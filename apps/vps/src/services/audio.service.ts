@@ -1,4 +1,4 @@
-import { and, arrayContains, asc, count, desc, eq, sql } from 'drizzle-orm'
+import { and, arrayContains, asc, count, desc, eq, or, type SQL, sql } from 'drizzle-orm'
 import { Context, Crypto, Effect, Encoding, Layer } from 'effect'
 import { db } from '@/db'
 import {
@@ -105,7 +105,8 @@ export interface AudioService {
   readonly getTags: (type: AudioType) => Effect.Effect<string[], DatabaseError>
   readonly getBySlug: (
     type: AudioType,
-    slug: string
+    slug: string,
+    actor?: { userId: string; userRole: string }
   ) => Effect.Effect<SelectMdxCompiledAudio, DatabaseError | NotFoundError>
   readonly getBySlugForEdit: (
     type: AudioType,
@@ -151,14 +152,9 @@ const getByTypeEffect = (
     yield* Effect.annotateCurrentSpan('audio.limit', limit)
     yield* Effect.annotateCurrentSpan('audio.offset', offset)
     if (tag) yield* Effect.annotateCurrentSpan('audio.tag', tag)
-    const visibilityCondition = actor
-      ? actor.userRole === 'admin'
-        ? undefined
-        : audioIdsForCreator(actor.userId)
-      : eq(audioTable.draft, false)
     const whereCondition = and(
       eq(audioTable.type, type),
-      visibilityCondition,
+      audioListVisibilityCondition(actor),
       tag ? arrayContains(audioTable.tags, [tag]) : undefined
     )
 
@@ -252,18 +248,29 @@ const getTagsEffect = (type: AudioType) =>
       .toSorted()
   })
 
-const getBySlugEffect = (type: AudioType, slug: string, mdx: MdxService, includeDrafts = false) =>
+// Single-item lookup: a non-admin actor sees public content plus their own
+// drafts, so a creator following a link to their own unpublished mix doesn't
+// 404 on it.
+const audioVisibilityCondition = (actor?: { userId: string; userRole: string }) => {
+  if (actor?.userRole === 'admin') return undefined
+  if (actor) return or(eq(audioTable.draft, false), audioIdsForCreator(actor.userId))
+  return eq(audioTable.draft, false)
+}
+
+// Manage/dashboard list: a non-admin actor sees only their own content
+// (draft or live), not the public catalog plus their drafts.
+const audioListVisibilityCondition = (actor?: { userId: string; userRole: string }) => {
+  if (!actor) return eq(audioTable.draft, false)
+  if (actor.userRole === 'admin') return undefined
+  return audioIdsForCreator(actor.userId)
+}
+
+const findAudioBySlug = (type: AudioType, slug: string, mdx: MdxService, where: SQL | undefined) =>
   Effect.gen(function* () {
     const audio = yield* Effect.tryPromise({
       try: () =>
         db.query.audioTable.findFirst({
-          where: includeDrafts
-            ? and(eq(audioTable.type, type), eq(audioTable.slug, slug))
-            : and(
-                eq(audioTable.type, type),
-                eq(audioTable.slug, slug),
-                eq(audioTable.draft, false)
-              ),
+          where,
           with: {
             audioCreators: {
               with: { creator: true }
@@ -307,6 +314,27 @@ const getBySlugEffect = (type: AudioType, slug: string, mdx: MdxService, include
       }))
     }
   })
+
+// Public/actor-aware lookup: visibility is decided in the WHERE clause, so a
+// draft row a viewer isn't allowed to see never leaves the database.
+const getBySlugEffect = (
+  type: AudioType,
+  slug: string,
+  mdx: MdxService,
+  actor?: { userId: string; userRole: string }
+) =>
+  findAudioBySlug(
+    type,
+    slug,
+    mdx,
+    and(eq(audioTable.type, type), eq(audioTable.slug, slug), audioVisibilityCondition(actor))
+  )
+
+// Edit lookup: fetches unconditionally (any type+slug, draft or not) because
+// the caller (getBySlugForEdit) runs requireCreatorOrAdmin right after --
+// that authorization check, not a query filter, is what gates access here.
+const getBySlugUnfilteredEffect = (type: AudioType, slug: string, mdx: MdxService) =>
+  findAudioBySlug(type, slug, mdx, and(eq(audioTable.type, type), eq(audioTable.slug, slug)))
 
 const createEffect = (
   data: CreateAudioData,
@@ -640,13 +668,13 @@ export const AudioServiceLayer = Layer.effect(
         ),
       getTags: (type) =>
         getTagsEffect(type).pipe(Effect.withSpan('audio.getTags', { attributes: { type } })),
-      getBySlug: (type, slug) =>
-        getBySlugEffect(type, slug, mdx).pipe(
+      getBySlug: (type, slug, actor) =>
+        getBySlugEffect(type, slug, mdx, actor).pipe(
           Effect.withSpan('audio.getBySlug', { attributes: { type, slug } })
         ),
       getBySlugForEdit: (type, slug, userId, userRole) =>
         Effect.gen(function* () {
-          const audio = yield* getBySlugEffect(type, slug, mdx, true)
+          const audio = yield* getBySlugUnfilteredEffect(type, slug, mdx)
           yield* requireCreatorOrAdmin('audio', audio.id, userId, userRole)
           return audio
         }).pipe(Effect.withSpan('audio.getBySlugForEdit', { attributes: { type, slug } })),

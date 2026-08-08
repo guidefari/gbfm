@@ -1,6 +1,7 @@
-import { PlayToggle } from '@gbfm/ui'
+import { Badge, PlayToggle } from '@gbfm/ui'
 import type { SelectAudio } from '@gbfm/vps/schemas'
 import { Link } from '@tanstack/react-router'
+import { useSession } from '@/lib/auth-client'
 import { cn } from '@/lib/utils'
 import { useNowPlayingTrack, usePlayerActions, useTransport } from '@/services/player'
 import { toPlaybackState } from '@/services/player/toPlaybackState'
@@ -14,6 +15,8 @@ export function EpisodeRow({ mix }: EpisodeRowProps) {
   const current = useNowPlayingTrack()
   const { isPlaying, isBuffering, isLoaded } = useTransport()
   const { playTrack, togglePlayPause } = usePlayerActions()
+  const { data: session } = useSession()
+  const isAdmin = session?.user?.role === 'admin'
 
   const isActive = current?.id === mix.id
   const hasCreators = Boolean(mix.creators && mix.creators.length > 0)
@@ -55,6 +58,12 @@ export function EpisodeRow({ mix }: EpisodeRowProps) {
         )}>
         {mix.title}
       </Link>
+
+      {isAdmin && mix.draft && (
+        <Badge variant='secondary' className='shrink-0'>
+          Draft
+        </Badge>
+      )}
 
       <span className='shrink-0 text-[11px] tracking-widest text-muted-foreground'>
         {dateLabel}

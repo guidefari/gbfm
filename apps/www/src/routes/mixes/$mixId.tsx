@@ -434,9 +434,12 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
         <div className='flex-1 pt-2 space-y-6'>
           <div className='space-y-4'>
             <div className='flex flex-col gap-2'>
-              <h1 className='text-4xl font-black leading-none tracking-tighter md:text-5xl'>
-                {mix.title}
-              </h1>
+              <div className='flex flex-wrap items-center gap-3'>
+                <h1 className='text-4xl font-black leading-none tracking-tighter md:text-5xl'>
+                  {mix.title}
+                </h1>
+                {mix.draft && <Badge variant='secondary'>Draft</Badge>}
+              </div>
               {mix.creators && mix.creators.length > 0 && (
                 <div className='flex flex-wrap gap-x-1.5 gap-y-1 text-xs font-bold tracking-widest text-muted-foreground/80'>
                   <span className='opacity-50'>by</span>

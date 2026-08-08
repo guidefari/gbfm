@@ -62,7 +62,8 @@ export interface ShowService {
   ) => Effect.Effect<void, DatabaseError | NotFoundError | UnauthorizedError>
   readonly getEpisodes: (
     showSlug: string,
-    options: { limit: number; offset: number }
+    options: { limit: number; offset: number },
+    actor?: { userId: string; userRole: string }
   ) => Effect.Effect<
     {
       data: SelectAudio[]
@@ -393,7 +394,11 @@ const deleteEffect = (slug: string, userId: string, userRole: string) =>
     })
   })
 
-const getEpisodesEffect = (showSlug: string, options: { limit: number; offset: number }) =>
+const getEpisodesEffect = (
+  showSlug: string,
+  options: { limit: number; offset: number },
+  actor?: { userId: string; userRole: string }
+) =>
   Effect.gen(function* () {
     const { limit, offset } = options
 
@@ -421,7 +426,8 @@ const getEpisodesEffect = (showSlug: string, options: { limit: number; offset: n
       })
     }
 
-    const whereCondition = and(eq(audioTable.showId, show.id), eq(audioTable.draft, false))
+    const draftCondition = actor?.userRole === 'admin' ? undefined : eq(audioTable.draft, false)
+    const whereCondition = and(eq(audioTable.showId, show.id), draftCondition)
 
     const countResult = yield* Effect.tryPromise({
       try: () => db.select({ total: count() }).from(audioTable).where(whereCondition),
@@ -496,8 +502,8 @@ export const ShowServiceLayer = Layer.succeed(ShowService, {
     deleteEffect(slug, userId, userRole).pipe(
       Effect.withSpan('show.delete', { attributes: { slug } })
     ),
-  getEpisodes: (showSlug, options) =>
-    getEpisodesEffect(showSlug, options).pipe(
+  getEpisodes: (showSlug, options, actor) =>
+    getEpisodesEffect(showSlug, options, actor).pipe(
       Effect.withSpan('show.getEpisodes', { attributes: { showSlug } })
     )
 })
