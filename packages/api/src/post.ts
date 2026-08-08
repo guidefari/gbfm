@@ -281,23 +281,9 @@ export const PostGroup = HttpApiGroup.make('post')
     })
   )
   .add(
-    HttpApiEndpoint.post('getRandomMicroPost', '/api/content/posts/micro/random', {
-      payload: GetRandomMicroPostInput,
-      success: GetRandomMicroPostResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
-    })
-  )
-  .add(
     HttpApiEndpoint.get('getMicroPostById', '/api/content/posts/micro/by-id/:id', {
       params: IdParam,
       success: CompiledMicroPostResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
-    })
-  )
-  .add(
-    HttpApiEndpoint.get('getAdjacentMicroPosts', '/api/content/posts/micro/:slug/adjacent', {
-      params: SlugParam,
-      success: GetAdjacentMicroPostsResponse,
       error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
     })
   )
