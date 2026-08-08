@@ -14,6 +14,11 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
+    "BackupTaskInvoker": {
+      "name": string
+      "type": "sst.aws.Function"
+      "url": string
+    }
     "BlueskySyncTask": {
       "assignPublicIp": boolean
       "cluster": string
@@ -23,7 +28,15 @@ declare module "sst" {
       "taskDefinition": string
       "type": "sst.aws.Task"
     }
-    "CdnRouterWorker": import("@cloudflare/workers-types").Service
+    "DatabaseBackupTask": {
+      "assignPublicIp": boolean
+      "cluster": string
+      "containers": any
+      "securityGroups": any
+      "subnets": any
+      "taskDefinition": string
+      "type": "sst.aws.Task"
+    }
     "DatabaseBackups": {
       "name": string
       "type": "sst.aws.Bucket"
@@ -61,7 +74,6 @@ declare module "sst" {
       "name": string
       "type": "sst.aws.Bucket"
     }
-    "MixesR2": import("@cloudflare/workers-types").R2Bucket
     "OTEL_EXPORTER_OTLP_ENDPOINT": {
       "type": "sst.sst.Secret"
       "value": string
@@ -86,36 +98,11 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
-    "StorageAccessKeyId": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
-    "StorageEndpoint": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
-    "StorageProvider": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
-    "StorageRegion": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
-    "StorageSecretAccessKey": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
-    "StorageSigningEndpoint": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
     "Urls": {
       "site": string
       "type": "sst.sst.Linkable"
       "vps": string
     }
-    "UserContentR2": import("@cloudflare/workers-types").R2Bucket
     "User_Content": {
       "name": string
       "type": "sst.aws.Bucket"
@@ -129,6 +116,7 @@ declare module "sst" {
       "url": string
     }
     "gbfm_network": {
+      "bastion": string
       "type": "sst.aws.Vpc"
     }
     "gbfm_vps": {
