@@ -10,6 +10,7 @@ export const navigationSessions = pgTable(
     userId: text('userId').references(() => user.id, { onDelete: 'cascade' }),
     deviceToken: text('deviceToken'),
     cursor: integer('cursor').notNull().default(0),
+    lastIntentToken: text('lastIntentToken'),
     createdAt: timestamp('createdAt').defaultNow().notNull(),
     updatedAt: timestamp('updatedAt').defaultNow().notNull()
   },
@@ -21,6 +22,17 @@ export const navigationSessions = pgTable(
       .on(table.deviceToken)
       .where(sql`${table.deviceToken} IS NOT NULL`)
   ]
+)
+
+export const navigationSeenPosts = pgTable(
+  'navigation_seen_posts',
+  {
+    sessionId: uuid('sessionId')
+      .notNull()
+      .references(() => navigationSessions.id, { onDelete: 'cascade' }),
+    slug: text('slug').notNull()
+  },
+  (table) => [uniqueIndex('navigation_seen_session_slug_uq').on(table.sessionId, table.slug)]
 )
 
 export const navigationTrailEntries = pgTable(

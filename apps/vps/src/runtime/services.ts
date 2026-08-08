@@ -22,6 +22,7 @@ import { MusicEntityServiceLayer } from '@/services/music-entity'
 import { MusicLinkScraperServiceLayer } from '@/services/music-link-scraper.service'
 import { MusicReminderServiceLayer } from '@/services/music-reminder.service'
 import { NavigationRetentionServiceLayer } from '@/services/navigation-retention.service'
+import { NavigationSessionServiceLayer } from '@/services/navigation.service'
 import { PostServiceLayer } from '@/services/post.service'
 import { ProfileServiceLayer } from '@/services/profile.service'
 import { QRCodeServiceLayer } from '@/services/qrcode.service'
@@ -55,6 +56,7 @@ const BaseServicesLayer = Layer.mergeAll(
   SpotifyServiceLayer,
   MusicReminderServiceLayer,
   NavigationRetentionServiceLayer.pipe(Layer.provide(DatabaseServiceLayer)),
+  NavigationSessionServiceLayer,
   ReminderSignalServiceLayer,
   MusicLinkScraperServiceLayer.pipe(Layer.provide(SpotifyServiceLayer)),
   AudioServiceLayer.pipe(Layer.provide(MdxServiceLayer), Layer.provide(UploadAssetDepsLive)),
