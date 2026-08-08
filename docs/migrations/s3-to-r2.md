@@ -527,7 +527,7 @@ All slices run under `bun precommit`.
 3. [OPS-241](https://linear.app/guidefari/issue/OPS-241/remove-database-backup-subsystem-gated-on-provider-verification) — **Remove repository backups.** Completed early after the operator moved ownership to PlanetScale; retain only the unlinked S3 bucket until lifecycle expiry.
 4. [OPS-237](https://linear.app/guidefari/issue/OPS-237/delete-dead-cross-bucket-copy-path) — **Delete cross-bucket copy**, slices 4 and 4b. **Completed.**
 5. [OPS-238](https://linear.app/guidefari/issue/OPS-238/cdn-router-worker-and-sst-wiring-for-r2) — **Worker + SST wiring**, slices 6–7, deployed to a test hostname. **Completed.**
-6. [OPS-239](https://linear.app/guidefari/issue/OPS-239/cut-mixes-bucket-over-to-r2) — **`Mixes` cutover.** Super Slurper copy → verify → R2 CORS → router origin → soak. No upload path, so lower risk.
+6. [OPS-239](https://linear.app/guidefari/issue/OPS-239/cut-mixes-bucket-over-to-r2) — **`Mixes` cutover.** Super Slurper copy and parity verification are complete; see the [redacted evidence](evidence/r2-mixes-copy-2026-08-09.md). Remaining: R2 CORS → router origin → soak. No upload path, so lower risk.
 7. [OPS-240](https://linear.app/guidefari/issue/OPS-240/cut-user-content-bucket-over-to-r2) — **`User_Content` cutover.** Copy → verify → R2 CORS (C4) → presigning to R2 host (C3) → router origin → soak the upload path hard.
 8. [OPS-242](https://linear.app/guidefari/issue/OPS-242/consolidate-legacy-cloudfront-assets-into-r2) — **Follow-up phase: legacy CloudFront consolidation.** Copy `d20tmfka7s58bt` contents into R2, repoint the 7 hardcoded references, verify no persisted rows or historical RSS items depend on the old host, then retire the distribution. Single source, as intended.
 
