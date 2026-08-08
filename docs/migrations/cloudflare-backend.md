@@ -106,7 +106,9 @@ Hyperdrive remains useful for routes moved into Workers. Before using it, audit 
 
 ### Phase 1: move S3 to R2
 
-Implementation spec: [`s3-to-r2.md`](s3-to-r2.md), which supersedes this section. Written against the traced code, it diverges from the plan below in four ways:
+Implementation spec: [`s3-to-r2.md`](s3-to-r2.md), which supersedes this section. Tracked in Linear under [OPS-234](https://linear.app/guidefari/issue/OPS-234/s3-to-r2-migration-parent) (steps: [OPS-235](https://linear.app/guidefari/issue/OPS-235/inventory-user-content-and-mixes-buckets), [OPS-236](https://linear.app/guidefari/issue/OPS-236/consolidate-13-s3client-constructions-behind-objectstoreclient), [OPS-237](https://linear.app/guidefari/issue/OPS-237/delete-dead-cross-bucket-copy-path), [OPS-238](https://linear.app/guidefari/issue/OPS-238/cdn-router-worker-and-sst-wiring-for-r2), [OPS-239](https://linear.app/guidefari/issue/OPS-239/cut-mixes-bucket-over-to-r2), [OPS-240](https://linear.app/guidefari/issue/OPS-240/cut-user-content-bucket-over-to-r2), [OPS-241](https://linear.app/guidefari/issue/OPS-241/remove-database-backup-subsystem-gated-on-provider-verification), [OPS-242](https://linear.app/guidefari/issue/OPS-242/consolidate-legacy-cloudfront-assets-into-r2)).
+
+Written against the traced code, it diverges from the plan below in four ways:
 
 - browser CORS on R2 **is** required from day one (the browser PUTs multipart chunks directly to the bucket);
 - cutover is forward-only per-bucket, not dual-write;

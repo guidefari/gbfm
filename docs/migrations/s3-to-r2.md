@@ -1,5 +1,7 @@
 # S3 to R2 Migration (Phase 1, promoted to step one)
 
+Tracked in Linear under [OPS-234](https://linear.app/guidefari/issue/OPS-234/s3-to-r2-migration-parent). Each execution step below has its own issue; see [Execution Order](#execution-order).
+
 ## Summary
 
 Move the canonical buckets from S3 to Cloudflare R2 without changing object keys or public `cdn.goosebumps.fm` URLs. Infrastructure stays in **SST**, using its Pulumi extensibility for the Cloudflare resources.
@@ -532,14 +534,14 @@ All slices run under `bun precommit`.
 
 ## Execution Order
 
-1. **Inventory** `User_Content` and `Mixes`. Confirm the <500 MB expectation (C5); flag exceptions.
-2. **Consolidate** — slices 1–3, `provider: 'aws'` still selected. Zero production behavior change; ships independently. *This is the highest-value, lowest-risk PR and should land first regardless of everything downstream.*
-3. **Delete cross-bucket copy** — slices 4 and 4b. Independent of storage; ships separately. Small enough to fold into step 2 if convenient.
-4. **Worker + SST wiring** — slices 6–7, deployed to a test hostname.
-5. **`Mixes` cutover.** Super Slurper copy → verify → R2 CORS → router origin → soak. No upload path, so lower risk.
-6. **`User_Content` cutover.** Copy → verify → R2 CORS (C4) → presigning to R2 host (C3) → router origin → soak the upload path hard.
-7. **Backup removal** — only after the provider precondition is verified and recorded.
-8. **Follow-up phase: legacy CloudFront consolidation.** Copy `d20tmfka7s58bt` contents into R2, repoint the 7 hardcoded references, verify no persisted rows or historical RSS items depend on the old host, then retire the distribution. Single source, as intended.
+1. [OPS-235](https://linear.app/guidefari/issue/OPS-235/inventory-user-content-and-mixes-buckets) — **Inventory** `User_Content` and `Mixes`. Confirm the <500 MB expectation (C5); flag exceptions.
+2. [OPS-236](https://linear.app/guidefari/issue/OPS-236/consolidate-13-s3client-constructions-behind-objectstoreclient) — **Consolidate**, slices 1–3, `provider: 'aws'` still selected. Zero production behavior change; ships independently. *This is the highest-value, lowest-risk PR and should land first regardless of everything downstream.*
+3. [OPS-237](https://linear.app/guidefari/issue/OPS-237/delete-dead-cross-bucket-copy-path) — **Delete cross-bucket copy**, slices 4 and 4b. Independent of storage; ships separately. Small enough to fold into step 2 if convenient.
+4. [OPS-238](https://linear.app/guidefari/issue/OPS-238/cdn-router-worker-and-sst-wiring-for-r2) — **Worker + SST wiring**, slices 6–7, deployed to a test hostname.
+5. [OPS-239](https://linear.app/guidefari/issue/OPS-239/cut-mixes-bucket-over-to-r2) — **`Mixes` cutover.** Super Slurper copy → verify → R2 CORS → router origin → soak. No upload path, so lower risk.
+6. [OPS-240](https://linear.app/guidefari/issue/OPS-240/cut-user-content-bucket-over-to-r2) — **`User_Content` cutover.** Copy → verify → R2 CORS (C4) → presigning to R2 host (C3) → router origin → soak the upload path hard.
+7. [OPS-241](https://linear.app/guidefari/issue/OPS-241/remove-database-backup-subsystem-gated-on-provider-verification) — **Backup removal**, only after the provider precondition is verified and recorded.
+8. [OPS-242](https://linear.app/guidefari/issue/OPS-242/consolidate-legacy-cloudfront-assets-into-r2) — **Follow-up phase: legacy CloudFront consolidation.** Copy `d20tmfka7s58bt` contents into R2, repoint the 7 hardcoded references, verify no persisted rows or historical RSS items depend on the old host, then retire the distribution. Single source, as intended.
 
 S3 stays readable and unexpired through the rollback window.
 
@@ -558,6 +560,6 @@ S3 stays readable and unexpired through the rollback window.
 
 **Open questions**
 
-1. **Does the database provider actually deliver verified, restore-tested backups?** Blocks step 7 only. Everything else proceeds regardless.
-2. **Does R2's multipart ETag survive the equality check at `upload.handlers.ts:313-320`?** Empirical, answered by Slice 5. If not, that handler needs size-and-count validation instead — a real code change this spec has scoped but not designed.
-3. **Which SST Cloudflare provider resources cover R2 buckets and Worker script bindings** at the pinned SST/Pulumi version? Affects how much Pulumi escape-hatch code `infra/bucket.ts` needs.
+1. **Does the database provider actually deliver verified, restore-tested backups?** Blocks OPS-241 only. Everything else proceeds regardless.
+2. **Does R2's multipart ETag survive the equality check at `upload.handlers.ts:313-320`?** Empirical, answered by Slice 5 in OPS-240. If not, that handler needs size-and-count validation instead — a real code change this spec has scoped but not designed.
+3. **Which SST Cloudflare provider resources cover R2 buckets and Worker script bindings** at the pinned SST/Pulumi version? Resolved in OPS-238; affects how much Pulumi escape-hatch code `infra/bucket.ts` needs.
