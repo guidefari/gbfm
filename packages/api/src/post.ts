@@ -153,10 +153,6 @@ export const GetRandomMicroPostResponse = Schema.Struct({
   slug: Schema.String
 })
 
-const GetRandomMicroPostInput = Schema.Struct({
-  exclude: Schema.optional(Schema.Array(Schema.String))
-})
-
 const SearchMicroPostsQuery = {
   ...PaginationQuery,
   q: Schema.NonEmptyString
