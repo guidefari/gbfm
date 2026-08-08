@@ -102,7 +102,9 @@ export const createWebHandler = (options?: {
     Layer.provide(SpotifyHandlersLive),
     Layer.provide(ShowsHandlersLive),
     Layer.provide(Layer.mergeAll(UserHandlersLive, UploadHandlersLive)),
-    Layer.provide(Layer.mergeAll(AuthMiddlewareLive, IdentityResolverLive)),
+    // These middleware services are also yielded directly by built handlers. Keep them in the
+    // layer output so toWebHandler can prove no request-time context remains.
+    Layer.provideMerge(Layer.mergeAll(AuthMiddlewareLive, IdentityResolverLive)),
     // provideMerge, not provide: services a handler pulls via plain `yield*`
     // only clear toWebHandler's phantom-context requirement once they're
     // also in this layer's output, which plain `provide` discards.
