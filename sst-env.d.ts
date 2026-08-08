@@ -98,6 +98,30 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
+    "StorageAccessKeyId": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "StorageEndpoint": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "StorageProvider": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "StorageRegion": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "StorageSecretAccessKey": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "StorageSigningEndpoint": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "Urls": {
       "site": string
       "type": "sst.sst.Linkable"

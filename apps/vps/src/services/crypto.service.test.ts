@@ -18,6 +18,7 @@ const layer = CryptoServiceLayer.pipe(
       encryption: { rootKey: 'test-root-key' },
       spotify: { clientId: '', clientSecret: '' },
       buckets: { userContent: '', databaseBackups: '', mixes: '' },
+      storage: { provider: 'aws', region: 'us-east-1' },
       tasks: { databaseBackup: undefined },
       resources: { available: false },
       app: { stage: 'test', nodeEnv: 'test', dbStage: undefined, logLevel: undefined },

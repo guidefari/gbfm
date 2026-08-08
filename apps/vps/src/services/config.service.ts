@@ -1,5 +1,5 @@
 import { isRecord } from '@gbfm/core/utils'
-import { Context, Effect, Layer, Schema } from 'effect'
+import { Context, Effect, Layer, Redacted, Schema } from 'effect'
 
 let Resource: { [key: string]: unknown } | null = null
 try {
@@ -49,6 +49,25 @@ function resourceString(name: string, property: string, fallback: string): strin
   return stringValue(resource[property], fallback)
 }
 
+/** Parsed object storage configuration. R2 requires an endpoint and explicit credentials. */
+export const StorageConfigSchema = Schema.Struct({
+  provider: Schema.Literals(['aws', 'r2']),
+  endpoint: Schema.optional(Schema.String),
+  region: Schema.String,
+  accessKeyId: Schema.optional(Schema.Redacted(Schema.String)),
+  secretAccessKey: Schema.optional(Schema.Redacted(Schema.String)),
+  signingEndpoint: Schema.optional(Schema.String)
+}).check(
+  Schema.makeFilter((storage) =>
+    storage.provider === 'aws' ||
+    (storage.endpoint !== undefined &&
+      storage.accessKeyId !== undefined &&
+      storage.secretAccessKey !== undefined)
+      ? undefined
+      : 'r2 provider requires endpoint and credentials'
+  )
+)
+
 const ConfigSchema = Schema.Struct({
   database: Schema.Struct({
     host: Schema.String,
@@ -81,6 +100,7 @@ const ConfigSchema = Schema.Struct({
     databaseBackups: Schema.String,
     mixes: Schema.String
   }),
+  storage: StorageConfigSchema,
   tasks: Schema.Struct({
     databaseBackup: Schema.optional(Schema.String)
   }),
@@ -144,6 +164,18 @@ export function createConfig(): ConfigService {
   )
   const mixesBucketName = resourceString('Mixes', 'name', 'mixes-dev')
 
+  const storageAccessKeyId = secretString('StorageAccessKeyId', '')
+  const storageSecretAccessKey = secretString('StorageSecretAccessKey', '')
+  const storage = Schema.decodeUnknownSync(StorageConfigSchema)({
+    provider: secretString('StorageProvider', 'aws'),
+    endpoint: secretString('StorageEndpoint', '') || undefined,
+    region: secretString('StorageRegion', 'auto'),
+    accessKeyId: storageAccessKeyId.length === 0 ? undefined : Redacted.make(storageAccessKeyId),
+    secretAccessKey:
+      storageSecretAccessKey.length === 0 ? undefined : Redacted.make(storageSecretAccessKey),
+    signingEndpoint: secretString('StorageSigningEndpoint', '') || undefined
+  })
+
   const databaseBackupTask = resourceString('DatabaseBackupTask', 'taskDefinition', '') || undefined
 
   const nodeEnv = isProd ? 'production' : 'development'
@@ -192,6 +224,7 @@ export function createConfig(): ConfigService {
       databaseBackups: databaseBackupsBucketName,
       mixes: mixesBucketName
     },
+    storage,
     tasks: {
       databaseBackup: databaseBackupTask
     },
