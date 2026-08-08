@@ -1,14 +1,15 @@
 import { useRouter } from '@tanstack/react-router'
-import { MessageCircle } from 'lucide-react'
 import type { MouseEvent } from 'react'
 import { useState } from 'react'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
+import { TweetCardActions } from '@/components/TweetCardActions'
 import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
 import { TweetQuoteCard } from '@/components/TweetQuoteCard'
 import { TweetReplyComposer } from '@/components/TweetReplyComposer'
 import { TweetReplyList } from '@/components/TweetReplyList'
 import { TweetTagLinks } from '@/components/TweetTagLinks'
+import { useSession } from '@/lib/auth-client'
 import { useMicroPostReplies } from '@/lib/http'
 import { cn } from '@/lib/utils'
 
@@ -30,10 +31,15 @@ export function TweetReplyCard({
   isLast: boolean
 }) {
   const router = useRouter()
+  const { data: session } = useSession()
+  const user = session?.user
   const [showThread, setShowThread] = useState(false)
   const hasMusicEntity = Boolean(reply.musicEntityType && reply.musicEntityId)
   const replyCount = reply.replyCount ?? 0
   const canNest = depth < MAX_NESTED_DEPTH
+  const canEdit = Boolean(
+    user && (user.role === 'admin' || reply.creators?.some((creator) => creator.id === user.id))
+  )
 
   const openReply = () => router.navigate({ to: '/tweet/$slug', params: { slug: reply.slug } })
 
@@ -72,31 +78,29 @@ export function TweetReplyCard({
         {reply.quotedPostId && <TweetQuoteCard quotedPostId={reply.quotedPostId} />}
         {reply.tags && reply.tags.length > 0 && <TweetTagLinks tags={[...reply.tags]} />}
 
+        <TweetCardActions
+          post={reply}
+          slug={reply.slug}
+          canEdit={canEdit}
+          replyCount={canNest ? replyCount : undefined}
+          replyCountExpanded={canNest ? showThread : undefined}
+          onReplyCountClick={canNest ? () => setShowThread((open) => !open) : undefined}
+        />
+
         <div className='flex items-center gap-4'>
           <TweetReplyComposer
             parentSlug={reply.slug}
             compact
             onPosted={() => setShowThread(true)}
           />
-          {replyCount > 0 &&
-            (canNest ? (
-              <button
-                type='button'
-                onClick={() => setShowThread((open) => !open)}
-                aria-expanded={showThread}
-                className='inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground'>
-                <MessageCircle className='h-3 w-3' />
-                {showThread ? 'Hide' : 'Show'} {replyCount} {replyCount === 1 ? 'reply' : 'replies'}
-              </button>
-            ) : (
-              <button
-                type='button'
-                onClick={openReply}
-                className='inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground'>
-                <MessageCircle className='h-3 w-3' />
-                Continue thread ({replyCount})
-              </button>
-            ))}
+          {!canNest && replyCount > 0 && (
+            <button
+              type='button'
+              onClick={openReply}
+              className='inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground'>
+              Continue thread ({replyCount})
+            </button>
+          )}
         </div>
       </div>
 

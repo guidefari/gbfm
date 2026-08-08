@@ -1,4 +1,3 @@
-import { MessageCircle } from 'lucide-react'
 import { TweetReplyCard } from '@/components/TweetReplyCard'
 import { useMicroPostReplies } from '@/lib/http'
 
@@ -33,15 +32,6 @@ export function TweetReplyList({ parentSlug, depth = 0 }: Props) {
 
   return (
     <div>
-      {depth === 0 && (
-        <div className='mb-3 flex items-center gap-3 text-xs text-muted-foreground'>
-          <span className='flex items-center gap-1.5'>
-            <MessageCircle className='h-3.5 w-3.5' />
-            {replies.length} {replies.length === 1 ? 'reply' : 'replies'}
-          </span>
-          <span aria-hidden className='h-px flex-1 bg-border/60' />
-        </div>
-      )}
       {replies.map((reply, index) => (
         <TweetReplyCard
           key={reply.id}
