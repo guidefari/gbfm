@@ -26,7 +26,7 @@ describe('IdentityResolver', () => {
     expect(cookie).toContain('HttpOnly')
     expect(cookie).toContain('Secure')
     expect(cookie).toContain('SameSite=Lax')
-    expect(cookie).toContain('Path=/api/content/posts/micro')
+    expect(cookie).toContain('Path=/')
   })
 
   it('uses an existing anonymous device token without setting a replacement cookie', async () => {

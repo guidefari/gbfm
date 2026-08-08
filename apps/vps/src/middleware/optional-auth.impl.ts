@@ -21,7 +21,7 @@ const deviceTokenCookieName = 'gbfm-navigation-device'
 
 const deviceTokenCookie: NonNullable<Cookies.Cookie['options']> = {
   httpOnly: true,
-  path: '/api/content/posts/micro',
+  path: '/',
   sameSite: 'lax',
   secure: true
 }
