@@ -1,0 +1,90 @@
+{
+  "generatedAt": "2026-08-08T19:35:06.743Z",
+  "redaction": "Object keys are represented by SHA-256 hashes and file extensions only.",
+  "limits": {
+    "expectedMaximumObjectBytes": 500000000,
+    "superSlurperMaximumObjectBytes": 1000000000000,
+    "r2MaximumKeyBytes": 1024,
+    "r2MaximumMetadataBytes": 8192
+  },
+  "buckets": [
+    {
+      "bucket": "gbfm-prod-usercontentbucket-cohrefob",
+      "objectCount": 198,
+      "totalBytes": 983213381,
+      "storageClasses": {
+        "STANDARD": 198
+      },
+      "largestObject": {
+        "keySha256": "cf3ceb10cf665608aab6d03e591c94b801bb6f1f2aabfb1b5ea46f9655b5648e",
+        "extension": ".mp3",
+        "size": 153937574
+      },
+      "metadata": {
+        "contentTypes": {
+          "audio/mpeg": 8,
+          "audio/x-m4a": 3,
+          "image/jpeg": 158,
+          "image/png": 28,
+          "image/webp": 1
+        },
+        "customMetadataKeys": {
+          "expected-size": 1
+        },
+        "httpFieldsPresent": {
+          "content-type": 198
+        },
+        "serverSideEncryption": {
+          "AES256": 198
+        },
+        "objectsWithCustomMetadata": 1,
+        "maximumEstimatedMetadataBytes": 55
+      },
+      "incompleteMultipartUploads": [],
+      "exceptions": {
+        "aboveExpected500Mb": [],
+        "aboveSuperSlurper1Tb": [],
+        "archivalObjects": [],
+        "keysAboveR2Limit": [],
+        "metadataAboveR2Limit": []
+      }
+    },
+    {
+      "bucket": "gbfm-prod-mixesbucket-zftkfrfx",
+      "objectCount": 25,
+      "totalBytes": 3794106703,
+      "storageClasses": {
+        "STANDARD": 25
+      },
+      "largestObject": {
+        "keySha256": "e53bc08c1e62cbbc50c9b3cc875497e3ff98d257bc1f5ba1aea5fc419b27101c",
+        "extension": ".mp3",
+        "size": 265858611
+      },
+      "metadata": {
+        "contentTypes": {
+          "application/octet-stream": 1,
+          "audio/mp3": 23,
+          "audio/mpeg": 1
+        },
+        "customMetadataKeys": {},
+        "httpFieldsPresent": {
+          "content-type": 25
+        },
+        "serverSideEncryption": {
+          "AES256": 25
+        },
+        "objectsWithCustomMetadata": 0,
+        "maximumEstimatedMetadataBytes": 36
+      },
+      "incompleteMultipartUploads": [],
+      "exceptions": {
+        "aboveExpected500Mb": [],
+        "aboveSuperSlurper1Tb": [],
+        "archivalObjects": [],
+        "keysAboveR2Limit": [],
+        "metadataAboveR2Limit": []
+      }
+    }
+  ]
+}
