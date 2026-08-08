@@ -167,29 +167,6 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
         }
       })
     )
-    .handle('getRandomMicroPost', ({ payload }) =>
-      Effect.gen(function* () {
-        const svc = yield* PostService
-        const excludeSlugs = [...(payload.exclude ?? [])]
-        const result = yield* dieOnDatabaseError(
-          svc
-            .getRandomMicroPost(excludeSlugs)
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
-        )
-        return result
-      })
-    )
-    .handle('getAdjacentMicroPosts', ({ params }) =>
-      Effect.gen(function* () {
-        const svc = yield* PostService
-        const result = yield* dieOnDatabaseError(
-          svc
-            .getAdjacentMicroPosts(params.slug)
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
-        )
-        return result
-      })
-    )
     .handle('getMicroPostBySlug', ({ params }) =>
       Effect.gen(function* () {
         const svc = yield* PostService
