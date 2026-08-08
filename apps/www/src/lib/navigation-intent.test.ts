@@ -18,6 +18,29 @@ describe('runNavigationIntent', () => {
     expect(secondCompleted).toBe(true)
   })
 
+  test('aborts a superseded in-flight request without navigating', async () => {
+    let requestStarted = false
+    let requestAborted = false
+    let navigated = false
+
+    runNavigationIntent(
+      Effect.sync(() => (requestStarted = true)).pipe(
+        Effect.andThen(
+          Effect.onInterrupt(Effect.never, () => Effect.sync(() => (requestAborted = true)))
+        ),
+        Effect.andThen(Effect.sync(() => (navigated = true)))
+      )
+    )
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    runNavigationIntent(Effect.void)
+
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(requestStarted).toBe(true)
+    expect(requestAborted).toBe(true)
+    expect(navigated).toBe(false)
+  })
+
   test('runs an uncontested intent to completion', () => {
     let completed = false
 
