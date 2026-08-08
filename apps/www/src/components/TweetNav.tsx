@@ -1,9 +1,14 @@
+import { useAtomSet, useAtomValue } from '@effect/atom-react'
+import type { NavigationResultResponse } from '@gbfm/api/navigation'
 import { useHotkey } from '@tanstack/react-hotkeys'
 import { useRouter } from '@tanstack/react-router'
 import { Effect } from 'effect'
+import * as Atom from 'effect/unstable/reactivity/Atom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useMemo } from 'react'
 import { HoldToRandomButton } from '@/components/HoldToRandomButton'
-import { useAdjacentMicroPosts, useRandomMicroPost } from '@/lib/http'
+import { jump, stepBack, stepForward } from '@/lib/navigation-commands'
+import { useNavigateMicroPosts } from '@/lib/http'
 import { runNavigationIntent } from '@/lib/navigation-intent'
 import { cn } from '@/lib/utils'
 
@@ -11,26 +16,18 @@ type Props = {
   slug: string
 }
 
+type Capabilities = NavigationResultResponse['capabilities']
+
 const iconButtonClassName =
   'inline-flex h-8 w-8 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground'
 const disabledIconButtonClassName =
   'inline-flex h-8 w-8 items-center justify-center rounded-sm text-muted-foreground/25'
 
-type AdjacentPost = { slug: string } | null
-
 const flankClassName =
   'fixed top-1/2 z-30 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground lg:flex'
 
-function PrevLink({
-  prev,
-  onTap,
-  onHoldComplete
-}: {
-  prev: AdjacentPost
-  onTap: () => void
-  onHoldComplete: () => void
-}) {
-  if (!prev) {
+function PrevLink({ enabled, onTap }: { enabled: boolean; onTap: () => void }) {
+  if (!enabled) {
     return (
       <span aria-hidden className={disabledIconButtonClassName}>
         <ChevronLeft className='h-4 w-4' />
@@ -39,26 +36,28 @@ function PrevLink({
   }
 
   return (
-    <HoldToRandomButton
-      onTap={onTap}
-      onHoldComplete={onHoldComplete}
-      ariaLabel='Previous tweet (hold for random)'
+    <button
+      type='button'
+      aria-label='Previous tweet'
+      onClick={onTap}
       className={iconButtonClassName}>
       <ChevronLeft className='h-4 w-4' />
-    </HoldToRandomButton>
+    </button>
   )
 }
 
 function NextLink({
-  next,
+  enabled,
+  hasUnread,
   onTap,
   onHoldComplete
 }: {
-  next: AdjacentPost
+  enabled: boolean
+  hasUnread: boolean
   onTap: () => void
   onHoldComplete: () => void
 }) {
-  if (!next) {
+  if (!enabled) {
     return (
       <span aria-hidden className={disabledIconButtonClassName}>
         <ChevronRight className='h-4 w-4' />
@@ -69,7 +68,7 @@ function NextLink({
   return (
     <HoldToRandomButton
       onTap={onTap}
-      onHoldComplete={onHoldComplete}
+      onHoldComplete={hasUnread ? onHoldComplete : () => {}}
       ariaLabel='Next tweet (hold for random)'
       className={iconButtonClassName}>
       <ChevronRight className='h-4 w-4' />
@@ -78,14 +77,16 @@ function NextLink({
 }
 
 function FlankingArrows({
-  prev,
-  next,
+  canStepBack,
+  canStepForward,
+  hasUnread,
   onTapPrev,
   onTapNext,
   onHoldComplete
 }: {
-  prev: AdjacentPost
-  next: AdjacentPost
+  canStepBack: boolean
+  canStepForward: boolean
+  hasUnread: boolean
   onTapPrev: () => void
   onTapNext: () => void
   onHoldComplete: () => void
@@ -95,24 +96,24 @@ function FlankingArrows({
 
   return (
     <>
-      {prev ? (
-        <HoldToRandomButton
-          onTap={onTapPrev}
-          onHoldComplete={onHoldComplete}
-          ariaLabel='Previous tweet (hold for random)'
+      {canStepBack ? (
+        <button
+          type='button'
+          aria-label='Previous tweet'
+          onClick={onTapPrev}
           className={cn(flankClassName, leftPosition)}>
           <ChevronLeft className='h-6 w-6' />
-        </HoldToRandomButton>
+        </button>
       ) : (
         <span aria-hidden className={cn(flankClassName, leftPosition, 'text-muted-foreground/20')}>
           <ChevronLeft className='h-6 w-6' />
         </span>
       )}
 
-      {next ? (
+      {canStepForward ? (
         <HoldToRandomButton
           onTap={onTapNext}
-          onHoldComplete={onHoldComplete}
+          onHoldComplete={hasUnread ? onHoldComplete : () => {}}
           ariaLabel='Next tweet (hold for random)'
           className={cn(flankClassName, rightPosition)}>
           <ChevronRight className='h-6 w-6' />
@@ -128,55 +129,55 @@ function FlankingArrows({
 
 export function TweetNav({ slug }: Props) {
   const router = useRouter()
-  const { data } = useAdjacentMicroPosts(slug)
-  const { randomMicroPostEffect } = useRandomMicroPost()
+  const { navigateMicroPostsEffect } = useNavigateMicroPosts()
+  const capabilitiesAtom = useMemo(() => Atom.make<Capabilities | null>(null), [])
+  const capabilities = useAtomValue(capabilitiesAtom)
+  const setCapabilities = useAtomSet(capabilitiesAtom)
 
-  const prev = data?.prev ?? null
-  const next = data?.next ?? null
-
-  const goToPrev = () => {
-    if (prev) {
-      runNavigationIntent(
-        Effect.sync(() => {
-          void router.navigate({ to: '/tweet/$slug', params: { slug: prev.slug } })
-        })
-      )
-    }
-  }
-
-  const goToNext = () => {
-    if (next) {
-      runNavigationIntent(
-        Effect.sync(() => {
-          void router.navigate({ to: '/tweet/$slug', params: { slug: next.slug } })
-        })
-      )
-    }
-  }
-
-  const onHoldComplete = () =>
+  const navigate = (
+    command: (intentToken: string) => Effect.Effect<NavigationResultResponse, unknown>
+  ) =>
     runNavigationIntent(
-      randomMicroPostEffect(slug).pipe(
-        Effect.flatMap(({ slug }) =>
-          Effect.sync(() => {
-            void router.navigate({ to: '/tweet/$slug', params: { slug } })
-          })
-        )
+      command(crypto.randomUUID()).pipe(
+        Effect.tap((result) => Effect.sync(() => setCapabilities(result.capabilities))),
+        Effect.flatMap((result) =>
+          Effect.promise(() =>
+            router.navigate({ to: '/tweet/$slug', params: { slug: result.destination.slug } })
+          )
+        ),
+        Effect.asVoid
       )
     )
+
+  const goToPrev = () =>
+    navigate((intentToken) => stepBack(navigateMicroPostsEffect, { from: slug, intentToken }))
+  const goToNext = () =>
+    navigate((intentToken) => stepForward(navigateMicroPostsEffect, { from: slug, intentToken }))
+  const onHoldComplete = () =>
+    navigate((intentToken) => jump(navigateMicroPostsEffect, { from: slug, intentToken }))
 
   useHotkey('ArrowLeft', goToPrev)
   useHotkey('ArrowRight', goToNext)
 
+  const canStepBack = capabilities?.canStepBack ?? false
+  const canStepForward = capabilities?.canStepForward ?? false
+  const hasUnread = capabilities?.hasUnread ?? false
+
   return (
     <>
       <div className='flex items-center gap-1 lg:hidden'>
-        <PrevLink prev={prev} onTap={goToPrev} onHoldComplete={onHoldComplete} />
-        <NextLink next={next} onTap={goToNext} onHoldComplete={onHoldComplete} />
+        <PrevLink enabled={canStepBack} onTap={goToPrev} />
+        <NextLink
+          enabled={canStepForward}
+          hasUnread={hasUnread}
+          onTap={goToNext}
+          onHoldComplete={onHoldComplete}
+        />
       </div>
       <FlankingArrows
-        prev={prev}
-        next={next}
+        canStepBack={canStepBack}
+        canStepForward={canStepForward}
+        hasUnread={hasUnread}
         onTapPrev={goToPrev}
         onTapNext={goToNext}
         onHoldComplete={onHoldComplete}
