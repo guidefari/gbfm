@@ -10,6 +10,7 @@ import { InternalGroup } from './internal'
 import { InviteGroup } from './invite'
 import { MusicGroup } from './music'
 import { MusicRemindersGroup } from './music-reminders'
+import { NavigationGroup } from './navigation'
 import { NewsletterGroup } from './newsletter'
 import { PostGroup } from './post'
 import { ProfileGroup } from './profile'
@@ -37,6 +38,7 @@ export const Api = HttpApi.make('gbfm')
   .add(EmailGroup)
   .add(FavoritesGroup)
   .add(MusicRemindersGroup)
+  .add(NavigationGroup)
   .add(NewsletterGroup)
   .add(FileManagerGroup)
   .add(SpotifyGroup)
