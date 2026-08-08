@@ -330,6 +330,13 @@
       "when": 1785625490177,
       "tag": "0049_open_archangel",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1786198566320,
+      "tag": "0050_lumpy_black_widow",
+      "breakpoints": true
     }
   ]
 }
