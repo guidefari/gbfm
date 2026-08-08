@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
-import { db } from '@/db'
 import { user as userTable } from '@/db/auth.schema'
+import { Database } from '@/db/layer'
 import { showCreators, showsTable } from '@/db/show.schema'
 import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
@@ -31,7 +31,9 @@ export interface ResolveService {
 
 export const ResolveService = Context.Service<ResolveService>('ResolveService')
 
-const resolveEffect = (slug: string) =>
+type DatabaseConnection = Context.Service.Shape<typeof Database>
+
+const resolveEffect = (db: DatabaseConnection, slug: string) =>
   Effect.gen(function* () {
     if (isReservedSlug(slug)) {
       return yield* new NotFoundError({
@@ -62,7 +64,7 @@ const resolveEffect = (slug: string) =>
 
     const foundUser = userRecords[0]
     if (foundUser && !foundUser.banned) {
-      const profile = yield* getPublicProfileEffect(slug)
+      const profile = yield* getPublicProfileEffect(db, slug)
       return { type: 'profile' as const, data: profile }
     }
 
@@ -149,7 +151,13 @@ const resolveEffect = (slug: string) =>
     })
   })
 
-export const ResolveServiceLayer = Layer.succeed(ResolveService, {
-  resolve: (slug) =>
-    resolveEffect(slug).pipe(Effect.withSpan('resolve.slug', { attributes: { slug } }))
-})
+export const ResolveServiceLayer = Layer.effect(
+  ResolveService,
+  Effect.gen(function* () {
+    const db = yield* Database
+    return {
+      resolve: (slug) =>
+        resolveEffect(db, slug).pipe(Effect.withSpan('resolve.slug', { attributes: { slug } }))
+    }
+  })
+)

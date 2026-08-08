@@ -1,6 +1,6 @@
 import { and, arrayContains, asc, count, desc, eq, or, type SQL, sql } from 'drizzle-orm'
 import { Context, Crypto, Effect, Encoding, Layer } from 'effect'
-import { db } from '@/db'
+import { Database } from '@/db/layer'
 import {
   audioCreators,
   audioTable,
@@ -135,6 +135,7 @@ export interface AudioService {
 export const AudioService = Context.Service<AudioService>('AudioService')
 
 const getByTypeEffect = (
+  db: Database['Service'],
   type: AudioType,
   options: {
     limit: number
@@ -154,7 +155,7 @@ const getByTypeEffect = (
     if (tag) yield* Effect.annotateCurrentSpan('audio.tag', tag)
     const whereCondition = and(
       eq(audioTable.type, type),
-      audioListVisibilityCondition(actor),
+      audioListVisibilityCondition(db, actor),
       tag ? arrayContains(audioTable.tags, [tag]) : undefined
     )
 
@@ -224,7 +225,7 @@ const getByTypeEffect = (
     }
   })
 
-const getTagsEffect = (type: AudioType) =>
+const getTagsEffect = (db: Database['Service'], type: AudioType) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
       try: () =>
@@ -251,21 +252,33 @@ const getTagsEffect = (type: AudioType) =>
 // Single-item lookup: a non-admin actor sees public content plus their own
 // drafts, so a creator following a link to their own unpublished mix doesn't
 // 404 on it.
-const audioVisibilityCondition = (actor?: { userId: string; userRole: string }) => {
+const audioVisibilityCondition = (
+  db: Database['Service'],
+  actor?: { userId: string; userRole: string }
+) => {
   if (actor?.userRole === 'admin') return undefined
-  if (actor) return or(eq(audioTable.draft, false), audioIdsForCreator(actor.userId))
+  if (actor) return or(eq(audioTable.draft, false), audioIdsForCreator(db, actor.userId))
   return eq(audioTable.draft, false)
 }
 
 // Manage/dashboard list: a non-admin actor sees only their own content
 // (draft or live), not the public catalog plus their drafts.
-const audioListVisibilityCondition = (actor?: { userId: string; userRole: string }) => {
+const audioListVisibilityCondition = (
+  db: Database['Service'],
+  actor?: { userId: string; userRole: string }
+) => {
   if (!actor) return eq(audioTable.draft, false)
   if (actor.userRole === 'admin') return undefined
-  return audioIdsForCreator(actor.userId)
+  return audioIdsForCreator(db, actor.userId)
 }
 
-const findAudioBySlug = (type: AudioType, slug: string, mdx: MdxService, where: SQL | undefined) =>
+const findAudioBySlug = (
+  db: Database['Service'],
+  type: AudioType,
+  slug: string,
+  mdx: MdxService,
+  where: SQL | undefined
+) =>
   Effect.gen(function* () {
     const audio = yield* Effect.tryPromise({
       try: () =>
@@ -318,25 +331,32 @@ const findAudioBySlug = (type: AudioType, slug: string, mdx: MdxService, where: 
 // Public/actor-aware lookup: visibility is decided in the WHERE clause, so a
 // draft row a viewer isn't allowed to see never leaves the database.
 const getBySlugEffect = (
+  db: Database['Service'],
   type: AudioType,
   slug: string,
   mdx: MdxService,
   actor?: { userId: string; userRole: string }
 ) =>
   findAudioBySlug(
+    db,
     type,
     slug,
     mdx,
-    and(eq(audioTable.type, type), eq(audioTable.slug, slug), audioVisibilityCondition(actor))
+    and(eq(audioTable.type, type), eq(audioTable.slug, slug), audioVisibilityCondition(db, actor))
   )
 
 // Edit lookup: fetches unconditionally (any type+slug, draft or not) because
 // the caller (getBySlugForEdit) runs requireCreatorOrAdmin right after --
 // that authorization check, not a query filter, is what gates access here.
-const getBySlugUnfilteredEffect = (type: AudioType, slug: string, mdx: MdxService) =>
-  findAudioBySlug(type, slug, mdx, and(eq(audioTable.type, type), eq(audioTable.slug, slug)))
+const getBySlugUnfilteredEffect = (
+  db: Database['Service'],
+  type: AudioType,
+  slug: string,
+  mdx: MdxService
+) => findAudioBySlug(db, type, slug, mdx, and(eq(audioTable.type, type), eq(audioTable.slug, slug)))
 
 const createEffect = (
+  db: Database['Service'],
   data: CreateAudioData,
   creatorIds: string[],
   { actorId, idempotencyKey }: CreateAudioOptions
@@ -445,6 +465,7 @@ const createEffect = (
   })
 
 const updateEffect = (
+  db: Database['Service'],
   type: AudioType,
   slug: string,
   userId: string,
@@ -477,7 +498,7 @@ const updateEffect = (
       })
     }
 
-    yield* requireCreatorOrAdmin('audio', existingAudio.id, userId, userRole)
+    yield* requireCreatorOrAdmin(db, 'audio', existingAudio.id, userId, userRole)
 
     const { creatorIds, ...updateData } = data
     let updatedAudio = existingAudio
@@ -593,7 +614,7 @@ const updateEffect = (
 const PLAY_DEDUP_WINDOW_MS = 5 * 60 * 1000 // 5 minutes
 const playDedupMap = new Map<string, number>()
 
-const trackPlayEffect = (id: string, clientIp?: string) =>
+const trackPlayEffect = (db: Database['Service'], id: string, clientIp?: string) =>
   Effect.gen(function* () {
     const records = yield* Effect.tryPromise({
       try: () =>
@@ -653,46 +674,47 @@ const trackPlayEffect = (id: string, clientIp?: string) =>
 export const AudioServiceLayer = Layer.effect(
   AudioService,
   Effect.gen(function* () {
+    const db = yield* Database
     const mdx = yield* MdxService
     const crypto = yield* Crypto.Crypto
     const config = yield* ConfigService
     const uploadAssetService = yield* UploadAssetService
     return {
       getByType: (type, options) =>
-        getByTypeEffect(type, options).pipe(
+        getByTypeEffect(db, type, options).pipe(
           Effect.withSpan('audio.getByType', { attributes: { type } })
         ),
       getByTypeForEdit: (type, options, userId, userRole) =>
-        getByTypeEffect(type, options, { userId, userRole }).pipe(
+        getByTypeEffect(db, type, options, { userId, userRole }).pipe(
           Effect.withSpan('audio.getByTypeForEdit', { attributes: { type } })
         ),
       getTags: (type) =>
-        getTagsEffect(type).pipe(Effect.withSpan('audio.getTags', { attributes: { type } })),
+        getTagsEffect(db, type).pipe(Effect.withSpan('audio.getTags', { attributes: { type } })),
       getBySlug: (type, slug, actor) =>
-        getBySlugEffect(type, slug, mdx, actor).pipe(
+        getBySlugEffect(db, type, slug, mdx, actor).pipe(
           Effect.withSpan('audio.getBySlug', { attributes: { type, slug } })
         ),
       getBySlugForEdit: (type, slug, userId, userRole) =>
         Effect.gen(function* () {
-          const audio = yield* getBySlugUnfilteredEffect(type, slug, mdx)
-          yield* requireCreatorOrAdmin('audio', audio.id, userId, userRole)
+          const audio = yield* getBySlugUnfilteredEffect(db, type, slug, mdx)
+          yield* requireCreatorOrAdmin(db, 'audio', audio.id, userId, userRole)
           return audio
         }).pipe(Effect.withSpan('audio.getBySlugForEdit', { attributes: { type, slug } })),
       create: (data, creatorIds, options) =>
-        createEffect(data, creatorIds, options).pipe(
+        createEffect(db, data, creatorIds, options).pipe(
           Effect.provideService(Crypto.Crypto, crypto),
           Effect.provideService(ConfigService, config),
           Effect.provideService(UploadAssetService, uploadAssetService),
           Effect.withSpan('audio.create')
         ),
       update: (type, slug, userId, userRole, data) =>
-        updateEffect(type, slug, userId, userRole, data, mdx).pipe(
+        updateEffect(db, type, slug, userId, userRole, data, mdx).pipe(
           Effect.provideService(ConfigService, config),
           Effect.provideService(UploadAssetService, uploadAssetService),
           Effect.withSpan('audio.update', { attributes: { type, slug } })
         ),
       trackPlay: (id, clientIp) =>
-        trackPlayEffect(id, clientIp).pipe(
+        trackPlayEffect(db, id, clientIp).pipe(
           Effect.withSpan('audio.trackPlay', { attributes: { id } })
         )
     }

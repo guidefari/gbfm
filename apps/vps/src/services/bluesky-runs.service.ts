@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
-import { db } from '@/db'
+import { Database } from '@/db/layer'
 import {
   type BlueskySourceStatus,
   blueskyPostSources,
@@ -44,7 +44,7 @@ const databaseError = (operation: string) =>
 
 // Ownership for runs and sources is only expressible through the owning
 // external account, so every read re-checks it rather than trusting the id.
-const requireOwnedAccount = (userId: string, accountId: string) =>
+const requireOwnedAccount = (db: Database['Service'], userId: string, accountId: string) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
       try: () =>
@@ -60,10 +60,10 @@ const requireOwnedAccount = (userId: string, accountId: string) =>
     }
   })
 
-const makeService = (): BlueskyRunsService => ({
+const makeService = (db: Database['Service']): BlueskyRunsService => ({
   listRuns: ({ userId, accountId, limit }) =>
     Effect.gen(function* () {
-      yield* requireOwnedAccount(userId, accountId)
+      yield* requireOwnedAccount(db, userId, accountId)
       return yield* Effect.tryPromise({
         try: () =>
           db
@@ -78,7 +78,7 @@ const makeService = (): BlueskyRunsService => ({
 
   listSources: ({ userId, accountId, statuses, limit, offset }) =>
     Effect.gen(function* () {
-      yield* requireOwnedAccount(userId, accountId)
+      yield* requireOwnedAccount(db, userId, accountId)
       const statusCondition =
         statuses && statuses.length > 0
           ? inArray(blueskyPostSources.sourceStatus, [...statuses])
@@ -139,4 +139,10 @@ const makeService = (): BlueskyRunsService => ({
     })
 })
 
-export const BlueskyRunsServiceLayer = Layer.succeed(BlueskyRunsService, makeService())
+export const BlueskyRunsServiceLayer = Layer.effect(
+  BlueskyRunsService,
+  Effect.gen(function* () {
+    const db = yield* Database
+    return makeService(db)
+  })
+)

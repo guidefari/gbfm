@@ -3,9 +3,8 @@ import { eq, inArray } from 'drizzle-orm'
 import { Effect, Layer } from 'effect'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import { user } from '@/db/auth.schema'
-import { db } from '@/db'
+import { DatabaseTestLayer, db } from '@/test/database'
 import { navigationSessions } from '@/db/navigation.schema'
-import { DatabaseServiceLayer } from '@/runtime/services'
 import {
   ANONYMOUS_NAVIGATION_SESSION_RETENTION_MS,
   NavigationRetentionService,
@@ -19,7 +18,7 @@ const recentAnonymousSessionId = randomUUID()
 const expiredUserSessionId = randomUUID()
 const sessionIds = [expiredAnonymousSessionId, recentAnonymousSessionId, expiredUserSessionId]
 
-const retentionLayer = NavigationRetentionServiceLayer.pipe(Layer.provide(DatabaseServiceLayer))
+const retentionLayer = NavigationRetentionServiceLayer.pipe(Layer.provide(DatabaseTestLayer))
 
 const sweepExpiredAnonymousSessions = Effect.gen(function* () {
   const retention = yield* NavigationRetentionService

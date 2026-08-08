@@ -1,13 +1,14 @@
 import { REMINDER_STATUS } from '@gbfm/core/status'
 import { and, asc, eq, lte, or } from 'drizzle-orm'
 import { Chunk, Effect, Schedule } from 'effect'
-import { db } from '@/db'
+import { Database } from '@/db/layer'
 import { musicReminder } from '@/db/music-reminder.schema'
 import { getErrorMessage, ReminderProcessingError } from '@/errors'
 import { sendMusicReminderEmailEffect } from './email.service'
 
 // Process all pending music reminders
 export const processPendingReminders = Effect.gen(function* () {
+  const db = yield* Database
   const now = new Date()
   const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000)
 
@@ -53,7 +54,7 @@ export const processPendingReminders = Effect.gen(function* () {
   yield* Effect.forEach(
     Chunk.fromIterable(claimedReminders),
     (reminder) =>
-      processSingleReminder(reminder).pipe(
+      processSingleReminder(db, reminder).pipe(
         Effect.retry(Schedule.exponential(1000).pipe(Schedule.upTo({ duration: '30 seconds' }))),
         Effect.catch((error) =>
           Effect.logError(
@@ -67,7 +68,10 @@ export const processPendingReminders = Effect.gen(function* () {
   )
 })
 
-const processSingleReminder = (reminder: typeof musicReminder.$inferSelect) =>
+const processSingleReminder = (
+  db: Database['Service'],
+  reminder: typeof musicReminder.$inferSelect
+) =>
   Effect.gen(function* () {
     // Send the reminder email
     yield* sendMusicReminderEmailEffect(reminder)
@@ -126,6 +130,7 @@ const processSingleReminder = (reminder: typeof musicReminder.$inferSelect) =>
 
 // Returns the soonest reminderDate among pending/failed reminders (past or future)
 export const queryNextDueReminder = Effect.gen(function* () {
+  const db = yield* Database
   const results = yield* Effect.tryPromise({
     try: () =>
       db
@@ -153,6 +158,7 @@ export const queryNextDueReminder = Effect.gen(function* () {
 // Get statistics about pending reminders (for monitoring)
 // not using this anywhere yet👀
 export const getReminderStats = Effect.gen(function* () {
+  const db = yield* Database
   const now = new Date()
 
   const [stats] = yield* Effect.tryPromise({

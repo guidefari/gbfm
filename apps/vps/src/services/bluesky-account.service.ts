@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm'
 import { Context, Effect, Layer, Redacted } from 'effect'
-import { db } from '@/db'
+import { Database } from '@/db/layer'
 import {
   blueskySyncStates,
   externalAccountSessions,
@@ -57,7 +57,11 @@ const sessionPayload = (input: {
     refreshJwt: Redacted.value(input.refreshJwt)
   })
 
-const makeService = (client: BlueskyClient, crypto: CryptoService): BlueskyAccountService => ({
+const makeService = (
+  db: Database['Service'],
+  client: BlueskyClient,
+  crypto: CryptoService
+): BlueskyAccountService => ({
   connect: ({ userId, handle, appPassword }) =>
     Effect.gen(function* () {
       const login = yield* client.login({ handle, appPassword })
@@ -179,6 +183,7 @@ const makeService = (client: BlueskyClient, crypto: CryptoService): BlueskyAccou
 export const BlueskyAccountServiceLayer = Layer.effect(
   BlueskyAccountService,
   Effect.gen(function* () {
-    return makeService(yield* BlueskyClient, yield* CryptoService)
+    const db = yield* Database
+    return makeService(db, yield* BlueskyClient, yield* CryptoService)
   })
 )

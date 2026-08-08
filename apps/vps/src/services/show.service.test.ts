@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { beforeAll, describe, expect, test } from 'vitest'
-import { db } from '@/db'
+import { DatabaseTestLayer, db } from '@/test/database'
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { user } from '@/db/auth.schema'
 import { ShowService, ShowServiceLayer } from './show.service'
@@ -13,7 +13,7 @@ const getService = () =>
   Effect.runPromise(
     Effect.gen(function* () {
       return yield* ShowService
-    }).pipe(Effect.provide(ShowServiceLayer))
+    }).pipe(Effect.provide(ShowServiceLayer.pipe(Layer.provide(DatabaseTestLayer))))
   )
 
 beforeAll(async () => {

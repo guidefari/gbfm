@@ -1,9 +1,10 @@
 import { Layer } from 'effect'
+import { pool } from '@/db'
+import { Database, DatabaseLayer } from '@/db/layer'
 import { MdxServiceLayer } from '@/lib/mdx'
 import { OtlpLive } from '@/lib/otel'
-import { DatabaseServiceLayer } from '@/services/database.service'
 
-export { DatabaseService, DatabaseServiceLayer } from '@/services/database.service'
+export { Database, DatabaseLayer } from '@/db/layer'
 
 import { AudioServiceLayer } from '@/services/audio.service'
 import { ConfigServiceLayer } from '@/services/config.service'
@@ -40,6 +41,7 @@ import { UserServiceLayer } from '@/services/user.service'
 import { ObjectStoreClientLayer } from '@/services/storage/object-store-client'
 
 const DevToolsLive: Layer.Layer<never> = Layer.empty
+const DatabaseLive = DatabaseLayer(pool)
 
 const SentryClientLive = SentryClientServiceLayer.pipe(Layer.provide(ConfigServiceLayer))
 
@@ -52,14 +54,12 @@ const BaseServicesLayer = Layer.mergeAll(
   BlueskyImportServiceLayer,
   LockServiceLayer,
   CryptoServiceLayer.pipe(Layer.provide(ConfigServiceLayer)),
-  DatabaseServiceLayer,
   EmailServiceLayer,
   FavoriteServiceLayer,
   SpotifyServiceLayer,
   MusicReminderServiceLayer,
-  NavigationRetentionServiceLayer.pipe(Layer.provide(DatabaseServiceLayer)),
+  NavigationRetentionServiceLayer,
   NavigationSessionServiceLayer.pipe(
-    Layer.provide(DatabaseServiceLayer),
     Layer.provide(
       PostServiceLayer.pipe(Layer.provide(MdxServiceLayer), Layer.provide(UploadAssetDepsLive))
     )
@@ -80,7 +80,7 @@ const BaseServicesLayer = Layer.mergeAll(
   UploadAssetServiceLayer,
   UserServiceLayer,
   DevToolsLive
-)
+).pipe(Layer.provide(DatabaseLive))
 
 const MusicEntityLive = MusicEntityServiceLayer.pipe(Layer.provide(BaseServicesLayer))
 const BlueskyArchiveLive = BlueskyArchiveServiceLayer.pipe(
@@ -96,8 +96,10 @@ const ServicesLayer = Layer.mergeAll(
   MusicEntityLive,
   BlueskyAccountServiceLayer.pipe(Layer.provide(BaseServicesLayer)),
   BlueskyArchiveLive,
-  BlueskyRunsServiceLayer,
+  BlueskyRunsServiceLayer.pipe(Layer.provide(DatabaseLive)),
   BlueskySyncLive
-)
+).pipe(Layer.provide(DatabaseLive))
 
-export const AppLayer = ServicesLayer.pipe(Layer.provideMerge(AppLoggerLive))
+export const AppLayer = Layer.mergeAll(ServicesLayer, DatabaseLive).pipe(
+  Layer.provideMerge(AppLoggerLive)
+)

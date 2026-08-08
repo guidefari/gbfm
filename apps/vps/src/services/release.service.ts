@@ -1,6 +1,6 @@
 import { and, eq, exists, lte } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
-import { db } from '@/db'
+import { Database } from '@/db/layer'
 import { musicLabelsTable } from '@/db/music-entity.schema'
 import {
   type InsertRelease,
@@ -50,7 +50,9 @@ export interface ReleaseService {
 
 export const ReleaseService = Context.Service<ReleaseService>('ReleaseService')
 
-const getBySlugEffect = (slug: string, includeDrafts = false) =>
+type DatabaseConnection = Context.Service.Shape<typeof Database>
+
+const getBySlugEffect = (db: DatabaseConnection, slug: string, includeDrafts = false) =>
   Effect.gen(function* () {
     const releaseRecords = yield* Effect.tryPromise({
       try: () =>
@@ -122,6 +124,7 @@ const getBySlugEffect = (slug: string, includeDrafts = false) =>
   })
 
 const createEffect = (
+  db: DatabaseConnection,
   data: InsertRelease & { releaseDate: Date },
   userId: string,
   userRole: string
@@ -147,7 +150,7 @@ const createEffect = (
       })
     }
 
-    yield* requireCreatorOrAdmin('label', label.id, userId, userRole)
+    yield* requireCreatorOrAdmin(db, 'label', label.id, userId, userRole)
 
     const insertedRecords = yield* Effect.tryPromise({
       try: () =>
@@ -187,6 +190,7 @@ const createEffect = (
   })
 
 const updateEffect = (
+  db: DatabaseConnection,
   slug: string,
   userId: string,
   userRole: string,
@@ -212,7 +216,7 @@ const updateEffect = (
       })
     }
 
-    yield* requireCreatorOrAdmin('label', existingRelease.labelId, userId, userRole)
+    yield* requireCreatorOrAdmin(db, 'label', existingRelease.labelId, userId, userRole)
 
     if (data.labelId && data.labelId !== existingRelease.labelId) {
       const destinationLabelId = data.labelId
@@ -238,7 +242,7 @@ const updateEffect = (
           id: data.labelId
         })
       }
-      yield* requireCreatorOrAdmin('label', destinationLabel.id, userId, userRole)
+      yield* requireCreatorOrAdmin(db, 'label', destinationLabel.id, userId, userRole)
     }
 
     const updatedRecords = yield* Effect.tryPromise({
@@ -296,7 +300,7 @@ const updateEffect = (
     return baseProcessedRelease
   })
 
-const deleteEffect = (slug: string, userId: string, userRole: string) =>
+const deleteEffect = (db: DatabaseConnection, slug: string, userId: string, userRole: string) =>
   Effect.gen(function* () {
     const existingRecords = yield* Effect.tryPromise({
       try: () => db.select().from(releasesTable).where(eq(releasesTable.slug, slug)).limit(1),
@@ -317,7 +321,7 @@ const deleteEffect = (slug: string, userId: string, userRole: string) =>
       })
     }
 
-    yield* requireCreatorOrAdmin('label', existingRelease.labelId, userId, userRole)
+    yield* requireCreatorOrAdmin(db, 'label', existingRelease.labelId, userId, userRole)
 
     yield* Effect.tryPromise({
       try: () => db.delete(releasesTable).where(eq(releasesTable.id, existingRelease.id)),
@@ -330,23 +334,31 @@ const deleteEffect = (slug: string, userId: string, userRole: string) =>
     })
   })
 
-export const ReleaseServiceLayer = Layer.succeed(ReleaseService, {
-  getBySlug: (slug) =>
-    getBySlugEffect(slug).pipe(Effect.withSpan('release.getBySlug', { attributes: { slug } })),
-  getBySlugForEdit: (slug, userId, userRole) =>
-    Effect.gen(function* () {
-      const release = yield* getBySlugEffect(slug, true)
-      yield* requireCreatorOrAdmin('label', release.labelId, userId, userRole)
-      return release
-    }).pipe(Effect.withSpan('release.getBySlugForEdit', { attributes: { slug } })),
-  create: (data, userId, userRole) =>
-    createEffect(data, userId, userRole).pipe(Effect.withSpan('release.create')),
-  update: (slug, userId, userRole, data) =>
-    updateEffect(slug, userId, userRole, data).pipe(
-      Effect.withSpan('release.update', { attributes: { slug } })
-    ),
-  delete: (slug, userId, userRole) =>
-    deleteEffect(slug, userId, userRole).pipe(
-      Effect.withSpan('release.delete', { attributes: { slug } })
-    )
-})
+export const ReleaseServiceLayer = Layer.effect(
+  ReleaseService,
+  Effect.gen(function* () {
+    const db = yield* Database
+    return {
+      getBySlug: (slug) =>
+        getBySlugEffect(db, slug).pipe(
+          Effect.withSpan('release.getBySlug', { attributes: { slug } })
+        ),
+      getBySlugForEdit: (slug, userId, userRole) =>
+        Effect.gen(function* () {
+          const release = yield* getBySlugEffect(db, slug, true)
+          yield* requireCreatorOrAdmin(db, 'label', release.labelId, userId, userRole)
+          return release
+        }).pipe(Effect.withSpan('release.getBySlugForEdit', { attributes: { slug } })),
+      create: (data, userId, userRole) =>
+        createEffect(db, data, userId, userRole).pipe(Effect.withSpan('release.create')),
+      update: (slug, userId, userRole, data) =>
+        updateEffect(db, slug, userId, userRole, data).pipe(
+          Effect.withSpan('release.update', { attributes: { slug } })
+        ),
+      delete: (slug, userId, userRole) =>
+        deleteEffect(db, slug, userId, userRole).pipe(
+          Effect.withSpan('release.delete', { attributes: { slug } })
+        )
+    }
+  })
+)

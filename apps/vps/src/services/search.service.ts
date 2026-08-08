@@ -1,6 +1,6 @@
 import { and, type Column, eq, ilike, or, sql } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
-import { db } from '@/db'
+import { Database } from '@/db/layer'
 import { audioTable } from '@/db/audio.schema'
 import { postsTable } from '@/db/post.schema'
 import { showsTable } from '@/db/show.schema'
@@ -31,7 +31,7 @@ export interface SearchService {
 
 export const SearchService = Context.Service<SearchService>('SearchService')
 
-const searchEffect = (query: string, limit: number) =>
+const searchEffect = (db: Database['Service'], query: string, limit: number) =>
   Effect.gen(function* () {
     const pattern = `%${query}%`
 
@@ -144,7 +144,15 @@ const searchEffect = (query: string, limit: number) =>
     return yield* Effect.all({ shows, audio, posts }, { concurrency: 'unbounded' })
   })
 
-export const SearchServiceLayer = Layer.succeed(SearchService, {
-  search: (query, limit) =>
-    searchEffect(query, limit).pipe(Effect.withSpan('search.search', { attributes: { query } }))
-})
+export const SearchServiceLayer = Layer.effect(
+  SearchService,
+  Effect.gen(function* () {
+    const db = yield* Database
+    return {
+      search: (query, limit) =>
+        searchEffect(db, query, limit).pipe(
+          Effect.withSpan('search.search', { attributes: { query } })
+        )
+    }
+  })
+)

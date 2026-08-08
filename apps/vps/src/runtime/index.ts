@@ -22,7 +22,7 @@ import type { SentryService } from '@/services/sentry.service'
 import type { ShowService, ShowSubscriptionService } from '@/services/show.service'
 import type { SpotifyService } from '@/services/spotify.service'
 import type { UserService } from '@/services/user.service'
-import type { DatabaseService } from './services'
+import type { Database } from '@/db/layer'
 import { AppLayer } from './services'
 
 export type AppServices =
@@ -31,7 +31,7 @@ export type AppServices =
   | BlueskyArchiveService
   | BlueskySyncService
   | LockService
-  | DatabaseService
+  | Database
   | EmailService
   | FavoriteService
   | SpotifyService

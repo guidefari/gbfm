@@ -1,8 +1,8 @@
 import { and, asc, eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
-import { db } from '@/db'
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { audioIdsForCreator } from '@/db/creator-membership'
+import { Database } from '@/db/layer'
 import {
   SOCIAL_LINK_PLATFORMS,
   type SocialLinkPlatform,
@@ -69,7 +69,9 @@ export interface ProfileService {
 
 export const ProfileService = Context.Service<ProfileService>('ProfileService')
 
-export const getPublicProfileEffect = (username: string) =>
+type DatabaseConnection = Context.Service.Shape<typeof Database>
+
+export const getPublicProfileEffect = (db: DatabaseConnection, username: string) =>
   Effect.gen(function* () {
     const userRecords = yield* Effect.tryPromise({
       try: () =>
@@ -140,7 +142,7 @@ export const getPublicProfileEffect = (username: string) =>
               columns: { thumbnailUrl: true }
             }
           },
-          where: and(audioIdsForCreator(foundUser.id), eq(audioTable.draft, false)),
+          where: and(audioIdsForCreator(db, foundUser.id), eq(audioTable.draft, false)),
           orderBy: asc(audioTable.createdAt)
         }),
       catch: (error) =>
@@ -233,9 +235,15 @@ export const getPublicProfileEffect = (username: string) =>
     }
   })
 
-export const ProfileServiceLayer = Layer.succeed(ProfileService, {
-  getPublicProfile: (username) =>
-    getPublicProfileEffect(username).pipe(
-      Effect.withSpan('profile.getPublic', { attributes: { username } })
-    )
-})
+export const ProfileServiceLayer = Layer.effect(
+  ProfileService,
+  Effect.gen(function* () {
+    const db = yield* Database
+    return {
+      getPublicProfile: (username) =>
+        getPublicProfileEffect(db, username).pipe(
+          Effect.withSpan('profile.getPublic', { attributes: { username } })
+        )
+    }
+  })
+)

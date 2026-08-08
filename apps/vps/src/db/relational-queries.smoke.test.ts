@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { and, asc, desc, eq, ilike, or } from 'drizzle-orm'
 import { describe, expect, test } from 'vitest'
-import { db } from '@/db'
+import { db } from '@/test/database'
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { audioIdsForCreator, showIdsForCreator } from '@/db/creator-membership'
 import { showCreators, showsTable } from '@/db/show.schema'
@@ -35,7 +35,7 @@ describe('relational query smoke matrix', () => {
       shape(and(eq(audioTable.type, 'mix'), eq(audioTable.draft, false)))
     ).resolves.toBeDefined()
     await expect(
-      shape(and(eq(audioTable.type, 'mix'), audioIdsForCreator(actorId)))
+      shape(and(eq(audioTable.type, 'mix'), audioIdsForCreator(db, actorId)))
     ).resolves.toBeDefined()
   })
 
@@ -79,7 +79,7 @@ describe('relational query smoke matrix', () => {
           showId: true
         },
         with: { show: { columns: { thumbnailUrl: true } } },
-        where: and(audioIdsForCreator(actorId), eq(audioTable.draft, false)),
+        where: and(audioIdsForCreator(db, actorId), eq(audioTable.draft, false)),
         orderBy: asc(audioTable.createdAt)
       })
     ).resolves.toBeDefined()
@@ -96,7 +96,7 @@ describe('relational query smoke matrix', () => {
       })
 
     await expect(shape(eq(showsTable.draft, false))).resolves.toBeDefined()
-    await expect(shape(showIdsForCreator(actorId))).resolves.toBeDefined()
+    await expect(shape(showIdsForCreator(db, actorId))).resolves.toBeDefined()
   })
 
   test('show.service getBySlug, getEpisodes, showCreators', async () => {

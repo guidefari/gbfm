@@ -1,5 +1,5 @@
 import { eq, inArray } from 'drizzle-orm'
-import { db } from '@/db'
+import type { Database } from '@/db/layer'
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { postCreators, postsTable } from '@/db/post.schema'
 import { showCreators, showsTable } from '@/db/show.schema'
@@ -11,7 +11,7 @@ import { showCreators, showsTable } from '@/db/show.schema'
  * it with "invalid reference to FROM-clause entry".
  */
 
-export const audioIdsForCreator = (creatorId: string) =>
+export const audioIdsForCreator = (db: Database['Service'], creatorId: string) =>
   inArray(
     audioTable.id,
     db
@@ -20,7 +20,7 @@ export const audioIdsForCreator = (creatorId: string) =>
       .where(eq(audioCreators.creatorId, creatorId))
   )
 
-export const showIdsForCreator = (creatorId: string) =>
+export const showIdsForCreator = (db: Database['Service'], creatorId: string) =>
   inArray(
     showsTable.id,
     db
@@ -29,7 +29,7 @@ export const showIdsForCreator = (creatorId: string) =>
       .where(eq(showCreators.creatorId, creatorId))
   )
 
-export const postIdsForCreator = (creatorId: string) =>
+export const postIdsForCreator = (db: Database['Service'], creatorId: string) =>
   inArray(
     postsTable.id,
     db

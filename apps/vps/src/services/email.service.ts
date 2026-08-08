@@ -2,7 +2,7 @@ import { EMAIL_DELIVERY_STATUSES } from '@gbfm/core/status'
 import { sendMusicReminderEmail } from '@gbfm/email/sender'
 import { eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
-import { db } from '@/db'
+import { Database } from '@/db/layer'
 import { user } from '@/db/auth.schema'
 import { EMAIL_NOTIFICATION_TYPES, emailDeliveryLogsTable } from '@/db/email.schema'
 import type { MusicReminder } from '@/db/music-reminder.schema'
@@ -23,14 +23,15 @@ export const EmailService = Context.Service<EmailService>('EmailService')
 export const EmailServiceLayer = Layer.effect(
   EmailService,
   Effect.gen(function* () {
+    const db = yield* Database
     return {
-      sendMusicReminderEmail: (reminder: MusicReminder) => sendReminderEmail(reminder)
+      sendMusicReminderEmail: (reminder: MusicReminder) => sendReminderEmail(db, reminder)
     }
   })
 )
 
 // Core email sending logic with Effect
-const sendReminderEmail = (reminder: MusicReminder) =>
+const sendReminderEmail = (db: Database['Service'], reminder: MusicReminder) =>
   Effect.gen(function* () {
     yield* Effect.annotateCurrentSpan('email.type', 'music_reminder')
     yield* Effect.annotateCurrentSpan('reminder.id', reminder.id)
@@ -187,8 +188,11 @@ const sendReminderEmail = (reminder: MusicReminder) =>
 // Main function to send music reminder emails
 export const sendMusicReminderEmailEffect = (
   reminder: MusicReminder
-): Effect.Effect<void, EmailError | DatabaseError> =>
-  sendReminderEmail(reminder).pipe(
+): Effect.Effect<void, EmailError | DatabaseError, Database> =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    return yield* sendReminderEmail(db, reminder)
+  }).pipe(
     Effect.withSpan('email.send', {
       attributes: {
         'email.template': 'music-reminder',

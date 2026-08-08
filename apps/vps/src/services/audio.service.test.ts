@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { count, eq } from 'drizzle-orm'
 import { Effect, Layer } from 'effect'
 import { beforeAll, describe, expect, test } from 'vitest'
-import { db } from '@/db'
+import { DatabaseTestLayer, db } from '@/test/database'
 import { audioTable } from '@/db/audio.schema'
 import { user } from '@/db/auth.schema'
 import { showsTable } from '@/db/show.schema'
@@ -31,7 +31,8 @@ const getService = () =>
       Effect.provide(
         AudioServiceLayer.pipe(
           Layer.provide(MdxServiceLayer),
-          Layer.provide(Layer.mergeAll(ConfigServiceLayer, UploadAssetServiceLayer))
+          Layer.provide(Layer.mergeAll(ConfigServiceLayer, UploadAssetServiceLayer)),
+          Layer.provide(DatabaseTestLayer)
         )
       )
     )

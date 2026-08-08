@@ -1,8 +1,8 @@
 import { and, desc, eq, isNotNull, or } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import { Context, Effect, Layer } from 'effect'
-import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
+import { Database } from '@/db/layer'
 import { favoritesTable, type SelectFavorite } from '@/db/favorites.schema'
 import { showSubscriptionsTable, showsTable } from '@/db/show.schema'
 import { ConflictError, DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
@@ -60,8 +60,10 @@ export interface FavoriteService {
 // Service tag for dependency injection
 export const FavoriteService = Context.Service<FavoriteService>('FavoriteService')
 
+type DatabaseConnection = Context.Service.Shape<typeof Database>
+
 // Core service logic - pure Effects with no service dependencies
-const addFavoriteEffect = (userId: string, audioId: string) =>
+const addFavoriteEffect = (db: DatabaseConnection, userId: string, audioId: string) =>
   Effect.withSpan('favorite.add', {
     attributes: { userId, audioId }
   })(
@@ -161,7 +163,7 @@ const addFavoriteEffect = (userId: string, audioId: string) =>
     })
   )
 
-const removeFavoriteEffect = (userId: string, audioId: string) =>
+const removeFavoriteEffect = (db: DatabaseConnection, userId: string, audioId: string) =>
   Effect.withSpan('favorite.remove', {
     attributes: { userId, audioId }
   })(
@@ -213,7 +215,7 @@ const removeFavoriteEffect = (userId: string, audioId: string) =>
     })
   )
 
-const addShowFavoriteEffect = (userId: string, showId: string) =>
+const addShowFavoriteEffect = (db: DatabaseConnection, userId: string, showId: string) =>
   Effect.withSpan('favorite.addShow', {
     attributes: { userId, showId }
   })(
@@ -338,7 +340,7 @@ const addShowFavoriteEffect = (userId: string, showId: string) =>
     })
   )
 
-const removeShowFavoriteEffect = (userId: string, showId: string) =>
+const removeShowFavoriteEffect = (db: DatabaseConnection, userId: string, showId: string) =>
   Effect.withSpan('favorite.removeShow', {
     attributes: { userId, showId }
   })(
@@ -411,6 +413,7 @@ const removeShowFavoriteEffect = (userId: string, showId: string) =>
   )
 
 const getFavoritesEffect = (
+  db: DatabaseConnection,
   userId: string,
   limit = 20,
   offset = 0
@@ -489,10 +492,16 @@ const getFavoritesEffect = (
   )
 
 // Implementation - simple layer that provides access to the Effects
-export const FavoriteServiceLayer = Layer.succeed(FavoriteService, {
-  addFavorite: addFavoriteEffect,
-  addShowFavorite: addShowFavoriteEffect,
-  removeFavorite: removeFavoriteEffect,
-  removeShowFavorite: removeShowFavoriteEffect,
-  getFavorites: getFavoritesEffect
-})
+export const FavoriteServiceLayer = Layer.effect(
+  FavoriteService,
+  Effect.gen(function* () {
+    const db = yield* Database
+    return {
+      addFavorite: (userId, audioId) => addFavoriteEffect(db, userId, audioId),
+      addShowFavorite: (userId, showId) => addShowFavoriteEffect(db, userId, showId),
+      removeFavorite: (userId, audioId) => removeFavoriteEffect(db, userId, audioId),
+      removeShowFavorite: (userId, showId) => removeShowFavoriteEffect(db, userId, showId),
+      getFavorites: (userId, limit, offset) => getFavoritesEffect(db, userId, limit, offset)
+    }
+  })
+)

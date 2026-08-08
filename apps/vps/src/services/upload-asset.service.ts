@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
-import { db } from '@/db'
+import { Database } from '@/db/layer'
 import { type SelectUploadAsset, uploadAssetsTable } from '@/db/upload-asset.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { ConfigService } from '@/services/config.service'
@@ -39,7 +39,7 @@ export interface UploadAssetService {
 
 export const UploadAssetService = Context.Service<UploadAssetService>('UploadAssetService')
 
-const createPendingEffect = (input: CreatePendingAssetInput) =>
+const createPendingEffect = (db: Database['Service'], input: CreatePendingAssetInput) =>
   Effect.gen(function* () {
     const now = Date.now()
     const expiresAt = new Date(now + input.expiresInSeconds * 1000)
@@ -79,7 +79,7 @@ const createPendingEffect = (input: CreatePendingAssetInput) =>
     return asset
   }).pipe(Effect.withSpan('uploadAsset.createPending', { attributes: { key: input.key } }))
 
-const markUploadedEffect = (key: string) =>
+const markUploadedEffect = (db: Database['Service'], key: string) =>
   Effect.tryPromise({
     try: () =>
       db
@@ -101,7 +101,12 @@ const markUploadedEffect = (key: string) =>
 // attachedToId, and it keeps a hypothetical future 'expired' row (S3 object
 // possibly already reclaimed by a cleanup job) from ever being flipped to
 // 'attached'.
-const markAttachedEffect = (key: string, attachedToTable: string, attachedToId: string) =>
+const markAttachedEffect = (
+  db: Database['Service'],
+  key: string,
+  attachedToTable: string,
+  attachedToId: string
+) =>
   Effect.tryPromise({
     try: () =>
       db
@@ -119,11 +124,18 @@ const markAttachedEffect = (key: string, attachedToTable: string, attachedToId: 
     Effect.withSpan('uploadAsset.markAttached', { attributes: { key, attachedToTable } })
   )
 
-export const UploadAssetServiceLayer = Layer.succeed(UploadAssetService, {
-  createPending: createPendingEffect,
-  markUploaded: markUploadedEffect,
-  markAttached: markAttachedEffect
-})
+export const UploadAssetServiceLayer = Layer.effect(
+  UploadAssetService,
+  Effect.gen(function* () {
+    const db = yield* Database
+    return {
+      createPending: (input) => createPendingEffect(db, input),
+      markUploaded: (key) => markUploadedEffect(db, key),
+      markAttached: (key, attachedToTable, attachedToId) =>
+        markAttachedEffect(db, key, attachedToTable, attachedToId)
+    }
+  })
+)
 
 // Content records store the full public URL (e.g. `${bucketRouter}/user-
 // content/${key}`, see upload.handlers.ts's presignImage/completeMultipartUpload

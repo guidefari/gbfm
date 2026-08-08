@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm'
 import { Effect } from 'effect'
-import { db } from '@/db'
+import type { Database } from '@/db/layer'
 import { audioCreators } from '@/db/audio.schema'
 import { musicLabelCreatorsTable } from '@/db/music-entity.schema'
 import { postCreators } from '@/db/post.schema'
@@ -10,6 +10,7 @@ import { DatabaseError, getErrorMessage, UnauthorizedError } from '@/errors'
 type CreatorTableType = 'show' | 'audio' | 'label' | 'post'
 
 export function checkCreatorAuthorship(
+  db: Database['Service'],
   tableType: CreatorTableType,
   resourceId: string,
   userId: string
@@ -62,6 +63,7 @@ export function checkCreatorAuthorship(
 }
 
 export function requireCreatorOrAdmin(
+  db: Database['Service'],
   tableType: CreatorTableType,
   resourceId: string,
   userId: string,
@@ -72,7 +74,7 @@ export function requireCreatorOrAdmin(
       return
     }
 
-    const isCreator = yield* checkCreatorAuthorship(tableType, resourceId, userId)
+    const isCreator = yield* checkCreatorAuthorship(db, tableType, resourceId, userId)
 
     if (!isCreator) {
       return yield* new UnauthorizedError({
@@ -83,9 +85,14 @@ export function requireCreatorOrAdmin(
   })
 }
 
-export function requireCreator(tableType: CreatorTableType, resourceId: string, userId: string) {
+export function requireCreator(
+  db: Database['Service'],
+  tableType: CreatorTableType,
+  resourceId: string,
+  userId: string
+) {
   return Effect.gen(function* () {
-    const isCreator = yield* checkCreatorAuthorship(tableType, resourceId, userId)
+    const isCreator = yield* checkCreatorAuthorship(db, tableType, resourceId, userId)
 
     if (!isCreator) {
       return yield* new UnauthorizedError({

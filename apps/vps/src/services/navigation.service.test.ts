@@ -2,14 +2,13 @@ import { randomUUID } from 'node:crypto'
 import { eq, inArray } from 'drizzle-orm'
 import { Effect, Layer, Schema } from 'effect'
 import { afterEach, beforeAll, describe, expect, test } from 'vitest'
-import { db } from '@/db'
+import { DatabaseTestLayer, db } from '@/test/database'
 import { navigationSeenPosts, navigationSessions } from '@/db/navigation.schema'
 import { postsTable } from '@/db/post.schema'
 import { CorpusExhausted, Slug } from '@/domain/navigation'
 import { MdxServiceLayer } from '@/lib/mdx'
 import { ConfigServiceLayer } from '@/services/config.service'
 import { PostServiceLayer } from '@/services/post.service'
-import { DatabaseServiceLayer } from '@/runtime/services'
 import { UploadAssetServiceLayer } from '@/services/upload-asset.service'
 import {
   NavigationSessionService,
@@ -28,8 +27,8 @@ const postLayer = PostServiceLayer.pipe(
   Layer.provide(Layer.mergeAll(ConfigServiceLayer, UploadAssetServiceLayer))
 )
 const navigationLayer = NavigationSessionServiceLayer.pipe(
-  Layer.provide(DatabaseServiceLayer),
-  Layer.provide(postLayer)
+  Layer.provide(postLayer),
+  Layer.provide(DatabaseTestLayer)
 )
 
 const read = (identity: { readonly _tag: 'Anonymous'; readonly deviceToken: string }) =>

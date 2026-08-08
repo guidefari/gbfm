@@ -17,7 +17,7 @@ import {
 } from '@/db/navigation.schema'
 import { postsTable } from '@/db/post.schema'
 import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
-import { DatabaseService } from '@/runtime/services'
+import { Database } from '@/db/layer'
 import { PostService } from '@/services/post.service'
 
 export type IntentToken = string
@@ -113,7 +113,7 @@ const resultFor = (
 export const NavigationSessionServiceLayer = Layer.effect(
   NavigationSessionService,
   Effect.gen(function* () {
-    const { db } = yield* DatabaseService
+    const db = yield* Database
     const posts = yield* PostService
 
     const liveEntry = (sessionId: string, position: number, direction: 'Back' | 'Forward') =>

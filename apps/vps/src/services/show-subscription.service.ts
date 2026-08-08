@@ -1,8 +1,8 @@
 import { and, count, desc, eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
-import { db } from '@/db'
 import { user as usersTable } from '@/db/auth.schema'
 import { favoritesTable } from '@/db/favorites.schema'
+import { Database } from '@/db/layer'
 import {
   type SelectShow,
   type SelectShowSubscription,
@@ -41,7 +41,9 @@ export interface ShowSubscriptionService {
 export const ShowSubscriptionService =
   Context.Service<ShowSubscriptionService>('ShowSubscriptionService')
 
-const subscribeEffect = (userId: string, showId: string) =>
+type DatabaseConnection = Context.Service.Shape<typeof Database>
+
+const subscribeEffect = (db: DatabaseConnection, userId: string, showId: string) =>
   Effect.gen(function* () {
     const showRecords = yield* Effect.tryPromise({
       try: () =>
@@ -106,7 +108,7 @@ const subscribeEffect = (userId: string, showId: string) =>
     return subscription
   })
 
-const unsubscribeEffect = (userId: string, showId: string) =>
+const unsubscribeEffect = (db: DatabaseConnection, userId: string, showId: string) =>
   Effect.gen(function* () {
     const result = yield* Effect.tryPromise({
       try: () =>
@@ -137,7 +139,11 @@ const unsubscribeEffect = (userId: string, showId: string) =>
     yield* recordShowUnsubscribe()
   })
 
-const getUserSubscriptionsEffect = (userId: string, options: { limit: number; offset: number }) =>
+const getUserSubscriptionsEffect = (
+  db: DatabaseConnection,
+  userId: string,
+  options: { limit: number; offset: number }
+) =>
   Effect.gen(function* () {
     const { limit, offset } = options
 
@@ -193,7 +199,7 @@ const getUserSubscriptionsEffect = (userId: string, options: { limit: number; of
     }
   })
 
-const getSubscribersEffect = (showId: string) =>
+const getSubscribersEffect = (db: DatabaseConnection, showId: string) =>
   Effect.gen(function* () {
     const subscribers = yield* Effect.tryPromise({
       try: () =>
@@ -217,29 +223,35 @@ const getSubscribersEffect = (showId: string) =>
     return subscribers
   })
 
-export const ShowSubscriptionServiceLayer = Layer.succeed(ShowSubscriptionService, {
-  subscribe: (userId, showId) =>
-    subscribeEffect(userId, showId).pipe(
-      Effect.withSpan('showSubscription.subscribe', {
-        attributes: { showId }
-      })
-    ),
-  unsubscribe: (userId, showId) =>
-    unsubscribeEffect(userId, showId).pipe(
-      Effect.withSpan('showSubscription.unsubscribe', {
-        attributes: { showId }
-      })
-    ),
-  getUserSubscriptions: (userId, options) =>
-    getUserSubscriptionsEffect(userId, options).pipe(
-      Effect.withSpan('showSubscription.getUserSubscriptions', {
-        attributes: { userId }
-      })
-    ),
-  getSubscribers: (showId) =>
-    getSubscribersEffect(showId).pipe(
-      Effect.withSpan('showSubscription.getSubscribers', {
-        attributes: { showId }
-      })
-    )
-})
+export const ShowSubscriptionServiceLayer = Layer.effect(
+  ShowSubscriptionService,
+  Effect.gen(function* () {
+    const db = yield* Database
+    return {
+      subscribe: (userId, showId) =>
+        subscribeEffect(db, userId, showId).pipe(
+          Effect.withSpan('showSubscription.subscribe', {
+            attributes: { showId }
+          })
+        ),
+      unsubscribe: (userId, showId) =>
+        unsubscribeEffect(db, userId, showId).pipe(
+          Effect.withSpan('showSubscription.unsubscribe', {
+            attributes: { showId }
+          })
+        ),
+      getUserSubscriptions: (userId, options) =>
+        getUserSubscriptionsEffect(db, userId, options).pipe(
+          Effect.withSpan('showSubscription.getUserSubscriptions', {
+            attributes: { userId }
+          })
+        ),
+      getSubscribers: (showId) =>
+        getSubscribersEffect(db, showId).pipe(
+          Effect.withSpan('showSubscription.getSubscribers', {
+            attributes: { showId }
+          })
+        )
+    }
+  })
+)

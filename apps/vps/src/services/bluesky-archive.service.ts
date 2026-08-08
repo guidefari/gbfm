@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
-import { db } from '@/db'
+import { Database } from '@/db/layer'
 import { blueskyPostSources } from '@/db/external-account.schema'
 import { postCreators, postsTable, type InsertPost } from '@/db/post.schema'
 import { DatabaseError } from '@/errors'
@@ -36,7 +36,11 @@ type WriteResult = 'created' | 'alreadyImported' | 'conflicted' | 'failed'
 const entityTypeForUrl = (url: string): 'album' | 'track' =>
   /\/album(?:s)?\//i.test(url) ? 'album' : 'track'
 
-const makeWrite = (musicEntities: MusicEntityService, scraper: MusicLinkScraperService) => ({
+const makeWrite = (
+  db: Database['Service'],
+  musicEntities: MusicEntityService,
+  scraper: MusicLinkScraperService
+) => ({
   write: ({
     ownerUserId,
     externalAccountId,
@@ -150,6 +154,7 @@ const makeWrite = (musicEntities: MusicEntityService, scraper: MusicLinkScraperS
 export const BlueskyArchiveServiceLayer = Layer.effect(
   BlueskyArchiveService,
   Effect.gen(function* () {
-    return makeWrite(yield* MusicEntityService, yield* MusicLinkScraperService)
+    const db = yield* Database
+    return makeWrite(db, yield* MusicEntityService, yield* MusicLinkScraperService)
   })
 )

@@ -2,7 +2,7 @@ import { and, isNull, lt } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { navigationSessions } from '@/db/navigation.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
-import { DatabaseService } from '@/runtime/services'
+import { Database } from '@/db/layer'
 
 export const ANONYMOUS_NAVIGATION_SESSION_RETENTION_MS = 30 * 24 * 60 * 60 * 1000
 
@@ -21,7 +21,7 @@ const cutoffAt = (now: Date) => new Date(now.getTime() - ANONYMOUS_NAVIGATION_SE
 export const NavigationRetentionServiceLayer = Layer.effect(
   NavigationRetentionService,
   Effect.gen(function* () {
-    const { db } = yield* DatabaseService
+    const db = yield* Database
 
     return {
       sweepExpiredAnonymousSessions: (now) =>

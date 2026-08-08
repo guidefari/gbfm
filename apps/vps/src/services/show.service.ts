@@ -1,6 +1,6 @@
 import { and, asc, count, desc, eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
-import { db } from '@/db'
+import { Database } from '@/db/layer'
 import { audioTable, type SelectAudio } from '@/db/audio.schema'
 import { showIdsForCreator } from '@/db/creator-membership'
 import {
@@ -76,6 +76,7 @@ export interface ShowService {
 export const ShowService = Context.Service<ShowService>('ShowService')
 
 const getAllEffect = (
+  db: Database['Service'],
   options: { limit: number; offset: number },
   actor?: { userId: string; userRole: string }
 ) =>
@@ -84,7 +85,7 @@ const getAllEffect = (
     const whereCondition = actor
       ? actor.userRole === 'admin'
         ? undefined
-        : showIdsForCreator(actor.userId)
+        : showIdsForCreator(db, actor.userId)
       : eq(showsTable.draft, false)
 
     const countResult = yield* Effect.tryPromise({
@@ -131,7 +132,7 @@ const getAllEffect = (
     }
   })
 
-const getBySlugEffect = (slug: string, includeDrafts = false) =>
+const getBySlugEffect = (db: Database['Service'], slug: string, includeDrafts = false) =>
   Effect.gen(function* () {
     const show = yield* Effect.tryPromise({
       try: () =>
@@ -194,7 +195,7 @@ const getBySlugEffect = (slug: string, includeDrafts = false) =>
     return processedShow
   })
 
-const createEffect = (data: InsertShow, hostIds: string[]) =>
+const createEffect = (db: Database['Service'], data: InsertShow, hostIds: string[]) =>
   Effect.gen(function* () {
     const result = yield* Effect.tryPromise({
       try: () =>
@@ -242,6 +243,7 @@ const createEffect = (data: InsertShow, hostIds: string[]) =>
   })
 
 const updateEffect = (
+  db: Database['Service'],
   slug: string,
   userId: string,
   userRole: string,
@@ -269,7 +271,7 @@ const updateEffect = (
       })
     }
 
-    yield* requireCreatorOrAdmin('show', existingShow.id, userId, userRole)
+    yield* requireCreatorOrAdmin(db, 'show', existingShow.id, userId, userRole)
 
     const updatedRecords = yield* Effect.tryPromise({
       try: () =>
@@ -360,7 +362,7 @@ const updateEffect = (
     return baseProcessedShow
   })
 
-const deleteEffect = (slug: string, userId: string, userRole: string) =>
+const deleteEffect = (db: Database['Service'], slug: string, userId: string, userRole: string) =>
   Effect.gen(function* () {
     const existingRecords = yield* Effect.tryPromise({
       try: () => db.select().from(showsTable).where(eq(showsTable.slug, slug)).limit(1),
@@ -381,7 +383,7 @@ const deleteEffect = (slug: string, userId: string, userRole: string) =>
       })
     }
 
-    yield* requireCreatorOrAdmin('show', existingShow.id, userId, userRole)
+    yield* requireCreatorOrAdmin(db, 'show', existingShow.id, userId, userRole)
 
     yield* Effect.tryPromise({
       try: () => db.delete(showsTable).where(eq(showsTable.id, existingShow.id)),
@@ -395,6 +397,7 @@ const deleteEffect = (slug: string, userId: string, userRole: string) =>
   })
 
 const getEpisodesEffect = (
+  db: Database['Service'],
   showSlug: string,
   options: { limit: number; offset: number },
   actor?: { userId: string; userRole: string }
@@ -481,29 +484,36 @@ const getEpisodesEffect = (
     }
   })
 
-export const ShowServiceLayer = Layer.succeed(ShowService, {
-  getAll: (options) => getAllEffect(options).pipe(Effect.withSpan('show.getAll')),
-  getAllForEdit: (options, userId, userRole) =>
-    getAllEffect(options, { userId, userRole }).pipe(Effect.withSpan('show.getAllForEdit')),
-  getBySlug: (slug) =>
-    getBySlugEffect(slug).pipe(Effect.withSpan('show.getBySlug', { attributes: { slug } })),
-  getBySlugForEdit: (slug, userId, userRole) =>
-    Effect.gen(function* () {
-      const show = yield* getBySlugEffect(slug, true)
-      yield* requireCreatorOrAdmin('show', show.id, userId, userRole)
-      return show
-    }).pipe(Effect.withSpan('show.getBySlugForEdit', { attributes: { slug } })),
-  create: (data, hostIds) => createEffect(data, hostIds).pipe(Effect.withSpan('show.create')),
-  update: (slug, userId, userRole, data) =>
-    updateEffect(slug, userId, userRole, data).pipe(
-      Effect.withSpan('show.update', { attributes: { slug } })
-    ),
-  delete: (slug, userId, userRole) =>
-    deleteEffect(slug, userId, userRole).pipe(
-      Effect.withSpan('show.delete', { attributes: { slug } })
-    ),
-  getEpisodes: (showSlug, options, actor) =>
-    getEpisodesEffect(showSlug, options, actor).pipe(
-      Effect.withSpan('show.getEpisodes', { attributes: { showSlug } })
-    )
-})
+export const ShowServiceLayer = Layer.effect(
+  ShowService,
+  Effect.gen(function* () {
+    const db = yield* Database
+    return {
+      getAll: (options) => getAllEffect(db, options).pipe(Effect.withSpan('show.getAll')),
+      getAllForEdit: (options, userId, userRole) =>
+        getAllEffect(db, options, { userId, userRole }).pipe(Effect.withSpan('show.getAllForEdit')),
+      getBySlug: (slug) =>
+        getBySlugEffect(db, slug).pipe(Effect.withSpan('show.getBySlug', { attributes: { slug } })),
+      getBySlugForEdit: (slug, userId, userRole) =>
+        Effect.gen(function* () {
+          const show = yield* getBySlugEffect(db, slug, true)
+          yield* requireCreatorOrAdmin(db, 'show', show.id, userId, userRole)
+          return show
+        }).pipe(Effect.withSpan('show.getBySlugForEdit', { attributes: { slug } })),
+      create: (data, hostIds) =>
+        createEffect(db, data, hostIds).pipe(Effect.withSpan('show.create')),
+      update: (slug, userId, userRole, data) =>
+        updateEffect(db, slug, userId, userRole, data).pipe(
+          Effect.withSpan('show.update', { attributes: { slug } })
+        ),
+      delete: (slug, userId, userRole) =>
+        deleteEffect(db, slug, userId, userRole).pipe(
+          Effect.withSpan('show.delete', { attributes: { slug } })
+        ),
+      getEpisodes: (showSlug, options, actor) =>
+        getEpisodesEffect(db, showSlug, options, actor).pipe(
+          Effect.withSpan('show.getEpisodes', { attributes: { showSlug } })
+        )
+    }
+  })
+)

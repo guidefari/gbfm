@@ -6,7 +6,7 @@ import {
   externalAccountSessions,
   externalAccounts
 } from '@/db/external-account.schema'
-import { db } from '@/db'
+import { Database } from '@/db/layer'
 import {
   BlueskyProviderError,
   CryptoError,
@@ -111,6 +111,7 @@ const databaseError = (operation: string) =>
   new DatabaseError({ message: 'Bluesky sync database operation failed', operation })
 
 const start = (
+  db: Database['Service'],
   locks: LockService,
   { userId, accountId }: Parameters<BlueskySyncService['start']>[0]
 ): Effect.Effect<SyncRunHandle, DatabaseError | NotFoundError | LockUnavailable> =>
@@ -153,6 +154,7 @@ const start = (
   )
 
 const sync = (
+  db: Database['Service'],
   client: BlueskyClient,
   importer: BlueskyImportService,
   archive: BlueskyArchiveService,
@@ -389,27 +391,31 @@ const sync = (
     )
   )
 
-const dueScheduledAccounts = Effect.tryPromise({
-  try: () =>
-    db
-      .select({ accountId: externalAccounts.id, userId: externalAccounts.userId })
-      .from(externalAccounts)
-      .innerJoin(blueskySyncStates, eq(blueskySyncStates.externalAccountId, externalAccounts.id))
-      .where(
-        and(
-          eq(externalAccounts.provider, 'bluesky'),
-          eq(externalAccounts.status, 'active'),
-          eq(blueskySyncStates.scheduled, true),
-          or(
-            isNull(blueskySyncStates.nextEligibleAt),
-            lte(blueskySyncStates.nextEligibleAt, new Date())
+const dueScheduledAccounts = (db: Database['Service']) =>
+  Effect.tryPromise({
+    try: () =>
+      db
+        .select({ accountId: externalAccounts.id, userId: externalAccounts.userId })
+        .from(externalAccounts)
+        .innerJoin(blueskySyncStates, eq(blueskySyncStates.externalAccountId, externalAccounts.id))
+        .where(
+          and(
+            eq(externalAccounts.provider, 'bluesky'),
+            eq(externalAccounts.status, 'active'),
+            eq(blueskySyncStates.scheduled, true),
+            or(
+              isNull(blueskySyncStates.nextEligibleAt),
+              lte(blueskySyncStates.nextEligibleAt, new Date())
+            )
           )
-        )
-      ),
-  catch: () => databaseError('enumerate-scheduled-accounts')
-})
+        ),
+    catch: () => databaseError('enumerate-scheduled-accounts')
+  })
 
-const recordScheduledFailure = (accountId: string): Effect.Effect<void, DatabaseError> =>
+const recordScheduledFailure = (
+  db: Database['Service'],
+  accountId: string
+): Effect.Effect<void, DatabaseError> =>
   Effect.tryPromise({
     try: async () => {
       const [state] = await db
@@ -427,10 +433,11 @@ const recordScheduledFailure = (accountId: string): Effect.Effect<void, Database
   })
 
 const syncScheduled = (
+  db: Database['Service'],
   self: Pick<BlueskySyncService, 'sync'>
 ): Effect.Effect<ScheduledSyncReport, DatabaseError> =>
   Effect.gen(function* () {
-    const accounts = yield* dueScheduledAccounts
+    const accounts = yield* dueScheduledAccounts(db)
 
     const outcomes = yield* Effect.forEach(
       accounts,
@@ -447,7 +454,7 @@ const syncScheduled = (
         }).pipe(
           Effect.catch((error) =>
             Effect.gen(function* () {
-              yield* recordScheduledFailure(account.accountId).pipe(
+              yield* recordScheduledFailure(db, account.accountId).pipe(
                 Effect.tapError((failure) =>
                   Effect.logError('Unable to record Bluesky scheduled sync failure', {
                     accountId: account.accountId,
@@ -478,16 +485,17 @@ const syncScheduled = (
 export const BlueskySyncServiceLayer = Layer.effect(
   BlueskySyncService,
   Effect.gen(function* () {
+    const db = yield* Database
     const client = yield* BlueskyClient
     const importer = yield* BlueskyImportService
     const archive = yield* BlueskyArchiveService
     const crypto = yield* CryptoService
     const locks = yield* LockService
     const service: BlueskySyncService = {
-      start: (input: Parameters<BlueskySyncService['start']>[0]) => start(locks, input),
+      start: (input: Parameters<BlueskySyncService['start']>[0]) => start(db, locks, input),
       sync: (input: Parameters<BlueskySyncService['sync']>[0]) =>
-        sync(client, importer, archive, crypto, locks, input),
-      syncScheduled: () => syncScheduled(service)
+        sync(db, client, importer, archive, crypto, locks, input),
+      syncScheduled: () => syncScheduled(db, service)
     }
     return service
   })

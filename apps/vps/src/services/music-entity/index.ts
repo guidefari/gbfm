@@ -14,7 +14,7 @@ import type {
 } from '@/db/music-entity.schema'
 import type { DatabaseError, NotFoundError, SpotifyError } from '@/errors'
 import { ConfigService as ConfigServiceTag } from '@/services/config.service'
-import { DatabaseService } from '@/services/database.service'
+import { Database } from '@/db/layer'
 import {
   affiliateAlbumWithLabelEffect,
   affiliateArtistWithLabelEffect,
@@ -313,7 +313,7 @@ export const MusicEntityServiceLayer = Layer.effect(
     const spotify = yield* SpotifyServiceTag
     const s3 = yield* S3ServiceTag
     const config = yield* ConfigServiceTag
-    const { db } = yield* DatabaseService
+    const db = yield* Database
 
     return {
       createArtist: createArtistEffect(db),

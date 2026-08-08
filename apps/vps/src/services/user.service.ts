@@ -1,6 +1,5 @@
 import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
-import { db } from '@/db'
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import {
   SOCIAL_LINK_PLATFORMS,
@@ -8,6 +7,7 @@ import {
   userSocialLinks,
   user as userTable
 } from '@/db/auth.schema'
+import { Database } from '@/db/layer'
 import type { InsertAuthorEmailPreferences, SelectAuthorEmailPreferences } from '@/db/email.schema'
 import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
 import {
@@ -127,8 +127,10 @@ export interface UserService {
 // Service tag for dependency injection
 export const UserService = Context.Service<UserService>('UserService')
 
+type DatabaseConnection = Context.Service.Shape<typeof Database>
+
 // Core service logic - pure Effects with no service dependencies
-const getUserByIdEffect = (userId: string) =>
+const getUserByIdEffect = (db: DatabaseConnection, userId: string) =>
   Effect.gen(function* () {
     const userRecords = yield* Effect.tryPromise({
       try: () => db.select().from(userTable).where(eq(userTable.id, userId)).limit(1),
@@ -153,6 +155,7 @@ const getUserByIdEffect = (userId: string) =>
   })
 
 const updateUserProfileEffect = (
+  db: DatabaseConnection,
   userId: string,
   data: {
     email?: string
@@ -163,7 +166,7 @@ const updateUserProfileEffect = (
 ) =>
   Effect.gen(function* () {
     // Check if user exists
-    yield* getUserByIdEffect(userId)
+    yield* getUserByIdEffect(db, userId)
 
     // Update user profile
     const updatedRecords = yield* Effect.tryPromise({
@@ -188,7 +191,7 @@ const updateUserProfileEffect = (
     return user
   })
 
-const searchUsersEffect = (query: string) =>
+const searchUsersEffect = (db: DatabaseConnection, query: string) =>
   Effect.gen(function* () {
     const searchPattern = `%${query}%`
 
@@ -226,9 +229,9 @@ const getUserEmailPreferencesEffect = (userId: string) =>
       })
   })
 
-const getUserSocialLinksEffect = (userId: string) =>
+const getUserSocialLinksEffect = (db: DatabaseConnection, userId: string) =>
   Effect.gen(function* () {
-    yield* getUserByIdEffect(userId)
+    yield* getUserByIdEffect(db, userId)
 
     const links = yield* Effect.tryPromise({
       try: () =>
@@ -257,6 +260,7 @@ const getUserSocialLinksEffect = (userId: string) =>
   })
 
 const replaceUserSocialLinksEffect = (
+  db: DatabaseConnection,
   userId: string,
   links: Array<{
     platform: SocialLinkPlatform
@@ -265,7 +269,7 @@ const replaceUserSocialLinksEffect = (
   }>
 ) =>
   Effect.gen(function* () {
-    yield* getUserByIdEffect(userId)
+    yield* getUserByIdEffect(db, userId)
 
     const updatedLinks = yield* Effect.tryPromise({
       try: () =>
@@ -308,7 +312,7 @@ const replaceUserSocialLinksEffect = (
     )
   })
 
-const listDjsEffect = () =>
+const listDjsEffect = (db: DatabaseConnection) =>
   Effect.gen(function* () {
     const mixCountExpr = sql<number>`count(${audioTable.id})::int`
 
@@ -367,30 +371,40 @@ const updateUserEmailPreferencesEffect = (
   })
 
 // Implementation - simple layer that provides access to the Effects
-export const UserServiceLayer = Layer.succeed(UserService, {
-  getUserById: (userId) =>
-    getUserByIdEffect(userId).pipe(Effect.withSpan('user.getById', { attributes: { userId } })),
-  searchUsers: (query) =>
-    searchUsersEffect(query).pipe(Effect.withSpan('user.searchUsers', { attributes: { query } })),
-  updateUserProfile: (userId, data) =>
-    updateUserProfileEffect(userId, data).pipe(
-      Effect.withSpan('user.updateProfile', { attributes: { userId } })
-    ),
-  getUserSocialLinks: (userId) =>
-    getUserSocialLinksEffect(userId).pipe(
-      Effect.withSpan('user.getSocialLinks', { attributes: { userId } })
-    ),
-  replaceUserSocialLinks: (userId, links) =>
-    replaceUserSocialLinksEffect(userId, links).pipe(
-      Effect.withSpan('user.replaceSocialLinks', { attributes: { userId } })
-    ),
-  listDjs: () => listDjsEffect().pipe(Effect.withSpan('user.listDjs')),
-  getUserEmailPreferences: (userId) =>
-    getUserEmailPreferencesEffect(userId).pipe(
-      Effect.withSpan('user.getEmailPreferences', { attributes: { userId } })
-    ),
-  updateUserEmailPreferences: (userId, preferences) =>
-    updateUserEmailPreferencesEffect(userId, preferences).pipe(
-      Effect.withSpan('user.updateEmailPreferences', { attributes: { userId } })
-    )
-})
+export const UserServiceLayer = Layer.effect(
+  UserService,
+  Effect.gen(function* () {
+    const db = yield* Database
+    return {
+      getUserById: (userId) =>
+        getUserByIdEffect(db, userId).pipe(
+          Effect.withSpan('user.getById', { attributes: { userId } })
+        ),
+      searchUsers: (query) =>
+        searchUsersEffect(db, query).pipe(
+          Effect.withSpan('user.searchUsers', { attributes: { query } })
+        ),
+      updateUserProfile: (userId, data) =>
+        updateUserProfileEffect(db, userId, data).pipe(
+          Effect.withSpan('user.updateProfile', { attributes: { userId } })
+        ),
+      getUserSocialLinks: (userId) =>
+        getUserSocialLinksEffect(db, userId).pipe(
+          Effect.withSpan('user.getSocialLinks', { attributes: { userId } })
+        ),
+      replaceUserSocialLinks: (userId, links) =>
+        replaceUserSocialLinksEffect(db, userId, links).pipe(
+          Effect.withSpan('user.replaceSocialLinks', { attributes: { userId } })
+        ),
+      listDjs: () => listDjsEffect(db).pipe(Effect.withSpan('user.listDjs')),
+      getUserEmailPreferences: (userId) =>
+        getUserEmailPreferencesEffect(userId).pipe(
+          Effect.withSpan('user.getEmailPreferences', { attributes: { userId } })
+        ),
+      updateUserEmailPreferences: (userId, preferences) =>
+        updateUserEmailPreferencesEffect(userId, preferences).pipe(
+          Effect.withSpan('user.updateEmailPreferences', { attributes: { userId } })
+        )
+    }
+  })
+)

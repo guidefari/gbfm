@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { beforeAll, describe, expect, test } from 'vitest'
-import { db } from '@/db'
+import { DatabaseTestLayer, db } from '@/test/database'
 import { user } from '@/db/auth.schema'
 import { uploadAssetsTable } from '@/db/upload-asset.schema'
 import {
@@ -25,7 +25,7 @@ const getService = () =>
   Effect.runPromise(
     Effect.gen(function* () {
       return yield* UploadAssetService
-    }).pipe(Effect.provide(UploadAssetServiceLayer))
+    }).pipe(Effect.provide(UploadAssetServiceLayer.pipe(Layer.provide(DatabaseTestLayer))))
   )
 
 const makePendingInput = (key: string) => ({

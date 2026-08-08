@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
-import { db } from '@/db'
+import { Database } from '@/db/layer'
 import {
   type MusicReminder,
   musicReminder,
@@ -24,7 +24,9 @@ export interface MusicReminderService {
 
 export const MusicReminderService = Context.Service<MusicReminderService>('MusicReminderService')
 
-const createEffect = (data: NewMusicReminder) =>
+type DatabaseConnection = Context.Service.Shape<typeof Database>
+
+const createEffect = (db: DatabaseConnection, data: NewMusicReminder) =>
   Effect.withSpan('music-reminder.create', {
     attributes: {
       userId: data.userId,
@@ -64,7 +66,7 @@ const createEffect = (data: NewMusicReminder) =>
     })
   )
 
-const getByUserIdEffect = (userId: string) =>
+const getByUserIdEffect = (db: DatabaseConnection, userId: string) =>
   Effect.gen(function* () {
     const reminders = yield* Effect.tryPromise({
       try: () =>
@@ -89,7 +91,12 @@ const getByUserIdEffect = (userId: string) =>
     return reminders
   })
 
-const updateEffect = (id: string, userId: string, data: Partial<NewMusicReminder>) =>
+const updateEffect = (
+  db: DatabaseConnection,
+  id: string,
+  userId: string,
+  data: Partial<NewMusicReminder>
+) =>
   Effect.gen(function* () {
     const existingRecords = yield* Effect.tryPromise({
       try: () => db.select().from(musicReminder).where(eq(musicReminder.id, id)).limit(1),
@@ -155,7 +162,7 @@ const updateEffect = (id: string, userId: string, data: Partial<NewMusicReminder
     return updated
   })
 
-const deleteEffect = (id: string, userId: string) =>
+const deleteEffect = (db: DatabaseConnection, id: string, userId: string) =>
   Effect.gen(function* () {
     const existingRecords = yield* Effect.tryPromise({
       try: () => db.select().from(musicReminder).where(eq(musicReminder.id, id)).limit(1),
@@ -199,9 +206,15 @@ const deleteEffect = (id: string, userId: string) =>
     })
   })
 
-export const MusicReminderServiceLayer = Layer.succeed(MusicReminderService, {
-  create: createEffect,
-  getByUserId: getByUserIdEffect,
-  update: updateEffect,
-  delete: deleteEffect
-})
+export const MusicReminderServiceLayer = Layer.effect(
+  MusicReminderService,
+  Effect.gen(function* () {
+    const db = yield* Database
+    return {
+      create: (data) => createEffect(db, data),
+      getByUserId: (userId) => getByUserIdEffect(db, userId),
+      update: (id, userId, data) => updateEffect(db, id, userId, data),
+      delete: (id, userId) => deleteEffect(db, id, userId)
+    }
+  })
+)

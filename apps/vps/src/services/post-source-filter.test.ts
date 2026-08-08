@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { and, eq, inArray, notInArray } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
-import { db } from '@/db'
+import { db } from '@/test/database'
 import { blueskyPostSources } from '@/db/external-account.schema'
 import { postsTable } from '@/db/post.schema'
 import { importedPostIds } from './post.service'
@@ -68,13 +68,13 @@ const seededMatching = (condition: ReturnType<typeof inArray>) =>
 
 describe('imported post membership predicate', () => {
   test('bluesky branch includes the imported post and excludes the native one', async () => {
-    const matched = await seededMatching(inArray(postsTable.id, importedPostIds()))
+    const matched = await seededMatching(inArray(postsTable.id, importedPostIds(db)))
 
     expect(matched).toEqual([importedId])
   })
 
   test('native branch includes the native post and excludes the imported one', async () => {
-    const matched = await seededMatching(notInArray(postsTable.id, importedPostIds()))
+    const matched = await seededMatching(notInArray(postsTable.id, importedPostIds(db)))
 
     expect(matched).toEqual([nativeId])
   })
@@ -103,7 +103,7 @@ describe('imported drafts review query', () => {
       .from(postsTable)
       .where(
         and(
-          inArray(postsTable.id, importedPostIds()),
+          inArray(postsTable.id, importedPostIds(db)),
           eq(postsTable.type, 'micro'),
           eq(postsTable.draft, true),
           inArray(postsTable.id, [importedId, publishedId])
