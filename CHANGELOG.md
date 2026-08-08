@@ -1,3 +1,10 @@
+## [2.84.1](https://github.com/guidefari/gbfm/compare/v2.84.0...v2.84.1) (2026-08-08)
+
+
+### Bug Fixes
+
+* **ci:** bridge interrupted SST asset paths ([d86df47](https://github.com/guidefari/gbfm/commit/d86df476810b6bf960d5dd1ce8d4887cc2dbda23))
+
 # [2.84.0](https://github.com/guidefari/gbfm/compare/v2.83.0...v2.84.0) (2026-08-08)
 
 
