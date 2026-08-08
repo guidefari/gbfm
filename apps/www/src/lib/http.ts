@@ -17,12 +17,11 @@ import type {
   SelectShowSubscription
 } from '@gbfm/vps/schemas'
 import { useCallback } from 'react'
-import { useRouter } from '@tanstack/react-router'
 import { Effect, Option, Schema } from 'effect'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { RuntimeClient } from '@/runtime'
 import { captureException } from '@/services/analytics'
-import { useSeenTweets } from '@/store/tweetSeen'
+import { readTweetBrowseState } from '@/store/tweetSeen'
 import { getApiClient } from './api-client'
 import { useSession } from './auth-client'
 import { createFetcher, getRequestMethod, getRequestUrl, type ApiFailureInput } from './http-client'
@@ -435,27 +434,24 @@ export function useAdjacentMicroPosts(slug: string) {
 }
 
 export function useRandomMicroPost() {
-  const router = useRouter()
-  const seen = useSeenTweets()
-
-  const goToRandom = useCallback(
-    async (currentSlug: string) => {
-      const client = await getApiClient()
-      const { slug } = await Effect.runPromise(
-        client.post
-          .getRandomMicroPost({ payload: { exclude: [...seen, currentSlug] } })
+  const randomMicroPostEffect = useCallback(
+    (currentSlug: string) =>
+      Effect.gen(function* () {
+        const client = yield* Effect.promise(() => getApiClient())
+        return yield* client.post
+          .getRandomMicroPost({
+            payload: { exclude: [...readTweetBrowseState().seenSlugs, currentSlug] }
+          })
           .pipe(
             Effect.tapError((error) =>
               captureException(error, { endpoint: 'post.getRandomMicroPost' })
             )
           )
-      )
-      router.navigate({ to: '/tweet/$slug', params: { slug } })
-    },
-    [router, seen]
+      }),
+    []
   )
 
-  return { goToRandom }
+  return { randomMicroPostEffect }
 }
 
 export function useEditorialPostBySlug(slug: string) {

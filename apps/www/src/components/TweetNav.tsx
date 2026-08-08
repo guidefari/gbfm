@@ -1,8 +1,10 @@
 import { useHotkey } from '@tanstack/react-hotkeys'
 import { useRouter } from '@tanstack/react-router'
+import { Effect } from 'effect'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { HoldToRandomButton } from '@/components/HoldToRandomButton'
 import { useAdjacentMicroPosts, useRandomMicroPost } from '@/lib/http'
+import { runNavigationIntent } from '@/lib/navigation-intent'
 import { cn } from '@/lib/utils'
 
 type Props = {
@@ -127,20 +129,41 @@ function FlankingArrows({
 export function TweetNav({ slug }: Props) {
   const router = useRouter()
   const { data } = useAdjacentMicroPosts(slug)
-  const { goToRandom } = useRandomMicroPost()
+  const { randomMicroPostEffect } = useRandomMicroPost()
 
   const prev = data?.prev ?? null
   const next = data?.next ?? null
 
   const goToPrev = () => {
-    if (prev) router.navigate({ to: '/tweet/$slug', params: { slug: prev.slug } })
+    if (prev) {
+      runNavigationIntent(
+        Effect.sync(() => {
+          void router.navigate({ to: '/tweet/$slug', params: { slug: prev.slug } })
+        })
+      )
+    }
   }
 
   const goToNext = () => {
-    if (next) router.navigate({ to: '/tweet/$slug', params: { slug: next.slug } })
+    if (next) {
+      runNavigationIntent(
+        Effect.sync(() => {
+          void router.navigate({ to: '/tweet/$slug', params: { slug: next.slug } })
+        })
+      )
+    }
   }
 
-  const onHoldComplete = () => goToRandom(slug)
+  const onHoldComplete = () =>
+    runNavigationIntent(
+      randomMicroPostEffect(slug).pipe(
+        Effect.flatMap(({ slug }) =>
+          Effect.sync(() => {
+            void router.navigate({ to: '/tweet/$slug', params: { slug } })
+          })
+        )
+      )
+    )
 
   useHotkey('ArrowLeft', goToPrev)
   useHotkey('ArrowRight', goToNext)
