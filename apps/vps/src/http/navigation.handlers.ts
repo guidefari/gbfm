@@ -32,17 +32,19 @@ export const NavigationHandlersLive = HttpApiBuilder.group(Api, 'navigation', (h
           .pipe(Effect.catchTag('DatabaseError', () => new HttpApiError.InternalServerError()))
       })
     )
-    .handle('navigateMicroPosts', ({ payload }) =>
-      Effect.gen(function* () {
+    .handle('navigateMicroPosts', ({ payload }) => {
+      const command = toNavigationCommand(payload.command)
+      return Effect.gen(function* () {
         const { resolve: resolveIdentity } = yield* IdentityResolver
         const navigation = yield* NavigationSessionService
-        const identity = yield* resolveIdentity
-        const command = toNavigationCommand(payload.command)
+        const identity = yield* resolveIdentity.pipe(Effect.withSpan('navigation.identity.resolve'))
+        yield* Effect.annotateCurrentSpan('identityKind', identity._tag)
         if (command._tag === 'Open') {
           const posts = yield* PostService
           yield* posts.getMicroPostBySlug(command.slug).pipe(
             Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
-            Effect.catchTag('DatabaseError', () => new HttpApiError.InternalServerError())
+            Effect.catchTag('DatabaseError', () => new HttpApiError.InternalServerError()),
+            Effect.withSpan('navigation.open.validate')
           )
         }
         const result = yield* navigation
@@ -54,6 +56,13 @@ export const NavigationHandlersLive = HttpApiBuilder.group(Api, 'navigation', (h
           )
 
         return result
-      })
-    )
+      }).pipe(
+        Effect.withSpan('navigation.request', {
+          attributes: {
+            command: command._tag,
+            ...(command._tag === 'Step' ? { direction: command.direction } : {})
+          }
+        })
+      )
+    })
 )

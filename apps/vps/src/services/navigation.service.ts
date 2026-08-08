@@ -308,7 +308,7 @@ export const NavigationSessionServiceLayer = Layer.effect(
           } satisfies Phase
         }
         return { session, length, replay: undefined } satisfies Phase
-      })
+      }).pipe(Effect.withSpan('navigation.session.read'))
 
     const neighboursFor = (sessionId: string, position: number) =>
       Effect.all({
@@ -318,7 +318,8 @@ export const NavigationSessionServiceLayer = Layer.effect(
         Effect.map(({ back, forward }) => ({
           ...(back ? { back: back.slug } : {}),
           ...(forward ? { forward: forward.slug } : {})
-        }))
+        })),
+        Effect.withSpan('navigation.neighbours.read')
       )
 
     const findUnread = (pick: 'NextByDate' | 'Random', from: Slug, seen: ReadonlySet<Slug>) =>
@@ -349,7 +350,10 @@ export const NavigationSessionServiceLayer = Layer.effect(
           }
         }
       }).pipe(
-        Effect.mapError((error) => (error instanceof NotFoundError ? new CorpusExhausted() : error))
+        Effect.mapError((error) =>
+          error instanceof NotFoundError ? new CorpusExhausted() : error
+        ),
+        Effect.withSpan('navigation.destination.resolve', { attributes: { pick } })
       )
 
     const resolve = (
@@ -360,24 +364,26 @@ export const NavigationSessionServiceLayer = Layer.effect(
       retried: boolean
     ): Effect.Effect<NavigationResult, NoSuchMove | CorpusExhausted | DatabaseError> =>
       Effect.gen(function* () {
+        yield* Effect.annotateCurrentSpan('retried', retried)
         const phase = yield* readPhase(identity, command)
         yield* Effect.annotateCurrentSpan('trailLength', phase.length)
         yield* Effect.annotateCurrentSpan('cursor', phase.session?.cursor ?? -1)
         if (phase.replay && phase.session) {
-          const index = yield* entryIndex(phase.session.id, phase.replay.position)
-          const neighbours = yield* neighboursFor(phase.session.id, phase.replay.position)
-          return resultFor(
-            phase.replay,
-            index,
-            phase.length,
-            yield* hasUnread(phase.session.id),
-            neighbours
-          )
+          const replay = phase.replay
+          const session = phase.session
+          yield* Effect.annotateCurrentSpan('path', 'replay')
+          return yield* Effect.gen(function* () {
+            const index = yield* entryIndex(session.id, replay.position)
+            const neighbours = yield* neighboursFor(session.id, replay.position)
+            return resultFor(replay, index, phase.length, yield* hasUnread(session.id), neighbours)
+          }).pipe(Effect.withSpan('navigation.result.read'))
         }
         if (command._tag === 'Step' && command.direction === 'Back') {
+          yield* Effect.annotateCurrentSpan('path', 'rejected')
           return yield* noSuchMove(command)
         }
 
+        yield* Effect.annotateCurrentSpan('path', 'append')
         const seen = phase.session
           ? yield* Effect.tryPromise({
               try: () =>
@@ -472,27 +478,30 @@ export const NavigationSessionServiceLayer = Layer.effect(
               return { _tag: 'Appended', session: updated, position }
             }),
           catch: (error) => databaseError('transaction', error)
-        })
+        }).pipe(Effect.withSpan('navigation.append.transaction'))
 
+        yield* Effect.annotateCurrentSpan('lockOutcome', locked._tag)
         if (locked._tag === 'Retry') {
           if (retried) return yield* noSuchMove(command)
           return yield* resolve(identity, command, from, intentToken, true)
         }
-        const entry =
-          locked._tag === 'Appended'
-            ? {
-                slug: destination.slug,
-                postId: destination.postId,
-                position: locked.position,
-                arrivedBy: command._tag,
-                visitedAt: new Date(destination.visitedAt)
-              }
-            : yield* entryAtPosition(locked.session.id, locked.session.cursor)
-        if (!entry) return yield* noSuchMove(command)
-        const length = yield* trailLength(locked.session.id)
-        const index = yield* entryIndex(locked.session.id, entry.position)
-        const neighbours = yield* neighboursFor(locked.session.id, entry.position)
-        return resultFor(entry, index, length, yield* hasUnread(locked.session.id), neighbours)
+        return yield* Effect.gen(function* () {
+          const entry =
+            locked._tag === 'Appended'
+              ? {
+                  slug: destination.slug,
+                  postId: destination.postId,
+                  position: locked.position,
+                  arrivedBy: command._tag,
+                  visitedAt: new Date(destination.visitedAt)
+                }
+              : yield* entryAtPosition(locked.session.id, locked.session.cursor)
+          if (!entry) return yield* noSuchMove(command)
+          const length = yield* trailLength(locked.session.id)
+          const index = yield* entryIndex(locked.session.id, entry.position)
+          const neighbours = yield* neighboursFor(locked.session.id, entry.position)
+          return resultFor(entry, index, length, yield* hasUnread(locked.session.id), neighbours)
+        }).pipe(Effect.withSpan('navigation.result.read'))
       })
 
     const read = (identity: NavigationIdentity) =>
@@ -527,8 +536,13 @@ export const NavigationSessionServiceLayer = Layer.effect(
     return {
       resolve: (identity, command, from, intentToken) =>
         resolve(identity, command, from, intentToken, false).pipe(
+          Effect.tapError((error) => Effect.annotateCurrentSpan('errorType', error._tag)),
           Effect.withSpan('navigation.resolve', {
-            attributes: { command: command._tag, identityKind: identity._tag }
+            attributes: {
+              command: command._tag,
+              ...(command._tag === 'Step' ? { direction: command.direction } : {}),
+              identityKind: identity._tag
+            }
           })
         ),
       read,
