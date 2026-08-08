@@ -37,12 +37,14 @@ import { ShowServiceLayer, ShowSubscriptionServiceLayer } from '@/services/show.
 import { SpotifyServiceLayer } from '@/services/spotify.service'
 import { UploadAssetServiceLayer } from '@/services/upload-asset.service'
 import { UserServiceLayer } from '@/services/user.service'
+import { ObjectStoreClientLayer } from '@/services/storage/object-store-client'
 
 const DevToolsLive: Layer.Layer<never> = Layer.empty
 
 const SentryClientLive = SentryClientServiceLayer.pipe(Layer.provide(ConfigServiceLayer))
 
 const UploadAssetDepsLive = Layer.mergeAll(ConfigServiceLayer, UploadAssetServiceLayer)
+const ObjectStoreClientLive = ObjectStoreClientLayer.pipe(Layer.provide(ConfigServiceLayer))
 
 const BaseServicesLayer = Layer.mergeAll(
   ConfigServiceLayer,
@@ -69,7 +71,7 @@ const BaseServicesLayer = Layer.mergeAll(
   ProfileServiceLayer,
   ResolveServiceLayer,
   ReleaseServiceLayer,
-  S3ServiceLayer,
+  S3ServiceLayer.pipe(Layer.provide(ObjectStoreClientLive)),
   SearchServiceLayer,
   SentryServiceLayer.pipe(Layer.provide(SentryClientLive)),
   OtlpLive.pipe(Layer.provide(SentryClientLive), Layer.provide(ConfigServiceLayer)),

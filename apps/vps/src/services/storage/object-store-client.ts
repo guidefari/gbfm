@@ -49,22 +49,25 @@ export const ObjectStoreClientLayer: Layer.Layer<ObjectStoreClient, never, Confi
         storage.accessKeyId === undefined ||
         storage.secretAccessKey === undefined
       ) {
-        return yield* Effect.dieMessage('Parsed R2 storage configuration is incomplete')
+        return yield* Effect.die(new Error('Parsed R2 storage configuration is incomplete'))
       }
+      const endpoint = storage.endpoint
+      const accessKeyId = storage.accessKeyId
+      const secretAccessKey = storage.secretAccessKey
 
       return yield* Effect.acquireRelease(
         Effect.sync(() => {
           const clientConfig: S3ClientConfig = {
-            endpoint: storage.endpoint,
+            endpoint,
             region: storage.region,
             credentials: {
-              accessKeyId: Redacted.value(storage.accessKeyId),
-              secretAccessKey: Redacted.value(storage.secretAccessKey)
+              accessKeyId: Redacted.value(accessKeyId),
+              secretAccessKey: Redacted.value(secretAccessKey)
             }
           }
           const client = makeS3Client(clientConfig)
           const signingClient =
-            storage.signingEndpoint === undefined || storage.signingEndpoint === storage.endpoint
+            storage.signingEndpoint === undefined || storage.signingEndpoint === endpoint
               ? client
               : makeS3Client({ ...clientConfig, endpoint: storage.signingEndpoint })
           return {

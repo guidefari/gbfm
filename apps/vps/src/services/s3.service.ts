@@ -10,12 +10,15 @@ import {
   ListObjectsV2Command,
   ListPartsCommand,
   PutObjectCommand,
-  S3Client,
   UploadPartCommand
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { Context, Effect, Layer } from 'effect'
 import { getErrorMessage, S3Error } from '@/errors'
+import {
+  ObjectStoreClient,
+  type ObjectStoreClient as ObjectStoreClientType
+} from '@/services/storage/object-store-client'
 
 export interface S3MultipartPart {
   readonly partNumber: number
@@ -118,6 +121,7 @@ const getKeyPrefix = (key: string): string => {
 
 // Core service logic - pure Effects with no service dependencies
 const uploadFileEffect = (
+  store: ObjectStoreClientType,
   key: string,
   body: Buffer | Uint8Array | Blob | string,
   contentType: string,
@@ -125,7 +129,7 @@ const uploadFileEffect = (
 ) =>
   Effect.tryPromise({
     try: async () => {
-      const s3 = new S3Client({})
+      const s3 = store.client
       await s3.send(
         new PutObjectCommand({
           Bucket: bucketName,
@@ -150,7 +154,8 @@ const uploadFileEffect = (
           })
   }).pipe(
     Effect.tap(() =>
-      Effect.annotateCurrentSpan('aws.service', 's3').pipe(
+      Effect.annotateCurrentSpan('storage.provider', store.provider).pipe(
+        Effect.andThen(Effect.annotateCurrentSpan('aws.service', 's3')),
         Effect.andThen(Effect.annotateCurrentSpan('s3.bucket', bucketName)),
         Effect.andThen(Effect.annotateCurrentSpan('s3.key_prefix', getKeyPrefix(key))),
         Effect.andThen(Effect.annotateCurrentSpan('content.type', contentType)),
@@ -167,6 +172,7 @@ const uploadFileEffect = (
   )
 
 const presignPutObjectEffect = (
+  store: ObjectStoreClientType,
   key: string,
   contentType: string,
   bucketName: string,
@@ -174,7 +180,7 @@ const presignPutObjectEffect = (
 ) =>
   Effect.tryPromise({
     try: async () => {
-      const s3 = new S3Client({})
+      const s3 = store.signingClient
       const command = new PutObjectCommand({
         Bucket: bucketName,
         Key: key,
@@ -191,6 +197,7 @@ const presignPutObjectEffect = (
   }).pipe(
     Effect.withSpan('aws.s3.presignPutObject', {
       attributes: {
+        'storage.provider': store.provider,
         'aws.service': 's3',
         's3.bucket': bucketName,
         's3.key_prefix': getKeyPrefix(key),
@@ -199,10 +206,10 @@ const presignPutObjectEffect = (
     })
   )
 
-const deleteFileEffect = (key: string, bucketName: string) =>
+const deleteFileEffect = (store: ObjectStoreClientType, key: string, bucketName: string) =>
   Effect.tryPromise({
     try: async () => {
-      const s3 = new S3Client({})
+      const s3 = store.client
       await s3.send(
         new DeleteObjectCommand({
           Bucket: bucketName,
@@ -225,6 +232,7 @@ const deleteFileEffect = (key: string, bucketName: string) =>
   }).pipe(
     Effect.withSpan('aws.s3.deleteObject', {
       attributes: {
+        'storage.provider': store.provider,
         'aws.service': 's3',
         's3.bucket': bucketName,
         's3.key_prefix': getKeyPrefix(key)
@@ -232,10 +240,10 @@ const deleteFileEffect = (key: string, bucketName: string) =>
     })
   )
 
-const checkExistsEffect = (key: string, bucketName: string) =>
+const checkExistsEffect = (store: ObjectStoreClientType, key: string, bucketName: string) =>
   Effect.tryPromise({
     try: async () => {
-      const s3 = new S3Client({})
+      const s3 = store.client
       await s3.send(
         new HeadObjectCommand({
           Bucket: bucketName,
@@ -249,6 +257,7 @@ const checkExistsEffect = (key: string, bucketName: string) =>
     Effect.orElseSucceed(() => false),
     Effect.withSpan('aws.s3.headObject', {
       attributes: {
+        'storage.provider': store.provider,
         'aws.service': 's3',
         's3.bucket': bucketName,
         's3.key_prefix': getKeyPrefix(key)
@@ -256,10 +265,10 @@ const checkExistsEffect = (key: string, bucketName: string) =>
     })
   )
 
-const listObjectsEffect = (prefix: string, bucketName: string) =>
+const listObjectsEffect = (store: ObjectStoreClientType, prefix: string, bucketName: string) =>
   Effect.tryPromise({
     try: async () => {
-      const s3 = new S3Client({})
+      const s3 = store.client
       const allObjects: Array<{
         key: string
         lastModified: Date
@@ -309,6 +318,7 @@ const listObjectsEffect = (prefix: string, bucketName: string) =>
   }).pipe(
     Effect.withSpan('aws.s3.listObjectsV2', {
       attributes: {
+        'storage.provider': store.provider,
         'aws.service': 's3',
         's3.bucket': bucketName,
         's3.prefix': prefix
@@ -316,10 +326,15 @@ const listObjectsEffect = (prefix: string, bucketName: string) =>
     })
   )
 
-const copyFileEffect = (key: string, sourceBucket: string, destinationBucket: string) =>
+const copyFileEffect = (
+  store: ObjectStoreClientType,
+  key: string,
+  sourceBucket: string,
+  destinationBucket: string
+) =>
   Effect.tryPromise({
     try: async () => {
-      const s3 = new S3Client({})
+      const s3 = store.client
       await s3.send(
         new CopyObjectCommand({
           Bucket: destinationBucket,
@@ -343,6 +358,7 @@ const copyFileEffect = (key: string, sourceBucket: string, destinationBucket: st
   }).pipe(
     Effect.withSpan('aws.s3.copyObject', {
       attributes: {
+        'storage.provider': store.provider,
         'aws.service': 's3',
         's3.source_bucket': sourceBucket,
         's3.destination_bucket': destinationBucket,
@@ -352,6 +368,7 @@ const copyFileEffect = (key: string, sourceBucket: string, destinationBucket: st
   )
 
 const createMultipartUploadEffect = (
+  store: ObjectStoreClientType,
   key: string,
   contentType: string,
   expectedSize: number,
@@ -359,7 +376,7 @@ const createMultipartUploadEffect = (
 ) =>
   Effect.tryPromise({
     try: async () => {
-      const s3 = new S3Client({})
+      const s3 = store.client
       const response = await s3.send(
         new CreateMultipartUploadCommand({
           Bucket: bucketName,
@@ -382,6 +399,7 @@ const createMultipartUploadEffect = (
   }).pipe(
     Effect.withSpan('aws.s3.createMultipartUpload', {
       attributes: {
+        'storage.provider': store.provider,
         'aws.service': 's3',
         's3.bucket': bucketName,
         's3.key_prefix': getKeyPrefix(key),
@@ -390,10 +408,10 @@ const createMultipartUploadEffect = (
     })
   )
 
-const getObjectMetadataEffect = (key: string, bucketName: string) =>
+const getObjectMetadataEffect = (store: ObjectStoreClientType, key: string, bucketName: string) =>
   Effect.tryPromise({
     try: async () => {
-      const s3 = new S3Client({})
+      const s3 = store.client
       try {
         const response = await s3.send(new HeadObjectCommand({ Bucket: bucketName, Key: key }))
         return {
@@ -425,6 +443,7 @@ const getObjectMetadataEffect = (key: string, bucketName: string) =>
   }).pipe(
     Effect.withSpan('aws.s3.headObjectMetadata', {
       attributes: {
+        'storage.provider': store.provider,
         'aws.service': 's3',
         's3.bucket': bucketName,
         's3.key_prefix': getKeyPrefix(key)
@@ -433,6 +452,7 @@ const getObjectMetadataEffect = (key: string, bucketName: string) =>
   )
 
 const presignUploadPartEffect = (
+  store: ObjectStoreClientType,
   key: string,
   uploadId: string,
   partNumber: number,
@@ -441,7 +461,7 @@ const presignUploadPartEffect = (
 ) =>
   Effect.tryPromise({
     try: async () => {
-      const s3 = new S3Client({})
+      const s3 = store.signingClient
       const command = new UploadPartCommand({
         Bucket: bucketName,
         Key: key,
@@ -459,6 +479,7 @@ const presignUploadPartEffect = (
   }).pipe(
     Effect.withSpan('aws.s3.presignUploadPart', {
       attributes: {
+        'storage.provider': store.provider,
         'aws.service': 's3',
         's3.bucket': bucketName,
         's3.key_prefix': getKeyPrefix(key),
@@ -468,6 +489,7 @@ const presignUploadPartEffect = (
   )
 
 const completeMultipartUploadEffect = (
+  store: ObjectStoreClientType,
   key: string,
   uploadId: string,
   parts: ReadonlyArray<{ partNumber: number; etag: string }>,
@@ -475,7 +497,7 @@ const completeMultipartUploadEffect = (
 ) =>
   Effect.tryPromise({
     try: async () => {
-      const s3 = new S3Client({})
+      const s3 = store.client
       const sortedParts: CompletedPart[] = parts
         .toSorted((a, b) => a.partNumber - b.partNumber)
         .map((p) => ({ ETag: p.etag, PartNumber: p.partNumber }))
@@ -499,6 +521,7 @@ const completeMultipartUploadEffect = (
   }).pipe(
     Effect.withSpan('aws.s3.completeMultipartUpload', {
       attributes: {
+        'storage.provider': store.provider,
         'aws.service': 's3',
         's3.bucket': bucketName,
         's3.key_prefix': getKeyPrefix(key),
@@ -507,10 +530,15 @@ const completeMultipartUploadEffect = (
     })
   )
 
-const abortMultipartUploadEffect = (key: string, uploadId: string, bucketName: string) =>
+const abortMultipartUploadEffect = (
+  store: ObjectStoreClientType,
+  key: string,
+  uploadId: string,
+  bucketName: string
+) =>
   Effect.tryPromise({
     try: async () => {
-      const s3 = new S3Client({})
+      const s3 = store.client
       await s3.send(
         new AbortMultipartUploadCommand({
           Bucket: bucketName,
@@ -528,6 +556,7 @@ const abortMultipartUploadEffect = (key: string, uploadId: string, bucketName: s
   }).pipe(
     Effect.withSpan('aws.s3.abortMultipartUpload', {
       attributes: {
+        'storage.provider': store.provider,
         'aws.service': 's3',
         's3.bucket': bucketName,
         's3.key_prefix': getKeyPrefix(key)
@@ -535,10 +564,15 @@ const abortMultipartUploadEffect = (key: string, uploadId: string, bucketName: s
     })
   )
 
-const listMultipartPartsEffect = (key: string, uploadId: string, bucketName: string) =>
+const listMultipartPartsEffect = (
+  store: ObjectStoreClientType,
+  key: string,
+  uploadId: string,
+  bucketName: string
+) =>
   Effect.tryPromise({
     try: async () => {
-      const s3 = new S3Client({})
+      const s3 = store.client
       const collected: S3MultipartPart[] = []
       let partNumberMarker: string | undefined
 
@@ -579,6 +613,7 @@ const listMultipartPartsEffect = (key: string, uploadId: string, bucketName: str
   }).pipe(
     Effect.withSpan('aws.s3.listParts', {
       attributes: {
+        'storage.provider': store.provider,
         'aws.service': 's3',
         's3.bucket': bucketName,
         's3.key_prefix': getKeyPrefix(key)
@@ -586,10 +621,10 @@ const listMultipartPartsEffect = (key: string, uploadId: string, bucketName: str
     })
   )
 
-const listBucketsEffect = () =>
+const listBucketsEffect = (store: ObjectStoreClientType) =>
   Effect.tryPromise({
     try: async () => {
-      const s3 = new S3Client({})
+      const s3 = store.client
       const response = await s3.send(new ListBucketsCommand({}))
       return (response.Buckets ?? [])
         .map((bucket) => bucket.Name)
@@ -610,24 +645,38 @@ const listBucketsEffect = () =>
   }).pipe(
     Effect.withSpan('aws.s3.listBuckets', {
       attributes: {
+        'storage.provider': store.provider,
         'aws.service': 's3'
       }
     })
   )
 
-// Implementation - simple layer (effects are pure functions)
-export const S3ServiceLayer = Layer.succeed(S3Service, {
-  uploadFile: uploadFileEffect,
-  presignPutObject: presignPutObjectEffect,
-  deleteFile: deleteFileEffect,
-  checkExists: checkExistsEffect,
-  listObjects: listObjectsEffect,
-  copyFile: copyFileEffect,
-  listBuckets: listBucketsEffect,
-  createMultipartUpload: createMultipartUploadEffect,
-  getObjectMetadata: getObjectMetadataEffect,
-  presignUploadPart: presignUploadPartEffect,
-  completeMultipartUpload: completeMultipartUploadEffect,
-  abortMultipartUpload: abortMultipartUploadEffect,
-  listMultipartParts: listMultipartPartsEffect
-})
+export const S3ServiceLayer = Layer.effect(
+  S3Service,
+  Effect.gen(function* () {
+    const store = yield* ObjectStoreClient
+    return {
+      uploadFile: (key, body, contentType, bucketName) =>
+        uploadFileEffect(store, key, body, contentType, bucketName),
+      presignPutObject: (key, contentType, bucketName, expiresInSeconds) =>
+        presignPutObjectEffect(store, key, contentType, bucketName, expiresInSeconds),
+      deleteFile: (key, bucketName) => deleteFileEffect(store, key, bucketName),
+      checkExists: (key, bucketName) => checkExistsEffect(store, key, bucketName),
+      listObjects: (prefix, bucketName) => listObjectsEffect(store, prefix, bucketName),
+      copyFile: (key, sourceBucket, destinationBucket) =>
+        copyFileEffect(store, key, sourceBucket, destinationBucket),
+      listBuckets: () => listBucketsEffect(store),
+      createMultipartUpload: (key, contentType, expectedSize, bucketName) =>
+        createMultipartUploadEffect(store, key, contentType, expectedSize, bucketName),
+      getObjectMetadata: (key, bucketName) => getObjectMetadataEffect(store, key, bucketName),
+      presignUploadPart: (key, uploadId, partNumber, bucketName, expiresInSeconds) =>
+        presignUploadPartEffect(store, key, uploadId, partNumber, bucketName, expiresInSeconds),
+      completeMultipartUpload: (key, uploadId, parts, bucketName) =>
+        completeMultipartUploadEffect(store, key, uploadId, parts, bucketName),
+      abortMultipartUpload: (key, uploadId, bucketName) =>
+        abortMultipartUploadEffect(store, key, uploadId, bucketName),
+      listMultipartParts: (key, uploadId, bucketName) =>
+        listMultipartPartsEffect(store, key, uploadId, bucketName)
+    } satisfies S3Service
+  })
+)
