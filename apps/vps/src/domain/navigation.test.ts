@@ -107,18 +107,32 @@ describe('applyCommand', () => {
     expect(replayed.trail).toStrictEqual(original.trail)
   })
 
-  test('does not move for an idempotent Open of the current trail entry', () => {
+  test('appends Open to an empty trail at cursor zero', () => {
+    const updated = succeeds(
+      applyCommand(
+        session([], 0),
+        { _tag: 'Open', slug: slug('first') },
+        Option.some(destination('first'))
+      )
+    )
+
+    expect(updated.trail).toStrictEqual([{ ...entry('first'), arrivedBy: 'Open' }])
+    expect(updated.cursor).toBe(0)
+  })
+
+  test('moves the cursor for Open of a current trail entry without appending', () => {
     const original = session([entry('first'), entry('second')], 1)
 
     const updated = succeeds(
       applyCommand(
         original,
-        { _tag: 'Open', slug: slug('second') },
-        Option.some(destination('second'))
+        { _tag: 'Open', slug: slug('first') },
+        Option.some(destination('first'))
       )
     )
 
-    expect(updated).toStrictEqual(original)
+    expect(updated.cursor).toBe(0)
+    expect(updated.trail).toStrictEqual(original.trail)
   })
 
   test('appends Step(Forward) and Jump at the end of the trail', () => {
@@ -153,7 +167,32 @@ describe('applyCommand', () => {
     expect(Result.isFailure(jumped)).toBe(true)
   })
 
-  test('evicts only the oldest trail entry while retaining its seen slug', () => {
+  test('appends an Open of a seen slug after it was evicted from the trail', () => {
+    const fullTrail = Array.from({ length: 500 }, (_, index) => entry(`tweet-${index}`, index))
+    const evicted = succeeds(
+      applyCommand(
+        session(fullTrail, 499),
+        { _tag: 'Step', direction: 'Forward' },
+        Option.some(destination('tweet-500', 500))
+      )
+    )
+
+    const reopened = succeeds(
+      applyCommand(
+        evicted,
+        { _tag: 'Open', slug: slug('tweet-0') },
+        Option.some(destination('tweet-0', 501))
+      )
+    )
+
+    expect(reopened.trail).toHaveLength(500)
+    expect(reopened.trail[0]?.slug).toBe(slug('tweet-2'))
+    expect(reopened.trail[499]?.slug).toBe(slug('tweet-0'))
+    expect(reopened.cursor).toBe(499)
+    expect(reopened.seenSlugs.has(slug('tweet-0'))).toBe(true)
+  })
+
+  test('keeps seen slugs unavailable to Step(Forward) and Jump after trail eviction', () => {
     const fullTrail = Array.from({ length: 500 }, (_, index) => entry(`tweet-${index}`, index))
     const original = session(fullTrail, 499)
 

@@ -102,9 +102,12 @@ const appendResolved = (
 ): Result.Result<NavigationSession, NoSuchMove> => {
   if (
     Option.isNone(resolved) ||
-    session.seenSlugs.has(resolved.value.slug) ||
     session.trail.some((entry) => entry.slug === resolved.value.slug)
   ) {
+    return Result.fail(noSuchMove(command))
+  }
+
+  if (command._tag !== 'Open' && session.seenSlugs.has(resolved.value.slug)) {
     return Result.fail(noSuchMove(command))
   }
 
