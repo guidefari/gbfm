@@ -392,6 +392,28 @@ export function useMicroPostSearch(q: string, limit = DEFAULT_PAGE_SIZE) {
   }
 }
 
+export function useGlobalSearch(q: string, limit = 10) {
+  const trimmed = q.trim()
+  const { data, error, isPending } = useQuery({
+    queryKey: ['search', 'global', trimmed, limit],
+    queryFn: async () => {
+      const client = await getApiClient()
+      const result = await Effect.runPromise(
+        client.search
+          .searchContent({ query: { q: trimmed, limit } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'search.searchContent' })
+            )
+          )
+      )
+      return result
+    },
+    enabled: trimmed.length > 0
+  })
+  return { data, error, isPending }
+}
+
 export function useAdjacentMicroPosts(slug: string) {
   const { data, error, isPending } = useQuery({
     queryKey: ['post', 'micro', slug, 'adjacent'],

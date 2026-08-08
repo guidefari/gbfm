@@ -7,8 +7,9 @@ import {
   DropdownMenuTrigger
 } from '@gbfm/ui'
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
-import { LayoutDashboard, LogOut, Pause, Play } from 'lucide-react'
-import { useCallback } from 'react'
+import { LayoutDashboard, LogOut, Pause, Play, Search } from 'lucide-react'
+import { useCallback, useState } from 'react'
+import { GlobalSearchDialog } from '@/components/GlobalSearchDialog'
 import { GoosebumpsLogo } from '@/components/icons/GoosebumpsLogo'
 import { signOut, useSession } from '@/lib/auth-client'
 import { cn } from '@/lib/utils'
@@ -164,6 +165,8 @@ function ProgressTicker() {
 }
 
 export function DesktopChrome({ className }: { className?: string }) {
+  const [searchOpen, setSearchOpen] = useState(false)
+
   return (
     <div
       className={cn(
@@ -181,12 +184,22 @@ export function DesktopChrome({ className }: { className?: string }) {
 
       <DesktopLinks />
 
+      <button
+        type='button'
+        onClick={() => setSearchOpen(true)}
+        aria-label='Search'
+        className='flex size-7 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
+        <Search className='h-3 w-3' />
+      </button>
+
       <div className='min-w-0 flex-1' />
 
       <div className='flex shrink-0 items-center gap-3'>
         <NowPlayingChip />
         <AccountMenu />
       </div>
+
+      <GlobalSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
     </div>
   )
 }

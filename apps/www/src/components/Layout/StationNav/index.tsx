@@ -1,7 +1,8 @@
 import { Sheet, SheetClose, SheetContent, SheetTitle } from '@gbfm/ui'
 import { Link, useLocation } from '@tanstack/react-router'
-import { BookOpen, Disc3, Menu, Pause, Play, X } from 'lucide-react'
+import { BookOpen, Disc3, Menu, Pause, Play, Search, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { GlobalSearchDialog } from '@/components/GlobalSearchDialog'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import {
@@ -62,6 +63,7 @@ function PlayerTab() {
 
 export function StationNav() {
   const [isOpen, setIsOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const { isFullscreenVisible } = useVisibility()
   const location = useLocation()
 
@@ -91,7 +93,7 @@ export function StationNav() {
       <nav
         aria-label='Primary'
         className='fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] lg:hidden'>
-        <div className='grid h-11 grid-cols-4'>
+        <div className='grid h-11 grid-cols-5'>
           <PlayerTab />
           <Link
             to='/shows'
@@ -109,6 +111,13 @@ export function StationNav() {
           </Link>
           <button
             type='button'
+            onClick={() => setSearchOpen(true)}
+            aria-label='Search'
+            className={tabClass}>
+            <Search className='h-5 w-5' strokeWidth={1.75} />
+          </button>
+          <button
+            type='button'
             onClick={open}
             aria-label='Menu'
             aria-expanded={isOpen}
@@ -118,6 +127,8 @@ export function StationNav() {
           </button>
         </div>
       </nav>
+
+      <GlobalSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
 
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetContent

@@ -7,7 +7,8 @@ export const SearchResultItem = Schema.Struct({
   slug: Schema.String,
   type: Schema.String,
   thumbnailUrl: Schema.NullOr(Schema.String),
-  description: Schema.NullOr(Schema.String)
+  description: Schema.NullOr(Schema.String),
+  showSlug: Schema.optional(Schema.NullOr(Schema.String))
 })
 export type SearchResultItem = typeof SearchResultItem.Type
 
