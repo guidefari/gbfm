@@ -18,6 +18,7 @@ import type {
 } from '@gbfm/vps/schemas'
 import { useCallback } from 'react'
 import { Effect, Option, Schema } from 'effect'
+import { HttpApiError } from 'effect/unstable/httpapi'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { RuntimeClient } from '@/runtime'
 import { captureException } from '@/services/analytics'
@@ -411,6 +412,29 @@ export function useGlobalSearch(q: string, limit = 10) {
     enabled: trimmed.length > 0
   })
   return { data, error, isPending }
+}
+
+export function useNavigateMicroPosts() {
+  const navigateMicroPostsEffect = useCallback(
+    (
+      payload: Parameters<
+        Awaited<ReturnType<typeof getApiClient>>['navigation']['navigateMicroPosts']
+      >[0]['payload']
+    ) =>
+      Effect.promise(() => getApiClient()).pipe(
+        Effect.flatMap((client) => client.navigation.navigateMicroPosts({ payload })),
+        Effect.retry({
+          times: 1,
+          while: (error) => error instanceof HttpApiError.InternalServerError
+        }),
+        Effect.tapError((error) =>
+          Effect.sync(() => captureException(error, { endpoint: 'navigation.navigateMicroPosts' }))
+        )
+      ),
+    []
+  )
+
+  return { navigateMicroPostsEffect }
 }
 
 export function useAdjacentMicroPosts(slug: string) {
