@@ -6,7 +6,6 @@ import {
   DialogHeader,
   DialogTitle
 } from '@gbfm/ui'
-import type { SelectMdxCompiledMicroPost } from '@gbfm/vps/schemas'
 import { toPng } from 'html-to-image'
 import { Loader2 } from 'lucide-react'
 import { useRef, useState } from 'react'
@@ -30,8 +29,16 @@ const formats = [
 
 type FormatKey = (typeof formats)[number]['key']
 
+export type TweetDownloadPost = {
+  title: string | null
+  createdAt: Date | string | null
+  musicEntityType: string | null
+  musicEntityId: string | null
+  creators?: ReadonlyArray<{ name: string; username: string | null }>
+}
+
 type Props = {
-  post: SelectMdxCompiledMicroPost
+  post: TweetDownloadPost
   slug: string
   open: boolean
   onOpenChange: (open: boolean) => void

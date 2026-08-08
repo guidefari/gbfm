@@ -5,6 +5,7 @@ import { MDXRendrr } from '@/components/MDXRendrr'
 import { RouteError } from '@/components/RouteError'
 import { TweetActionsMenu } from '@/components/TweetActionsMenu'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
+import { TweetCardActions } from '@/components/TweetCardActions'
 import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
 import { TweetNav } from '@/components/TweetNav'
 import { TweetParentPreview } from '@/components/TweetParentPreview'
@@ -14,6 +15,7 @@ import { TweetReplyList } from '@/components/TweetReplyList'
 import { TweetTagLinks } from '@/components/TweetTagLinks'
 import { useSession } from '@/lib/auth-client'
 import { getApiClient } from '@/lib/api-client'
+import { useMicroPostReplies } from '@/lib/http'
 import { generateMicroPostSEO, generateSEOMeta } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
 import { useRecordTweetViewed } from '@/store/tweetSeen'
@@ -68,6 +70,12 @@ function TweetPostPage() {
   const { data: session } = useSession()
   const user = session?.user
   const recordViewed = useRecordTweetViewed()
+  const { data: repliesData } = useMicroPostReplies(slug)
+  const replyCount = repliesData?.data.length ?? 0
+
+  const scrollToReplies = () => {
+    document.getElementById('replies')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   useEffect(() => {
     recordViewed({ postId: post.id, slug })
@@ -124,12 +132,22 @@ function TweetPostPage() {
             <TweetTagLinks tags={post.tags} />
           </div>
         )}
+
+        <div className='border-t border-border/40 pt-3'>
+          <TweetCardActions
+            post={post}
+            slug={slug}
+            canEdit={canEdit}
+            replyCount={replyCount}
+            onReplyCountClick={scrollToReplies}
+          />
+        </div>
       </article>
-      <div className='mt-6 space-y-4'>
+      <div id='replies' className='mt-6 scroll-mt-4 space-y-4'>
         <TweetReplyComposer parentSlug={slug} />
         <TweetReplyList parentSlug={slug} />
       </div>
-      <TweetActionsMenu post={post} slug={slug} canEdit={canEdit} />
+      <TweetActionsMenu />
     </div>
   )
 }
