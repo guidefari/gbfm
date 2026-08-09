@@ -35,3 +35,16 @@ Postgres stops at the first missing constraint. The M1 fixture omits only those
 two redundant `DROP CONSTRAINT` statements and applies all remaining tracked
 SQL. This exception must be removed by repairing the migration history, not
 carried into the D1 migration toolchain.
+
+## 2026-08-09: Tag and genre normalization design is incomplete
+
+The M3 instruction requires all seven source `varchar[]` declarations to be
+normalized, except `artistNames`, and names only `tags`, `audio_tags`,
+`post_tags`, and `show_tags` as the replacement design. Those join tables
+cannot represent `music_artists.genres`, `music_albums.genres`,
+`music_labels.tags`, or `music_labels.genres`; `releases.tags` is also inherited
+from the shared content fields but has no named join table. The current API
+schemas expose these fields as arrays.
+
+M3 needs an approved table and API projection design for genres and the label
+and release tag surfaces before their array columns can be removed safely.
