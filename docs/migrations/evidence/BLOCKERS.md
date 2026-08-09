@@ -49,5 +49,12 @@ schemas expose these fields as arrays.
 M3 needs an approved table and API projection design for genres and the label
 and release tag surfaces before their array columns can be removed safely.
 
-HALT-CHAIN: M3 cannot complete schema translation until the normalization model
-for genres and label/release tags is approved.
+**RESOLVED 2026-08-09.** The halt was correct: the spec named only
+audio_tags/post_tags/show_tags and omitted `releases.tags` and all four `genres`
+columns. There are 9 array columns across 8 tables, and `tags` arrives via the
+`defaultContentFields` spread rather than being declared per table.
+
+Approved design is now in `postgres-to-d1.md` under "Tags: array column to join
+table": a shared polymorphic `labels(kind, name)` + `entity_labels(entity_type,
+entity_id, label_id)` pair, rather than six per-table join tables. Committed in
+`227ed2e9`. M3 may proceed.
