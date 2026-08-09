@@ -23,7 +23,7 @@ lives only on this machine until someone pushes.
 | Branch | State | Contains |
 | --- | --- | --- |
 | `prod` (local) | 22 ahead of `origin/prod` | M1 + M2 D1 work, the spec and evidence docs, **and the R2 agent's commits** |
-| `d1-m3-schema` | branched off `prod`, 0 commits, 49 files dirty | All M3 schema translation. Agent working here now. |
+| `d1-m3-schema` | 1 commit ahead of `prod`, clean | All M3 schema translation. **Ready for review.** |
 | `origin/prod` | 12 hours old | Last pushed state. Predates all D1 work. |
 | `dev` | 13 hours old | `fix(ci): stop building retired backup image` |
 
@@ -51,7 +51,7 @@ grep.
 | --- | --- | --- | --- |
 | M1 audit and fixtures | OPS-245 | **Done** | `prod` |
 | M2 decouple `db` from module scope | OPS-246 | **Done** | `prod` |
-| M3 schema and query translation | OPS-247 | **In progress**, not green | `d1-m3-schema` |
+| M3 schema and query translation | OPS-247 | **Done**, green, awaiting review | `d1-m3-schema` |
 | M4 Worker runtime and Alchemy stack | OPS-248 | Not started (halted, unblocked) | - |
 | M5 data migration tooling | OPS-249 | Not started | - |
 | Cutover | OPS-250 | **Human only**, not started | - |
@@ -84,48 +84,57 @@ blocker for Workers, which have no database handle at module scope.
 
 Shipped on Postgres with no behaviour change. 38 test files, 402 tests passing.
 
-### M3: built, not finished
+### M3: done and green
 
-On `d1-m3-schema`, uncommitted (49 files) because `bun precommit` is red and the
-agent rules correctly forbid committing red.
+One commit on `d1-m3-schema`: `feat(db): translate schemas to D1 (OPS-247)`,
+64 files, +7333/-1280. Verified independently, not just self-reported:
 
-Done:
+- `bun precommit` passes across all 8 packages;
+- 7 D1 tests pass via the Miniflare harness, no Docker;
+- zero `as any`, zero `as unknown`, zero deleted or skipped tests.
 
-- all 14 schema files translated from `pg-core` to `sqlite-core`, 43 tables;
-- polymorphic `labels` / `entity_labels` tables replacing all nine array columns;
-- **`entity_labels.position`**, added by the agent and not in the spec, so tag
-  order survives the array-to-rows move;
-- standalone trigram FTS5 tables with maintenance triggers for audio, posts, shows;
+Contents:
+
+- all 14 schema files translated to `sqlite-core`, 43 tables, with a generated
+  standalone SQLite baseline in `apps/vps/drizzle-d1/` kept separate from the
+  Postgres migration history;
+- polymorphic `labels` / `entity_labels` replacing all nine array columns, with
+  `entity_labels.position` preserving source array order;
+- `db/labels.ts`: the read and write projections, including a batch
+  `projectEntityLabelsForRows` that avoids N+1 on list endpoints;
+- standalone trigram FTS5 tables and maintenance triggers; `search.service.ts`
+  now uses `ftsMatches` with a `LIKE`/`lower()` path for short queries;
 - navigation partial unique indexes preserved;
-- Better Auth switched to the SQLite provider;
-- Miniflare D1 test harness, no Docker required, 5 tests passing;
-- batch label deletion wired into six delete paths.
+- Better Auth on the SQLite provider.
 
-Not done, and the reason it is not green:
+Two deliberate compromises, both documented in `evidence/d1-m3-report.md`:
 
-- **tag/genre read and write projections.** The physical array columns are gone
-  but services and HTTP handlers still read them as arrays. This is the real
-  remaining work and what the running agent is doing.
-- 41 typecheck errors across 18 files, most of them the Postgres runtime
-  (`scripts/`, `migrate.ts`, `runtime/services.ts`, `test/database.ts`) that M4
-  replaces.
-- `navigation.service.ts` uses `.for('update')`, which SQLite does not have. It
-  is the single category C site and needs the M4 Durable Object. It must not be
-  converted to a non-atomic shim.
+- **`navigation.service.ts` keeps `.for('update')` under two `@ts-expect-error`
+  comments.** SQLite has no `SELECT FOR UPDATE`. This is the single category C
+  site. Suppressing the type error preserves the Postgres runtime semantics
+  until M4 replaces the transaction with a Durable Object. The alternative,
+  deleting `.for('update')` to satisfy the compiler, would silently break
+  navigation locking, which is strictly worse.
+- **Eight `scripts/*.ts` excluded from typecheck**, each listed individually with
+  a reason. Seven are historical one-off maintenance scripts. The eighth,
+  `scripts/seed-music-lookups.ts`, is **live tooling**: it runs as part of
+  `db:migrate` in `apps/vps/package.json`. M4 must port it, not delete it. Do not
+  let this exclusion quietly become permanent.
 
 ## What is next
 
-1. **Finish M3 to green.** Agent running now on `d1-m3-schema`. Definition of done
-   is `bun precommit` passing plus the 5 D1 tests still passing, with everything
-   deferred to M4 recorded explicitly.
-2. **Review the M3 diff** (`git diff prod..d1-m3-schema`) and merge if sound.
-3. **M4: Worker runtime and Alchemy stack.** Unblocked now that the package name
+1. **Review the M3 diff** (`git diff prod..d1-m3-schema`, one commit) and merge
+   if sound. This is the current blocking step: nothing else runs until you have
+   looked at it.
+2. **M4: Worker runtime and Alchemy stack.** Unblocked now that the package name
    is settled. Includes the navigation Durable Object, the `apps/vps` to
    `apps/server` rename, Cron plus Queue for reminders, rate-limiter deletion,
    the SSE-to-polling change in `apps/www`, and a bundle re-measurement after the
-   Cloudflare Sentry SDK is wired.
-4. **M5: data migration tooling.** Blocked by OPS-252.
-5. **Cutover.** Human only. See the checklist on OPS-250.
+   Cloudflare Sentry SDK is wired. Also: port `seed-music-lookups.ts` and remove
+   its typecheck exclusion, and replace the two `@ts-expect-error` suppressions in
+   `navigation.service.ts` with the Durable Object.
+3. **M5: data migration tooling.** Blocked by OPS-252.
+4. **Cutover.** Human only. See the checklist on OPS-250.
 
 ## Open decisions and outstanding facts
 
