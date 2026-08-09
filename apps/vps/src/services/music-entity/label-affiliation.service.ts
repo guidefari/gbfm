@@ -1,6 +1,6 @@
 import { and, asc, eq, lte, sql } from 'drizzle-orm'
 import { Effect } from 'effect'
-import { databaseClient as DbType } from '@/db/layer'
+import type { DatabaseClient } from '@/db/layer'
 import {
   musicAlbumsTable,
   musicArtistsTable,
@@ -12,7 +12,7 @@ import { DatabaseError, getErrorMessage } from '@/errors'
 import { requireOne } from './shared'
 
 const findRequiredEntity = (
-  db: typeof DbType,
+  db: DatabaseClient,
   entity: 'MusicLabel' | 'MusicArtist' | 'MusicAlbum',
   id: string
 ) => {
@@ -44,7 +44,7 @@ const findRequiredEntity = (
 }
 
 /** Lists all artists affiliated with a label for administrative management. */
-export const getArtistsForLabelEffect = (db: typeof DbType) => (labelId: string) =>
+export const getArtistsForLabelEffect = (db: DatabaseClient) => (labelId: string) =>
   Effect.tryPromise({
     try: async () => {
       const rows = await db
@@ -64,7 +64,7 @@ export const getArtistsForLabelEffect = (db: typeof DbType) => (labelId: string)
   }).pipe(Effect.withSpan('musicEntity.getArtistsForLabel', { attributes: { labelId } }))
 
 /** Lists published artists affiliated with a label for public rendering. */
-export const getPublishedArtistsForLabelEffect = (db: typeof DbType) => (labelId: string) =>
+export const getPublishedArtistsForLabelEffect = (db: DatabaseClient) => (labelId: string) =>
   Effect.tryPromise({
     try: async () => {
       const rows = await db
@@ -89,7 +89,7 @@ export const getPublishedArtistsForLabelEffect = (db: typeof DbType) => (labelId
   }).pipe(Effect.withSpan('musicEntity.getPublishedArtistsForLabel', { attributes: { labelId } }))
 
 /** Lists all albums affiliated with a label for administrative management. */
-export const getAlbumsForLabelEffect = (db: typeof DbType) => (labelId: string) =>
+export const getAlbumsForLabelEffect = (db: DatabaseClient) => (labelId: string) =>
   Effect.tryPromise({
     try: async () => {
       const rows = await db
@@ -109,7 +109,7 @@ export const getAlbumsForLabelEffect = (db: typeof DbType) => (labelId: string) 
   }).pipe(Effect.withSpan('musicEntity.getAlbumsForLabel', { attributes: { labelId } }))
 
 /** Lists published albums affiliated with a label for public rendering. */
-export const getPublishedAlbumsForLabelEffect = (db: typeof DbType) => (labelId: string) =>
+export const getPublishedAlbumsForLabelEffect = (db: DatabaseClient) => (labelId: string) =>
   Effect.tryPromise({
     try: async () => {
       const rows = await db
@@ -134,7 +134,7 @@ export const getPublishedAlbumsForLabelEffect = (db: typeof DbType) => (labelId:
   }).pipe(Effect.withSpan('musicEntity.getPublishedAlbumsForLabel', { attributes: { labelId } }))
 
 /** Lists every label affiliated with an artist. */
-export const getLabelsForArtistEffect = (db: typeof DbType) => (artistId: string) =>
+export const getLabelsForArtistEffect = (db: DatabaseClient) => (artistId: string) =>
   Effect.tryPromise({
     try: async () => {
       const rows = await db
@@ -154,7 +154,7 @@ export const getLabelsForArtistEffect = (db: typeof DbType) => (artistId: string
   }).pipe(Effect.withSpan('musicEntity.getLabelsForArtist', { attributes: { artistId } }))
 
 /** Lists every label affiliated with an album. */
-export const getLabelsForAlbumEffect = (db: typeof DbType) => (albumId: string) =>
+export const getLabelsForAlbumEffect = (db: DatabaseClient) => (albumId: string) =>
   Effect.tryPromise({
     try: async () => {
       const rows = await db
@@ -175,7 +175,7 @@ export const getLabelsForAlbumEffect = (db: typeof DbType) => (albumId: string) 
 
 /** Creates an idempotent factual affiliation between a label and an artist. */
 export const affiliateArtistWithLabelEffect =
-  (db: typeof DbType) => (labelId: string, artistId: string) =>
+  (db: DatabaseClient) => (labelId: string, artistId: string) =>
     Effect.gen(function* () {
       yield* Effect.all([
         findRequiredEntity(db, 'MusicLabel', labelId),
@@ -200,7 +200,7 @@ export const affiliateArtistWithLabelEffect =
 
 /** Removes a factual affiliation between a label and an artist. */
 export const unaffiliateArtistFromLabelEffect =
-  (db: typeof DbType) => (labelId: string, artistId: string) =>
+  (db: DatabaseClient) => (labelId: string, artistId: string) =>
     Effect.tryPromise({
       try: () =>
         db
@@ -226,7 +226,7 @@ export const unaffiliateArtistFromLabelEffect =
 
 /** Creates an idempotent factual affiliation between a label and an album. */
 export const affiliateAlbumWithLabelEffect =
-  (db: typeof DbType) => (labelId: string, albumId: string) =>
+  (db: DatabaseClient) => (labelId: string, albumId: string) =>
     Effect.gen(function* () {
       yield* Effect.all([
         findRequiredEntity(db, 'MusicLabel', labelId),
@@ -251,7 +251,7 @@ export const affiliateAlbumWithLabelEffect =
 
 /** Removes a factual affiliation between a label and an album. */
 export const unaffiliateAlbumFromLabelEffect =
-  (db: typeof DbType) => (labelId: string, albumId: string) =>
+  (db: DatabaseClient) => (labelId: string, albumId: string) =>
     Effect.tryPromise({
       try: () =>
         db

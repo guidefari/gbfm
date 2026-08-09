@@ -1,6 +1,6 @@
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { Effect } from 'effect'
-import { databaseClient as DbType } from '@/db/layer'
+import type { DatabaseClient } from '@/db/layer'
 import { musicTrackArtistsTable, musicTracksTable } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { toSlug } from '@/services/to-slug'
@@ -18,7 +18,7 @@ export interface CreateTrackInput {
   createdById?: string | null
 }
 
-export const createTrackEffect = (db: typeof DbType) =>
+export const createTrackEffect = (db: DatabaseClient) =>
   Effect.fn('musicEntity.createTrack')(function* (data: CreateTrackInput) {
     const { artistIds, ...trackData } = data
 
@@ -55,7 +55,7 @@ export const createTrackEffect = (db: typeof DbType) =>
     })
   })
 
-export const getTracksEffect = (db: typeof DbType) => () =>
+export const getTracksEffect = (db: DatabaseClient) => () =>
   Effect.tryPromise({
     try: () => db.select().from(musicTracksTable).orderBy(desc(musicTracksTable.createdAt)),
     catch: (e) =>
@@ -66,7 +66,7 @@ export const getTracksEffect = (db: typeof DbType) => () =>
       })
   }).pipe(Effect.withSpan('musicEntity.getTracks'))
 
-export const getTrackByIdEffect = (db: typeof DbType) => (id: string) =>
+export const getTrackByIdEffect = (db: DatabaseClient) => (id: string) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
       try: () => db.select().from(musicTracksTable).where(eq(musicTracksTable.id, id)).limit(1),
@@ -81,7 +81,7 @@ export const getTrackByIdEffect = (db: typeof DbType) => (id: string) =>
   }).pipe(Effect.withSpan('musicEntity.getTrackById', { attributes: { id } }))
 
 export const updateTrackEffect =
-  (db: typeof DbType) => (id: string, data: Partial<CreateTrackInput>) =>
+  (db: DatabaseClient) => (id: string, data: Partial<CreateTrackInput>) =>
     Effect.gen(function* () {
       const { artistIds, ...trackData } = data
       if (trackData.title && !trackData.slug) {
@@ -126,7 +126,7 @@ export const updateTrackEffect =
       })
     }).pipe(Effect.withSpan('musicEntity.updateTrack', { attributes: { id } }))
 
-export const deleteTrackEffect = (db: typeof DbType) => (id: string) =>
+export const deleteTrackEffect = (db: DatabaseClient) => (id: string) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
       try: () =>
@@ -148,7 +148,7 @@ export const deleteTrackEffect = (db: typeof DbType) => (id: string) =>
   }).pipe(Effect.withSpan('musicEntity.deleteTrack', { attributes: { id } }))
 
 export const addArtistToTrackEffect =
-  (db: typeof DbType) =>
+  (db: DatabaseClient) =>
   (trackId: string, artistId: string, opts?: { role?: string; displayOrder?: number }) =>
     Effect.tryPromise({
       try: () =>
@@ -178,7 +178,7 @@ export const addArtistToTrackEffect =
     )
 
 export const removeArtistFromTrackEffect =
-  (db: typeof DbType) => (trackId: string, artistId: string) =>
+  (db: DatabaseClient) => (trackId: string, artistId: string) =>
     Effect.tryPromise({
       try: () =>
         db

@@ -4,7 +4,6 @@ import type { Pool } from 'pg'
 import * as schema from './exports'
 
 export type DatabaseClient = NodePgDatabase<typeof schema> & { readonly $client: Pool }
-export declare const databaseClient: DatabaseClient
 
 export class Database extends Context.Service<Database, DatabaseClient>()('Database') {}
 

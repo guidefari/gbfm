@@ -1,6 +1,6 @@
 import { and, desc, eq } from 'drizzle-orm'
 import { Effect } from 'effect'
-import { databaseClient as DbType } from '@/db/layer'
+import type { DatabaseClient } from '@/db/layer'
 import { musicEntityLinksTable, musicPlaylistsTable } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { toSlug } from '@/services/to-slug'
@@ -16,7 +16,7 @@ export interface CreatePlaylistInput {
   createdById?: string | null
 }
 
-export const createPlaylistEffect = (db: typeof DbType) =>
+export const createPlaylistEffect = (db: DatabaseClient) =>
   Effect.fn('musicEntity.createPlaylist')(function* (data: CreatePlaylistInput) {
     const rows = yield* Effect.tryPromise({
       try: () => db.insert(musicPlaylistsTable).values(data).returning(),
@@ -30,7 +30,7 @@ export const createPlaylistEffect = (db: typeof DbType) =>
     return yield* requireInserted(rows, 'music_playlists')
   })
 
-export const getPlaylistsEffect = (db: typeof DbType) => () =>
+export const getPlaylistsEffect = (db: DatabaseClient) => () =>
   Effect.tryPromise({
     try: async () => {
       const rows = await db
@@ -58,7 +58,7 @@ export const getPlaylistsEffect = (db: typeof DbType) => () =>
       })
   }).pipe(Effect.withSpan('musicEntity.getPlaylists'))
 
-export const getPlaylistByIdEffect = (db: typeof DbType) => (id: string) =>
+export const getPlaylistByIdEffect = (db: DatabaseClient) => (id: string) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
       try: async () => {
@@ -91,7 +91,7 @@ export const getPlaylistByIdEffect = (db: typeof DbType) => (id: string) =>
   }).pipe(Effect.withSpan('musicEntity.getPlaylistById', { attributes: { id } }))
 
 export const updatePlaylistEffect =
-  (db: typeof DbType) => (id: string, data: Partial<CreatePlaylistInput>) =>
+  (db: DatabaseClient) => (id: string, data: Partial<CreatePlaylistInput>) =>
     Effect.gen(function* () {
       const updateData = { ...data }
       if (updateData.title && !updateData.slug) {
@@ -114,7 +114,7 @@ export const updatePlaylistEffect =
       return yield* requireOne(rows, 'MusicPlaylist', id)
     }).pipe(Effect.withSpan('musicEntity.updatePlaylist', { attributes: { id } }))
 
-export const deletePlaylistEffect = (db: typeof DbType) => (id: string) =>
+export const deletePlaylistEffect = (db: DatabaseClient) => (id: string) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
       try: () =>

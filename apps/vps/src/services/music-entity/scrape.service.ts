@@ -1,7 +1,7 @@
 import { LINK_STATUS } from '@gbfm/core/status'
 import { and, eq } from 'drizzle-orm'
 import { Effect } from 'effect'
-import { databaseClient as DbType } from '@/db/layer'
+import type { DatabaseClient } from '@/db/layer'
 import {
   type MusicEntityType,
   musicEntityLinksTable,
@@ -42,7 +42,7 @@ function isScrapeableMusicEntityType(value: string): value is ScrapeableMusicEnt
 }
 
 const findExistingEntityByUrl =
-  (db: typeof DbType) => (url: string, entityType: ScrapeableMusicEntityType) =>
+  (db: DatabaseClient) => (url: string, entityType: ScrapeableMusicEntityType) =>
     Effect.tryPromise({
       try: () =>
         db
@@ -64,7 +64,7 @@ const findExistingEntityByUrl =
     }).pipe(Effect.withSpan('musicEntity.findExistingEntityByUrl'))
 
 const getEntityById =
-  (db: typeof DbType) =>
+  (db: DatabaseClient) =>
   (
     entityType: ScrapeableMusicEntityType,
     entityId: string
@@ -85,7 +85,7 @@ const getEntityById =
   }
 
 export const scrapeAndCreateEntityEffect =
-  (db: typeof DbType, scraper: MusicLinkScraperService) =>
+  (db: DatabaseClient, scraper: MusicLinkScraperService) =>
   (entityType: ScrapeableMusicEntityType, input: MusicScrapeInput) =>
     Effect.gen(function* () {
       if (input.url) {

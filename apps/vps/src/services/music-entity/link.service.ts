@@ -1,7 +1,7 @@
 import { LINK_STATUS, type LinkStatus } from '@gbfm/core/status'
 import { and, eq, sql } from 'drizzle-orm'
 import { Effect } from 'effect'
-import { databaseClient as DbType } from '@/db/layer'
+import type { DatabaseClient } from '@/db/layer'
 import {
   type InsertMusicEntityLink,
   type MusicEntityType,
@@ -11,7 +11,7 @@ import { DatabaseError, getErrorMessage } from '@/errors'
 import { requireInserted, requireOne } from './shared'
 
 export const getLinksForEntityEffect =
-  (db: typeof DbType) =>
+  (db: DatabaseClient) =>
   (entityType: MusicEntityType, entityId: string, statusFilter?: LinkStatus) =>
     Effect.tryPromise({
       try: () => {
@@ -44,7 +44,7 @@ export const getLinksForEntityEffect =
       })
     )
 
-export const addLinkEffect = (db: typeof DbType) =>
+export const addLinkEffect = (db: DatabaseClient) =>
   Effect.fn('musicEntity.addLink')(function* (data: InsertMusicEntityLink) {
     const rows = yield* Effect.tryPromise({
       try: () =>
@@ -76,7 +76,7 @@ export const addLinkEffect = (db: typeof DbType) =>
   })
 
 export const updateLinkStatusEffect =
-  (db: typeof DbType) =>
+  (db: DatabaseClient) =>
   (
     entityType: MusicEntityType,
     entityId: string,
@@ -126,7 +126,7 @@ export const updateLinkStatusEffect =
     )
 
 export const deleteLinkEffect =
-  (db: typeof DbType) => (entityType: MusicEntityType, entityId: string, linkId: string) =>
+  (db: DatabaseClient) => (entityType: MusicEntityType, entityId: string, linkId: string) =>
     Effect.gen(function* () {
       const rows = yield* Effect.tryPromise({
         try: () =>

@@ -1,7 +1,7 @@
 import { LINK_STATUS } from '@gbfm/core/status'
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import { Effect } from 'effect'
-import { databaseClient as DbType } from '@/db/layer'
+import type { DatabaseClient } from '@/db/layer'
 import {
   musicEntityLinksTable,
   musicPlaylistsTable,
@@ -29,7 +29,7 @@ import {
 } from './shared'
 import { updateTrackEffect } from './track.service'
 
-export const getPlaylistTracksEffect = (db: typeof DbType) => (playlistId: string) =>
+export const getPlaylistTracksEffect = (db: DatabaseClient) => (playlistId: string) =>
   Effect.tryPromise({
     try: async () => {
       const rows = await db
@@ -81,7 +81,7 @@ export const getPlaylistTracksEffect = (db: typeof DbType) => (playlistId: strin
     })
   )
 
-export const addTrackToPlaylistEffect = (db: typeof DbType) =>
+export const addTrackToPlaylistEffect = (db: DatabaseClient) =>
   Effect.fn('musicEntity.addTrackToPlaylist')(function* (
     playlistId: string,
     trackId: string,
@@ -108,7 +108,7 @@ export const addTrackToPlaylistEffect = (db: typeof DbType) =>
   })
 
 export const removeTrackFromPlaylistEffect =
-  (db: typeof DbType) => (playlistId: string, trackId: string) =>
+  (db: DatabaseClient) => (playlistId: string, trackId: string) =>
     Effect.tryPromise({
       try: () =>
         db
@@ -133,7 +133,7 @@ export const removeTrackFromPlaylistEffect =
     )
 
 export const reorderPlaylistTracksEffect =
-  (db: typeof DbType) => (playlistId: string, trackIds: string[]) =>
+  (db: DatabaseClient) => (playlistId: string, trackIds: string[]) =>
     Effect.tryPromise({
       try: () =>
         db.transaction(async (tx) => {
@@ -221,7 +221,7 @@ const copyCoverImageToCdnEffect = (
   }).pipe(Effect.catch(() => Effect.succeed(null)))
 
 const enrichTrackLinksEffect = (
-  db: typeof DbType,
+  db: DatabaseClient,
   scraper: MusicLinkScraperService,
   s3: S3Service,
   cdnUrl: string,
@@ -304,7 +304,7 @@ const enrichTrackLinksEffect = (
   )
 
 const enrichImportedPlaylistLinksEffect = (
-  db: typeof DbType,
+  db: DatabaseClient,
   scraper: MusicLinkScraperService,
   s3: S3Service,
   cdnUrl: string,
@@ -345,7 +345,7 @@ const enrichImportedPlaylistLinksEffect = (
     )
   )
 
-const getPlaylistLinkSyncTargetsEffect = (db: typeof DbType) => (playlistId: string) =>
+const getPlaylistLinkSyncTargetsEffect = (db: DatabaseClient) => (playlistId: string) =>
   Effect.gen(function* () {
     const rows = yield* getPlaylistTracksEffect(db)(playlistId)
     return rows.flatMap((row) => {
@@ -366,7 +366,7 @@ const getPlaylistLinkSyncTargetsEffect = (db: typeof DbType) => (playlistId: str
     })
   )
 
-const getSpotifyPlaylistUrlEffect = (db: typeof DbType) => (playlistId: string) =>
+const getSpotifyPlaylistUrlEffect = (db: DatabaseClient) => (playlistId: string) =>
   Effect.tryPromise({
     try: async () => {
       const rows = await db
@@ -395,7 +395,7 @@ const getSpotifyPlaylistUrlEffect = (db: typeof DbType) => (playlistId: string) 
   )
 
 const refreshPlaylistCoverImageEffect = (
-  db: typeof DbType,
+  db: DatabaseClient,
   spotify: SpotifyService,
   s3: S3Service,
   cdnUrl: string,
@@ -449,7 +449,7 @@ const refreshPlaylistCoverImageEffect = (
     })
   )
 
-export const addSpotifyTrackToPlaylistEffect = (db: typeof DbType, spotify: SpotifyService) =>
+export const addSpotifyTrackToPlaylistEffect = (db: DatabaseClient, spotify: SpotifyService) =>
   Effect.fn('musicEntity.addSpotifyTrackToPlaylist')(function* (
     playlistId: string,
     spotifyUrl: string
@@ -553,7 +553,7 @@ export const addSpotifyTrackToPlaylistEffect = (db: typeof DbType, spotify: Spot
   })
 
 export const importSpotifyPlaylistEffect = (
-  db: typeof DbType,
+  db: DatabaseClient,
   spotify: SpotifyService,
   scraper: MusicLinkScraperService,
   s3: S3Service,
@@ -747,7 +747,7 @@ export const importSpotifyPlaylistEffect = (
   })
 
 export const syncPlaylistLinksEffect = (
-  db: typeof DbType,
+  db: DatabaseClient,
   spotify: SpotifyService,
   scraper: MusicLinkScraperService,
   s3: S3Service,

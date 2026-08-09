@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm'
 import { Data, Effect } from 'effect'
-import { databaseClient as DbType } from '@/db/layer'
+import type { DatabaseClient } from '@/db/layer'
 import {
   type MusicEntityType,
   type musicAlbumsTable,
@@ -16,7 +16,7 @@ export class FetchError extends Data.TaggedError('FetchError')<{
   readonly cause?: unknown
 }> {}
 
-export type DrizzleTransaction = Parameters<Parameters<typeof DbType.transaction>[0]>[0]
+export type DrizzleTransaction = Parameters<Parameters<DatabaseClient['transaction']>[0]>[0]
 
 export type ImportedTrackTarget = {
   trackId: string

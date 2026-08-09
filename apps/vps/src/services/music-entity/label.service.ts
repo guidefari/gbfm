@@ -1,6 +1,6 @@
 import { and, desc, eq, lte } from 'drizzle-orm'
 import { Effect } from 'effect'
-import { databaseClient as DbType } from '@/db/layer'
+import type { DatabaseClient } from '@/db/layer'
 import { user as usersTable } from '@/db/auth.schema'
 import {
   musicLabelCreatorsTable,
@@ -26,7 +26,7 @@ export interface CreateLabelInput {
   createdById?: string | null
 }
 
-export const createLabelEffect = (db: typeof DbType) =>
+export const createLabelEffect = (db: DatabaseClient) =>
   Effect.fn('musicEntity.createLabel')(function* (data: CreateLabelInput) {
     const rows = yield* Effect.tryPromise({
       try: () =>
@@ -50,7 +50,7 @@ export const createLabelEffect = (db: typeof DbType) =>
     return yield* requireInserted(rows, 'music_labels')
   })
 
-export const getLabelsEffect = (db: typeof DbType) => (includeDrafts: boolean) =>
+export const getLabelsEffect = (db: DatabaseClient) => (includeDrafts: boolean) =>
   Effect.tryPromise({
     try: () =>
       db
@@ -66,7 +66,7 @@ export const getLabelsEffect = (db: typeof DbType) => (includeDrafts: boolean) =
       })
   }).pipe(Effect.withSpan('musicEntity.getLabels'))
 
-export const getLabelByIdEffect = (db: typeof DbType) => (id: string) =>
+export const getLabelByIdEffect = (db: DatabaseClient) => (id: string) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
       try: () => db.select().from(musicLabelsTable).where(eq(musicLabelsTable.id, id)).limit(1),
@@ -80,7 +80,7 @@ export const getLabelByIdEffect = (db: typeof DbType) => (id: string) =>
     return yield* requireOne(rows, 'MusicLabel', id)
   }).pipe(Effect.withSpan('musicEntity.getLabelById', { attributes: { id } }))
 
-export const getLabelBySlugEffect = (db: typeof DbType) => (slug: string) =>
+export const getLabelBySlugEffect = (db: DatabaseClient) => (slug: string) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
       try: () =>
@@ -132,7 +132,7 @@ export const getLabelBySlugEffect = (db: typeof DbType) => (slug: string) =>
   }).pipe(Effect.withSpan('musicEntity.getLabelBySlug', { attributes: { slug } }))
 
 export const updateLabelEffect =
-  (db: typeof DbType) => (id: string, data: Partial<CreateLabelInput>) =>
+  (db: DatabaseClient) => (id: string, data: Partial<CreateLabelInput>) =>
     Effect.gen(function* () {
       const updateData = { ...data }
       if (updateData.name && !updateData.slug) updateData.slug = toSlug(updateData.name)
@@ -153,7 +153,7 @@ export const updateLabelEffect =
       return yield* requireOne(rows, 'MusicLabel', id)
     }).pipe(Effect.withSpan('musicEntity.updateLabel', { attributes: { id } }))
 
-export const deleteLabelEffect = (db: typeof DbType) => (id: string) =>
+export const deleteLabelEffect = (db: DatabaseClient) => (id: string) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
       try: () =>
