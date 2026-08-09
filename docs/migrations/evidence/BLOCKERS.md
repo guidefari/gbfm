@@ -58,3 +58,13 @@ Approved design is now in `postgres-to-d1.md` under "Tags: array column to join
 table": a shared polymorphic `labels(kind, name)` + `entity_labels(entity_type,
 entity_id, label_id)` pair, rather than six per-table join tables. Committed in
 `227ed2e9`. M3 may proceed.
+
+## 2026-08-09: M2 database composition remains PostgreSQL-bound
+
+`apps/vps/src/runtime/services.ts` still imports the module-level `pg.Pool` from
+`db/index.ts` and constructs `DatabaseLayer(pool)`. Local D1 can only be supplied
+at a Worker or test composition seam, neither of which exists yet. M3 can translate
+the schema and local test harness, but its D1 client cannot replace the production
+runtime layer without beginning M4's Worker composition work. This must be resolved
+when the Worker request scope is introduced; do not route a D1 binding through the
+current module-level runtime.
