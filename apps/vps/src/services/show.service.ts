@@ -1,6 +1,8 @@
 import { and, asc, count, desc, eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { Database } from '@/db/layer'
+import { projectEntityLabels, projectEntityLabelsForRows, replaceEntityLabels } from '@/db/labels'
+import { entityLabelsTable } from '@/db/tags.schema'
 import { audioTable, type SelectAudio } from '@/db/audio.schema'
 import { showIdsForCreator } from '@/db/creator-membership'
 import {
@@ -121,7 +123,12 @@ const getAllEffect = (
         })
     })
 
-    const data = shows.map(({ showCreators: hosts, ...show }) => ({
+    const projectedShows = yield* Effect.tryPromise({
+      try: () => projectEntityLabelsForRows(db, 'show', shows),
+      catch: (error) =>
+        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+    })
+    const data = projectedShows.map(({ showCreators: hosts, ...show }) => ({
       ...show,
       hosts: hosts.map(({ creator }) => ({ id: creator.id, name: creator.name }))
     }))
@@ -163,9 +170,15 @@ const getBySlugEffect = (db: Database['Service'], slug: string, includeDrafts = 
     }
 
     const { showCreators: hosts, ...showFields } = show
+    const { tags } = yield* Effect.tryPromise({
+      try: () => projectEntityLabels(db, 'show', showFields),
+      catch: (error) =>
+        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+    })
 
     let processedShow: SelectMdxCompiledShow = {
       ...showFields,
+      tags,
       compiledContent: '',
       hosts: hosts.map(({ creator }) => ({
         id: creator.id,
@@ -197,26 +210,26 @@ const getBySlugEffect = (db: Database['Service'], slug: string, includeDrafts = 
 
 const createEffect = (db: Database['Service'], data: InsertShow, hostIds: string[]) =>
   Effect.gen(function* () {
+    const { tags, ...showData } = data
+    const id = crypto.randomUUID()
     const result = yield* Effect.tryPromise({
-      try: () =>
-        db.transaction(async (tx) => {
-          const [newShow] = await tx.insert(showsTable).values(data).returning()
-
-          if (!newShow) {
-            throw new Error('Failed to create show')
-          }
-
-          if (hostIds.length > 0) {
-            await tx.insert(showCreators).values(
-              hostIds.map((creatorId) => ({
-                showId: newShow.id,
-                creatorId
-              }))
-            )
-          }
-
-          return newShow
-        }),
+      try: async () => {
+        await db.batch([
+          db.insert(showsTable).values({ ...showData, id }),
+          ...(hostIds.length > 0
+            ? [
+                db
+                  .insert(showCreators)
+                  .values(hostIds.map((creatorId) => ({ showId: id, creatorId })))
+              ]
+            : [])
+        ])
+        const rows = await db.select().from(showsTable).where(eq(showsTable.id, id)).limit(1)
+        const show = rows[0]
+        if (!show) throw new Error('Failed to create show')
+        if (tags !== undefined) await replaceEntityLabels(db, 'show', show.id, { tags })
+        return show
+      },
       catch: (error) => {
         const errorMessage = getErrorMessage(error)
         if (errorMessage.includes('unique constraint')) {
@@ -239,7 +252,12 @@ const createEffect = (db: Database['Service'], data: InsertShow, hostIds: string
       }
     })
 
-    return result
+    const { tags: projectedTags } = yield* Effect.tryPromise({
+      try: () => projectEntityLabels(db, 'show', result),
+      catch: (error) =>
+        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+    })
+    return { ...result, tags: projectedTags }
   })
 
 const updateEffect = (
@@ -250,7 +268,7 @@ const updateEffect = (
   data: Partial<InsertShow> & { hostIds?: string[] }
 ) =>
   Effect.gen(function* () {
-    const { hostIds, ...updateData } = data
+    const { hostIds, tags, ...updateData } = data
 
     const existingRecords = yield* Effect.tryPromise({
       try: () => db.select().from(showsTable).where(eq(showsTable.slug, slug)).limit(1),
@@ -274,32 +292,30 @@ const updateEffect = (
     yield* requireCreatorOrAdmin(db, 'show', existingShow.id, userId, userRole)
 
     const updatedRecords = yield* Effect.tryPromise({
-      try: () =>
-        db.transaction(async (tx) => {
-          const [updatedShow] = await tx
-            .update(showsTable)
-            .set({ ...updateData, updatedAt: new Date() })
-            .where(eq(showsTable.id, existingShow.id))
-            .returning()
+      try: async () => {
+        const update = db
+          .update(showsTable)
+          .set({ ...updateData, updatedAt: new Date() })
+          .where(eq(showsTable.id, existingShow.id))
 
-          if (!updatedShow) {
-            throw new Error('Failed to update show')
-          }
+        if (hostIds) {
+          await db.batch([
+            update,
+            db.delete(showCreators).where(eq(showCreators.showId, existingShow.id)),
+            ...(hostIds.length > 0
+              ? [
+                  db
+                    .insert(showCreators)
+                    .values(hostIds.map((creatorId) => ({ showId: existingShow.id, creatorId })))
+                ]
+              : [])
+          ])
+        } else {
+          await db.batch([update])
+        }
 
-          if (hostIds) {
-            await tx.delete(showCreators).where(eq(showCreators.showId, updatedShow.id))
-
-            if (hostIds.length > 0) {
-              await tx.insert(showCreators).values(
-                hostIds.map((creatorId) => ({
-                  showId: updatedShow.id,
-                  creatorId
-                }))
-              )
-            }
-          }
-          return [updatedShow]
-        }),
+        return db.select().from(showsTable).where(eq(showsTable.id, existingShow.id)).limit(1)
+      },
       catch: (error) =>
         new DatabaseError({
           message: `Failed to update show: ${getErrorMessage(error)}`,
@@ -317,6 +333,18 @@ const updateEffect = (
       })
     }
 
+    if (tags !== undefined) {
+      yield* Effect.tryPromise({
+        try: () => replaceEntityLabels(db, 'show', updatedShow.id, { tags }),
+        catch: (error) =>
+          new DatabaseError({
+            message: getErrorMessage(error),
+            operation: 'update',
+            table: 'labels'
+          })
+      })
+    }
+
     const hostRows = yield* Effect.tryPromise({
       try: () =>
         db.query.showCreators.findMany({
@@ -331,8 +359,14 @@ const updateEffect = (
         })
     })
 
+    const { tags: projectedTags } = yield* Effect.tryPromise({
+      try: () => projectEntityLabels(db, 'show', updatedShow),
+      catch: (error) =>
+        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+    })
     const baseProcessedShow: SelectMdxCompiledShow = {
       ...updatedShow,
+      tags: projectedTags,
       compiledContent: '',
       hosts: hostRows.map(({ creator }) => ({
         id: creator.id,
@@ -386,7 +420,18 @@ const deleteEffect = (db: Database['Service'], slug: string, userId: string, use
     yield* requireCreatorOrAdmin(db, 'show', existingShow.id, userId, userRole)
 
     yield* Effect.tryPromise({
-      try: () => db.delete(showsTable).where(eq(showsTable.id, existingShow.id)),
+      try: () =>
+        db.batch([
+          db
+            .delete(entityLabelsTable)
+            .where(
+              and(
+                eq(entityLabelsTable.entityType, 'show'),
+                eq(entityLabelsTable.entityId, existingShow.id)
+              )
+            ),
+          db.delete(showsTable).where(eq(showsTable.id, existingShow.id))
+        ]),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to delete show: ${getErrorMessage(error)}`,
@@ -468,15 +513,22 @@ const getEpisodesEffect = (
         })
     })
 
-    const data = episodes.map(({ audioCreators: creators, show: episodeShow, ...episode }) => ({
-      ...episode,
-      thumbnailUrl: episode.thumbnailUrl ?? episodeShow?.thumbnailUrl ?? null,
-      creators: creators.map(({ creator }) => ({
-        id: creator.id,
-        name: creator.name,
-        username: creator.username
-      }))
-    }))
+    const projectedEpisodes = yield* Effect.tryPromise({
+      try: () => projectEntityLabelsForRows(db, 'audio', episodes),
+      catch: (error) =>
+        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+    })
+    const data = projectedEpisodes.map(
+      ({ audioCreators: creators, show: episodeShow, ...episode }) => ({
+        ...episode,
+        thumbnailUrl: episode.thumbnailUrl ?? episodeShow?.thumbnailUrl ?? null,
+        creators: creators.map(({ creator }) => ({
+          id: creator.id,
+          name: creator.name,
+          username: creator.username
+        }))
+      })
+    )
 
     return {
       data,

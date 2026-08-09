@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { user as userTable } from '@/db/auth.schema'
 import { Database } from '@/db/layer'
+import { readEntityLabels } from '@/db/labels'
 import { showCreators, showsTable } from '@/db/show.schema'
 import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
@@ -85,6 +86,15 @@ const resolveEffect = (db: DatabaseConnection, slug: string) =>
 
     const foundShow = showRecords[0]
     if (foundShow) {
+      const { tags } = yield* Effect.tryPromise({
+        try: () => readEntityLabels(db, 'show', foundShow.id),
+        catch: (error) =>
+          new DatabaseError({
+            message: getErrorMessage(error),
+            operation: 'select',
+            table: 'labels'
+          })
+      })
       const hostsRaw = yield* Effect.tryPromise({
         try: () =>
           db
@@ -136,7 +146,7 @@ const resolveEffect = (db: DatabaseConnection, slug: string) =>
           description: foundShow.description,
           thumbnailUrl: foundShow.thumbnailUrl,
           bannerImageUrl: foundShow.bannerImageUrl,
-          tags: foundShow.tags,
+          tags,
           createdAt: foundShow.createdAt,
           compiledContent,
           hosts

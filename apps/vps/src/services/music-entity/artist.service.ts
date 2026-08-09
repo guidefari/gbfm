@@ -1,10 +1,11 @@
 import { desc, eq, sql } from 'drizzle-orm'
 import { Effect } from 'effect'
 import type { DatabaseClient } from '@/db/layer'
+import { projectEntityLabels, projectEntityLabelsForRows, replaceEntityLabels } from '@/db/labels'
 import { musicArtistsTable, type SelectMusicArtist } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { toSlug } from '@/services/to-slug'
-import { deleteLinksForEntityTx, requireInserted, requireOne } from './shared'
+import { deleteEntityLabels, deleteLinksForEntity, requireInserted, requireOne } from './shared'
 
 export interface CreateArtistInput {
   name: string
@@ -18,8 +19,15 @@ export interface CreateArtistInput {
 
 export const createArtistEffect = (db: DatabaseClient) =>
   Effect.fn('musicEntity.createArtist')(function* (data: CreateArtistInput) {
+    const { genres, ...artistData } = data
     const rows = yield* Effect.tryPromise({
-      try: () => db.insert(musicArtistsTable).values(data).returning(),
+      try: async () => {
+        const rows = await db.insert(musicArtistsTable).values(artistData).returning()
+        const artist = rows[0]
+        if (artist && genres !== undefined)
+          await replaceEntityLabels(db, 'artist', artist.id, { genres })
+        return rows
+      },
       catch: (e) =>
         new DatabaseError({
           message: `Failed to create artist: ${getErrorMessage(e)}`,
@@ -27,12 +35,25 @@ export const createArtistEffect = (db: DatabaseClient) =>
           table: 'music_artists'
         })
     })
-    return yield* requireInserted(rows, 'music_artists')
+    const artist = yield* requireInserted(rows, 'music_artists')
+    const { genres: projectedGenres } = yield* Effect.tryPromise({
+      try: () => projectEntityLabels(db, 'artist', artist),
+      catch: (e) =>
+        new DatabaseError({ message: getErrorMessage(e), operation: 'select', table: 'labels' })
+    })
+    return { ...artist, genres: projectedGenres }
   })
 
 export const getArtistsEffect = (db: DatabaseClient) => () =>
   Effect.tryPromise({
-    try: () => db.select().from(musicArtistsTable).orderBy(desc(musicArtistsTable.createdAt)),
+    try: async () => {
+      const artists = await db
+        .select()
+        .from(musicArtistsTable)
+        .orderBy(desc(musicArtistsTable.createdAt))
+      const projected = await projectEntityLabelsForRows(db, 'artist', artists)
+      return projected.map(({ tags: _tags, genres, ...artist }) => ({ ...artist, genres }))
+    },
     catch: (e) =>
       new DatabaseError({
         message: `Failed to list artists: ${getErrorMessage(e)}`,
@@ -52,13 +73,19 @@ export const getArtistByIdEffect = (db: DatabaseClient) => (id: string) =>
           table: 'music_artists'
         })
     })
-    return yield* requireOne(rows, 'MusicArtist', id)
+    const artist = yield* requireOne(rows, 'MusicArtist', id)
+    const { genres } = yield* Effect.tryPromise({
+      try: () => projectEntityLabels(db, 'artist', artist),
+      catch: (e) =>
+        new DatabaseError({ message: getErrorMessage(e), operation: 'select', table: 'labels' })
+    })
+    return { ...artist, genres }
   }).pipe(Effect.withSpan('musicEntity.getArtistById', { attributes: { id } }))
 
 export const updateArtistEffect =
   (db: DatabaseClient) => (id: string, data: Partial<CreateArtistInput>) =>
     Effect.gen(function* () {
-      const updateData = { ...data }
+      const { genres, ...updateData } = data
       if (updateData.name && !updateData.slug) {
         updateData.slug = toSlug(updateData.name)
       }
@@ -76,20 +103,37 @@ export const updateArtistEffect =
             table: 'music_artists'
           })
       })
-      return yield* requireOne(rows, 'MusicArtist', id)
+      const artist = yield* requireOne(rows, 'MusicArtist', id)
+      if (genres !== undefined) {
+        yield* Effect.tryPromise({
+          try: () => replaceEntityLabels(db, 'artist', artist.id, { genres }),
+          catch: (e) =>
+            new DatabaseError({ message: getErrorMessage(e), operation: 'update', table: 'labels' })
+        })
+      }
+      const { genres: projectedGenres } = yield* Effect.tryPromise({
+        try: () => projectEntityLabels(db, 'artist', artist),
+        catch: (e) =>
+          new DatabaseError({ message: getErrorMessage(e), operation: 'select', table: 'labels' })
+      })
+      return { ...artist, genres: projectedGenres }
     }).pipe(Effect.withSpan('musicEntity.updateArtist', { attributes: { id } }))
 
 export const deleteArtistEffect = (db: DatabaseClient) => (id: string) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
       try: () =>
-        db.transaction(async (tx) => {
-          await deleteLinksForEntityTx(tx, 'artist', id)
-          return tx
-            .delete(musicArtistsTable)
-            .where(eq(musicArtistsTable.id, id))
-            .returning({ id: musicArtistsTable.id })
-        }),
+        (async () => {
+          const [, , rows] = await db.batch([
+            deleteLinksForEntity(db, 'artist', id),
+            deleteEntityLabels(db, 'artist', id),
+            db
+              .delete(musicArtistsTable)
+              .where(eq(musicArtistsTable.id, id))
+              .returning({ id: musicArtistsTable.id })
+          ])
+          return rows
+        })(),
       catch: (e) =>
         new DatabaseError({
           message: `Failed to delete artist: ${getErrorMessage(e)}`,
@@ -122,13 +166,19 @@ export const findOrCreateArtist = (db: DatabaseClient) =>
     opts?: { imageUrl?: string | null }
   ) {
     const rows = yield* findArtistByNameCI(db)(name)
-    if (rows[0]) {
-      if (opts?.imageUrl && rows[0].imageUrl !== opts.imageUrl) {
+    const existing = rows[0]
+    if (existing) {
+      if (opts?.imageUrl && existing.imageUrl !== opts.imageUrl) {
         yield* Effect.logInfo(
-          `[MusicEntity] Artist "${rows[0].name}" exists with different imageUrl (existing: ${rows[0].imageUrl}, scraped: ${opts.imageUrl}) — skipping update`
+          `[MusicEntity] Artist "${existing.name}" exists with different imageUrl (existing: ${existing.imageUrl}, scraped: ${opts.imageUrl}) — skipping update`
         )
       }
-      return rows[0]
+      const { genres } = yield* Effect.tryPromise({
+        try: () => projectEntityLabels(db, 'artist', existing),
+        catch: (e) =>
+          new DatabaseError({ message: getErrorMessage(e), operation: 'select', table: 'labels' })
+      })
+      return { ...existing, genres }
     }
     return yield* createArtistEffect(db)({
       name,

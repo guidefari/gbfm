@@ -1,5 +1,6 @@
-import { and, asc, eq, lte, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, lte, sql } from 'drizzle-orm'
 import { Effect } from 'effect'
+import { projectEntityLabelsForRows } from '@/db/labels'
 import type { DatabaseClient } from '@/db/layer'
 import {
   musicAlbumsTable,
@@ -53,7 +54,12 @@ export const getArtistsForLabelEffect = (db: DatabaseClient) => (labelId: string
         .innerJoin(musicArtistsTable, eq(musicLabelArtistsTable.artistId, musicArtistsTable.id))
         .where(eq(musicLabelArtistsTable.labelId, labelId))
         .orderBy(asc(musicArtistsTable.name))
-      return rows.map(({ artist }) => artist)
+      const projected = await projectEntityLabelsForRows(
+        db,
+        'artist',
+        rows.map(({ artist }) => artist)
+      )
+      return projected.map(({ tags: _tags, genres, ...artist }) => ({ ...artist, genres }))
     },
     catch: (cause) =>
       new DatabaseError({
@@ -78,7 +84,12 @@ export const getPublishedArtistsForLabelEffect = (db: DatabaseClient) => (labelI
           )
         )
         .orderBy(asc(musicArtistsTable.name))
-      return rows.map(({ artist }) => artist)
+      const projected = await projectEntityLabelsForRows(
+        db,
+        'artist',
+        rows.map(({ artist }) => artist)
+      )
+      return projected.map(({ tags: _tags, genres, ...artist }) => ({ ...artist, genres }))
     },
     catch: (cause) =>
       new DatabaseError({
@@ -97,8 +108,17 @@ export const getAlbumsForLabelEffect = (db: DatabaseClient) => (labelId: string)
         .from(musicLabelAlbumsTable)
         .innerJoin(musicAlbumsTable, eq(musicLabelAlbumsTable.albumId, musicAlbumsTable.id))
         .where(eq(musicLabelAlbumsTable.labelId, labelId))
-        .orderBy(sql`${musicAlbumsTable.releaseDate} DESC NULLS LAST`, asc(musicAlbumsTable.title))
-      return rows.map(({ album }) => album)
+        .orderBy(
+          sql`${musicAlbumsTable.releaseDate} IS NULL`,
+          desc(musicAlbumsTable.releaseDate),
+          asc(musicAlbumsTable.title)
+        )
+      const projected = await projectEntityLabelsForRows(
+        db,
+        'album',
+        rows.map(({ album }) => album)
+      )
+      return projected.map(({ tags: _tags, genres, ...album }) => ({ ...album, genres }))
     },
     catch: (cause) =>
       new DatabaseError({
@@ -122,8 +142,17 @@ export const getPublishedAlbumsForLabelEffect = (db: DatabaseClient) => (labelId
             lte(musicAlbumsTable.publishedAt, new Date())
           )
         )
-        .orderBy(sql`${musicAlbumsTable.releaseDate} DESC NULLS LAST`, asc(musicAlbumsTable.title))
-      return rows.map(({ album }) => album)
+        .orderBy(
+          sql`${musicAlbumsTable.releaseDate} IS NULL`,
+          desc(musicAlbumsTable.releaseDate),
+          asc(musicAlbumsTable.title)
+        )
+      const projected = await projectEntityLabelsForRows(
+        db,
+        'album',
+        rows.map(({ album }) => album)
+      )
+      return projected.map(({ tags: _tags, genres, ...album }) => ({ ...album, genres }))
     },
     catch: (cause) =>
       new DatabaseError({
@@ -143,7 +172,11 @@ export const getLabelsForArtistEffect = (db: DatabaseClient) => (artistId: strin
         .innerJoin(musicLabelsTable, eq(musicLabelArtistsTable.labelId, musicLabelsTable.id))
         .where(eq(musicLabelArtistsTable.artistId, artistId))
         .orderBy(asc(musicLabelsTable.name))
-      return rows.map(({ label }) => label)
+      return projectEntityLabelsForRows(
+        db,
+        'musicLabel',
+        rows.map(({ label }) => label)
+      )
     },
     catch: (cause) =>
       new DatabaseError({
@@ -163,7 +196,11 @@ export const getLabelsForAlbumEffect = (db: DatabaseClient) => (albumId: string)
         .innerJoin(musicLabelsTable, eq(musicLabelAlbumsTable.labelId, musicLabelsTable.id))
         .where(eq(musicLabelAlbumsTable.albumId, albumId))
         .orderBy(asc(musicLabelsTable.name))
-      return rows.map(({ label }) => label)
+      return projectEntityLabelsForRows(
+        db,
+        'musicLabel',
+        rows.map(({ label }) => label)
+      )
     },
     catch: (cause) =>
       new DatabaseError({

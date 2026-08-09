@@ -1,6 +1,5 @@
 import * as Sentry from '@sentry/bun'
 import { Effect, Metric } from 'effect'
-import { Database } from '@/db/layer'
 
 const SLOW_REQUEST_THRESHOLD = 500
 
@@ -46,10 +45,6 @@ const emailFailCount = Metric.counter('email_fail_count', {
 const dbQueryDuration = Metric.gauge('db_query_duration_ms', {
   description: 'Most recent database query duration in milliseconds'
 })
-const activeConnections = Metric.gauge('active_db_connections', {
-  description: 'Current number of active database connections'
-})
-
 const mirrorCount = (name: string, value = 1) =>
   Effect.sync(() => {
     if (!Sentry.getClient()) return
@@ -87,15 +82,11 @@ export const recordRequest = (duration: number, isError = false) =>
   })
 
 export const checkPerformanceHealth = Effect.gen(function* () {
-  const db = yield* Database
-  const pool = db.$client
   const heapUsedMB = process.memoryUsage().heapUsed / 1024 / 1024
   yield* Metric.update(heapUsed, heapUsedMB)
   yield* Metric.update(uptime, process.uptime())
-  yield* Metric.update(activeConnections, pool.totalCount)
   yield* mirrorGauge('heap_used_mb', heapUsedMB, 'megabyte')
   yield* mirrorGauge('uptime_seconds', process.uptime(), 'second')
-  yield* mirrorGauge('active_db_connections', pool.totalCount)
 
   if (heapUsedMB > 500) {
     yield* Effect.logWarning('[Performance] High memory usage detected', {
@@ -124,10 +115,3 @@ export const recordDbQueryDuration = (duration: number) =>
     Metric.update(dbQueryDuration, duration),
     mirrorDistribution('db_query_duration_ms', duration, 'millisecond')
   )
-export const recordActiveConnections = () =>
-  Effect.gen(function* () {
-    const db = yield* Database
-    const pool = db.$client
-    yield* Metric.update(activeConnections, pool.totalCount)
-    yield* mirrorGauge('active_db_connections', pool.totalCount)
-  })

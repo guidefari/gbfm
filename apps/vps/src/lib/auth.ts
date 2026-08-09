@@ -23,7 +23,7 @@ import { ac, admin as adminRole, creator, editor, userRole } from './auth-permis
 const makeAuth = (database: DatabaseClient) =>
   betterAuth({
     database: drizzleAdapter(database, {
-      provider: 'pg',
+      provider: 'sqlite',
       schema: authSchema
     }),
     emailAndPassword: {

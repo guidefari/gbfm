@@ -1,5 +1,5 @@
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
-import { index, integer, pgEnum, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
+import { index, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
 import { user } from './auth.schema'
 
 // Lifecycle: pending (presigned URL/multipart upload issued, bytes not yet
@@ -12,26 +12,23 @@ import { user } from './auth.schema'
 // No cleanup job is implemented here (out of scope for #131's asset-lifecycle
 // task) -- this table only records enough (createdAt/expiresAt) for a future
 // job to find stale `pending`/`uploaded` rows and delete their S3 objects.
-export const uploadAssetStatusEnum = pgEnum('upload_asset_status', [
-  'pending',
-  'uploaded',
-  'attached',
-  'expired'
-])
+export const uploadAssetStatusEnum = ['pending', 'uploaded', 'attached', 'expired'] as const
 
-export const uploadAssetTypeEnum = pgEnum('upload_asset_type', ['image', 'audio'])
+export const uploadAssetTypeEnum = ['image', 'audio'] as const
 
-export const uploadAssetsTable = pgTable(
+export const uploadAssetsTable = sqliteTable(
   'upload_assets',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     userId: text('user_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
     key: text('key').notNull(),
     bucket: text('bucket').notNull(),
-    assetType: uploadAssetTypeEnum('asset_type').notNull(),
-    status: uploadAssetStatusEnum('status').default('pending').notNull(),
+    assetType: text('asset_type', { enum: uploadAssetTypeEnum }).notNull(),
+    status: text('status', { enum: uploadAssetStatusEnum }).default('pending').notNull(),
     // S3 multipart upload id -- set for the audio multipart path, null for
     // the image single-PUT path (there is no multipart "upload session" to
     // track for a single PUT).
@@ -45,16 +42,18 @@ export const uploadAssetsTable = pgTable(
     // abstraction for a field a future cleanup job only needs to read, not
     // join on.
     attachedToTable: text('attached_to_table'),
-    attachedToId: uuid('attached_to_id'),
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp('updated_at', { withTimezone: true })
-      .defaultNow()
+    attachedToId: text('attached_to_id'),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .$defaultFn(() => new Date())
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
     // Populated at insert time (createdAt + a fixed pending-window constant
     // owned by the upload handlers, not this schema file) so a future cleanup
     // job can select on it directly instead of recomputing per row.
-    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull()
+    expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull()
   },
   (table) => [
     unique('upload_assets_key_unique').on(table.key),

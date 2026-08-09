@@ -15,7 +15,7 @@ const READINESS_CACHE_MS = 5_000
 export const checkDatabase = Effect.gen(function* () {
   const db = yield* Database
   return yield* Effect.tryPromise({
-    try: () => db.execute(sql.raw('SELECT 1')),
+    try: () => db.run(sql.raw('SELECT 1')),
     catch: (cause) => cause
   }).pipe(
     Effect.tapError((cause) => Effect.logError('[health] readiness check failed', cause)),

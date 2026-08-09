@@ -1,22 +1,27 @@
-import { boolean, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
+import { integer, text } from 'drizzle-orm/sqlite-core'
 
 export const defaultAuditFields = {
-  createdBy: uuid(),
-  updatedBy: uuid(),
-  deletedAt: timestamp({ withTimezone: true }),
-  deletedBy: uuid()
+  createdBy: text(),
+  updatedBy: text(),
+  deletedAt: integer({ mode: 'timestamp_ms' }),
+  deletedBy: text()
 }
 
 export const defaultContentFields = {
-  id: uuid().primaryKey().defaultRandom(),
-  title: varchar({ length: 255 }).notNull(),
+  id: text()
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  title: text().notNull(),
   description: text(),
-  thumbnailUrl: varchar({ length: 255 }),
-  bannerImageUrl: varchar({ length: 255 }),
-  slug: varchar({ length: 255 }).notNull(),
-  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-  draft: boolean().notNull().default(false),
-  tags: varchar({ length: 255 }).array(),
+  thumbnailUrl: text(),
+  bannerImageUrl: text(),
+  slug: text().notNull(),
+  createdAt: integer({ mode: 'timestamp_ms' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: integer({ mode: 'timestamp_ms' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  draft: integer({ mode: 'boolean' }).notNull().default(false),
   content: text().notNull()
 }

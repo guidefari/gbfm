@@ -3,6 +3,7 @@ import { Context, Effect, Layer } from 'effect'
 import { user as usersTable } from '@/db/auth.schema'
 import { favoritesTable } from '@/db/favorites.schema'
 import { Database } from '@/db/layer'
+import { projectEntityLabelsForRows } from '@/db/labels'
 import {
   type SelectShow,
   type SelectShowSubscription,
@@ -193,8 +194,22 @@ const getUserSubscriptionsEffect = (
         })
     })
 
+    const shows = yield* Effect.tryPromise({
+      try: () =>
+        projectEntityLabelsForRows(
+          db,
+          'show',
+          subscriptions.map((subscription) => subscription.show)
+        ),
+      catch: (error) =>
+        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+    })
+
     return {
-      data: subscriptions,
+      data: subscriptions.map((subscription, index) => ({
+        ...subscription,
+        show: shows[index] ?? { ...subscription.show, tags: [] }
+      })),
       pagination: createPaginationMetadata(total, limit, offset)
     }
   })

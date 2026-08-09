@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, like, or, sql } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import {
@@ -205,7 +205,12 @@ const searchUsersEffect = (db: DatabaseConnection, query: string) =>
             image: userTable.image
           })
           .from(userTable)
-          .where(or(ilike(userTable.name, searchPattern), ilike(userTable.username, searchPattern)))
+          .where(
+            or(
+              like(sql`lower(${userTable.name})`, searchPattern.toLowerCase()),
+              like(sql`lower(${userTable.username})`, searchPattern.toLowerCase())
+            )
+          )
           .limit(10),
       catch: (error) =>
         new DatabaseError({
@@ -272,31 +277,33 @@ const replaceUserSocialLinksEffect = (
     yield* getUserByIdEffect(db, userId)
 
     const updatedLinks = yield* Effect.tryPromise({
-      try: () =>
-        db.transaction(async (tx) => {
-          await tx.delete(userSocialLinks).where(eq(userSocialLinks.userId, userId))
+      try: async () => {
+        await db.batch([
+          db.delete(userSocialLinks).where(eq(userSocialLinks.userId, userId)),
+          ...(links.length > 0
+            ? [
+                db.insert(userSocialLinks).values(
+                  links.map((link) => ({
+                    userId,
+                    platform: link.platform,
+                    url: link.url,
+                    position: link.position
+                  }))
+                )
+              ]
+            : [])
+        ])
 
-          if (links.length > 0) {
-            await tx.insert(userSocialLinks).values(
-              links.map((link) => ({
-                userId,
-                platform: link.platform,
-                url: link.url,
-                position: link.position
-              }))
-            )
-          }
-
-          return tx
-            .select({
-              platform: userSocialLinks.platform,
-              url: userSocialLinks.url,
-              position: userSocialLinks.position
-            })
-            .from(userSocialLinks)
-            .where(eq(userSocialLinks.userId, userId))
-            .orderBy(asc(userSocialLinks.position))
-        }),
+        return db
+          .select({
+            platform: userSocialLinks.platform,
+            url: userSocialLinks.url,
+            position: userSocialLinks.position
+          })
+          .from(userSocialLinks)
+          .where(eq(userSocialLinks.userId, userId))
+          .orderBy(asc(userSocialLinks.position))
+      },
       catch: (error) =>
         new DatabaseError({
           message: `Failed to replace user social links: ${getErrorMessage(error)}`,

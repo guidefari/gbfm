@@ -2,6 +2,7 @@ import { and, eq, exists, lte } from 'drizzle-orm'
 import { Effect, Layer } from 'effect'
 import { HttpRouter, HttpServerResponse } from 'effect/unstable/http'
 import { Database } from '@/db/layer'
+import { readEntityLabels } from '@/db/labels'
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { rssFeedHtml } from '@/routes/rss/rss.template'
 import { user as usersTable } from '@/db/auth.schema'
@@ -410,9 +411,12 @@ const shareLabel = HttpRouter.params.pipe(
         'music_label_creators'
       )
 
+      const { genres } = yield* fetchDb(
+        () => readEntityLabels(db, 'musicLabel', label.id),
+        'labels'
+      )
       const description = label.description || `Check out ${label.name || slug} on goosebumps.fm`
-      const genresSuffix =
-        label.genres && label.genres.length > 0 ? ` | Genres: ${label.genres.join(', ')}` : ''
+      const genresSuffix = genres.length > 0 ? ` | Genres: ${genres.join(', ')}` : ''
 
       return {
         html: buildOGHtml({

@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { Context, Effect, Layer, Redacted } from 'effect'
 import { Database } from '@/db/layer'
 import {
@@ -71,9 +71,9 @@ const makeService = (
       )
 
       return yield* Effect.tryPromise({
-        try: () =>
-          db.transaction(async (tx) => {
-            const [account] = await tx
+        try: async () => {
+          await db.batch([
+            db
               .insert(externalAccounts)
               .values({
                 userId,
@@ -97,14 +97,17 @@ const makeService = (
                   lastErrorCategory: null,
                   updatedAt: new Date()
                 }
-              })
-              .returning()
-            if (!account) throw databaseError('connect-account')
-
-            await tx
+              }),
+            db
               .insert(externalAccountSessions)
               .values({
-                externalAccountId: account.id,
+                externalAccountId: sql`(
+                  select ${externalAccounts.id}
+                  from ${externalAccounts}
+                  where ${externalAccounts.userId} = ${userId}
+                    and ${externalAccounts.provider} = 'bluesky'
+                    and ${externalAccounts.providerAccountId} = ${login.did}
+                )`,
                 appPassword: encryptedPassword,
                 session: encryptedSession
               })
@@ -116,8 +119,22 @@ const makeService = (
                   updatedAt: new Date()
                 }
               })
-            return account
-          }),
+          ])
+          const rows = await db
+            .select()
+            .from(externalAccounts)
+            .where(
+              and(
+                eq(externalAccounts.userId, userId),
+                eq(externalAccounts.provider, 'bluesky'),
+                eq(externalAccounts.providerAccountId, login.did)
+              )
+            )
+            .limit(1)
+          const account = rows[0]
+          if (!account) throw databaseError('connect-account')
+          return account
+        },
         catch: () => databaseError('connect')
       })
     }),

@@ -1,6 +1,12 @@
 import { and, desc, eq, lte } from 'drizzle-orm'
 import { Effect } from 'effect'
 import type { DatabaseClient } from '@/db/layer'
+import {
+  projectEntityLabels,
+  projectEntityLabelsForRows,
+  readEntityLabels,
+  replaceEntityLabels
+} from '@/db/labels'
 import { user as usersTable } from '@/db/auth.schema'
 import {
   musicLabelCreatorsTable,
@@ -11,7 +17,7 @@ import {
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
 import { toSlug } from '@/services/to-slug'
-import { deleteLinksForEntityTx, requireInserted, requireOne } from './shared'
+import { deleteEntityLabels, deleteLinksForEntity, requireInserted, requireOne } from './shared'
 
 export interface CreateLabelInput {
   name: string
@@ -28,18 +34,30 @@ export interface CreateLabelInput {
 
 export const createLabelEffect = (db: DatabaseClient) =>
   Effect.fn('musicEntity.createLabel')(function* (data: CreateLabelInput) {
+    const { tags, genres, ...labelData } = data
+    const id = crypto.randomUUID()
     const rows = yield* Effect.tryPromise({
-      try: () =>
-        db.transaction(async (tx) => {
-          const inserted = await tx.insert(musicLabelsTable).values(data).returning()
-          const label = inserted[0]
-          if (label && data.createdById) {
-            await tx
-              .insert(musicLabelCreatorsTable)
-              .values({ labelId: label.id, creatorId: data.createdById })
-          }
-          return inserted
-        }),
+      try: async () => {
+        await db.batch([
+          db.insert(musicLabelsTable).values({ ...labelData, id }),
+          ...(labelData.createdById
+            ? [
+                db
+                  .insert(musicLabelCreatorsTable)
+                  .values({ labelId: id, creatorId: labelData.createdById })
+              ]
+            : [])
+        ])
+        const rows = await db
+          .select()
+          .from(musicLabelsTable)
+          .where(eq(musicLabelsTable.id, id))
+          .limit(1)
+        if (rows[0] && (tags !== undefined || genres !== undefined)) {
+          await replaceEntityLabels(db, 'musicLabel', id, { tags, genres })
+        }
+        return rows
+      },
       catch: (error) =>
         new DatabaseError({
           message: `Failed to create label: ${getErrorMessage(error)}`,
@@ -47,17 +65,24 @@ export const createLabelEffect = (db: DatabaseClient) =>
           table: 'music_labels'
         })
     })
-    return yield* requireInserted(rows, 'music_labels')
+    const label = yield* requireInserted(rows, 'music_labels')
+    return yield* Effect.tryPromise({
+      try: () => projectEntityLabels(db, 'musicLabel', label),
+      catch: (error) =>
+        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+    })
   })
 
 export const getLabelsEffect = (db: DatabaseClient) => (includeDrafts: boolean) =>
   Effect.tryPromise({
-    try: () =>
-      db
+    try: async () => {
+      const labels = await db
         .select()
         .from(musicLabelsTable)
         .where(includeDrafts ? undefined : lte(musicLabelsTable.publishedAt, new Date()))
-        .orderBy(desc(musicLabelsTable.createdAt)),
+        .orderBy(desc(musicLabelsTable.createdAt))
+      return projectEntityLabelsForRows(db, 'musicLabel', labels)
+    },
     catch: (error) =>
       new DatabaseError({
         message: `Failed to list labels: ${getErrorMessage(error)}`,
@@ -77,7 +102,12 @@ export const getLabelByIdEffect = (db: DatabaseClient) => (id: string) =>
           table: 'music_labels'
         })
     })
-    return yield* requireOne(rows, 'MusicLabel', id)
+    const label = yield* requireOne(rows, 'MusicLabel', id)
+    return yield* Effect.tryPromise({
+      try: () => projectEntityLabels(db, 'musicLabel', label),
+      catch: (error) =>
+        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+    })
   }).pipe(Effect.withSpan('musicEntity.getLabelById', { attributes: { id } }))
 
 export const getLabelBySlugEffect = (db: DatabaseClient) => (slug: string) =>
@@ -99,6 +129,11 @@ export const getLabelBySlugEffect = (db: DatabaseClient) => (slug: string) =>
         })
     })
     const label = yield* requireOne(rows, 'MusicLabel', slug)
+    const projectedLabel = yield* Effect.tryPromise({
+      try: () => projectEntityLabels(db, 'musicLabel', label),
+      catch: (error) =>
+        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+    })
     const creators = yield* Effect.tryPromise({
       try: () =>
         db
@@ -115,9 +150,9 @@ export const getLabelBySlugEffect = (db: DatabaseClient) => (slug: string) =>
     })
 
     let compiledContent = ''
-    if (label.content) {
+    if (projectedLabel.content) {
       const result = yield* Effect.tryPromise({
-        try: () => compileMDX(label.content),
+        try: () => compileMDX(projectedLabel.content),
         catch: (error) =>
           new DatabaseError({
             message: `Failed to compile label MDX: ${getErrorMessage(error)}`,
@@ -128,13 +163,13 @@ export const getLabelBySlugEffect = (db: DatabaseClient) => (slug: string) =>
       if (isMDXCompilationResult(result)) compiledContent = result.compiled
     }
 
-    return { ...label, compiledContent, creators } satisfies SelectMdxCompiledMusicLabel
+    return { ...projectedLabel, compiledContent, creators } satisfies SelectMdxCompiledMusicLabel
   }).pipe(Effect.withSpan('musicEntity.getLabelBySlug', { attributes: { slug } }))
 
 export const updateLabelEffect =
   (db: DatabaseClient) => (id: string, data: Partial<CreateLabelInput>) =>
     Effect.gen(function* () {
-      const updateData = { ...data }
+      const { tags, genres, ...updateData } = data
       if (updateData.name && !updateData.slug) updateData.slug = toSlug(updateData.name)
       const rows = yield* Effect.tryPromise({
         try: () =>
@@ -150,20 +185,50 @@ export const updateLabelEffect =
             table: 'music_labels'
           })
       })
-      return yield* requireOne(rows, 'MusicLabel', id)
+      const label = yield* requireOne(rows, 'MusicLabel', id)
+      if (tags !== undefined || genres !== undefined) {
+        yield* Effect.tryPromise({
+          try: async () => {
+            const current = await readEntityLabels(db, 'musicLabel', label.id)
+            await replaceEntityLabels(db, 'musicLabel', label.id, {
+              tags: tags === undefined ? current.tags : tags,
+              genres: genres === undefined ? current.genres : genres
+            })
+          },
+          catch: (error) =>
+            new DatabaseError({
+              message: getErrorMessage(error),
+              operation: 'update',
+              table: 'labels'
+            })
+        })
+      }
+      return yield* Effect.tryPromise({
+        try: () => projectEntityLabels(db, 'musicLabel', label),
+        catch: (error) =>
+          new DatabaseError({
+            message: getErrorMessage(error),
+            operation: 'select',
+            table: 'labels'
+          })
+      })
     }).pipe(Effect.withSpan('musicEntity.updateLabel', { attributes: { id } }))
 
 export const deleteLabelEffect = (db: DatabaseClient) => (id: string) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
       try: () =>
-        db.transaction(async (tx) => {
-          await deleteLinksForEntityTx(tx, 'label', id)
-          return tx
-            .delete(musicLabelsTable)
-            .where(eq(musicLabelsTable.id, id))
-            .returning({ id: musicLabelsTable.id })
-        }),
+        (async () => {
+          const [, , rows] = await db.batch([
+            deleteLinksForEntity(db, 'label', id),
+            deleteEntityLabels(db, 'musicLabel', id),
+            db
+              .delete(musicLabelsTable)
+              .where(eq(musicLabelsTable.id, id))
+              .returning({ id: musicLabelsTable.id })
+          ])
+          return rows
+        })(),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to delete label: ${getErrorMessage(error)}`,

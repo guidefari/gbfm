@@ -1,6 +1,8 @@
 import { and, eq, exists, lte } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { Database } from '@/db/layer'
+import { projectEntityLabels, replaceEntityLabels } from '@/db/labels'
+import { entityLabelsTable } from '@/db/tags.schema'
 import { musicLabelsTable } from '@/db/music-entity.schema'
 import {
   type InsertRelease,
@@ -96,8 +98,14 @@ const getBySlugEffect = (db: DatabaseConnection, slug: string, includeDrafts = f
       })
     }
 
+    const { tags } = yield* Effect.tryPromise({
+      try: () => projectEntityLabels(db, 'release', release),
+      catch: (error) =>
+        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+    })
     let processedRelease: SelectMdxCompiledRelease = {
       ...release,
+      tags,
       compiledContent: ''
     }
 
@@ -130,6 +138,7 @@ const createEffect = (
   userRole: string
 ) =>
   Effect.gen(function* () {
+    const { tags, ...releaseData } = data
     const labelRecords = yield* Effect.tryPromise({
       try: () =>
         db.select().from(musicLabelsTable).where(eq(musicLabelsTable.id, data.labelId)).limit(1),
@@ -157,7 +166,7 @@ const createEffect = (
         db
           .insert(releasesTable)
           .values({
-            ...data,
+            ...releaseData,
             releaseDate: data.releaseDate
           })
           .returning(),
@@ -186,7 +195,22 @@ const createEffect = (
       })
     }
 
-    return newRelease
+    if (tags !== undefined) {
+      yield* Effect.tryPromise({
+        try: () => replaceEntityLabels(db, 'release', newRelease.id, { tags }),
+        catch: (error) =>
+          new DatabaseError({
+            message: getErrorMessage(error),
+            operation: 'insert',
+            table: 'labels'
+          })
+      })
+    }
+    return yield* Effect.tryPromise({
+      try: () => projectEntityLabels(db, 'release', newRelease),
+      catch: (error) =>
+        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+    })
   })
 
 const updateEffect = (
@@ -197,6 +221,7 @@ const updateEffect = (
   data: Partial<InsertRelease> & { releaseDate?: Date }
 ) =>
   Effect.gen(function* () {
+    const { tags, ...releaseData } = data
     const existingRecords = yield* Effect.tryPromise({
       try: () => db.select().from(releasesTable).where(eq(releasesTable.slug, slug)).limit(1),
       catch: (error) =>
@@ -250,7 +275,7 @@ const updateEffect = (
         db
           .update(releasesTable)
           .set({
-            ...data,
+            ...releaseData,
             updatedAt: new Date(),
             releaseDate: data.releaseDate ?? existingRelease.releaseDate
           })
@@ -273,8 +298,27 @@ const updateEffect = (
       })
     }
 
+    if (tags !== undefined) {
+      yield* Effect.tryPromise({
+        try: () => replaceEntityLabels(db, 'release', updatedRelease.id, { tags }),
+        catch: (error) =>
+          new DatabaseError({
+            message: getErrorMessage(error),
+            operation: 'update',
+            table: 'labels'
+          })
+      })
+    }
+
+    const { tags: projectedTags } = yield* Effect.tryPromise({
+      try: () => projectEntityLabels(db, 'release', updatedRelease),
+      catch: (error) =>
+        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+    })
+
     const baseProcessedRelease: SelectMdxCompiledRelease = {
       ...updatedRelease,
+      tags: projectedTags,
       compiledContent: ''
     }
 
@@ -324,7 +368,18 @@ const deleteEffect = (db: DatabaseConnection, slug: string, userId: string, user
     yield* requireCreatorOrAdmin(db, 'label', existingRelease.labelId, userId, userRole)
 
     yield* Effect.tryPromise({
-      try: () => db.delete(releasesTable).where(eq(releasesTable.id, existingRelease.id)),
+      try: () =>
+        db.batch([
+          db
+            .delete(entityLabelsTable)
+            .where(
+              and(
+                eq(entityLabelsTable.entityType, 'release'),
+                eq(entityLabelsTable.entityId, existingRelease.id)
+              )
+            ),
+          db.delete(releasesTable).where(eq(releasesTable.id, existingRelease.id))
+        ]),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to delete release: ${getErrorMessage(error)}`,

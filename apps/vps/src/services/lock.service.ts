@@ -1,5 +1,4 @@
 import { Context, Effect, Layer } from 'effect'
-import { Database } from '@/db/layer'
 import { DatabaseError, LockUnavailable } from '@/errors'
 
 export interface LockService {
@@ -11,48 +10,11 @@ export interface LockService {
 
 export const LockService = Context.Service<LockService>('LockService')
 
-const databaseError = (operation: string) =>
-  new DatabaseError({ message: 'Lock database operation failed', operation })
-
 const withLock = <A, E, R>(
-  pool: Database['Service']['$client'],
   key: string,
-  effect: Effect.Effect<A, E, R>
-): Effect.Effect<A, E | LockUnavailable | DatabaseError, R> =>
-  Effect.acquireUseRelease(
-    Effect.tryPromise({
-      try: () => pool.connect(),
-      catch: () => databaseError('acquire-lock-connection')
-    }),
-    (client) =>
-      Effect.gen(function* () {
-        const result = yield* Effect.tryPromise({
-          try: async () => {
-            const response = await client.query<{ locked: boolean }>(
-              'select pg_try_advisory_lock(hashtext($1)) as locked',
-              [key]
-            )
-            return response.rows[0]?.locked === true
-          },
-          catch: () => databaseError('acquire-lock')
-        })
-        if (!result) return yield* new LockUnavailable({ key })
-        return yield* effect
-      }),
-    (client) =>
-      Effect.promise(async () => {
-        try {
-          await client.query('select pg_advisory_unlock(hashtext($1))', [key])
-        } finally {
-          client.release()
-        }
-      })
-  )
+  _effect: Effect.Effect<A, E, R>
+): Effect.Effect<A, E | LockUnavailable | DatabaseError, R> => new LockUnavailable({ key })
 
-export const LockServiceLayer = Layer.effect(
-  LockService,
-  Effect.gen(function* () {
-    const db = yield* Database
-    return { withLock: (key, effect) => withLock(db.$client, key, effect) }
-  })
-)
+export const LockServiceLayer = Layer.succeed(LockService, {
+  withLock
+})

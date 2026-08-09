@@ -1,14 +1,16 @@
 import { REMINDER_STATUS, REMINDER_STATUSES } from '@gbfm/core/status'
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
-import { boolean, index, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { user } from './auth.schema'
 
-export const reminderStatusEnum = pgEnum('reminder_status', [...REMINDER_STATUSES])
+export const reminderStatusEnum = [...REMINDER_STATUSES] as const
 
-export const musicReminder = pgTable(
+export const musicReminder = sqliteTable(
   'music_reminder',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     userId: text('user_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
@@ -16,13 +18,15 @@ export const musicReminder = pgTable(
     artistName: text('artist_name').notNull(),
     musicUrl: text('music_url').notNull(),
     albumCoverUrl: text('album_cover_url'),
-    reminderDate: timestamp('reminder_date').notNull(),
+    reminderDate: integer('reminder_date', { mode: 'timestamp_ms' }).notNull(),
     notes: text('notes'),
-    status: reminderStatusEnum('status').default(REMINDER_STATUS.PENDING).notNull(),
-    isSent: boolean('is_sent').default(false).notNull(),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at')
-      .defaultNow()
+    status: text('status', { enum: reminderStatusEnum }).default(REMINDER_STATUS.PENDING).notNull(),
+    isSent: integer('is_sent', { mode: 'boolean' }).default(false).notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .$defaultFn(() => new Date())
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull()
   },

@@ -1,20 +1,28 @@
 import { z } from 'zod'
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
-import { index, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
+import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { user } from './auth.schema'
 
-export const newsletterSubscribersTable = pgTable(
+export const newsletterSubscribersTable = sqliteTable(
   'newsletter_subscribers',
   {
-    id: uuid().primaryKey().defaultRandom(),
-    email: varchar({ length: 255 }).notNull().unique(),
-    name: varchar({ length: 100 }),
-    source: varchar({ length: 50 }),
+    id: text()
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    email: text().notNull().unique(),
+    name: text(),
+    source: text(),
     userId: text().references(() => user.id, { onDelete: 'set null' }),
-    unsubscribeToken: uuid().unique().defaultRandom(),
-    unsubscribedAt: timestamp({ withTimezone: true }),
-    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+    unsubscribeToken: text()
+      .unique()
+      .$defaultFn(() => crypto.randomUUID()),
+    unsubscribedAt: integer({ mode: 'timestamp_ms' }),
+    createdAt: integer({ mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    updatedAt: integer({ mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date())
   },
   (table) => [
     index('newsletter_subscribers_email_idx').on(table.email),

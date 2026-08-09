@@ -4,7 +4,7 @@ import type { DatabaseClient } from '@/db/layer'
 import { musicEntityLinksTable, musicPlaylistsTable } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { toSlug } from '@/services/to-slug'
-import { deleteLinksForEntityTx, requireInserted, requireOne } from './shared'
+import { deleteLinksForEntity, requireInserted, requireOne } from './shared'
 
 export interface CreatePlaylistInput {
   title: string
@@ -118,13 +118,16 @@ export const deletePlaylistEffect = (db: DatabaseClient) => (id: string) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
       try: () =>
-        db.transaction(async (tx) => {
-          await deleteLinksForEntityTx(tx, 'playlist', id)
-          return tx
-            .delete(musicPlaylistsTable)
-            .where(eq(musicPlaylistsTable.id, id))
-            .returning({ id: musicPlaylistsTable.id })
-        }),
+        (async () => {
+          const [, rows] = await db.batch([
+            deleteLinksForEntity(db, 'playlist', id),
+            db
+              .delete(musicPlaylistsTable)
+              .where(eq(musicPlaylistsTable.id, id))
+              .returning({ id: musicPlaylistsTable.id })
+          ])
+          return rows
+        })(),
       catch: (e) =>
         new DatabaseError({
           message: `Failed to delete playlist: ${getErrorMessage(e)}`,

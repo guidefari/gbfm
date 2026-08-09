@@ -1,10 +1,11 @@
 import { desc, eq, sql } from 'drizzle-orm'
 import { Effect } from 'effect'
 import type { DatabaseClient } from '@/db/layer'
+import { projectEntityLabels, projectEntityLabelsForRows, replaceEntityLabels } from '@/db/labels'
 import { musicAlbumArtistsTable, musicAlbumsTable } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { toSlug } from '@/services/to-slug'
-import { deleteLinksForEntityTx, requireOne } from './shared'
+import { deleteEntityLabels, deleteLinksForEntity, requireOne } from './shared'
 
 export interface CreateAlbumInput {
   title: string
@@ -21,32 +22,41 @@ export interface CreateAlbumInput {
 
 export const createAlbumEffect = (db: DatabaseClient) =>
   Effect.fn('musicEntity.createAlbum')(function* (data: CreateAlbumInput) {
-    const { artistIds, ...albumData } = data
+    const { artistIds, genres, ...albumData } = data
+    const id = crypto.randomUUID()
 
-    return yield* Effect.tryPromise({
-      try: () =>
-        db.transaction(async (tx) => {
-          const rows = await tx.insert(musicAlbumsTable).values(albumData).returning()
-          const album = rows[0]
-          if (!album) throw new Error('Insert returned no rows')
-
-          if (artistIds?.length) {
-            const linkRows = artistIds.map((artistId, i) => ({
-              albumId: album.id,
-              artistId,
-              displayOrder: i
-            }))
-            await tx
-              .insert(musicAlbumArtistsTable)
-              .values(linkRows)
-              .onConflictDoUpdate({
-                target: [musicAlbumArtistsTable.albumId, musicAlbumArtistsTable.artistId],
-                set: { displayOrder: sql`excluded."displayOrder"` }
-              })
-          }
-
-          return album
-        }),
+    const rows = yield* Effect.tryPromise({
+      try: async () => {
+        await db.batch([
+          db.insert(musicAlbumsTable).values({ ...albumData, id }),
+          ...(artistIds?.length
+            ? [
+                db
+                  .insert(musicAlbumArtistsTable)
+                  .values(
+                    artistIds.map((artistId, displayOrder) => ({
+                      albumId: id,
+                      artistId,
+                      displayOrder
+                    }))
+                  )
+                  .onConflictDoUpdate({
+                    target: [musicAlbumArtistsTable.albumId, musicAlbumArtistsTable.artistId],
+                    set: { displayOrder: sql`excluded.displayOrder` }
+                  })
+              ]
+            : [])
+        ])
+        const rows = await db
+          .select()
+          .from(musicAlbumsTable)
+          .where(eq(musicAlbumsTable.id, id))
+          .limit(1)
+        const album = rows[0]
+        if (!album) throw new Error('Insert returned no rows')
+        if (genres !== undefined) await replaceEntityLabels(db, 'album', album.id, { genres })
+        return album
+      },
       catch: (e) =>
         new DatabaseError({
           message: `Failed to create album: ${getErrorMessage(e)}`,
@@ -54,11 +64,24 @@ export const createAlbumEffect = (db: DatabaseClient) =>
           table: 'music_albums'
         })
     })
+    const { genres: projectedGenres } = yield* Effect.tryPromise({
+      try: () => projectEntityLabels(db, 'album', rows),
+      catch: (e) =>
+        new DatabaseError({ message: getErrorMessage(e), operation: 'select', table: 'labels' })
+    })
+    return { ...rows, genres: projectedGenres }
   })
 
 export const getAlbumsEffect = (db: DatabaseClient) => () =>
   Effect.tryPromise({
-    try: () => db.select().from(musicAlbumsTable).orderBy(desc(musicAlbumsTable.createdAt)),
+    try: async () => {
+      const albums = await db
+        .select()
+        .from(musicAlbumsTable)
+        .orderBy(desc(musicAlbumsTable.createdAt))
+      const projected = await projectEntityLabelsForRows(db, 'album', albums)
+      return projected.map(({ tags: _tags, genres, ...album }) => ({ ...album, genres }))
+    },
     catch: (e) =>
       new DatabaseError({
         message: `Failed to list albums: ${getErrorMessage(e)}`,
@@ -78,46 +101,58 @@ export const getAlbumByIdEffect = (db: DatabaseClient) => (id: string) =>
           table: 'music_albums'
         })
     })
-    return yield* requireOne(rows, 'MusicAlbum', id)
+    const album = yield* requireOne(rows, 'MusicAlbum', id)
+    const { genres } = yield* Effect.tryPromise({
+      try: () => projectEntityLabels(db, 'album', album),
+      catch: (e) =>
+        new DatabaseError({ message: getErrorMessage(e), operation: 'select', table: 'labels' })
+    })
+    return { ...album, genres }
   }).pipe(Effect.withSpan('musicEntity.getAlbumById', { attributes: { id } }))
 
 export const updateAlbumEffect =
   (db: DatabaseClient) => (id: string, data: Partial<CreateAlbumInput>) =>
     Effect.gen(function* () {
-      const { artistIds, ...albumData } = data
+      const { artistIds, genres, ...albumData } = data
       if (albumData.title && !albumData.slug) {
         albumData.slug = toSlug(albumData.title)
       }
 
-      return yield* Effect.tryPromise({
-        try: () =>
-          db.transaction(async (tx) => {
-            const rows = await tx
+      const rows = yield* Effect.tryPromise({
+        try: async () => {
+          await db.batch([
+            db
               .update(musicAlbumsTable)
               .set({ ...albumData, updatedAt: new Date() })
-              .where(eq(musicAlbumsTable.id, id))
-              .returning()
-
-            const album = rows[0]
-            if (!album) throw new Error('Album not found')
-
-            if (artistIds?.length) {
-              const linkRows = artistIds.map((artistId, i) => ({
-                albumId: id,
-                artistId,
-                displayOrder: i
-              }))
-              await tx
-                .insert(musicAlbumArtistsTable)
-                .values(linkRows)
-                .onConflictDoUpdate({
-                  target: [musicAlbumArtistsTable.albumId, musicAlbumArtistsTable.artistId],
-                  set: { displayOrder: sql`excluded."displayOrder"` }
-                })
-            }
-
-            return album
-          }),
+              .where(eq(musicAlbumsTable.id, id)),
+            ...(artistIds?.length
+              ? [
+                  db
+                    .insert(musicAlbumArtistsTable)
+                    .values(
+                      artistIds.map((artistId, displayOrder) => ({
+                        albumId: id,
+                        artistId,
+                        displayOrder
+                      }))
+                    )
+                    .onConflictDoUpdate({
+                      target: [musicAlbumArtistsTable.albumId, musicAlbumArtistsTable.artistId],
+                      set: { displayOrder: sql`excluded.displayOrder` }
+                    })
+                ]
+              : [])
+          ])
+          const rows = await db
+            .select()
+            .from(musicAlbumsTable)
+            .where(eq(musicAlbumsTable.id, id))
+            .limit(1)
+          const album = rows[0]
+          if (!album) throw new Error('Album not found')
+          if (genres !== undefined) await replaceEntityLabels(db, 'album', album.id, { genres })
+          return album
+        },
         catch: (e) =>
           new DatabaseError({
             message: `Failed to update album: ${getErrorMessage(e)}`,
@@ -125,19 +160,29 @@ export const updateAlbumEffect =
             table: 'music_albums'
           })
       })
+      const { genres: projectedGenres } = yield* Effect.tryPromise({
+        try: () => projectEntityLabels(db, 'album', rows),
+        catch: (e) =>
+          new DatabaseError({ message: getErrorMessage(e), operation: 'select', table: 'labels' })
+      })
+      return { ...rows, genres: projectedGenres }
     }).pipe(Effect.withSpan('musicEntity.updateAlbum', { attributes: { id } }))
 
 export const deleteAlbumEffect = (db: DatabaseClient) => (id: string) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
       try: () =>
-        db.transaction(async (tx) => {
-          await deleteLinksForEntityTx(tx, 'album', id)
-          return tx
-            .delete(musicAlbumsTable)
-            .where(eq(musicAlbumsTable.id, id))
-            .returning({ id: musicAlbumsTable.id })
-        }),
+        (async () => {
+          const [, , rows] = await db.batch([
+            deleteLinksForEntity(db, 'album', id),
+            deleteEntityLabels(db, 'album', id),
+            db
+              .delete(musicAlbumsTable)
+              .where(eq(musicAlbumsTable.id, id))
+              .returning({ id: musicAlbumsTable.id })
+          ])
+          return rows
+        })(),
       catch: (e) =>
         new DatabaseError({
           message: `Failed to delete album: ${getErrorMessage(e)}`,

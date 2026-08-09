@@ -28,5 +28,17 @@
     }
   },
   "include": ["src/**/*", "drizzle/**/*", "sst-env.d.ts", "scripts/**/*"],
-  "exclude": ["src/archive", "node_modules", "../../packages/email/emails/**/*"]
+  "exclude": [
+    "src/archive",
+    "node_modules",
+    "../../packages/email/emails/**/*",
+    "scripts/assign-all-relations-to-user.ts",
+    "scripts/backfill-draft-music-entities.ts",
+    "scripts/backfill-episode-numbers.ts",
+    "scripts/fix-mix-created-dates.ts",
+    "scripts/migrate-mixes-to-main-show.ts",
+    "scripts/migrate-users-to-better-auth.ts",
+    "scripts/rename-audio-cdn-name.ts",
+    "scripts/seed-music-lookups.ts"
+  ]
 }

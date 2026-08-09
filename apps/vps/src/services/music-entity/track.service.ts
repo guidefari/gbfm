@@ -4,7 +4,7 @@ import type { DatabaseClient } from '@/db/layer'
 import { musicTrackArtistsTable, musicTracksTable } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { toSlug } from '@/services/to-slug'
-import { deleteLinksForEntityTx, requireOne } from './shared'
+import { deleteEntityLabels, deleteLinksForEntity, requireOne } from './shared'
 
 export interface CreateTrackInput {
   title: string
@@ -21,31 +21,39 @@ export interface CreateTrackInput {
 export const createTrackEffect = (db: DatabaseClient) =>
   Effect.fn('musicEntity.createTrack')(function* (data: CreateTrackInput) {
     const { artistIds, ...trackData } = data
+    const id = crypto.randomUUID()
 
-    return yield* Effect.tryPromise({
-      try: () =>
-        db.transaction(async (tx) => {
-          const rows = await tx.insert(musicTracksTable).values(trackData).returning()
-          const track = rows[0]
-          if (!track) throw new Error('Insert returned no rows')
-
-          if (artistIds?.length) {
-            const linkRows = artistIds.map((artistId, i) => ({
-              trackId: track.id,
-              artistId,
-              displayOrder: i
-            }))
-            await tx
-              .insert(musicTrackArtistsTable)
-              .values(linkRows)
-              .onConflictDoUpdate({
-                target: [musicTrackArtistsTable.trackId, musicTrackArtistsTable.artistId],
-                set: { displayOrder: sql`excluded."displayOrder"` }
-              })
-          }
-
-          return track
-        }),
+    const rows = yield* Effect.tryPromise({
+      try: async () => {
+        await db.batch([
+          db.insert(musicTracksTable).values({ ...trackData, id }),
+          ...(artistIds?.length
+            ? [
+                db
+                  .insert(musicTrackArtistsTable)
+                  .values(
+                    artistIds.map((artistId, displayOrder) => ({
+                      trackId: id,
+                      artistId,
+                      displayOrder
+                    }))
+                  )
+                  .onConflictDoUpdate({
+                    target: [musicTrackArtistsTable.trackId, musicTrackArtistsTable.artistId],
+                    set: { displayOrder: sql`excluded.displayOrder` }
+                  })
+              ]
+            : [])
+        ])
+        const rows = await db
+          .select()
+          .from(musicTracksTable)
+          .where(eq(musicTracksTable.id, id))
+          .limit(1)
+        const track = rows[0]
+        if (!track) throw new Error('Insert returned no rows')
+        return track
+      },
       catch: (e) =>
         new DatabaseError({
           message: `Failed to create track: ${getErrorMessage(e)}`,
@@ -53,6 +61,7 @@ export const createTrackEffect = (db: DatabaseClient) =>
           table: 'music_tracks'
         })
     })
+    return rows
   })
 
 export const getTracksEffect = (db: DatabaseClient) => () =>
@@ -88,35 +97,40 @@ export const updateTrackEffect =
         trackData.slug = toSlug(trackData.title)
       }
 
-      return yield* Effect.tryPromise({
-        try: () =>
-          db.transaction(async (tx) => {
-            const rows = await tx
+      const rows = yield* Effect.tryPromise({
+        try: async () => {
+          await db.batch([
+            db
               .update(musicTracksTable)
               .set({ ...trackData, updatedAt: new Date() })
-              .where(eq(musicTracksTable.id, id))
-              .returning()
-
-            const track = rows[0]
-            if (!track) throw new Error('Track not found')
-
-            if (artistIds?.length) {
-              const linkRows = artistIds.map((artistId, i) => ({
-                trackId: id,
-                artistId,
-                displayOrder: i
-              }))
-              await tx
-                .insert(musicTrackArtistsTable)
-                .values(linkRows)
-                .onConflictDoUpdate({
-                  target: [musicTrackArtistsTable.trackId, musicTrackArtistsTable.artistId],
-                  set: { displayOrder: sql`excluded."displayOrder"` }
-                })
-            }
-
-            return track
-          }),
+              .where(eq(musicTracksTable.id, id)),
+            ...(artistIds?.length
+              ? [
+                  db
+                    .insert(musicTrackArtistsTable)
+                    .values(
+                      artistIds.map((artistId, displayOrder) => ({
+                        trackId: id,
+                        artistId,
+                        displayOrder
+                      }))
+                    )
+                    .onConflictDoUpdate({
+                      target: [musicTrackArtistsTable.trackId, musicTrackArtistsTable.artistId],
+                      set: { displayOrder: sql`excluded.displayOrder` }
+                    })
+                ]
+              : [])
+          ])
+          const rows = await db
+            .select()
+            .from(musicTracksTable)
+            .where(eq(musicTracksTable.id, id))
+            .limit(1)
+          const track = rows[0]
+          if (!track) throw new Error('Track not found')
+          return track
+        },
         catch: (e) =>
           new DatabaseError({
             message: `Failed to update track: ${getErrorMessage(e)}`,
@@ -124,19 +138,24 @@ export const updateTrackEffect =
             table: 'music_tracks'
           })
       })
+      return rows
     }).pipe(Effect.withSpan('musicEntity.updateTrack', { attributes: { id } }))
 
 export const deleteTrackEffect = (db: DatabaseClient) => (id: string) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
       try: () =>
-        db.transaction(async (tx) => {
-          await deleteLinksForEntityTx(tx, 'track', id)
-          return tx
-            .delete(musicTracksTable)
-            .where(eq(musicTracksTable.id, id))
-            .returning({ id: musicTracksTable.id })
-        }),
+        (async () => {
+          const [, , rows] = await db.batch([
+            deleteLinksForEntity(db, 'track', id),
+            deleteEntityLabels(db, 'track', id),
+            db
+              .delete(musicTracksTable)
+              .where(eq(musicTracksTable.id, id))
+              .returning({ id: musicTracksTable.id })
+          ])
+          return rows
+        })(),
       catch: (e) =>
         new DatabaseError({
           message: `Failed to delete track: ${getErrorMessage(e)}`,

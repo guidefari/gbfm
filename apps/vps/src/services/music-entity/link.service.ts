@@ -61,7 +61,7 @@ export const addLinkEffect = (db: DatabaseClient) =>
               url: data.url,
               status: data.status ?? LINK_STATUS.VERIFIED,
               metadata: data.metadata,
-              updatedAt: sql`now()`
+              updatedAt: new Date()
             }
           })
           .returning(),

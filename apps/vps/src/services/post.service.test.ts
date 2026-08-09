@@ -21,7 +21,7 @@ const basePost: SelectMdxCompiledPost = {
   slug: 'title',
   content: 'Body',
   draft: false,
-  tags: null,
+  tags: [],
   type: 'post',
   musicEntityType: null,
   musicEntityId: null,

@@ -1,18 +1,24 @@
 import { sql } from 'drizzle-orm'
-import { integer, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 import { user } from './auth.schema'
 import { postsTable } from './post.schema'
 
-export const navigationSessions = pgTable(
+export const navigationSessions = sqliteTable(
   'navigation_sessions',
   {
-    id: uuid('id').defaultRandom().primaryKey(),
+    id: text('id')
+      .$defaultFn(() => crypto.randomUUID())
+      .primaryKey(),
     userId: text('userId').references(() => user.id, { onDelete: 'cascade' }),
     deviceToken: text('deviceToken'),
     cursor: integer('cursor').notNull().default(0),
     lastIntentToken: text('lastIntentToken'),
-    createdAt: timestamp('createdAt').defaultNow().notNull(),
-    updatedAt: timestamp('updatedAt').defaultNow().notNull()
+    createdAt: integer('createdAt', { mode: 'timestamp_ms' })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updatedAt: integer('updatedAt', { mode: 'timestamp_ms' })
+      .$defaultFn(() => new Date())
+      .notNull()
   },
   (table) => [
     uniqueIndex('navigation_sessions_user_uq')
@@ -24,10 +30,10 @@ export const navigationSessions = pgTable(
   ]
 )
 
-export const navigationSeenPosts = pgTable(
+export const navigationSeenPosts = sqliteTable(
   'navigation_seen_posts',
   {
-    sessionId: uuid('sessionId')
+    sessionId: text('sessionId')
       .notNull()
       .references(() => navigationSessions.id, { onDelete: 'cascade' }),
     slug: text('slug').notNull()
@@ -35,20 +41,24 @@ export const navigationSeenPosts = pgTable(
   (table) => [uniqueIndex('navigation_seen_session_slug_uq').on(table.sessionId, table.slug)]
 )
 
-export const navigationTrailEntries = pgTable(
+export const navigationTrailEntries = sqliteTable(
   'navigation_trail_entries',
   {
-    id: uuid('id').defaultRandom().primaryKey(),
-    sessionId: uuid('sessionId')
+    id: text('id')
+      .$defaultFn(() => crypto.randomUUID())
+      .primaryKey(),
+    sessionId: text('sessionId')
       .notNull()
       .references(() => navigationSessions.id, { onDelete: 'cascade' }),
-    postId: uuid('postId')
+    postId: text('postId')
       .notNull()
       .references(() => postsTable.id, { onDelete: 'cascade' }),
     slug: text('slug').notNull(),
     position: integer('position').notNull(),
     arrivedBy: text('arrivedBy').notNull(),
-    visitedAt: timestamp('visitedAt').defaultNow().notNull()
+    visitedAt: integer('visitedAt', { mode: 'timestamp_ms' })
+      .$defaultFn(() => new Date())
+      .notNull()
   },
   (table) => [
     uniqueIndex('navigation_trail_session_position_uq').on(table.sessionId, table.position)

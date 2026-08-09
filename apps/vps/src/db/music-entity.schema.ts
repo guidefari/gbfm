@@ -1,18 +1,7 @@
 import { LINK_STATUS, LINK_STATUSES } from '@gbfm/core/status'
 import { z } from 'zod'
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
-import {
-  index,
-  integer,
-  jsonb,
-  pgTable,
-  primaryKey,
-  text,
-  timestamp,
-  unique,
-  uuid,
-  varchar
-} from 'drizzle-orm/pg-core'
+import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 import { user } from './auth.schema'
 
 // ---------------------------------------------------------------------------
@@ -63,122 +52,149 @@ export type AlbumType = (typeof ALBUM_TYPES)[number]
 // ---------------------------------------------------------------------------
 
 /** Seeded — do not insert manually; use scripts/seed-music-lookups.ts */
-export const musicEntityTypesTable = pgTable('music_entity_types', {
-  id: varchar({ length: 50 }).primaryKey(), // 'artist' | 'album' | 'track' | 'playlist' | 'label'
-  displayName: varchar({ length: 100 }).notNull()
+export const musicEntityTypesTable = sqliteTable('music_entity_types', {
+  id: text().primaryKey(), // 'artist' | 'album' | 'track' | 'playlist' | 'label'
+  displayName: text().notNull()
 })
 
 /** Seeded — do not insert manually; use scripts/seed-music-lookups.ts */
-export const musicPlatformsTable = pgTable('music_platforms', {
-  id: varchar({ length: 50 }).primaryKey(), // 'spotify' | 'bandcamp' | ...
-  displayName: varchar({ length: 100 }).notNull(),
-  websiteUrl: varchar({ length: 512 }),
-  iconUrl: varchar({ length: 512 })
+export const musicPlatformsTable = sqliteTable('music_platforms', {
+  id: text().primaryKey(), // 'spotify' | 'bandcamp' | ...
+  displayName: text().notNull(),
+  websiteUrl: text(),
+  iconUrl: text()
 })
 
 // ---------------------------------------------------------------------------
 // Core entity tables
 // ---------------------------------------------------------------------------
 
-export const musicArtistsTable = pgTable(
+export const musicArtistsTable = sqliteTable(
   'music_artists',
   {
-    id: uuid().primaryKey().defaultRandom(),
-    name: varchar({ length: 255 }).notNull(),
+    id: text()
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    name: text().notNull(),
     bio: text(),
-    imageUrl: varchar({ length: 512 }),
-    genres: varchar({ length: 255 }).array(),
-    slug: varchar({ length: 255 }).notNull().unique(),
-    publishedAt: timestamp({ withTimezone: true }),
+    imageUrl: text(),
+    slug: text().notNull().unique(),
+    publishedAt: integer({ mode: 'timestamp_ms' }),
     createdById: text().references(() => user.id, { onDelete: 'set null' }),
-    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+    createdAt: integer({ mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    updatedAt: integer({ mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date())
   },
   (table) => [index('music_artists_slug_idx').on(table.slug)]
 )
 
-export const musicAlbumsTable = pgTable(
+export const musicAlbumsTable = sqliteTable(
   'music_albums',
   {
-    id: uuid().primaryKey().defaultRandom(),
-    title: varchar({ length: 255 }).notNull(),
+    id: text()
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    title: text().notNull(),
     // Denormalized artist names for fast display without joins
-    artistNames: varchar({ length: 255 }).array(),
-    releaseDate: timestamp({ withTimezone: true }),
-    coverImageUrl: varchar({ length: 512 }),
-    genres: varchar({ length: 255 }).array(),
-    albumType: varchar({ length: 50 }), // LP | EP | single | compilation
-    slug: varchar({ length: 255 }).notNull().unique(),
-    publishedAt: timestamp({ withTimezone: true }),
+    artistNames: text({ mode: 'json' }).$type<string[]>(),
+    releaseDate: integer({ mode: 'timestamp_ms' }),
+    coverImageUrl: text(),
+    albumType: text(), // LP | EP | single | compilation
+    slug: text().notNull().unique(),
+    publishedAt: integer({ mode: 'timestamp_ms' }),
     createdById: text().references(() => user.id, { onDelete: 'set null' }),
-    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+    createdAt: integer({ mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    updatedAt: integer({ mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date())
   },
   (table) => [index('music_albums_slug_idx').on(table.slug)]
 )
 
-export const musicTracksTable = pgTable(
+export const musicTracksTable = sqliteTable(
   'music_tracks',
   {
-    id: uuid().primaryKey().defaultRandom(),
-    title: varchar({ length: 255 }).notNull(),
+    id: text()
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    title: text().notNull(),
     // Denormalized artist names for fast display without joins
-    artistNames: varchar({ length: 255 }).array(),
-    coverImageUrl: varchar({ length: 512 }),
-    albumId: uuid().references(() => musicAlbumsTable.id, {
+    artistNames: text({ mode: 'json' }).$type<string[]>(),
+    coverImageUrl: text(),
+    albumId: text().references(() => musicAlbumsTable.id, {
       onDelete: 'set null'
     }),
     trackNumber: integer(),
-    slug: varchar({ length: 255 }).notNull().unique(),
-    publishedAt: timestamp({ withTimezone: true }),
+    slug: text().notNull().unique(),
+    publishedAt: integer({ mode: 'timestamp_ms' }),
     createdById: text().references(() => user.id, { onDelete: 'set null' }),
-    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+    createdAt: integer({ mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    updatedAt: integer({ mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date())
   },
   (table) => [index('music_tracks_slug_idx').on(table.slug)]
 )
 
-export const musicPlaylistsTable = pgTable(
+export const musicPlaylistsTable = sqliteTable(
   'music_playlists',
   {
-    id: uuid().primaryKey().defaultRandom(),
-    title: varchar({ length: 255 }).notNull(),
+    id: text()
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    title: text().notNull(),
     description: text(),
-    coverImageUrl: varchar({ length: 512 }),
+    coverImageUrl: text(),
     curatorId: text().references(() => user.id, { onDelete: 'set null' }),
-    slug: varchar({ length: 255 }).notNull().unique(),
-    publishedAt: timestamp({ withTimezone: true }),
+    slug: text().notNull().unique(),
+    publishedAt: integer({ mode: 'timestamp_ms' }),
     createdById: text().references(() => user.id, { onDelete: 'set null' }),
-    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+    createdAt: integer({ mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    updatedAt: integer({ mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    revision: integer().notNull().default(0)
   },
   (table) => [index('music_playlists_slug_idx').on(table.slug)]
 )
 
-export const musicLabelsTable = pgTable(
+export const musicLabelsTable = sqliteTable(
   'music_labels',
   {
-    id: uuid().primaryKey().defaultRandom(),
-    name: varchar({ length: 255 }).notNull(),
+    id: text()
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    name: text().notNull(),
     description: text(),
-    imageUrl: varchar('image_url', { length: 512 }),
-    bannerImageUrl: varchar('banner_image_url', { length: 512 }),
-    slug: varchar({ length: 255 }).notNull().unique(),
+    imageUrl: text('image_url'),
+    bannerImageUrl: text('banner_image_url'),
+    slug: text().notNull().unique(),
     content: text().notNull().default(''),
-    tags: varchar({ length: 255 }).array(),
-    genres: varchar({ length: 255 }).array(),
-    publishedAt: timestamp('published_at', { withTimezone: true }),
+    publishedAt: integer('published_at', { mode: 'timestamp_ms' }),
     createdById: text('created_by_id').references(() => user.id, { onDelete: 'set null' }),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date())
   },
   (table) => [index('music_labels_slug_idx').on(table.slug)]
 )
 
-export const musicLabelCreatorsTable = pgTable(
+export const musicLabelCreatorsTable = sqliteTable(
   'music_label_creators',
   {
-    labelId: uuid('label_id')
+    labelId: text('label_id')
       .notNull()
       .references(() => musicLabelsTable.id, { onDelete: 'cascade' }),
     creatorId: text('creator_id')
@@ -188,13 +204,13 @@ export const musicLabelCreatorsTable = pgTable(
   (table) => [primaryKey({ columns: [table.labelId, table.creatorId] })]
 )
 
-export const musicLabelArtistsTable = pgTable(
+export const musicLabelArtistsTable = sqliteTable(
   'music_label_artists',
   {
-    labelId: uuid('label_id')
+    labelId: text('label_id')
       .notNull()
       .references(() => musicLabelsTable.id, { onDelete: 'cascade' }),
-    artistId: uuid('artist_id')
+    artistId: text('artist_id')
       .notNull()
       .references(() => musicArtistsTable.id, { onDelete: 'cascade' })
   },
@@ -204,13 +220,13 @@ export const musicLabelArtistsTable = pgTable(
   ]
 )
 
-export const musicLabelAlbumsTable = pgTable(
+export const musicLabelAlbumsTable = sqliteTable(
   'music_label_albums',
   {
-    labelId: uuid('label_id')
+    labelId: text('label_id')
       .notNull()
       .references(() => musicLabelsTable.id, { onDelete: 'cascade' }),
-    albumId: uuid('album_id')
+    albumId: text('album_id')
       .notNull()
       .references(() => musicAlbumsTable.id, { onDelete: 'cascade' })
   },
@@ -224,32 +240,32 @@ export const musicLabelAlbumsTable = pgTable(
 // Many-to-many: artists ↔ albums and artists ↔ tracks
 // ---------------------------------------------------------------------------
 
-export const musicAlbumArtistsTable = pgTable(
+export const musicAlbumArtistsTable = sqliteTable(
   'music_album_artists',
   {
-    albumId: uuid()
+    albumId: text()
       .notNull()
       .references(() => musicAlbumsTable.id, { onDelete: 'cascade' }),
-    artistId: uuid()
+    artistId: text()
       .notNull()
       .references(() => musicArtistsTable.id, { onDelete: 'cascade' }),
     displayOrder: integer().notNull().default(0),
-    role: varchar({ length: 100 }) // 'primary' | 'featured' | 'producer' | null
+    role: text() // 'primary' | 'featured' | 'producer' | null
   },
   (table) => [primaryKey({ columns: [table.albumId, table.artistId] })]
 )
 
-export const musicTrackArtistsTable = pgTable(
+export const musicTrackArtistsTable = sqliteTable(
   'music_track_artists',
   {
-    trackId: uuid()
+    trackId: text()
       .notNull()
       .references(() => musicTracksTable.id, { onDelete: 'cascade' }),
-    artistId: uuid()
+    artistId: text()
       .notNull()
       .references(() => musicArtistsTable.id, { onDelete: 'cascade' }),
     displayOrder: integer().notNull().default(0),
-    role: varchar({ length: 100 })
+    role: text()
   },
   (table) => [primaryKey({ columns: [table.trackId, table.artistId] })]
 )
@@ -258,17 +274,19 @@ export const musicTrackArtistsTable = pgTable(
 // Many-to-many: playlists ↔ tracks
 // ---------------------------------------------------------------------------
 
-export const musicPlaylistTracksTable = pgTable(
+export const musicPlaylistTracksTable = sqliteTable(
   'music_playlist_tracks',
   {
-    playlistId: uuid()
+    playlistId: text()
       .notNull()
       .references(() => musicPlaylistsTable.id, { onDelete: 'cascade' }),
-    trackId: uuid()
+    trackId: text()
       .notNull()
       .references(() => musicTracksTable.id, { onDelete: 'cascade' }),
     position: integer().notNull(),
-    addedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+    addedAt: integer({ mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date())
   },
   (table) => [
     primaryKey({ columns: [table.playlistId, table.trackId] }),
@@ -286,38 +304,39 @@ export const musicPlaylistTracksTable = pgTable(
  * their respective seeded lookup tables so invalid values are rejected at the
  * database level.
  */
-export const musicEntityLinksTable = pgTable(
+export const musicEntityLinksTable = sqliteTable(
   'music_entity_links',
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     // FK to music_entity_types — ensures only valid entity types are stored
-    entityType: varchar({ length: 50 })
+    entityType: text('entity_type')
       .notNull()
       .references(() => musicEntityTypesTable.id),
-    entityId: uuid().notNull(),
+    entityId: text().notNull(),
     // FK to music_platforms — ensures only known platforms are stored
-    platform: varchar({ length: 50 })
+    platform: text()
       .notNull()
       .references(() => musicPlatformsTable.id),
-    url: varchar({ length: 2048 }).notNull(),
-    status: varchar({ length: 50 }).notNull().default(LINK_STATUS.VERIFIED),
-    scrapedAt: timestamp({ withTimezone: true }),
-    verifiedAt: timestamp({ withTimezone: true }),
+    url: text().notNull(),
+    status: text().notNull().default(LINK_STATUS.VERIFIED),
+    scrapedAt: integer({ mode: 'timestamp_ms' }),
+    verifiedAt: integer({ mode: 'timestamp_ms' }),
     verifiedBy: text().references(() => user.id, { onDelete: 'set null' }),
-    metadata: jsonb().$type<Record<string, unknown>>(),
-    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+    metadata: text({ mode: 'json' }).$type<Record<string, unknown>>(),
+    createdAt: integer({ mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    updatedAt: integer({ mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date())
   },
   (table) => [
     index('music_entity_links_entity_idx').on(table.entityType, table.entityId),
     index('music_entity_links_status_idx').on(table.status),
     index('music_entity_links_platform_idx').on(table.platform),
-    // One link per platform per entity
-    unique('music_entity_links_unique_platform').on(
-      table.entityType,
-      table.entityId,
-      table.platform
-    )
+    uniqueIndex('music_entity_links_identity_uq').on(table.entityType, table.platform, table.url)
   ]
 )
 
@@ -328,10 +347,14 @@ export const musicEntityLinksTable = pgTable(
 export type SelectMusicEntityType = InferSelectModel<typeof musicEntityTypesTable>
 export type SelectMusicPlatform = InferSelectModel<typeof musicPlatformsTable>
 
-export type SelectMusicArtist = InferSelectModel<typeof musicArtistsTable>
+export type SelectMusicArtist = InferSelectModel<typeof musicArtistsTable> & {
+  genres: string[] | null
+}
 export type InsertMusicArtist = InferInsertModel<typeof musicArtistsTable>
 
-export type SelectMusicAlbum = InferSelectModel<typeof musicAlbumsTable>
+export type SelectMusicAlbum = InferSelectModel<typeof musicAlbumsTable> & {
+  genres: string[] | null
+}
 export type InsertMusicAlbum = InferInsertModel<typeof musicAlbumsTable>
 
 export type SelectMusicTrack = InferSelectModel<typeof musicTracksTable>
@@ -340,7 +363,10 @@ export type InsertMusicTrack = InferInsertModel<typeof musicTracksTable>
 export type SelectMusicPlaylist = InferSelectModel<typeof musicPlaylistsTable>
 export type InsertMusicPlaylist = InferInsertModel<typeof musicPlaylistsTable>
 
-export type SelectMusicLabel = InferSelectModel<typeof musicLabelsTable>
+export type SelectMusicLabel = InferSelectModel<typeof musicLabelsTable> & {
+  tags: string[] | null
+  genres: string[] | null
+}
 export type InsertMusicLabel = InferInsertModel<typeof musicLabelsTable>
 export type SelectMdxCompiledMusicLabel = SelectMusicLabel & {
   compiledContent: string

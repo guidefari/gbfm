@@ -1,27 +1,11 @@
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
-import {
-  boolean,
-  index,
-  integer,
-  jsonb,
-  pgEnum,
-  pgTable,
-  text,
-  timestamp,
-  uniqueIndex,
-  uuid
-} from 'drizzle-orm/pg-core'
+import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 import { user } from './auth.schema'
 import { postsTable } from './post.schema'
 
-export const externalAccountProviderEnum = pgEnum('external_account_provider', ['bluesky'])
-export const externalAccountStatusEnum = pgEnum('external_account_status', [
-  'active',
-  'needs_reconnect',
-  'revoked',
-  'error'
-])
-export const blueskySourceStatusEnum = pgEnum('bluesky_source_status', [
+export const externalAccountProviderEnum = ['bluesky'] as const
+export const externalAccountStatusEnum = ['active', 'needs_reconnect', 'revoked', 'error'] as const
+export const blueskySourceStatusEnum = [
   'active',
   'edited',
   'deleted',
@@ -29,12 +13,8 @@ export const blueskySourceStatusEnum = pgEnum('bluesky_source_status', [
   'error',
   'dismissed',
   'conflict'
-])
-export const blueskySyncRunStatusEnum = pgEnum('bluesky_sync_run_status', [
-  'running',
-  'succeeded',
-  'failed'
-])
+] as const
+export const blueskySyncRunStatusEnum = ['running', 'succeeded', 'failed'] as const
 
 /** The encrypted envelope persisted by the application crypto service. */
 export type CiphertextEnvelope = {
@@ -44,26 +24,30 @@ export type CiphertextEnvelope = {
   readonly payload: string
 }
 
-export const externalAccounts = pgTable(
+export const externalAccounts = sqliteTable(
   'external_accounts',
   {
-    id: uuid('id').defaultRandom().primaryKey(),
+    id: text('id')
+      .$defaultFn(() => crypto.randomUUID())
+      .primaryKey(),
     userId: text('user_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
-    provider: externalAccountProviderEnum('provider').notNull(),
+    provider: text('provider', { enum: externalAccountProviderEnum }).notNull(),
     providerAccountId: text('provider_account_id').notNull(),
     handle: text('handle'),
     displayName: text('display_name'),
     avatarUrl: text('avatar_url'),
     issuer: text('issuer'),
     serviceEndpoint: text('service_endpoint'),
-    status: externalAccountStatusEnum('status').notNull().default('active'),
+    status: text('status', { enum: externalAccountStatusEnum }).notNull().default('active'),
     lastErrorCategory: text('last_error_category'),
-    lastSuccessfulSyncAt: timestamp('last_successful_sync_at', { withTimezone: true }),
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp('updated_at', { withTimezone: true })
-      .defaultNow()
+    lastSuccessfulSyncAt: integer('last_successful_sync_at', { mode: 'timestamp_ms' }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .$defaultFn(() => new Date())
       .$onUpdate(() => new Date())
       .notNull()
   },
@@ -78,45 +62,49 @@ export const externalAccounts = pgTable(
 )
 
 /** Secrets are isolated from presentation queries and encrypted before insertion. */
-export const externalAccountSessions = pgTable('external_account_sessions', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  externalAccountId: uuid('external_account_id')
+export const externalAccountSessions = sqliteTable('external_account_sessions', {
+  id: text('id')
+    .$defaultFn(() => crypto.randomUUID())
+    .primaryKey(),
+  externalAccountId: text('external_account_id')
     .notNull()
     .unique()
     .references(() => externalAccounts.id, { onDelete: 'cascade' }),
-  appPassword: jsonb('app_password').$type<CiphertextEnvelope>(),
-  session: jsonb('session').$type<CiphertextEnvelope>(),
-  updatedAt: timestamp('updated_at', { withTimezone: true })
-    .defaultNow()
+  appPassword: text('app_password', { mode: 'json' }).$type<CiphertextEnvelope>(),
+  session: text('session', { mode: 'json' }).$type<CiphertextEnvelope>(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+    .$defaultFn(() => new Date())
     .$onUpdate(() => new Date())
     .notNull()
 })
 
-export const blueskySyncStates = pgTable('bluesky_sync_states', {
-  externalAccountId: uuid('external_account_id')
+export const blueskySyncStates = sqliteTable('bluesky_sync_states', {
+  externalAccountId: text('external_account_id')
     .primaryKey()
     .references(() => externalAccounts.id, { onDelete: 'cascade' }),
   cursor: text('cursor'),
   lookbackDays: integer('lookback_days').notNull().default(90),
-  scheduled: boolean('scheduled').notNull().default(false),
+  scheduled: integer('scheduled', { mode: 'boolean' }).notNull().default(false),
   consecutiveFailures: integer('consecutive_failures').notNull().default(0),
-  nextEligibleAt: timestamp('next_eligible_at', { withTimezone: true }),
-  lastAttemptedAt: timestamp('last_attempted_at', { withTimezone: true }),
-  lastStartedAt: timestamp('last_started_at', { withTimezone: true }),
-  updatedAt: timestamp('updated_at', { withTimezone: true })
-    .defaultNow()
+  nextEligibleAt: integer('next_eligible_at', { mode: 'timestamp_ms' }),
+  lastAttemptedAt: integer('last_attempted_at', { mode: 'timestamp_ms' }),
+  lastStartedAt: integer('last_started_at', { mode: 'timestamp_ms' }),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+    .$defaultFn(() => new Date())
     .$onUpdate(() => new Date())
     .notNull()
 })
 
-export const blueskySyncRuns = pgTable(
+export const blueskySyncRuns = sqliteTable(
   'bluesky_sync_runs',
   {
-    id: uuid('id').defaultRandom().primaryKey(),
-    externalAccountId: uuid('external_account_id')
+    id: text('id')
+      .$defaultFn(() => crypto.randomUUID())
+      .primaryKey(),
+    externalAccountId: text('external_account_id')
       .notNull()
       .references(() => externalAccounts.id, { onDelete: 'cascade' }),
-    status: blueskySyncRunStatusEnum('status').notNull().default('running'),
+    status: text('status', { enum: blueskySyncRunStatusEnum }).notNull().default('running'),
     discovered: integer('discovered').notNull().default(0),
     qualifying: integer('qualifying').notNull().default(0),
     created: integer('created').notNull().default(0),
@@ -127,39 +115,47 @@ export const blueskySyncRuns = pgTable(
     failed: integer('failed').notNull().default(0),
     pageCount: integer('page_count').notNull().default(0),
     errorCategory: text('error_category'),
-    startedAt: timestamp('started_at', { withTimezone: true }).defaultNow().notNull(),
-    finishedAt: timestamp('finished_at', { withTimezone: true })
+    startedAt: integer('started_at', { mode: 'timestamp_ms' })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    finishedAt: integer('finished_at', { mode: 'timestamp_ms' })
   },
   (table) => [
     index('bluesky_sync_runs_account_started_idx').on(table.externalAccountId, table.startedAt)
   ]
 )
 
-export const blueskyPostSources = pgTable(
+export const blueskyPostSources = sqliteTable(
   'bluesky_post_sources',
   {
-    id: uuid('id').defaultRandom().primaryKey(),
-    externalAccountId: uuid('external_account_id').references(() => externalAccounts.id, {
+    id: text('id')
+      .$defaultFn(() => crypto.randomUUID())
+      .primaryKey(),
+    externalAccountId: text('external_account_id').references(() => externalAccounts.id, {
       onDelete: 'set null'
     }),
-    postId: uuid('post_id').references(() => postsTable.id, { onDelete: 'set null' }),
+    postId: text('post_id').references(() => postsTable.id, { onDelete: 'set null' }),
     authorDid: text('author_did').notNull(),
     authorHandle: text('author_handle'),
     atUri: text('at_uri').notNull(),
     cid: text('cid'),
     publicUrl: text('public_url').notNull(),
-    sourceCreatedAt: timestamp('source_created_at', { withTimezone: true }).notNull(),
-    sourceStatus: blueskySourceStatusEnum('source_status').notNull().default('active'),
+    sourceCreatedAt: integer('source_created_at', { mode: 'timestamp_ms' }).notNull(),
+    sourceStatus: text('source_status', { enum: blueskySourceStatusEnum })
+      .notNull()
+      .default('active'),
     sourceFingerprint: text('source_fingerprint'),
     sourceText: text('source_text'),
-    sourceFacets: jsonb('source_facets'),
-    sourceEmbeds: jsonb('source_embeds'),
-    locallyEdited: boolean('locally_edited').notNull().default(false),
-    lastSeenAt: timestamp('last_seen_at', { withTimezone: true }),
+    sourceFacets: text('source_facets', { mode: 'json' }).$type<unknown>(),
+    sourceEmbeds: text('source_embeds', { mode: 'json' }).$type<unknown>(),
+    locallyEdited: integer('locally_edited', { mode: 'boolean' }).notNull().default(false),
+    lastSeenAt: integer('last_seen_at', { mode: 'timestamp_ms' }),
     lastError: text('last_error'),
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp('updated_at', { withTimezone: true })
-      .defaultNow()
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .$defaultFn(() => new Date())
       .$onUpdate(() => new Date())
       .notNull()
   },

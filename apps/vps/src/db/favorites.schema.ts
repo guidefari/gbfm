@@ -1,24 +1,28 @@
 import { z } from 'zod'
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
-import { index, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
+import { index, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
 import { audioTable } from './audio.schema'
 import { user } from './auth.schema'
 import { showsTable } from './show.schema'
 
-export const favoritesTable = pgTable(
+export const favoritesTable = sqliteTable(
   'favorites',
   {
-    id: uuid('id').defaultRandom().primaryKey(),
+    id: text('id')
+      .$defaultFn(() => crypto.randomUUID())
+      .primaryKey(),
     userId: text('user_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
-    audioId: uuid('audio_id').references(() => audioTable.id, {
+    audioId: text('audio_id').references(() => audioTable.id, {
       onDelete: 'cascade'
     }),
-    showId: uuid('show_id').references(() => showsTable.id, {
+    showId: text('show_id').references(() => showsTable.id, {
       onDelete: 'cascade'
     }),
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .$defaultFn(() => new Date())
+      .notNull()
   },
   (t) => [
     index('favorites_user_created_idx').on(t.userId, t.createdAt),

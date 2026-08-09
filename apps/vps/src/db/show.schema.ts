@@ -1,10 +1,10 @@
 import { z } from 'zod'
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
-import { index, pgTable, primaryKey, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
+import { index, integer, primaryKey, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
 import { user } from './auth.schema'
 import { defaultContentFields } from './util'
 
-export const showsTable = pgTable(
+export const showsTable = sqliteTable(
   'shows',
   {
     ...defaultContentFields
@@ -12,8 +12,8 @@ export const showsTable = pgTable(
   (table) => [index('shows_slug_idx').on(table.slug)]
 )
 
-export type SelectShow = InferSelectModel<typeof showsTable>
-export type InsertShow = InferInsertModel<typeof showsTable>
+export type SelectShow = InferSelectModel<typeof showsTable> & { tags: string[] | null }
+export type InsertShow = InferInsertModel<typeof showsTable> & { tags?: string[] }
 
 export type SelectMdxCompiledShow = SelectShow & {
   compiledContent: string
@@ -23,10 +23,10 @@ export type SelectMdxCompiledShow = SelectShow & {
   }>
 }
 
-export const showCreators = pgTable(
+export const showCreators = sqliteTable(
   'show_creators',
   {
-    showId: uuid()
+    showId: text()
       .notNull()
       .references(() => showsTable.id, { onDelete: 'cascade' }),
     creatorId: text()
@@ -39,17 +39,21 @@ export const showCreators = pgTable(
   ]
 )
 
-export const showSubscriptionsTable = pgTable(
+export const showSubscriptionsTable = sqliteTable(
   'show_subscriptions',
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     userId: text()
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
-    showId: uuid()
+    showId: text()
       .notNull()
       .references(() => showsTable.id, { onDelete: 'cascade' }),
-    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+    createdAt: integer({ mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date())
   },
   (table) => [
     unique('show_subscriptions_user_show_unique').on(table.userId, table.showId),

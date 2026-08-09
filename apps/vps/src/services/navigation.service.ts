@@ -415,6 +415,7 @@ export const NavigationSessionServiceLayer = Layer.effect(
                 .select()
                 .from(navigationSessions)
                 .where(identityWhere(identity))
+                // @ts-expect-error SQLite has no SELECT FOR UPDATE. M4 replaces this transaction with a Durable Object.
                 .for('update')
                 .limit(1)
               const session = existing[0]
@@ -447,6 +448,7 @@ export const NavigationSessionServiceLayer = Layer.effect(
                     .select()
                     .from(navigationSessions)
                     .where(identityWhere(identity))
+                    // @ts-expect-error SQLite has no SELECT FOR UPDATE. M4 replaces this transaction with a Durable Object.
                     .for('update')
                     .limit(1)
                 )[0]

@@ -1,7 +1,7 @@
 import { EMAIL_DELIVERY_STATUS_VALUES, EMAIL_DELIVERY_STATUSES } from '@gbfm/core/status'
 import { z } from 'zod'
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
-import { boolean, index, jsonb, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
+import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { user } from './auth.schema'
 
 export const EMAIL_NOTIFICATION_TYPES = {
@@ -15,26 +15,32 @@ export type EmailNotificationType =
   (typeof EMAIL_NOTIFICATION_TYPES)[keyof typeof EMAIL_NOTIFICATION_TYPES]
 
 // Email delivery logs table - tracks all email sending attempts
-export const emailDeliveryLogsTable = pgTable(
+export const emailDeliveryLogsTable = sqliteTable(
   'email_delivery_logs',
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     userId: text().references(() => user.id, { onDelete: 'set null' }), // null for non-user emails
-    recipientEmail: varchar({ length: 255 }).notNull(),
-    recipientName: varchar({ length: 255 }),
-    emailType: varchar({ length: 50 }).notNull(),
-    templateName: varchar({ length: 100 }).notNull(), // e.g., 'welcome', 'mix-notification'
-    subject: varchar({ length: 500 }).notNull(),
-    status: varchar({ length: 50 }).notNull().default(EMAIL_DELIVERY_STATUSES.PENDING),
-    sesMessageId: varchar({ length: 255 }), // SES response message ID
-    metadata: jsonb(), // Additional context (mix ID, etc.)
-    errorMessage: text(), // Error details if failed
-    sentAt: timestamp({ withTimezone: true }),
-    deliveredAt: timestamp({ withTimezone: true }),
-    bouncedAt: timestamp({ withTimezone: true }),
-    complainedAt: timestamp({ withTimezone: true }),
-    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+    recipientEmail: text().notNull(),
+    recipientName: text(),
+    emailType: text().notNull(),
+    templateName: text().notNull(),
+    subject: text().notNull(),
+    status: text().notNull().default(EMAIL_DELIVERY_STATUSES.PENDING),
+    sesMessageId: text(),
+    metadata: text({ mode: 'json' }).$type<Record<string, unknown>>(),
+    errorMessage: text(),
+    sentAt: integer({ mode: 'timestamp_ms' }),
+    deliveredAt: integer({ mode: 'timestamp_ms' }),
+    bouncedAt: integer({ mode: 'timestamp_ms' }),
+    complainedAt: integer({ mode: 'timestamp_ms' }),
+    createdAt: integer({ mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    updatedAt: integer({ mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date())
   },
   (table) => [
     index('email_delivery_logs_userId_idx').on(table.userId),
@@ -45,22 +51,28 @@ export const emailDeliveryLogsTable = pgTable(
 )
 
 // Author email preferences table - manages user notification settings
-export const userEmailPreferencesTable = pgTable('user_email_preferences', {
-  id: uuid().primaryKey().defaultRandom(),
+export const userEmailPreferencesTable = sqliteTable('user_email_preferences', {
+  id: text()
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   userId: text()
     .notNull()
     .unique()
     .references(() => user.id, { onDelete: 'cascade' }),
   // Notification preferences
-  mixReleaseEnabled: boolean().notNull().default(true),
-  promotionalEnabled: boolean().notNull().default(true),
-  systemEnabled: boolean().notNull().default(true),
+  mixReleaseEnabled: integer({ mode: 'boolean' }).notNull().default(true),
+  promotionalEnabled: integer({ mode: 'boolean' }).notNull().default(true),
+  systemEnabled: integer({ mode: 'boolean' }).notNull().default(true),
   // Global settings
-  globalUnsubscribe: boolean().notNull().default(false), // Opt-out of all non-transactional emails
+  globalUnsubscribe: integer({ mode: 'boolean' }).notNull().default(false), // Opt-out of all non-transactional emails
   // Metadata
-  unsubscribeToken: uuid().unique(), // Token for unsubscribe links
-  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  unsubscribeToken: text().unique(), // Token for unsubscribe links
+  createdAt: integer({ mode: 'timestamp_ms' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: integer({ mode: 'timestamp_ms' })
+    .notNull()
+    .$defaultFn(() => new Date())
 })
 
 // Type exports for Drizzle

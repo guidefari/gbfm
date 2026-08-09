@@ -17,11 +17,13 @@ import {
 } from '@gbfm/api/post'
 import { SearchResults } from '@gbfm/api/search'
 import { decodeResponseBody } from '@gbfm/api/testing'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { db } from '@/test/database'
 import { audioTable } from '@/db/audio.schema'
 import { session, user } from '@/db/auth.schema'
+import { entityLabelsTable } from '@/db/tags.schema'
+import { replaceEntityLabels } from '@/db/labels'
 import { navigationSessions } from '@/db/navigation.schema'
 import {
   musicAlbumsTable,
@@ -2121,6 +2123,8 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
     const suffix = crypto.randomUUID()
     const slug = `draft-${suffix}`
     const tag = `draft-tag-${suffix}`
+    const audioId = crypto.randomUUID()
+    const postId = crypto.randomUUID()
     const [publishedShow] = await db
       .insert(showsTable)
       .values({ title: 'Published parent', slug: `published-${suffix}`, content: '', draft: false })
@@ -2139,13 +2143,13 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
 
     await Promise.all([
       db.insert(audioTable).values({
+        id: audioId,
         title: 'Draft audio',
         slug,
         content: '',
         type: 'mix',
         url: 'https://example.com/draft.mp3',
-        draft: true,
-        tags: [tag]
+        draft: true
       }),
       db.insert(audioTable).values({
         title: 'Draft episode',
@@ -2158,12 +2162,12 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
       }),
       db.insert(showsTable).values({ title: 'Draft show', slug, content: '', draft: true }),
       db.insert(postsTable).values({
+        id: postId,
         title: 'Draft post',
         slug,
         content: 'draft',
         type: 'post',
-        draft: true,
-        tags: [tag]
+        draft: true
       }),
       db.insert(musicLabelsTable).values({ name: 'Draft label', slug, content: '' }),
       db.insert(releasesTable).values({
@@ -2173,6 +2177,10 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
         labelId: publishedLabel.id,
         draft: true
       })
+    ])
+    await Promise.all([
+      replaceEntityLabels(db, 'audio', audioId, { tags: [tag] }),
+      replaceEntityLabels(db, 'post', postId, { tags: [tag] })
     ])
 
     try {
@@ -2210,6 +2218,16 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
       expect(JSON.stringify(await labels.json())).not.toContain(slug)
       expect(await rss.text()).not.toContain(slug)
     } finally {
+      await db
+        .delete(entityLabelsTable)
+        .where(
+          and(eq(entityLabelsTable.entityType, 'audio'), eq(entityLabelsTable.entityId, audioId))
+        )
+      await db
+        .delete(entityLabelsTable)
+        .where(
+          and(eq(entityLabelsTable.entityType, 'post'), eq(entityLabelsTable.entityId, postId))
+        )
       await db.delete(releasesTable).where(eq(releasesTable.slug, slug))
       await db.delete(audioTable).where(eq(audioTable.slug, `episode-${suffix}`))
       await db.delete(audioTable).where(eq(audioTable.slug, slug))

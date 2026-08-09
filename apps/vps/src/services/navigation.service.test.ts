@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { eq, inArray } from 'drizzle-orm'
+import { eq, inArray, sql } from 'drizzle-orm'
 import { Effect, Layer, Schema } from 'effect'
 import { afterEach, beforeAll, describe, expect, test } from 'vitest'
 import { DatabaseTestLayer, db } from '@/test/database'
@@ -89,7 +89,7 @@ const open = (reader: ReturnType<typeof identity>, post: { readonly slug: Slug }
   Effect.runPromise(resolve(reader, { _tag: 'Open', slug: post.slug }, post.slug, randomUUID()))
 
 beforeAll(async () => {
-  await db.execute('SELECT 1')
+  await db.run(sql`SELECT 1`)
 })
 
 afterEach(async () => {

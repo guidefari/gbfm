@@ -1,32 +1,22 @@
 import { z } from 'zod'
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
-import {
-  index,
-  integer,
-  pgEnum,
-  pgTable,
-  primaryKey,
-  text,
-  uniqueIndex,
-  uuid,
-  varchar
-} from 'drizzle-orm/pg-core'
+import { index, integer, sqliteTable, primaryKey, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 import { user } from './auth.schema'
 import { showsTable } from './show.schema'
 import { defaultContentFields } from './util'
 
-export const audioTypeEnum = pgEnum('audio_type', ['mix', 'track', 'misc'])
+export const audioTypeEnum = ['mix', 'track', 'misc'] as const
 
-export const audioTable = pgTable(
+export const audioTable = sqliteTable(
   'audio',
   {
     ...defaultContentFields,
-    type: audioTypeEnum().notNull(),
-    url: varchar({ length: 255 }).notNull(),
-    idempotencyKey: uuid(),
+    type: text({ enum: audioTypeEnum }).notNull(),
+    url: text().notNull(),
+    idempotencyKey: text(),
     idempotencyActorId: text(),
     idempotencyFingerprint: text(),
-    showId: uuid().references(() => showsTable.id, { onDelete: 'set null' }),
+    showId: text().references(() => showsTable.id, { onDelete: 'set null' }),
     episodeNumber: integer(),
     playCount: integer().notNull().default(0)
   },
@@ -38,14 +28,15 @@ export const audioTable = pgTable(
       table.idempotencyKey
     ),
     index('audio_show_idx').on(table.showId),
-    index('audio_type_created_idx').on(table.type, table.createdAt),
-    index('audio_tags_gin_idx').using('gin', table.tags)
+    index('audio_type_created_idx').on(table.type, table.createdAt)
   ]
 )
 
 type AudioPersistenceFields = 'idempotencyKey' | 'idempotencyActorId' | 'idempotencyFingerprint'
 type BaseSelectAudio = Omit<InferSelectModel<typeof audioTable>, AudioPersistenceFields>
-export type InsertAudio = Omit<InferInsertModel<typeof audioTable>, AudioPersistenceFields>
+export type InsertAudio = Omit<InferInsertModel<typeof audioTable>, AudioPersistenceFields> & {
+  tags?: string[]
+}
 
 export type Creator = {
   id: string
@@ -54,6 +45,7 @@ export type Creator = {
 }
 
 export type SelectAudio = BaseSelectAudio & {
+  tags: string[] | null
   creators?: Creator[]
 }
 
@@ -125,10 +117,10 @@ export const createAudioSchema = insertAudioSchema.extend({
   creatorIds: z.array(z.string()).min(1).optional()
 })
 
-export const audioCreators = pgTable(
+export const audioCreators = sqliteTable(
   'audio_creators',
   {
-    audioId: uuid()
+    audioId: text()
       .notNull()
       .references(() => audioTable.id),
     creatorId: text()

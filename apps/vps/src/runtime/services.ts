@@ -42,6 +42,7 @@ import { UserServiceLayer } from '@/services/user.service'
 import { ObjectStoreClientLayer } from '@/services/storage/object-store-client'
 
 const DevToolsLive: Layer.Layer<never> = Layer.empty
+// @ts-expect-error The Bun/Postgres runtime remains until M4 supplies the Worker D1 composition seam.
 const DatabaseLive = DatabaseLayer(pool)
 
 const SentryClientLive = SentryClientServiceLayer.pipe(Layer.provide(ConfigServiceLayer))

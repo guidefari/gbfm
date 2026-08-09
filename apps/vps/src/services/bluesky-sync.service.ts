@@ -342,8 +342,8 @@ const sync = (
 
       yield* Effect.tryPromise({
         try: () =>
-          db.transaction(async (tx) => {
-            await tx
+          db.batch([
+            db
               .update(blueskySyncRuns)
               .set({
                 status: 'succeeded',
@@ -356,8 +356,8 @@ const sync = (
                 pageCount: summary.pageCount,
                 finishedAt: new Date()
               })
-              .where(eq(blueskySyncRuns.id, run.id))
-            await tx
+              .where(eq(blueskySyncRuns.id, run.id)),
+            db
               .update(blueskySyncStates)
               .set({
                 cursor: summary.cursor,
@@ -366,12 +366,12 @@ const sync = (
                 consecutiveFailures: 0,
                 updatedAt: new Date()
               })
-              .where(eq(blueskySyncStates.externalAccountId, accountId))
-            await tx
+              .where(eq(blueskySyncStates.externalAccountId, accountId)),
+            db
               .update(externalAccounts)
               .set({ lastSuccessfulSyncAt: new Date(), updatedAt: new Date() })
               .where(eq(externalAccounts.id, accountId))
-          }),
+          ]),
         catch: () => databaseError('complete-run')
       })
       return summary

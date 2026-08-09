@@ -1,45 +1,42 @@
 import { z } from 'zod'
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
 import {
-  type AnyPgColumn,
+  type AnySQLiteColumn,
   index,
   integer,
-  pgEnum,
-  pgTable,
+  sqliteTable,
   primaryKey,
-  text,
-  uuid,
-  varchar
-} from 'drizzle-orm/pg-core'
+  text
+} from 'drizzle-orm/sqlite-core'
 import { user } from './auth.schema'
 import { defaultContentFields } from './util'
 
 export const POST_MUSIC_ENTITY_TYPES = ['album', 'track', 'playlist'] as const
 export type PostMusicEntityType = (typeof POST_MUSIC_ENTITY_TYPES)[number]
 
-export const postTypeEnum = pgEnum('post_type', ['post', 'micro'])
+export const postTypeEnum = ['post', 'micro'] as const
 // todo: derive this at some point bossman
 export type PostType = 'post' | 'micro'
 
 const { title, content, ...postContentFields } = defaultContentFields
 
-export const postsTable = pgTable(
+export const postsTable = sqliteTable(
   'posts',
   {
     ...postContentFields,
-    title: varchar({ length: 255 }),
+    title: text(),
     content: text(),
-    type: postTypeEnum(),
+    type: text({ enum: postTypeEnum }),
     musicEntityType: text('music_entity_type'),
-    musicEntityId: uuid('music_entity_id'),
-    parentPostId: uuid('parent_post_id').references((): AnyPgColumn => postsTable.id, {
+    musicEntityId: text('music_entity_id'),
+    parentPostId: text('parent_post_id').references((): AnySQLiteColumn => postsTable.id, {
       onDelete: 'set null'
     }),
-    rootPostId: uuid('root_post_id').references((): AnyPgColumn => postsTable.id, {
+    rootPostId: text('root_post_id').references((): AnySQLiteColumn => postsTable.id, {
       onDelete: 'set null'
     }),
     depth: integer('depth').notNull().default(0),
-    quotedPostId: uuid('quoted_post_id').references((): AnyPgColumn => postsTable.id, {
+    quotedPostId: text('quoted_post_id').references((): AnySQLiteColumn => postsTable.id, {
       onDelete: 'set null'
     })
   },
@@ -47,15 +44,14 @@ export const postsTable = pgTable(
     index('posts_slug_idx').on(table.slug),
     index('posts_music_entity_idx').on(table.musicEntityType, table.musicEntityId),
     index('posts_type_created_idx').on(table.type, table.createdAt),
-    index('posts_tags_gin_idx').using('gin', table.tags),
     index('posts_parent_created_idx').on(table.parentPostId, table.createdAt),
     index('posts_root_created_idx').on(table.rootPostId, table.createdAt),
     index('posts_quoted_post_idx').on(table.quotedPostId)
   ]
 )
 
-export type SelectPost = InferSelectModel<typeof postsTable>
-export type InsertPost = InferInsertModel<typeof postsTable>
+export type SelectPost = InferSelectModel<typeof postsTable> & { tags: string[] | null }
+export type InsertPost = InferInsertModel<typeof postsTable> & { tags?: string[] }
 
 export type BlueskySourceAttribution = {
   readonly authorDid: string
@@ -147,10 +143,10 @@ export const createPostSchema = insertPostSchema.extend({
 
 export const updatePostSchema = insertPostSchema.partial()
 
-export const postCreators = pgTable(
+export const postCreators = sqliteTable(
   'post_creators',
   {
-    postId: uuid()
+    postId: text()
       .notNull()
       .references(() => postsTable.id),
     creatorId: text()

@@ -1,5 +1,5 @@
 import { and, desc, eq, isNotNull, or } from 'drizzle-orm'
-import { alias } from 'drizzle-orm/pg-core'
+import { alias } from 'drizzle-orm/sqlite-core'
 import { Context, Effect, Layer } from 'effect'
 import { audioTable } from '@/db/audio.schema'
 import { Database } from '@/db/layer'

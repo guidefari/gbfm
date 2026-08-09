@@ -1,13 +1,31 @@
-import { and, type Column, eq, ilike, or, sql } from 'drizzle-orm'
+import { and, eq, like, or, sql, type SQLWrapper } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
+import { hasEntityLabelLike } from '@/db/labels'
 import { Database } from '@/db/layer'
 import { audioTable } from '@/db/audio.schema'
 import { postsTable } from '@/db/post.schema'
 import { showsTable } from '@/db/show.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
 
-const tagMatches = (tags: Column, pattern: string) =>
-  sql`EXISTS (SELECT 1 FROM unnest(${tags}) AS t WHERE t ILIKE ${pattern})`
+const shortQueryMatches = (
+  entityType: 'audio' | 'show' | 'post',
+  query: string,
+  table: { id: SQLWrapper; title: SQLWrapper; description: SQLWrapper; content: SQLWrapper }
+) => {
+  const pattern = `%${query.toLowerCase()}%`
+  return or(
+    like(sql`lower(${table.title})`, pattern),
+    like(sql`lower(${table.description})`, pattern),
+    like(sql`lower(${table.content})`, pattern),
+    hasEntityLabelLike(entityType, table.id, pattern)
+  )
+}
+
+const ftsMatches = (table: 'audio' | 'shows' | 'posts', query: string) => {
+  const index = sql.raw(`${table}_fts`)
+  const match = `"${query.replaceAll('"', '""')}"`
+  return sql`rowid IN (SELECT rowid FROM ${index} WHERE ${index} MATCH ${match})`
+}
 
 export type SearchResultItem = {
   id: string
@@ -33,7 +51,12 @@ export const SearchService = Context.Service<SearchService>('SearchService')
 
 const searchEffect = (db: Database['Service'], query: string, limit: number) =>
   Effect.gen(function* () {
-    const pattern = `%${query}%`
+    const showMatches =
+      query.length < 3 ? shortQueryMatches('show', query, showsTable) : ftsMatches('shows', query)
+    const audioMatches =
+      query.length < 3 ? shortQueryMatches('audio', query, audioTable) : ftsMatches('audio', query)
+    const postMatches =
+      query.length < 3 ? shortQueryMatches('post', query, postsTable) : ftsMatches('posts', query)
 
     const shows = Effect.tryPromise({
       try: () =>
@@ -46,17 +69,7 @@ const searchEffect = (db: Database['Service'], query: string, limit: number) =>
             description: showsTable.description
           })
           .from(showsTable)
-          .where(
-            and(
-              eq(showsTable.draft, false),
-              or(
-                ilike(showsTable.title, pattern),
-                ilike(showsTable.description, pattern),
-                ilike(showsTable.content, pattern),
-                tagMatches(showsTable.tags, pattern)
-              )
-            )
-          )
+          .where(and(eq(showsTable.draft, false), showMatches))
           .limit(limit),
       catch: (error) =>
         new DatabaseError({
@@ -82,15 +95,7 @@ const searchEffect = (db: Database['Service'], query: string, limit: number) =>
               columns: { thumbnailUrl: true, slug: true }
             }
           },
-          where: and(
-            eq(audioTable.draft, false),
-            or(
-              ilike(audioTable.title, pattern),
-              ilike(audioTable.description, pattern),
-              ilike(audioTable.content, pattern),
-              tagMatches(audioTable.tags, pattern)
-            )
-          ),
+          where: and(eq(audioTable.draft, false), audioMatches),
           limit
         }),
       catch: (error) =>
@@ -121,17 +126,7 @@ const searchEffect = (db: Database['Service'], query: string, limit: number) =>
             description: postsTable.description
           })
           .from(postsTable)
-          .where(
-            and(
-              eq(postsTable.draft, false),
-              or(
-                ilike(postsTable.title, pattern),
-                ilike(postsTable.description, pattern),
-                ilike(postsTable.content, pattern),
-                tagMatches(postsTable.tags, pattern)
-              )
-            )
-          )
+          .where(and(eq(postsTable.draft, false), postMatches))
           .limit(limit),
       catch: (error) =>
         new DatabaseError({

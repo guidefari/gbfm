@@ -1,6 +1,13 @@
-import { and, arrayContains, asc, count, desc, eq, or, type SQL, sql } from 'drizzle-orm'
+import { and, asc, count, desc, eq, or, type SQL, sql } from 'drizzle-orm'
 import { Context, Crypto, Effect, Encoding, Layer } from 'effect'
 import { Database } from '@/db/layer'
+import {
+  hasEntityLabel,
+  projectEntityLabels,
+  projectEntityLabelsForRows,
+  replaceEntityLabels
+} from '@/db/labels'
+import { entityLabelsTable, labelsTable } from '@/db/tags.schema'
 import {
   audioCreators,
   audioTable,
@@ -156,7 +163,7 @@ const getByTypeEffect = (
     const whereCondition = and(
       eq(audioTable.type, type),
       audioListVisibilityCondition(db, actor),
-      tag ? arrayContains(audioTable.tags, [tag]) : undefined
+      tag ? hasEntityLabel('audio', audioTable.id, tag) : undefined
     )
 
     const countResult = yield* Effect.tryPromise({
@@ -209,7 +216,12 @@ const getByTypeEffect = (
         })
     })
 
-    const data = audioItems.map(({ audioCreators: creators, show, ...audio }) => ({
+    const projectedAudio = yield* Effect.tryPromise({
+      try: () => projectEntityLabelsForRows(db, 'audio', audioItems),
+      catch: (error) =>
+        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+    })
+    const data = projectedAudio.map(({ audioCreators: creators, show, ...audio }) => ({
       ...audio,
       thumbnailUrl: audio.thumbnailUrl ?? show?.thumbnailUrl ?? null,
       creators: creators.map(({ creator }) => ({
@@ -230,10 +242,19 @@ const getTagsEffect = (db: Database['Service'], type: AudioType) =>
     const rows = yield* Effect.tryPromise({
       try: () =>
         db
-          .selectDistinct({
-            tag: sql<string | null>`unnest(${audioTable.tags})`
-          })
+          .selectDistinct({ tag: labelsTable.name })
           .from(audioTable)
+          .innerJoin(
+            entityLabelsTable,
+            and(
+              eq(entityLabelsTable.entityType, 'audio'),
+              eq(entityLabelsTable.entityId, audioTable.id)
+            )
+          )
+          .innerJoin(
+            labelsTable,
+            and(eq(labelsTable.id, entityLabelsTable.labelId), eq(labelsTable.kind, 'tag'))
+          )
           .where(and(eq(audioTable.type, type), eq(audioTable.draft, false))),
       catch: (error) =>
         new DatabaseError({
@@ -244,8 +265,8 @@ const getTagsEffect = (db: Database['Service'], type: AudioType) =>
     })
 
     return rows
-      .map((r) => r.tag)
-      .filter((t): t is string => typeof t === 'string' && t.length > 0)
+      .map((row) => row.tag)
+      .filter((tag) => tag.length > 0)
       .toSorted()
   })
 
@@ -316,8 +337,14 @@ const findAudioBySlug = (
 
     const { audioCreators: creators, show, ...audioFields } = audio
 
+    const { tags } = yield* Effect.tryPromise({
+      try: () => projectEntityLabels(db, 'audio', audioFields),
+      catch: (error) =>
+        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+    })
     return {
       ...audioFields,
+      tags,
       thumbnailUrl: audioFields.thumbnailUrl ?? show?.thumbnailUrl ?? null,
       compiledContent,
       creators: creators.map(({ creator }) => ({
@@ -366,57 +393,62 @@ const createEffect = (
     // thumbnailUrl is intentionally left as-is (NULL when not provided): the
     // show's artwork is resolved at read time instead of copied here, so
     // episodes stay in sync when a show's art changes later.
-    const audioData = { ...data }
+    const { tags, ...audioData } = data
+    const id = crypto.randomUUID()
 
     const result = yield* Effect.tryPromise({
       try: () =>
-        timeQuery(
-          () =>
-            db.transaction(async (tx) => {
-              const [insertedAudio] = await tx
-                .insert(audioTable)
-                .values({
-                  ...audioData,
-                  idempotencyKey,
-                  idempotencyActorId: actorId,
-                  idempotencyFingerprint
-                })
-                .onConflictDoNothing()
-                .returning()
-
-              if (!insertedAudio) {
-                const [replayedAudio] = await tx
-                  .select()
+        timeQuery(async () => {
+          await db.batch([
+            db
+              .insert(audioTable)
+              .values({
+                ...audioData,
+                id,
+                idempotencyKey,
+                idempotencyActorId: actorId,
+                idempotencyFingerprint
+              })
+              .onConflictDoNothing(),
+            ...creatorIds.map((creatorId) =>
+              db.insert(audioCreators).select(
+                db
+                  .select({
+                    audioId: audioTable.id,
+                    creatorId: sql<string>`${creatorId}`.as('creatorId')
+                  })
                   .from(audioTable)
                   .where(
                     and(
+                      eq(audioTable.id, id),
                       eq(audioTable.idempotencyActorId, actorId),
-                      eq(audioTable.idempotencyKey, idempotencyKey)
+                      eq(audioTable.idempotencyKey, idempotencyKey),
+                      eq(audioTable.idempotencyFingerprint, idempotencyFingerprint)
                     )
                   )
-                  .limit(1)
-
-                if (!replayedAudio) {
-                  throw new AudioCreateConflict()
-                }
-                if (replayedAudio.idempotencyFingerprint !== idempotencyFingerprint) {
-                  throw new AudioCreateConflict()
-                }
-
-                return { audio: replayedAudio, created: false }
-              }
-
-              await tx.insert(audioCreators).values(
-                creatorIds.map((creatorId) => ({
-                  audioId: insertedAudio.id,
-                  creatorId
-                }))
               )
+            )
+          ])
 
-              return { audio: insertedAudio, created: true }
-            }),
-          'create-audio-transaction'
-        ),
+          const rows = await db
+            .select()
+            .from(audioTable)
+            .where(
+              and(
+                eq(audioTable.idempotencyActorId, actorId),
+                eq(audioTable.idempotencyKey, idempotencyKey)
+              )
+            )
+            .limit(1)
+          const audio = rows[0]
+          if (!audio || audio.idempotencyFingerprint !== idempotencyFingerprint) {
+            throw new AudioCreateConflict()
+          }
+
+          if (audio.id === id && tags !== undefined)
+            await replaceEntityLabels(db, 'audio', audio.id, { tags })
+          return { audio, created: audio.id === id }
+        }, 'create-audio-batch'),
       catch: (error) => {
         const errorMessage = getErrorMessage(error)
         if (error instanceof AudioCreateConflict || errorMessage.includes('unique constraint')) {
@@ -461,7 +493,12 @@ const createEffect = (
       ])
     }
 
-    return result.audio
+    const { tags: projectedTags } = yield* Effect.tryPromise({
+      try: () => projectEntityLabels(db, 'audio', result.audio),
+      catch: (error) =>
+        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+    })
+    return { ...result.audio, tags: projectedTags }
   })
 
 const updateEffect = (
@@ -500,7 +537,7 @@ const updateEffect = (
 
     yield* requireCreatorOrAdmin(db, 'audio', existingAudio.id, userId, userRole)
 
-    const { creatorIds, ...updateData } = data
+    const { creatorIds, tags, ...updateData } = data
     let updatedAudio = existingAudio
 
     if (Object.keys(updateData).length > 0) {
@@ -540,21 +577,32 @@ const updateEffect = (
     if (creatorIds && creatorIds.length > 0) {
       yield* Effect.tryPromise({
         try: () =>
-          db.transaction(async (tx) => {
-            await tx.delete(audioCreators).where(eq(audioCreators.audioId, updatedAudio.id))
-
-            await tx.insert(audioCreators).values(
+          db.batch([
+            db.delete(audioCreators).where(eq(audioCreators.audioId, updatedAudio.id)),
+            db.insert(audioCreators).values(
               creatorIds.map((creatorId) => ({
                 audioId: updatedAudio.id,
                 creatorId
               }))
             )
-          }),
+          ]),
         catch: (error) =>
           new DatabaseError({
             message: `Failed to update creators: ${getErrorMessage(error)}`,
             operation: 'transaction',
             table: 'audio_creators'
+          })
+      })
+    }
+
+    if (tags !== undefined) {
+      yield* Effect.tryPromise({
+        try: () => replaceEntityLabels(db, 'audio', updatedAudio.id, { tags }),
+        catch: (error) =>
+          new DatabaseError({
+            message: getErrorMessage(error),
+            operation: 'update',
+            table: 'labels'
           })
       })
     }
@@ -599,8 +647,14 @@ const updateEffect = (
       showThumbnailUrl = show?.thumbnailUrl ?? null
     }
 
+    const { tags: projectedTags } = yield* Effect.tryPromise({
+      try: () => projectEntityLabels(db, 'audio', updatedAudio),
+      catch: (error) =>
+        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+    })
     return {
       ...updatedAudio,
+      tags: projectedTags,
       thumbnailUrl: updatedAudio.thumbnailUrl ?? showThumbnailUrl,
       compiledContent,
       creators: creatorRows.map(({ creator }) => ({

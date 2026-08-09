@@ -8,6 +8,7 @@ export const migrate = (path: string) =>
   Effect.gen(function* () {
     const db = yield* Database
     console.log('Running migrations...')
+    // @ts-expect-error This Postgres migrator is retained until M4 replaces the Bun runtime.
     yield* Effect.promise(() => migratePostgres(db, { migrationsFolder: path }))
     const { entityTypeCount, platformCount } = yield* Effect.promise(() => seedMusicLookups(db))
     console.log(
@@ -16,4 +17,5 @@ export const migrate = (path: string) =>
     console.log('Migrations completed.')
   })
 
+// @ts-expect-error This Postgres entry point is retained until M4 replaces the Bun runtime.
 void Effect.runPromise(migrate('./drizzle/').pipe(Effect.provide(DatabaseLayer(pool))))

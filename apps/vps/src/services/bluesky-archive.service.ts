@@ -1,6 +1,7 @@
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull, sql } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { Database } from '@/db/layer'
+import { replaceEntityLabels } from '@/db/labels'
 import { blueskyPostSources } from '@/db/external-account.schema'
 import { postCreators, postsTable, type InsertPost } from '@/db/post.schema'
 import { DatabaseError } from '@/errors'
@@ -36,6 +37,146 @@ type WriteResult = 'created' | 'alreadyImported' | 'conflicted' | 'failed'
 const entityTypeForUrl = (url: string): 'album' | 'track' =>
   /\/album(?:s)?\//i.test(url) ? 'album' : 'track'
 
+const writeRecord = async (
+  db: Database['Service'],
+  input: {
+    readonly ownerUserId: string
+    readonly externalAccountId: string
+    readonly record: ImportedRecord
+    readonly musicEntityType: 'album' | 'track' | null
+    readonly musicEntityId: string | null
+  }
+): Promise<WriteResult> => {
+  const { ownerUserId, externalAccountId, record, musicEntityType, musicEntityId } = input
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const existingRows = await db
+      .select({
+        id: blueskyPostSources.id,
+        cid: blueskyPostSources.cid,
+        locallyEdited: blueskyPostSources.locallyEdited,
+        postId: blueskyPostSources.postId
+      })
+      .from(blueskyPostSources)
+      .where(eq(blueskyPostSources.atUri, record.atUri))
+      .limit(1)
+    const existing = existingRows[0]
+
+    if (!existing) {
+      await db.batch([
+        db
+          .insert(blueskyPostSources)
+          .values({
+            id: crypto.randomUUID(),
+            externalAccountId,
+            authorDid: record.authorDid,
+            authorHandle: record.authorHandle,
+            atUri: record.atUri,
+            cid: record.cid,
+            publicUrl: record.publicUrl,
+            sourceCreatedAt: record.sourceCreatedAt,
+            sourceText: record.text,
+            sourceFingerprint: record.cid,
+            lastSeenAt: new Date()
+          })
+          .onConflictDoNothing({ target: blueskyPostSources.atUri })
+      ])
+      continue
+    }
+
+    const snapshot = and(
+      eq(blueskyPostSources.id, existing.id),
+      existing.cid === null
+        ? isNull(blueskyPostSources.cid)
+        : eq(blueskyPostSources.cid, existing.cid),
+      eq(blueskyPostSources.locallyEdited, existing.locallyEdited),
+      existing.postId === null
+        ? isNull(blueskyPostSources.postId)
+        : eq(blueskyPostSources.postId, existing.postId)
+    )
+    const changed = existing.cid !== record.cid
+    const conflicted = changed && existing.locallyEdited
+    const sourceStatus: 'active' | 'edited' | 'conflict' = conflicted
+      ? 'conflict'
+      : changed
+        ? 'edited'
+        : 'active'
+    const sourceValues = {
+      authorHandle: record.authorHandle,
+      cid: record.cid,
+      sourceText: record.text,
+      sourceFingerprint: record.cid,
+      sourceStatus,
+      sourceCreatedAt: record.sourceCreatedAt,
+      lastSeenAt: new Date(),
+      lastError: null,
+      updatedAt: new Date()
+    }
+
+    if (existing.postId) {
+      const [updated] = await db.batch([
+        db
+          .update(blueskyPostSources)
+          .set(sourceValues)
+          .where(snapshot)
+          .returning({ id: blueskyPostSources.id }),
+        db
+          .update(postsTable)
+          .set({ createdAt: record.sourceCreatedAt })
+          .where(
+            and(
+              eq(postsTable.id, existing.postId),
+              sql`exists (
+                select 1
+                from ${blueskyPostSources}
+                where ${blueskyPostSources.id} = ${existing.id}
+                  and ${blueskyPostSources.cid} = ${record.cid}
+                  and ${blueskyPostSources.postId} = ${existing.postId}
+              )`
+            )
+          )
+      ])
+      if (updated.length > 0) return conflicted ? 'conflicted' : 'alreadyImported'
+      continue
+    }
+
+    const postId = crypto.randomUUID()
+    const postValues: InsertPost = {
+      id: postId,
+      content: record.normalizedContent,
+      slug: generatePostSlug(null, record.normalizedContent),
+      createdAt: record.sourceCreatedAt,
+      draft: true,
+      type: 'micro',
+      musicEntityType,
+      musicEntityId
+    }
+    const attached = sql`exists (
+      select 1
+      from ${blueskyPostSources}
+      where ${blueskyPostSources.id} = ${existing.id}
+        and ${blueskyPostSources.postId} = ${postId}
+    )`
+    const [, , updated] = await db.batch([
+      db.insert(postsTable).values(postValues),
+      db.insert(postCreators).values({ postId, creatorId: ownerUserId }),
+      db
+        .update(blueskyPostSources)
+        .set({ ...sourceValues, postId })
+        .where(snapshot)
+        .returning({ id: blueskyPostSources.id }),
+      db.delete(postCreators).where(and(eq(postCreators.postId, postId), sql`not ${attached}`)),
+      db.delete(postsTable).where(and(eq(postsTable.id, postId), sql`not ${attached}`))
+    ])
+    if (updated.length > 0) {
+      await replaceEntityLabels(db, 'post', postId, { tags: [...record.tags] })
+      return 'created'
+    }
+  }
+
+  throw new Error('Bluesky source changed while importing')
+}
+
 const makeWrite = (
   db: Database['Service'],
   musicEntities: MusicEntityService,
@@ -64,79 +205,12 @@ const makeWrite = (
 
         return yield* Effect.tryPromise({
           try: () =>
-            db.transaction(async (tx) => {
-              const [source] = await tx
-                .insert(blueskyPostSources)
-                .values({
-                  externalAccountId,
-                  authorDid: record.authorDid,
-                  authorHandle: record.authorHandle,
-                  atUri: record.atUri,
-                  cid: record.cid,
-                  publicUrl: record.publicUrl,
-                  sourceCreatedAt: record.sourceCreatedAt,
-                  sourceText: record.text,
-                  sourceFingerprint: record.cid,
-                  lastSeenAt: new Date()
-                })
-                .onConflictDoNothing({ target: blueskyPostSources.atUri })
-                .returning()
-              if (!source) {
-                const [existing] = await tx
-                  .select({
-                    id: blueskyPostSources.id,
-                    cid: blueskyPostSources.cid,
-                    locallyEdited: blueskyPostSources.locallyEdited,
-                    postId: blueskyPostSources.postId
-                  })
-                  .from(blueskyPostSources)
-                  .where(eq(blueskyPostSources.atUri, record.atUri))
-                  .limit(1)
-                if (!existing) throw databaseError
-                const changed = existing.cid !== record.cid
-                const conflicted = changed && existing.locallyEdited
-                await tx
-                  .update(blueskyPostSources)
-                  .set({
-                    authorHandle: record.authorHandle,
-                    cid: record.cid,
-                    sourceText: record.text,
-                    sourceFingerprint: record.cid,
-                    sourceStatus: conflicted ? 'conflict' : changed ? 'edited' : 'active',
-                    sourceCreatedAt: record.sourceCreatedAt,
-                    lastSeenAt: new Date(),
-                    lastError: null,
-                    updatedAt: new Date()
-                  })
-                  .where(eq(blueskyPostSources.id, existing.id))
-                if (existing.postId) {
-                  await tx
-                    .update(postsTable)
-                    .set({ createdAt: record.sourceCreatedAt })
-                    .where(eq(postsTable.id, existing.postId))
-                }
-                return conflicted ? 'conflicted' : 'alreadyImported'
-              }
-
-              const postValues: InsertPost = {
-                content: record.normalizedContent,
-                slug: generatePostSlug(null, record.normalizedContent),
-                createdAt: record.sourceCreatedAt,
-                draft: true,
-                tags: [...record.tags],
-                type: 'micro',
-                musicEntityType: resolved ? entityTypeForUrl(candidateUrl ?? '') : null,
-                musicEntityId: resolved?.entity.id ?? null
-              }
-              const [post] = await tx.insert(postsTable).values(postValues).returning()
-              if (!post) throw databaseError
-
-              await tx.insert(postCreators).values({ postId: post.id, creatorId: ownerUserId })
-              await tx
-                .update(blueskyPostSources)
-                .set({ postId: post.id })
-                .where(eq(blueskyPostSources.id, source.id))
-              return 'created'
+            writeRecord(db, {
+              ownerUserId,
+              externalAccountId,
+              record,
+              musicEntityType: resolved ? entityTypeForUrl(candidateUrl ?? '') : null,
+              musicEntityId: resolved?.entity.id ?? null
             }),
           catch: () => databaseError
         }).pipe(Effect.catchTag('DatabaseError', () => Effect.succeed<WriteResult>('failed')))

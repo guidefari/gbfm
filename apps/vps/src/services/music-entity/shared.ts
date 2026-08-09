@@ -9,14 +9,13 @@ import {
   type musicPlaylistsTable,
   type musicTracksTable
 } from '@/db/music-entity.schema'
+import { entityLabelsTable } from '@/db/tags.schema'
 import { DatabaseError, NotFoundError } from '@/errors'
 
 export class FetchError extends Data.TaggedError('FetchError')<{
   readonly message: string
   readonly cause?: unknown
 }> {}
-
-export type DrizzleTransaction = Parameters<Parameters<DatabaseClient['transaction']>[0]>[0]
 
 export type ImportedTrackTarget = {
   trackId: string
@@ -51,12 +50,12 @@ export function requireInserted<T>(rows: T[], table: string): Effect.Effect<T, D
   return Effect.succeed(row)
 }
 
-export const deleteLinksForEntityTx = (
-  tx: DrizzleTransaction,
+export const deleteLinksForEntity = (
+  db: DatabaseClient,
   entityType: MusicEntityType,
   entityId: string
 ) =>
-  tx
+  db
     .delete(musicEntityLinksTable)
     .where(
       and(
@@ -65,12 +64,23 @@ export const deleteLinksForEntityTx = (
       )
     )
 
-export const findEntityIdBySpotifyUrlTx = async (
-  tx: DrizzleTransaction,
+export const deleteEntityLabels = (
+  db: DatabaseClient,
+  entityType: 'audio' | 'show' | 'post' | 'release' | 'artist' | 'album' | 'track' | 'musicLabel',
+  entityId: string
+) =>
+  db
+    .delete(entityLabelsTable)
+    .where(
+      and(eq(entityLabelsTable.entityType, entityType), eq(entityLabelsTable.entityId, entityId))
+    )
+
+export const findEntityIdBySpotifyUrl = async (
+  db: DatabaseClient,
   entityType: MusicEntityType,
   url: string
 ) => {
-  const rows = await tx
+  const rows = await db
     .select({ entityId: musicEntityLinksTable.entityId })
     .from(musicEntityLinksTable)
     .where(
@@ -85,7 +95,7 @@ export const findEntityIdBySpotifyUrlTx = async (
 }
 
 export const uniqueSlug = async (
-  tx: DrizzleTransaction,
+  db: DatabaseClient,
   table:
     | typeof musicPlaylistsTable
     | typeof musicTracksTable
@@ -96,7 +106,7 @@ export const uniqueSlug = async (
   let candidate = base
   let n = 1
   while (true) {
-    const existing = await tx
+    const existing = await db
       .select({ id: table.id })
       .from(table)
       .where(eq(table.slug, candidate))

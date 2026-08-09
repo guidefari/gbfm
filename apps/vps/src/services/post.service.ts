@@ -1,20 +1,36 @@
 import {
   and,
-  arrayContains,
   asc,
   count,
   desc,
   eq,
+  exists,
   gte,
   inArray,
   isNull,
+  like,
   lte,
   ne,
   notInArray,
+  or,
   sql
 } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { Database } from '@/db/layer'
+import {
+  hasEntityLabel,
+  hasEntityLabelLike,
+  projectEntityLabels,
+  projectEntityLabelsForRows,
+  replaceEntityLabels
+} from '@/db/labels'
+import { entityLabelsTable, labelsTable } from '@/db/tags.schema'
+import {
+  musicAlbumsTable,
+  musicPlaylistTracksTable,
+  musicPlaylistsTable,
+  musicTracksTable
+} from '@/db/music-entity.schema'
 import { postIdsForCreator } from '@/db/creator-membership'
 import { blueskyPostSources } from '@/db/external-account.schema'
 import { user as usersTable } from '@/db/auth.schema'
@@ -192,6 +208,8 @@ export interface PostService {
 
 export const PostService = Context.Service<PostService>('PostService')
 
+type PostRow = Omit<SelectPost, 'tags'> & { tags?: string[] | null }
+
 const isNonBlankString = (value: unknown): value is string =>
   typeof value === 'string' && value.trim().length > 0
 
@@ -244,7 +262,7 @@ export function normalizePostData(
   return normalizedData
 }
 
-const buildPostWithCreators = (db: Database['Service'], post: SelectPost, mdx: MdxService) =>
+const buildPostWithCreators = (db: Database['Service'], post: PostRow, mdx: MdxService) =>
   Effect.gen(function* () {
     const [blueskySource] = yield* Effect.tryPromise({
       try: () =>
@@ -288,24 +306,37 @@ const buildPostWithCreators = (db: Database['Service'], post: SelectPost, mdx: M
         })
     }).pipe(Effect.withSpan('post.getCreators', { attributes: { postId: post.id } }))
 
-    const compiled = yield* buildPostWithPreloadedCreators(post, creators, mdx)
+    const projectedPost = yield* Effect.tryPromise({
+      try: () => projectEntityLabels(db, 'post', post),
+      catch: (error) =>
+        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+    })
+    const compiled = yield* buildPostWithPreloadedCreators(db, projectedPost, creators, mdx)
     return blueskySource ? { ...compiled, blueskySource } : compiled
   })
 
 const buildPostWithPreloadedCreators = (
-  post: SelectPost,
+  db: Database['Service'],
+  post: PostRow,
   creators: Array<{ id: string; name: string; username: string | null }>,
   mdx: MdxService
 ) =>
   Effect.gen(function* () {
+    const projectedPost = yield* Effect.tryPromise({
+      try: () => projectEntityLabels(db, 'post', post),
+      catch: (error) =>
+        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+    })
     let compiledContent = ''
 
-    if (post.content) {
-      compiledContent = yield* mdx.compile(post.content).pipe(Effect.orElseSucceed(() => ''))
+    if (projectedPost.content) {
+      compiledContent = yield* mdx
+        .compile(projectedPost.content)
+        .pipe(Effect.orElseSucceed(() => ''))
     }
 
     return {
-      ...post,
+      ...projectedPost,
       compiledContent,
       creators
     } satisfies SelectMdxCompiledPost
@@ -371,11 +402,11 @@ const getAllEffect = (
     const { limit, offset, type, tag, topLevelOnly, source, draft, q } = options
     const contentCondition =
       type && tag
-        ? and(eq(postsTable.type, type), arrayContains(postsTable.tags, [tag]))
+        ? and(eq(postsTable.type, type), hasEntityLabel('post', postsTable.id, tag))
         : type
           ? eq(postsTable.type, type)
           : tag
-            ? arrayContains(postsTable.tags, [tag])
+            ? hasEntityLabel('post', postsTable.id, tag)
             : undefined
     const visibilityCondition = actor
       ? actor.userRole === 'admin'
@@ -392,7 +423,7 @@ const getAllEffect = (
     const draftCondition = draft === undefined ? undefined : eq(postsTable.draft, draft)
     const searchTerm = q?.trim()
     const searchCondition = searchTerm
-      ? sql`(${postsTable.title} ilike ${`%${searchTerm}%`} or ${postsTable.slug} ilike ${`%${searchTerm}%`} or ${postsTable.content} ilike ${`%${searchTerm}%`})`
+      ? sql`(lower(${postsTable.title}) LIKE ${`%${searchTerm.toLowerCase()}%`} OR lower(${postsTable.slug}) LIKE ${`%${searchTerm.toLowerCase()}%`} OR lower(${postsTable.content}) LIKE ${`%${searchTerm.toLowerCase()}%`})`
       : undefined
     const whereCondition = and(
       visibilityCondition,
@@ -525,12 +556,17 @@ const getAllEffect = (
       sourcesData.flatMap(({ postId, ...source }) => (postId ? [[postId, source] as const] : []))
     )
 
+    const projectedData = yield* Effect.tryPromise({
+      try: () => projectEntityLabelsForRows(db, 'post', data),
+      catch: (error) =>
+        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+    })
     const compiledData: SelectMdxCompiledPost[] = yield* Effect.forEach(
-      data,
+      projectedData,
       (post) => {
         const creators = creatorsByPostId[post.id] ?? []
         const blueskySource = sourceByPostId.get(post.id)
-        return buildPostWithPreloadedCreators(post, creators, mdx).pipe(
+        return buildPostWithPreloadedCreators(db, post, creators, mdx).pipe(
           Effect.map((compiled) => (blueskySource ? { ...compiled, blueskySource } : compiled))
         )
       },
@@ -552,10 +588,19 @@ const getEditorialTagsEffect = (db: Database['Service']) =>
     const rows = yield* Effect.tryPromise({
       try: () =>
         db
-          .selectDistinct({
-            tag: sql<string | null>`unnest(${postsTable.tags})`
-          })
+          .selectDistinct({ tag: labelsTable.name })
           .from(postsTable)
+          .innerJoin(
+            entityLabelsTable,
+            and(
+              eq(entityLabelsTable.entityType, 'post'),
+              eq(entityLabelsTable.entityId, postsTable.id)
+            )
+          )
+          .innerJoin(
+            labelsTable,
+            and(eq(labelsTable.id, entityLabelsTable.labelId), eq(labelsTable.kind, 'tag'))
+          )
           .where(and(eq(postsTable.type, 'post'), eq(postsTable.draft, false))),
       catch: (error) =>
         new DatabaseError({
@@ -567,7 +612,7 @@ const getEditorialTagsEffect = (db: Database['Service']) =>
 
     return rows
       .map((r) => r.tag)
-      .filter((t): t is string => typeof t === 'string' && t.length > 0)
+      .filter((tag) => tag.length > 0)
       .toSorted()
   })
 
@@ -576,10 +621,19 @@ const getMicroTagsEffect = (db: Database['Service']) =>
     const rows = yield* Effect.tryPromise({
       try: () =>
         db
-          .selectDistinct({
-            tag: sql<string | null>`unnest(${postsTable.tags})`
-          })
+          .selectDistinct({ tag: labelsTable.name })
           .from(postsTable)
+          .innerJoin(
+            entityLabelsTable,
+            and(
+              eq(entityLabelsTable.entityType, 'post'),
+              eq(entityLabelsTable.entityId, postsTable.id)
+            )
+          )
+          .innerJoin(
+            labelsTable,
+            and(eq(labelsTable.id, entityLabelsTable.labelId), eq(labelsTable.kind, 'tag'))
+          )
           .where(and(eq(postsTable.type, 'micro'), eq(postsTable.draft, false))),
       catch: (error) =>
         new DatabaseError({
@@ -591,7 +645,7 @@ const getMicroTagsEffect = (db: Database['Service']) =>
 
     return rows
       .map((r) => r.tag)
-      .filter((t): t is string => typeof t === 'string' && t.length > 0)
+      .filter((tag) => tag.length > 0)
       .toSorted()
   })
 
@@ -738,77 +792,89 @@ const searchMicroPostsEffect = (
 ) =>
   Effect.gen(function* () {
     const { q, limit, offset } = options
-    const pattern = `%${q}%`
-
-    // Join columns below are quoted camelCase (e.g. "albumId", "artistNames")
-    // rather than snake_case: these tables were defined without explicit
-    // db-name strings on individual columns, so Drizzle's default naming
-    // keeps the JS property name verbatim as the real Postgres column name.
-    // Only posts.music_entity_id/music_entity_type and the table names
-    // themselves were given explicit snake_case strings.
-    const matchCondition = sql`
-      (
-        ${postsTable.title} ILIKE ${pattern}
-        OR ${postsTable.content} ILIKE ${pattern}
-        OR EXISTS (SELECT 1 FROM unnest(${postsTable.tags}) AS tag WHERE tag ILIKE ${pattern})
-      )
-      OR (
-        ${postsTable.musicEntityType} = 'track' AND EXISTS (
-          SELECT 1 FROM music_tracks t
-          LEFT JOIN music_albums alb ON alb.id = t."albumId"
-          WHERE t.id = ${postsTable.musicEntityId}
-            AND (
-              t.title ILIKE ${pattern}
-              OR t."artistNames"::text ILIKE ${pattern}
-              OR alb.title ILIKE ${pattern}
-              OR EXISTS (
-                SELECT 1 FROM music_track_artists mta
-                JOIN music_artists a ON a.id = mta."artistId"
-                WHERE mta."trackId" = t.id AND a.name ILIKE ${pattern}
+    const pattern = `%${q.toLowerCase()}%`
+    const directPostMatch =
+      q.length < 3
+        ? or(
+            like(sql`lower(${postsTable.title})`, pattern),
+            like(sql`lower(${postsTable.content})`, pattern),
+            hasEntityLabelLike('post', postsTable.id, pattern)
+          )
+        : sql`rowid IN (SELECT rowid FROM posts_fts WHERE posts_fts MATCH ${`"${q.replaceAll('"', '""')}"`})`
+    const matchCondition = or(
+      directPostMatch,
+      and(
+        eq(postsTable.musicEntityType, 'track'),
+        exists(
+          db
+            .select({ id: musicTracksTable.id })
+            .from(musicTracksTable)
+            .leftJoin(musicAlbumsTable, eq(musicAlbumsTable.id, musicTracksTable.albumId))
+            .where(
+              and(
+                eq(musicTracksTable.id, postsTable.musicEntityId),
+                or(
+                  like(sql`lower(${musicTracksTable.title})`, pattern),
+                  like(sql`lower(${musicTracksTable.artistNames})`, pattern),
+                  like(sql`lower(${musicAlbumsTable.title})`, pattern)
+                )
               )
             )
         )
-      )
-      OR (
-        ${postsTable.musicEntityType} = 'album' AND EXISTS (
-          SELECT 1 FROM music_albums alb
-          WHERE alb.id = ${postsTable.musicEntityId}
-            AND (
-              alb.title ILIKE ${pattern}
-              OR alb."artistNames"::text ILIKE ${pattern}
-              OR EXISTS (
-                SELECT 1 FROM music_album_artists maa
-                JOIN music_artists a ON a.id = maa."artistId"
-                WHERE maa."albumId" = alb.id AND a.name ILIKE ${pattern}
+      ),
+      and(
+        eq(postsTable.musicEntityType, 'album'),
+        exists(
+          db
+            .select({ id: musicAlbumsTable.id })
+            .from(musicAlbumsTable)
+            .where(
+              and(
+                eq(musicAlbumsTable.id, postsTable.musicEntityId),
+                or(
+                  like(sql`lower(${musicAlbumsTable.title})`, pattern),
+                  like(sql`lower(${musicAlbumsTable.artistNames})`, pattern)
+                )
               )
             )
         )
-      )
-      OR (
-        ${postsTable.musicEntityType} = 'playlist' AND EXISTS (
-          SELECT 1 FROM music_playlists pl
-          WHERE pl.id = ${postsTable.musicEntityId}
-            AND (
-              pl.title ILIKE ${pattern}
-              OR pl.description ILIKE ${pattern}
-              OR EXISTS (
-                SELECT 1 FROM music_playlist_tracks mpt
-                JOIN music_tracks t2 ON t2.id = mpt."trackId"
-                WHERE mpt."playlistId" = pl.id
-                  AND (
-                    t2.title ILIKE ${pattern}
-                    OR t2."artistNames"::text ILIKE ${pattern}
-                    OR EXISTS (
-                      SELECT 1 FROM music_track_artists mta2
-                      JOIN music_artists a2 ON a2.id = mta2."artistId"
-                      WHERE mta2."trackId" = t2.id AND a2.name ILIKE ${pattern}
-                    )
+      ),
+      and(
+        eq(postsTable.musicEntityType, 'playlist'),
+        exists(
+          db
+            .select({ id: musicPlaylistsTable.id })
+            .from(musicPlaylistsTable)
+            .where(
+              and(
+                eq(musicPlaylistsTable.id, postsTable.musicEntityId),
+                or(
+                  like(sql`lower(${musicPlaylistsTable.title})`, pattern),
+                  like(sql`lower(${musicPlaylistsTable.description})`, pattern),
+                  exists(
+                    db
+                      .select({ trackId: musicPlaylistTracksTable.trackId })
+                      .from(musicPlaylistTracksTable)
+                      .innerJoin(
+                        musicTracksTable,
+                        eq(musicTracksTable.id, musicPlaylistTracksTable.trackId)
+                      )
+                      .where(
+                        and(
+                          eq(musicPlaylistTracksTable.playlistId, musicPlaylistsTable.id),
+                          or(
+                            like(sql`lower(${musicTracksTable.title})`, pattern),
+                            like(sql`lower(${musicTracksTable.artistNames})`, pattern)
+                          )
+                        )
+                      )
                   )
+                )
               )
             )
         )
       )
-    `
+    )
 
     const whereCondition = and(
       eq(postsTable.type, 'micro'),
@@ -898,7 +964,7 @@ const searchMicroPostsEffect = (
 
     const compiledData = yield* Effect.forEach(
       data,
-      (post) => buildPostWithPreloadedCreators(post, creatorsByPostId[post.id] ?? [], mdx),
+      (post) => buildPostWithPreloadedCreators(db, post, creatorsByPostId[post.id] ?? [], mdx),
       { concurrency: 5 }
     )
 
@@ -1001,7 +1067,10 @@ const getByTagEffect = (
 ) =>
   Effect.gen(function* () {
     const { limit, offset } = options
-    const whereCondition = and(eq(postsTable.draft, false), arrayContains(postsTable.tags, [tag]))
+    const whereCondition = and(
+      eq(postsTable.draft, false),
+      hasEntityLabel('post', postsTable.id, tag)
+    )
 
     const countResult = yield* Effect.tryPromise({
       try: () =>
@@ -1052,8 +1121,14 @@ const getByTagEffect = (
       offset
     })
 
+    const projectedData = yield* Effect.tryPromise({
+      try: () => projectEntityLabelsForRows(db, 'post', data),
+      catch: (error) =>
+        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+    })
+
     return {
-      data,
+      data: projectedData,
       pagination: createPaginationMetadata(total, limit, offset)
     }
   })
@@ -1231,31 +1306,33 @@ const createEffect = (db: Database['Service'], data: Partial<InsertPost>, creato
       yield* validateQuotedPost(db, normalizedData.quotedPostId)
     }
 
+    const { tags, ...postData } = normalizedData
     const dataWithSlug: InsertPost = {
-      ...normalizedData,
+      ...postData,
       slug: isNonBlankString(normalizedData.slug)
         ? normalizedData.slug
         : generatePostSlug(normalizedData.title, normalizedData.content)
     }
+    const id = crypto.randomUUID()
 
     const result = yield* Effect.tryPromise({
-      try: () =>
-        db.transaction(async (tx) => {
-          const [newPost] = await tx.insert(postsTable).values(dataWithSlug).returning()
-
-          if (!newPost) {
-            throw new Error('Failed to create post')
-          }
-
-          await tx.insert(postCreators).values(
-            creatorIds.map((creatorId) => ({
-              postId: newPost.id,
-              creatorId
-            }))
-          )
-
-          return newPost
-        }),
+      try: async () => {
+        await db.batch([
+          db.insert(postsTable).values({ ...dataWithSlug, id }),
+          ...(creatorIds.length > 0
+            ? [
+                db
+                  .insert(postCreators)
+                  .values(creatorIds.map((creatorId) => ({ postId: id, creatorId })))
+              ]
+            : [])
+        ])
+        const rows = await db.select().from(postsTable).where(eq(postsTable.id, id)).limit(1)
+        const post = rows[0]
+        if (!post) throw new Error('Failed to create post')
+        if (tags !== undefined) await replaceEntityLabels(db, 'post', post.id, { tags })
+        return post
+      },
       catch: (error) => {
         const errorMessage = getErrorMessage(error)
         if (errorMessage.includes('unique constraint')) {
@@ -1281,7 +1358,7 @@ const createEffect = (db: Database['Service'], data: Partial<InsertPost>, creato
     yield* Effect.annotateCurrentSpan('postId', result.id)
     yield* Effect.annotateCurrentSpan('postType', result.type)
     yield* Effect.annotateCurrentSpan('creatorCount', creatorIds.length)
-    yield* Effect.annotateCurrentSpan('tagCount', result.tags?.length || 0)
+    yield* Effect.annotateCurrentSpan('tagCount', tags?.length || 0)
 
     yield* Effect.logInfo('[Content] Post created', {
       postId: result.id,
@@ -1289,12 +1366,16 @@ const createEffect = (db: Database['Service'], data: Partial<InsertPost>, creato
       slug: result.slug,
       type: result.type,
       creatorCount: creatorIds.length,
-      tags: result.tags
+      tags
     })
 
     yield* markAttachedAssets('posts', result.id, [result.thumbnailUrl, result.bannerImageUrl])
 
-    return result
+    return yield* Effect.tryPromise({
+      try: () => projectEntityLabels(db, 'post', result),
+      catch: (error) =>
+        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+    })
   })
 
 export const deriveReplyThreadFields = (parent: {
@@ -1396,23 +1477,19 @@ const createMicroPostReplyEffect = (
       quotedPostId,
       ...threadFields
     }
+    const id = crypto.randomUUID()
 
     const result = yield* Effect.tryPromise({
-      try: () =>
-        db.transaction(async (tx) => {
-          const [newPost] = await tx.insert(postsTable).values(replyData).returning()
-
-          if (!newPost) {
-            throw new Error('Failed to create reply')
-          }
-
-          await tx.insert(postCreators).values({
-            postId: newPost.id,
-            creatorId: actorUserId
-          })
-
-          return newPost
-        }),
+      try: async () => {
+        await db.batch([
+          db.insert(postsTable).values({ ...replyData, id }),
+          db.insert(postCreators).values({ postId: id, creatorId: actorUserId })
+        ])
+        const rows = await db.select().from(postsTable).where(eq(postsTable.id, id)).limit(1)
+        const post = rows[0]
+        if (!post) throw new Error('Failed to create reply')
+        return post
+      },
       catch: (error) => {
         const errorMessage = getErrorMessage(error)
         if (errorMessage.includes('unique constraint')) {
@@ -1598,7 +1675,7 @@ const getMicroPostRepliesEffect = (
 
     const compiledData = yield* Effect.forEach(
       data,
-      (post) => buildPostWithPreloadedCreators(post, creatorsByPostId[post.id] ?? [], mdx),
+      (post) => buildPostWithPreloadedCreators(db, post, creatorsByPostId[post.id] ?? [], mdx),
       { concurrency: 5 }
     )
 
@@ -1768,8 +1845,8 @@ const getMicroPostThreadEffect = (
     }
 
     const sentry = yield* SentryService
-    const compileRow = (post: SelectPost) =>
-      buildPostWithPreloadedCreators(post, creatorsByPostId[post.id] ?? [], mdx).pipe(
+    const compileRow = (post: PostRow) =>
+      buildPostWithPreloadedCreators(db, post, creatorsByPostId[post.id] ?? [], mdx).pipe(
         Effect.flatMap((compiled) =>
           toMicroPost(compiled).pipe(
             Effect.catchTag('DatabaseError', (e) =>
@@ -1857,7 +1934,7 @@ const updateEffect = (
     const normalizedNextPostData = normalizePostData(nextPostData, nextPostData.type)
     yield* validatePostData(normalizedNextPostData)
 
-    const { creatorIds, ...updateData } = data
+    const { creatorIds, tags, ...updateData } = data
     const normalizedUpdateData = normalizePostData(updateData, nextPostData.type)
     let updatedPost = existingPost
 
@@ -1927,6 +2004,18 @@ const updateEffect = (
             message: `Failed to update creators: ${getErrorMessage(error)}`,
             operation: 'update',
             table: 'post_creators'
+          })
+      })
+    }
+
+    if (tags !== undefined) {
+      yield* Effect.tryPromise({
+        try: () => replaceEntityLabels(db, 'post', updatedPost.id, { tags }),
+        catch: (error) =>
+          new DatabaseError({
+            message: getErrorMessage(error),
+            operation: 'update',
+            table: 'labels'
           })
       })
     }
