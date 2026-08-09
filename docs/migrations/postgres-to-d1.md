@@ -159,7 +159,7 @@ Option 4.
 This is the core of the spec. `videoshare` is the working precedent:
 
 ```ts
-// apps/api/src/worker.ts — the ONLY place env is visible
+// apps/server/src/worker.ts — the ONLY place env is visible
 export default {
   async fetch(request: Request, env: ApiEnv, ctx: ExecutionContext) {
     return handler(request, requestScope(env, ctx))
@@ -204,7 +204,7 @@ interface SitemapCache { readonly kv: KVNamespace }
 Replace the module-level `db` export with a Layer built per request:
 
 ```ts
-// apps/api/src/db/layer.ts
+// apps/server/src/db/layer.ts
 export class Database extends Context.Tag('Database')<
   Database,
   DrizzleD1Database<typeof schema>
@@ -569,28 +569,28 @@ corruption, not a test failure. Review line by line; do not sample.
 
 ## Files to Add / Change / Delete
 
-Paths below use the post-rename `apps/api`; the move from `apps/vps` happens as
+Paths below use the post-rename `apps/server`; the move from `apps/vps` happens as
 one commit in M4.
 
 | File | Action | Responsibility |
 | --- | --- | --- |
 | `alchemy.run.ts` | add | Alchemy V2 stack: D1, R2 x2, KV, Queue, Worker |
-| `apps/api/src/worker.ts` | add | composition seam; `fetch`/`scheduled`/`queue` |
-| `apps/api/src/db/layer.ts` | add | `Database` tag + Layer from `D1Database` |
-| `apps/api/src/db/*.schema.ts` | change | 14 files, `pg-core` to `sqlite-core` |
-| `apps/api/src/db/tags.schema.ts` | add | `tags` + three join tables |
-| `apps/api/src/db/index.ts` | delete | the module-level `Pool` and `db` export |
-| `apps/api/src/services/**` | change | require `Database`; classified transactions |
-| `apps/api/src/services/search.service.ts` | change | FTS5 |
-| `apps/api/src/services/post.service.ts` | change | FTS5; the `:747` block |
-| `apps/api/src/services/sitemap-cache.ts` | add | KV-backed capability |
-| `apps/api/src/services/reminder-queue.ts` | add | Queue-backed capability |
-| `apps/api/src/lib/auth.ts` | change | `provider: 'sqlite'`, scoped client |
-| `apps/api/src/app.ts` | change | delete both loops and shutdown handling |
-| `apps/api/src/middlewares/rate-limiter.ts` | delete | Cloudflare rule |
-| `apps/api/src/services/qrcode.service.ts` | delete | feature dropped |
-| `apps/api/src/http/bluesky-events.routes.ts` | change | SSE to polled JSON |
-| `apps/api/src/test/global-setup.ts` | change | Testcontainers Postgres to Miniflare D1 |
+| `apps/server/src/worker.ts` | add | composition seam; `fetch`/`scheduled`/`queue` |
+| `apps/server/src/db/layer.ts` | add | `Database` tag + Layer from `D1Database` |
+| `apps/server/src/db/*.schema.ts` | change | 14 files, `pg-core` to `sqlite-core` |
+| `apps/server/src/db/tags.schema.ts` | add | `tags` + three join tables |
+| `apps/server/src/db/index.ts` | delete | the module-level `Pool` and `db` export |
+| `apps/server/src/services/**` | change | require `Database`; classified transactions |
+| `apps/server/src/services/search.service.ts` | change | FTS5 |
+| `apps/server/src/services/post.service.ts` | change | FTS5; the `:747` block |
+| `apps/server/src/services/sitemap-cache.ts` | add | KV-backed capability |
+| `apps/server/src/services/reminder-queue.ts` | add | Queue-backed capability |
+| `apps/server/src/lib/auth.ts` | change | `provider: 'sqlite'`, scoped client |
+| `apps/server/src/app.ts` | change | delete both loops and shutdown handling |
+| `apps/server/src/middlewares/rate-limiter.ts` | delete | Cloudflare rule |
+| `apps/server/src/services/qrcode.service.ts` | delete | feature dropped |
+| `apps/server/src/http/bluesky-events.routes.ts` | change | SSE to polled JSON |
+| `apps/server/src/test/global-setup.ts` | change | Testcontainers Postgres to Miniflare D1 |
 | `migrations/` | add | generated SQLite migrations + FTS5 triggers |
 | `scripts/migrate-pg-to-d1.ts` | add | export, transform, import, verify |
 
@@ -613,7 +613,7 @@ export default Alchemy.Stack(
     const sitemap = yield* Cloudflare.KV.Namespace('Sitemap')
 
     const api = yield* Cloudflare.Worker('Api', {
-      main: './apps/api/src/worker.ts',
+      main: './apps/server/src/worker.ts',
       domain: isProduction ? 'api.goosebumps.fm' : undefined,
       url: !isProduction,
       compatibility: { date: '2026-08-09', flags: ['nodejs_compat'] },
@@ -629,14 +629,21 @@ export default Alchemy.Stack(
 Alchemy owns only new resources; existing SST resources stay untouched until
 teardown.
 
-### Rename: `vps` to `api`
+### Rename: `vps` to `server`
 
 The name `vps` described an ECS box. Nothing about the new stack is a VPS, so the
 name goes with the migration rather than outliving it.
 
 - **Hostname:** `vps.goosebumps.fm` becomes `api.goosebumps.fm`.
-- **Workspace:** `apps/vps` becomes `apps/api`; package `@gbfm/vps` becomes
-  `@gbfm/api`.
+- **Workspace:** `apps/vps` becomes `apps/server`; package `@gbfm/vps` becomes
+  `@gbfm/server`.
+
+**Not `@gbfm/api`.** `packages/api` already owns that name: it holds the shared
+HttpApi contract definitions consumed by the server, `apps/www`, and
+`apps/mobile`, and `apps/vps` itself depends on it. Renaming the application to
+`@gbfm/api` would create two workspace packages with one name, one depending on
+the other. The hostname is still `api.goosebumps.fm`; package name and hostname
+need not match, and `server` describes what the app is.
 
 `@gbfm/vps` currently exports `./schemas` (consumed as `@gbfm/vps/schemas`), so
 the rename touches every importer of the DB schema types. Do it as one mechanical

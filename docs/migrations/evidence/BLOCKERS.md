@@ -68,3 +68,36 @@ the schema and local test harness, but its D1 client cannot replace the producti
 runtime layer without beginning M4's Worker composition work. This must be resolved
 when the Worker request scope is introduced; do not route a D1 binding through the
 current module-level runtime.
+
+## 2026-08-09: M3 transaction and composition gate
+
+The D1 layer exposes `DrizzleD1Database`, which intentionally has `batch()` but
+no interactive `transaction()`. The category A and B transaction sites now use
+ordered D1 batches and guarded retries. The category C navigation call at
+`apps/vps/src/services/navigation.service.ts:413` is intentionally unchanged,
+per the classification, until M4 provides a Durable Object keyed by navigation
+identity. It cannot typecheck against the D1 client without either converting it
+to an unsafe non-atomic shim or starting M4 work.
+
+The current `apps/vps` runtime still constructs its layer from a PostgreSQL pool.
+M2 explicitly records that a D1 binding cannot enter this runtime until the M4
+Worker composition seam exists. Replacing the full Docker-dependent test suite
+with D1 before that seam would either skip the application integration tests or
+alter the current production composition.
+
+The local M3 Miniflare migration harness and focused schema slices are complete,
+but the full M3 gate cannot be truthfully marked complete until the following are
+implemented together:
+
+- normalized tags and genres write/read projections across content and music entity services;
+- the M4 navigation Durable Object or an explicitly approved alternative;
+- request-scoped Worker D1 composition replacing the PostgreSQL pool test setup.
+
+## 2026-08-09: M4 package rename collides with an existing workspace package
+
+HALT-CHAIN: `packages/api/package.json` already owns `@gbfm/api`, while
+`apps/vps/package.json` depends on it and exports the database schema types that
+`apps/www` consumes as `@gbfm/vps/schemas`. Renaming the application package to
+`@gbfm/api` creates duplicate workspace package names and makes the required
+typecheck ambiguous. The migration specification needs a human-approved package
+boundary decision before the mechanical rename and all later M4 work can proceed.
