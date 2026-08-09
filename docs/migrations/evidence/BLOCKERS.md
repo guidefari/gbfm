@@ -48,3 +48,6 @@ schemas expose these fields as arrays.
 
 M3 needs an approved table and API projection design for genres and the label
 and release tag surfaces before their array columns can be removed safely.
+
+HALT-CHAIN: M3 cannot complete schema translation until the normalization model
+for genres and label/release tags is approved.
