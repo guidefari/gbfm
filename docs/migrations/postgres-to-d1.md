@@ -256,25 +256,69 @@ error channel, and services that depend on a capability rather than a client.
 
 ### Tags: array column to join table
 
-Seven `varchar[]` columns become rows. This removes the two GIN indexes and every
-`unnest()` call site at once.
+Array columns become rows. This removes the two GIN indexes and every `unnest()`
+call site at once.
+
+There are **nine** array columns across eight tables, not the three an earlier
+draft of this spec named. `tags` is not a per-table column: it lives in
+`defaultContentFields` (`db/util.ts:20`) and arrives by spread, so every content
+table has one.
+
+| Table | Columns | Origin |
+| --- | --- | --- |
+| `audio`, `shows`, `releases`, `posts` | `tags` | `defaultContentFields` spread |
+| `music_artists` | `genres` | own |
+| `music_albums` | `genres`, `artistNames` | own |
+| `music_tracks` | `artistNames` | own |
+| `music_labels` | `tags`, `genres` | own |
+
+Per-table join tables would mean six of them, and a seventh the next time a table
+spreads `defaultContentFields`. Since the source column is shared, the join table
+is shared too:
 
 ```ts
-export const tagsTable = sqliteTable('tags', {
-  id: text().primaryKey().$defaultFn(() => crypto.randomUUID()),
-  name: text().notNull().unique(),
-})
-
-export const postTagsTable = sqliteTable(
-  'post_tags',
+export const labelsTable = sqliteTable(
+  'labels',
   {
-    postId: text('post_id').notNull().references(() => postsTable.id, { onDelete: 'cascade' }),
-    tagId: text('tag_id').notNull().references(() => tagsTable.id, { onDelete: 'cascade' }),
+    id: text().primaryKey().$defaultFn(() => crypto.randomUUID()),
+    kind: text({ enum: ['tag', 'genre'] }).notNull(),
+    name: text().notNull(),
   },
-  (t) => [primaryKey({ columns: [t.postId, t.tagId] })],
+  (t) => [uniqueIndex('labels_kind_name_uq').on(t.kind, t.name)],
 )
-// audio_tags, show_tags follow the same shape.
+
+export const entityLabelsTable = sqliteTable(
+  'entity_labels',
+  {
+    entityType: text('entity_type', {
+      enum: ['audio', 'show', 'post', 'release', 'artist', 'album', 'track', 'musicLabel'],
+    }).notNull(),
+    entityId: text('entity_id').notNull(),
+    labelId: text('label_id').notNull().references(() => labelsTable.id, { onDelete: 'cascade' }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.entityType, t.entityId, t.labelId] }),
+    index('entity_labels_label_idx').on(t.labelId, t.entityType),
+  ],
+)
 ```
+
+`entity_type` follows the existing discriminator convention already used by
+`posts.music_entity_type`, so this is not a new pattern in the schema.
+
+Two consequences, both deliberate:
+
+- **No foreign key on `entity_id`.** A polymorphic link table cannot declare one.
+  Deletes must clear `entity_labels` explicitly, which adds a statement to the
+  category A batch at each delete site rather than relying on `ON DELETE CASCADE`.
+  That is the real cost of the shared design. The alternative is six
+  near-identical tables plus a standing rule nobody remembers on table seven.
+- **`kind` keeps tags and genres in one table.** Same shape, never mixed in a
+  query, separated by a predicate. Splitting them would duplicate a schema to
+  encode a value.
+
+The API keeps returning `tags: string[]` and `genres: string[]` exactly as today;
+the projection aggregates by `kind` at the adapter seam.
 
 `artistNames` is excluded, and stays a denormalized column stored as JSON text.
 
@@ -329,10 +373,16 @@ because they are queried (`unnest` + `ILIKE`, two GIN indexes) and unordered.
 ```sql
 CREATE VIRTUAL TABLE posts_fts USING fts5(
   title, description, content, tags,
-  content='posts', content_rowid='rowid',
   tokenize='trigram'
 );
 ```
+
+Note this is a **standalone** FTS5 table, not `content='posts'` external-content.
+Once tags move to `entity_labels`, the indexed `tags` column is an aggregate of
+rows in another table, so there is no single source row to point at. Triggers
+populate all four columns: on `posts` for the text fields, and on `entity_labels`
+for the tag string. External-content mode would only work if every indexed column
+lived on `posts`.
 
 Triggers keep it current on insert/update/delete. `shows` and `audio` get the
 same treatment.
