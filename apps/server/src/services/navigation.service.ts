@@ -295,22 +295,17 @@ export const NavigationSessionServiceLayer = Layer.effect(
         }).pipe(Effect.map((rows) => rows[0]))
         if (!session) return { session: undefined, length: 0, replay: undefined } satisfies Phase
 
-        const length = yield* trailLength(session.id)
-        if (command._tag === 'Open') {
-          return {
-            session,
-            length,
-            replay: yield* entryForSlug(session.id, command.slug)
-          } satisfies Phase
-        }
-        if (command._tag === 'Step') {
-          return {
-            session,
-            length,
-            replay: yield* liveEntry(session.id, session.cursor, command.direction)
-          } satisfies Phase
-        }
-        return { session, length, replay: undefined } satisfies Phase
+        const replayEffect =
+          command._tag === 'Open'
+            ? entryForSlug(session.id, command.slug)
+            : command._tag === 'Step'
+              ? liveEntry(session.id, session.cursor, command.direction)
+              : Effect.succeed(undefined)
+        const { length, replay } = yield* Effect.all({
+          length: trailLength(session.id),
+          replay: replayEffect
+        })
+        return { session, length, replay } satisfies Phase
       }).pipe(Effect.withSpan('navigation.session.read'))
 
     const neighboursFor = (sessionId: string, position: number) =>
@@ -376,9 +371,12 @@ export const NavigationSessionServiceLayer = Layer.effect(
           const session = phase.session
           yield* Effect.annotateCurrentSpan('path', 'replay')
           return yield* Effect.gen(function* () {
-            const index = yield* entryIndex(session.id, replay.position)
-            const neighbours = yield* neighboursFor(session.id, replay.position)
-            return resultFor(replay, index, phase.length, yield* hasUnread(session.id), neighbours)
+            const { index, neighbours, unread } = yield* Effect.all({
+              index: entryIndex(session.id, replay.position),
+              neighbours: neighboursFor(session.id, replay.position),
+              unread: hasUnread(session.id)
+            })
+            return resultFor(replay, index, phase.length, unread, neighbours)
           }).pipe(Effect.withSpan('navigation.result.read'))
         }
         if (command._tag === 'Step' && command.direction === 'Back') {
@@ -535,10 +533,13 @@ export const NavigationSessionServiceLayer = Layer.effect(
                 }
               : yield* entryAtPosition(locked.session.id, locked.session.cursor)
           if (!entry) return yield* noSuchMove(command)
-          const length = yield* trailLength(locked.session.id)
-          const index = yield* entryIndex(locked.session.id, entry.position)
-          const neighbours = yield* neighboursFor(locked.session.id, entry.position)
-          return resultFor(entry, index, length, yield* hasUnread(locked.session.id), neighbours)
+          const { length, index, neighbours, unread } = yield* Effect.all({
+            length: trailLength(locked.session.id),
+            index: entryIndex(locked.session.id, entry.position),
+            neighbours: neighboursFor(locked.session.id, entry.position),
+            unread: hasUnread(locked.session.id)
+          })
+          return resultFor(entry, index, length, unread, neighbours)
         }).pipe(Effect.withSpan('navigation.result.read'))
       })
 
@@ -554,20 +555,21 @@ export const NavigationSessionServiceLayer = Layer.effect(
             capabilities: { canStepBack: false, canStepForward: false, hasUnread: false }
           }
         }
-        const entry = yield* entryAtPosition(session.id, session.cursor)
-        const length = yield* trailLength(session.id)
+        const { entry, length, index, unread } = yield* Effect.all({
+          entry: entryAtPosition(session.id, session.cursor),
+          length: trailLength(session.id),
+          index: entryIndex(session.id, session.cursor),
+          unread: hasUnread(session.id)
+        })
         if (!entry || length === 0) {
           return {
             slug: null,
             capabilities: { canStepBack: false, canStepForward: false, hasUnread: false }
           }
         }
-        const index = yield* entryIndex(session.id, entry.position)
         return {
           slug: entry.slug,
-          capabilities: capabilitiesOf(index, length, {
-            hasUnread: yield* hasUnread(session.id)
-          })
+          capabilities: capabilitiesOf(index, length, { hasUnread: unread })
         }
       })
 

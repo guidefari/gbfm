@@ -689,36 +689,37 @@ const getAdjacentMicroPostsEffect = (slug: string) =>
     // precision but JS Date only carries milliseconds, so a value read
     // out and passed back in as a query param can silently round down
     // and no longer compare equal to the row it came from.
-    const prevRows = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select({ slug: postsTable.slug, title: postsTable.title })
-          .from(postsTable)
-          .where(and(baseCondition, gte(postsTable.createdAt, current.createdAt)))
-          .orderBy(asc(postsTable.createdAt))
-          .limit(1),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to fetch previous micro post: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'posts'
-        })
-    })
-
-    const nextRows = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select({ slug: postsTable.slug, title: postsTable.title })
-          .from(postsTable)
-          .where(and(baseCondition, lte(postsTable.createdAt, current.createdAt)))
-          .orderBy(desc(postsTable.createdAt))
-          .limit(1),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to fetch next micro post: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'posts'
-        })
+    const { prevRows, nextRows } = yield* Effect.all({
+      prevRows: Effect.tryPromise({
+        try: () =>
+          db
+            .select({ slug: postsTable.slug, title: postsTable.title })
+            .from(postsTable)
+            .where(and(baseCondition, gte(postsTable.createdAt, current.createdAt)))
+            .orderBy(asc(postsTable.createdAt))
+            .limit(1),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to fetch previous micro post: ${getErrorMessage(error)}`,
+            operation: 'select',
+            table: 'posts'
+          })
+      }),
+      nextRows: Effect.tryPromise({
+        try: () =>
+          db
+            .select({ slug: postsTable.slug, title: postsTable.title })
+            .from(postsTable)
+            .where(and(baseCondition, lte(postsTable.createdAt, current.createdAt)))
+            .orderBy(desc(postsTable.createdAt))
+            .limit(1),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to fetch next micro post: ${getErrorMessage(error)}`,
+            operation: 'select',
+            table: 'posts'
+          })
+      })
     })
 
     return {
