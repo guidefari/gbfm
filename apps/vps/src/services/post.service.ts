@@ -262,8 +262,9 @@ export function normalizePostData(
   return normalizedData
 }
 
-const buildPostWithCreators = (db: Database['Service'], post: PostRow, mdx: MdxService) =>
+const buildPostWithCreators = (post: PostRow, mdx: MdxService) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const [blueskySource] = yield* Effect.tryPromise({
       try: () =>
         db
@@ -311,17 +312,17 @@ const buildPostWithCreators = (db: Database['Service'], post: PostRow, mdx: MdxS
       catch: (error) =>
         new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
     })
-    const compiled = yield* buildPostWithPreloadedCreators(db, projectedPost, creators, mdx)
+    const compiled = yield* buildPostWithPreloadedCreators(projectedPost, creators, mdx)
     return blueskySource ? { ...compiled, blueskySource } : compiled
   })
 
 const buildPostWithPreloadedCreators = (
-  db: Database['Service'],
   post: PostRow,
   creators: Array<{ id: string; name: string; username: string | null }>,
   mdx: MdxService
 ) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const projectedPost = yield* Effect.tryPromise({
       try: () => projectEntityLabels(db, 'post', post),
       catch: (error) =>
@@ -384,7 +385,6 @@ export const importedPostIds = (db: Database['Service']) =>
     .where(sql`${blueskyPostSources.postId} is not null`)
 
 const getAllEffect = (
-  db: Database['Service'],
   options: {
     limit: number
     offset: number
@@ -399,6 +399,7 @@ const getAllEffect = (
   actor?: { userId: string; userRole: string }
 ) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const { limit, offset, type, tag, topLevelOnly, source, draft, q } = options
     const contentCondition =
       type && tag
@@ -566,7 +567,7 @@ const getAllEffect = (
       (post) => {
         const creators = creatorsByPostId[post.id] ?? []
         const blueskySource = sourceByPostId.get(post.id)
-        return buildPostWithPreloadedCreators(db, post, creators, mdx).pipe(
+        return buildPostWithPreloadedCreators(post, creators, mdx).pipe(
           Effect.map((compiled) => (blueskySource ? { ...compiled, blueskySource } : compiled))
         )
       },
@@ -583,8 +584,9 @@ const getAllEffect = (
     })
   )
 
-const getEditorialTagsEffect = (db: Database['Service']) =>
+const getEditorialTagsEffect = () =>
   Effect.gen(function* () {
+    const db = yield* Database
     const rows = yield* Effect.tryPromise({
       try: () =>
         db
@@ -616,8 +618,9 @@ const getEditorialTagsEffect = (db: Database['Service']) =>
       .toSorted()
   })
 
-const getMicroTagsEffect = (db: Database['Service']) =>
+const getMicroTagsEffect = () =>
   Effect.gen(function* () {
+    const db = yield* Database
     const rows = yield* Effect.tryPromise({
       try: () =>
         db
@@ -649,8 +652,9 @@ const getMicroTagsEffect = (db: Database['Service']) =>
       .toSorted()
   })
 
-const getAdjacentMicroPostsEffect = (db: Database['Service'], slug: string) =>
+const getAdjacentMicroPostsEffect = (slug: string) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const currentRecords = yield* Effect.tryPromise({
       try: () =>
         db
@@ -728,8 +732,9 @@ const getAdjacentMicroPostsEffect = (db: Database['Service'], slug: string) =>
     }
   }).pipe(Effect.withSpan('post.getAdjacentMicroPosts', { attributes: { slug } }))
 
-const getRandomMicroPostEffect = (db: Database['Service'], excludeSlugs: string[]) =>
+const getRandomMicroPostEffect = (excludeSlugs: string[]) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const baseCondition = and(
       eq(postsTable.type, 'micro'),
       eq(postsTable.draft, false),
@@ -786,11 +791,11 @@ const getRandomMicroPostEffect = (db: Database['Service'], excludeSlugs: string[
   }).pipe(Effect.withSpan('post.getRandomMicroPost'))
 
 const searchMicroPostsEffect = (
-  db: Database['Service'],
   options: { q: string; limit: number; offset: number },
   mdx: MdxService
 ) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const { q, limit, offset } = options
     const pattern = `%${q.toLowerCase()}%`
     const directPostMatch =
@@ -964,7 +969,7 @@ const searchMicroPostsEffect = (
 
     const compiledData = yield* Effect.forEach(
       data,
-      (post) => buildPostWithPreloadedCreators(db, post, creatorsByPostId[post.id] ?? [], mdx),
+      (post) => buildPostWithPreloadedCreators(post, creatorsByPostId[post.id] ?? [], mdx),
       { concurrency: 5 }
     )
 
@@ -995,12 +1000,11 @@ const searchMicroPostsEffect = (
   }).pipe(Effect.withSpan('post.searchMicroPosts', { attributes: { q: options.q } }))
 
 const getEditorialsEffect = (
-  db: Database['Service'],
   options: { limit: number; offset: number; tag?: string },
   mdx: MdxService
 ) =>
   Effect.gen(function* () {
-    const posts = yield* getAllEffect(db, { ...options, type: 'post' }, mdx)
+    const posts = yield* getAllEffect({ ...options, type: 'post' }, mdx)
     const sentry = yield* SentryService
     const rawData = yield* Effect.forEach(
       posts.data,
@@ -1028,12 +1032,11 @@ const getEditorialsEffect = (
   }).pipe(Effect.withSpan('post.getEditorials'))
 
 const getMicroPostsEffect = (
-  db: Database['Service'],
   options: { limit: number; offset: number; tag?: string },
   mdx: MdxService
 ) =>
   Effect.gen(function* () {
-    const posts = yield* getAllEffect(db, { ...options, type: 'micro', topLevelOnly: true }, mdx)
+    const posts = yield* getAllEffect({ ...options, type: 'micro', topLevelOnly: true }, mdx)
     const sentry = yield* SentryService
     const rawData = yield* Effect.forEach(
       posts.data,
@@ -1060,12 +1063,9 @@ const getMicroPostsEffect = (
     }
   }).pipe(Effect.withSpan('post.getMicroPosts'))
 
-const getByTagEffect = (
-  db: Database['Service'],
-  tag: string,
-  options: { limit: number; offset: number }
-) =>
+const getByTagEffect = (tag: string, options: { limit: number; offset: number }) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const { limit, offset } = options
     const whereCondition = and(
       eq(postsTable.draft, false),
@@ -1133,13 +1133,9 @@ const getByTagEffect = (
     }
   })
 
-const getBySlugEffect = (
-  db: Database['Service'],
-  slug: string,
-  mdx: MdxService,
-  includeDrafts = false
-) =>
+const getBySlugEffect = (slug: string, mdx: MdxService, includeDrafts = false) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const postRecords = yield* Effect.tryPromise({
       try: () =>
         db
@@ -1168,7 +1164,7 @@ const getBySlugEffect = (
       })
     }
 
-    const processedPost = yield* buildPostWithCreators(db, post, mdx)
+    const processedPost = yield* buildPostWithCreators(post, mdx)
 
     yield* Effect.annotateCurrentSpan('slug', slug)
 
@@ -1180,9 +1176,9 @@ const getBySlugEffect = (
     return processedPost
   }).pipe(Effect.withSpan('post.getBySlug', { attributes: { slug } }))
 
-const getEditorialBySlugEffect = (db: Database['Service'], slug: string, mdx: MdxService) =>
+const getEditorialBySlugEffect = (slug: string, mdx: MdxService) =>
   Effect.gen(function* () {
-    const post = yield* getBySlugEffect(db, slug, mdx)
+    const post = yield* getBySlugEffect(slug, mdx)
     return yield* toEditorialPost(post).pipe(
       Effect.mapError(
         () =>
@@ -1199,9 +1195,9 @@ const getEditorialBySlugEffect = (db: Database['Service'], slug: string, mdx: Md
     })
   )
 
-const getMicroPostBySlugEffect = (db: Database['Service'], slug: string, mdx: MdxService) =>
+const getMicroPostBySlugEffect = (slug: string, mdx: MdxService) =>
   Effect.gen(function* () {
-    const post = yield* getBySlugEffect(db, slug, mdx)
+    const post = yield* getBySlugEffect(slug, mdx)
     return yield* toMicroPost(post).pipe(
       Effect.mapError(
         () =>
@@ -1218,8 +1214,9 @@ const getMicroPostBySlugEffect = (db: Database['Service'], slug: string, mdx: Md
     })
   )
 
-const getMicroPostByIdEffect = (db: Database['Service'], id: string, mdx: MdxService) =>
+const getMicroPostByIdEffect = (id: string, mdx: MdxService) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const postRecords = yield* Effect.tryPromise({
       try: () =>
         db
@@ -1244,7 +1241,7 @@ const getMicroPostByIdEffect = (db: Database['Service'], id: string, mdx: MdxSer
       })
     }
 
-    const compiled = yield* buildPostWithCreators(db, post, mdx)
+    const compiled = yield* buildPostWithCreators(post, mdx)
     return yield* toMicroPost(compiled).pipe(
       Effect.mapError(
         () =>
@@ -1262,8 +1259,9 @@ const getMicroPostByIdEffect = (db: Database['Service'], id: string, mdx: MdxSer
 // micro post specifically (QuotedPostNotEmbeddableError otherwise) -- the
 // exact same NotFoundError/type-mismatch split used for reply parents via
 // ParentPostNotReplyableError, just keyed by id instead of slug.
-const validateQuotedPost = (db: Database['Service'], quotedPostId: string) =>
+const validateQuotedPost = (quotedPostId: string) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const quotedRecords = yield* Effect.tryPromise({
       try: () => db.select().from(postsTable).where(eq(postsTable.id, quotedPostId)).limit(1),
       catch: (error) =>
@@ -1297,13 +1295,14 @@ export const generatePostSlug = (title?: string | null, content?: string | null)
   return source ? toSlug(source) : toSlug('post')
 }
 
-const createEffect = (db: Database['Service'], data: Partial<InsertPost>, creatorIds: string[]) =>
+const createEffect = (data: Partial<InsertPost>, creatorIds: string[]) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const normalizedData = normalizePostData(data, data.type)
     yield* validatePostData(normalizedData)
 
     if (normalizedData.quotedPostId) {
-      yield* validateQuotedPost(db, normalizedData.quotedPostId)
+      yield* validateQuotedPost(normalizedData.quotedPostId)
     }
 
     const { tags, ...postData } = normalizedData
@@ -1392,7 +1391,6 @@ const generateReplySlug = () =>
   `reply-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 
 const createMicroPostReplyEffect = (
-  db: Database['Service'],
   options: {
     parentSlug: string
     actorUserId: string
@@ -1405,6 +1403,7 @@ const createMicroPostReplyEffect = (
   mdx: MdxService
 ) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const {
       parentSlug,
       actorUserId,
@@ -1416,7 +1415,7 @@ const createMicroPostReplyEffect = (
     } = options
 
     if (quotedPostId) {
-      yield* validateQuotedPost(db, quotedPostId)
+      yield* validateQuotedPost(quotedPostId)
     }
 
     const parentRecords = yield* Effect.tryPromise({
@@ -1442,7 +1441,7 @@ const createMicroPostReplyEffect = (
     // invisible to non-creators, so replying to one fails the same way an
     // ordinary read would (NotFoundError), rather than leaking its existence.
     if (parent.draft) {
-      const isCreator = yield* checkCreatorAuthorship(db, 'post', parent.id, actorUserId)
+      const isCreator = yield* checkCreatorAuthorship('post', parent.id, actorUserId)
       if (!isCreator) {
         return yield* new NotFoundError({
           message: 'Parent post not found',
@@ -1525,7 +1524,7 @@ const createMicroPostReplyEffect = (
       depth: threadFields.depth
     })
 
-    const compiled = yield* buildPostWithCreators(db, result, mdx)
+    const compiled = yield* buildPostWithCreators(result, mdx)
     return yield* toMicroPost(compiled).pipe(
       Effect.mapError(
         (error) =>
@@ -1541,12 +1540,12 @@ const createMicroPostReplyEffect = (
   )
 
 const getMicroPostRepliesEffect = (
-  db: Database['Service'],
   parentSlug: string,
   options: { limit: number; offset: number },
   mdx: MdxService
 ) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const { limit, offset } = options
 
     const parentRecords = yield* Effect.tryPromise({
@@ -1675,7 +1674,7 @@ const getMicroPostRepliesEffect = (
 
     const compiledData = yield* Effect.forEach(
       data,
-      (post) => buildPostWithPreloadedCreators(db, post, creatorsByPostId[post.id] ?? [], mdx),
+      (post) => buildPostWithPreloadedCreators(post, creatorsByPostId[post.id] ?? [], mdx),
       { concurrency: 5 }
     )
 
@@ -1708,12 +1707,12 @@ const getMicroPostRepliesEffect = (
   }).pipe(Effect.withSpan('post.getMicroPostReplies', { attributes: { parentSlug } }))
 
 const getMicroPostThreadEffect = (
-  db: Database['Service'],
   slug: string,
   options: { limit: number; offset: number },
   mdx: MdxService
 ) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const { limit, offset } = options
 
     const focusRecords = yield* Effect.tryPromise({
@@ -1846,7 +1845,7 @@ const getMicroPostThreadEffect = (
 
     const sentry = yield* SentryService
     const compileRow = (post: PostRow) =>
-      buildPostWithPreloadedCreators(db, post, creatorsByPostId[post.id] ?? [], mdx).pipe(
+      buildPostWithPreloadedCreators(post, creatorsByPostId[post.id] ?? [], mdx).pipe(
         Effect.flatMap((compiled) =>
           toMicroPost(compiled).pipe(
             Effect.catchTag('DatabaseError', (e) =>
@@ -1895,7 +1894,6 @@ const getMicroPostThreadEffect = (
   }).pipe(Effect.withSpan('post.getMicroPostThread', { attributes: { slug } }))
 
 const updateEffect = (
-  db: Database['Service'],
   slug: string,
   userId: string,
   userRole: string,
@@ -1903,6 +1901,7 @@ const updateEffect = (
   mdx: MdxService
 ) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const existingRecords = yield* Effect.tryPromise({
       try: () => db.select().from(postsTable).where(eq(postsTable.slug, slug)).limit(1),
       catch: (error) =>
@@ -1922,7 +1921,7 @@ const updateEffect = (
       })
     }
 
-    yield* requireCreatorOrAdmin(db, 'post', existingPost.id, userId, userRole)
+    yield* requireCreatorOrAdmin('post', existingPost.id, userId, userRole)
 
     // Thread structure (parentPostId/rootPostId/depth) must never be
     // mutable via update, even though InsertPost's type allows it -- the
@@ -2020,7 +2019,7 @@ const updateEffect = (
       })
     }
 
-    return yield* buildPostWithCreators(db, updatedPost, mdx)
+    return yield* buildPostWithCreators(updatedPost, mdx)
   })
 
 export const PostServiceLayer = Layer.effect(
@@ -2030,38 +2029,42 @@ export const PostServiceLayer = Layer.effect(
     const mdx = yield* MdxService
     const config = yield* ConfigService
     const uploadAssetService = yield* UploadAssetService
+    const provideDb = Effect.provideService(Database, db)
     return {
-      getAll: (opts) => getAllEffect(db, opts, mdx),
-      getAllForEdit: (opts, userId, userRole) => getAllEffect(db, opts, mdx, { userId, userRole }),
-      getBySlug: (slug) => getBySlugEffect(db, slug, mdx),
+      getAll: (opts) => provideDb(getAllEffect(opts, mdx)),
+      getAllForEdit: (opts, userId, userRole) =>
+        provideDb(getAllEffect(opts, mdx, { userId, userRole })),
+      getBySlug: (slug) => provideDb(getBySlugEffect(slug, mdx)),
       getBySlugForEdit: (slug, userId, userRole) =>
-        Effect.gen(function* () {
-          const post = yield* getBySlugEffect(db, slug, mdx, true)
-          yield* requireCreatorOrAdmin(db, 'post', post.id, userId, userRole)
-          return post
-        }),
-      getEditorials: (opts) => getEditorialsEffect(db, opts, mdx),
-      getEditorialBySlug: (slug) => getEditorialBySlugEffect(db, slug, mdx),
-      getMicroPosts: (opts) => getMicroPostsEffect(db, opts, mdx),
-      getMicroPostBySlug: (slug) => getMicroPostBySlugEffect(db, slug, mdx),
-      getMicroPostById: (id) => getMicroPostByIdEffect(db, id, mdx),
-      getEditorialTags: () => getEditorialTagsEffect(db),
-      getMicroTags: () => getMicroTagsEffect(db),
-      getAdjacentMicroPosts: (slug) => getAdjacentMicroPostsEffect(db, slug),
-      getRandomMicroPost: (excludeSlugs) => getRandomMicroPostEffect(db, excludeSlugs),
-      searchMicroPosts: (opts) => searchMicroPostsEffect(db, opts, mdx),
-      getByTag: (tag, opts) => getByTagEffect(db, tag, opts),
+        provideDb(
+          Effect.gen(function* () {
+            const post = yield* getBySlugEffect(slug, mdx, true)
+            yield* requireCreatorOrAdmin('post', post.id, userId, userRole)
+            return post
+          })
+        ),
+      getEditorials: (opts) => provideDb(getEditorialsEffect(opts, mdx)),
+      getEditorialBySlug: (slug) => provideDb(getEditorialBySlugEffect(slug, mdx)),
+      getMicroPosts: (opts) => provideDb(getMicroPostsEffect(opts, mdx)),
+      getMicroPostBySlug: (slug) => provideDb(getMicroPostBySlugEffect(slug, mdx)),
+      getMicroPostById: (id) => provideDb(getMicroPostByIdEffect(id, mdx)),
+      getEditorialTags: () => provideDb(getEditorialTagsEffect()),
+      getMicroTags: () => provideDb(getMicroTagsEffect()),
+      getAdjacentMicroPosts: (slug) => provideDb(getAdjacentMicroPostsEffect(slug)),
+      getRandomMicroPost: (excludeSlugs) => provideDb(getRandomMicroPostEffect(excludeSlugs)),
+      searchMicroPosts: (opts) => provideDb(searchMicroPostsEffect(opts, mdx)),
+      getByTag: (tag, opts) => provideDb(getByTagEffect(tag, opts)),
       create: (data, creatorIds) =>
-        createEffect(db, data, creatorIds).pipe(
+        provideDb(createEffect(data, creatorIds)).pipe(
           Effect.provideService(ConfigService, config),
           Effect.provideService(UploadAssetService, uploadAssetService)
         ),
-      createMicroPostReply: (opts) => createMicroPostReplyEffect(db, opts, mdx),
+      createMicroPostReply: (opts) => provideDb(createMicroPostReplyEffect(opts, mdx)),
       getMicroPostReplies: (parentSlug, opts) =>
-        getMicroPostRepliesEffect(db, parentSlug, opts, mdx),
-      getMicroPostThread: (slug, opts) => getMicroPostThreadEffect(db, slug, opts, mdx),
+        provideDb(getMicroPostRepliesEffect(parentSlug, opts, mdx)),
+      getMicroPostThread: (slug, opts) => provideDb(getMicroPostThreadEffect(slug, opts, mdx)),
       update: (slug, userId, userRole, data) =>
-        updateEffect(db, slug, userId, userRole, data, mdx).pipe(
+        provideDb(updateEffect(slug, userId, userRole, data, mdx)).pipe(
           Effect.provideService(ConfigService, config),
           Effect.provideService(UploadAssetService, uploadAssetService)
         )
