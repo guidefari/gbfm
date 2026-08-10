@@ -3,6 +3,27 @@
   "dialect": "postgresql",
   "entries": [
     {
+      "idx": 0,
+      "version": "7",
+      "when": 1753416979630,
+      "tag": "0000_true_baseline",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1753416979631,
+      "tag": "0001_absent_vulcan",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1753416979632,
+      "tag": "0002_cuddly_gideon",
+      "breakpoints": true
+    },
+    {
       "idx": 3,
       "version": "7",
       "when": 1753416979633,
