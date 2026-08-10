@@ -75,9 +75,7 @@ Node-only integrations, which cannot run on workerd.
 ### What exists
 
 - `@sentry/cloudflare@10.52.0` added to `apps/vps/package.json`, matching the
-  installed `@sentry/bun` version. **Note: `bun install` has not been run, so it
-  is in the manifest but not in `node_modules`.** Install before doing anything
-  else, or every import will look broken for the wrong reason.
+  installed `@sentry/bun` version, and confirmed present in `node_modules`.
 - `src/runtime/sentry-bun.ts` (20 lines) and `src/runtime/sentry-worker.ts`
   (43 lines): the platform split, keeping initialization at the composition seam
   rather than scattered through services.
