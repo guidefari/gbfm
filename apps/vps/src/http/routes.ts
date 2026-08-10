@@ -12,12 +12,7 @@ import { BlueskyEventsRoute } from '@/http/bluesky-events.routes'
 import { EmailHandlersLive } from '@/http/email.handlers'
 import { FavoritesHandlersLive } from '@/http/favorites.handlers'
 import { FileManagerHandlersLive } from '@/http/file-manager.handlers'
-import {
-  CorsLive,
-  RateLimiterLive,
-  RequestLoggerLive,
-  SentryDefectLive
-} from '@/http/global-middleware'
+import { CorsLive, RequestLoggerLive, SentryDefectLive } from '@/http/global-middleware'
 import { checkDatabase, makeHealthHandlers } from '@/http/health.handlers'
 import { DocsLive } from '@/http/docs'
 import { InviteHandlersLive } from '@/http/invite.handlers'
@@ -112,15 +107,11 @@ export const createWebHandler = (options: {
     // guaranteed by Layer.mergeAll -- each HttpRouter.middleware(fn, {global:
     // true}) registers into a shared Set via Layer.effectDiscard, and
     // mergeAll builds member layers concurrently with no documented ordering.
-    // It works today (verified: an OPTIONS preflight through this exact
-    // composition returns CORS headers with no x-ratelimit-* header, proving
-    // CorsLive's short-circuit runs before RateLimiterLive's httpEffect ever
-    // executes) only because none of these four middleware bodies suspend
+    // It works today only because none of these middleware bodies suspend
     // before their first yield, so Effect's scheduler happens to run them in
     // array order. Adding a real async gap to any of them, or an Effect
     // version change to mergeAll's build strategy, could silently reorder
-    // this. If CORS ever stops short-circuiting rate-limiting for OPTIONS
-    // requests, check this ordering first.
+    // this.
     Layer.mergeAll(
       ApiLive,
       betterAuthRoute,
@@ -129,7 +120,6 @@ export const createWebHandler = (options: {
       SiteRoutesLive,
       DocsLive,
       CorsLive,
-      RateLimiterLive,
       RequestLoggerLive,
       SentryDefectLive
     ).pipe(
