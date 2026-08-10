@@ -25,7 +25,24 @@ This document supersedes the email part of Phase 2 in
 [`cloudflare-backend.md`](cloudflare-backend.md). It is a prerequisite for the
 human API/D1 cutover in OPS-250.
 
-## Context / Current State
+## Implementation status
+
+The application and infrastructure changes landed on `prod` in `fded1baa` and
+were reconciled with the latest `prod` history in `0d391795`. The automated gate
+passes: server unit and D1 suites, email and API package suites, `bun precommit`,
+and `git diff --check` are green. No production deployment or real email send
+was performed.
+
+The remaining work is the human-operated live gate:
+
+- confirm Cloudflare Email Sending access and sufficient account quota;
+- deploy the `email-staging` Alchemy stage with a controlled test recipient;
+- send each critical template and inspect provider receipts, mailbox delivery,
+  and DKIM/SPF/DMARC results;
+- include the production email hard cut in OPS-250, then remove the live SES
+  identity and IAM access after the smoke checks pass.
+
+## Baseline before implementation
 
 ### Infrastructure
 
@@ -987,7 +1004,7 @@ flow completes once, and no SES dependency remains.
 
 ## Acceptance Gates
 
-The migration is complete when:
+The code migration is complete. The provider migration is complete when:
 
 - every application caller uses `EmailDelivery`;
 - `packages/email` contains no provider or infrastructure dependency;

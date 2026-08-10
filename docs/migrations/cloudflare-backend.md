@@ -2,7 +2,12 @@
 
 ## Status
 
-Exploration and decision record. No production infrastructure has been migrated yet.
+Implementation is in progress. The Worker/D1/Alchemy stack, R2 migration work,
+and Cloudflare Email Sending code have landed, but production API and email
+traffic have not cut over. OPS-250 remains the human-operated production gate.
+See [`d1-handover.md`](d1-handover.md), [`s3-to-r2.md`](s3-to-r2.md), and
+[`ses-to-cloudflare-email.md`](ses-to-cloudflare-email.md) for authoritative
+workstream status.
 
 ## Goals
 
@@ -135,14 +140,19 @@ The browser PUTs image bytes and each multipart chunk directly to the bucket via
 ### Phase 2: move jobs and email
 
 Email implementation spec: [`ses-to-cloudflare-email.md`](ses-to-cloudflare-email.md).
+It supersedes this plan's original fallback, attachment, and lifecycle-event
+requirements. The application and Alchemy implementation has landed; the
+controlled staging send and production hard cut remain.
 
-- Replace SES behind the existing email package boundary. From Bun, use Email Service's REST API/authenticated SMTP or call a small Worker adapter; the native sending binding is available only once the caller runs in Workers. Evaluate the sending beta for the Workers Paid requirement, account quota, 5 MiB message size, 50-recipient limit, attachments, deliverability, and delivery/bounce/complaint events before adopting it. Keep an external transactional provider as the fallback if the beta fails the gate.
+- Replace SES through a provider-neutral application transport backed only by the native Worker `send_email` binding in production. Confirm Cloudflare account access and quota, then prove critical templates, provider receipts, mailbox delivery, and authentication headers from the deployed staging Worker. The cut is forward-only: no provider selector, SES fallback, attachments, or lifecycle-event subsystem belongs in this migration.
 - Replace the reminder forever loop with a bounded scheduled/Queue-backed process. Process-local queues cannot be a correctness dependency in sleeping or horizontally routed compute. Define one-minute scheduling precision, idempotent claims, overlap prevention, retry policy, and backlog fan-out rather than assuming one invocation can process every due reminder.
 - Replace hourly process-local sitemap regeneration with a Cron Trigger plus KV/R2 cache, or generate on demand with edge caching.
 - While PostgreSQL remains, invoke the existing `pg_dump` image as a direct-database Container job and upload to R2. Use a Workflow or explicit status protocol to observe completion, retry failures, prevent overlap, alert, and verify restores; merely starting a Container from Cron is not backup success. Measure dump size against Container disk/memory because the current script buffers the full dump.
 - If D1 is adopted, use Time Travel plus independent Workflow exports to R2. Paid Time Travel retains 30 days (Free retains seven); export can block other database requests, and in-place restore interrupts active work, so both export and restore need production-like load tests.
 
-**Gate:** reminder lateness/duplicates/retries and a representative backlog, sitemap, email attachments and delivery events, backup failure/overlap, and restore drills succeed without the AWS service running.
+**Gate:** reminder lateness/duplicates/retries and a representative backlog,
+sitemap, the email staging checks defined in the superseding email spec, backup
+failure/overlap, and restore drills succeed without the AWS service running.
 
 ### Phase 3: move compute and deployment
 
