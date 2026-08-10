@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, isNull, lt, notExists, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, isNull, lt, lte, notExists, sql } from 'drizzle-orm'
 import { Context, Effect, Layer, Schema } from 'effect'
 import {
   capabilitiesOf,
@@ -287,6 +287,182 @@ export const NavigationSessionServiceLayer = Layer.effect(
         catch: (error) => databaseError('count', error)
       })
 
+    const readSnapshot = (session: SessionRow) =>
+      Effect.tryPromise({
+        try: async () => {
+          const [entryRows, lengthRows, indexRows, unreadRows] = await db.batch([
+            db
+              .select({
+                slug: navigationTrailEntries.slug,
+                postId: navigationTrailEntries.postId,
+                position: navigationTrailEntries.position,
+                arrivedBy: navigationTrailEntries.arrivedBy,
+                visitedAt: navigationTrailEntries.visitedAt
+              })
+              .from(navigationTrailEntries)
+              .innerJoin(postsTable, eq(navigationTrailEntries.postId, postsTable.id))
+              .where(
+                and(
+                  eq(navigationTrailEntries.sessionId, session.id),
+                  eq(navigationTrailEntries.position, session.cursor),
+                  eq(postsTable.draft, false)
+                )
+              )
+              .limit(1),
+            db
+              .select({ count: sql<number>`CAST(count(*) AS INTEGER)` })
+              .from(navigationTrailEntries)
+              .innerJoin(postsTable, eq(navigationTrailEntries.postId, postsTable.id))
+              .where(
+                and(eq(navigationTrailEntries.sessionId, session.id), eq(postsTable.draft, false))
+              ),
+            db
+              .select({ count: sql<number>`CAST(count(*) AS INTEGER)` })
+              .from(navigationTrailEntries)
+              .innerJoin(postsTable, eq(navigationTrailEntries.postId, postsTable.id))
+              .where(
+                and(
+                  eq(navigationTrailEntries.sessionId, session.id),
+                  lt(navigationTrailEntries.position, session.cursor),
+                  eq(postsTable.draft, false)
+                )
+              ),
+            db
+              .select({ slug: postsTable.slug })
+              .from(postsTable)
+              .where(
+                and(
+                  eq(postsTable.type, 'micro'),
+                  eq(postsTable.draft, false),
+                  isNull(postsTable.parentPostId),
+                  notExists(
+                    db
+                      .select()
+                      .from(navigationSeenPosts)
+                      .where(
+                        and(
+                          eq(navigationSeenPosts.sessionId, session.id),
+                          eq(navigationSeenPosts.slug, postsTable.slug)
+                        )
+                      )
+                  )
+                )
+              )
+              .limit(1)
+          ])
+          const entry = entryRows[0]
+          return {
+            entry: entry
+              ? { ...entry, slug: asSlug(entry.slug), arrivedBy: arrivedBy(entry.arrivedBy) }
+              : undefined,
+            length: lengthRows[0]?.count ?? 0,
+            index: indexRows[0]?.count ?? 0,
+            hasUnread: unreadRows.length > 0
+          }
+        },
+        catch: (error) => databaseError('read', error)
+      })
+
+    const resultSnapshot = (sessionId: string, position: number) => {
+      const currentPostCreatedAt = db
+        .select({ createdAt: postsTable.createdAt })
+        .from(navigationTrailEntries)
+        .innerJoin(postsTable, eq(navigationTrailEntries.postId, postsTable.id))
+        .where(
+          and(
+            eq(navigationTrailEntries.sessionId, sessionId),
+            eq(navigationTrailEntries.position, position)
+          )
+        )
+        .limit(1)
+      return Effect.tryPromise({
+        try: async () => {
+          const [lengthRows, indexRows, backRows, forwardRows, unreadRows] = await db.batch([
+            db
+              .select({ count: sql<number>`CAST(count(*) AS INTEGER)` })
+              .from(navigationTrailEntries)
+              .innerJoin(postsTable, eq(navigationTrailEntries.postId, postsTable.id))
+              .where(
+                and(eq(navigationTrailEntries.sessionId, sessionId), eq(postsTable.draft, false))
+              ),
+            db
+              .select({ count: sql<number>`CAST(count(*) AS INTEGER)` })
+              .from(navigationTrailEntries)
+              .innerJoin(postsTable, eq(navigationTrailEntries.postId, postsTable.id))
+              .where(
+                and(
+                  eq(navigationTrailEntries.sessionId, sessionId),
+                  lt(navigationTrailEntries.position, position),
+                  eq(postsTable.draft, false)
+                )
+              ),
+            db
+              .select({ slug: navigationTrailEntries.slug })
+              .from(navigationTrailEntries)
+              .innerJoin(postsTable, eq(navigationTrailEntries.postId, postsTable.id))
+              .where(
+                and(
+                  eq(navigationTrailEntries.sessionId, sessionId),
+                  lt(navigationTrailEntries.position, position),
+                  eq(postsTable.draft, false)
+                )
+              )
+              .orderBy(desc(navigationTrailEntries.position))
+              .limit(1),
+            db
+              .select({ slug: navigationTrailEntries.slug })
+              .from(navigationTrailEntries)
+              .innerJoin(postsTable, eq(navigationTrailEntries.postId, postsTable.id))
+              .where(
+                and(
+                  eq(navigationTrailEntries.sessionId, sessionId),
+                  gt(navigationTrailEntries.position, position),
+                  eq(postsTable.draft, false)
+                )
+              )
+              .orderBy(asc(navigationTrailEntries.position))
+              .limit(1),
+            db
+              .select({ slug: postsTable.slug })
+              .from(postsTable)
+              .where(
+                and(
+                  eq(postsTable.type, 'micro'),
+                  eq(postsTable.draft, false),
+                  isNull(postsTable.parentPostId),
+                  lte(postsTable.createdAt, currentPostCreatedAt),
+                  notExists(
+                    db
+                      .select()
+                      .from(navigationSeenPosts)
+                      .where(
+                        and(
+                          eq(navigationSeenPosts.sessionId, sessionId),
+                          eq(navigationSeenPosts.slug, postsTable.slug)
+                        )
+                      )
+                  )
+                )
+              )
+              .orderBy(desc(postsTable.createdAt))
+              .limit(1)
+          ])
+          const back = backRows[0]
+          const forward = forwardRows[0] ?? unreadRows[0]
+          return {
+            length: lengthRows[0]?.count ?? 0,
+            index: indexRows[0]?.count ?? 0,
+            neighbours: {
+              ...(back ? { back: asSlug(back.slug) } : {}),
+              ...(forward ? { forward: asSlug(forward.slug) } : {})
+            },
+            hasUnread: unreadRows.length > 0
+          }
+        },
+        catch: (error) => databaseError('read', error)
+      })
+    }
+
     const readPhase = (identity: NavigationIdentity, command: NavigationCommand) =>
       Effect.gen(function* () {
         const session = yield* Effect.tryPromise({
@@ -295,22 +471,17 @@ export const NavigationSessionServiceLayer = Layer.effect(
         }).pipe(Effect.map((rows) => rows[0]))
         if (!session) return { session: undefined, length: 0, replay: undefined } satisfies Phase
 
-        const length = yield* trailLength(session.id)
-        if (command._tag === 'Open') {
-          return {
-            session,
-            length,
-            replay: yield* entryForSlug(session.id, command.slug)
-          } satisfies Phase
-        }
-        if (command._tag === 'Step') {
-          return {
-            session,
-            length,
-            replay: yield* liveEntry(session.id, session.cursor, command.direction)
-          } satisfies Phase
-        }
-        return { session, length, replay: undefined } satisfies Phase
+        const replayEffect =
+          command._tag === 'Open'
+            ? entryForSlug(session.id, command.slug)
+            : command._tag === 'Step'
+              ? liveEntry(session.id, session.cursor, command.direction)
+              : Effect.succeed(undefined)
+        const { length, replay } = yield* Effect.all({
+          length: trailLength(session.id),
+          replay: replayEffect
+        })
+        return { session, length, replay } satisfies Phase
       }).pipe(Effect.withSpan('navigation.session.read'))
 
     const neighboursFor = (sessionId: string, position: number) =>
@@ -330,10 +501,9 @@ export const NavigationSessionServiceLayer = Layer.effect(
         if (pick === 'Random') {
           const picked = yield* posts.getRandomMicroPost([...seen])
           if (seen.has(asSlug(picked.slug))) return yield* new CorpusExhausted()
-          const post = yield* posts.getMicroPostBySlug(picked.slug)
           return {
-            slug: asSlug(post.slug),
-            postId: post.id,
+            slug: asSlug(picked.slug),
+            postId: picked.id,
             visitedAt: Date.now()
           } satisfies ResolvedDestination
         }
@@ -344,10 +514,9 @@ export const NavigationSessionServiceLayer = Layer.effect(
           if (!adjacent.next) return yield* new CorpusExhausted()
           current = asSlug(adjacent.next.slug)
           if (!seen.has(current)) {
-            const post = yield* posts.getMicroPostBySlug(current)
             return {
-              slug: asSlug(post.slug),
-              postId: post.id,
+              slug: current,
+              postId: adjacent.next.id,
               visitedAt: Date.now()
             } satisfies ResolvedDestination
           }
@@ -371,14 +540,53 @@ export const NavigationSessionServiceLayer = Layer.effect(
         const phase = yield* readPhase(identity, command)
         yield* Effect.annotateCurrentSpan('trailLength', phase.length)
         yield* Effect.annotateCurrentSpan('cursor', phase.session?.cursor ?? -1)
-        if (phase.replay && phase.session && retryCount === 0) {
+        if (phase.replay && phase.session) {
           const replay = phase.replay
           const session = phase.session
           yield* Effect.annotateCurrentSpan('path', 'replay')
+          if (replay.position !== session.cursor) {
+            const updated = yield* Effect.tryPromise({
+              try: async () => {
+                const [row] = await db
+                  .update(navigationSessions)
+                  .set({
+                    cursor: replay.position,
+                    lastIntentToken: intentToken,
+                    updatedAt: new Date()
+                  })
+                  .where(
+                    and(
+                      eq(navigationSessions.id, session.id),
+                      eq(navigationSessions.cursor, session.cursor),
+                      eq(navigationSessions.updatedAt, session.updatedAt)
+                    )
+                  )
+                  .returning()
+                return row
+              },
+              catch: (error) => databaseError('update', error)
+            })
+            if (!updated) {
+              if (retryCount === MAX_NAVIGATION_LOCK_RETRIES) return yield* noSuchMove(command)
+              yield* Effect.sleep('1 millis')
+              return yield* resolve(identity, command, from, intentToken, retryCount + 1)
+            }
+            yield* lock.sync(identity, {
+              sessionId: updated.id,
+              position: replay.position,
+              intentToken,
+              updatedAtMs: updated.updatedAt.getTime()
+            })
+          }
           return yield* Effect.gen(function* () {
-            const index = yield* entryIndex(session.id, replay.position)
-            const neighbours = yield* neighboursFor(session.id, replay.position)
-            return resultFor(replay, index, phase.length, yield* hasUnread(session.id), neighbours)
+            const snapshot = yield* resultSnapshot(session.id, replay.position)
+            return resultFor(
+              replay,
+              snapshot.index,
+              snapshot.length,
+              snapshot.hasUnread,
+              snapshot.neighbours
+            )
           }).pipe(Effect.withSpan('navigation.result.read'))
         }
         if (command._tag === 'Step' && command.direction === 'Back') {
@@ -399,7 +607,7 @@ export const NavigationSessionServiceLayer = Layer.effect(
           : new Set<Slug>()
         const destination =
           command._tag === 'Open'
-            ? yield* posts.getMicroPostBySlug(command.slug).pipe(
+            ? yield* posts.getMicroPostReferenceBySlug(command.slug).pipe(
                 Effect.map((post) => ({
                   slug: asSlug(post.slug),
                   postId: post.id,
@@ -535,10 +743,14 @@ export const NavigationSessionServiceLayer = Layer.effect(
                 }
               : yield* entryAtPosition(locked.session.id, locked.session.cursor)
           if (!entry) return yield* noSuchMove(command)
-          const length = yield* trailLength(locked.session.id)
-          const index = yield* entryIndex(locked.session.id, entry.position)
-          const neighbours = yield* neighboursFor(locked.session.id, entry.position)
-          return resultFor(entry, index, length, yield* hasUnread(locked.session.id), neighbours)
+          const snapshot = yield* resultSnapshot(locked.session.id, entry.position)
+          return resultFor(
+            entry,
+            snapshot.index,
+            snapshot.length,
+            snapshot.hasUnread,
+            snapshot.neighbours
+          )
         }).pipe(Effect.withSpan('navigation.result.read'))
       })
 
@@ -554,19 +766,17 @@ export const NavigationSessionServiceLayer = Layer.effect(
             capabilities: { canStepBack: false, canStepForward: false, hasUnread: false }
           }
         }
-        const entry = yield* entryAtPosition(session.id, session.cursor)
-        const length = yield* trailLength(session.id)
-        if (!entry || length === 0) {
+        const snapshot = yield* readSnapshot(session)
+        if (!snapshot.entry || snapshot.length === 0) {
           return {
             slug: null,
             capabilities: { canStepBack: false, canStepForward: false, hasUnread: false }
           }
         }
-        const index = yield* entryIndex(session.id, entry.position)
         return {
-          slug: entry.slug,
-          capabilities: capabilitiesOf(index, length, {
-            hasUnread: yield* hasUnread(session.id)
+          slug: snapshot.entry.slug,
+          capabilities: capabilitiesOf(snapshot.index, snapshot.length, {
+            hasUnread: snapshot.hasUnread
           })
         }
       })

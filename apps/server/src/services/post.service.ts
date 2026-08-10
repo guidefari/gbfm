@@ -122,6 +122,9 @@ export interface PostService {
   readonly getMicroPostBySlug: (
     slug: string
   ) => Effect.Effect<SelectMdxCompiledMicroPost, DatabaseError | NotFoundError>
+  readonly getMicroPostReferenceBySlug: (
+    slug: string
+  ) => Effect.Effect<{ readonly id: string; readonly slug: string }, DatabaseError | NotFoundError>
   readonly getMicroPostById: (
     id: string
   ) => Effect.Effect<SelectMdxCompiledMicroPost, DatabaseError | NotFoundError>
@@ -129,14 +132,14 @@ export interface PostService {
   readonly getMicroTags: () => Effect.Effect<string[], DatabaseError>
   readonly getAdjacentMicroPosts: (slug: string) => Effect.Effect<
     {
-      prev: { slug: string; title: string | null } | null
-      next: { slug: string; title: string | null } | null
+      prev: { id: string; slug: string; title: string | null } | null
+      next: { id: string; slug: string; title: string | null } | null
     },
     DatabaseError | NotFoundError
   >
   readonly getRandomMicroPost: (
     excludeSlugs: string[]
-  ) => Effect.Effect<{ slug: string }, DatabaseError | NotFoundError>
+  ) => Effect.Effect<{ id: string; slug: string }, DatabaseError | NotFoundError>
   readonly searchMicroPosts: (options: {
     q: string
     limit: number
@@ -265,54 +268,66 @@ export function normalizePostData(
 const buildPostWithCreators = (post: PostRow, mdx: MdxService) =>
   Effect.gen(function* () {
     const db = yield* Database
-    const [blueskySource] = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select({
-            authorDid: blueskyPostSources.authorDid,
-            authorHandle: blueskyPostSources.authorHandle,
-            publicUrl: blueskyPostSources.publicUrl,
-            sourceCreatedAt: blueskyPostSources.sourceCreatedAt,
-            sourceStatus: blueskyPostSources.sourceStatus,
-            locallyEdited: blueskyPostSources.locallyEdited,
-            lastError: blueskyPostSources.lastError
+    const { blueskySources, creators, projectedPost } = yield* Effect.all({
+      blueskySources: Effect.tryPromise({
+        try: () =>
+          db
+            .select({
+              authorDid: blueskyPostSources.authorDid,
+              authorHandle: blueskyPostSources.authorHandle,
+              publicUrl: blueskyPostSources.publicUrl,
+              sourceCreatedAt: blueskyPostSources.sourceCreatedAt,
+              sourceStatus: blueskyPostSources.sourceStatus,
+              locallyEdited: blueskyPostSources.locallyEdited,
+              lastError: blueskyPostSources.lastError
+            })
+            .from(blueskyPostSources)
+            .where(eq(blueskyPostSources.postId, post.id))
+            .limit(1),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to fetch Bluesky source: ${getErrorMessage(error)}`,
+            operation: 'select',
+            table: 'bluesky_post_sources'
           })
-          .from(blueskyPostSources)
-          .where(eq(blueskyPostSources.postId, post.id))
-          .limit(1),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to fetch Bluesky source: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'bluesky_post_sources'
-        })
-    })
-
-    const creators = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select({
-            id: usersTable.id,
-            name: usersTable.name,
-            username: usersTable.username
+      }),
+      creators: Effect.tryPromise({
+        try: () =>
+          db
+            .select({
+              id: usersTable.id,
+              name: usersTable.name,
+              username: usersTable.username
+            })
+            .from(postCreators)
+            .innerJoin(usersTable, eq(postCreators.creatorId, usersTable.id))
+            .where(eq(postCreators.postId, post.id)),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to fetch creators: ${getErrorMessage(error)}`,
+            operation: 'select',
+            table: 'post_creators'
           })
-          .from(postCreators)
-          .innerJoin(usersTable, eq(postCreators.creatorId, usersTable.id))
-          .where(eq(postCreators.postId, post.id)),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to fetch creators: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'post_creators'
-        })
-    }).pipe(Effect.withSpan('post.getCreators', { attributes: { postId: post.id } }))
-
-    const projectedPost = yield* Effect.tryPromise({
-      try: () => projectEntityLabels(db, 'post', post),
-      catch: (error) =>
-        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+      }).pipe(Effect.withSpan('post.getCreators', { attributes: { postId: post.id } })),
+      projectedPost: Effect.tryPromise({
+        try: () => projectEntityLabels(db, 'post', post),
+        catch: (error) =>
+          new DatabaseError({
+            message: getErrorMessage(error),
+            operation: 'select',
+            table: 'labels'
+          })
+      })
     })
-    const compiled = yield* buildPostWithPreloadedCreators(projectedPost, creators, mdx)
+    const compiledContent = projectedPost.content
+      ? yield* mdx.compile(projectedPost.content).pipe(Effect.orElseSucceed(() => ''))
+      : ''
+    const compiled = {
+      ...projectedPost,
+      compiledContent,
+      creators
+    } satisfies SelectMdxCompiledPost
+    const blueskySource = blueskySources[0]
     return blueskySource ? { ...compiled, blueskySource } : compiled
   })
 
@@ -328,13 +343,9 @@ const buildPostWithPreloadedCreators = (
       catch: (error) =>
         new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
     })
-    let compiledContent = ''
-
-    if (projectedPost.content) {
-      compiledContent = yield* mdx
-        .compile(projectedPost.content)
-        .pipe(Effect.orElseSucceed(() => ''))
-    }
+    const compiledContent = projectedPost.content
+      ? yield* mdx.compile(projectedPost.content).pipe(Effect.orElseSucceed(() => ''))
+      : ''
 
     return {
       ...projectedPost,
@@ -694,36 +705,37 @@ const getAdjacentMicroPostsEffect = (slug: string) =>
     // precision but JS Date only carries milliseconds, so a value read
     // out and passed back in as a query param can silently round down
     // and no longer compare equal to the row it came from.
-    const prevRows = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select({ slug: postsTable.slug, title: postsTable.title })
-          .from(postsTable)
-          .where(and(baseCondition, gte(postsTable.createdAt, current.createdAt)))
-          .orderBy(asc(postsTable.createdAt))
-          .limit(1),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to fetch previous micro post: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'posts'
-        })
-    })
-
-    const nextRows = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select({ slug: postsTable.slug, title: postsTable.title })
-          .from(postsTable)
-          .where(and(baseCondition, lte(postsTable.createdAt, current.createdAt)))
-          .orderBy(desc(postsTable.createdAt))
-          .limit(1),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to fetch next micro post: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'posts'
-        })
+    const { prevRows, nextRows } = yield* Effect.all({
+      prevRows: Effect.tryPromise({
+        try: () =>
+          db
+            .select({ id: postsTable.id, slug: postsTable.slug, title: postsTable.title })
+            .from(postsTable)
+            .where(and(baseCondition, gte(postsTable.createdAt, current.createdAt)))
+            .orderBy(asc(postsTable.createdAt))
+            .limit(1),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to fetch previous micro post: ${getErrorMessage(error)}`,
+            operation: 'select',
+            table: 'posts'
+          })
+      }),
+      nextRows: Effect.tryPromise({
+        try: () =>
+          db
+            .select({ id: postsTable.id, slug: postsTable.slug, title: postsTable.title })
+            .from(postsTable)
+            .where(and(baseCondition, lte(postsTable.createdAt, current.createdAt)))
+            .orderBy(desc(postsTable.createdAt))
+            .limit(1),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to fetch next micro post: ${getErrorMessage(error)}`,
+            operation: 'select',
+            table: 'posts'
+          })
+      })
     })
 
     return {
@@ -748,7 +760,7 @@ const getRandomMicroPostEffect = (excludeSlugs: string[]) =>
     const rows = yield* Effect.tryPromise({
       try: () =>
         db
-          .select({ slug: postsTable.slug })
+          .select({ id: postsTable.id, slug: postsTable.slug })
           .from(postsTable)
           .where(withExclude)
           .orderBy(sql`random()`)
@@ -766,7 +778,7 @@ const getRandomMicroPostEffect = (excludeSlugs: string[]) =>
     const fallback = yield* Effect.tryPromise({
       try: () =>
         db
-          .select({ slug: postsTable.slug })
+          .select({ id: postsTable.id, slug: postsTable.slug })
           .from(postsTable)
           .where(baseCondition)
           .orderBy(sql`random()`)
@@ -1195,10 +1207,133 @@ const getEditorialBySlugEffect = (slug: string, mdx: MdxService) =>
     })
   )
 
+const getMicroPostReferenceBySlugEffect = (slug: string) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    const rows = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select({ id: postsTable.id, slug: postsTable.slug })
+          .from(postsTable)
+          .where(
+            and(
+              eq(postsTable.slug, slug),
+              eq(postsTable.type, 'micro'),
+              eq(postsTable.draft, false)
+            )
+          )
+          .limit(1),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch micro post reference: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'posts'
+        })
+    })
+    const post = rows[0]
+    if (!post) {
+      return yield* new NotFoundError({
+        message: 'Micro post not found',
+        resource: 'post',
+        id: slug
+      })
+    }
+    return post
+  }).pipe(Effect.withSpan('post.getMicroPostReferenceBySlug', { attributes: { slug } }))
+
 const getMicroPostBySlugEffect = (slug: string, mdx: MdxService) =>
   Effect.gen(function* () {
-    const post = yield* getBySlugEffect(slug, mdx)
-    return yield* toMicroPost(post).pipe(
+    const db = yield* Database
+    const postIds = db
+      .select({ id: postsTable.id })
+      .from(postsTable)
+      .where(
+        and(eq(postsTable.slug, slug), eq(postsTable.type, 'micro'), eq(postsTable.draft, false))
+      )
+      .limit(1)
+    const [postRecords, blueskySources, creators, labels] = yield* Effect.tryPromise({
+      try: () =>
+        db.batch([
+          db
+            .select()
+            .from(postsTable)
+            .where(
+              and(
+                eq(postsTable.slug, slug),
+                eq(postsTable.type, 'micro'),
+                eq(postsTable.draft, false)
+              )
+            )
+            .limit(1),
+          db
+            .select({
+              authorDid: blueskyPostSources.authorDid,
+              authorHandle: blueskyPostSources.authorHandle,
+              publicUrl: blueskyPostSources.publicUrl,
+              sourceCreatedAt: blueskyPostSources.sourceCreatedAt,
+              sourceStatus: blueskyPostSources.sourceStatus,
+              locallyEdited: blueskyPostSources.locallyEdited,
+              lastError: blueskyPostSources.lastError
+            })
+            .from(blueskyPostSources)
+            .where(inArray(blueskyPostSources.postId, postIds))
+            .limit(1),
+          db
+            .select({
+              id: usersTable.id,
+              name: usersTable.name,
+              username: usersTable.username
+            })
+            .from(postCreators)
+            .innerJoin(usersTable, eq(postCreators.creatorId, usersTable.id))
+            .where(inArray(postCreators.postId, postIds)),
+          db
+            .select({ kind: labelsTable.kind, name: labelsTable.name })
+            .from(entityLabelsTable)
+            .innerJoin(labelsTable, eq(entityLabelsTable.labelId, labelsTable.id))
+            .where(
+              and(
+                eq(entityLabelsTable.entityType, 'post'),
+                inArray(entityLabelsTable.entityId, postIds)
+              )
+            )
+            .orderBy(asc(labelsTable.kind), asc(entityLabelsTable.position))
+        ]),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch micro post: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'posts'
+        })
+    }).pipe(Effect.withSpan('post.getMicroPostBySlug.batch'))
+
+    const post = postRecords[0]
+    if (!post) {
+      return yield* new NotFoundError({
+        message: 'Micro post not found',
+        resource: 'post',
+        id: slug
+      })
+    }
+
+    const tags = labels.flatMap((label) => (label.kind === 'tag' ? [label.name] : []))
+    const genres = labels.flatMap((label) => (label.kind === 'genre' ? [label.name] : []))
+    const projectedPost = {
+      ...post,
+      tags: tags.length > 0 ? tags : null,
+      genres: genres.length > 0 ? genres : null
+    }
+    const compiledContent = projectedPost.content
+      ? yield* mdx.compile(projectedPost.content).pipe(Effect.orElseSucceed(() => ''))
+      : ''
+    const compiled = {
+      ...projectedPost,
+      compiledContent,
+      creators
+    } satisfies SelectMdxCompiledPost
+    const blueskySource = blueskySources[0]
+    const enriched = blueskySource ? { ...compiled, blueskySource } : compiled
+    return yield* toMicroPost(enriched).pipe(
       Effect.mapError(
         () =>
           new NotFoundError({
@@ -1548,18 +1683,36 @@ const getMicroPostRepliesEffect = (
     const db = yield* Database
     const { limit, offset } = options
 
-    const parentRecords = yield* Effect.tryPromise({
-      try: () => db.select().from(postsTable).where(eq(postsTable.slug, parentSlug)).limit(1),
+    const parentId = db
+      .select({ id: postsTable.id })
+      .from(postsTable)
+      .where(eq(postsTable.slug, parentSlug))
+      .limit(1)
+    const [parentRecords, countResult, data] = yield* Effect.tryPromise({
+      try: () =>
+        db.batch([
+          parentId,
+          db
+            .select({ total: count() })
+            .from(postsTable)
+            .where(inArray(postsTable.parentPostId, parentId)),
+          db
+            .select()
+            .from(postsTable)
+            .where(inArray(postsTable.parentPostId, parentId))
+            .orderBy(asc(postsTable.createdAt))
+            .limit(limit)
+            .offset(offset)
+        ]),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to fetch parent post: ${getErrorMessage(error)}`,
+          message: `Failed to fetch replies: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'posts'
         })
-    })
+    }).pipe(Effect.withSpan('post.getMicroPostReplies.batch'))
 
-    const parent = parentRecords[0]
-    if (!parent) {
+    if (!parentRecords[0]) {
       return yield* new NotFoundError({
         message: 'Parent post not found',
         resource: 'post',
@@ -1567,44 +1720,7 @@ const getMicroPostRepliesEffect = (
       })
     }
 
-    const whereCondition = eq(postsTable.parentPostId, parent.id)
-
-    const countResult = yield* Effect.tryPromise({
-      try: () =>
-        timeQuery(
-          () => db.select({ total: count() }).from(postsTable).where(whereCondition),
-          'get-micro-post-replies-count'
-        ),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to count replies: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'posts'
-        })
-    })
-
     const total = countResult[0]?.total ?? 0
-
-    const data = yield* Effect.tryPromise({
-      try: () =>
-        timeQuery(
-          () =>
-            db
-              .select()
-              .from(postsTable)
-              .where(whereCondition)
-              .orderBy(asc(postsTable.createdAt))
-              .limit(limit)
-              .offset(offset),
-          'get-micro-post-replies-data'
-        ),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to fetch replies: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'posts'
-        })
-    })
 
     const postIds = data.map((p) => p.id)
 
@@ -2047,6 +2163,7 @@ export const PostServiceLayer = Layer.effect(
       getEditorialBySlug: (slug) => provideDb(getEditorialBySlugEffect(slug, mdx)),
       getMicroPosts: (opts) => provideDb(getMicroPostsEffect(opts, mdx)),
       getMicroPostBySlug: (slug) => provideDb(getMicroPostBySlugEffect(slug, mdx)),
+      getMicroPostReferenceBySlug: (slug) => provideDb(getMicroPostReferenceBySlugEffect(slug)),
       getMicroPostById: (id) => provideDb(getMicroPostByIdEffect(id, mdx)),
       getEditorialTags: () => provideDb(getEditorialTagsEffect()),
       getMicroTags: () => provideDb(getMicroTagsEffect()),

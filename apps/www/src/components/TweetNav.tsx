@@ -2,22 +2,28 @@ import { useAtomSet, useAtomValue } from '@effect/atom-react'
 import type { NavigationResultResponse } from '@gbfm/api/navigation'
 import { useHotkey } from '@tanstack/react-hotkeys'
 import { useRouter } from '@tanstack/react-router'
-import { Effect } from 'effect'
+import { Effect, Fiber } from 'effect'
 import * as Atom from 'effect/unstable/reactivity/Atom'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useEffect, useMemo } from 'react'
+import { ChevronLeft, ChevronRight, LoaderCircle } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { HoldToRandomButton } from '@/components/HoldToRandomButton'
-import { jump, stepBack, stepForward } from '@/lib/navigation-commands'
+import { jump, open, stepBack, stepForward } from '@/lib/navigation-commands'
 import { useNavigateMicroPosts } from '@/lib/http'
 import { runNavigationIntent } from '@/lib/navigation-intent'
 import { cn } from '@/lib/utils'
 
 type Props = {
   slug: string
-  initialCapabilities: Capabilities
 }
 
 type Capabilities = NavigationResultResponse['capabilities']
+type Neighbours = NavigationResultResponse['neighbours']
+
+const emptyCapabilities: Capabilities = {
+  canStepBack: false,
+  canStepForward: false,
+  hasUnread: false
+}
 
 const iconButtonClassName =
   'inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground'
@@ -133,50 +139,130 @@ function FlankingArrows({
   )
 }
 
-export function TweetNav({ slug, initialCapabilities }: Props) {
+export function TweetNav({ slug }: Props) {
   const router = useRouter()
   const { navigateMicroPostsEffect } = useNavigateMicroPosts()
-  const capabilitiesAtom = useMemo(
-    () => Atom.make<Capabilities>(initialCapabilities),
-    [initialCapabilities]
-  )
+  const capabilitiesAtom = useMemo(() => Atom.make<Capabilities>(emptyCapabilities), [])
   const capabilities = useAtomValue(capabilitiesAtom)
   const setCapabilities = useAtomSet(capabilitiesAtom)
+  const pendingRef = useRef(false)
+  const [neighbours, setNeighbours] = useState<Neighbours>({})
+  const [isNavigating, setIsNavigating] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(true)
+
+  const acceptNavigation = useCallback(
+    (result: NavigationResultResponse) => {
+      setCapabilities(result.capabilities)
+      setNeighbours(result.neighbours)
+    },
+    [setCapabilities]
+  )
+  const preloadNeighbours = useCallback(
+    (neighboursToPreload: Neighbours) =>
+      Effect.forEach(
+        [neighboursToPreload.back, neighboursToPreload.forward].filter(
+          (neighbour) => neighbour !== undefined
+        ),
+        (neighbour) =>
+          Effect.promise(() =>
+            router.preloadRoute({ to: '/tweet/$slug', params: { slug: neighbour } })
+          ),
+        { concurrency: 'unbounded' }
+      ).pipe(Effect.ignore),
+    [router]
+  )
 
   useEffect(() => {
-    setCapabilities(initialCapabilities)
-  }, [initialCapabilities, setCapabilities])
+    if (pendingRef.current) {
+      setIsSyncing(false)
+      return
+    }
 
-  const navigate = (
-    command: (intentToken: string) => Effect.Effect<NavigationResultResponse, unknown>
-  ) =>
-    runNavigationIntent(
-      command(crypto.randomUUID()).pipe(
-        Effect.tap((result) => Effect.sync(() => setCapabilities(result.capabilities))),
-        Effect.tap((result) =>
-          Effect.promise(() =>
-            Promise.all(
-              [result.neighbours.back, result.neighbours.forward]
-                .filter((neighbour) => neighbour !== undefined)
-                .map((neighbour) =>
-                  router.preloadRoute({ to: '/tweet/$slug', params: { slug: neighbour } })
-                )
-            )
-          ).pipe(Effect.ignore)
-        ),
-        Effect.flatMap((result) =>
-          Effect.promise(() =>
-            router.navigate({ to: '/tweet/$slug', params: { slug: result.destination.slug } })
-          )
-        ),
-        Effect.asVoid
+    setIsSyncing(true)
+    const fiber = Effect.runFork(
+      open(navigateMicroPostsEffect, {
+        from: slug,
+        slug,
+        intentToken: crypto.randomUUID()
+      }).pipe(
+        Effect.tap((result) => Effect.sync(() => acceptNavigation(result))),
+        Effect.ignore,
+        Effect.ensuring(Effect.sync(() => setIsSyncing(false)))
       )
     )
 
+    return () => {
+      Effect.runFork(Fiber.interrupt(fiber))
+    }
+  }, [acceptNavigation, navigateMicroPostsEffect, slug])
+
+  useEffect(() => {
+    const fiber = Effect.runFork(preloadNeighbours(neighbours))
+    return () => {
+      Effect.runFork(Fiber.interrupt(fiber))
+    }
+  }, [neighbours, preloadNeighbours])
+
+  const navigate = (
+    command: (intentToken: string) => Effect.Effect<NavigationResultResponse, unknown>,
+    expectedSlug?: string
+  ) => {
+    if (pendingRef.current) return
+
+    pendingRef.current = true
+    setIsNavigating(true)
+    const commandEffect = command(crypto.randomUUID()).pipe(
+      Effect.tap((result) => Effect.sync(() => acceptNavigation(result))),
+      expectedSlug
+        ? Effect.tapError(() =>
+            Effect.promise(() => router.navigate({ to: '/tweet/$slug', params: { slug } })).pipe(
+              Effect.ignore
+            )
+          )
+        : (effect) => effect
+    )
+    const navigationEffect = expectedSlug
+      ? Effect.all(
+          {
+            result: commandEffect,
+            route: Effect.promise(() =>
+              router.navigate({ to: '/tweet/$slug', params: { slug: expectedSlug } })
+            )
+          },
+          { concurrency: 'unbounded' }
+        ).pipe(Effect.map(({ result }) => result))
+      : commandEffect
+
+    runNavigationIntent(
+      navigationEffect.pipe(
+        Effect.flatMap((result) =>
+          expectedSlug === result.destination.slug
+            ? Effect.succeed(result)
+            : Effect.promise(() =>
+                router.navigate({ to: '/tweet/$slug', params: { slug: result.destination.slug } })
+              ).pipe(Effect.as(result))
+        ),
+        Effect.asVoid,
+        Effect.ensuring(
+          Effect.sync(() => {
+            pendingRef.current = false
+            setIsNavigating(false)
+          })
+        )
+      )
+    )
+  }
+
   const goToPrev = () =>
-    navigate((intentToken) => stepBack(navigateMicroPostsEffect, { from: slug, intentToken }))
+    navigate(
+      (intentToken) => stepBack(navigateMicroPostsEffect, { from: slug, intentToken }),
+      neighbours.back
+    )
   const goToNext = () =>
-    navigate((intentToken) => stepForward(navigateMicroPostsEffect, { from: slug, intentToken }))
+    navigate(
+      (intentToken) => stepForward(navigateMicroPostsEffect, { from: slug, intentToken }),
+      neighbours.forward
+    )
   const onHoldComplete = () =>
     navigate((intentToken) => jump(navigateMicroPostsEffect, { from: slug, intentToken }))
 
@@ -184,26 +270,36 @@ export function TweetNav({ slug, initialCapabilities }: Props) {
   useHotkey('ArrowRight', goToNext)
 
   const { canStepBack, canStepForward, hasUnread } = capabilities
+  const isPending = isNavigating || isSyncing
 
   return (
-    <>
+    <div aria-busy={isPending}>
       <div className='flex items-center gap-1 lg:hidden'>
-        <PrevLink enabled={canStepBack} onTap={goToPrev} />
+        <PrevLink enabled={canStepBack && !isPending} onTap={goToPrev} />
         <NextLink
-          enabled={canStepForward}
+          enabled={canStepForward && !isPending}
           hasUnread={hasUnread}
           onTap={goToNext}
           onHoldComplete={onHoldComplete}
         />
       </div>
+      {isPending && (
+        <div
+          role='status'
+          aria-live='polite'
+          className='mt-2 flex items-center gap-2 font-mono text-xs text-muted-foreground'>
+          <LoaderCircle aria-hidden className='h-3.5 w-3.5 animate-spin' />
+          {isNavigating ? 'Loading tweet…' : 'Preparing navigation…'}
+        </div>
+      )}
       <FlankingArrows
-        canStepBack={canStepBack}
-        canStepForward={canStepForward}
+        canStepBack={canStepBack && !isPending}
+        canStepForward={canStepForward && !isPending}
         hasUnread={hasUnread}
         onTapPrev={goToPrev}
         onTapNext={goToNext}
         onHoldComplete={onHoldComplete}
       />
-    </>
+    </div>
   )
 }
