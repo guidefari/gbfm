@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { and, asc, desc, eq, ilike, or } from 'drizzle-orm'
+import { and, asc, desc, eq, like, or, sql } from 'drizzle-orm'
 import { describe, expect, test } from 'vitest'
 import { db } from '@/test/database'
 import { audioCreators, audioTable } from '@/db/audio.schema'
@@ -7,7 +7,7 @@ import { audioIdsForCreator, showIdsForCreator } from '@/db/creator-membership'
 import { showCreators, showsTable } from '@/db/show.schema'
 
 /**
- * Every db.query.* shape in the codebase, executed against real Postgres.
+ * Every db.query.* shape in the codebase, executed against real D1 (via Miniflare).
  *
  * Drizzle relational queries alias the base table and build lateral joins, so
  * a predicate that is valid TypeScript can still emit invalid SQL. tsc cannot
@@ -134,7 +134,10 @@ describe('relational query smoke matrix', () => {
         with: { show: { columns: { thumbnailUrl: true } } },
         where: and(
           eq(audioTable.draft, false),
-          or(ilike(audioTable.title, '%smoke%'), ilike(audioTable.slug, '%smoke%'))
+          or(
+            like(sql`lower(${audioTable.title})`, '%smoke%'),
+            like(sql`lower(${audioTable.slug})`, '%smoke%')
+          )
         ),
         limit: 1
       })
