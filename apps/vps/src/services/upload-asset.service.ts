@@ -39,8 +39,9 @@ export interface UploadAssetService {
 
 export const UploadAssetService = Context.Service<UploadAssetService>('UploadAssetService')
 
-const createPendingEffect = (db: Database['Service'], input: CreatePendingAssetInput) =>
+const createPendingEffect = (input: CreatePendingAssetInput) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const now = Date.now()
     const expiresAt = new Date(now + input.expiresInSeconds * 1000)
 
@@ -79,20 +80,23 @@ const createPendingEffect = (db: Database['Service'], input: CreatePendingAssetI
     return asset
   }).pipe(Effect.withSpan('uploadAsset.createPending', { attributes: { key: input.key } }))
 
-const markUploadedEffect = (db: Database['Service'], key: string) =>
-  Effect.tryPromise({
-    try: () =>
-      db
-        .update(uploadAssetsTable)
-        .set({ status: 'uploaded' })
-        .where(and(eq(uploadAssetsTable.key, key), eq(uploadAssetsTable.status, 'pending'))),
-    catch: (error) =>
-      new DatabaseError({
-        message: `Failed to mark upload asset uploaded: ${getErrorMessage(error)}`,
-        operation: 'update',
-        table: 'upload_assets'
-      })
-  }).pipe(Effect.asVoid, Effect.withSpan('uploadAsset.markUploaded', { attributes: { key } }))
+const markUploadedEffect = (key: string) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    yield* Effect.tryPromise({
+      try: () =>
+        db
+          .update(uploadAssetsTable)
+          .set({ status: 'uploaded' })
+          .where(and(eq(uploadAssetsTable.key, key), eq(uploadAssetsTable.status, 'pending'))),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to mark upload asset uploaded: ${getErrorMessage(error)}`,
+          operation: 'update',
+          table: 'upload_assets'
+        })
+    })
+  }).pipe(Effect.withSpan('uploadAsset.markUploaded', { attributes: { key } }))
 
 // Guards the transition the same way markUploadedEffect does: WHERE
 // status='uploaded' only. This makes a repeat markAttached call on an
@@ -101,38 +105,34 @@ const markUploadedEffect = (db: Database['Service'], key: string) =>
 // attachedToId, and it keeps a hypothetical future 'expired' row (S3 object
 // possibly already reclaimed by a cleanup job) from ever being flipped to
 // 'attached'.
-const markAttachedEffect = (
-  db: Database['Service'],
-  key: string,
-  attachedToTable: string,
-  attachedToId: string
-) =>
-  Effect.tryPromise({
-    try: () =>
-      db
-        .update(uploadAssetsTable)
-        .set({ status: 'attached', attachedToTable, attachedToId })
-        .where(and(eq(uploadAssetsTable.key, key), eq(uploadAssetsTable.status, 'uploaded'))),
-    catch: (error) =>
-      new DatabaseError({
-        message: `Failed to mark upload asset attached: ${getErrorMessage(error)}`,
-        operation: 'update',
-        table: 'upload_assets'
-      })
-  }).pipe(
-    Effect.asVoid,
-    Effect.withSpan('uploadAsset.markAttached', { attributes: { key, attachedToTable } })
-  )
+const markAttachedEffect = (key: string, attachedToTable: string, attachedToId: string) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    yield* Effect.tryPromise({
+      try: () =>
+        db
+          .update(uploadAssetsTable)
+          .set({ status: 'attached', attachedToTable, attachedToId })
+          .where(and(eq(uploadAssetsTable.key, key), eq(uploadAssetsTable.status, 'uploaded'))),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to mark upload asset attached: ${getErrorMessage(error)}`,
+          operation: 'update',
+          table: 'upload_assets'
+        })
+    })
+  }).pipe(Effect.withSpan('uploadAsset.markAttached', { attributes: { key, attachedToTable } }))
 
 export const UploadAssetServiceLayer = Layer.effect(
   UploadAssetService,
   Effect.gen(function* () {
     const db = yield* Database
+    const provideDb = Effect.provideService(Database, db)
     return {
-      createPending: (input) => createPendingEffect(db, input),
-      markUploaded: (key) => markUploadedEffect(db, key),
+      createPending: (input) => provideDb(createPendingEffect(input)),
+      markUploaded: (key) => provideDb(markUploadedEffect(key)),
       markAttached: (key, attachedToTable, attachedToId) =>
-        markAttachedEffect(db, key, attachedToTable, attachedToId)
+        provideDb(markAttachedEffect(key, attachedToTable, attachedToId))
     }
   })
 )

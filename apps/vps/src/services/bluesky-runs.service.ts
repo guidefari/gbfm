@@ -44,8 +44,9 @@ const databaseError = (operation: string) =>
 
 // Ownership for runs and sources is only expressible through the owning
 // external account, so every read re-checks it rather than trusting the id.
-const requireOwnedAccount = (db: Database['Service'], userId: string, accountId: string) =>
+const requireOwnedAccount = (userId: string, accountId: string) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const rows = yield* Effect.tryPromise({
       try: () =>
         db
@@ -60,89 +61,123 @@ const requireOwnedAccount = (db: Database['Service'], userId: string, accountId:
     }
   })
 
-const makeService = (db: Database['Service']): BlueskyRunsService => ({
-  listRuns: ({ userId, accountId, limit }) =>
-    Effect.gen(function* () {
-      yield* requireOwnedAccount(db, userId, accountId)
-      return yield* Effect.tryPromise({
-        try: () =>
-          db
-            .select()
-            .from(blueskySyncRuns)
-            .where(eq(blueskySyncRuns.externalAccountId, accountId))
-            .orderBy(desc(blueskySyncRuns.startedAt))
-            .limit(limit),
-        catch: () => databaseError('select')
-      })
-    }),
-
-  listSources: ({ userId, accountId, statuses, limit, offset }) =>
-    Effect.gen(function* () {
-      yield* requireOwnedAccount(db, userId, accountId)
-      const statusCondition =
-        statuses && statuses.length > 0
-          ? inArray(blueskyPostSources.sourceStatus, [...statuses])
-          : undefined
-
-      return yield* Effect.tryPromise({
-        try: () =>
-          db
-            .select({
-              source: blueskyPostSources,
-              postSlug: postsTable.slug,
-              postDraft: postsTable.draft
-            })
-            .from(blueskyPostSources)
-            .leftJoin(postsTable, eq(postsTable.id, blueskyPostSources.postId))
-            .where(and(eq(blueskyPostSources.externalAccountId, accountId), statusCondition))
-            .orderBy(desc(blueskyPostSources.sourceCreatedAt))
-            .limit(limit)
-            .offset(offset)
-            .then((rows) =>
-              rows.map((row) => ({
-                ...row.source,
-                postSlug: row.postSlug,
-                postDraft: row.postDraft
-              }))
-            ),
-        catch: () => databaseError('select')
-      })
-    }),
-
-  setSourceStatus: ({ userId, sourceId, sourceStatus }) =>
-    Effect.gen(function* () {
-      const owned = yield* Effect.tryPromise({
-        try: () =>
-          db
-            .select({ id: blueskyPostSources.id })
-            .from(blueskyPostSources)
-            .innerJoin(
-              externalAccounts,
-              eq(externalAccounts.id, blueskyPostSources.externalAccountId)
-            )
-            .where(and(eq(blueskyPostSources.id, sourceId), eq(externalAccounts.userId, userId)))
-            .limit(1),
-        catch: () => databaseError('select')
-      })
-      if (owned.length === 0) {
-        return yield* new NotFoundError({ message: 'Bluesky source not found' })
-      }
-
-      yield* Effect.tryPromise({
-        try: () =>
-          db
-            .update(blueskyPostSources)
-            .set({ sourceStatus })
-            .where(eq(blueskyPostSources.id, sourceId)),
-        catch: () => databaseError('update')
-      })
+const listRunsEffect = ({
+  userId,
+  accountId,
+  limit
+}: {
+  readonly userId: string
+  readonly accountId: string
+  readonly limit: number
+}) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    yield* requireOwnedAccount(userId, accountId)
+    return yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select()
+          .from(blueskySyncRuns)
+          .where(eq(blueskySyncRuns.externalAccountId, accountId))
+          .orderBy(desc(blueskySyncRuns.startedAt))
+          .limit(limit),
+      catch: () => databaseError('select')
     })
-})
+  })
+
+const listSourcesEffect = ({
+  userId,
+  accountId,
+  statuses,
+  limit,
+  offset
+}: {
+  readonly userId: string
+  readonly accountId: string
+  readonly statuses?: ReadonlyArray<BlueskySourceStatus>
+  readonly limit: number
+  readonly offset: number
+}) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    yield* requireOwnedAccount(userId, accountId)
+    const statusCondition =
+      statuses && statuses.length > 0
+        ? inArray(blueskyPostSources.sourceStatus, [...statuses])
+        : undefined
+
+    return yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select({
+            source: blueskyPostSources,
+            postSlug: postsTable.slug,
+            postDraft: postsTable.draft
+          })
+          .from(blueskyPostSources)
+          .leftJoin(postsTable, eq(postsTable.id, blueskyPostSources.postId))
+          .where(and(eq(blueskyPostSources.externalAccountId, accountId), statusCondition))
+          .orderBy(desc(blueskyPostSources.sourceCreatedAt))
+          .limit(limit)
+          .offset(offset)
+          .then((rows) =>
+            rows.map((row) => ({
+              ...row.source,
+              postSlug: row.postSlug,
+              postDraft: row.postDraft
+            }))
+          ),
+      catch: () => databaseError('select')
+    })
+  })
+
+const setSourceStatusEffect = ({
+  userId,
+  sourceId,
+  sourceStatus
+}: {
+  readonly userId: string
+  readonly sourceId: string
+  readonly sourceStatus: BlueskySourceStatus
+}) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    const owned = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select({ id: blueskyPostSources.id })
+          .from(blueskyPostSources)
+          .innerJoin(
+            externalAccounts,
+            eq(externalAccounts.id, blueskyPostSources.externalAccountId)
+          )
+          .where(and(eq(blueskyPostSources.id, sourceId), eq(externalAccounts.userId, userId)))
+          .limit(1),
+      catch: () => databaseError('select')
+    })
+    if (owned.length === 0) {
+      return yield* new NotFoundError({ message: 'Bluesky source not found' })
+    }
+
+    yield* Effect.tryPromise({
+      try: () =>
+        db
+          .update(blueskyPostSources)
+          .set({ sourceStatus })
+          .where(eq(blueskyPostSources.id, sourceId)),
+      catch: () => databaseError('update')
+    })
+  })
 
 export const BlueskyRunsServiceLayer = Layer.effect(
   BlueskyRunsService,
   Effect.gen(function* () {
     const db = yield* Database
-    return makeService(db)
+    const provideDb = Effect.provideService(Database, db)
+    return {
+      listRuns: (input) => provideDb(listRunsEffect(input)),
+      listSources: (input) => provideDb(listSourcesEffect(input)),
+      setSourceStatus: (input) => provideDb(setSourceStatusEffect(input))
+    }
   })
 )

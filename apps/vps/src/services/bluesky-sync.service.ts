@@ -111,50 +111,51 @@ const databaseError = (operation: string) =>
   new DatabaseError({ message: 'Bluesky sync database operation failed', operation })
 
 const start = (
-  db: Database['Service'],
   locks: LockService,
   { userId, accountId }: Parameters<BlueskySyncService['start']>[0]
-): Effect.Effect<SyncRunHandle, DatabaseError | NotFoundError | LockUnavailable> =>
+): Effect.Effect<SyncRunHandle, DatabaseError | NotFoundError | LockUnavailable, Database> =>
   locks.withLock(
     `bluesky-sync:${accountId}`,
-    Effect.tryPromise({
-      try: async () => {
-        const [account] = await db
-          .select({ id: externalAccounts.id })
-          .from(externalAccounts)
-          .where(and(eq(externalAccounts.id, accountId), eq(externalAccounts.userId, userId)))
-          .limit(1)
-        if (!account) throw new NotFoundError({ message: 'Bluesky account not found' })
+    Effect.gen(function* () {
+      const db = yield* Database
+      return yield* Effect.tryPromise({
+        try: async () => {
+          const [account] = await db
+            .select({ id: externalAccounts.id })
+            .from(externalAccounts)
+            .where(and(eq(externalAccounts.id, accountId), eq(externalAccounts.userId, userId)))
+            .limit(1)
+          if (!account) throw new NotFoundError({ message: 'Bluesky account not found' })
 
-        const [existing] = await db
-          .select({ id: blueskySyncRuns.id })
-          .from(blueskySyncRuns)
-          .where(
-            and(
-              eq(blueskySyncRuns.externalAccountId, accountId),
-              eq(blueskySyncRuns.status, 'running')
+          const [existing] = await db
+            .select({ id: blueskySyncRuns.id })
+            .from(blueskySyncRuns)
+            .where(
+              and(
+                eq(blueskySyncRuns.externalAccountId, accountId),
+                eq(blueskySyncRuns.status, 'running')
+              )
             )
-          )
-          .orderBy(blueskySyncRuns.startedAt)
-          .limit(1)
-        if (existing) return { runId: existing.id, status: 'queued' as const }
+            .orderBy(blueskySyncRuns.startedAt)
+            .limit(1)
+          if (existing) return { runId: existing.id, status: 'queued' as const }
 
-        const [run] = await db
-          .insert(blueskySyncRuns)
-          .values({ externalAccountId: accountId })
-          .returning({ id: blueskySyncRuns.id })
-        if (!run) throw databaseError('create-run')
-        return { runId: run.id, status: 'queued' as const }
-      },
-      catch: (error): DatabaseError | NotFoundError =>
-        error instanceof NotFoundError || error instanceof DatabaseError
-          ? error
-          : databaseError('start-run')
+          const [run] = await db
+            .insert(blueskySyncRuns)
+            .values({ externalAccountId: accountId })
+            .returning({ id: blueskySyncRuns.id })
+          if (!run) throw databaseError('create-run')
+          return { runId: run.id, status: 'queued' as const }
+        },
+        catch: (error): DatabaseError | NotFoundError =>
+          error instanceof NotFoundError || error instanceof DatabaseError
+            ? error
+            : databaseError('start-run')
+      })
     })
   )
 
 const sync = (
-  db: Database['Service'],
   client: BlueskyClient,
   importer: BlueskyImportService,
   archive: BlueskyArchiveService,
@@ -165,6 +166,7 @@ const sync = (
   locks.withLock(
     `bluesky-sync:${accountId}`,
     Effect.gen(function* () {
+      const db = yield* Database
       const [account] = yield* Effect.tryPromise({
         try: () =>
           db
@@ -378,66 +380,74 @@ const sync = (
     }).pipe(
       Effect.tapError((error) =>
         runId
-          ? Effect.tryPromise({
-              try: () =>
-                db
-                  .update(blueskySyncRuns)
-                  .set({ status: 'failed', errorCategory: error._tag, finishedAt: new Date() })
-                  .where(eq(blueskySyncRuns.id, runId)),
-              catch: () => undefined
-            }).pipe(Effect.catch(() => Effect.void))
+          ? Effect.gen(function* () {
+              const db = yield* Database
+              yield* Effect.tryPromise({
+                try: () =>
+                  db
+                    .update(blueskySyncRuns)
+                    .set({ status: 'failed', errorCategory: error._tag, finishedAt: new Date() })
+                    .where(eq(blueskySyncRuns.id, runId)),
+                catch: () => undefined
+              }).pipe(Effect.catch(() => Effect.void))
+            })
           : Effect.void
       )
     )
   )
 
-const dueScheduledAccounts = (db: Database['Service']) =>
-  Effect.tryPromise({
-    try: () =>
-      db
-        .select({ accountId: externalAccounts.id, userId: externalAccounts.userId })
-        .from(externalAccounts)
-        .innerJoin(blueskySyncStates, eq(blueskySyncStates.externalAccountId, externalAccounts.id))
-        .where(
-          and(
-            eq(externalAccounts.provider, 'bluesky'),
-            eq(externalAccounts.status, 'active'),
-            eq(blueskySyncStates.scheduled, true),
-            or(
-              isNull(blueskySyncStates.nextEligibleAt),
-              lte(blueskySyncStates.nextEligibleAt, new Date())
-            )
+const dueScheduledAccounts = () =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    return yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select({ accountId: externalAccounts.id, userId: externalAccounts.userId })
+          .from(externalAccounts)
+          .innerJoin(
+            blueskySyncStates,
+            eq(blueskySyncStates.externalAccountId, externalAccounts.id)
           )
-        ),
-    catch: () => databaseError('enumerate-scheduled-accounts')
+          .where(
+            and(
+              eq(externalAccounts.provider, 'bluesky'),
+              eq(externalAccounts.status, 'active'),
+              eq(blueskySyncStates.scheduled, true),
+              or(
+                isNull(blueskySyncStates.nextEligibleAt),
+                lte(blueskySyncStates.nextEligibleAt, new Date())
+              )
+            )
+          ),
+      catch: () => databaseError('enumerate-scheduled-accounts')
+    })
   })
 
-const recordScheduledFailure = (
-  db: Database['Service'],
-  accountId: string
-): Effect.Effect<void, DatabaseError> =>
-  Effect.tryPromise({
-    try: async () => {
-      const [state] = await db
-        .select({ consecutiveFailures: blueskySyncStates.consecutiveFailures })
-        .from(blueskySyncStates)
-        .where(eq(blueskySyncStates.externalAccountId, accountId))
-        .limit(1)
-      const next = nextScheduleAfterFailure(state?.consecutiveFailures ?? 0, new Date())
-      await db
-        .update(blueskySyncStates)
-        .set({ ...next, updatedAt: new Date() })
-        .where(eq(blueskySyncStates.externalAccountId, accountId))
-    },
-    catch: () => databaseError('record-scheduled-failure')
+const recordScheduledFailure = (accountId: string): Effect.Effect<void, DatabaseError, Database> =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    yield* Effect.tryPromise({
+      try: async () => {
+        const [state] = await db
+          .select({ consecutiveFailures: blueskySyncStates.consecutiveFailures })
+          .from(blueskySyncStates)
+          .where(eq(blueskySyncStates.externalAccountId, accountId))
+          .limit(1)
+        const next = nextScheduleAfterFailure(state?.consecutiveFailures ?? 0, new Date())
+        await db
+          .update(blueskySyncStates)
+          .set({ ...next, updatedAt: new Date() })
+          .where(eq(blueskySyncStates.externalAccountId, accountId))
+      },
+      catch: () => databaseError('record-scheduled-failure')
+    })
   })
 
 const syncScheduled = (
-  db: Database['Service'],
   self: Pick<BlueskySyncService, 'sync'>
-): Effect.Effect<ScheduledSyncReport, DatabaseError> =>
+): Effect.Effect<ScheduledSyncReport, DatabaseError, Database> =>
   Effect.gen(function* () {
-    const accounts = yield* dueScheduledAccounts(db)
+    const accounts = yield* dueScheduledAccounts()
 
     const outcomes = yield* Effect.forEach(
       accounts,
@@ -454,7 +464,7 @@ const syncScheduled = (
         }).pipe(
           Effect.catch((error) =>
             Effect.gen(function* () {
-              yield* recordScheduledFailure(db, account.accountId).pipe(
+              yield* recordScheduledFailure(account.accountId).pipe(
                 Effect.tapError((failure) =>
                   Effect.logError('Unable to record Bluesky scheduled sync failure', {
                     accountId: account.accountId,
@@ -491,11 +501,12 @@ export const BlueskySyncServiceLayer = Layer.effect(
     const archive = yield* BlueskyArchiveService
     const crypto = yield* CryptoService
     const locks = yield* LockService
+    const provideDb = Effect.provideService(Database, db)
     const service: BlueskySyncService = {
-      start: (input: Parameters<BlueskySyncService['start']>[0]) => start(db, locks, input),
+      start: (input: Parameters<BlueskySyncService['start']>[0]) => provideDb(start(locks, input)),
       sync: (input: Parameters<BlueskySyncService['sync']>[0]) =>
-        sync(db, client, importer, archive, crypto, locks, input),
-      syncScheduled: () => syncScheduled(db, service)
+        provideDb(sync(client, importer, archive, crypto, locks, input)),
+      syncScheduled: () => provideDb(syncScheduled(service))
     }
     return service
   })

@@ -49,8 +49,9 @@ export interface SearchService {
 
 export const SearchService = Context.Service<SearchService>('SearchService')
 
-const searchEffect = (db: Database['Service'], query: string, limit: number) =>
+const searchEffect = (query: string, limit: number) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const showMatches =
       query.length < 3 ? shortQueryMatches('show', query, showsTable) : ftsMatches('shows', query)
     const audioMatches =
@@ -143,9 +144,10 @@ export const SearchServiceLayer = Layer.effect(
   SearchService,
   Effect.gen(function* () {
     const db = yield* Database
+    const provideDb = Effect.provideService(Database, db)
     return {
       search: (query, limit) =>
-        searchEffect(db, query, limit).pipe(
+        provideDb(searchEffect(query, limit)).pipe(
           Effect.withSpan('search.search', { attributes: { query } })
         )
     }

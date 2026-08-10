@@ -24,15 +24,17 @@ export const EmailServiceLayer = Layer.effect(
   EmailService,
   Effect.gen(function* () {
     const db = yield* Database
+    const provideDb = Effect.provideService(Database, db)
     return {
-      sendMusicReminderEmail: (reminder: MusicReminder) => sendReminderEmail(db, reminder)
+      sendMusicReminderEmail: (reminder: MusicReminder) => provideDb(sendReminderEmail(reminder))
     }
   })
 )
 
 // Core email sending logic with Effect
-const sendReminderEmail = (db: Database['Service'], reminder: MusicReminder) =>
+const sendReminderEmail = (reminder: MusicReminder) =>
   Effect.gen(function* () {
+    const db = yield* Database
     yield* Effect.annotateCurrentSpan('email.type', 'music_reminder')
     yield* Effect.annotateCurrentSpan('reminder.id', reminder.id)
     yield* Effect.annotateCurrentSpan('user.id', reminder.userId)
@@ -189,10 +191,7 @@ const sendReminderEmail = (db: Database['Service'], reminder: MusicReminder) =>
 export const sendMusicReminderEmailEffect = (
   reminder: MusicReminder
 ): Effect.Effect<void, EmailError | DatabaseError, Database> =>
-  Effect.gen(function* () {
-    const db = yield* Database
-    return yield* sendReminderEmail(db, reminder)
-  }).pipe(
+  sendReminderEmail(reminder).pipe(
     Effect.withSpan('email.send', {
       attributes: {
         'email.template': 'music-reminder',

@@ -177,17 +177,16 @@ const writeRecord = async (
   throw new Error('Bluesky source changed while importing')
 }
 
-const makeWrite = (
-  db: Database['Service'],
-  musicEntities: MusicEntityService,
-  scraper: MusicLinkScraperService
-) => ({
-  write: ({
-    ownerUserId,
-    externalAccountId,
-    records
-  }: Parameters<BlueskyArchiveService['write']>[0]) =>
-    Effect.forEach(records, (record) =>
+const writeEffect = ({
+  ownerUserId,
+  externalAccountId,
+  records
+}: Parameters<BlueskyArchiveService['write']>[0]) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    const musicEntities = yield* MusicEntityService
+    const scraper = yield* MusicLinkScraperService
+    return yield* Effect.forEach(records, (record) =>
       Effect.gen(function* () {
         const candidateUrl = record.candidateUrls[0]
         const scraped = candidateUrl
@@ -223,12 +222,21 @@ const makeWrite = (
         failed: results.filter((result) => result === 'failed').length
       }))
     )
-})
+  })
 
 export const BlueskyArchiveServiceLayer = Layer.effect(
   BlueskyArchiveService,
   Effect.gen(function* () {
     const db = yield* Database
-    return makeWrite(db, yield* MusicEntityService, yield* MusicLinkScraperService)
+    const musicEntities = yield* MusicEntityService
+    const scraper = yield* MusicLinkScraperService
+    return {
+      write: (input) =>
+        writeEffect(input).pipe(
+          Effect.provideService(Database, db),
+          Effect.provideService(MusicEntityService, musicEntities),
+          Effect.provideService(MusicLinkScraperService, scraper)
+        )
+    }
   })
 )

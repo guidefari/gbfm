@@ -54,7 +54,7 @@ export const processPendingReminders = Effect.gen(function* () {
   yield* Effect.forEach(
     Chunk.fromIterable(claimedReminders),
     (reminder) =>
-      processSingleReminder(db, reminder).pipe(
+      processSingleReminder(reminder).pipe(
         Effect.retry(Schedule.exponential(1000).pipe(Schedule.upTo({ duration: '30 seconds' }))),
         Effect.catch((error) =>
           Effect.logError(
@@ -68,11 +68,9 @@ export const processPendingReminders = Effect.gen(function* () {
   )
 })
 
-const processSingleReminder = (
-  db: Database['Service'],
-  reminder: typeof musicReminder.$inferSelect
-) =>
+const processSingleReminder = (reminder: typeof musicReminder.$inferSelect) =>
   Effect.gen(function* () {
+    const db = yield* Database
     // Send the reminder email
     yield* sendMusicReminderEmailEffect(reminder)
 
@@ -103,6 +101,7 @@ const processSingleReminder = (
   }).pipe(
     Effect.catch((error) =>
       Effect.gen(function* () {
+        const db = yield* Database
         // Log the failure
         yield* Effect.logError(`Failed to send reminder ${reminder.id}`, {
           error: error instanceof Error ? error.message : 'Unknown error',
