@@ -1,20 +1,9 @@
-import { readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import fontkit from '@pdf-lib/fontkit'
 import { Context, Effect, Layer } from 'effect'
-import { PDFDocument, rgb } from 'pdf-lib'
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 import QRCode from 'qrcode'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { config } from '@/services/config.service'
 import { S3Service } from '@/services/s3.service'
-
-const currentDir = dirname(fileURLToPath(import.meta.url))
-
-const jbMonoBold = readFileSync(join(currentDir, '../assets/fonts/JetBrainsMono-Bold.ttf'))
-const jbMonoExtraBold = readFileSync(
-  join(currentDir, '../assets/fonts/JetBrainsMono-ExtraBold.ttf')
-)
 
 interface MixData {
   slug: string
@@ -84,13 +73,11 @@ const generateQROnlyPdf = (mix: MixData, qrDataUrl: string) =>
         })
     })
 
-    pdfDoc.registerFontkit(fontkit)
-
     const page = pdfDoc.addPage([612, 792])
     const { width, height } = page.getSize()
 
     const fontBold = yield* Effect.tryPromise({
-      try: () => pdfDoc.embedFont(jbMonoBold),
+      try: () => pdfDoc.embedFont(StandardFonts.HelveticaBold),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to embed font: ${getErrorMessage(error)}`,
@@ -100,7 +87,7 @@ const generateQROnlyPdf = (mix: MixData, qrDataUrl: string) =>
     })
 
     const fontExtraBold = yield* Effect.tryPromise({
-      try: () => pdfDoc.embedFont(jbMonoExtraBold),
+      try: () => pdfDoc.embedFont(StandardFonts.HelveticaBold),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to embed font: ${getErrorMessage(error)}`,

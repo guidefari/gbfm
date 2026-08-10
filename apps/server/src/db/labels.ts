@@ -21,6 +21,8 @@ const distinct = (values: ReadonlyArray<string>) => [...new Set(values)]
 
 const label = (kind: 'tag' | 'genre', name: string) => ({ kind, name })
 
+const ENTITY_LABEL_IDS_PER_QUERY = 99
+
 export const replaceEntityLabels = async (
   db: DatabaseClient,
   entityType: LabelEntityType,
@@ -129,25 +131,29 @@ export const projectEntityLabelsForRows = async <T extends { id: string }>(
   entities: readonly T[]
 ) => {
   if (entities.length === 0) return []
-  const rows = await db
-    .select({
-      entityId: entityLabelsTable.entityId,
-      kind: labelsTable.kind,
-      name: labelsTable.name,
-      position: entityLabelsTable.position
-    })
-    .from(entityLabelsTable)
-    .innerJoin(labelsTable, eq(entityLabelsTable.labelId, labelsTable.id))
-    .where(
-      and(
-        eq(entityLabelsTable.entityType, entityType),
-        inArray(
-          entityLabelsTable.entityId,
-          entities.map((entity) => entity.id)
+  const rows = []
+  for (let index = 0; index < entities.length; index += ENTITY_LABEL_IDS_PER_QUERY) {
+    const entityIds = entities
+      .slice(index, index + ENTITY_LABEL_IDS_PER_QUERY)
+      .map((entity) => entity.id)
+    const batch = await db
+      .select({
+        entityId: entityLabelsTable.entityId,
+        kind: labelsTable.kind,
+        name: labelsTable.name,
+        position: entityLabelsTable.position
+      })
+      .from(entityLabelsTable)
+      .innerJoin(labelsTable, eq(entityLabelsTable.labelId, labelsTable.id))
+      .where(
+        and(
+          eq(entityLabelsTable.entityType, entityType),
+          inArray(entityLabelsTable.entityId, entityIds)
         )
       )
-    )
-    .orderBy(asc(labelsTable.kind), asc(entityLabelsTable.position))
+      .orderBy(asc(labelsTable.kind), asc(entityLabelsTable.position))
+    rows.push(...batch)
+  }
   const labelsByEntityId = new Map<string, { tags: string[]; genres: string[] }>()
   for (const row of rows) {
     const labels = labelsByEntityId.get(row.entityId) ?? { tags: [], genres: [] }

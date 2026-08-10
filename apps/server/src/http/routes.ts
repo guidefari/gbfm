@@ -1,7 +1,7 @@
-import * as BunFileSystem from '@effect/platform-bun/BunFileSystem'
-import * as BunPath from '@effect/platform-bun/BunPath'
 import { Api } from '@gbfm/api/api'
 import type { ReadinessCheckFailedError } from '@gbfm/api/errors'
+import * as FileSystem from 'effect/FileSystem'
+import * as Path from 'effect/Path'
 import { Effect, Layer } from 'effect'
 import { HttpRouter, HttpServer, HttpServerRequest, HttpServerResponse } from 'effect/unstable/http'
 import { HttpApiBuilder } from 'effect/unstable/httpapi'
@@ -127,19 +127,8 @@ export const createWebHandler = (options: {
       // RequestLoggerLive is the single structured request event; disable
       // Effect HttpMiddleware.logger to avoid a second response log line.
       Layer.provide(HttpRouter.disableLogger),
-      // HttpServerRequest.multipart (user group's updateProfile avatar
-      // upload, see user.handlers.ts's uploadAvatar) needs a real
-      // FileSystem.FileSystem + Path.Path to buffer parts to temp files.
-      // The upload group's own endpoints are presign-based now (no more
-      // uploadMultipartPart/uploadFile multipart proxies) and don't need
-      // this, but user.handlers.ts still does. HttpServer.layerServices
-      // ships its own FileSystem.layerNoop, so the real Bun implementation
-      // is nested inside the same provideMerge, applied after layerServices,
-      // so it overwrites the noop instead of losing to it. Confirmed by
-      // reproducing the "not implemented" multipart defect from the noop
-      // FileSystem and watching it disappear with this composition.
       Layer.provideMerge(
-        Layer.mergeAll(BunFileSystem.layer, BunPath.layer).pipe(
+        Layer.mergeAll(FileSystem.layerNoop({}), Path.layer).pipe(
           Layer.provideMerge(HttpServer.layerServices)
         )
       ),

@@ -41,6 +41,11 @@ export default Alchemy.Stack(
       }
     })
 
+    yield* Cloudflare.Queues.Consumer('ReminderConsumer', {
+      queueId: reminders.queueId,
+      scriptName: api.workerName
+    })
+
     return {
       apiUrl: api.url,
       apiDomains: api.domains,

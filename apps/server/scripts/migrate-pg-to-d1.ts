@@ -681,7 +681,7 @@ const pgConfig = {
   user: process.env.PG_USER ?? 'postgres',
   password: process.env.PG_PASSWORD ?? 'postgres',
   database: process.env.PG_DATABASE ?? 'postgres',
-  ssl: false as const
+  ssl: process.env.PG_SSL === 'true'
 }
 
 const persistPath = process.env.D1_PERSIST_PATH ?? './.migration-d1'

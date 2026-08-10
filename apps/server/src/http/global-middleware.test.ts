@@ -1,5 +1,5 @@
-import * as BunFileSystem from '@effect/platform-bun/BunFileSystem'
-import * as BunPath from '@effect/platform-bun/BunPath'
+import * as FileSystem from 'effect/FileSystem'
+import * as Path from 'effect/Path'
 import { Context, Layer } from 'effect'
 import { HttpRouter, HttpServer, HttpServerResponse } from 'effect/unstable/http'
 import { describe, expect, test } from 'vitest'
@@ -29,7 +29,7 @@ describe('RequestLoggerLive', () => {
       ).pipe(
         Layer.provide(HttpRouter.disableLogger),
         Layer.provideMerge(
-          Layer.mergeAll(BunFileSystem.layer, BunPath.layer).pipe(
+          Layer.mergeAll(FileSystem.layerNoop({}), Path.layer).pipe(
             Layer.provideMerge(HttpServer.layerServices)
           )
         ),

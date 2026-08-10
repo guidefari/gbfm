@@ -26,7 +26,7 @@ const pgConfig = {
   user: process.env.PG_USER ?? 'postgres',
   password: process.env.PG_PASSWORD ?? 'postgres',
   database: process.env.PG_DATABASE ?? 'postgres',
-  ssl: false as const
+  ssl: process.env.PG_SSL === 'true'
 }
 
 const persistPath = process.env.D1_PERSIST_PATH ?? './.migration-d1'
@@ -294,8 +294,8 @@ const runSpotChecks = async (pg: Client, db: D1Database): Promise<SpotCheck[]> =
 
   const pgUserIds = await pg.query<IdRow>('select id from "user" order by id')
   const d1UserIdsResult = await db.prepare('select id from "user" order by id').bind().all<IdRow>()
-  const d1UserIds = d1UserIdsResult.results.map((row) => row.id)
-  const pgUserIdList = pgUserIds.rows.map((row) => row.id)
+  const d1UserIds = d1UserIdsResult.results.map((row) => row.id).sort()
+  const pgUserIdList = pgUserIds.rows.map((row) => row.id).sort()
   checks.push({
     name: 'uuid identity: user.id byte-for-byte',
     pass: JSON.stringify(pgUserIdList) === JSON.stringify(d1UserIds),
@@ -309,14 +309,10 @@ const runSpotChecks = async (pg: Client, db: D1Database): Promise<SpotCheck[]> =
     .prepare('select id, updated_at from "user" order by id')
     .bind()
     .all<D1TimestampRow>()
+  const d1TimestampsById = new Map(d1Timestamp.results.map((row) => [row.id, row.updated_at]))
   const timestampsMatch =
     pgTimestamp.rows.length === d1Timestamp.results.length &&
-    pgTimestamp.rows.every((row, index) => {
-      const d1Row = d1Timestamp.results[index]
-      return (
-        d1Row !== undefined && row.id === d1Row.id && row.updated_at.getTime() === d1Row.updated_at
-      )
-    })
+    pgTimestamp.rows.every((row) => row.updated_at.getTime() === d1TimestampsById.get(row.id))
   checks.push({
     name: 'timestamp equality: user.updated_at epoch ms',
     pass: timestampsMatch,
@@ -330,16 +326,10 @@ const runSpotChecks = async (pg: Client, db: D1Database): Promise<SpotCheck[]> =
     .prepare('select id, email_verified from "user" order by id')
     .bind()
     .all<D1BooleanRow>()
+  const d1BooleansById = new Map(d1BooleanResult.results.map((row) => [row.id, row.email_verified]))
   const booleansMatch =
     pgBoolean.rows.length === d1BooleanResult.results.length &&
-    pgBoolean.rows.every((row, index) => {
-      const d1Row = d1BooleanResult.results[index]
-      return (
-        d1Row !== undefined &&
-        row.id === d1Row.id &&
-        (row.email_verified ? 1 : 0) === d1Row.email_verified
-      )
-    })
+    pgBoolean.rows.every((row) => (row.email_verified ? 1 : 0) === d1BooleansById.get(row.id))
   checks.push({
     name: 'boolean translation: user.email_verified 0/1',
     pass: booleansMatch,
