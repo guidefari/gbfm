@@ -19,6 +19,7 @@ import { postsTable } from '@/db/post.schema'
 import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
 import { Database } from '@/db/layer'
 import { PostService } from '@/services/post.service'
+import { NavigationLock } from '@/services/navigation-lock'
 
 export type IntentToken = string
 
@@ -71,6 +72,7 @@ const identityWhere = (identity: NavigationIdentity) =>
     : eq(navigationSessions.deviceToken, identity.deviceToken)
 
 const asSlug = Schema.decodeUnknownSync(Slug)
+const MAX_NAVIGATION_LOCK_RETRIES = 5
 
 const arrivedBy = (value: string): TrailRow['arrivedBy'] => {
   switch (value) {
@@ -115,6 +117,7 @@ export const NavigationSessionServiceLayer = Layer.effect(
   Effect.gen(function* () {
     const db = yield* Database
     const posts = yield* PostService
+    const lock = yield* NavigationLock
 
     const liveEntry = (sessionId: string, position: number, direction: 'Back' | 'Forward') =>
       Effect.tryPromise({
@@ -254,7 +257,7 @@ export const NavigationSessionServiceLayer = Layer.effect(
       Effect.tryPromise({
         try: async () => {
           const rows = await db
-            .select({ count: sql<number>`count(*)::int` })
+            .select({ count: sql<number>`CAST(count(*) AS INTEGER)` })
             .from(navigationTrailEntries)
             .innerJoin(postsTable, eq(navigationTrailEntries.postId, postsTable.id))
             .where(
@@ -269,7 +272,7 @@ export const NavigationSessionServiceLayer = Layer.effect(
       Effect.tryPromise({
         try: async () => {
           const rows = await db
-            .select({ count: sql<number>`count(*)::int` })
+            .select({ count: sql<number>`CAST(count(*) AS INTEGER)` })
             .from(navigationTrailEntries)
             .innerJoin(postsTable, eq(navigationTrailEntries.postId, postsTable.id))
             .where(
@@ -361,14 +364,14 @@ export const NavigationSessionServiceLayer = Layer.effect(
       command: NavigationCommand,
       from: Slug,
       intentToken: IntentToken,
-      retried: boolean
+      retryCount: number
     ): Effect.Effect<NavigationResult, NoSuchMove | CorpusExhausted | DatabaseError> =>
       Effect.gen(function* () {
-        yield* Effect.annotateCurrentSpan('retried', retried)
+        yield* Effect.annotateCurrentSpan('retried', retryCount > 0)
         const phase = yield* readPhase(identity, command)
         yield* Effect.annotateCurrentSpan('trailLength', phase.length)
         yield* Effect.annotateCurrentSpan('cursor', phase.session?.cursor ?? -1)
-        if (phase.replay && phase.session) {
+        if (phase.replay && phase.session && retryCount === 0) {
           const replay = phase.replay
           const session = phase.session
           yield* Effect.annotateCurrentSpan('path', 'replay')
@@ -408,29 +411,44 @@ export const NavigationSessionServiceLayer = Layer.effect(
               )
             : yield* findUnread(command._tag === 'Jump' ? 'Random' : 'NextByDate', from, seen)
 
-        const locked = yield* Effect.tryPromise({
-          try: () =>
-            db.transaction(async (tx): Promise<Locked> => {
-              const existing = await tx
+        const decision = yield* lock
+          .decide(identity, {
+            sessionId: phase.session?.id ?? null,
+            cursor: phase.session?.cursor ?? null,
+            updatedAtMs: phase.session?.updatedAt.getTime() ?? null,
+            intentToken
+          })
+          .pipe(Effect.withSpan('navigation.lock.decide'))
+
+        const readSessionById = (sessionId: string) =>
+          Effect.tryPromise({
+            try: async () => {
+              const rows = await db
                 .select()
                 .from(navigationSessions)
-                .where(identityWhere(identity))
-                // @ts-expect-error SQLite has no SELECT FOR UPDATE. M4 replaces this transaction with a Durable Object.
-                .for('update')
+                .where(eq(navigationSessions.id, sessionId))
                 .limit(1)
-              const session = existing[0]
-              if (session?.lastIntentToken === intentToken) return { _tag: 'Duplicate', session }
-              if (
-                session &&
-                (session.cursor !== phase.session?.cursor ||
-                  session.updatedAt.getTime() !== phase.session?.updatedAt.getTime())
-              ) {
-                return { _tag: 'Retry' }
-              }
-              const created = session
+              return rows[0]
+            },
+            catch: (error) => databaseError('read', error)
+          })
+
+        const appendAndAdvance = (sessionId: string | null, position: number) =>
+          Effect.tryPromise({
+            try: async () => {
+              const existing = sessionId
+                ? (
+                    await db
+                      .select()
+                      .from(navigationSessions)
+                      .where(eq(navigationSessions.id, sessionId))
+                      .limit(1)
+                  )[0]
+                : undefined
+              const created = existing
                 ? undefined
                 : (
-                    await tx
+                    await db
                       .insert(navigationSessions)
                       .values(
                         identity._tag === 'User'
@@ -441,51 +459,69 @@ export const NavigationSessionServiceLayer = Layer.effect(
                       .returning()
                   )[0]
               const active =
-                session ??
+                existing ??
                 created ??
                 (
-                  await tx
-                    .select()
-                    .from(navigationSessions)
-                    .where(identityWhere(identity))
-                    // @ts-expect-error SQLite has no SELECT FOR UPDATE. M4 replaces this transaction with a Durable Object.
-                    .for('update')
-                    .limit(1)
+                  await db.select().from(navigationSessions).where(identityWhere(identity)).limit(1)
                 )[0]
               if (!active) throw new Error('Failed to create navigation session')
-              const positions = await tx
-                .select({ position: navigationTrailEntries.position })
-                .from(navigationTrailEntries)
-                .where(eq(navigationTrailEntries.sessionId, active.id))
-                .orderBy(desc(navigationTrailEntries.position))
-                .limit(1)
-              const position = (positions[0]?.position ?? -1) + 1
-              await tx.insert(navigationTrailEntries).values({
+              await db.insert(navigationTrailEntries).values({
                 sessionId: active.id,
                 postId: destination.postId,
                 slug: destination.slug,
                 position,
                 arrivedBy: command._tag
               })
-              await tx
+              await db
                 .insert(navigationSeenPosts)
                 .values({ sessionId: active.id, slug: destination.slug })
                 .onConflictDoNothing()
-              const [updated] = await tx
+              const [updated] = await db
                 .update(navigationSessions)
                 .set({ cursor: position, lastIntentToken: intentToken, updatedAt: new Date() })
                 .where(eq(navigationSessions.id, active.id))
                 .returning()
               if (!updated) throw new Error('Failed to update navigation session')
-              return { _tag: 'Appended', session: updated, position }
-            }),
-          catch: (error) => databaseError('transaction', error)
-        }).pipe(Effect.withSpan('navigation.append.transaction'))
+              return updated
+            },
+            catch: (error) => databaseError('write', error)
+          })
+
+        const locked: Locked = yield* Effect.gen(function* () {
+          if (decision._tag === 'Retry') return { _tag: 'Retry' as const }
+
+          if (decision._tag === 'Duplicate') {
+            const session = yield* readSessionById(decision.sessionId)
+            if (!session) {
+              return yield* Effect.fail(
+                databaseError('read', 'Failed to read duplicate navigation session')
+              )
+            }
+            return { _tag: 'Duplicate' as const, session }
+          }
+
+          const updated = yield* appendAndAdvance(decision.sessionId, decision.position).pipe(
+            Effect.tapError(() => lock.reset(identity).pipe(Effect.ignore))
+          )
+          return { _tag: 'Appended' as const, session: updated, position: decision.position }
+        }).pipe(Effect.withSpan('navigation.append.write'))
+
+        if (locked._tag === 'Appended') {
+          yield* lock
+            .commit(identity, {
+              sessionId: locked.session.id,
+              position: locked.position,
+              intentToken,
+              updatedAtMs: locked.session.updatedAt.getTime()
+            })
+            .pipe(Effect.withSpan('navigation.lock.commit'))
+        }
 
         yield* Effect.annotateCurrentSpan('lockOutcome', locked._tag)
         if (locked._tag === 'Retry') {
-          if (retried) return yield* noSuchMove(command)
-          return yield* resolve(identity, command, from, intentToken, true)
+          if (retryCount === MAX_NAVIGATION_LOCK_RETRIES) return yield* noSuchMove(command)
+          yield* Effect.sleep('1 millis')
+          return yield* resolve(identity, command, from, intentToken, retryCount + 1)
         }
         return yield* Effect.gen(function* () {
           const entry =
@@ -537,7 +573,7 @@ export const NavigationSessionServiceLayer = Layer.effect(
 
     return {
       resolve: (identity, command, from, intentToken) =>
-        resolve(identity, command, from, intentToken, false).pipe(
+        resolve(identity, command, from, intentToken, 0).pipe(
           Effect.tapError((error) => Effect.annotateCurrentSpan('errorType', error._tag)),
           Effect.withSpan('navigation.resolve', {
             attributes: {
@@ -549,11 +585,12 @@ export const NavigationSessionServiceLayer = Layer.effect(
         ),
       read,
       reset: (identity) =>
-        Effect.tryPromise({
-          try: async () => {
-            await db.delete(navigationSessions).where(identityWhere(identity))
-          },
-          catch: (error) => databaseError('delete', error)
+        Effect.gen(function* () {
+          yield* Effect.tryPromise({
+            try: () => db.delete(navigationSessions).where(identityWhere(identity)),
+            catch: (error) => databaseError('delete', error)
+          })
+          yield* lock.reset(identity)
         })
     }
   })

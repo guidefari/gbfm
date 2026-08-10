@@ -21,7 +21,7 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
     "plugins": [{ "name": "@effect/language-service" }],
-    "types": ["@types/bun"],
+    "types": ["@cloudflare/workers-types", "@types/bun"],
     "paths": {
       "*": ["./*"],
       "@/*": ["./src/*"]

@@ -1,6 +1,7 @@
 import * as Alchemy from 'alchemy'
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as Effect from 'effect/Effect'
+import type { NavigationLockDurableObject } from './apps/vps/src/durable-objects/navigation-lock.do'
 
 export default Alchemy.Stack(
   'gbfm',
@@ -33,7 +34,10 @@ export default Alchemy.Stack(
         USER_CONTENT: userContent,
         MIXES: mixes,
         SITEMAP: sitemap,
-        REMINDERS: reminders
+        REMINDERS: reminders,
+        NAVIGATION_LOCK: Cloudflare.DurableObject<NavigationLockDurableObject>('NavigationLock', {
+          className: 'NavigationLockDurableObject'
+        })
       }
     })
 

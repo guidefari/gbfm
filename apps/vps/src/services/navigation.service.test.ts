@@ -1,13 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import { eq, inArray, sql } from 'drizzle-orm'
-import { Effect, Layer, Schema } from 'effect'
-import { afterEach, beforeAll, describe, expect, test } from 'vitest'
+import { Effect, Layer, ManagedRuntime, Schema } from 'effect'
+import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest'
 import { DatabaseTestLayer, db } from '@/test/database'
 import { navigationSeenPosts, navigationSessions } from '@/db/navigation.schema'
 import { postsTable } from '@/db/post.schema'
 import { CorpusExhausted, Slug } from '@/domain/navigation'
 import { MdxServiceLayer } from '@/lib/mdx'
 import { ConfigServiceLayer } from '@/services/config.service'
+import { NavigationLockLocalLayer } from '@/services/navigation-lock'
 import { PostServiceLayer } from '@/services/post.service'
 import { UploadAssetServiceLayer } from '@/services/upload-asset.service'
 import {
@@ -28,14 +29,16 @@ const postLayer = PostServiceLayer.pipe(
 )
 const navigationLayer = NavigationSessionServiceLayer.pipe(
   Layer.provide(postLayer),
-  Layer.provide(DatabaseTestLayer)
+  Layer.provide(DatabaseTestLayer),
+  Layer.provide(NavigationLockLocalLayer)
 )
+const navigationRuntime = ManagedRuntime.make(navigationLayer)
 
 const read = (identity: { readonly _tag: 'Anonymous'; readonly deviceToken: string }) =>
   Effect.gen(function* () {
     const navigation = yield* NavigationSessionService
     return yield* navigation.read(identity)
-  }).pipe(Effect.provide(navigationLayer))
+  })
 
 const resolve = (
   identity: { readonly _tag: 'Anonymous'; readonly deviceToken: string },
@@ -49,7 +52,7 @@ const resolve = (
   Effect.gen(function* () {
     const navigation = yield* NavigationSessionService
     return yield* navigation.resolve(identity, command, from, intentToken)
-  }).pipe(Effect.provide(navigationLayer))
+  })
 
 const createPost = async (name: string, createdAt: Date) => {
   const id = randomUUID()
@@ -86,11 +89,15 @@ const sessionFor = async (deviceToken: string) => {
 }
 
 const open = (reader: ReturnType<typeof identity>, post: { readonly slug: Slug }) =>
-  Effect.runPromise(resolve(reader, { _tag: 'Open', slug: post.slug }, post.slug, randomUUID()))
+  navigationRuntime.runPromise(
+    resolve(reader, { _tag: 'Open', slug: post.slug }, post.slug, randomUUID())
+  )
 
 beforeAll(async () => {
   await db.run(sql`SELECT 1`)
 })
+
+afterAll(() => navigationRuntime.dispose())
 
 afterEach(async () => {
   if (readerTokens.length > 0) {
@@ -113,10 +120,10 @@ describe('NavigationSessionService', () => {
 
     await open(reader, first)
     const results = await Promise.all([
-      Effect.runPromise(
+      navigationRuntime.runPromise(
         resolve(reader, { _tag: 'Step', direction: 'Forward' }, first.slug, randomUUID())
       ),
-      Effect.runPromise(
+      navigationRuntime.runPromise(
         resolve(reader, { _tag: 'Step', direction: 'Forward' }, first.slug, randomUUID())
       )
     ])
@@ -139,7 +146,7 @@ describe('NavigationSessionService', () => {
     await open(reader, last)
     await db.delete(postsTable).where(eq(postsTable.id, deleted.id))
 
-    const result = await Effect.runPromise(
+    const result = await navigationRuntime.runPromise(
       resolve(reader, { _tag: 'Step', direction: 'Back' }, last.slug, randomUUID())
     )
 
@@ -158,7 +165,7 @@ describe('NavigationSessionService', () => {
     await open(reader, last)
     await db.update(postsTable).set({ draft: true }).where(eq(postsTable.id, drafted.id))
 
-    const result = await Effect.runPromise(
+    const result = await navigationRuntime.runPromise(
       resolve(reader, { _tag: 'Step', direction: 'Back' }, last.slug, randomUUID())
     )
 
@@ -172,7 +179,7 @@ describe('NavigationSessionService', () => {
 
     await open(reader, only)
 
-    await expect(Effect.runPromise(read(reader))).resolves.toEqual({
+    await expect(navigationRuntime.runPromise(read(reader))).resolves.toEqual({
       slug: only.slug,
       capabilities: { canStepBack: false, canStepForward: false, hasUnread: false }
     })
@@ -193,7 +200,7 @@ describe('NavigationSessionService', () => {
       .set({ cursor: 1 })
       .where(eq(navigationSessions.id, session.id))
 
-    await expect(Effect.runPromise(read(reader))).resolves.toMatchObject({
+    await expect(navigationRuntime.runPromise(read(reader))).resolves.toMatchObject({
       slug: middle.slug,
       capabilities: { canStepBack: true }
     })
@@ -207,12 +214,12 @@ describe('NavigationSessionService', () => {
     const before = await sessionFor(reader.deviceToken)
 
     await expect(
-      Effect.runPromise(
+      navigationRuntime.runPromise(
         resolve(reader, { _tag: 'Step', direction: 'Forward' }, only.slug, randomUUID())
       )
     ).rejects.toBeInstanceOf(CorpusExhausted)
     await expect(
-      Effect.runPromise(resolve(reader, { _tag: 'Jump' }, only.slug, randomUUID()))
+      navigationRuntime.runPromise(resolve(reader, { _tag: 'Jump' }, only.slug, randomUUID()))
     ).rejects.toBeInstanceOf(CorpusExhausted)
 
     const seen = await db
@@ -231,10 +238,10 @@ describe('NavigationSessionService', () => {
 
     await open(reader, first)
     const [firstResult, retriedResult] = await Promise.all([
-      Effect.runPromise(
+      navigationRuntime.runPromise(
         resolve(reader, { _tag: 'Step', direction: 'Forward' }, first.slug, randomUUID())
       ),
-      Effect.runPromise(
+      navigationRuntime.runPromise(
         resolve(reader, { _tag: 'Step', direction: 'Forward' }, first.slug, randomUUID())
       )
     ])
@@ -255,7 +262,7 @@ describe('NavigationSessionService', () => {
     await open(reader, last)
     const before = await sessionFor(reader.deviceToken)
 
-    const result = await Effect.runPromise(
+    const result = await navigationRuntime.runPromise(
       resolve(reader, { _tag: 'Step', direction: 'Back' }, last.slug, randomUUID())
     )
     const after = await sessionFor(reader.deviceToken)
