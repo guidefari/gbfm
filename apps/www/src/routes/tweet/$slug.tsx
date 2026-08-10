@@ -14,8 +14,7 @@ import { TweetReplyList } from '@/components/TweetReplyList'
 import { TweetTagLinks } from '@/components/TweetTagLinks'
 import { useSession } from '@/lib/auth-client'
 import { getApiClient } from '@/lib/api-client'
-import { navigateMicroPostsEffect, useMicroPostReplies } from '@/lib/http'
-import { open } from '@/lib/navigation-commands'
+import { useMicroPostReplies } from '@/lib/http'
 import { generateMicroPostSEO, generateSEOMeta } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
 
@@ -28,26 +27,16 @@ export const Route = createFileRoute('/tweet/$slug')({
   ),
   loader: async ({ params }) => {
     const client = await getApiClient()
-    const [post, navigation] = await Promise.all([
-      Effect.runPromise(
-        client.post
-          .getMicroPostBySlug({ params: { slug: params.slug } })
-          .pipe(
-            Effect.tapError((error) =>
-              captureException(error, { endpoint: 'post.getMicroPostBySlug' })
-            )
+    const post = await Effect.runPromise(
+      client.post
+        .getMicroPostBySlug({ params: { slug: params.slug } })
+        .pipe(
+          Effect.tapError((error) =>
+            captureException(error, { endpoint: 'post.getMicroPostBySlug' })
           )
-      ),
-      Effect.runPromise(
-        open(navigateMicroPostsEffect, {
-          from: params.slug,
-          slug: params.slug,
-          intentToken: crypto.randomUUID()
-        })
-      )
-    ])
+        )
+    )
     return {
-      navigation,
       post: {
         ...post,
         bannerImageUrl: null,
@@ -75,7 +64,7 @@ export const Route = createFileRoute('/tweet/$slug')({
 
 function TweetPostPage() {
   const { slug } = Route.useParams()
-  const { navigation, post } = Route.useLoaderData()
+  const { post } = Route.useLoaderData()
   const { data: session } = useSession()
   const user = session?.user
   const { data: repliesData } = useMicroPostReplies(slug)
@@ -98,7 +87,7 @@ function TweetPostPage() {
   return (
     <div className='max-w-3xl px-4 py-8 mx-auto'>
       <div className='mb-6 lg:mb-0'>
-        <TweetNav slug={slug} initialCapabilities={navigation.capabilities} />
+        <TweetNav slug={slug} />
       </div>
       {post.parentPostId && <TweetParentPreview parentPostId={post.parentPostId} />}
       <article className='space-y-4 rounded-lg border border-border/60 bg-card/60 p-4 shadow-sm sm:p-5'>
