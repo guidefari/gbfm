@@ -14,3 +14,6 @@ backups/
 
 # temp files
 .tmp/
+
+# local D1 target for scripts/migrate-pg-to-d1.ts
+.migration-d1/
