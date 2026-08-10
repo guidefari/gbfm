@@ -87,9 +87,11 @@ export const readEntityLabels = async (
       and(eq(entityLabelsTable.entityType, entityType), eq(entityLabelsTable.entityId, entityId))
     )
     .orderBy(asc(labelsTable.kind), asc(entityLabelsTable.position))
+  const tags = rows.flatMap((row) => (row.kind === 'tag' ? [row.name] : []))
+  const genres = rows.flatMap((row) => (row.kind === 'genre' ? [row.name] : []))
   return {
-    tags: rows.flatMap((row) => (row.kind === 'tag' ? [row.name] : [])),
-    genres: rows.flatMap((row) => (row.kind === 'genre' ? [row.name] : []))
+    tags: tags.length > 0 ? tags : null,
+    genres: genres.length > 0 ? genres : null
   }
 }
 
@@ -161,8 +163,12 @@ export const projectEntityLabelsForRows = async <T extends { id: string }>(
     else labels.genres.push(row.name)
     labelsByEntityId.set(row.entityId, labels)
   }
-  return entities.map((entity) => ({
-    ...entity,
-    ...(labelsByEntityId.get(entity.id) ?? { tags: [], genres: [] })
-  }))
+  return entities.map((entity) => {
+    const labels = labelsByEntityId.get(entity.id) ?? { tags: [], genres: [] }
+    return {
+      ...entity,
+      tags: labels.tags.length > 0 ? labels.tags : null,
+      genres: labels.genres.length > 0 ? labels.genres : null
+    }
+  })
 }

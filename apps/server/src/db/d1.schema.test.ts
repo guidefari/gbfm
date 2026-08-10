@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm'
 import { describe, expect, test } from 'vitest'
 import { audioTable } from '@/db/audio.schema'
 import { entityLabelsTable, labelsTable } from '@/db/tags.schema'
-import { readEntityLabels, replaceEntityLabels } from '@/db/labels'
+import { projectEntityLabelsForRows, readEntityLabels, replaceEntityLabels } from '@/db/labels'
 import { db, d1 } from '@/test/d1'
 
 describe('D1 schema', () => {
@@ -66,6 +66,29 @@ describe('D1 schema', () => {
       tags: ['second', 'first'],
       genres: ['electronic', 'ambient']
     })
+  })
+
+  test('returns null, not an empty array, for an entity with no tags or genres', async () => {
+    await expect(readEntityLabels(db, 'artist', 'artist-untagged')).resolves.toEqual({
+      tags: null,
+      genres: null
+    })
+  })
+
+  test('projectEntityLabelsForRows returns null for entities with no labels alongside entities that have some', async () => {
+    await replaceEntityLabels(db, 'artist', 'artist-with-genres', {
+      genres: ['ambient']
+    })
+
+    const projected = await projectEntityLabelsForRows(db, 'artist', [
+      { id: 'artist-with-genres' },
+      { id: 'artist-without-genres' }
+    ])
+
+    expect(projected).toEqual([
+      { id: 'artist-with-genres', tags: null, genres: ['ambient'] },
+      { id: 'artist-without-genres', tags: null, genres: null }
+    ])
   })
 
   test('keeps partial navigation indexes', async () => {

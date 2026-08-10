@@ -416,7 +416,7 @@ const shareLabel = HttpRouter.params.pipe(
         'labels'
       )
       const description = label.description || `Check out ${label.name || slug} on goosebumps.fm`
-      const genresSuffix = genres.length > 0 ? ` | Genres: ${genres.join(', ')}` : ''
+      const genresSuffix = genres && genres.length > 0 ? ` | Genres: ${genres.join(', ')}` : ''
 
       return {
         html: buildOGHtml({
