@@ -122,6 +122,9 @@ export interface PostService {
   readonly getMicroPostBySlug: (
     slug: string
   ) => Effect.Effect<SelectMdxCompiledMicroPost, DatabaseError | NotFoundError>
+  readonly getMicroPostReferenceBySlug: (
+    slug: string
+  ) => Effect.Effect<{ readonly id: string; readonly slug: string }, DatabaseError | NotFoundError>
   readonly getMicroPostById: (
     id: string
   ) => Effect.Effect<SelectMdxCompiledMicroPost, DatabaseError | NotFoundError>
@@ -129,14 +132,14 @@ export interface PostService {
   readonly getMicroTags: () => Effect.Effect<string[], DatabaseError>
   readonly getAdjacentMicroPosts: (slug: string) => Effect.Effect<
     {
-      prev: { slug: string; title: string | null } | null
-      next: { slug: string; title: string | null } | null
+      prev: { id: string; slug: string; title: string | null } | null
+      next: { id: string; slug: string; title: string | null } | null
     },
     DatabaseError | NotFoundError
   >
   readonly getRandomMicroPost: (
     excludeSlugs: string[]
-  ) => Effect.Effect<{ slug: string }, DatabaseError | NotFoundError>
+  ) => Effect.Effect<{ id: string; slug: string }, DatabaseError | NotFoundError>
   readonly searchMicroPosts: (options: {
     q: string
     limit: number
@@ -693,7 +696,7 @@ const getAdjacentMicroPostsEffect = (slug: string) =>
       prevRows: Effect.tryPromise({
         try: () =>
           db
-            .select({ slug: postsTable.slug, title: postsTable.title })
+            .select({ id: postsTable.id, slug: postsTable.slug, title: postsTable.title })
             .from(postsTable)
             .where(and(baseCondition, gte(postsTable.createdAt, current.createdAt)))
             .orderBy(asc(postsTable.createdAt))
@@ -708,7 +711,7 @@ const getAdjacentMicroPostsEffect = (slug: string) =>
       nextRows: Effect.tryPromise({
         try: () =>
           db
-            .select({ slug: postsTable.slug, title: postsTable.title })
+            .select({ id: postsTable.id, slug: postsTable.slug, title: postsTable.title })
             .from(postsTable)
             .where(and(baseCondition, lte(postsTable.createdAt, current.createdAt)))
             .orderBy(desc(postsTable.createdAt))
@@ -744,7 +747,7 @@ const getRandomMicroPostEffect = (excludeSlugs: string[]) =>
     const rows = yield* Effect.tryPromise({
       try: () =>
         db
-          .select({ slug: postsTable.slug })
+          .select({ id: postsTable.id, slug: postsTable.slug })
           .from(postsTable)
           .where(withExclude)
           .orderBy(sql`random()`)
@@ -762,7 +765,7 @@ const getRandomMicroPostEffect = (excludeSlugs: string[]) =>
     const fallback = yield* Effect.tryPromise({
       try: () =>
         db
-          .select({ slug: postsTable.slug })
+          .select({ id: postsTable.id, slug: postsTable.slug })
           .from(postsTable)
           .where(baseCondition)
           .orderBy(sql`random()`)
@@ -1190,6 +1193,40 @@ const getEditorialBySlugEffect = (slug: string, mdx: MdxService) =>
       attributes: { 'post.slug': slug }
     })
   )
+
+const getMicroPostReferenceBySlugEffect = (slug: string) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    const rows = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select({ id: postsTable.id, slug: postsTable.slug })
+          .from(postsTable)
+          .where(
+            and(
+              eq(postsTable.slug, slug),
+              eq(postsTable.type, 'micro'),
+              eq(postsTable.draft, false)
+            )
+          )
+          .limit(1),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch micro post reference: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'posts'
+        })
+    })
+    const post = rows[0]
+    if (!post) {
+      return yield* new NotFoundError({
+        message: 'Micro post not found',
+        resource: 'post',
+        id: slug
+      })
+    }
+    return post
+  }).pipe(Effect.withSpan('post.getMicroPostReferenceBySlug', { attributes: { slug } }))
 
 const getMicroPostBySlugEffect = (slug: string, mdx: MdxService) =>
   Effect.gen(function* () {
@@ -2043,6 +2080,7 @@ export const PostServiceLayer = Layer.effect(
       getEditorialBySlug: (slug) => provideDb(getEditorialBySlugEffect(slug, mdx)),
       getMicroPosts: (opts) => provideDb(getMicroPostsEffect(opts, mdx)),
       getMicroPostBySlug: (slug) => provideDb(getMicroPostBySlugEffect(slug, mdx)),
+      getMicroPostReferenceBySlug: (slug) => provideDb(getMicroPostReferenceBySlugEffect(slug)),
       getMicroPostById: (id) => provideDb(getMicroPostByIdEffect(id, mdx)),
       getEditorialTags: () => provideDb(getEditorialTagsEffect()),
       getMicroTags: () => provideDb(getMicroTagsEffect()),

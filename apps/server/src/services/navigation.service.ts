@@ -325,10 +325,9 @@ export const NavigationSessionServiceLayer = Layer.effect(
         if (pick === 'Random') {
           const picked = yield* posts.getRandomMicroPost([...seen])
           if (seen.has(asSlug(picked.slug))) return yield* new CorpusExhausted()
-          const post = yield* posts.getMicroPostBySlug(picked.slug)
           return {
-            slug: asSlug(post.slug),
-            postId: post.id,
+            slug: asSlug(picked.slug),
+            postId: picked.id,
             visitedAt: Date.now()
           } satisfies ResolvedDestination
         }
@@ -339,10 +338,9 @@ export const NavigationSessionServiceLayer = Layer.effect(
           if (!adjacent.next) return yield* new CorpusExhausted()
           current = asSlug(adjacent.next.slug)
           if (!seen.has(current)) {
-            const post = yield* posts.getMicroPostBySlug(current)
             return {
-              slug: asSlug(post.slug),
-              postId: post.id,
+              slug: current,
+              postId: adjacent.next.id,
               visitedAt: Date.now()
             } satisfies ResolvedDestination
           }
@@ -397,7 +395,7 @@ export const NavigationSessionServiceLayer = Layer.effect(
           : new Set<Slug>()
         const destination =
           command._tag === 'Open'
-            ? yield* posts.getMicroPostBySlug(command.slug).pipe(
+            ? yield* posts.getMicroPostReferenceBySlug(command.slug).pipe(
                 Effect.map((post) => ({
                   slug: asSlug(post.slug),
                   postId: post.id,
