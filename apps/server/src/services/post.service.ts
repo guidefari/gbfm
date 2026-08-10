@@ -1594,18 +1594,36 @@ const getMicroPostRepliesEffect = (
     const db = yield* Database
     const { limit, offset } = options
 
-    const parentRecords = yield* Effect.tryPromise({
-      try: () => db.select().from(postsTable).where(eq(postsTable.slug, parentSlug)).limit(1),
+    const parentId = db
+      .select({ id: postsTable.id })
+      .from(postsTable)
+      .where(eq(postsTable.slug, parentSlug))
+      .limit(1)
+    const [parentRecords, countResult, data] = yield* Effect.tryPromise({
+      try: () =>
+        db.batch([
+          parentId,
+          db
+            .select({ total: count() })
+            .from(postsTable)
+            .where(inArray(postsTable.parentPostId, parentId)),
+          db
+            .select()
+            .from(postsTable)
+            .where(inArray(postsTable.parentPostId, parentId))
+            .orderBy(asc(postsTable.createdAt))
+            .limit(limit)
+            .offset(offset)
+        ]),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to fetch parent post: ${getErrorMessage(error)}`,
+          message: `Failed to fetch replies: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'posts'
         })
-    })
+    }).pipe(Effect.withSpan('post.getMicroPostReplies.batch'))
 
-    const parent = parentRecords[0]
-    if (!parent) {
+    if (!parentRecords[0]) {
       return yield* new NotFoundError({
         message: 'Parent post not found',
         resource: 'post',
@@ -1613,44 +1631,7 @@ const getMicroPostRepliesEffect = (
       })
     }
 
-    const whereCondition = eq(postsTable.parentPostId, parent.id)
-
-    const countResult = yield* Effect.tryPromise({
-      try: () =>
-        timeQuery(
-          () => db.select({ total: count() }).from(postsTable).where(whereCondition),
-          'get-micro-post-replies-count'
-        ),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to count replies: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'posts'
-        })
-    })
-
     const total = countResult[0]?.total ?? 0
-
-    const data = yield* Effect.tryPromise({
-      try: () =>
-        timeQuery(
-          () =>
-            db
-              .select()
-              .from(postsTable)
-              .where(whereCondition)
-              .orderBy(asc(postsTable.createdAt))
-              .limit(limit)
-              .offset(offset),
-          'get-micro-post-replies-data'
-        ),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to fetch replies: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'posts'
-        })
-    })
 
     const postIds = data.map((p) => p.id)
 
