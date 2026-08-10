@@ -32,4 +32,5 @@ const task = Effect.gen(function* () {
   if (Exit.isFailure(syncExit)) return yield* Effect.failCause(syncExit.cause)
 })
 
-await Effect.runPromise(task.pipe(Effect.provide(AppLayer)))
+// @ts-expect-error This script has no D1 binding outside the Worker request path; it is not yet ported off the Bun/Postgres runtime.
+await Effect.runPromise(task.pipe(Effect.provide(AppLayer())))

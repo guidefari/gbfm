@@ -1,9 +1,9 @@
 import { Layer } from 'effect'
-import { pool } from '@/db'
-import { Database, DatabaseLayer } from '@/db/layer'
+import { Database } from '@/db/layer'
 import { AuthLive } from '@/lib/auth'
 import { MdxServiceLayer } from '@/lib/mdx'
 import { OtlpLive } from '@/lib/otel'
+import { SitemapCache } from '@/services/sitemap-cache'
 
 export { Database, DatabaseLayer } from '@/db/layer'
 
@@ -42,68 +42,76 @@ import { UserServiceLayer } from '@/services/user.service'
 import { ObjectStoreClientLayer } from '@/services/storage/object-store-client'
 
 const DevToolsLive: Layer.Layer<never> = Layer.empty
-// @ts-expect-error The Bun/Postgres runtime remains until M4 supplies the Worker D1 composition seam.
-const DatabaseLive = DatabaseLayer(pool)
 
 const SentryClientLive = SentryClientServiceLayer.pipe(Layer.provide(ConfigServiceLayer))
 
 const UploadAssetDepsLive = Layer.mergeAll(ConfigServiceLayer, UploadAssetServiceLayer)
 const ObjectStoreClientLive = ObjectStoreClientLayer.pipe(Layer.provide(ConfigServiceLayer))
 
-const BaseServicesLayer = Layer.mergeAll(
-  ConfigServiceLayer,
-  BlueskyClientLayer,
-  BlueskyImportServiceLayer,
-  LockServiceLayer,
-  CryptoServiceLayer.pipe(Layer.provide(ConfigServiceLayer)),
-  EmailServiceLayer,
-  FavoriteServiceLayer,
-  SpotifyServiceLayer,
-  MusicReminderServiceLayer,
-  NavigationRetentionServiceLayer,
-  NavigationSessionServiceLayer.pipe(
-    Layer.provide(
-      PostServiceLayer.pipe(Layer.provide(MdxServiceLayer), Layer.provide(UploadAssetDepsLive))
-    )
-  ),
-  ReminderSignalServiceLayer,
-  MusicLinkScraperServiceLayer.pipe(Layer.provide(SpotifyServiceLayer)),
-  AudioServiceLayer.pipe(Layer.provide(MdxServiceLayer), Layer.provide(UploadAssetDepsLive)),
-  PostServiceLayer.pipe(Layer.provide(MdxServiceLayer), Layer.provide(UploadAssetDepsLive)),
-  ProfileServiceLayer,
-  ResolveServiceLayer,
-  ReleaseServiceLayer,
-  S3ServiceLayer.pipe(Layer.provide(Layer.mergeAll(ObjectStoreClientLive, ConfigServiceLayer))),
-  SearchServiceLayer,
-  SentryServiceLayer.pipe(Layer.provide(SentryClientLive)),
-  OtlpLive.pipe(Layer.provide(SentryClientLive), Layer.provide(ConfigServiceLayer)),
-  ShowServiceLayer,
-  ShowSubscriptionServiceLayer,
-  UploadAssetServiceLayer,
-  UserServiceLayer,
-  DevToolsLive
-).pipe(Layer.provide(DatabaseLive))
+// Takes the Database and SitemapCache layers as parameters instead of
+// building them from module-scope bindings: the composition seam
+// (worker.ts) is the only place that may see env.DB / env.SITEMAP, and it
+// builds these fresh per request.
+export const AppLayer = (
+  databaseLive: Layer.Layer<Database>,
+  sitemapCacheLive: Layer.Layer<SitemapCache>
+) => {
+  const BaseServicesLayer = Layer.mergeAll(
+    ConfigServiceLayer,
+    BlueskyClientLayer,
+    BlueskyImportServiceLayer,
+    LockServiceLayer,
+    CryptoServiceLayer.pipe(Layer.provide(ConfigServiceLayer)),
+    EmailServiceLayer,
+    FavoriteServiceLayer,
+    SpotifyServiceLayer,
+    MusicReminderServiceLayer,
+    NavigationRetentionServiceLayer,
+    NavigationSessionServiceLayer.pipe(
+      Layer.provide(
+        PostServiceLayer.pipe(Layer.provide(MdxServiceLayer), Layer.provide(UploadAssetDepsLive))
+      )
+    ),
+    ReminderSignalServiceLayer,
+    MusicLinkScraperServiceLayer.pipe(Layer.provide(SpotifyServiceLayer)),
+    AudioServiceLayer.pipe(Layer.provide(MdxServiceLayer), Layer.provide(UploadAssetDepsLive)),
+    PostServiceLayer.pipe(Layer.provide(MdxServiceLayer), Layer.provide(UploadAssetDepsLive)),
+    ProfileServiceLayer,
+    ResolveServiceLayer,
+    ReleaseServiceLayer,
+    S3ServiceLayer.pipe(Layer.provide(Layer.mergeAll(ObjectStoreClientLive, ConfigServiceLayer))),
+    SearchServiceLayer,
+    SentryServiceLayer.pipe(Layer.provide(SentryClientLive)),
+    OtlpLive.pipe(Layer.provide(SentryClientLive), Layer.provide(ConfigServiceLayer)),
+    ShowServiceLayer,
+    ShowSubscriptionServiceLayer,
+    UploadAssetServiceLayer,
+    UserServiceLayer,
+    DevToolsLive
+  ).pipe(Layer.provide(databaseLive))
 
-const MusicEntityLive = MusicEntityServiceLayer.pipe(Layer.provide(BaseServicesLayer))
-const BlueskyArchiveLive = BlueskyArchiveServiceLayer.pipe(
-  Layer.provide(Layer.mergeAll(BaseServicesLayer, MusicEntityLive))
-)
-const BlueskySyncLive = BlueskySyncServiceLayer.pipe(
-  Layer.provide(Layer.mergeAll(BaseServicesLayer, MusicEntityLive, BlueskyArchiveLive))
-)
+  const MusicEntityLive = MusicEntityServiceLayer.pipe(Layer.provide(BaseServicesLayer))
+  const BlueskyArchiveLive = BlueskyArchiveServiceLayer.pipe(
+    Layer.provide(Layer.mergeAll(BaseServicesLayer, MusicEntityLive))
+  )
+  const BlueskySyncLive = BlueskySyncServiceLayer.pipe(
+    Layer.provide(Layer.mergeAll(BaseServicesLayer, MusicEntityLive, BlueskyArchiveLive))
+  )
 
-const ServicesLayer = Layer.mergeAll(
-  BaseServicesLayer,
-  QRCodeServiceLayer.pipe(Layer.provide(BaseServicesLayer)),
-  MusicEntityLive,
-  BlueskyAccountServiceLayer.pipe(Layer.provide(BaseServicesLayer)),
-  BlueskyArchiveLive,
-  BlueskyRunsServiceLayer.pipe(Layer.provide(DatabaseLive)),
-  BlueskySyncLive
-).pipe(Layer.provide(DatabaseLive))
+  const ServicesLayer = Layer.mergeAll(
+    BaseServicesLayer,
+    QRCodeServiceLayer.pipe(Layer.provide(BaseServicesLayer)),
+    MusicEntityLive,
+    BlueskyAccountServiceLayer.pipe(Layer.provide(BaseServicesLayer)),
+    BlueskyArchiveLive,
+    BlueskyRunsServiceLayer.pipe(Layer.provide(databaseLive)),
+    BlueskySyncLive
+  ).pipe(Layer.provide(databaseLive))
 
-export const AppLayer = Layer.mergeAll(
-  ServicesLayer,
-  DatabaseLive,
-  AuthLive.pipe(Layer.provide(DatabaseLive))
-).pipe(Layer.provideMerge(AppLoggerLive))
+  return Layer.mergeAll(
+    ServicesLayer,
+    databaseLive,
+    sitemapCacheLive,
+    AuthLive.pipe(Layer.provide(databaseLive))
+  ).pipe(Layer.provideMerge(AppLoggerLive))
+}

@@ -76,7 +76,9 @@ const betterAuthRoute = HttpRouter.add('*', '/auth/*', (request) =>
 // AppType anywhere in this file or its callers.
 export const createWebHandler = (options?: {
   readonly healthDatabaseCheck?: Effect.Effect<void, ReadinessCheckFailedError>
+  readonly appServicesLive?: typeof AppServicesLive
 }) => {
+  const appServices = options?.appServicesLive ?? AppServicesLive
   const ApiLive = HttpApiBuilder.layer(Api).pipe(
     Layer.provide(makeHealthHandlers(options?.healthDatabaseCheck ?? checkDatabase)),
     Layer.provide(InternalHandlersLive),
@@ -134,7 +136,7 @@ export const createWebHandler = (options?: {
       RequestLoggerLive,
       SentryDefectLive
     ).pipe(
-      Layer.provideMerge(AppServicesLive),
+      Layer.provideMerge(appServices),
       // RequestLoggerLive is the single structured request event; disable
       // Effect HttpMiddleware.logger to avoid a second response log line.
       Layer.provide(HttpRouter.disableLogger),

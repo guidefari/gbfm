@@ -1,4 +1,4 @@
-import { Effect, ManagedRuntime } from 'effect'
+import { Effect, Layer, ManagedRuntime } from 'effect'
 import type { AudioService } from '@/services/audio.service'
 import type { BlueskyAccountService } from '@/services/bluesky-account.service'
 import type { BlueskyArchiveService } from '@/services/bluesky-archive.service'
@@ -20,11 +20,35 @@ import type { S3Service } from '@/services/s3.service'
 import type { SearchService } from '@/services/search.service'
 import type { SentryService } from '@/services/sentry.service'
 import type { ShowService, ShowSubscriptionService } from '@/services/show.service'
+import type { SitemapCache } from '@/services/sitemap-cache'
 import type { SpotifyService } from '@/services/spotify.service'
 import type { UserService } from '@/services/user.service'
-import type { Database } from '@/db/layer'
+import { Database } from '@/db/layer'
 import type { Auth } from '@/lib/auth'
+import { SitemapCache as SitemapCacheTag } from '@/services/sitemap-cache'
 import { AppLayer } from './services'
+
+// This module-level ManagedRuntime predates the Worker composition seam
+// (worker.ts) and cannot see a real D1 binding or KV namespace -- Workers
+// have no module-scope database/binding handle, and env is only visible
+// inside fetch/scheduled/queue. It stays only to keep existing runAppFork
+// call sites (background email/logging side effects) compiling; nothing
+// on this path may depend on Database or SitemapCache resolving to a live
+// connection. The Worker request path builds its own
+// AppLayer(DatabaseLayer(env.DB), SitemapCacheLayer(env.SITEMAP)) per
+// invocation instead of touching this singleton.
+const UnavailableDatabaseLive = Layer.effect(
+  Database,
+  Effect.die(
+    'Database is not available on the module-level runtime singleton outside the Worker request path'
+  )
+)
+const UnavailableSitemapCacheLive = Layer.effect(
+  SitemapCacheTag,
+  Effect.die(
+    'SitemapCache is not available on the module-level runtime singleton outside the Worker request path'
+  )
+)
 
 export type AppServices =
   | ConfigService
@@ -36,6 +60,7 @@ export type AppServices =
   | Auth
   | EmailService
   | FavoriteService
+  | SitemapCache
   | SpotifyService
   | MusicReminderService
   | ReminderSignalService
@@ -54,7 +79,9 @@ export type AppServices =
   | ShowSubscriptionService
   | UserService
 
-const managedRuntime = ManagedRuntime.make(AppLayer)
+const managedRuntime = ManagedRuntime.make(
+  AppLayer(UnavailableDatabaseLive, UnavailableSitemapCacheLive)
+)
 
 // The app's built service instances (DB pool, S3 client, etc.) as an Effect,
 // for other layer chains (e.g. the Effect HttpApi router in http/routes.ts)
