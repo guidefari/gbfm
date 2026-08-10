@@ -1,15 +1,15 @@
 # D1 cutover readiness (OPS-249 / for OPS-250)
 
-Updated 2026-08-10 after a read-only production snapshot rehearsal. This
-document does not authorize cutover. OPS-250 remains human-only.
+Updated 2026-08-10 after a read-only production snapshot rehearsal and a
+throwaway deployed D1 staging rehearsal. This document does not authorize
+cutover. OPS-250 remains human-only.
 
 ## Bottom line
 
-**Not ready to cut over.** The production data migration and the local D1
-checks now pass, and the D1 size risk is closed. The remaining gates require a
-deployed Worker and D1 database, which this task was forbidden to deploy or
-operate. They include session continuity, a black-box staging run, write-load
-behavior, and a Time Travel restore drill.
+**Not ready to cut over.** The production data migration, deployed Worker
+boot, D1 binding, Durable Object, cron, and queue registration now pass in a
+throwaway stage. Public API body parity, session continuity, write-load
+behavior, and a Time Travel restore drill still block OPS-250.
 
 ## Now proven
 
@@ -47,6 +47,23 @@ behavior, and a Time Travel restore drill.
 - A local Miniflare D1 test forces a duplicate-key failure in the second
   statement of a `batch()`, asserts rejection, then proves the first insert was
   rolled back. This closes the local batch-atomicity gap.
+- The throwaway `d1-staging` Worker booted on workers.dev. `/health/live` and
+  `/health/ready` both returned 200, and a public shows read returned 200 from
+  the deployed D1 binding.
+- A real same-identity Durable Object rehearsal serialized two concurrent
+  navigation requests into trail positions 1 then 2. The cron is registered,
+  and the reminders queue has one Worker consumer.
+- A fresh read-only production snapshot was imported into deployed staging D1.
+  The local source-to-D1 verification passed all 41 tables, checksums, fan-outs,
+  relationship checks, foreign-key checks, and sharp-type checks.
+- The actual deployed JavaScript modules measure 2,004,627 gzipped bytes,
+  1.91 MiB. This is below the earlier 2.56 MiB estimate.
+- The deployed Worker imports and wraps requests with `@sentry/cloudflare`
+  without a Node-only startup crash. Its throwaway configuration has no Sentry
+  DSN, so transport delivery remains unverified.
+
+See [`d1-staging-rehearsal.md`](d1-staging-rehearsal.md) for commands and raw
+check outcomes.
 
 ## Rehearsal timing
 
@@ -74,21 +91,23 @@ the complete aggregate-only measurement and its limits.
 
 ## Still open and blocking
 
-1. **Deployed D1 behavior and cutover rehearsal.** This run used local
-   Miniflare. It does not measure network latency, Workers request limits,
-   deployed D1 batch behavior, or final-delta handling.
-2. **M5 slice 15.** No black-box API suite has compared a migrated staging
-   Worker with production. Deploying staging was forbidden here.
-3. **Session continuity.** The Better Auth tables match structurally, but no
+1. **Public API body parity.** A 14-endpoint comparison found 6 exact matches
+   and 8 body mismatches, though every endpoint returned 200 on both stacks.
+   Null-versus-empty-array differences are confirmed; the remaining differences
+   need endpoint-level review.
+2. **Session continuity.** The Better Auth tables match structurally, but no
    live session issued by Postgres has been validated through the Worker and
-   D1 adapter.
-4. **Write serialization load test.** No deployed write-path contention test
-   has measured D1's serialized writer under representative load.
-5. **D1 Time Travel restore drill.** It requires a deployed D1 database and
-   was not attempted.
-6. **Final Worker bundle measurement.** The existing measurement predates the
-   actual Cloudflare Sentry SDK graph and must be repeated against the Worker
-   entrypoint.
+   D1 adapter. The staging Worker also logs that its Better Auth base URL is
+   not configured.
+3. **Write serialization load test.** The navigation Durable Object serialized
+   two requests, but no deployed D1 writer contention test has measured
+   representative write load.
+4. **D1 Time Travel restore drill.** A deployed D1 database now exists, but
+   the restore drill was not attempted.
+5. **Sentry transport.** The Cloudflare SDK boots, but staging has no DSN and
+   no event delivery or error ingestion was verified.
+6. **Reminder delivery.** The cron and queue consumer are registered, but no
+   message delivery was tested because this stage has no safe email setup.
 7. **Cloudflare Rate Limiting rule.** Confirm the target route has the required
    operational rule before cutover.
 8. **Human cutover operations.** Freezing writes, a final delta migration, DNS,
@@ -96,8 +115,7 @@ the complete aggregate-only measurement and its limits.
 
 ## Recommendation
 
-Do not schedule OPS-250 from this evidence alone. First deploy and rehearse the
-staging Worker with a fresh production snapshot, run the black-box suite and
-session-continuity check, load-test writes, repeat the bundle measurement, and
-run a D1 Time Travel restore. Then have the human owner choose and rehearse the
-write-freeze sequence.
+Do not schedule OPS-250 from this evidence alone. Resolve the public API body
+mismatches, then run authenticated session continuity, a safe reminder delivery
+rehearsal, a deployed write-load test, and a D1 Time Travel restore. Then have
+the human owner choose and rehearse the write-freeze sequence.
