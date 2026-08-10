@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "sst dev --stage=dev --verbose",
+    "dev:d1": "bun --filter @gbfm/www dev:d1",
     "refresh": "sst refresh --stage=dev",
     "deploy": "sst deploy --stage=dev",
     "deploy:prod": "sst deploy --stage=prod",

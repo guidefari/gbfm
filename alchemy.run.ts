@@ -67,7 +67,7 @@ export default Alchemy.Stack(
         BETTER_AUTH_SECRET: secret('BETTER_AUTH_SECRET'),
         BETTER_AUTH_URL: secret('BETTER_AUTH_URL'),
         GBFM_ENCRYPTION_ROOT_KEY: secret('GBFM_ENCRYPTION_ROOT_KEY'),
-        StorageProvider: 'r2',
+        StorageProvider: process.env.StorageAccessKeyId ? 'r2' : secret('StorageProvider'),
         StorageEndpoint: secret('StorageEndpoint'),
         StorageRegion: secret('StorageRegion'),
         StorageAccessKeyId: secret('StorageAccessKeyId'),

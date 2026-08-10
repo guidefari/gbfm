@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
+    "dev:d1": "VPS_PROXY_TARGET=https://gbfm-api-d1-staging-mebtavpzy2m53eso.guideg6.workers.dev vite --port 5173 --strictPort",
     "build": "vite build",
     "bio": "oxlint ./src --fix && oxfmt ./src --write",
     "preview": "vite preview",

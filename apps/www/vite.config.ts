@@ -10,7 +10,11 @@ import tailwindcss from '@tailwindcss/vite'
 import { repoChangelogPlugin } from './plugins/repo-changelog'
 import { themeColorsPlugin } from './plugins/theme-colors'
 
-const VPS_PROXY_TARGET = process.env.VITE_VPS_BASE_URL || 'http://127.0.0.1:3003'
+// VPS_PROXY_TARGET is deliberately not VITE_ prefixed: it steers the dev proxy
+// only. Setting VITE_VPS_BASE_URL would also reach the browser bundle, making
+// requests cross-site and dropping the session cookie.
+const VPS_PROXY_TARGET =
+  process.env.VPS_PROXY_TARGET || process.env.VITE_VPS_BASE_URL || 'http://127.0.0.1:3003'
 const sentryRelease = process.env.SENTRY_RELEASE
 const shouldUploadSourceMaps = Boolean(process.env.SENTRY_AUTH_TOKEN && sentryRelease)
 
