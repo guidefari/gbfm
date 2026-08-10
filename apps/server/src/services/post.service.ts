@@ -268,49 +268,66 @@ export function normalizePostData(
 const buildPostWithCreators = (post: PostRow, mdx: MdxService) =>
   Effect.gen(function* () {
     const db = yield* Database
-    const [blueskySource] = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select({
-            authorDid: blueskyPostSources.authorDid,
-            authorHandle: blueskyPostSources.authorHandle,
-            publicUrl: blueskyPostSources.publicUrl,
-            sourceCreatedAt: blueskyPostSources.sourceCreatedAt,
-            sourceStatus: blueskyPostSources.sourceStatus,
-            locallyEdited: blueskyPostSources.locallyEdited,
-            lastError: blueskyPostSources.lastError
+    const { blueskySources, creators, projectedPost } = yield* Effect.all({
+      blueskySources: Effect.tryPromise({
+        try: () =>
+          db
+            .select({
+              authorDid: blueskyPostSources.authorDid,
+              authorHandle: blueskyPostSources.authorHandle,
+              publicUrl: blueskyPostSources.publicUrl,
+              sourceCreatedAt: blueskyPostSources.sourceCreatedAt,
+              sourceStatus: blueskyPostSources.sourceStatus,
+              locallyEdited: blueskyPostSources.locallyEdited,
+              lastError: blueskyPostSources.lastError
+            })
+            .from(blueskyPostSources)
+            .where(eq(blueskyPostSources.postId, post.id))
+            .limit(1),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to fetch Bluesky source: ${getErrorMessage(error)}`,
+            operation: 'select',
+            table: 'bluesky_post_sources'
           })
-          .from(blueskyPostSources)
-          .where(eq(blueskyPostSources.postId, post.id))
-          .limit(1),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to fetch Bluesky source: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'bluesky_post_sources'
-        })
+      }),
+      creators: Effect.tryPromise({
+        try: () =>
+          db
+            .select({
+              id: usersTable.id,
+              name: usersTable.name,
+              username: usersTable.username
+            })
+            .from(postCreators)
+            .innerJoin(usersTable, eq(postCreators.creatorId, usersTable.id))
+            .where(eq(postCreators.postId, post.id)),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to fetch creators: ${getErrorMessage(error)}`,
+            operation: 'select',
+            table: 'post_creators'
+          })
+      }).pipe(Effect.withSpan('post.getCreators', { attributes: { postId: post.id } })),
+      projectedPost: Effect.tryPromise({
+        try: () => projectEntityLabels(db, 'post', post),
+        catch: (error) =>
+          new DatabaseError({
+            message: getErrorMessage(error),
+            operation: 'select',
+            table: 'labels'
+          })
+      })
     })
-
-    const creators = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select({
-            id: usersTable.id,
-            name: usersTable.name,
-            username: usersTable.username
-          })
-          .from(postCreators)
-          .innerJoin(usersTable, eq(postCreators.creatorId, usersTable.id))
-          .where(eq(postCreators.postId, post.id)),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to fetch creators: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'post_creators'
-        })
-    }).pipe(Effect.withSpan('post.getCreators', { attributes: { postId: post.id } }))
-
-    const compiled = yield* buildPostWithPreloadedCreators(post, creators, mdx)
+    const compiledContent = projectedPost.content
+      ? yield* mdx.compile(projectedPost.content).pipe(Effect.orElseSucceed(() => ''))
+      : ''
+    const compiled = {
+      ...projectedPost,
+      compiledContent,
+      creators
+    } satisfies SelectMdxCompiledPost
+    const blueskySource = blueskySources[0]
     return blueskySource ? { ...compiled, blueskySource } : compiled
   })
 
@@ -326,13 +343,9 @@ const buildPostWithPreloadedCreators = (
       catch: (error) =>
         new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
     })
-    let compiledContent = ''
-
-    if (projectedPost.content) {
-      compiledContent = yield* mdx
-        .compile(projectedPost.content)
-        .pipe(Effect.orElseSucceed(() => ''))
-    }
+    const compiledContent = projectedPost.content
+      ? yield* mdx.compile(projectedPost.content).pipe(Effect.orElseSucceed(() => ''))
+      : ''
 
     return {
       ...projectedPost,
