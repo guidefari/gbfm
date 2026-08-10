@@ -5,7 +5,7 @@ import { config } from '@/services/config.service'
 import { SentryService } from '@/services/sentry.service'
 
 // Step 8 (docs/migration-effect-http-api.md): the global concerns that used
-// to be Hono middleware in apps/vps/src/lib/create-app.ts, ported to
+// to be Hono middleware in apps/server/src/lib/create-app.ts, ported to
 // Effect's global HttpRouter.middleware -- global (not endpoint-scoped)
 // because CORS/logging/defect-reporting need to cover every route including
 // better-auth and the plain HttpRouter routes in site-routes.ts, not just
@@ -14,7 +14,7 @@ import { SentryService } from '@/services/sentry.service'
 // docs/migrations/postgres-to-d1.md's "Rate limiting" subsection.
 
 // ── CORS ──────────────────────────────────────────────────────
-// Matches apps/vps/src/lib/create-app.ts's corsConfig exactly. The old Hono
+// Matches apps/server/src/lib/create-app.ts's corsConfig exactly. The old Hono
 // origin() function never actually rejects -- it falls back to the
 // production origin for any unrecognized Origin header rather than omitting
 // the CORS headers -- so this uses the predicate form of allowedOrigins

@@ -116,7 +116,7 @@ Bun and Worker needing different initialization is expected and correct.
 ## Standing constraints
 
 - `bun precommit` must pass before every commit. Never `--no-verify`.
-- D1 suite stays green: `cd apps/vps && bunx vitest run --config vitest.d1.config.ts` (7 tests).
+- D1 suite stays green: `cd apps/server && bunx vitest run --config vitest.d1.config.ts` (7 tests).
 - No `as any`, no `as unknown`, no type assertions to force compilation.
 - No deleting tests, no `.skip`, no weakened assertions.
 - No code comments unless genuinely non-obvious. No em dashes.

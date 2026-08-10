@@ -21,7 +21,7 @@ new sst.x.DevCommand('Studio_prod', {
   link: [...allSecrets, email],
   dev: {
     command: 'bun scripts/drizzle-studio.ts --target=prod',
-    directory: './apps/vps',
+    directory: './apps/server',
     autostart: false
   }
 })
@@ -29,7 +29,7 @@ new sst.x.DevCommand('Studio_prod', {
 //   link: [...allSecrets, email],
 //   dev: {
 //     command: 'bun scripts/drizzle-studio.ts --target=local',
-//     directory: './apps/vps',
+//     directory: './apps/server',
 //     autostart: false
 //   }
 // })
@@ -38,7 +38,7 @@ new sst.x.DevCommand('db_gen', {
   link: [...allSecrets, email],
   dev: {
     command: 'npx drizzle-kit generate --config drizzle.config.prod.ts',
-    directory: './apps/vps',
+    directory: './apps/server',
     autostart: false
   }
 })
@@ -47,7 +47,7 @@ new sst.x.DevCommand('db_migrateProd', {
   link: [...allSecrets, email],
   dev: {
     command: 'bun run src/migrate.ts',
-    directory: './apps/vps',
+    directory: './apps/server',
     autostart: false
   }
 })
@@ -56,7 +56,7 @@ new sst.x.DevCommand('betterAuthGen', {
   link: [...allSecrets, email],
   dev: {
     command: 'bunx @better-auth/cli@latest generate',
-    directory: './apps/vps',
+    directory: './apps/server',
     autostart: false
   },
   environment: {
@@ -68,7 +68,7 @@ new sst.x.DevCommand('betterAuthGen', {
 //   link: [...allSecrets, email],
 //   dev: {
 //     command: 'npx drizzle-kit push --config drizzle.config.local.ts',
-//     directory: './apps/vps',
+//     directory: './apps/server',
 //     autostart: false
 //   }
 // })
@@ -77,7 +77,7 @@ new sst.x.DevCommand('db_pushProd', {
   link: [...allSecrets, email],
   dev: {
     command: 'npx drizzle-kit push --config drizzle.config.prod.ts',
-    directory: './apps/vps',
+    directory: './apps/server',
     autostart: false
   }
 })
@@ -86,7 +86,7 @@ new sst.x.DevCommand('db_pushProd', {
 //   link: [...allSecrets, email],
 //   dev: {
 //     command: 'npx drizzle-kit check --config drizzle.config.prod.ts',
-//     directory: './apps/vps',
+//     directory: './apps/server',
 //     autostart: false
 //   }
 // })
@@ -94,7 +94,7 @@ new sst.x.DevCommand('db_pushProd', {
 //   link: [...allSecrets, email],
 //   dev: {
 //     command: "bun scripts/fix-mix-created-dates.ts",
-//     directory: "./apps/vps",
+//     directory: "./apps/server",
 //     autostart: false,
 //   },
 // });
@@ -102,7 +102,7 @@ new sst.x.DevCommand('db_pushProd', {
 // new sst.x.DevCommand('Build_Container', {
 //   link: [email, ...allSecrets],
 //   dev: {
-//     command: 'docker build -f apps/vps/Dockerfile -t gbfm_vps .',
+//     command: 'docker build -f apps/server/Dockerfile -t gbfm_vps .',
 //     directory: './',
 //     autostart: false
 //   }
@@ -129,7 +129,7 @@ new sst.x.DevCommand('Email_Preview', {
 //   link: [...allSecrets, email],
 //   dev: {
 //     command: 'bun src/archive/seed-posts.ts',
-//     directory: './apps/vps',
+//     directory: './apps/server',
 //     autostart: false
 //   }
 // })
@@ -138,7 +138,7 @@ new sst.x.DevCommand('Email_Preview', {
 //   link: [...allSecrets, email],
 //   dev: {
 //     command: 'bun src/archive/seed-micro.ts',
-//     directory: './apps/vps',
+//     directory: './apps/server',
 //     autostart: false
 //   }
 // })
@@ -147,7 +147,7 @@ new sst.x.DevCommand('Email_Preview', {
 //   link: [...allSecrets, email],
 //   dev: {
 //     command: 'bun src/archive/seed-labels.ts',
-//     directory: './apps/vps',
+//     directory: './apps/server',
 //     autostart: false
 //   }
 // })
@@ -156,7 +156,7 @@ new sst.x.DevCommand('Email_Preview', {
 //   link: [...allSecrets, email],
 //   dev: {
 //     command: 'bun scripts/migrate-labels.ts',
-//     directory: './apps/vps',
+//     directory: './apps/server',
 //     autostart: false
 //   }
 // })
@@ -165,7 +165,7 @@ new sst.x.DevCommand('Email_Preview', {
 //   link: [...allSecrets, email],
 //   dev: {
 //     command: 'bun scripts/assign-all-relations-to-user.ts',
-//     directory: './apps/vps',
+//     directory: './apps/server',
 //     autostart: false
 //   }
 // })
@@ -174,7 +174,7 @@ new sst.x.DevCommand('Email_Preview', {
 //   link: [...allSecrets, email],
 //   dev: {
 //     command: 'bun scripts/backfill-episode-numbers.ts',
-//     directory: './apps/vps',
+//     directory: './apps/server',
 //     autostart: false
 //   }
 // })
@@ -183,7 +183,7 @@ new sst.x.DevCommand('Email_Preview', {
 //   link: [...allSecrets, email],
 //   dev: {
 //     command: 'bun scripts/backfill-episode-numbers.ts --apply',
-//     directory: './apps/vps',
+//     directory: './apps/server',
 //     autostart: false
 //   }
 // })

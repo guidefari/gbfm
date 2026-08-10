@@ -1,10 +1,10 @@
-import type { AdminOverview } from '@gbfm/vps/schemas'
+import type { AdminOverview } from '@gbfm/server/schemas'
 import { Effect } from 'effect'
 import { useQuery } from '@tanstack/react-query'
 import { getApiClient } from '@/lib/api-client'
 import { captureException } from '@/services/analytics'
 
-export type { AdminOverviewContentBreakdown } from '@gbfm/vps/schemas'
+export type { AdminOverviewContentBreakdown } from '@gbfm/server/schemas'
 
 export function useAdminOverview() {
   return useQuery<AdminOverview, Error>({

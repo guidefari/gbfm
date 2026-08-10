@@ -1,5 +1,5 @@
 {
-  "name": "@gbfm/vps",
+  "name": "@gbfm/server",
   "exports": {
     "./schemas": "./src/db/exports.ts"
   },

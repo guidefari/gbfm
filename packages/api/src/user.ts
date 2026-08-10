@@ -30,7 +30,7 @@ const SocialLink = Schema.Struct({
 export const SocialLinksInput = Schema.Array(SocialLink)
 export const SocialLinksResponse = Schema.Array(SocialLink)
 
-// Mirrors userTable's real columns (apps/vps/src/db/auth.schema.ts) as
+// Mirrors userTable's real columns (apps/server/src/db/auth.schema.ts) as
 // returned by UserService.getUserById/updateUserProfile -- role/banned/
 // banReason/banExpires were never in the old selectUserSchema, but
 // apps/www's own User type already declares an optional `role`, so the

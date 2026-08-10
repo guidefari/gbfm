@@ -17,7 +17,7 @@ export const FavoriteActionResponse = Schema.Struct({
   message: Schema.String
 })
 
-// Mirrors FavoriteService's FavoriteWithContent, apps/vps/src/services/favorite.service.ts.
+// Mirrors FavoriteService's FavoriteWithContent, apps/server/src/services/favorite.service.ts.
 const FavoriteAudio = Schema.Struct({
   id: Schema.String,
   title: Schema.String,

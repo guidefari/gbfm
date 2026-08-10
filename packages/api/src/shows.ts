@@ -56,7 +56,7 @@ export const GetAllShowsResponse = Schema.Struct({
   pagination: PaginationMeta
 })
 
-// Mirrors audioTable's real columns (apps/vps/src/db/audio.schema.ts),
+// Mirrors audioTable's real columns (apps/server/src/db/audio.schema.ts),
 // not the old selectAudioSchema -- getEpisodesEffect does a bare
 // db.select().from(audioTable) with no column projection and no creators
 // join, so the real response has always included every raw column

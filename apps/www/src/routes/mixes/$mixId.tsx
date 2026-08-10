@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
   useToast
 } from '@gbfm/ui'
-import type { SelectMdxCompiledAudio } from '@gbfm/vps/schemas'
+import type { SelectMdxCompiledAudio } from '@gbfm/server/schemas'
 import { createFileRoute, Link, useCanGoBack, useNavigate, useRouter } from '@tanstack/react-router'
 import { Effect } from 'effect'
 import {

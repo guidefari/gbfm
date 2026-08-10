@@ -12,15 +12,15 @@ bare URLs, ahead of eventually publishing them.
 
 The hard part was already built and live in the Bluesky import path:
 
-- `apps/vps/src/services/music-link-scraper.service.ts` — pluggable
+- `apps/server/src/services/music-link-scraper.service.ts` — pluggable
   `MusicDataProvider` interface. `OdesliProvider` (song.link, no API key)
   converts one seed URL into 15+ platform links in a single call.
-- `apps/vps/src/services/music-entity/scrape.service.ts` —
+- `apps/server/src/services/music-entity/scrape.service.ts` —
   `scrapeAndCreateEntityEffect` orchestrates scrape → find-or-create artist →
   create album/track/playlist → insert links, dedup'd by existing URL.
-- `apps/vps/src/services/bluesky-archive.service.ts` — calls the above at
+- `apps/server/src/services/bluesky-archive.service.ts` — calls the above at
   import time and sets `posts.musicEntityType` / `musicEntityId`.
-- `apps/vps/src/services/spotify.service.ts` — Spotify client-credentials
+- `apps/server/src/services/spotify.service.ts` — Spotify client-credentials
   client (`getTrack`, `getAlbum`, `searchAlbums`, `enrichTrackFromUrl`).
 
 What was missing: a way to re-run this for drafts that already exist but
@@ -34,7 +34,7 @@ now (`{"statusCode":400,"code":"could_not_fetch_entity_data"}` on live
 testing across multiple unrelated Bandcamp tracks/albums). Spotify-sourced
 drafts resolve fine as-is.
 
-No existing fallback covered this. `apps/vps/src/services/
+No existing fallback covered this. `apps/server/src/services/
 bandcamp.service.ts` already scraped Bandcamp's embedded JSON-LD for
 title/artist/art (used by `enrichTrackFromUrl`), but that code path wasn't
 wired into the scraper pipeline at all.
@@ -90,7 +90,7 @@ docs doesn't exist here; `upTo` is the right primitive for "existing
 schedule, capped by count").
 
 **6. Backfill script**
-(`apps/vps/scripts/backfill-draft-music-entities.ts`)
+(`apps/server/scripts/backfill-draft-music-entities.ts`)
 
 - Queries `posts` where `music_entity_id IS NULL`, extracts a candidate
   music URL from `content` (same host allowlist logic as the Bluesky
@@ -108,7 +108,7 @@ schedule, capped by count").
 
 `MusicLinkScraperServiceLayer` changed from `Layer.sync` (no deps) to
 `Layer.effect` requiring `SpotifyService` (needed for the search fallback).
-Updated `apps/vps/src/runtime/services.ts` so
+Updated `apps/server/src/runtime/services.ts` so
 `MusicLinkScraperServiceLayer.pipe(Layer.provide(SpotifyServiceLayer))` —
 previously both sat flat in the same `Layer.mergeAll` with no explicit
 dependency edge.
@@ -152,12 +152,12 @@ representative of the current code** — don't act on these numbers.
 
 ## Files touched
 
-- `apps/vps/src/services/bandcamp.service.ts` — ISRC extraction, Schema
+- `apps/server/src/services/bandcamp.service.ts` — ISRC extraction, Schema
   parsing, artist bug fix
-- `apps/vps/src/services/spotify.service.ts` — `searchTrackByIsrc`,
+- `apps/server/src/services/spotify.service.ts` — `searchTrackByIsrc`,
   `searchAlbumByTitleArtist`
-- `apps/vps/src/services/music-link-scraper.service.ts` —
+- `apps/server/src/services/music-link-scraper.service.ts` —
   `BandcampProvider`, Spotify-fallback orchestration, Odesli retry
-- `apps/vps/src/runtime/services.ts` — layer dependency wiring
-- `apps/vps/scripts/backfill-draft-music-entities.ts` — new backfill
+- `apps/server/src/runtime/services.ts` — layer dependency wiring
+- `apps/server/scripts/backfill-draft-music-entities.ts` — new backfill
   script (untracked, not yet committed)

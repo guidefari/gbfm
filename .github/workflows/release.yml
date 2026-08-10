@@ -88,11 +88,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build apps/vps release image
+      - name: Build apps/server release image
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: apps/vps/Dockerfile
+          file: apps/server/Dockerfile
           target: release
           push: false
           load: false

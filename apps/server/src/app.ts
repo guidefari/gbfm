@@ -6,7 +6,7 @@ import { SentryService } from './services/sentry.service'
 // (AppType was Awaited<ReturnType<typeof initializeApp>>, threaded through
 // createWebHandler as a parameter nothing actually called Hono methods on;
 // confirmed by grep before removing it). All real route serving now lives
-// entirely in apps/vps/src/http/routes.ts's createWebHandler.
+// entirely in apps/server/src/http/routes.ts's createWebHandler.
 //
 // The reminder loop and hourly sitemap regeneration that used to run here
 // moved to the Worker composition seam (worker.ts): a Cron Trigger drives

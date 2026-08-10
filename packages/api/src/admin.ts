@@ -18,9 +18,9 @@ export class SimulatedRateLimitError extends Schema.TaggedErrorClass<SimulatedRa
   { httpApiStatus: 429 }
 ) {}
 
-// Mirrors apps/vps/src/db/admin-overview.schema.ts (Zod, DB-facing) --
+// Mirrors apps/server/src/db/admin-overview.schema.ts (Zod, DB-facing) --
 // kept as its own leaf schema here since packages/api can't import from
-// apps/vps.
+// apps/server.
 const ContentBreakdown = Schema.Struct({
   published: Schema.Number,
   drafts: Schema.Number,

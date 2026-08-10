@@ -123,4 +123,4 @@ jobs:
           SENTRY_RELEASE: ${{ steps.deployment-ref.outputs.ref }}
           SST_APP: gbfm
           SST_STAGE: prod
-        run: bun run apps/vps/scripts/verify-production-deployment.ts
+        run: bun run apps/server/scripts/verify-production-deployment.ts

@@ -191,7 +191,7 @@ const presignPart = (
   )
 
 // PUTs the raw part body straight to S3 using the presigned URL -- bypasses
-// API Gateway/VPS entirely for the heavy bytes (see apps/vps/src/http/
+// API Gateway/VPS entirely for the heavy bytes (see apps/server/src/http/
 // upload.handlers.ts's presignMultipartPart and PR #130's band-aid this
 // replaces). No credentials/cookies on this request: the presigned URL's
 // signature is the only auth, so this intentionally does not go through

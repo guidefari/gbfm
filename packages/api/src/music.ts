@@ -2,7 +2,7 @@ import { Schema } from 'effect'
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup, HttpApiSchema } from 'effect/unstable/httpapi'
 import { AuthMiddleware } from './middleware/auth'
 
-// Mirrors apps/vps/src/db/music-entity.schema.ts's selectMusicArtistSchema
+// Mirrors apps/server/src/db/music-entity.schema.ts's selectMusicArtistSchema
 // (Zod, DB-facing) -- response fields are nullable to match actual column
 // nullability, not because the API wants to encourage nulls.
 export const ArtistResponse = Schema.Struct({
@@ -54,7 +54,7 @@ const ArtistJunctionInput = Schema.Struct({
   displayOrder: Schema.optional(Schema.Number)
 })
 
-// Mirrors apps/vps/src/db/music-entity.schema.ts's selectMusicAlbumSchema.
+// Mirrors apps/server/src/db/music-entity.schema.ts's selectMusicAlbumSchema.
 export const AlbumResponse = Schema.Struct({
   id: Schema.String,
   title: Schema.String,
@@ -295,7 +295,7 @@ const trackIdParam = { id: Schema.String }
 const playlistIdParam = { id: Schema.String }
 const labelIdParam = { id: Schema.String }
 
-// Mirrors apps/vps/src/db/music-entity.schema.ts's MUSIC_ENTITY_TYPES,
+// Mirrors apps/server/src/db/music-entity.schema.ts's MUSIC_ENTITY_TYPES,
 // MUSIC_PLATFORMS, LINK_STATUSES.
 export const EntityType = Schema.Literals(['artist', 'album', 'track', 'playlist', 'label'])
 export const ScrapeEntityType = Schema.Literals(['artist', 'album', 'track', 'playlist'])

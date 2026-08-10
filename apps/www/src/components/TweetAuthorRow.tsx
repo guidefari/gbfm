@@ -1,4 +1,4 @@
-import type { SelectMdxCompiledMicroPost } from '@gbfm/vps/schemas'
+import type { SelectMdxCompiledMicroPost } from '@gbfm/server/schemas'
 import { Link } from '@tanstack/react-router'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { usePublicProfile } from '@/lib/http'

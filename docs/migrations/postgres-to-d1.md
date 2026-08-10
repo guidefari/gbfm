@@ -665,7 +665,7 @@ export default Alchemy.Stack(
     const isProduction = stack.stage === 'prod'
 
     const db = yield* Cloudflare.D1.Database('Database', {
-      migrationsDir: './apps/vps/migrations',
+      migrationsDir: './apps/server/migrations',
     })
     const reminders = yield* Cloudflare.Queue('Reminders')
     const sitemap = yield* Cloudflare.KV.Namespace('Sitemap')
@@ -784,7 +784,7 @@ the test suite.
 *Gate:* slices 3-7 green against local D1.
 
 **M4 — Worker runtime and Alchemy stack.** Nothing serving production traffic.
-`apps/vps` becomes `apps/api`. Alchemy stack, composition seam, platform-bun
+`apps/vps` becomes `apps/server`. Alchemy stack, composition seam, platform-bun
 removal, QR/PDF deletion, Cron + Queue, rate-limiter deletion, SSE to polling,
 `@sentry/bun` to the Cloudflare SDK. Deploys to a staging hostname against a D1
 database seeded from a production snapshot.
@@ -825,7 +825,7 @@ No destructive step shares a deploy with a traffic switch.
 | FTS5 tokenization changes user-visible results | Medium | Trigram tokenizer preserves current substring semantics; M1 fixture is the pass criterion. |
 | `artistNames` drifts from the join tables | Low | One writer (`scrape.service.ts:117-120`) sets both from one call. Accepted as a credit snapshot, not a cache. |
 | D1 write serialization bottlenecks | Medium | Write rate measured M1; load test is an M5 gate. |
-| The `@gbfm/vps` to `@gbfm/api` rename breaks importers of `/schemas` | Medium | One mechanical commit inside M4, not spread across it. Typecheck is the net. |
+| The `@gbfm/vps` to `@gbfm/server` rename breaks importers of `/schemas` | Medium | One mechanical commit inside M4, not spread across it. Typecheck is the net. |
 | Polled sync status feels worse than SSE | Low | Admin-initiated progress indicator. DO with hibernated WebSockets is the fallback. |
 | Per-colo rate limiting raises the effective ceiling | Low | Generic abuse guard, no correctness dependency. |
 

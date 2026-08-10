@@ -12,7 +12,7 @@ export const PartNumber = Schema.Number.pipe(
 // scoped to a generated key, the browser PUTs directly to S3, and the
 // caller's own follow-up write (e.g. saving an audio/post record with this
 // key as its thumbnailUrl) is what proves the upload happened -- see
-// apps/vps/src/http/upload.handlers.ts's presignImage handler comment for
+// apps/server/src/http/upload.handlers.ts's presignImage handler comment for
 // why images don't get a separate "confirm" endpoint.
 export const PresignImageUploadInput = Schema.Struct({
   fileName: Schema.NonEmptyString.pipe(Schema.check(Schema.isMaxLength(255))),

@@ -1,5 +1,5 @@
 import { Badge } from '@gbfm/ui'
-import type { SelectMdxCompiledEditorialPost } from '@gbfm/vps/schemas'
+import type { SelectMdxCompiledEditorialPost } from '@gbfm/server/schemas'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { Effect } from 'effect'
 import { ArrowLeft, Tag } from 'lucide-react'

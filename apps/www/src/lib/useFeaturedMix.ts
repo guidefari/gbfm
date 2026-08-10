@@ -1,4 +1,4 @@
-import type { SelectAudio } from '@gbfm/vps/schemas'
+import type { SelectAudio } from '@gbfm/server/schemas'
 import { useQuery } from '@tanstack/react-query'
 import { apiUrl, fetcher, type PaginatedResponse } from './http'
 

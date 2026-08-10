@@ -4,7 +4,7 @@ import type {
   SelectMdxCompiledMicroPost,
   SelectMdxCompiledRelease,
   SelectMdxCompiledShow
-} from '@gbfm/vps/schemas'
+} from '@gbfm/server/schemas'
 import type { MusicLabel, PublicProfile } from './http'
 
 export const SITE_URL = 'https://goosebumps.fm'

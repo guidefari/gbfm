@@ -1,4 +1,7 @@
-import type { SelectMdxCompiledEditorialPost, SelectMdxCompiledMicroPost } from '@gbfm/vps/schemas'
+import type {
+  SelectMdxCompiledEditorialPost,
+  SelectMdxCompiledMicroPost
+} from '@gbfm/server/schemas'
 
 export type ContentScope = 'all' | 'mine'
 

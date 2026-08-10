@@ -31,13 +31,13 @@ export const service = new sst.aws.Service('gbfm_vps', {
     port: 3003
   },
   dev: {
-    directory: './apps/vps',
+    directory: './apps/server',
     command: 'bun dev'
   },
   image: {
     context: './',
     target: 'release',
-    dockerfile: 'apps/vps/Dockerfile'
+    dockerfile: 'apps/server/Dockerfile'
   },
   environment: {
     SENTRY_RELEASE: process.env.SENTRY_RELEASE ?? ''
@@ -91,7 +91,7 @@ export const scheduledMaintenanceTask = new sst.aws.Task('BlueskySyncTask', {
   image: {
     context: './',
     target: 'bluesky-sync-task',
-    dockerfile: 'apps/vps/Dockerfile'
+    dockerfile: 'apps/server/Dockerfile'
   },
   link: [...allSecrets]
 })

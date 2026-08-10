@@ -23,7 +23,7 @@ import { config } from '@/services/config.service'
 // HttpApi encoding. redirect.template.ts and seo/sitemap.service.ts (+
 // sitemap.utils.ts) are pure, framework-agnostic modules with no Hono
 // dependency -- reused here unchanged from their existing location, and
-// still imported unchanged by apps/vps/src/app.ts for the background
+// still imported unchanged by apps/server/src/app.ts for the background
 // sitemap-regeneration fork.
 
 type HtmlResult = { readonly html: string; readonly status: 200 | 400 | 404 | 500 }

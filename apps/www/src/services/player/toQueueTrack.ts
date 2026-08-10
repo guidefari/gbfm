@@ -1,5 +1,5 @@
 import type { QueueTrackType } from '@gbfm/player'
-import type { SelectAudio, SelectMdxCompiledAudio } from '@gbfm/vps/schemas'
+import type { SelectAudio, SelectMdxCompiledAudio } from '@gbfm/server/schemas'
 
 export type PlayableAudio = Pick<SelectAudio, 'id' | 'title' | 'slug' | 'url' | 'type'> & {
   thumbnailUrl?: string | null

@@ -5,7 +5,7 @@ export class AuthSession extends Context.Service<
   AuthSession,
   {
     // role/name are nullable because better-auth's admin() plugin types them
-    // loosely (apps/vps/src/lib/auth.ts) -- packages/api is a leaf package and
+    // loosely (apps/server/src/lib/auth.ts) -- packages/api is a leaf package and
     // can't import that concrete type, so this stays as the honest common shape.
     readonly user: {
       readonly id: string

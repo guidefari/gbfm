@@ -2,7 +2,7 @@ import { domain } from './dns'
 
 const isDevStage = $app.stage === 'dev'
 
-// Browser PUTs image bytes (apps/vps/src/http/upload.handlers.ts's
+// Browser PUTs image bytes (apps/server/src/http/upload.handlers.ts's
 // presignImage) and audio multipart part bytes directly to this bucket via
 // presigned URLs -- scoped to the real deployed web origins rather than
 // sst.aws.Bucket's own default of allowOrigins: ["*"], since the presigned

@@ -15,7 +15,7 @@ import type {
   SelectMdxCompiledShow,
   SelectShow,
   SelectShowSubscription
-} from '@gbfm/vps/schemas'
+} from '@gbfm/server/schemas'
 import { useCallback } from 'react'
 import { Effect, Option, Schema } from 'effect'
 import { HttpApiError } from 'effect/unstable/httpapi'

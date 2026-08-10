@@ -1,7 +1,7 @@
 import { Api } from '@gbfm/api/api'
 import { HttpApiScalar } from 'effect/unstable/httpapi'
 
-// Replaces apps/vps/src/lib/configure-open-api.ts (Hono + @scalar/hono-api-reference,
+// Replaces apps/server/src/lib/configure-open-api.ts (Hono + @scalar/hono-api-reference,
 // deleted alongside the rest of the Hono app in this step). HttpApiScalar.layer
 // generates the OpenAPI document from the real Api contract and embeds it
 // directly into the reference page -- no separate /doc JSON endpoint, matching

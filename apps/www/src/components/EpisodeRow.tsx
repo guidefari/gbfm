@@ -1,5 +1,5 @@
 import { Badge, PlayToggle } from '@gbfm/ui'
-import type { SelectAudio } from '@gbfm/vps/schemas'
+import type { SelectAudio } from '@gbfm/server/schemas'
 import { Link } from '@tanstack/react-router'
 import { useSession } from '@/lib/auth-client'
 import { cn } from '@/lib/utils'
