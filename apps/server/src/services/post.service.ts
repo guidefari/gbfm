@@ -307,12 +307,7 @@ const buildPostWithCreators = (post: PostRow, mdx: MdxService) =>
         })
     }).pipe(Effect.withSpan('post.getCreators', { attributes: { postId: post.id } }))
 
-    const projectedPost = yield* Effect.tryPromise({
-      try: () => projectEntityLabels(db, 'post', post),
-      catch: (error) =>
-        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
-    })
-    const compiled = yield* buildPostWithPreloadedCreators(projectedPost, creators, mdx)
+    const compiled = yield* buildPostWithPreloadedCreators(post, creators, mdx)
     return blueskySource ? { ...compiled, blueskySource } : compiled
   })
 

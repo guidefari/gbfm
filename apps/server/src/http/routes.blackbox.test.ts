@@ -2882,6 +2882,23 @@ describe('micro post navigation', () => {
     }
   })
 
+  it('returns not found when opening an unknown tweet', async () => {
+    const slug = `navigation-missing-${crypto.randomUUID()}`
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/content/posts/micro/navigate', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          command: { _tag: 'Open', slug },
+          from: slug,
+          intentToken: crypto.randomUUID()
+        })
+      })
+    )
+
+    expect(res.status).toBe(404)
+  })
+
   it('rejects an unknown command tag at the schema boundary', async () => {
     const res = await webHandler.handler(
       new Request('http://localhost/api/content/posts/micro/navigate', {

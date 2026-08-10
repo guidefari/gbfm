@@ -5,7 +5,6 @@ import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
 import { type NavigationCommand, Slug } from '@/domain/navigation'
 import { IdentityResolver } from '@/middleware/optional-auth.impl'
 import { NavigationSessionService } from '@/services/navigation.service'
-import { PostService } from '@/services/post.service'
 
 const decodeSlug = Schema.decodeUnknownSync(Slug)
 
@@ -39,19 +38,15 @@ export const NavigationHandlersLive = HttpApiBuilder.group(Api, 'navigation', (h
         const navigation = yield* NavigationSessionService
         const identity = yield* resolveIdentity.pipe(Effect.withSpan('navigation.identity.resolve'))
         yield* Effect.annotateCurrentSpan('identityKind', identity._tag)
-        if (command._tag === 'Open') {
-          const posts = yield* PostService
-          yield* posts.getMicroPostBySlug(command.slug).pipe(
-            Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
-            Effect.catchTag('DatabaseError', () => new HttpApiError.InternalServerError()),
-            Effect.withSpan('navigation.open.validate')
-          )
-        }
         const result = yield* navigation
           .resolve(identity, command, decodeSlug(payload.from), payload.intentToken)
           .pipe(
             Effect.catchTag('NoSuchMove', () => new HttpApiError.Conflict()),
-            Effect.catchTag('CorpusExhausted', () => new HttpApiError.Conflict()),
+            Effect.catchTag('CorpusExhausted', () =>
+              Effect.fail<HttpApiError.NotFound | HttpApiError.Conflict>(
+                command._tag === 'Open' ? new HttpApiError.NotFound() : new HttpApiError.Conflict()
+              )
+            ),
             Effect.catchTag('DatabaseError', () => new HttpApiError.InternalServerError())
           )
 
