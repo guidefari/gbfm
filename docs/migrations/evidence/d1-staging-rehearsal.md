@@ -110,6 +110,82 @@ label projection bound more than D1's request parameter budget. Batching the
 projection at 99 entity IDs fixed it. The deployed artists and tracks list
 endpoints then both returned 200.
 
+### Field-level review of the eight mismatches (OPS-249)
+
+Each endpoint was re-fetched from both stacks and diffed field by field,
+recursing into array elements rather than comparing only index 0. Two
+distinct root causes were found, plus two per-endpoint items that are not
+projection bugs.
+
+**Root cause 1: `tags`/`genres` returned `[]` instead of `null`.** Confirmed
+on `/api/shows`, `/api/content/posts`, `/api/music/artists`,
+`/api/music/albums`, and `/api/music/labels`. `apps/server/src/db/labels.ts`
+(`readEntityLabels`, `projectEntityLabelsForRows`) always returned `[]` for
+an entity with zero rows of a given label kind in `entity_labels`, never
+`null`. Production Postgres returns `null` for the common case (`tags`/
+`genres` unset) and the packages/api contracts already declare these fields
+`Schema.NullOr(Schema.Array(Schema.String))`, so `null` is the documented,
+default shape per the migration doc's invariant. `apps/www/src/lib/http.ts`
+branches explicitly on `tags ? [...tags] : null` at dozens of call sites,
+confirming the client treats null as a distinct, load-bearing value.
+
+Fixed: both projection helpers now return `null` when there are zero labels
+of a kind, `string[]` otherwise. One consumer,
+`apps/server/src/http/site-routes.ts`'s label OG-tag route, called
+`.length` directly on `readEntityLabels`'s `genres` and needed a null guard;
+this was a latent bug already live on D1 since OPS-247, just not exercised by
+`bun tsgo` until this projection started returning `null` for real. Locked
+with two new cases in `apps/server/src/db/d1.schema.test.ts`.
+
+Note the migration script (`apps/server/scripts/migrate-pg-to-d1.ts`,
+`migrateArrayFanOuts`) maps `row.values ?? []` when fanning array columns
+into `entity_labels`, so a Postgres row that was `[]` and one that was `null`
+both produce zero `entity_labels` rows. That distinction is not recoverable
+from D1 state alone. The fix restores the common-case shape (`null` for "no
+labels") rather than perfectly replaying each row's original null-vs-empty
+history, which no longer exists anywhere in the pipeline.
+
+**Root cause 2: tie-break ordering on `ORDER BY createdAt DESC`.**
+`/api/music/tracks`, `/api/music/labels`, and part of `/api/profile/:username`
+(editorials, tweets) return the same *set* of rows on both stacks but in a
+different order where multiple rows share an identical `createdAt` (a bulk
+import artifact -- e.g. 12 of 13 rows in `music_labels` share
+`2025-10-07T07:35:42.727Z`). Postgres and SQLite/D1 break ties on an
+unspecified secondary key differently, and none of `getArtistsEffect`,
+`getAlbumsEffect`, `getLabelsEffect`, `getTracksEffect`,
+`getPlaylistsEffect` declare one. This is a pre-existing latent bug (missing
+deterministic secondary sort key), not something introduced by the D1
+migration, and not a JSON-shape violation of the `tags: string[]` invariant.
+**Not fixed here** -- out of scope for OPS-249's shape-parity gate. Filed as
+a follow-up: add `, asc(id)` (or similar) as a secondary sort key to each of
+the five listed effects before relying on list-endpoint order being stable
+across either stack.
+
+**Not a bug, already an accepted change: `/api/search` ranking.** The
+`shows`/`audio`/`posts` result sets returned by `/api/search?q=ambient` are
+each a different subset/order on the two stacks. This is FTS5 (trigram)
+ranking versus Postgres `ILIKE`, explicitly called out and accepted in
+`docs/migrations/postgres-to-d1.md`'s risk register ("FTS5 tokenization
+changes user-visible results... M1 fixture is the pass criterion"). No shape
+difference was found in the search response (no `tags`/`genres` field
+present on either stack).
+
+**Not a projection bug: `/api/profile/:username`'s `createdAt` is 2 hours
+off.** The profile's `user.createdAt` (Better Auth `user` table) differs
+between stacks by exactly 2 hours on the one account checked; every other
+timestamp field checked across all eight endpoints matched exactly. This
+looks like a one-row artifact of the snapshot import rather than a systemic
+timezone bug in `auth.schema.ts` (`integer('created_at', { mode:
+'timestamp_ms' })`) or in the projection layer -- a systemic bug would show
+on every timestamp, not only this one column on this one row. Needs
+targeted follow-up before cutover: check whether other Better Auth `user`
+rows show the same 2-hour offset, and if so, audit
+`migrate-pg-to-d1.ts`'s timestamp handling for the `user` table specifically.
+
+None of the four items above block the null/[] projection fix. The tie-break
+ordering, search ranking, and `user.createdAt` items are independent of
+`apps/server/src/db/labels.ts` and are not resolved by this change.
+
 ## Open gates
 
 - Better Auth logs warn that no base URL is configured in this stage. Session
