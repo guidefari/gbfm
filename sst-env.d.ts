@@ -48,11 +48,6 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
-    "Email": {
-      "configSet": string
-      "sender": string
-      "type": "sst.aws.Email"
-    }
     "GBFM_ENCRYPTION_ROOT_KEY": {
       "type": "sst.sst.Secret"
       "value": string

@@ -15,11 +15,13 @@ import { emailTheme } from './theme'
 interface TestEmailProps {
   name?: string
   message?: string
+  sentAt?: string
 }
 
 export function TestEmail({
   name = 'Developer',
-  message = 'This is a test email from your React Email development environment!'
+  message = 'This is a test email from your React Email development environment!',
+  sentAt = new Date().toISOString()
 }: TestEmailProps) {
   return (
     <Html>
@@ -36,7 +38,7 @@ export function TestEmail({
             <Button style={ctaButton} href='https://goosebumps.fm'>
               Visit goosebumps.fm
             </Button>
-            <Text style={meta}>Sent at: {new Date().toISOString()}</Text>
+            <Text style={meta}>Sent at: {sentAt}</Text>
           </Section>
 
           <Section style={footer}>

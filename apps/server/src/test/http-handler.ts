@@ -10,6 +10,10 @@ import {
 } from '@/runtime/sentry-worker'
 import { NavigationLockLocalLayer } from '@/services/navigation-lock'
 import { SpotifyImportResolverLocalLayer } from '@/services/spotify-import-resolver.service'
+import {
+  RecordingEmailTransportLayer,
+  type EmailTransportService
+} from '@/services/email-transport.service'
 import { SentryServiceLayer } from '@/services/sentry.service'
 import { SitemapCacheLayer, type SitemapKv } from '@/services/sitemap-cache'
 
@@ -45,14 +49,21 @@ const inMemorySitemapKv = (): SitemapKv => {
 // Takes the D1Database instance rather than creating its own so a suite that
 // also seeds rows directly (via drizzle's `db` from src/test/database.ts)
 // reads and writes the same underlying database as the handler under test.
-export const createTestWebHandler = (d1: D1Database) => {
+/** Creates a Worker-shaped HTTP handler with a caller-chosen email transport test seam. */
+export const createTestWebHandler = (
+  d1: D1Database,
+  emailTransportLive: Layer.Layer<EmailTransportService> = RecordingEmailTransportLayer
+) => {
   const appServicesLive = AppLayer(
     DatabaseLayer(d1),
     SitemapCacheLayer(inMemorySitemapKv()),
     NavigationLockLocalLayer,
     SpotifyImportResolverLocalLayer,
     testSentryServiceLive,
-    WorkerTracingLive
+    WorkerTracingLive,
+    undefined,
+    undefined,
+    emailTransportLive
   )
   return createWebHandler({ appServicesLive })
 }

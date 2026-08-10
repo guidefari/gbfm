@@ -22,6 +22,7 @@
  */
 
 import type { D1Database, D1PreparedStatement } from '@cloudflare/workers-types'
+import { readFile } from 'node:fs/promises'
 import { Miniflare } from 'miniflare'
 import { Client, types } from 'pg'
 
@@ -49,7 +50,7 @@ type TableSpec = {
   readonly selfReferenceColumns?: ReadonlyArray<string>
 }
 
-type ColumnKind = 'text' | 'timestamp' | 'boolean' | 'json' | 'integer'
+type ColumnKind = 'text' | 'timestamp' | 'boolean' | 'json' | 'integer' | 'ses-provider'
 
 type ColumnSpec = {
   readonly source: string
@@ -652,7 +653,8 @@ const TABLES: ReadonlyArray<TableSpec> = [
       col('templateName', 'templateName', 'text'),
       same('subject', 'text'),
       same('status', 'text'),
-      col('sesMessageId', 'sesMessageId', 'text'),
+      col('sesMessageId', 'provider', 'ses-provider'),
+      col('sesMessageId', 'providerMessageId', 'text'),
       same('metadata', 'json'),
       col('errorMessage', 'errorMessage', 'text'),
       col('sentAt', 'sentAt', 'timestamp'),
@@ -679,6 +681,8 @@ const transformValue = (value: unknown, kind: ColumnKind): unknown => {
     case 'text':
     case 'integer':
       return value === undefined ? null : value
+    case 'ses-provider':
+      return value === null || value === undefined ? null : 'ses'
     case 'timestamp':
       return isoToEpochMs(value)
     case 'boolean':
@@ -879,30 +883,87 @@ const createTargetDatabase = async () => {
   return { miniflare, database }
 }
 
-const schemaAlreadyApplied = async (database: D1Database) => {
+const migrationsDir = new URL('../drizzle-d1/', import.meta.url)
+
+/** The ordered local D1 migrations required before importing Postgres rows. */
+export const d1MigrationFiles = [
+  '0000_public_thunderbolt.sql',
+  '0001_search_fts.sql',
+  '0002_email_provider_receipt.sql'
+] as const
+
+const migrationLedgerTable = '__gbfm_local_migration_ledger'
+
+const splitMigrationStatements = (migration: string) =>
+  migration
+    .split('--> statement-breakpoint')
+    .map((statement) => statement.trim())
+    .filter((statement) => statement.length > 0)
+
+const databaseObjectExists = async (database: D1Database, name: string) => {
   const row = await database
-    .prepare("select name from sqlite_master where type = 'table' and name = 'user'")
-    .bind()
+    .prepare('select name from sqlite_master where name = ?')
+    .bind(name)
     .first()
   return row !== null && row !== undefined
 }
 
-const applyMigrations = async (database: D1Database) => {
-  if (await schemaAlreadyApplied(database)) {
-    console.log('[migrate] target schema already present, skipping DDL')
-    return
+const applyExistingSchemaBaseline = async (database: D1Database) => {
+  const applied = await database
+    .prepare(`select name from ${migrationLedgerTable} limit 1`)
+    .bind()
+    .first()
+  if (applied) return
+
+  const knownExistingMigrations: Array<string> = []
+  if (await databaseObjectExists(database, 'user')) {
+    knownExistingMigrations.push('0000_public_thunderbolt.sql')
   }
-  const migrationsDir = new URL('../drizzle-d1/', import.meta.url)
-  const migrationFiles = ['0000_public_thunderbolt.sql', '0001_search_fts.sql']
-  for (const file of migrationFiles) {
-    const sqlText = await Bun.file(new URL(file, migrationsDir)).text()
-    const statements = sqlText
-      .split('--> statement-breakpoint')
-      .map((statement) => statement.trim())
-      .filter((statement) => statement.length > 0)
-    for (const statement of statements) {
-      await database.prepare(statement).bind().run()
-    }
+  if (await databaseObjectExists(database, 'audio_fts')) {
+    knownExistingMigrations.push('0001_search_fts.sql')
+  }
+  if (knownExistingMigrations.length === 0) return
+
+  await database.batch(
+    knownExistingMigrations.map((name) =>
+      database.prepare(`insert or ignore into ${migrationLedgerTable} (name) values (?)`).bind(name)
+    )
+  )
+  console.log(
+    `[migrate] baselined existing target migrations: ${knownExistingMigrations.join(', ')}`
+  )
+}
+
+/**
+ * Applies missing D1 migrations with a local ledger.
+ *
+ * Existing targets created before the ledger are baselined from durable schema
+ * markers, so a persisted 0000/0001 target receives newly added migrations.
+ */
+export const applyMigrations = async (database: D1Database) => {
+  await database
+    .prepare(`create table if not exists ${migrationLedgerTable} (name text primary key)`)
+    .bind()
+    .run()
+  await applyExistingSchemaBaseline(database)
+
+  const rows = await database
+    .prepare(`select name from ${migrationLedgerTable}`)
+    .bind()
+    .all<{ name: string }>()
+  const applied = new Set(rows.results.map((row) => row.name))
+
+  for (const file of d1MigrationFiles) {
+    if (applied.has(file)) continue
+    const sqlText = await readFile(new URL(file, migrationsDir), 'utf8')
+    const statements = splitMigrationStatements(sqlText).map((statement) =>
+      database.prepare(statement).bind()
+    )
+    statements.push(
+      database.prepare(`insert into ${migrationLedgerTable} (name) values (?)`).bind(file)
+    )
+    await database.batch(statements)
+    applied.add(file)
   }
 }
 

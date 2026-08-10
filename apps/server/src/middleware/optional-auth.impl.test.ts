@@ -3,6 +3,8 @@ import { HttpEffect, HttpServerResponse } from 'effect/unstable/http'
 import { describe, expect, it } from 'vitest'
 import { AuthLive } from '@/lib/auth'
 import { ConfigServiceLayer } from '@/services/config.service'
+import { EmailDeliveryLive } from '@/services/email-delivery.service'
+import { RecordingEmailTransportLayer } from '@/services/email-transport.service'
 import { DatabaseTestLayer } from '@/test/database'
 import { IdentityResolver, IdentityResolverLive } from './optional-auth.impl'
 
@@ -15,7 +17,24 @@ const handler = HttpEffect.toWebHandler(
     Effect.provide(
       IdentityResolverLive.pipe(
         Layer.provide(
-          AuthLive.pipe(Layer.provide(Layer.mergeAll(DatabaseTestLayer, ConfigServiceLayer)))
+          AuthLive.pipe(
+            Layer.provide(
+              Layer.mergeAll(
+                DatabaseTestLayer,
+                ConfigServiceLayer,
+                RecordingEmailTransportLayer,
+                EmailDeliveryLive.pipe(
+                  Layer.provide(
+                    Layer.mergeAll(
+                      DatabaseTestLayer,
+                      ConfigServiceLayer,
+                      RecordingEmailTransportLayer
+                    )
+                  )
+                )
+              )
+            )
+          )
         )
       )
     )

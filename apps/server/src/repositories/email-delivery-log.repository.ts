@@ -1,46 +1,122 @@
 import { EMAIL_DELIVERY_STATUSES, type EmailDeliveryStatus } from '@gbfm/core/status'
 import { and, desc, eq, gte, ilike, lt, type SQL, sql } from 'drizzle-orm'
 import type { DatabaseClient } from '@/db/layer'
-import { emailDeliveryLogsTable, type InsertEmailDeliveryLog } from '@/db/email.schema'
+import {
+  emailDeliveryLogsTable,
+  type EmailDeliveryFailureCategory,
+  type EmailDeliveryMetadata,
+  type EmailDeliveryProvider,
+  type EmailNotificationType
+} from '@/db/email.schema'
 import { createPaginationMetadata } from '@/lib/pagination'
 
-export type GetAdminEmailLogsParams = {
-  limit: number
-  offset: number
-  status?: EmailDeliveryStatus
-  recipientEmail?: string
-  dateFrom?: string
-  dateTo?: string
+/** Filters for the admin delivery-log listing. */
+export interface GetAdminEmailLogsParams {
+  readonly limit: number
+  readonly offset: number
+  readonly status?: EmailDeliveryStatus
+  readonly recipientEmail?: string
+  readonly dateFrom?: string
+  readonly dateTo?: string
 }
 
-export async function createEmailDeliveryLog(
-  log: InsertEmailDeliveryLog,
+/** A requested PENDING-to-terminal transition that found no PENDING row. */
+export class EmailDeliveryLogTransitionError extends Error {
+  readonly _tag = 'EmailDeliveryLogTransitionError' as const
+
+  /** Creates a transition error for the guarded terminal operation. */
+  constructor(readonly transition: 'mark-sent' | 'mark-failed') {
+    super(`Email delivery log ${transition} transition requires a PENDING row`)
+  }
+}
+
+/** The fields needed to persist one pending delivery attempt. */
+export interface CreatePendingEmailDeliveryLogInput {
+  readonly userId?: string
+  readonly recipientEmail: string
+  readonly recipientName?: string
+  readonly emailType: EmailNotificationType
+  readonly templateName: string
+  readonly subject: string
+  readonly metadata?: EmailDeliveryMetadata
+}
+
+/** Creates the PENDING row before the provider receives a message. */
+export async function createPendingEmailDeliveryLog(
+  input: CreatePendingEmailDeliveryLogInput,
   database: DatabaseClient
 ) {
-  const [result] = await database.insert(emailDeliveryLogsTable).values(log).returning()
-  if (!result) {
-    throw new Error('Failed to create email delivery log')
-  }
+  const [result] = await database
+    .insert(emailDeliveryLogsTable)
+    .values({ ...input, status: EMAIL_DELIVERY_STATUSES.PENDING })
+    .returning({ id: emailDeliveryLogsTable.id })
+
+  if (!result) throw new Error('Email delivery log insert returned no row')
   return result
 }
 
-export async function updateEmailDeliveryLog(
+/** Stores the provider receipt after an accepted delivery. */
+export async function markEmailDeliveryLogAsSent(
   id: string,
-  updates: Partial<InsertEmailDeliveryLog>,
+  receipt: {
+    readonly provider: EmailDeliveryProvider
+    readonly providerMessageId: string
+    readonly acceptedAt: Date
+  },
   database: DatabaseClient
 ) {
   const [result] = await database
     .update(emailDeliveryLogsTable)
-    .set({ ...updates, updatedAt: new Date() })
-    .where(eq(emailDeliveryLogsTable.id, id))
-    .returning()
+    .set({
+      status: EMAIL_DELIVERY_STATUSES.SENT,
+      provider: receipt.provider,
+      providerMessageId: receipt.providerMessageId,
+      sentAt: receipt.acceptedAt,
+      updatedAt: receipt.acceptedAt
+    })
+    .where(
+      and(
+        eq(emailDeliveryLogsTable.id, id),
+        eq(emailDeliveryLogsTable.status, EMAIL_DELIVERY_STATUSES.PENDING)
+      )
+    )
+    .returning({ id: emailDeliveryLogsTable.id })
+
+  if (!result) throw new EmailDeliveryLogTransitionError('mark-sent')
   return result
 }
 
+/** Stores a safe transport failure category without provider error text. */
+export async function markEmailDeliveryLogAsFailed(
+  id: string,
+  failureCategory: EmailDeliveryFailureCategory,
+  failedAt: Date,
+  database: DatabaseClient
+) {
+  const [result] = await database
+    .update(emailDeliveryLogsTable)
+    .set({
+      status: EMAIL_DELIVERY_STATUSES.FAILED,
+      failureCategory,
+      updatedAt: failedAt
+    })
+    .where(
+      and(
+        eq(emailDeliveryLogsTable.id, id),
+        eq(emailDeliveryLogsTable.status, EMAIL_DELIVERY_STATUSES.PENDING)
+      )
+    )
+    .returning({ id: emailDeliveryLogsTable.id })
+
+  if (!result) throw new EmailDeliveryLogTransitionError('mark-failed')
+  return result
+}
+
+/** Lists delivery logs for one user. */
 export async function getEmailDeliveryLogsByUserId(
   userId: string,
   database: DatabaseClient,
-  limit: number = 50
+  limit = 50
 ) {
   return database
     .select()
@@ -50,10 +126,11 @@ export async function getEmailDeliveryLogsByUserId(
     .limit(limit)
 }
 
+/** Lists delivery logs for one recipient address. */
 export async function getEmailDeliveryLogsByRecipientEmail(
   email: string,
   database: DatabaseClient,
-  limit: number = 50
+  limit = 50
 ) {
   return database
     .select()
@@ -63,121 +140,20 @@ export async function getEmailDeliveryLogsByRecipientEmail(
     .limit(limit)
 }
 
-export async function markEmailDeliveryLogAsSent(
-  id: string,
-  database: DatabaseClient,
-  sesMessageId?: string
-) {
-  return updateEmailDeliveryLog(
-    id,
-    {
-      status: EMAIL_DELIVERY_STATUSES.SENT,
-      sentAt: new Date(),
-      sesMessageId
-    },
-    database
-  )
-}
-
-export async function markEmailDeliveryLogAsFailed(
-  id: string,
-  errorMessage: string,
-  database: DatabaseClient
-) {
-  return updateEmailDeliveryLog(
-    id,
-    {
-      status: EMAIL_DELIVERY_STATUSES.FAILED,
-      errorMessage
-    },
-    database
-  )
-}
-
-export async function markEmailDeliveryLogAsDelivered(
-  sesMessageId: string,
-  database: DatabaseClient
-) {
-  const [log] = await database
-    .select()
-    .from(emailDeliveryLogsTable)
-    .where(eq(emailDeliveryLogsTable.sesMessageId, sesMessageId))
-    .limit(1)
-
-  if (log) {
-    return updateEmailDeliveryLog(
-      log.id,
-      {
-        status: EMAIL_DELIVERY_STATUSES.DELIVERED,
-        deliveredAt: new Date()
-      },
-      database
-    )
-  }
-}
-
-export async function markEmailDeliveryLogAsBounced(
-  sesMessageId: string,
-  database: DatabaseClient
-) {
-  const [log] = await database
-    .select()
-    .from(emailDeliveryLogsTable)
-    .where(eq(emailDeliveryLogsTable.sesMessageId, sesMessageId))
-    .limit(1)
-
-  if (log) {
-    return updateEmailDeliveryLog(
-      log.id,
-      {
-        status: EMAIL_DELIVERY_STATUSES.BOUNCED,
-        bouncedAt: new Date()
-      },
-      database
-    )
-  }
-}
-
-export async function markEmailDeliveryLogAsComplained(
-  sesMessageId: string,
-  database: DatabaseClient
-) {
-  const [log] = await database
-    .select()
-    .from(emailDeliveryLogsTable)
-    .where(eq(emailDeliveryLogsTable.sesMessageId, sesMessageId))
-    .limit(1)
-
-  if (log) {
-    return updateEmailDeliveryLog(
-      log.id,
-      {
-        status: EMAIL_DELIVERY_STATUSES.COMPLAINED,
-        complainedAt: new Date()
-      },
-      database
-    )
-  }
-}
-
+/** Lists delivery logs for the admin API. */
 export async function getAdminEmailLogs(
   { limit, offset, status, recipientEmail, dateFrom, dateTo }: GetAdminEmailLogsParams,
   database: DatabaseClient
 ) {
-  const filters: SQL[] = []
+  const filters: Array<SQL> = []
 
-  if (status) {
-    filters.push(eq(emailDeliveryLogsTable.status, status))
-  }
-
+  if (status) filters.push(eq(emailDeliveryLogsTable.status, status))
   if (recipientEmail) {
     filters.push(ilike(emailDeliveryLogsTable.recipientEmail, `%${recipientEmail}%`))
   }
-
   if (dateFrom) {
     filters.push(gte(emailDeliveryLogsTable.createdAt, new Date(`${dateFrom}T00:00:00.000Z`)))
   }
-
   if (dateTo) {
     const nextUtcDay = new Date(`${dateTo}T00:00:00.000Z`)
     nextUtcDay.setUTCDate(nextUtcDay.getUTCDate() + 1)
@@ -185,7 +161,6 @@ export async function getAdminEmailLogs(
   }
 
   const whereClause = filters.length > 0 ? and(...filters) : undefined
-
   const data = await database
     .select()
     .from(emailDeliveryLogsTable)
@@ -193,16 +168,11 @@ export async function getAdminEmailLogs(
     .orderBy(desc(emailDeliveryLogsTable.createdAt))
     .limit(limit)
     .offset(offset)
-
   const countRows = await database
     .select({ total: sql<number>`count(*)`.mapWith(Number) })
     .from(emailDeliveryLogsTable)
     .where(whereClause)
-
   const total = countRows[0]?.total ?? 0
 
-  return {
-    data,
-    pagination: createPaginationMetadata(total, limit, offset)
-  }
+  return { data, pagination: createPaginationMetadata(total, limit, offset) }
 }

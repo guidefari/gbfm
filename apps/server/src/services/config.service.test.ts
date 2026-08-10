@@ -1,6 +1,13 @@
 import { Redacted, Schema } from 'effect'
 import { describe, expect, test } from 'vitest'
-import { createConfig, StorageConfigSchema, type WorkerConfigBindings } from './config.service'
+import {
+  ConfigService,
+  createConfig,
+  StorageConfigSchema,
+  WorkerConfigServiceLayer,
+  type WorkerConfigBindings
+} from './config.service'
+import { Effect } from 'effect'
 
 const decodeStorageConfig = Schema.decodeUnknownSync(StorageConfigSchema)
 
@@ -38,6 +45,16 @@ describe('StorageConfigSchema', () => {
     expect(config.spotify).toEqual({ clientId: 'configured', clientSecret: 'configured' })
     expect(config.auth.betterAuthSecret).toBe('configured')
     expect(config.encryption.rootKey).toBe('configured')
+  })
+
+  test('rejects an invalid configured full email sender at the Worker config boundary', () => {
+    expect(() =>
+      Effect.runSync(
+        ConfigService.pipe(
+          Effect.provide(WorkerConfigServiceLayer({ ...workerBindings(), EMAIL_SENDER: 'noreply' }))
+        )
+      )
+    ).toThrow()
   })
 
   test('rejects missing production Worker secrets', () => {

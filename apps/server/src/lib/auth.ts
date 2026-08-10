@@ -1,42 +1,61 @@
-import { EMAIL_DELIVERY_STATUSES } from '@gbfm/core/status'
 import {
-  sendNewUserNotificationEmail,
-  sendPasswordResetEmail,
-  sendWelcomeEmail
+  buildNewUserNotificationEmail,
+  buildPasswordResetEmail,
+  buildWelcomeEmail,
+  type EmailRenderError,
+  type RenderedEmail
 } from '@gbfm/email/index'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { admin, bearer, username } from 'better-auth/plugins'
-import { Context, Effect, Layer } from 'effect'
+import { Clock, Context, Effect, Layer } from 'effect'
 import * as authSchema from '@/db/auth.schema'
 import { Database, type DatabaseClient } from '@/db/layer'
 import { EMAIL_NOTIFICATION_TYPES } from '@/db/email.schema'
-import { createEmailDeliveryLog } from '@/repositories/email-delivery-log.repository'
 import {
   getOrCreateEmailPreferencesByUserId,
   updateEmailPreferences
 } from '@/repositories/email-preferences.repository'
 import { linkOrCreateSubscriberForUser } from '@/repositories/newsletter.repository'
 import { ConfigService, type ConfigService as Config } from '@/services/config.service'
+import {
+  type DeliveryRequest,
+  EmailDelivery,
+  type EmailDeliveryError,
+  type EmailDeliveryReceipt,
+  type EmailDeliveryService
+} from '@/services/email-delivery.service'
 import { ac, admin as adminRole, creator, editor, userRole } from './auth-permissions'
 
-const makeAuth = (database: DatabaseClient, config: Config) =>
+const deliverBuiltEmail = (
+  message: Effect.Effect<RenderedEmail, EmailRenderError>,
+  request: Omit<DeliveryRequest, 'message'>,
+  delivery: EmailDeliveryService
+): Effect.Effect<EmailDeliveryReceipt, EmailRenderError | EmailDeliveryError> =>
+  Effect.gen(function* () {
+    const rendered = yield* message
+    return yield* delivery.deliver({ ...request, message: rendered })
+  })
+
+const makeAuth = (
+  database: DatabaseClient,
+  config: Config,
+  delivery: EmailDeliveryService,
+  nowIso: () => Promise<string>
+) =>
   betterAuth({
-    database: drizzleAdapter(database, {
-      provider: 'sqlite',
-      schema: authSchema
-    }),
+    database: drizzleAdapter(database, { provider: 'sqlite', schema: authSchema }),
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false,
       sendResetPassword: async ({ user, url }) => {
-        sendPasswordResetEmail({
-          to: user.email,
-          resetUrl: url,
-          expiresIn: '1 hour'
-        }).catch(() => {
-          console.error('[Auth] Failed to send password reset email', { userId: user.id })
-        })
+        await Effect.runPromise(
+          deliverBuiltEmail(
+            buildPasswordResetEmail({ to: user.email, resetUrl: url, expiresIn: '1 hour' }),
+            { emailType: EMAIL_NOTIFICATION_TYPES.TRANSACTIONAL, userId: user.id },
+            delivery
+          )
+        )
       }
     },
     emailVerification: {
@@ -46,40 +65,21 @@ const makeAuth = (database: DatabaseClient, config: Config) =>
         const callbackURL = `${config.urls.frontend}/`
         const verificationUrl = `${config.urls.frontend}/auth/verify-email?token=${encodeURIComponent(token)}&callbackURL=${encodeURIComponent(callbackURL)}`
 
-        const baseLogFields = {
-          userId: user.id,
-          recipientEmail: user.email,
-          recipientName: user.name,
-          emailType: EMAIL_NOTIFICATION_TYPES.TRANSACTIONAL,
-          templateName: 'welcome-verify',
-          subject: `Welcome to goosebumps.fm, ${user.name}, verify your email`
-        }
-
-        try {
-          await sendWelcomeEmail({
-            to: user.email,
-            username: user.name,
-            verificationUrl
-          })
-          await createEmailDeliveryLog(
+        await Effect.runPromise(
+          deliverBuiltEmail(
+            buildWelcomeEmail({
+              to: user.email,
+              username: user.name,
+              verificationUrl
+            }),
             {
-              ...baseLogFields,
-              status: EMAIL_DELIVERY_STATUSES.SENT,
-              sentAt: new Date()
+              emailType: EMAIL_NOTIFICATION_TYPES.TRANSACTIONAL,
+              userId: user.id,
+              recipientName: user.name
             },
-            database
+            delivery
           )
-        } catch (cause) {
-          const errorMessage = cause instanceof Error ? cause.message : String(cause)
-          await createEmailDeliveryLog(
-            {
-              ...baseLogFields,
-              status: EMAIL_DELIVERY_STATUSES.FAILED,
-              errorMessage
-            },
-            database
-          )
-        }
+        )
       }
     },
     databaseHooks: {
@@ -88,14 +88,9 @@ const makeAuth = (database: DatabaseClient, config: Config) =>
           after: async (createdUser) => {
             try {
               const { previouslyUnsubscribed } = await linkOrCreateSubscriberForUser(
-                {
-                  userId: createdUser.id,
-                  email: createdUser.email,
-                  name: createdUser.name
-                },
+                { userId: createdUser.id, email: createdUser.email, name: createdUser.name },
                 database
               )
-
               await getOrCreateEmailPreferencesByUserId(createdUser.id, database)
 
               if (previouslyUnsubscribed) {
@@ -116,36 +111,32 @@ const makeAuth = (database: DatabaseClient, config: Config) =>
               })
             }
 
-            try {
-              await sendNewUserNotificationEmail({
-                to: config.adminEmail,
-                name: createdUser.name,
-                email: createdUser.email,
-                timestamp: new Date().toISOString()
-              })
-            } catch {
-              console.error('[Auth] Failed to send new user admin notification', {
-                userId: createdUser.id
-              })
-            }
+            await Effect.runPromise(
+              deliverBuiltEmail(
+                buildNewUserNotificationEmail({
+                  to: config.adminEmail,
+                  name: createdUser.name,
+                  email: createdUser.email,
+                  timestamp: await nowIso()
+                }),
+                {
+                  emailType: EMAIL_NOTIFICATION_TYPES.SYSTEM,
+                  userId: createdUser.id,
+                  recipientName: createdUser.name
+                },
+                delivery
+              )
+            ).catch(() => {
+              console.error('[Auth] Failed to deliver new-user admin notification')
+            })
           }
         }
       }
     },
     session: {
-      expiresIn: 60 * 60 * 24 * 7, // 7 days
-      updateAge: 60 * 60 * 24, // 1 day
-      cookieCache: {
-        enabled: true,
-        maxAge: 5 * 60 // 5 minutes
-      }
-    },
-    advanced: {
-      backgroundTasks: {
-        handler: (promise) => {
-          void promise.catch(() => {})
-        }
-      }
+      expiresIn: 60 * 60 * 24 * 7,
+      updateAge: 60 * 60 * 24,
+      cookieCache: { enabled: true, maxAge: 5 * 60 }
     },
     trustedOrigins: [
       config.urls.frontend,
@@ -166,15 +157,7 @@ const makeAuth = (database: DatabaseClient, config: Config) =>
       username({
         displayUsernameNormalization: (displayUsername) => displayUsername.toLowerCase()
       }),
-      admin({
-        ac,
-        roles: {
-          admin: adminRole,
-          editor,
-          creator,
-          user: userRole
-        }
-      })
+      admin({ ac, roles: { admin: adminRole, editor, creator, user: userRole } })
     ]
   })
 
@@ -185,7 +168,15 @@ export const AuthLive = Layer.effect(
   Effect.gen(function* () {
     const database = yield* Database
     const config = yield* ConfigService
-    return Auth.of(makeAuth(database, config))
+    const delivery = yield* EmailDelivery
+    const clock = yield* Clock.Clock
+    return Auth.of(
+      makeAuth(database, config, delivery, () =>
+        Effect.runPromise(clock.currentTimeMillis).then((milliseconds) =>
+          new Date(milliseconds).toISOString()
+        )
+      )
+    )
   })
 )
 

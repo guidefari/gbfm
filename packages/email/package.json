@@ -10,15 +10,14 @@
   "scripts": {
     "dev": "email dev --dir emails -p 2672",
     "typecheck": "tsgo --noEmit",
-    "test:send": "bun src/test-send.ts"
+    "test": "vitest run"
   },
   "dependencies": {
-    "@aws-sdk/client-sesv2": "3.1038.0",
     "@gbfm/theme": "workspace:*",
     "@react-email/components": "1.0.12",
+    "effect": "4.0.0-beta.99",
     "react": "19.2.7",
-    "react-dom": "19.2.7",
-    "sst": "4.14.3"
+    "react-dom": "19.2.7"
   },
   "devDependencies": {
     "@react-email/ui": "6.3.2",

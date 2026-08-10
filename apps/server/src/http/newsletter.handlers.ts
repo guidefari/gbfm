@@ -1,37 +1,73 @@
 import { Api } from '@gbfm/api/api'
 import {
-  sendNewsletterAdminNotificationEmail,
-  sendNewsletterUnsubscribeLinkEmail,
-  sendNewsletterWelcomeEmail
-} from '@gbfm/email/sender'
-import * as Sentry from '@sentry/core'
+  buildNewsletterAdminNotificationEmail,
+  buildNewsletterUnsubscribeLinkEmail,
+  buildNewsletterWelcomeEmail,
+  type EmailRenderError,
+  type RenderedEmail
+} from '@gbfm/email/index'
 import { and, eq, isNull } from 'drizzle-orm'
-import { Effect } from 'effect'
+import { Clock, Effect, Result } from 'effect'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
 import { Database } from '@/db/layer'
+import { EMAIL_NOTIFICATION_TYPES } from '@/db/email.schema'
 import { newsletterSubscribersTable } from '@/db/newsletter.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
 import { globalUnsubscribe } from '@/repositories/email-preferences.repository'
 import { ConfigService } from '@/services/config.service'
+import { EmailDelivery } from '@/services/email-delivery.service'
 
 const dieOnDatabaseError = makeDieOnDatabaseError('newsletter')
 
 const notifyAdmin = (event: 'subscribed' | 'unsubscribed', email: string) =>
   Effect.gen(function* () {
     const config = yield* ConfigService
-    if (!config.adminEmail) return
-    sendNewsletterAdminNotificationEmail({
-      to: config.adminEmail,
-      event,
-      email
-    }).catch((err) => console.error('Admin newsletter notification failed:', err))
-    Sentry.addBreadcrumb({
-      category: 'newsletter',
-      message: `newsletter.${event}`,
-      level: 'info',
-      data: { email }
-    })
+    const clock = yield* Clock.Clock
+    const delivery = yield* EmailDelivery
+    const result = yield* Effect.result(
+      Effect.gen(function* () {
+        const message = yield* buildNewsletterAdminNotificationEmail({
+          to: config.adminEmail,
+          event,
+          email,
+          timestamp: new Date(yield* clock.currentTimeMillis).toISOString()
+        })
+        return yield* delivery.deliver({
+          message,
+          emailType: EMAIL_NOTIFICATION_TYPES.SYSTEM
+        })
+      })
+    )
+    if (Result.isFailure(result)) {
+      yield* Effect.logWarning('[newsletter] admin notification was not delivered', {
+        event,
+        failure: result.failure._tag
+      })
+    }
+  })
+
+const attemptSubscriptionEmail = (
+  build: Effect.Effect<RenderedEmail, EmailRenderError>,
+  emailType: 'welcome' | 'unsubscribe-link'
+) =>
+  Effect.gen(function* () {
+    const delivery = yield* EmailDelivery
+    const result = yield* Effect.result(
+      Effect.gen(function* () {
+        const message = yield* build
+        return yield* delivery.deliver({
+          message,
+          emailType: EMAIL_NOTIFICATION_TYPES.SYSTEM
+        })
+      })
+    )
+    if (Result.isFailure(result)) {
+      yield* Effect.logWarning('[newsletter] subscription email was not delivered', {
+        emailType,
+        failure: result.failure._tag
+      })
+    }
   })
 
 export const NewsletterHandlersLive = HttpApiBuilder.group(Api, 'newsletter', (handlers) =>
@@ -40,7 +76,6 @@ export const NewsletterHandlersLive = HttpApiBuilder.group(Api, 'newsletter', (h
       Effect.gen(function* () {
         const db = yield* Database
         const normalizedEmail = payload.email.trim().toLowerCase()
-
         const result = yield* dieOnDatabaseError(
           Effect.tryPromise({
             try: () =>
@@ -48,76 +83,79 @@ export const NewsletterHandlersLive = HttpApiBuilder.group(Api, 'newsletter', (h
                 .insert(newsletterSubscribersTable)
                 .values({
                   email: normalizedEmail,
-                  ...(payload.name && { name: payload.name.trim() }),
+                  ...(payload.name ? { name: payload.name.trim() } : {}),
                   source: payload.source || 'subscribe_page'
                 })
                 .onConflictDoNothing({ target: newsletterSubscribersTable.email })
                 .returning(),
-            catch: (error) =>
+            catch: (cause) =>
               new DatabaseError({
-                message: `Failed to subscribe to newsletter: ${getErrorMessage(error)}`,
+                message: `Failed to subscribe to newsletter: ${getErrorMessage(cause)}`,
                 operation: 'insert',
                 table: 'newsletter_subscribers'
               })
           })
         )
-
-        if (result.length === 0) {
-          return { subscribed: false, email: normalizedEmail }
-        }
+        if (result.length === 0) return { subscribed: false, email: normalizedEmail }
 
         const row = result[0]
+        const config = yield* ConfigService
         if (row?.unsubscribeToken) {
-          const unsubscribeUrl = `${process.env.APP_URL ?? 'https://goosebumps.fm'}/unsubscribe?token=${row.unsubscribeToken}`
-          sendNewsletterWelcomeEmail({ to: normalizedEmail, unsubscribeUrl }).catch((err) =>
-            console.error('Newsletter welcome email failed:', err)
+          yield* attemptSubscriptionEmail(
+            buildNewsletterWelcomeEmail({
+              to: normalizedEmail,
+              unsubscribeUrl: `${config.urls.frontend}/unsubscribe?token=${row.unsubscribeToken}`
+            }),
+            'welcome'
           )
         }
-
         yield* notifyAdmin('subscribed', normalizedEmail)
-
         return { subscribed: true, email: normalizedEmail }
       })
     )
     .handle('unsubscribe', ({ payload }) =>
       Effect.gen(function* () {
         const db = yield* Database
+        const clock = yield* Clock.Clock
+        const unsubscribedAt = new Date(yield* clock.currentTimeMillis)
         const result = yield* dieOnDatabaseError(
           Effect.tryPromise({
             try: () =>
               db
                 .update(newsletterSubscribersTable)
-                .set({ unsubscribedAt: new Date() })
+                .set({ unsubscribedAt })
                 .where(eq(newsletterSubscribersTable.unsubscribeToken, payload.token))
                 .returning({
                   id: newsletterSubscribersTable.id,
                   email: newsletterSubscribersTable.email,
                   userId: newsletterSubscribersTable.userId
                 }),
-            catch: (error) =>
+            catch: (cause) =>
               new DatabaseError({
-                message: `Failed to unsubscribe from newsletter: ${getErrorMessage(error)}`,
+                message: `Failed to unsubscribe from newsletter: ${getErrorMessage(cause)}`,
                 operation: 'update',
                 table: 'newsletter_subscribers'
               })
           })
         )
+        if (result.length === 0) return yield* new HttpApiError.NotFound()
 
-        if (result.length === 0) {
-          return yield* new HttpApiError.NotFound()
-        }
-
-        const linkedUserId = result[0]?.userId
-        if (linkedUserId) {
-          yield* Effect.promise(() =>
-            globalUnsubscribe(linkedUserId, db).catch((err) =>
-              console.error('Failed to propagate newsletter unsubscribe to user preferences:', err)
-            )
+        const subscriber = result[0]
+        const subscriberUserId = subscriber?.userId
+        if (subscriberUserId) {
+          yield* dieOnDatabaseError(
+            Effect.tryPromise({
+              try: () => globalUnsubscribe(subscriberUserId, db),
+              catch: (cause) =>
+                new DatabaseError({
+                  message: `Failed to propagate newsletter unsubscribe: ${getErrorMessage(cause)}`,
+                  operation: 'update',
+                  table: 'user_email_preferences'
+                })
+            })
           )
         }
-
-        yield* notifyAdmin('unsubscribed', result[0]?.email ?? payload.token)
-
+        yield* notifyAdmin('unsubscribed', subscriber?.email ?? payload.token)
         return { success: true }
       })
     )
@@ -125,7 +163,6 @@ export const NewsletterHandlersLive = HttpApiBuilder.group(Api, 'newsletter', (h
       Effect.gen(function* () {
         const db = yield* Database
         const normalizedEmail = payload.email.trim().toLowerCase()
-
         const [row] = yield* dieOnDatabaseError(
           Effect.tryPromise({
             try: () =>
@@ -139,23 +176,24 @@ export const NewsletterHandlersLive = HttpApiBuilder.group(Api, 'newsletter', (h
                   )
                 )
                 .limit(1),
-            catch: (error) =>
+            catch: (cause) =>
               new DatabaseError({
-                message: `Failed to look up newsletter subscriber: ${getErrorMessage(error)}`,
+                message: `Failed to look up newsletter subscriber: ${getErrorMessage(cause)}`,
                 operation: 'select',
                 table: 'newsletter_subscribers'
               })
           })
         )
-
         if (row?.unsubscribeToken) {
-          const unsubscribeUrl = `${process.env.APP_URL ?? 'https://goosebumps.fm'}/unsubscribe?token=${row.unsubscribeToken}`
-          sendNewsletterUnsubscribeLinkEmail({
-            to: normalizedEmail,
-            unsubscribeUrl
-          }).catch((err) => console.error('Request unsubscribe email failed:', err))
+          const config = yield* ConfigService
+          yield* attemptSubscriptionEmail(
+            buildNewsletterUnsubscribeLinkEmail({
+              to: normalizedEmail,
+              unsubscribeUrl: `${config.urls.frontend}/unsubscribe?token=${row.unsubscribeToken}`
+            }),
+            'unsubscribe-link'
+          )
         }
-
         return { sent: true }
       })
     )

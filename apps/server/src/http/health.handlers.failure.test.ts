@@ -7,6 +7,7 @@ import { AppLayer } from '@/runtime/services'
 import { WorkerTracingLive } from '@/runtime/sentry-worker'
 import { NavigationLockLocalLayer } from '@/services/navigation-lock'
 import { SpotifyImportResolverLocalLayer } from '@/services/spotify-import-resolver.service'
+import { RecordingEmailTransportLayer } from '@/services/email-transport.service'
 import { SitemapCacheLayer } from '@/services/sitemap-cache'
 import { d1 } from '@/test/database'
 import { testSentryServiceLive } from '@/test/http-handler'
@@ -28,7 +29,10 @@ const testAppServicesLive = AppLayer(
   NavigationLockLocalLayer,
   SpotifyImportResolverLocalLayer,
   testSentryServiceLive,
-  WorkerTracingLive
+  WorkerTracingLive,
+  undefined,
+  undefined,
+  RecordingEmailTransportLayer
 )
 
 // Separate file (docs/migration-effect-http-api.md, step 3a): each

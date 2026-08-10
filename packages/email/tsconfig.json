@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "../../tsconfig.json",
-  "include": ["src", "emails", "sst-env.d.ts", "../../sst-env.d.ts"],
+  "include": ["src", "emails"],
   "exclude": ["dist", "build", "node_modules"],
   "compilerOptions": {
     "module": "preserve",

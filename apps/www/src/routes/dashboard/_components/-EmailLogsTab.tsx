@@ -187,8 +187,8 @@ export function EmailLogsTab() {
               <th className='px-4 py-3 text-left font-medium'>Template</th>
               <th className='px-4 py-3 text-left font-medium'>Subject</th>
               <th className='px-4 py-3 text-left font-medium'>Status</th>
-              <th className='px-4 py-3 text-left font-medium'>SES Message ID</th>
-              <th className='px-4 py-3 text-left font-medium'>Error</th>
+              <th className='px-4 py-3 text-left font-medium'>Provider receipt</th>
+              <th className='px-4 py-3 text-left font-medium'>Failure</th>
             </tr>
           </thead>
           <tbody>
@@ -222,10 +222,12 @@ export function EmailLogsTab() {
                       <Badge variant={statusVariant(log.status)}>{log.status}</Badge>
                     </td>
                     <td className='max-w-[220px] truncate px-4 py-3 text-muted-foreground'>
-                      {log.sesMessageId || '—'}
+                      {log.provider && log.providerMessageId
+                        ? `${log.provider}: ${log.providerMessageId}`
+                        : '—'}
                     </td>
                     <td className='max-w-[260px] truncate px-4 py-3 text-muted-foreground'>
-                      {log.errorMessage || '—'}
+                      {log.failureCategory ?? log.errorMessage ?? '—'}
                     </td>
                   </tr>
                 ))

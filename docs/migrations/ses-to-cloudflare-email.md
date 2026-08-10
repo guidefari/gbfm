@@ -36,10 +36,15 @@ identity. `infra/dev.script.ts` links the email resource into local commands.
 `alchemy.run.ts` already owns the Cloudflare Worker, D1, R2, KV, Queues, and
 Durable Objects. The installed `alchemy@2.0.0-beta.64` provides:
 
+- `Cloudflare.Email.Routing`, which must enable Email Routing on the zone before
+  a Worker can use a `send_email` binding;
 - `Cloudflare.Email.SendingSubdomain`, which provisions a sending subdomain,
   DKIM, SPF, and return-path configuration;
-- `Cloudflare.Email.SendEmail`, which adds a Worker `send_email` binding;
+- `Cloudflare.Email.SendEmail`, a Worker-only `send_email` binding descriptor;
 - `Cloudflare.Email.Send`, which wraps that binding for Effect code.
+
+Alchemy's local `send_email` binding is a remote binding and can send email. It
+is not a safe local-development substitute.
 
 ### Rendering and delivery
 
@@ -145,13 +150,14 @@ delivery log and Cloudflare's Email Sending dashboard.
   needs it.
 - Changing email template design or copy.
 - Migrating unrelated DNS, static-site, R2, or redirect resources from SST.
-- Keeping the old admin `sesMessageId` contract for compatibility if repository
-  consumer audit confirms it is unused.
+- Keeping the old admin `sesMessageId` contract for compatibility. The audit
+  confirmed that `apps/www/src/routes/dashboard/_components/-EmailLogsTab.tsx`
+  consumes it, so that UI must change with the API contract.
 
 ## Invariants
 
 - One application delivery targets exactly one recipient.
-- One application action makes at most one provider call.
+- One `EmailTransport.send` invocation makes one provider call; the transport does not retry.
 - The application never sends the same message through SES and Cloudflare.
 - Verification and password-reset links preserve their current values.
 - Sender display name remains `goosebumps.fm`.
@@ -179,6 +185,42 @@ No rollback means the pre-cut gate must be strong. Before production deployment:
 
 These are deployment prerequisites, not a gradual migration.
 
+### Deployment workflow
+
+`.github/workflows/deploy.yml` currently disables its deploy and verification
+steps with `if: false` during OPS-244. Keep it disabled while OPS-250 or its
+assigned deployment agent is active. M2 and M3 cannot claim deployed-Worker
+proof until that workflow is re-enabled for OPS-250 or an approved replacement
+deployment path runs the same controlled checks.
+
+### Human Alchemy staging gate
+
+Do not run this while unattended. From the repository root, a human operator
+with the approved Cloudflare staging profile must load the staging secret file
+and run:
+
+```sh
+set -a
+. ./.env.alchemy.staging
+set +a
+bunx alchemy deploy --stage email-staging --yes
+```
+
+The command uses `alchemy.run.ts` and creates the `mail-email-staging.goosebumps.fm`
+sending identity plus the `EMAIL` binding. The secret file must provide
+`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_DEFAULT_ACCOUNT_ID`, `EMAIL_TEST_RECIPIENT`, `ADMIN_EMAIL`,
+`SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `DatabaseHost`, `DatabaseUser`,
+`DatabasePassword`, `DatabasePort`, `DatabaseName`, `SENTRY_BACKEND_DSN`,
+`VITE_PUBLIC_SENTRY_DSN`, `OTEL_EXPORTER_OTLP_ENDPOINT`,
+`OTEL_EXPORTER_OTLP_HEADERS`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`,
+`GBFM_ENCRYPTION_ROOT_KEY`, `StorageEndpoint`, `StorageRegion`,
+`StorageAccessKeyId`, `StorageSecretAccessKey`, and `StorageSigningEndpoint`.
+The operator must then use the deployed Worker to send each critical template to
+that controlled recipient and inspect Cloudflare acceptance, D1 receipts, and
+received authentication headers. Do not add a local workerd `send_email` test:
+Alchemy's local binding is remote and that test could send a real email. This is
+a live staging gate, not automated proof.
+
 ### Cloudflare limits
 
 Cloudflare's structured Worker API currently limits one message to:
@@ -200,17 +242,14 @@ call Cloudflare first.
 
 ### Sending identity
 
-Milestone 0 must prove whether the account can send from the zone apex or needs a
-subdomain such as `mail.goosebumps.fm`.
-
-If Cloudflare requires a subdomain, use:
+`Cloudflare.Email.SendingSubdomain` only provisions a subdomain. Use
+`mail.goosebumps.fm` as the sending domain:
 
 ```text
 From: goosebumps.fm <noreply@mail.goosebumps.fm>
 ```
 
-Preserve explicit `Reply-To` values. Do not claim to send from an unverified root
-address.
+Preserve explicit `Reply-To` values. Do not claim to send from the zone apex.
 
 ### No provider retry machinery
 
@@ -348,22 +387,27 @@ failure becomes a typed `EmailRenderError` with no message content.
 export interface EmailTransportService {
   readonly send: (
     message: OutboundEmailMessage
-  ) => Effect.Effect<SendReceipt, EmailRejected | EmailUnavailable>
+  ) => Effect.Effect<TransportReceipt, EmailRejected | EmailUnavailable>
 }
 
 export const EmailTransport =
   Context.Service<EmailTransportService>('EmailTransport')
 
-export interface SendReceipt {
+export interface TransportReceipt {
   readonly provider: 'cloudflare'
   readonly messageId: string
+}
+
+export interface SendReceipt extends TransportReceipt {
   readonly acceptedAt: Date
 }
 ```
 
-The interface is provider-neutral in behavior even though the current receipt
-records the concrete provider for persistence and operations. A future adapter
-can widen the provider value deliberately.
+`EmailDelivery` obtains `acceptedAt` from the injected application `Clock` after
+transport acceptance. It is not a provider-reported timestamp. The interface is
+provider-neutral in behavior even though the current receipt records the
+concrete provider for persistence and operations. A future adapter can widen the
+provider value deliberately.
 
 `EmailDelivery` resolves the sender once from parsed application configuration.
 The transport receives a complete address; it does not join local parts and
@@ -379,19 +423,33 @@ The service hides:
 ### Typed provider failures
 
 ```ts
+type CloudflareRejectedProviderCode =
+  | 'E_VALIDATION_ERROR'
+  | 'E_FIELD_MISSING'
+  | 'E_TOO_MANY_RECIPIENTS'
+  | 'E_TOO_MANY_ATTACHMENTS'
+  | 'E_CONTENT_TOO_LARGE'
+  | 'E_SENDER_NOT_VERIFIED'
+  | 'E_SENDER_DOMAIN_NOT_AVAILABLE'
+  | 'E_RECIPIENT_NOT_ALLOWED'
+  | 'E_RECIPIENT_SUPPRESSED'
+  | 'E_DELIVERY_FAILED'
+
+type EmailUnavailableProviderCode = 'unknown' | 'invalid-receipt' | 'not-configured'
+
 export class EmailRejected extends Data.TaggedError('EmailRejected')<{
   readonly reason:
     | 'invalid-message'
     | 'sender-not-verified'
     | 'recipient-not-allowed'
     | 'recipient-suppressed'
+    | 'delivery-failed'
     | 'content-too-large'
-  readonly providerCode?: string
+  readonly providerCode?: CloudflareRejectedProviderCode
 }> {}
 
 export class EmailUnavailable extends Data.TaggedError('EmailUnavailable')<{
-  readonly providerCode?: string
-  readonly cause: unknown
+  readonly providerCode?: EmailUnavailableProviderCode
 }> {}
 ```
 
@@ -404,11 +462,12 @@ Map Cloudflare errors as follows:
 | `E_SENDER_NOT_VERIFIED`, `E_SENDER_DOMAIN_NOT_AVAILABLE` | `EmailRejected('sender-not-verified')` |
 | `E_RECIPIENT_NOT_ALLOWED` | `EmailRejected('recipient-not-allowed')` |
 | `E_RECIPIENT_SUPPRESSED` | `EmailRejected('recipient-suppressed')` |
-| `E_DELIVERY_FAILED` | `EmailRejected('recipient-not-allowed')` until a better product category is needed |
+| `E_DELIVERY_FAILED` | `EmailRejected('delivery-failed')` |
 | rate, daily quota, internal, or unknown failures | `EmailUnavailable` |
 
-The adapter retains `cause: unknown` but never includes raw provider messages in
-user responses or broad telemetry.
+The adapter classifies unknown thrown values as the finite `unknown` code and
+never carries raw provider causes or messages into service-facing errors, user
+responses, logs, traces, or metric labels.
 
 ### EmailDelivery
 
@@ -416,9 +475,8 @@ user responses or broad telemetry.
 
 ```ts
 export interface DeliveryRequest {
-  readonly message: RenderedEmail
+  readonly message: RenderedEmail // carries the template name selected by the builder
   readonly emailType: EmailNotificationType
-  readonly templateName: EmailTemplateName
   readonly userId?: string
   readonly recipientName?: string
   readonly safeMetadata?: EmailDeliveryMetadata
@@ -427,9 +485,12 @@ export interface DeliveryRequest {
 export interface EmailDeliveryService {
   readonly deliver: (
     request: DeliveryRequest
-  ) => Effect.Effect<SendReceipt, EmailRenderError | EmailDeliveryError>
+  ) => Effect.Effect<SendReceipt, EmailDeliveryError>
 }
 ```
+
+`DeliveryRequest` contains an already rendered message, so `EmailDelivery` cannot
+return `EmailRenderError`. Callers handle rendering before they request delivery.
 
 The implementation:
 
@@ -441,8 +502,16 @@ The implementation:
 6. on typed send failure, updates the row to `FAILED` with a safe category and
    returns a typed `EmailDeliveryError`.
 
+Persistence failures use a closed safe category field, for example
+`persistenceCategory: 'create-pending' | 'mark-sent' | 'mark-failed'`; they do
+not expose database error text. This keeps persistence failure distinct from
+provider rejection or unavailability without leaking message data.
+
 This removes repeated log transitions from auth, reminders, and HTTP handlers.
-The service owns persistence through the existing `Database` Effect service.
+The service owns persistence through the existing `Database` Effect service. Both
+terminal writes use `WHERE id = ? AND status = 'PENDING'`; a zero-row update is
+a typed persistence transition failure, so `SENT` and `FAILED` rows cannot be
+overwritten.
 
 `safeMetadata` must use a closed schema. Do not accept `Record<string, unknown>`
 or copy arbitrary request payloads into logs.
@@ -479,9 +548,13 @@ The names should tell callers that building does not perform I/O.
 `alchemy.run.ts` adds the sending identity and binding:
 
 ```ts
+const routing = yield* Cloudflare.Email.Routing('EmailRouting', {
+  zone: 'goosebumps.fm'
+})
+
 const sendingDomain = yield* Cloudflare.Email.SendingSubdomain('EmailSending', {
   zoneId,
-  name: sendingDomainName
+  name: 'mail.goosebumps.fm'
 })
 
 const email = yield* Cloudflare.Email.SendEmail('EMAIL', {
@@ -489,7 +562,8 @@ const email = yield* Cloudflare.Email.SendEmail('EMAIL', {
 })
 ```
 
-Bind `EMAIL` to the API Worker.
+`Email.Routing` is a prerequisite for the `send_email` Worker binding. Bind
+`EMAIL` to the API Worker.
 
 Resolve the existing Cloudflare zone. Do not create, duplicate, or adopt the
 whole zone. The sending resource may create its required authentication records.
@@ -557,7 +631,12 @@ The admin mix loop remains one delivery per eligible recipient. This preserves
 preference checks, privacy, and one-row/one-message correlation.
 
 The reminder Queue marks its claim complete only after `EmailDelivery` returns a
-receipt. A failed delivery follows the existing failed reminder path. No provider
+receipt. The existing Queue retry can repeat a send if the Worker crashes after
+Cloudflare accepts the message but before the receipt is persisted. The legacy
+`processSingleReminder` invocation does not retry, so one invocation submits to
+the provider at most once. Cloudflare's API exposes no idempotency key, so this
+migration records that pre-existing at-least-once Queue risk rather than adding
+a second coordination system. The transport itself never retries and no provider
 fallback occurs.
 
 ### Persistence
@@ -585,11 +664,14 @@ Since this is a hard cut:
 
 For the deployed staging D1 database, add a normal D1 migration that creates the
 neutral fields, copies historical values, and removes or ignores the old field
-according to SQLite migration constraints.
+according to SQLite migration constraints. The local Postgres-to-D1 importer
+keeps its own migration ledger. On its first run against an existing target it
+baselines 0000 and 0001 from durable schema markers, then applies 0002; repeated
+runs consult the ledger and do not replay DDL.
 
-Audit `apps/www`, mobile, and admin consumers before removing `sesMessageId` from
-the API schema. Repository search currently shows only the API contract and its
-tests, not an application consumer. If confirmed, replace it outright with:
+The audit confirmed that `apps/www/src/routes/dashboard/_components/-EmailLogsTab.tsx`
+consumes `sesMessageId`. Change that consumer in the same slice as the API schema
+rather than assuming the field is unused. Replace the API field outright with:
 
 ```ts
 provider: Schema.NullOr(Schema.Literals(['ses', 'cloudflare']))
@@ -616,9 +698,11 @@ or `COMPLAINED`. Do not imply that this migration provides those transitions.
 
 ### Local development
 
-Default local development uses a recording `EmailTransport` Layer. It captures
-rendered messages for assertions and may write `.eml` previews to an ignored
-directory. It never sends real email.
+Tests and explicitly composed local development use a recording `EmailTransport`
+Layer. It captures rendered messages for assertions and never sends real email.
+The generic Bun runtime fails closed rather than recording a fake `SENT` receipt.
+Do not bind the local Alchemy `send_email` implementation by default: it is
+remote and may send real email.
 
 Move `packages/email/src/test-send.ts` to application-level tooling or delete it.
 A template package should not own production provider access.
@@ -848,8 +932,9 @@ Human-run:
 - fix forward on failure;
 - remove SES resources and credentials after the smoke gate.
 
-All ordinary tests run under `bun precommit`. Real Cloudflare sends are explicit
-credentialed evidence and do not run in CI.
+`bun precommit` runs formatting, linting, and type checks; it does not run tests.
+Run the focused and ordinary test suites explicitly. Real Cloudflare sends are
+explicit credentialed evidence and do not run in CI.
 
 ## Milestones
 
@@ -858,7 +943,7 @@ credentialed evidence and do not run in CI.
 - measure current SES daily and peak send volume;
 - confirm no attachment caller;
 - confirm Cloudflare Email Sending account access and quota;
-- prove root domain versus sending subdomain;
+- verify `mail.goosebumps.fm` is enabled after its DNS records validate;
 - list exact production sender addresses;
 - audit `sesMessageId` API consumers.
 
@@ -922,20 +1007,20 @@ The migration is complete when:
 | Risk / question | Impact | Response |
 | --- | --- | --- |
 | Cloudflare Email Sending is unavailable or under-quota. | Hard blocker. | M0 gate; choose another provider rather than build fallback. |
-| Root-domain sending is not supported by the Alchemy resource. | Visible sender-domain change. | Prove and approve `mail.goosebumps.fm` before implementation. |
+| The Alchemy resource only supports subdomain sending. | Visible sender-domain change. | Use and approve `mail.goosebumps.fm` before implementation. |
 | Cloudflare delivery differs from SES. | Messages may land in spam or fail. | Staging mailbox checks and production smoke; fix forward. |
 | No runtime rollback exists. | Production email can fail until repaired. | Strong pre-cut gate, narrow adapter, controlled smoke, clear operator access. |
 | Provider acceptance is not final delivery. | Admin `SENT` can overstate outcome. | Define `SENT` as accepted; use Cloudflare dashboard. Add events later if needed. |
 | Removing `sesMessageId` breaks an unknown client. | Admin API break. | Complete repository and known-client audit in M0. |
 | Existing direct callers hide detached work. | False success or lost failures. | Move every caller to owned `EmailDelivery` effects. |
 | A future provider needs attachments. | Interface must grow. | Add only with a real caller and tests; do not preserve dead SES MIME code. |
+| A Worker crash after provider acceptance but before receipt persistence can duplicate a retried reminder. | A user may receive a duplicate reminder. | Accept the existing at-least-once Queue risk; do not add transport retries. Revisit only with a product-level idempotency design. |
 | SES deletion happens before all smoke checks finish. | No quick external fallback. | Order teardown after the production smoke even under fix-forward policy. |
 
 Human decisions required before M1:
 
-1. Send from `goosebumps.fm` or `mail.goosebumps.fm`?
-2. Which sender local parts should production allow?
-3. What production smoke checks must pass before deleting SES?
+1. Which sender local parts under `mail.goosebumps.fm` should production allow?
+2. What production smoke checks must pass before deleting SES?
 
 ## References
 

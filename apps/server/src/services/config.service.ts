@@ -48,6 +48,7 @@ export type WorkerConfigBindings = Readonly<
     MIXES_BUCKET_NAME: string
     SENTRY_ENVIRONMENT?: string
     ADMIN_EMAIL?: string
+    EMAIL_SENDER?: string
   }
 >
 
@@ -122,6 +123,10 @@ function resourceString(name: string, property: string, fallback: string): strin
 }
 
 /** Parsed object storage configuration. R2 requires an account ID; signing checks credentials at use. */
+const FullEmailAddress = Schema.String.pipe(
+  Schema.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/))
+)
+
 export const StorageConfigSchema = Schema.Struct({
   provider: Schema.Literals(['aws', 'r2']),
   accountId: Schema.optional(Schema.String),
@@ -152,7 +157,7 @@ const ConfigSchema = Schema.Struct({
     bucketRouter: Schema.String
   }),
   auth: Schema.Struct({
-    emailSender: Schema.String,
+    emailSender: FullEmailAddress,
     accessTokenSecret: Schema.String,
     refreshTokenSecret: Schema.String,
     betterAuthSecret: Schema.String,
@@ -244,7 +249,7 @@ export function createConfig(bindings?: WorkerConfigBindings): ConfigService {
   const frontendUrl = resourceString('Urls', 'site', 'http://127.0.0.1:5173')
   const vpsUrl = resourceString('Urls', 'vps', 'http://127.0.0.1:3003')
   const bucketRouterUrl = 'https://cdn.goosebumps.fm'
-  const emailSender = resourceString('Email', 'sender', '')
+  const emailSender = stringValue(bindings?.EMAIL_SENDER, 'noreply@mail.goosebumps.fm')
   const userContentBucketName =
     bindings?.USER_CONTENT_BUCKET_NAME ?? resourceString('User_Content', 'name', 'user-content-dev')
   const mixesBucketName =

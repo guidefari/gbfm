@@ -1,7 +1,7 @@
 import { EMAIL_DELIVERY_STATUS_VALUES, EMAIL_DELIVERY_STATUSES } from '@gbfm/core/status'
-import { z } from 'zod'
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { z } from 'zod'
 import { user } from './auth.schema'
 
 export const EMAIL_NOTIFICATION_TYPES = {
@@ -14,22 +14,69 @@ export const EMAIL_NOTIFICATION_TYPES = {
 export type EmailNotificationType =
   (typeof EMAIL_NOTIFICATION_TYPES)[keyof typeof EMAIL_NOTIFICATION_TYPES]
 
-// Email delivery logs table - tracks all email sending attempts
+/** Providers retained only as delivery-log history, not as a runtime selection mechanism. */
+export const EMAIL_DELIVERY_PROVIDERS = ['ses', 'cloudflare'] as const
+export type EmailDeliveryProvider = (typeof EMAIL_DELIVERY_PROVIDERS)[number]
+
+/** Safe, closed failure categories persisted when a provider rejects or cannot accept a message. */
+export const EMAIL_DELIVERY_FAILURE_CATEGORIES = [
+  'invalid-message',
+  'sender-not-verified',
+  'recipient-not-allowed',
+  'recipient-suppressed',
+  'delivery-failed',
+  'content-too-large',
+  'unavailable'
+] as const
+export type EmailDeliveryFailureCategory = (typeof EMAIL_DELIVERY_FAILURE_CATEGORIES)[number]
+
+/** Safe metadata that supports delivery-log operations without accepting arbitrary request payloads. */
+export type EmailDeliveryMetadata =
+  | { readonly kind: 'invite'; readonly invitedBy: string }
+  | {
+      readonly kind: 'mix-notification'
+      readonly mixId: string
+      readonly mixSlug: string
+      readonly mixTitle: string
+      readonly artistName: string
+      readonly releaseDate: string
+    }
+  | { readonly kind: 'music-reminder'; readonly reminderId: string }
+
+const emailDeliveryStatusEnum = z.enum(EMAIL_DELIVERY_STATUS_VALUES)
+const emailDeliveryProviderEnum = z.enum(EMAIL_DELIVERY_PROVIDERS)
+const emailDeliveryFailureCategoryEnum = z.enum(EMAIL_DELIVERY_FAILURE_CATEGORIES)
+const emailDeliveryMetadataSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('invite'), invitedBy: z.string() }),
+  z.object({
+    kind: z.literal('mix-notification'),
+    mixId: z.string(),
+    mixSlug: z.string(),
+    mixTitle: z.string(),
+    artistName: z.string(),
+    releaseDate: z.string()
+  }),
+  z.object({ kind: z.literal('music-reminder'), reminderId: z.string() })
+])
+
+/** Delivery attempts and provider acceptance receipts. */
 export const emailDeliveryLogsTable = sqliteTable(
   'email_delivery_logs',
   {
     id: text()
       .primaryKey()
       .$defaultFn(() => crypto.randomUUID()),
-    userId: text().references(() => user.id, { onDelete: 'set null' }), // null for non-user emails
+    userId: text().references(() => user.id, { onDelete: 'set null' }),
     recipientEmail: text().notNull(),
     recipientName: text(),
     emailType: text().notNull(),
     templateName: text().notNull(),
     subject: text().notNull(),
     status: text().notNull().default(EMAIL_DELIVERY_STATUSES.PENDING),
-    sesMessageId: text(),
-    metadata: text({ mode: 'json' }).$type<Record<string, unknown>>(),
+    provider: text({ enum: EMAIL_DELIVERY_PROVIDERS }),
+    providerMessageId: text(),
+    metadata: text({ mode: 'json' }).$type<EmailDeliveryMetadata>(),
+    failureCategory: text({ enum: EMAIL_DELIVERY_FAILURE_CATEGORIES }),
     errorMessage: text(),
     sentAt: integer({ mode: 'timestamp_ms' }),
     deliveredAt: integer({ mode: 'timestamp_ms' }),
@@ -50,7 +97,7 @@ export const emailDeliveryLogsTable = sqliteTable(
   ]
 )
 
-// Author email preferences table - manages user notification settings
+/** Per-user notification preferences. */
 export const userEmailPreferencesTable = sqliteTable('user_email_preferences', {
   id: text()
     .primaryKey()
@@ -59,14 +106,11 @@ export const userEmailPreferencesTable = sqliteTable('user_email_preferences', {
     .notNull()
     .unique()
     .references(() => user.id, { onDelete: 'cascade' }),
-  // Notification preferences
   mixReleaseEnabled: integer({ mode: 'boolean' }).notNull().default(true),
   promotionalEnabled: integer({ mode: 'boolean' }).notNull().default(true),
   systemEnabled: integer({ mode: 'boolean' }).notNull().default(true),
-  // Global settings
-  globalUnsubscribe: integer({ mode: 'boolean' }).notNull().default(false), // Opt-out of all non-transactional emails
-  // Metadata
-  unsubscribeToken: text().unique(), // Token for unsubscribe links
+  globalUnsubscribe: integer({ mode: 'boolean' }).notNull().default(false),
+  unsubscribeToken: text().unique(),
   createdAt: integer({ mode: 'timestamp_ms' })
     .notNull()
     .$defaultFn(() => new Date()),
@@ -75,14 +119,10 @@ export const userEmailPreferencesTable = sqliteTable('user_email_preferences', {
     .$defaultFn(() => new Date())
 })
 
-// Type exports for Drizzle
 export type SelectEmailDeliveryLog = InferSelectModel<typeof emailDeliveryLogsTable>
 export type InsertEmailDeliveryLog = InferInsertModel<typeof emailDeliveryLogsTable>
 export type SelectAuthorEmailPreferences = InferSelectModel<typeof userEmailPreferencesTable>
 export type InsertAuthorEmailPreferences = InferInsertModel<typeof userEmailPreferencesTable>
-
-// Zod schemas for API validation
-const emailDeliveryStatusEnum = z.enum(EMAIL_DELIVERY_STATUS_VALUES)
 
 export const selectEmailDeliveryLogSchema = z.object({
   id: z.string(),
@@ -93,8 +133,10 @@ export const selectEmailDeliveryLogSchema = z.object({
   templateName: z.string(),
   subject: z.string(),
   status: emailDeliveryStatusEnum,
-  sesMessageId: z.string().nullable(),
-  metadata: z.record(z.string(), z.unknown()).nullable(),
+  provider: emailDeliveryProviderEnum.nullable(),
+  providerMessageId: z.string().nullable(),
+  metadata: emailDeliveryMetadataSchema.nullable(),
+  failureCategory: emailDeliveryFailureCategoryEnum.nullable(),
   errorMessage: z.string().nullable(),
   sentAt: z.date().nullable(),
   deliveredAt: z.date().nullable(),
@@ -112,8 +154,10 @@ export const insertEmailDeliveryLogSchema = z.object({
   templateName: z.string(),
   subject: z.string(),
   status: emailDeliveryStatusEnum.optional(),
-  sesMessageId: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  provider: emailDeliveryProviderEnum.optional(),
+  providerMessageId: z.string().optional(),
+  metadata: emailDeliveryMetadataSchema.optional(),
+  failureCategory: emailDeliveryFailureCategoryEnum.optional(),
   errorMessage: z.string().optional(),
   sentAt: z.date().optional(),
   deliveredAt: z.date().optional(),
@@ -149,7 +193,6 @@ export const updateAuthorEmailPreferencesSchema = z.object({
   globalUnsubscribe: z.boolean().optional()
 })
 
-// Relations
 export const emailDeliveryLogsRelations = relations(emailDeliveryLogsTable, ({ one }) => ({
   user: one(user, {
     fields: [emailDeliveryLogsTable.userId],

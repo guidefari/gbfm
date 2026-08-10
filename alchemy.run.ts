@@ -5,6 +5,7 @@ import * as Redacted from 'effect/Redacted'
 import { reminderSweepCron, sitemapRegenerationCron } from './apps/server/src/scheduled'
 import type { NavigationLockDurableObject } from './apps/server/src/durable-objects/navigation-lock.do'
 import type { SpotifyImportResolverDurableObject } from './apps/server/src/durable-objects/spotify-import-resolver.do'
+import { emailDeploymentConfig } from './apps/server/src/email-deployment-config'
 
 export default Alchemy.Stack(
   'gbfm',
@@ -16,6 +17,24 @@ export default Alchemy.Stack(
     const stack = yield* Alchemy.Stack
     const isProduction = stack.stage === 'prod'
     const secret = (name: string, sourceName = name) => Redacted.make(process.env[sourceName] ?? '')
+    const emailConfig = emailDeploymentConfig({
+      stage: stack.stage,
+      testRecipient: process.env.EMAIL_TEST_RECIPIENT
+    })
+
+    const routing = yield* Cloudflare.Email.Routing('EmailRouting', { zone: 'goosebumps.fm' })
+    yield* Cloudflare.Email.SendingSubdomain('EmailSending', {
+      zoneId: routing.zoneId,
+      name: emailConfig.sendingDomain
+    })
+    const email = isProduction
+      ? yield* Cloudflare.Email.SendEmail('EMAIL', {
+          allowedSenderAddresses: [emailConfig.emailSender]
+        })
+      : yield* Cloudflare.Email.SendEmail('EMAIL', {
+          allowedSenderAddresses: [emailConfig.emailSender],
+          destinationAddress: emailConfig.destinationAddress
+        })
 
     const db = yield* Cloudflare.D1.Database('Database', {
       migrationsDir: './apps/server/drizzle-d1'
@@ -39,6 +58,8 @@ export default Alchemy.Stack(
         MIXES: mixes,
         SITEMAP: sitemap,
         REMINDERS: reminders,
+        EMAIL: email,
+        EMAIL_SENDER: emailConfig.emailSender,
         NAVIGATION_LOCK: Cloudflare.DurableObject<NavigationLockDurableObject>('NavigationLock', {
           className: 'NavigationLockDurableObject'
         }),

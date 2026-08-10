@@ -18,7 +18,8 @@ import { BlueskyRunsServiceLayer } from '@/services/bluesky-runs.service'
 import { BlueskySyncServiceLayer } from '@/services/bluesky-sync.service'
 import { LockServiceLayer } from '@/services/lock.service'
 import { CryptoServiceLayer } from '@/services/crypto.service'
-import { EmailServiceLayer } from '@/services/email.service'
+import { EmailDeliveryLive } from '@/services/email-delivery.service'
+import type { EmailTransportService } from '@/services/email-transport.service'
 import { FavoriteServiceLayer } from '@/services/favorite.service'
 import { AppLoggerLive } from '@/services/logger.service'
 import { MusicEntityServiceLayer } from '@/services/music-entity'
@@ -61,8 +62,12 @@ export const AppLayer = (
   sentryLive: Layer.Layer<SentryService>,
   tracingLive: Layer.Layer<OtelTracer.OtelTracer>,
   configLive: Layer.Layer<ConfigService> = ConfigServiceLayer,
-  objectStoreLive: Layer.Layer<ObjectStoreClient> = UnavailableObjectStoreClientLayer
+  objectStoreLive: Layer.Layer<ObjectStoreClient> = UnavailableObjectStoreClientLayer,
+  emailTransportLive: Layer.Layer<EmailTransportService>
 ) => {
+  const EmailDeliveryWithDependencies = EmailDeliveryLive.pipe(
+    Layer.provide(Layer.mergeAll(databaseLive, configLive, emailTransportLive))
+  )
   const UploadAssetDepsLive = Layer.mergeAll(configLive, UploadAssetServiceLayer)
   const BaseServicesLayer = Layer.mergeAll(
     configLive,
@@ -70,7 +75,7 @@ export const AppLayer = (
     BlueskyImportServiceLayer,
     LockServiceLayer,
     CryptoServiceLayer.pipe(Layer.provide(configLive)),
-    EmailServiceLayer,
+    EmailDeliveryWithDependencies,
     FavoriteServiceLayer,
     SpotifyServiceLayer.pipe(Layer.provide(configLive)),
     MusicReminderServiceLayer,
@@ -122,7 +127,9 @@ export const AppLayer = (
     ServicesLayer,
     databaseLive,
     sitemapCacheLive,
-    AuthLive.pipe(Layer.provide(Layer.mergeAll(databaseLive, configLive))),
+    AuthLive.pipe(
+      Layer.provide(Layer.mergeAll(databaseLive, configLive, EmailDeliveryWithDependencies))
+    ),
     AppLoggerLive.pipe(Layer.provide(configLive))
   ).pipe(Layer.provide(configLive))
 }

@@ -6,24 +6,27 @@ export { TestEmail } from '../emails/test-email'
 export { emailTheme } from '../emails/theme'
 export { WelcomeEmail } from '../emails/welcome'
 export {
-  type EmailTemplate,
-  type SendEmailOptions,
-  sendEmail,
-  sendInviteEmail,
-  sendNewUserNotificationEmail,
-  sendNewsletterAdminNotificationEmail,
-  sendPasswordResetEmail,
-  sendTestEmail,
-  sendWelcomeEmail
-} from './sender'
-export {
-  type Attachment,
-  getFromAddress,
-  getToAddresses,
-  type SendEmailProps,
-  type SendTemplateEmailProps,
-  type SimpleSendEmailOptions,
-  send,
-  sendSimpleEmail,
-  sendTemplate
-} from './ses'
+  buildInviteEmail,
+  buildMusicReminderEmail,
+  buildNewMixNotificationEmail,
+  buildNewUserNotificationEmail,
+  buildNewsletterAdminNotificationEmail,
+  buildNewsletterUnsubscribeLinkEmail,
+  buildNewsletterWelcomeEmail,
+  buildPasswordResetEmail,
+  buildTestEmail,
+  buildWelcomeEmail,
+  type BuildInviteEmailInput,
+  type BuildMusicReminderEmailInput,
+  type BuildNewMixNotificationEmailInput,
+  type BuildNewUserNotificationEmailInput,
+  type BuildNewsletterAdminNotificationEmailInput,
+  type BuildNewsletterUnsubscribeLinkEmailInput,
+  type BuildNewsletterWelcomeEmailInput,
+  type BuildPasswordResetEmailInput,
+  type BuildTestEmailInput,
+  type BuildWelcomeEmailInput,
+  type EmailRecipientInput
+} from './builder'
+export { emailTemplateNames, type EmailTemplateName, type RenderedEmail } from './message'
+export { EmailRenderError, renderEmail, type RenderEmailInput } from './render'

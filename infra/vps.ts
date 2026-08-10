@@ -1,6 +1,5 @@
 import { contentBucket, fileRouter, mixesBucket } from './bucket'
 import { domain, urls } from './dns'
-import { email } from './email'
 import { allSecrets } from './secret'
 
 const isLocal = ['local', 'dev'].includes($app.stage)
@@ -44,7 +43,6 @@ export const service = new sst.aws.Service('gbfm_vps', {
   },
   link: [
     // database,
-    email,
     urls,
     fileRouter,
     contentBucket,

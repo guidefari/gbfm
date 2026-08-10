@@ -2,9 +2,9 @@ import { Api } from '@gbfm/api/api'
 import { type SendMixNotificationInput, type SendMixNotificationResponse } from '@gbfm/api/email'
 import { AuthSession } from '@gbfm/api/middleware/auth'
 import { EMAIL_DELIVERY_STATUSES, type EmailDeliveryStatus } from '@gbfm/core/status'
-import { sendMixNotificationEmail } from '@gbfm/email/sender'
+import { buildNewMixNotificationEmail, EmailRenderError } from '@gbfm/email/index'
 import { and, eq } from 'drizzle-orm'
-import { Effect, Schema } from 'effect'
+import { Effect } from 'effect'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
 import { Database } from '@/db/layer'
 import { audioTable } from '@/db/audio.schema'
@@ -16,19 +16,20 @@ import {
 } from '@/db/email.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
+import { getAdminEmailLogs } from '@/repositories/email-delivery-log.repository'
 import {
-  createEmailDeliveryLog,
-  getAdminEmailLogs,
-  markEmailDeliveryLogAsFailed,
-  markEmailDeliveryLogAsSent
-} from '@/repositories/email-delivery-log.repository'
-import {
-  canReceiveEmail,
+  canEmailReceive,
   getActiveMixRecipients
 } from '@/repositories/email-preferences.repository'
+import {
+  EmailDelivery,
+  EmailDeliveryPersistenceError,
+  EmailDeliveryRejected,
+  type EmailDeliveryService,
+  EmailDeliveryUnavailable
+} from '@/services/email-delivery.service'
 
 const dieOnDatabaseError = makeDieOnDatabaseError('email')
-const EmailMetadata = Schema.NullOr(Schema.Record(Schema.String, Schema.Unknown))
 
 const EMAIL_TYPE_NORMALIZATION_MAP: Record<string, EmailNotificationType> = {
   TRANSACTIONAL: EMAIL_NOTIFICATION_TYPES.TRANSACTIONAL,
@@ -51,8 +52,15 @@ const EMAIL_STATUS_NORMALIZATION_MAP: Record<string, EmailDeliveryStatus> = {
   FAILURE: EMAIL_DELIVERY_STATUSES.FAILED
 }
 
-class MixNotFoundError extends Error {
-  readonly _tag = 'MixNotFoundError'
+const MIX_NOTIFICATION_SEND_CONCURRENCY = 5
+
+type MixNotificationRecipientOutcome =
+  | { readonly _tag: 'sent'; readonly recipient: string; readonly emailId: string }
+  | { readonly _tag: 'skipped'; readonly recipient: string }
+  | { readonly _tag: 'failed'; readonly recipient: string }
+
+function normalizeRecipientEmail(value: string): string {
+  return value.trim().toLowerCase()
 }
 
 function normalizeLogToken(value: string | null | undefined) {
@@ -68,10 +76,18 @@ function toEmailLogResponse(log: SelectEmailDeliveryLog) {
   const normalizedStatusToken = normalizeLogToken(log.status)
 
   return {
-    ...log,
+    id: log.id,
+    userId: log.userId,
+    recipientEmail: log.recipientEmail,
+    recipientName: log.recipientName,
     emailType: EMAIL_TYPE_NORMALIZATION_MAP[normalizedTypeToken] ?? EMAIL_NOTIFICATION_TYPES.SYSTEM,
+    templateName: log.templateName,
+    subject: log.subject,
     status: EMAIL_STATUS_NORMALIZATION_MAP[normalizedStatusToken] ?? EMAIL_DELIVERY_STATUSES.FAILED,
-    metadata: Schema.decodeUnknownSync(EmailMetadata)(log.metadata),
+    provider: log.provider,
+    providerMessageId: log.providerMessageId,
+    failureCategory: log.failureCategory,
+    errorMessage: log.errorMessage,
     sentAt: log.sentAt?.toISOString() ?? null,
     deliveredAt: log.deliveredAt?.toISOString() ?? null,
     bouncedAt: log.bouncedAt?.toISOString() ?? null,
@@ -81,137 +97,147 @@ function toEmailLogResponse(log: SelectEmailDeliveryLog) {
   }
 }
 
-async function sendMixNotification(
-  db: Database['Service'],
-  input: SendMixNotificationInput
-): Promise<SendMixNotificationResponse> {
-  const recipients =
-    input.recipients && input.recipients.length > 0
-      ? input.recipients
-      : await getActiveMixRecipients(db)
-
-  if (recipients.length === 0) {
-    return { success: true, sentTo: [], emailIds: [], message: 'No opted-in recipients' }
-  }
-
-  const mix = await db.query.audioTable.findFirst({
-    where: and(
-      eq(audioTable.slug, input.mixSlug),
-      eq(audioTable.type, 'mix'),
-      eq(audioTable.draft, false)
-    ),
-    with: {
-      show: {
-        columns: { thumbnailUrl: true }
-      }
-    }
+const databaseEffect = <A>(
+  operation: DatabaseError['operation'],
+  table: string,
+  execute: () => Promise<A>
+) =>
+  Effect.tryPromise({
+    try: execute,
+    catch: (cause) =>
+      new DatabaseError({
+        message: `Email database ${operation} failed: ${getErrorMessage(cause)}`,
+        operation,
+        table
+      })
   })
 
-  if (!mix) {
-    throw new MixNotFoundError(`Mix not found: ${input.mixSlug}`)
-  }
+const sendMixNotification = (
+  db: Database['Service'],
+  input: SendMixNotificationInput,
+  delivery: EmailDeliveryService
+) =>
+  Effect.gen(function* () {
+    const recipients =
+      input.recipients && input.recipients.length > 0
+        ? input.recipients.map(normalizeRecipientEmail)
+        : yield* databaseEffect('select', 'user_email_preferences', () =>
+            getActiveMixRecipients(db)
+          )
 
-  const mixThumbnailUrl = mix.thumbnailUrl ?? mix.show?.thumbnailUrl ?? null
-  const mixUrl = `https://goosebumps.fm/mixes/${mix.slug}`
-  const coverImageUrl = input.metadata?.coverImageUrl || mixThumbnailUrl || undefined
-  const releaseDate =
-    input.metadata?.releaseDate ||
-    (mix.createdAt
-      ? new Date(mix.createdAt).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        })
-      : new Date().toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        }))
-
-  const sentTo: string[] = []
-  const skipped: string[] = []
-  const errors: string[] = []
-  const emailIds: string[] = []
-
-  for (const recipient of recipients) {
-    const [user] = await db
-      .select()
-      .from(usersTable)
-      .where(eq(usersTable.email, recipient))
-      .limit(1)
-
-    const username = user?.name || input.metadata?.username || recipient.split('@')[0] || 'listener'
-
-    if (user && !(await canReceiveEmail(user.id, EMAIL_NOTIFICATION_TYPES.MIX_RELEASE, db))) {
-      console.info('[Email] Sending mix notification emails', {
-        totalRecipients: recipients.length,
-        mixSlug: input.mixSlug,
-        mixTitle: input.metadata?.mixTitle || mix.title
-      })
-      skipped.push(recipient)
-      continue
+    if (recipients.length === 0) {
+      return { success: true, sentTo: [], emailIds: [], message: 'No opted-in recipients' }
     }
 
-    const mixTitle = input.metadata?.mixTitle || mix.title
-    const deliveryLog = await createEmailDeliveryLog(
-      {
-        userId: user?.id,
-        recipientEmail: recipient,
-        recipientName: username,
-        emailType: EMAIL_NOTIFICATION_TYPES.MIX_RELEASE,
-        templateName: 'mix-notification',
-        subject: `New mix: ${mixTitle}`,
-        status: EMAIL_DELIVERY_STATUSES.PENDING,
-        metadata: {
-          mixId: mix.id,
-          mixSlug: mix.slug,
-          mixTitle,
-          artistName: input.metadata?.artistName || 'Guide Fari',
-          coverImageUrl,
-          releaseDate
-        }
-      },
-      db
+    const mix = yield* databaseEffect('select', 'audio', () =>
+      db.query.audioTable.findFirst({
+        where: and(
+          eq(audioTable.slug, input.mixSlug),
+          eq(audioTable.type, 'mix'),
+          eq(audioTable.draft, false)
+        ),
+        with: { show: { columns: { thumbnailUrl: true } } }
+      })
     )
 
-    try {
-      await sendMixNotificationEmail({
-        to: recipient,
-        username,
-        mixTitle,
-        artistName: input.metadata?.artistName || 'Guide Fari',
-        mixUrl,
-        coverImageUrl,
-        releaseDate
-      })
-      await markEmailDeliveryLogAsSent(deliveryLog.id, db)
-      sentTo.push(recipient)
-      emailIds.push(deliveryLog.id)
-    } catch (error: unknown) {
-      console.error('[Email] Failed to send mix notification email', {
-        userId: user?.id,
-        mixSlug: input.mixSlug,
-        mixTitle: input.metadata?.mixTitle || mix.title,
-        emailLogId: deliveryLog.id
-      })
-      await markEmailDeliveryLogAsFailed(deliveryLog.id, getErrorMessage(error), db)
-      errors.push(recipient)
+    if (!mix) return yield* new HttpApiError.NotFound()
+
+    const mixThumbnailUrl = mix.thumbnailUrl ?? mix.show?.thumbnailUrl ?? null
+    const mixUrl = `https://goosebumps.fm/mixes/${mix.slug}`
+    const coverImageUrl = input.metadata?.coverImageUrl || mixThumbnailUrl || undefined
+    const releaseDate =
+      input.metadata?.releaseDate ||
+      (mix.createdAt
+        ? new Date(mix.createdAt).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          })
+        : new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          }))
+
+    const outcomes = yield* Effect.forEach(
+      recipients,
+      (recipient) =>
+        Effect.gen(function* () {
+          const canReceive = yield* databaseEffect('select', 'email_recipients', () =>
+            canEmailReceive(recipient, EMAIL_NOTIFICATION_TYPES.MIX_RELEASE, db)
+          )
+          if (!canReceive) {
+            return { _tag: 'skipped', recipient } as const
+          }
+
+          const [user] = yield* databaseEffect('select', 'user', () =>
+            db.select().from(usersTable).where(eq(usersTable.email, recipient)).limit(1)
+          )
+          const username =
+            user?.name || input.metadata?.username || recipient.split('@')[0] || 'listener'
+          const mixTitle = input.metadata?.mixTitle || mix.title
+          const message = yield* buildNewMixNotificationEmail({
+            to: recipient,
+            username,
+            mixTitle,
+            artistName: input.metadata?.artistName || 'Guide Fari',
+            mixUrl,
+            coverImageUrl,
+            releaseDate
+          })
+          const receipt = yield* delivery.deliver({
+            message,
+            emailType: EMAIL_NOTIFICATION_TYPES.MIX_RELEASE,
+            userId: user?.id,
+            recipientName: username,
+            safeMetadata: {
+              kind: 'mix-notification',
+              mixId: mix.id,
+              mixSlug: mix.slug,
+              mixTitle,
+              artistName: input.metadata?.artistName || 'Guide Fari',
+              releaseDate
+            }
+          })
+          return { _tag: 'sent', recipient, emailId: receipt.deliveryLogId } as const
+        }).pipe(
+          Effect.catchTags({
+            EmailRenderError: () => Effect.succeed({ _tag: 'failed', recipient } as const),
+            EmailDeliveryPersistenceError: () =>
+              Effect.succeed({ _tag: 'failed', recipient } as const),
+            EmailDeliveryRejected: () => Effect.succeed({ _tag: 'failed', recipient } as const),
+            EmailDeliveryUnavailable: () => Effect.succeed({ _tag: 'failed', recipient } as const)
+          })
+        ),
+      { concurrency: MIX_NOTIFICATION_SEND_CONCURRENCY }
+    )
+
+    const sentTo = outcomes.flatMap((outcome) =>
+      outcome._tag === 'sent' ? [outcome.recipient] : []
+    )
+    const skipped = outcomes.flatMap((outcome) =>
+      outcome._tag === 'skipped' ? [outcome.recipient] : []
+    )
+    const errors = outcomes.flatMap((outcome) =>
+      outcome._tag === 'failed' ? [outcome.recipient] : []
+    )
+    const emailIds = outcomes.flatMap((outcome) =>
+      outcome._tag === 'sent' ? [outcome.emailId] : []
+    )
+
+    if (sentTo.length === 0 && skipped.length === 0) {
+      return yield* new HttpApiError.InternalServerError()
     }
-  }
 
-  if (sentTo.length === 0 && skipped.length === 0) {
-    throw new Error('Failed to send any emails')
-  }
-
-  return {
-    success: true,
-    sentTo,
-    emailIds,
-    message: `Successfully sent ${sentTo.length} notification(s)${
-      skipped.length > 0 ? ` (${skipped.length} skipped due to preferences)` : ''
-    }${errors.length > 0 ? ` (${errors.length} failed)` : ''}`
-  }
-}
+    return {
+      success: true,
+      sentTo,
+      emailIds,
+      message: `Successfully sent ${sentTo.length} notification(s)${
+        skipped.length > 0 ? ` (${skipped.length} skipped due to preferences)` : ''
+      }${errors.length > 0 ? ` (${errors.length} failed)` : ''}`
+    }
+  })
 
 const requireAdmin = Effect.gen(function* () {
   const { user } = yield* AuthSession
@@ -226,17 +252,8 @@ export const EmailHandlersLive = HttpApiBuilder.group(Api, 'email', (handlers) =
       Effect.gen(function* () {
         yield* requireAdmin
         const db = yield* Database
-        return yield* Effect.tryPromise({
-          try: () => sendMixNotification(db, payload),
-          catch: (error: unknown) =>
-            error instanceof MixNotFoundError
-              ? new HttpApiError.NotFound()
-              : new DatabaseError({
-                  message: `Failed to send mix notification emails: ${getErrorMessage(error)}`,
-                  operation: 'send',
-                  table: 'email_delivery_logs'
-                })
-        }).pipe(dieOnDatabaseError)
+        const delivery = yield* EmailDelivery
+        return yield* sendMixNotification(db, payload, delivery).pipe(dieOnDatabaseError)
       })
     )
     .handle('getEmailLogs', ({ query }) =>

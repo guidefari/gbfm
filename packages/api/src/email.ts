@@ -33,6 +33,9 @@ const DateOnly = Schema.String.pipe(
   )
 )
 
+/** Maximum explicit recipients accepted by an admin mix-notification request. */
+export const MAX_MIX_NOTIFICATION_RECIPIENTS = 50
+
 const EmailLogStatus = Schema.Literals([
   'PENDING',
   'SENT',
@@ -56,8 +59,6 @@ const PaginationMeta = Schema.Struct({
   hasMore: Schema.Boolean
 })
 
-const EmailMetadata = Schema.NullOr(Schema.Record(Schema.String, Schema.Unknown))
-
 const EmailLog = Schema.Struct({
   id: Schema.String,
   userId: Schema.NullOr(Schema.String),
@@ -67,8 +68,19 @@ const EmailLog = Schema.Struct({
   templateName: Schema.String,
   subject: Schema.String,
   status: EmailLogStatus,
-  sesMessageId: Schema.NullOr(Schema.String),
-  metadata: EmailMetadata,
+  provider: Schema.NullOr(Schema.Literals(['ses', 'cloudflare'])),
+  providerMessageId: Schema.NullOr(Schema.String),
+  failureCategory: Schema.NullOr(
+    Schema.Literals([
+      'invalid-message',
+      'sender-not-verified',
+      'recipient-not-allowed',
+      'recipient-suppressed',
+      'delivery-failed',
+      'content-too-large',
+      'unavailable'
+    ])
+  ),
   errorMessage: Schema.NullOr(Schema.String),
   sentAt: Schema.NullOr(Schema.String),
   deliveredAt: Schema.NullOr(Schema.String),
@@ -96,7 +108,9 @@ const PaginationQuery = {
 }
 
 export const SendMixNotificationInput = Schema.Struct({
-  recipients: Schema.optional(Schema.Array(Email)),
+  recipients: Schema.optional(
+    Schema.Array(Email).pipe(Schema.check(Schema.isMaxLength(MAX_MIX_NOTIFICATION_RECIPIENTS)))
+  ),
   mixSlug: Schema.NonEmptyString,
   metadata: Schema.optional(
     Schema.Struct({

@@ -4,7 +4,7 @@ import type { BlueskyAccountService } from '@/services/bluesky-account.service'
 import type { BlueskyArchiveService } from '@/services/bluesky-archive.service'
 import type { BlueskySyncService } from '@/services/bluesky-sync.service'
 import type { ConfigService } from '@/services/config.service'
-import type { EmailService } from '@/services/email.service'
+import type { EmailDeliveryService } from '@/services/email-delivery.service'
 import type { FavoriteService } from '@/services/favorite.service'
 import type { LockService } from '@/services/lock.service'
 import type { MusicEntityService } from '@/services/music-entity'
@@ -29,6 +29,7 @@ import { NavigationLockLocalLayer } from '@/services/navigation-lock'
 import { ConfigServiceLayer } from '@/services/config.service'
 import { AwsObjectStoreClientLayer } from '@/services/storage/aws-object-store-client'
 import { SpotifyImportResolverLocalLayer } from '@/services/spotify-import-resolver.service'
+import { UnconfiguredEmailTransportLayer } from '@/services/email-transport.service'
 import { SitemapCache as SitemapCacheTag } from '@/services/sitemap-cache'
 import { AppLayer } from './services'
 import { BunSentryServiceLive, BunTracingLive } from './sentry-bun'
@@ -63,7 +64,7 @@ export type AppServices =
   | LockService
   | Database
   | Auth
-  | EmailService
+  | EmailDeliveryService
   | FavoriteService
   | SitemapCache
   | SpotifyService
@@ -87,6 +88,10 @@ export type AppServices =
 const configLive = ConfigServiceLayer
 const awsObjectStoreLive = AwsObjectStoreClientLayer.pipe(Layer.provide(configLive))
 
+// Bun has no Worker email binding. Local tests compose RecordingEmailTransportLayer
+// explicitly; every Bun runtime instead fails closed before it can claim a fake receipt.
+const bunEmailTransportLive = UnconfiguredEmailTransportLayer
+
 const managedRuntime = ManagedRuntime.make(
   AppLayer(
     UnavailableDatabaseLive,
@@ -96,7 +101,8 @@ const managedRuntime = ManagedRuntime.make(
     BunSentryServiceLive,
     BunTracingLive,
     configLive,
-    awsObjectStoreLive
+    awsObjectStoreLive,
+    bunEmailTransportLive
   )
 )
 

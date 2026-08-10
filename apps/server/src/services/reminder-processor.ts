@@ -1,10 +1,79 @@
 import { REMINDER_STATUS } from '@gbfm/core/status'
+import { buildMusicReminderEmail } from '@gbfm/email/index'
 import { and, asc, eq, lte, or } from 'drizzle-orm'
-import { Chunk, Effect, Schedule } from 'effect'
+import { Chunk, Effect } from 'effect'
+import { user } from '@/db/auth.schema'
 import { Database } from '@/db/layer'
+import { EMAIL_NOTIFICATION_TYPES } from '@/db/email.schema'
 import { musicReminder } from '@/db/music-reminder.schema'
 import { getErrorMessage, ReminderProcessingError } from '@/errors'
-import { sendMusicReminderEmailEffect } from './email.service'
+import { EmailDelivery } from './email-delivery.service'
+
+const deliverReminderEmail = (reminder: typeof musicReminder.$inferSelect) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    const delivery = yield* EmailDelivery
+    const rows = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select({ email: user.email, name: user.name })
+          .from(user)
+          .where(eq(user.id, reminder.userId))
+          .limit(1),
+      catch: (cause) =>
+        new ReminderProcessingError({
+          message: `Failed to load reminder recipient: ${getErrorMessage(cause)}`,
+          reminderId: reminder.id,
+          stage: 'query'
+        })
+    })
+    const recipient = rows[0]
+    if (!recipient?.email) {
+      return yield* new ReminderProcessingError({
+        message: 'Reminder recipient has no email address',
+        reminderId: reminder.id,
+        stage: 'email'
+      })
+    }
+
+    const message = yield* buildMusicReminderEmail({
+      to: recipient.email,
+      username: recipient.name || recipient.email.split('@')[0] || 'listener',
+      musicTitle: reminder.musicTitle,
+      artistName: reminder.artistName,
+      musicUrl: reminder.musicUrl,
+      reminderDate: reminder.reminderDate.toISOString(),
+      notes: reminder.notes,
+      albumCoverUrl: reminder.albumCoverUrl
+    }).pipe(
+      Effect.mapError(
+        () =>
+          new ReminderProcessingError({
+            message: 'Failed to render reminder email',
+            reminderId: reminder.id,
+            stage: 'email'
+          })
+      )
+    )
+    yield* delivery
+      .deliver({
+        message,
+        emailType: EMAIL_NOTIFICATION_TYPES.MIX_RELEASE,
+        userId: reminder.userId,
+        recipientName: recipient.name || undefined,
+        safeMetadata: { kind: 'music-reminder', reminderId: reminder.id }
+      })
+      .pipe(
+        Effect.mapError(
+          () =>
+            new ReminderProcessingError({
+              message: 'Failed to deliver reminder email',
+              reminderId: reminder.id,
+              stage: 'email'
+            })
+        )
+      )
+  })
 
 // Process all pending music reminders
 export const processPendingReminders = Effect.gen(function* () {
@@ -55,13 +124,8 @@ export const processPendingReminders = Effect.gen(function* () {
     Chunk.fromIterable(claimedReminders),
     (reminder) =>
       processSingleReminder(reminder).pipe(
-        Effect.retry(Schedule.exponential(1000).pipe(Schedule.upTo({ duration: '30 seconds' }))),
-        Effect.catch((error) =>
-          Effect.logError(
-            `Failed to process reminder ${reminder.id} after retries: ${
-              error instanceof Error ? error.message : String(error)
-            }`
-          )
+        Effect.catchTag('ReminderProcessingError', (error) =>
+          Effect.logError('Failed to process reminder email', { stage: error.stage })
         )
       ),
     { concurrency: 3 }
@@ -71,8 +135,7 @@ export const processPendingReminders = Effect.gen(function* () {
 const processSingleReminder = (reminder: typeof musicReminder.$inferSelect) =>
   Effect.gen(function* () {
     const db = yield* Database
-    // Send the reminder email
-    yield* sendMusicReminderEmailEffect(reminder)
+    yield* deliverReminderEmail(reminder)
 
     // Mark reminder as sent
     yield* Effect.tryPromise({
@@ -233,10 +296,9 @@ export const queryDueReminders = Effect.gen(function* () {
 
 export type ReminderClaimResult = { readonly claimed: true } | { readonly claimed: false }
 
-// Guarded UPDATE ... WHERE status = 'pending'. Zero rows affected means a
-// concurrent queue invocation (or the recovery sweep) already claimed this
-// reminder -- that is a lost race, not an error, so the caller acks rather
-// than retries.
+// Guarded UPDATE ... WHERE status is PENDING or FAILED. A queue redelivery
+// reclaims the FAILED state written after a delivery failure, while zero rows
+// still means another invocation already owns this reminder and can be acked.
 export const claimReminder = (reminderId: string) =>
   Effect.gen(function* () {
     const db = yield* Database
@@ -247,7 +309,13 @@ export const claimReminder = (reminderId: string) =>
           .update(musicReminder)
           .set({ status: REMINDER_STATUS.PROCESSING, updatedAt: new Date() })
           .where(
-            and(eq(musicReminder.id, reminderId), eq(musicReminder.status, REMINDER_STATUS.PENDING))
+            and(
+              eq(musicReminder.id, reminderId),
+              or(
+                eq(musicReminder.status, REMINDER_STATUS.PENDING),
+                eq(musicReminder.status, REMINDER_STATUS.FAILED)
+              )
+            )
           )
           .returning({ id: musicReminder.id }),
       catch: (error) =>
@@ -262,13 +330,15 @@ export const claimReminder = (reminderId: string) =>
     return result
   })
 
-// Sends one already-claimed reminder and marks it sent/failed. Assumes the
-// caller has already won the claim race via claimReminder.
+// Sends one already-claimed reminder and marks it sent/failed. Each invocation
+// makes one provider call. If the provider accepts just before the terminal D1
+// update fails, queue redelivery can send a duplicate; the persisted receipt
+// records accepted attempts but cannot make this external side effect atomic.
 export const sendClaimedReminder = (reminder: typeof musicReminder.$inferSelect) =>
   Effect.gen(function* () {
     const db = yield* Database
 
-    yield* sendMusicReminderEmailEffect(reminder)
+    yield* deliverReminderEmail(reminder)
 
     yield* Effect.tryPromise({
       try: () =>

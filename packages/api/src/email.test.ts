@@ -41,6 +41,19 @@ describe('email API contract', () => {
     expect(() => Schema.decodeUnknownSync(SendMixNotificationInput)({ mixSlug: '' })).toThrow()
   })
 
+  it('rejects more than 50 explicit notification recipients', () => {
+    const recipients = Array.from({ length: 51 }, (_, index) => `listener-${index}@example.com`)
+
+    expect(
+      Exit.isFailure(
+        Schema.decodeUnknownExit(SendMixNotificationInput)({
+          recipients,
+          mixSlug: 'summer-mix'
+        })
+      )
+    ).toBe(true)
+  })
+
   it('uses URL parsing semantics for cover images', () => {
     expect(
       Exit.isSuccess(
@@ -60,32 +73,33 @@ describe('email API contract', () => {
     ).toBe(false)
   })
 
-  it('accepts the serialized delivery-log response shape', () => {
-    expect(
-      Schema.decodeUnknownSync(EmailLogsResponse)({
-        data: [
-          {
-            id: 'log-1',
-            userId: null,
-            recipientEmail: 'listener@example.com',
-            recipientName: null,
-            emailType: 'MIX_RELEASE',
-            templateName: 'mix-notification',
-            subject: 'New mix: Summer',
-            status: 'SENT',
-            sesMessageId: 'ses-1',
-            metadata: { mixSlug: 'summer-mix' },
-            errorMessage: null,
-            sentAt: '2026-07-12T00:00:00.000Z',
-            deliveredAt: null,
-            bouncedAt: null,
-            complainedAt: null,
-            createdAt: '2026-07-12T00:00:00.000Z',
-            updatedAt: '2026-07-12T00:00:00.000Z'
-          }
-        ],
-        pagination: { total: 1, limit: 20, offset: 0, hasMore: false }
-      })
-    ).toBeTruthy()
+  it('projects delivery logs without persistence metadata', () => {
+    const response = Schema.decodeUnknownSync(EmailLogsResponse)({
+      data: [
+        {
+          id: 'log-1',
+          userId: null,
+          recipientEmail: 'listener@example.com',
+          recipientName: null,
+          emailType: 'MIX_RELEASE',
+          templateName: 'mix-notification',
+          subject: 'New mix: Summer',
+          status: 'SENT',
+          provider: 'ses',
+          providerMessageId: 'ses-1',
+          failureCategory: 'delivery-failed',
+          errorMessage: null,
+          sentAt: '2026-07-12T00:00:00.000Z',
+          deliveredAt: null,
+          bouncedAt: null,
+          complainedAt: null,
+          createdAt: '2026-07-12T00:00:00.000Z',
+          updatedAt: '2026-07-12T00:00:00.000Z'
+        }
+      ],
+      pagination: { total: 1, limit: 20, offset: 0, hasMore: false }
+    })
+
+    expect(response.data[0]).not.toHaveProperty('metadata')
   })
 })
