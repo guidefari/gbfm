@@ -91,31 +91,11 @@ const addFavoriteEffect = (userId: string, audioId: string) =>
         })
       }
 
-      // Check if already favorited
-      const existingRecords = yield* Effect.tryPromise({
-        try: () =>
-          db
-            .select()
-            .from(favoritesTable)
-            .where(and(eq(favoritesTable.userId, userId), eq(favoritesTable.audioId, audioId)))
-            .limit(1),
-        catch: (error) =>
-          new DatabaseError({
-            message: `Failed to check existing favorite: ${getErrorMessage(error)}`,
-            operation: 'select',
-            table: 'favorites'
-          })
-      })
-
-      if (existingRecords.length > 0) {
-        return yield* new ConflictError({
-          message: 'Already favorited',
-          resource: 'favorite',
-          id: `${userId}-${audioId}`
-        })
-      }
-
-      // Add favorite
+      // Guarded write: the unique_user_audio constraint, not a pre-read, is
+      // what actually prevents a duplicate under concurrent requests. A
+      // conflicting insert returns zero rows instead of throwing, so a
+      // collision surfaces as the typed ConflictError below rather than an
+      // unhandled DatabaseError defect.
       const insertedRecords = yield* Effect.tryPromise({
         try: () =>
           db
@@ -124,6 +104,7 @@ const addFavoriteEffect = (userId: string, audioId: string) =>
               userId,
               audioId
             })
+            .onConflictDoNothing({ target: [favoritesTable.userId, favoritesTable.audioId] })
             .returning(),
         catch: (error) =>
           new DatabaseError({
@@ -133,20 +114,12 @@ const addFavoriteEffect = (userId: string, audioId: string) =>
           })
       })
 
-      if (insertedRecords.length === 0) {
-        return yield* new DatabaseError({
-          message: 'Failed to create favorite record',
-          operation: 'insert',
-          table: 'favorites'
-        })
-      }
-
       const favorite = insertedRecords[0]
       if (!favorite) {
-        return yield* new DatabaseError({
-          message: 'Failed to create favorite record',
-          operation: 'insert',
-          table: 'favorites'
+        return yield* new ConflictError({
+          message: 'Already favorited',
+          resource: 'favorite',
+          id: `${userId}-${audioId}`
         })
       }
 
@@ -244,29 +217,6 @@ const addShowFavoriteEffect = (userId: string, showId: string) =>
         })
       }
 
-      const existingRecords = yield* Effect.tryPromise({
-        try: () =>
-          db
-            .select()
-            .from(favoritesTable)
-            .where(and(eq(favoritesTable.userId, userId), eq(favoritesTable.showId, showId)))
-            .limit(1),
-        catch: (error) =>
-          new DatabaseError({
-            message: `Failed to check existing favorite: ${getErrorMessage(error)}`,
-            operation: 'select',
-            table: 'favorites'
-          })
-      })
-
-      if (existingRecords.length > 0) {
-        return yield* new ConflictError({
-          message: 'Already favorited',
-          resource: 'favorite',
-          id: `${userId}-${showId}`
-        })
-      }
-
       const insertedRecords = yield* Effect.tryPromise({
         try: () =>
           db
@@ -275,6 +225,7 @@ const addShowFavoriteEffect = (userId: string, showId: string) =>
               userId,
               showId
             })
+            .onConflictDoNothing({ target: [favoritesTable.userId, favoritesTable.showId] })
             .returning(),
         catch: (error) =>
           new DatabaseError({
@@ -286,44 +237,34 @@ const addShowFavoriteEffect = (userId: string, showId: string) =>
 
       const favorite = insertedRecords[0]
       if (!favorite) {
-        return yield* new DatabaseError({
-          message: 'Failed to create favorite record',
-          operation: 'insert',
-          table: 'favorites'
+        return yield* new ConflictError({
+          message: 'Already favorited',
+          resource: 'favorite',
+          id: `${userId}-${showId}`
         })
       }
 
-      // Auto-subscribe when favoriting a show
-      const existingSubscription = yield* Effect.tryPromise({
+      // Auto-subscribe when favoriting a show. Guarded the same way: the
+      // unique constraint decides, so a concurrent duplicate subscribe is a
+      // silent no-op rather than a raced read-then-insert.
+      const subscribed = yield* Effect.tryPromise({
         try: () =>
           db
-            .select()
-            .from(showSubscriptionsTable)
-            .where(
-              and(
-                eq(showSubscriptionsTable.userId, userId),
-                eq(showSubscriptionsTable.showId, showId)
-              )
-            )
-            .limit(1),
+            .insert(showSubscriptionsTable)
+            .values({ userId, showId })
+            .onConflictDoNothing({
+              target: [showSubscriptionsTable.userId, showSubscriptionsTable.showId]
+            })
+            .returning(),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to check subscription: ${getErrorMessage(error)}`,
-            operation: 'select',
+            message: `Failed to subscribe: ${getErrorMessage(error)}`,
+            operation: 'insert',
             table: 'show_subscriptions'
           })
       })
 
-      if (existingSubscription.length === 0) {
-        yield* Effect.tryPromise({
-          try: () => db.insert(showSubscriptionsTable).values({ userId, showId }),
-          catch: (error) =>
-            new DatabaseError({
-              message: `Failed to subscribe: ${getErrorMessage(error)}`,
-              operation: 'insert',
-              table: 'show_subscriptions'
-            })
-        })
+      if (subscribed.length > 0) {
         yield* Effect.logInfo('[Favorites] Auto-subscribed to show', {
           userId,
           showId
