@@ -130,9 +130,16 @@ Two deliberate compromises, both documented in `evidence/d1-m3-report.md`:
    is settled. Includes the navigation Durable Object, the `apps/vps` to
    `apps/server` rename, Cron plus Queue for reminders, rate-limiter deletion,
    the SSE-to-polling change in `apps/www`, and a bundle re-measurement after the
-   Cloudflare Sentry SDK is wired. Also: port `seed-music-lookups.ts` and remove
-   its typecheck exclusion, and replace the two `@ts-expect-error` suppressions in
-   `navigation.service.ts` with the Durable Object.
+   Cloudflare Sentry SDK is wired. Also carries three items folded in from M3
+   review:
+   - **Stop threading `db` by hand.** M2 turned the module-scope singleton into an
+     explicit parameter, producing 77 `db: DatabaseClient` arguments. Service
+     effects should yield `Database` themselves so the `R` channel carries it.
+     Scripts and predicate builders keep the explicit parameter. See the spec
+     section "Stop threading `db` by hand (M4)".
+   - Port `seed-music-lookups.ts` and remove its typecheck exclusion.
+   - Replace the two `@ts-expect-error` suppressions in `navigation.service.ts`
+     with the Durable Object.
 3. **M5: data migration tooling.** Blocked by OPS-252.
 4. **Cutover.** Human only. See the checklist on OPS-250.
 

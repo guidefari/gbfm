@@ -218,6 +218,56 @@ Every consumer changes from `import { db } from '@/db'` to `yield* Database`.
 This is mechanical, touches every service, and is the reason Milestone 2 ships
 alone on Postgres.
 
+### Stop threading `db` by hand (M4)
+
+M2 removed the module-scope `db` singleton by turning it into an explicit first
+parameter. That satisfied the letter of the refactor and skipped its point: there
+are now **77** `db: DatabaseClient` parameters, and the service layer reimplements
+dependency injection by hand inside a system that already does it.
+
+`show.service.ts` is the representative case. It yields `Database` once in its
+Layer, then manually threads `db` into nine free functions:
+
+```ts
+// current: db is a parameter, R channel is empty
+const getBySlugEffect = (db: DatabaseClient, slug: string) => Effect.gen(...)
+
+export const ShowServiceLayer = Layer.effect(ShowService, Effect.gen(function* () {
+  const db = yield* Database
+  return { getBySlug: (slug) => getBySlugEffect(db, slug), /* ...8 more */ }
+}))
+```
+
+The idiomatic shape lets the `R` channel carry the requirement, so the Layer
+provides it once at the edge and `db` vanishes from every signature between:
+
+```ts
+// target: Database is a requirement, not an argument
+const getBySlugEffect = (slug: string) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    ...
+  })
+```
+
+**M4 converts the service layer to this shape.** It already rewrites the
+composition seam and touches every service, so this is one pass rather than two.
+
+Two categories deliberately keep an explicit `db` parameter:
+
+- **Scripts** (`db/seed-music-lookups.ts` and everything under `scripts/`). They
+  run outside any Effect runtime, invoked from `db:migrate` and similar. Requiring
+  `Database` would mean constructing a runtime and providing a Layer to perform one
+  insert.
+- **Predicate builders** (`db/creator-membership.ts`:
+  `audioIdsForCreator`, `showIdsForCreator`, `postIdsForCreator`). These execute
+  nothing. They return a Drizzle `inArray(...)` fragment composed into a `where`
+  clause, and need `db` only to build the subquery. Wrapping a pure value
+  constructor in `Effect` adds ceremony for no benefit.
+
+The test for which category a function is in: **does it perform an effect?** If
+yes, it requires `Database`. If it only builds a value, it takes a parameter.
+
 ### ORM choice: Drizzle, not `@effect/sql-d1`
 
 Worth stating explicitly, because the two available precedents disagree.
