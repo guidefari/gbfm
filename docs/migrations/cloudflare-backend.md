@@ -134,6 +134,8 @@ The browser PUTs image bytes and each multipart chunk directly to the bucket via
 
 ### Phase 2: move jobs and email
 
+Email implementation spec: [`ses-to-cloudflare-email.md`](ses-to-cloudflare-email.md).
+
 - Replace SES behind the existing email package boundary. From Bun, use Email Service's REST API/authenticated SMTP or call a small Worker adapter; the native sending binding is available only once the caller runs in Workers. Evaluate the sending beta for the Workers Paid requirement, account quota, 5 MiB message size, 50-recipient limit, attachments, deliverability, and delivery/bounce/complaint events before adopting it. Keep an external transactional provider as the fallback if the beta fails the gate.
 - Replace the reminder forever loop with a bounded scheduled/Queue-backed process. Process-local queues cannot be a correctness dependency in sleeping or horizontally routed compute. Define one-minute scheduling precision, idempotent claims, overlap prevention, retry policy, and backlog fan-out rather than assuming one invocation can process every due reminder.
 - Replace hourly process-local sitemap regeneration with a Cron Trigger plus KV/R2 cache, or generate on demand with edge caching.

@@ -16,3 +16,5 @@ apps/www/playwright-report
 **/*tsconfig.tsbuildinfo
 docs/refactor.md
 session.md
+apps/server/.alchemy
+.alchemy
