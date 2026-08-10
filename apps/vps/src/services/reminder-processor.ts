@@ -198,3 +198,128 @@ export const getReminderStats = Effect.gen(function* () {
     timestamp: now.toISOString()
   }
 })
+
+const DUE_REMINDERS_LIMIT = 100
+
+// Bounded read for the Cron Trigger: reminders due now, still pending. The
+// scheduled handler enqueues one job per row rather than claiming here --
+// claiming happens in the queue consumer, guarded against the same reminder
+// being enqueued twice by an overlapping cron run.
+export const queryDueReminders = Effect.gen(function* () {
+  const db = yield* Database
+  const now = new Date()
+
+  return yield* Effect.tryPromise({
+    try: () =>
+      db
+        .select({ id: musicReminder.id, reminderDate: musicReminder.reminderDate })
+        .from(musicReminder)
+        .where(
+          and(
+            lte(musicReminder.reminderDate, now),
+            eq(musicReminder.status, REMINDER_STATUS.PENDING)
+          )
+        )
+        .orderBy(asc(musicReminder.reminderDate))
+        .limit(DUE_REMINDERS_LIMIT),
+    catch: (error) =>
+      new ReminderProcessingError({
+        message: `Failed to query due reminders: ${getErrorMessage(error)}`,
+        reminderId: 'due-query',
+        stage: 'query'
+      })
+  })
+})
+
+export type ReminderClaimResult = { readonly claimed: true } | { readonly claimed: false }
+
+// Guarded UPDATE ... WHERE status = 'pending'. Zero rows affected means a
+// concurrent queue invocation (or the recovery sweep) already claimed this
+// reminder -- that is a lost race, not an error, so the caller acks rather
+// than retries.
+export const claimReminder = (reminderId: string) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+
+    const claimed = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .update(musicReminder)
+          .set({ status: REMINDER_STATUS.PROCESSING, updatedAt: new Date() })
+          .where(
+            and(eq(musicReminder.id, reminderId), eq(musicReminder.status, REMINDER_STATUS.PENDING))
+          )
+          .returning({ id: musicReminder.id }),
+      catch: (error) =>
+        new ReminderProcessingError({
+          message: `Failed to claim reminder: ${getErrorMessage(error)}`,
+          reminderId,
+          stage: 'query'
+        })
+    })
+
+    const result: ReminderClaimResult = { claimed: claimed.length > 0 }
+    return result
+  })
+
+// Sends one already-claimed reminder and marks it sent/failed. Assumes the
+// caller has already won the claim race via claimReminder.
+export const sendClaimedReminder = (reminder: typeof musicReminder.$inferSelect) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+
+    yield* sendMusicReminderEmailEffect(reminder)
+
+    yield* Effect.tryPromise({
+      try: () =>
+        db
+          .update(musicReminder)
+          .set({ status: REMINDER_STATUS.SENT, isSent: true, updatedAt: new Date() })
+          .where(eq(musicReminder.id, reminder.id)),
+      catch: (error) =>
+        new ReminderProcessingError({
+          message: `Failed to update reminder status to sent: ${getErrorMessage(error)}`,
+          reminderId: reminder.id,
+          stage: 'update'
+        })
+    })
+  }).pipe(
+    Effect.catch((error) =>
+      Effect.gen(function* () {
+        yield* Effect.logError(`Failed to send reminder ${reminder.id}`, {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          reminderId: reminder.id,
+          musicTitle: reminder.musicTitle
+        })
+
+        const db = yield* Database
+        yield* Effect.tryPromise({
+          try: () =>
+            db
+              .update(musicReminder)
+              .set({ status: REMINDER_STATUS.FAILED, updatedAt: new Date() })
+              .where(eq(musicReminder.id, reminder.id)),
+          catch: () => undefined
+        }).pipe(Effect.ignore)
+
+        return yield* error
+      })
+    )
+  )
+
+// Loads one reminder row by id, for the queue consumer to hand to
+// sendClaimedReminder after a successful claim.
+export const findReminderById = (reminderId: string) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    const rows = yield* Effect.tryPromise({
+      try: () => db.select().from(musicReminder).where(eq(musicReminder.id, reminderId)).limit(1),
+      catch: (error) =>
+        new ReminderProcessingError({
+          message: `Failed to load reminder: ${getErrorMessage(error)}`,
+          reminderId,
+          stage: 'query'
+        })
+    })
+    return rows[0] ?? null
+  })
