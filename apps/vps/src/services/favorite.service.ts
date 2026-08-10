@@ -60,14 +60,13 @@ export interface FavoriteService {
 // Service tag for dependency injection
 export const FavoriteService = Context.Service<FavoriteService>('FavoriteService')
 
-type DatabaseConnection = Context.Service.Shape<typeof Database>
-
 // Core service logic - pure Effects with no service dependencies
-const addFavoriteEffect = (db: DatabaseConnection, userId: string, audioId: string) =>
+const addFavoriteEffect = (userId: string, audioId: string) =>
   Effect.withSpan('favorite.add', {
     attributes: { userId, audioId }
   })(
     Effect.gen(function* () {
+      const db = yield* Database
       // Check if audio exists
       const audioRecords = yield* Effect.tryPromise({
         try: () =>
@@ -163,11 +162,12 @@ const addFavoriteEffect = (db: DatabaseConnection, userId: string, audioId: stri
     })
   )
 
-const removeFavoriteEffect = (db: DatabaseConnection, userId: string, audioId: string) =>
+const removeFavoriteEffect = (userId: string, audioId: string) =>
   Effect.withSpan('favorite.remove', {
     attributes: { userId, audioId }
   })(
     Effect.gen(function* () {
+      const db = yield* Database
       // Check if favorite exists
       const existingRecords = yield* Effect.tryPromise({
         try: () =>
@@ -215,11 +215,12 @@ const removeFavoriteEffect = (db: DatabaseConnection, userId: string, audioId: s
     })
   )
 
-const addShowFavoriteEffect = (db: DatabaseConnection, userId: string, showId: string) =>
+const addShowFavoriteEffect = (userId: string, showId: string) =>
   Effect.withSpan('favorite.addShow', {
     attributes: { userId, showId }
   })(
     Effect.gen(function* () {
+      const db = yield* Database
       const showRecords = yield* Effect.tryPromise({
         try: () =>
           db
@@ -340,11 +341,12 @@ const addShowFavoriteEffect = (db: DatabaseConnection, userId: string, showId: s
     })
   )
 
-const removeShowFavoriteEffect = (db: DatabaseConnection, userId: string, showId: string) =>
+const removeShowFavoriteEffect = (userId: string, showId: string) =>
   Effect.withSpan('favorite.removeShow', {
     attributes: { userId, showId }
   })(
     Effect.gen(function* () {
+      const db = yield* Database
       const existingRecords = yield* Effect.tryPromise({
         try: () =>
           db
@@ -413,15 +415,15 @@ const removeShowFavoriteEffect = (db: DatabaseConnection, userId: string, showId
   )
 
 const getFavoritesEffect = (
-  db: DatabaseConnection,
   userId: string,
   limit = 20,
   offset = 0
-): Effect.Effect<FavoriteWithContent[], DatabaseError> =>
+): Effect.Effect<FavoriteWithContent[], DatabaseError, Database> =>
   Effect.withSpan('favorite.get', {
     attributes: { userId, limit, offset }
   })(
     Effect.gen(function* () {
+      const db = yield* Database
       const favorites = yield* Effect.tryPromise({
         try: () =>
           db
@@ -496,12 +498,13 @@ export const FavoriteServiceLayer = Layer.effect(
   FavoriteService,
   Effect.gen(function* () {
     const db = yield* Database
+    const provideDb = Effect.provideService(Database, db)
     return {
-      addFavorite: (userId, audioId) => addFavoriteEffect(db, userId, audioId),
-      addShowFavorite: (userId, showId) => addShowFavoriteEffect(db, userId, showId),
-      removeFavorite: (userId, audioId) => removeFavoriteEffect(db, userId, audioId),
-      removeShowFavorite: (userId, showId) => removeShowFavoriteEffect(db, userId, showId),
-      getFavorites: (userId, limit, offset) => getFavoritesEffect(db, userId, limit, offset)
+      addFavorite: (userId, audioId) => provideDb(addFavoriteEffect(userId, audioId)),
+      addShowFavorite: (userId, showId) => provideDb(addShowFavoriteEffect(userId, showId)),
+      removeFavorite: (userId, audioId) => provideDb(removeFavoriteEffect(userId, audioId)),
+      removeShowFavorite: (userId, showId) => provideDb(removeShowFavoriteEffect(userId, showId)),
+      getFavorites: (userId, limit, offset) => provideDb(getFavoritesEffect(userId, limit, offset))
     }
   })
 )

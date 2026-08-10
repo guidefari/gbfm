@@ -69,10 +69,9 @@ export interface ProfileService {
 
 export const ProfileService = Context.Service<ProfileService>('ProfileService')
 
-type DatabaseConnection = Context.Service.Shape<typeof Database>
-
-export const getPublicProfileEffect = (db: DatabaseConnection, username: string) =>
+export const getPublicProfileEffect = (username: string) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const userRecords = yield* Effect.tryPromise({
       try: () =>
         db
@@ -241,7 +240,8 @@ export const ProfileServiceLayer = Layer.effect(
     const db = yield* Database
     return {
       getPublicProfile: (username) =>
-        getPublicProfileEffect(db, username).pipe(
+        getPublicProfileEffect(username).pipe(
+          Effect.provideService(Database, db),
           Effect.withSpan('profile.getPublic', { attributes: { username } })
         )
     }

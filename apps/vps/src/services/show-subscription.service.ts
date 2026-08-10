@@ -42,10 +42,9 @@ export interface ShowSubscriptionService {
 export const ShowSubscriptionService =
   Context.Service<ShowSubscriptionService>('ShowSubscriptionService')
 
-type DatabaseConnection = Context.Service.Shape<typeof Database>
-
-const subscribeEffect = (db: DatabaseConnection, userId: string, showId: string) =>
+const subscribeEffect = (userId: string, showId: string) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const showRecords = yield* Effect.tryPromise({
       try: () =>
         db
@@ -109,8 +108,9 @@ const subscribeEffect = (db: DatabaseConnection, userId: string, showId: string)
     return subscription
   })
 
-const unsubscribeEffect = (db: DatabaseConnection, userId: string, showId: string) =>
+const unsubscribeEffect = (userId: string, showId: string) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const result = yield* Effect.tryPromise({
       try: () =>
         db
@@ -140,12 +140,9 @@ const unsubscribeEffect = (db: DatabaseConnection, userId: string, showId: strin
     yield* recordShowUnsubscribe()
   })
 
-const getUserSubscriptionsEffect = (
-  db: DatabaseConnection,
-  userId: string,
-  options: { limit: number; offset: number }
-) =>
+const getUserSubscriptionsEffect = (userId: string, options: { limit: number; offset: number }) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const { limit, offset } = options
 
     const whereCondition = and(
@@ -214,8 +211,9 @@ const getUserSubscriptionsEffect = (
     }
   })
 
-const getSubscribersEffect = (db: DatabaseConnection, showId: string) =>
+const getSubscribersEffect = (showId: string) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const subscribers = yield* Effect.tryPromise({
       try: () =>
         db
@@ -242,27 +240,28 @@ export const ShowSubscriptionServiceLayer = Layer.effect(
   ShowSubscriptionService,
   Effect.gen(function* () {
     const db = yield* Database
+    const provideDb = Effect.provideService(Database, db)
     return {
       subscribe: (userId, showId) =>
-        subscribeEffect(db, userId, showId).pipe(
+        provideDb(subscribeEffect(userId, showId)).pipe(
           Effect.withSpan('showSubscription.subscribe', {
             attributes: { showId }
           })
         ),
       unsubscribe: (userId, showId) =>
-        unsubscribeEffect(db, userId, showId).pipe(
+        provideDb(unsubscribeEffect(userId, showId)).pipe(
           Effect.withSpan('showSubscription.unsubscribe', {
             attributes: { showId }
           })
         ),
       getUserSubscriptions: (userId, options) =>
-        getUserSubscriptionsEffect(db, userId, options).pipe(
+        provideDb(getUserSubscriptionsEffect(userId, options)).pipe(
           Effect.withSpan('showSubscription.getUserSubscriptions', {
             attributes: { userId }
           })
         ),
       getSubscribers: (showId) =>
-        getSubscribersEffect(db, showId).pipe(
+        provideDb(getSubscribersEffect(showId)).pipe(
           Effect.withSpan('showSubscription.getSubscribers', {
             attributes: { showId }
           })

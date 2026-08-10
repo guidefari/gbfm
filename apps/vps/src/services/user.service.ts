@@ -127,11 +127,10 @@ export interface UserService {
 // Service tag for dependency injection
 export const UserService = Context.Service<UserService>('UserService')
 
-type DatabaseConnection = Context.Service.Shape<typeof Database>
-
 // Core service logic - pure Effects with no service dependencies
-const getUserByIdEffect = (db: DatabaseConnection, userId: string) =>
+const getUserByIdEffect = (userId: string) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const userRecords = yield* Effect.tryPromise({
       try: () => db.select().from(userTable).where(eq(userTable.id, userId)).limit(1),
       catch: (error) =>
@@ -155,7 +154,6 @@ const getUserByIdEffect = (db: DatabaseConnection, userId: string) =>
   })
 
 const updateUserProfileEffect = (
-  db: DatabaseConnection,
   userId: string,
   data: {
     email?: string
@@ -165,8 +163,9 @@ const updateUserProfileEffect = (
   }
 ) =>
   Effect.gen(function* () {
+    const db = yield* Database
     // Check if user exists
-    yield* getUserByIdEffect(db, userId)
+    yield* getUserByIdEffect(userId)
 
     // Update user profile
     const updatedRecords = yield* Effect.tryPromise({
@@ -191,8 +190,9 @@ const updateUserProfileEffect = (
     return user
   })
 
-const searchUsersEffect = (db: DatabaseConnection, query: string) =>
+const searchUsersEffect = (query: string) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const searchPattern = `%${query}%`
 
     const users = yield* Effect.tryPromise({
@@ -223,20 +223,24 @@ const searchUsersEffect = (db: DatabaseConnection, query: string) =>
     return users
   })
 
-const getUserEmailPreferencesEffect = (db: DatabaseConnection, userId: string) =>
-  Effect.tryPromise({
-    try: () => getOrCreateEmailPreferencesByUserId(userId, db),
-    catch: (error) =>
-      new DatabaseError({
-        message: `Failed to get user email preferences: ${getErrorMessage(error)}`,
-        operation: 'select',
-        table: 'user_email_preferences'
-      })
+const getUserEmailPreferencesEffect = (userId: string) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    return yield* Effect.tryPromise({
+      try: () => getOrCreateEmailPreferencesByUserId(userId, db),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to get user email preferences: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'user_email_preferences'
+        })
+    })
   })
 
-const getUserSocialLinksEffect = (db: DatabaseConnection, userId: string) =>
+const getUserSocialLinksEffect = (userId: string) =>
   Effect.gen(function* () {
-    yield* getUserByIdEffect(db, userId)
+    const db = yield* Database
+    yield* getUserByIdEffect(userId)
 
     const links = yield* Effect.tryPromise({
       try: () =>
@@ -265,7 +269,6 @@ const getUserSocialLinksEffect = (db: DatabaseConnection, userId: string) =>
   })
 
 const replaceUserSocialLinksEffect = (
-  db: DatabaseConnection,
   userId: string,
   links: Array<{
     platform: SocialLinkPlatform
@@ -274,7 +277,8 @@ const replaceUserSocialLinksEffect = (
   }>
 ) =>
   Effect.gen(function* () {
-    yield* getUserByIdEffect(db, userId)
+    const db = yield* Database
+    yield* getUserByIdEffect(userId)
 
     const updatedLinks = yield* Effect.tryPromise({
       try: async () => {
@@ -319,8 +323,9 @@ const replaceUserSocialLinksEffect = (
     )
   })
 
-const listDjsEffect = (db: DatabaseConnection) =>
+const listDjsEffect = () =>
   Effect.gen(function* () {
+    const db = yield* Database
     const mixCountExpr = sql<number>`count(${audioTable.id})::int`
 
     const rows = yield* Effect.tryPromise({
@@ -352,11 +357,11 @@ const listDjsEffect = (db: DatabaseConnection) =>
   })
 
 const updateUserEmailPreferencesEffect = (
-  db: DatabaseConnection,
   userId: string,
   preferences: Partial<InsertAuthorEmailPreferences>
 ) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const result = yield* Effect.tryPromise({
       try: () => updateEmailPreferencesRepo(userId, preferences, db),
       catch: (error) =>
@@ -383,34 +388,35 @@ export const UserServiceLayer = Layer.effect(
   UserService,
   Effect.gen(function* () {
     const db = yield* Database
+    const provideDb = Effect.provideService(Database, db)
     return {
       getUserById: (userId) =>
-        getUserByIdEffect(db, userId).pipe(
+        provideDb(getUserByIdEffect(userId)).pipe(
           Effect.withSpan('user.getById', { attributes: { userId } })
         ),
       searchUsers: (query) =>
-        searchUsersEffect(db, query).pipe(
+        provideDb(searchUsersEffect(query)).pipe(
           Effect.withSpan('user.searchUsers', { attributes: { query } })
         ),
       updateUserProfile: (userId, data) =>
-        updateUserProfileEffect(db, userId, data).pipe(
+        provideDb(updateUserProfileEffect(userId, data)).pipe(
           Effect.withSpan('user.updateProfile', { attributes: { userId } })
         ),
       getUserSocialLinks: (userId) =>
-        getUserSocialLinksEffect(db, userId).pipe(
+        provideDb(getUserSocialLinksEffect(userId)).pipe(
           Effect.withSpan('user.getSocialLinks', { attributes: { userId } })
         ),
       replaceUserSocialLinks: (userId, links) =>
-        replaceUserSocialLinksEffect(db, userId, links).pipe(
+        provideDb(replaceUserSocialLinksEffect(userId, links)).pipe(
           Effect.withSpan('user.replaceSocialLinks', { attributes: { userId } })
         ),
-      listDjs: () => listDjsEffect(db).pipe(Effect.withSpan('user.listDjs')),
+      listDjs: () => provideDb(listDjsEffect()).pipe(Effect.withSpan('user.listDjs')),
       getUserEmailPreferences: (userId) =>
-        getUserEmailPreferencesEffect(db, userId).pipe(
+        provideDb(getUserEmailPreferencesEffect(userId)).pipe(
           Effect.withSpan('user.getEmailPreferences', { attributes: { userId } })
         ),
       updateUserEmailPreferences: (userId, preferences) =>
-        updateUserEmailPreferencesEffect(db, userId, preferences).pipe(
+        provideDb(updateUserEmailPreferencesEffect(userId, preferences)).pipe(
           Effect.withSpan('user.updateEmailPreferences', { attributes: { userId } })
         )
     }

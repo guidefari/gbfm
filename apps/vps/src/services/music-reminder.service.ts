@@ -24,9 +24,7 @@ export interface MusicReminderService {
 
 export const MusicReminderService = Context.Service<MusicReminderService>('MusicReminderService')
 
-type DatabaseConnection = Context.Service.Shape<typeof Database>
-
-const createEffect = (db: DatabaseConnection, data: NewMusicReminder) =>
+const createEffect = (data: NewMusicReminder) =>
   Effect.withSpan('music-reminder.create', {
     attributes: {
       userId: data.userId,
@@ -35,6 +33,7 @@ const createEffect = (db: DatabaseConnection, data: NewMusicReminder) =>
     }
   })(
     Effect.gen(function* () {
+      const db = yield* Database
       const records = yield* Effect.tryPromise({
         try: () => db.insert(musicReminder).values(data).returning(),
         catch: (error) =>
@@ -66,8 +65,9 @@ const createEffect = (db: DatabaseConnection, data: NewMusicReminder) =>
     })
   )
 
-const getByUserIdEffect = (db: DatabaseConnection, userId: string) =>
+const getByUserIdEffect = (userId: string) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const reminders = yield* Effect.tryPromise({
       try: () =>
         db
@@ -91,13 +91,9 @@ const getByUserIdEffect = (db: DatabaseConnection, userId: string) =>
     return reminders
   })
 
-const updateEffect = (
-  db: DatabaseConnection,
-  id: string,
-  userId: string,
-  data: Partial<NewMusicReminder>
-) =>
+const updateEffect = (id: string, userId: string, data: Partial<NewMusicReminder>) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const existingRecords = yield* Effect.tryPromise({
       try: () => db.select().from(musicReminder).where(eq(musicReminder.id, id)).limit(1),
       catch: (error) =>
@@ -162,8 +158,9 @@ const updateEffect = (
     return updated
   })
 
-const deleteEffect = (db: DatabaseConnection, id: string, userId: string) =>
+const deleteEffect = (id: string, userId: string) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const existingRecords = yield* Effect.tryPromise({
       try: () => db.select().from(musicReminder).where(eq(musicReminder.id, id)).limit(1),
       catch: (error) =>
@@ -210,11 +207,12 @@ export const MusicReminderServiceLayer = Layer.effect(
   MusicReminderService,
   Effect.gen(function* () {
     const db = yield* Database
+    const provideDb = Effect.provideService(Database, db)
     return {
-      create: (data) => createEffect(db, data),
-      getByUserId: (userId) => getByUserIdEffect(db, userId),
-      update: (id, userId, data) => updateEffect(db, id, userId, data),
-      delete: (id, userId) => deleteEffect(db, id, userId)
+      create: (data) => provideDb(createEffect(data)),
+      getByUserId: (userId) => provideDb(getByUserIdEffect(userId)),
+      update: (id, userId, data) => provideDb(updateEffect(id, userId, data)),
+      delete: (id, userId) => provideDb(deleteEffect(id, userId))
     }
   })
 )

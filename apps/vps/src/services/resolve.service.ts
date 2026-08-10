@@ -32,10 +32,9 @@ export interface ResolveService {
 
 export const ResolveService = Context.Service<ResolveService>('ResolveService')
 
-type DatabaseConnection = Context.Service.Shape<typeof Database>
-
-const resolveEffect = (db: DatabaseConnection, slug: string) =>
+const resolveEffect = (slug: string) =>
   Effect.gen(function* () {
+    const db = yield* Database
     if (isReservedSlug(slug)) {
       return yield* new NotFoundError({
         message: 'Not found',
@@ -65,7 +64,7 @@ const resolveEffect = (db: DatabaseConnection, slug: string) =>
 
     const foundUser = userRecords[0]
     if (foundUser && !foundUser.banned) {
-      const profile = yield* getPublicProfileEffect(db, slug)
+      const profile = yield* getPublicProfileEffect(slug)
       return { type: 'profile' as const, data: profile }
     }
 
@@ -167,7 +166,10 @@ export const ResolveServiceLayer = Layer.effect(
     const db = yield* Database
     return {
       resolve: (slug) =>
-        resolveEffect(db, slug).pipe(Effect.withSpan('resolve.slug', { attributes: { slug } }))
+        resolveEffect(slug).pipe(
+          Effect.provideService(Database, db),
+          Effect.withSpan('resolve.slug', { attributes: { slug } })
+        )
     }
   })
 )
