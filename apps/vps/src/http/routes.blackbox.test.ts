@@ -19,7 +19,8 @@ import { SearchResults } from '@gbfm/api/search'
 import { decodeResponseBody } from '@gbfm/api/testing'
 import { and, eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { db } from '@/test/database'
+import { d1, db } from '@/test/database'
+import { createTestWebHandler } from '@/test/http-handler'
 import { audioTable } from '@/db/audio.schema'
 import { session, user } from '@/db/auth.schema'
 import { entityLabelsTable } from '@/db/tags.schema'
@@ -44,14 +45,20 @@ import { createWebHandler } from './routes'
 let webHandler: ReturnType<typeof createWebHandler>
 
 beforeAll(async () => {
-  // Imported for its side effects (SentryService init, background forks) --
-  // no route serving lives here since step 8 removed the Hono app entirely.
-  await import('@/app')
-  webHandler = createWebHandler()
+  // No longer imports @/app for its side effects: app.ts's initializeApp
+  // runs against the module-level runtime singleton (src/runtime/index.ts),
+  // which now intentionally dies resolving Database outside the Worker
+  // request path (OPS-254). createTestWebHandler mirrors worker.ts's
+  // per-request AppLayer composition instead, including its own
+  // SentryServiceLayer, so nothing here depends on @/app's side effects.
+  // It's built against the same migrated D1 database as `db`
+  // (src/test/database.ts) so rows seeded directly through `db` are visible
+  // through the handler's own Database layer.
+  webHandler = createTestWebHandler(d1)
 })
 
 afterAll(async () => {
-  await webHandler.dispose()
+  await webHandler?.dispose()
 })
 
 describe('Effect router (Step 8: HonoFallback removed)', () => {

@@ -1,4 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { d1 } from '@/test/database'
+import { createTestWebHandler } from '@/test/http-handler'
 import { createWebHandler } from './routes'
 
 // Step 3b (docs/migration-effect-http-api.md): validates AuthMiddleware's
@@ -10,14 +12,17 @@ import { createWebHandler } from './routes'
 let webHandler: ReturnType<typeof createWebHandler>
 
 beforeAll(async () => {
-  // Imported for its side effects (SentryService init, background forks) --
-  // no route serving lives here since step 8 removed the Hono app entirely.
-  await import('@/app')
-  webHandler = createWebHandler()
+  // No longer imports @/app for its side effects: app.ts's initializeApp
+  // runs against the module-level runtime singleton (src/runtime/index.ts),
+  // which now intentionally dies resolving Database outside the Worker
+  // request path (OPS-254). createTestWebHandler mirrors worker.ts's
+  // per-request AppLayer composition instead, including its own
+  // SentryServiceLayer, so nothing here depends on @/app's side effects.
+  webHandler = createTestWebHandler(d1)
 })
 
 afterAll(async () => {
-  await webHandler.dispose()
+  await webHandler?.dispose()
 })
 
 describe('AuthMiddleware (internal group)', () => {

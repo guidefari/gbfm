@@ -2,7 +2,26 @@ import { ReadinessCheckFailedError } from '@gbfm/api/errors'
 import { decodeResponseBody } from '@gbfm/api/testing'
 import { Effect } from 'effect'
 import { describe, expect, it } from 'vitest'
+import { DatabaseLayer } from '@/db/layer'
+import { AppLayer } from '@/runtime/services'
+import { SitemapCacheLayer } from '@/services/sitemap-cache'
+import { d1 } from '@/test/database'
 import { createWebHandler } from './routes'
+
+// Mirrors worker.ts's per-request AppLayer composition instead of the
+// module-level singleton, which intentionally dies outside the Worker
+// request path (OPS-254). The injected healthDatabaseCheck below never
+// touches Database itself, but createWebHandler still builds every other
+// handler group against this same appServicesLive -- including its own
+// SentryServiceLayer, so unlike before, nothing here needs @/app's
+// side-effecting SentryService init anymore.
+const testAppServicesLive = AppLayer(
+  DatabaseLayer(d1),
+  SitemapCacheLayer({
+    get: async () => null,
+    put: async () => {}
+  })
+)
 
 // Separate file (docs/migration-effect-http-api.md, step 3a): each
 // createWebHandler builds its own cached readiness check (health.handlers.ts,
@@ -11,17 +30,14 @@ import { createWebHandler } from './routes'
 // as a dedicated home for the failure/concurrency paths.
 describe('health readiness failure + cache', () => {
   it('caches a failing readiness check and does not re-run it within the window', async () => {
-    // Imported for its side effects (SentryService init, background forks) --
-    // no route serving lives here since step 8 removed the Hono app entirely.
-    await import('@/app')
-
     let checks = 0
     const scoped = createWebHandler({
       healthDatabaseCheck: Effect.sync(() => {
         checks += 1
       }).pipe(
         Effect.flatMap(() => Effect.fail(new ReadinessCheckFailedError({ dbConnected: false })))
-      )
+      ),
+      appServicesLive: testAppServicesLive
     })
 
     try {
@@ -43,15 +59,12 @@ describe('health readiness failure + cache', () => {
   })
 
   it('concurrent requests on a cold cache share one in-flight check, not one each', async () => {
-    // Imported for its side effects (SentryService init, background forks) --
-    // no route serving lives here since step 8 removed the Hono app entirely.
-    await import('@/app')
-
     let checks = 0
     const scoped = createWebHandler({
       healthDatabaseCheck: Effect.sync(() => {
         checks += 1
-      }).pipe(Effect.delay('20 millis'))
+      }).pipe(Effect.delay('20 millis')),
+      appServicesLive: testAppServicesLive
     })
 
     try {
