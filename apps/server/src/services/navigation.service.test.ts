@@ -253,6 +253,16 @@ describe('NavigationSessionService', () => {
     expect(session.cursor).toBe(2)
   })
 
+  test('suggests the next unread post when there is no forward trail entry', async () => {
+    const newest = await createPost('suggest-newest', new Date('2026-05-20T00:00:00.000Z'))
+    const next = await createPost('suggest-next', new Date('2026-05-19T00:00:00.000Z'))
+    const reader = identity()
+
+    const result = await open(reader, newest)
+
+    expect(result.neighbours.forward).toBe(next.slug)
+  })
+
   test('moves the cursor when replaying Step(Back)', async () => {
     const first = await createPost('replay-first', new Date('2026-06-01T00:00:00.000Z'))
     const last = await createPost('replay-last', new Date('2026-06-02T00:00:00.000Z'))

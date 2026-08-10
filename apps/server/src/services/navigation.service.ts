@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, isNull, lt, notExists, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, isNull, lt, lte, notExists, sql } from 'drizzle-orm'
 import { Context, Effect, Layer, Schema } from 'effect'
 import {
   capabilitiesOf,
@@ -363,8 +363,19 @@ export const NavigationSessionServiceLayer = Layer.effect(
         catch: (error) => databaseError('read', error)
       })
 
-    const resultSnapshot = (sessionId: string, position: number) =>
-      Effect.tryPromise({
+    const resultSnapshot = (sessionId: string, position: number) => {
+      const currentPostCreatedAt = db
+        .select({ createdAt: postsTable.createdAt })
+        .from(navigationTrailEntries)
+        .innerJoin(postsTable, eq(navigationTrailEntries.postId, postsTable.id))
+        .where(
+          and(
+            eq(navigationTrailEntries.sessionId, sessionId),
+            eq(navigationTrailEntries.position, position)
+          )
+        )
+        .limit(1)
+      return Effect.tryPromise({
         try: async () => {
           const [lengthRows, indexRows, backRows, forwardRows, unreadRows] = await db.batch([
             db
@@ -419,6 +430,7 @@ export const NavigationSessionServiceLayer = Layer.effect(
                   eq(postsTable.type, 'micro'),
                   eq(postsTable.draft, false),
                   isNull(postsTable.parentPostId),
+                  lte(postsTable.createdAt, currentPostCreatedAt),
                   notExists(
                     db
                       .select()
@@ -432,10 +444,11 @@ export const NavigationSessionServiceLayer = Layer.effect(
                   )
                 )
               )
+              .orderBy(desc(postsTable.createdAt))
               .limit(1)
           ])
           const back = backRows[0]
-          const forward = forwardRows[0]
+          const forward = forwardRows[0] ?? unreadRows[0]
           return {
             length: lengthRows[0]?.count ?? 0,
             index: indexRows[0]?.count ?? 0,
@@ -448,6 +461,7 @@ export const NavigationSessionServiceLayer = Layer.effect(
         },
         catch: (error) => databaseError('read', error)
       })
+    }
 
     const readPhase = (identity: NavigationIdentity, command: NavigationCommand) =>
       Effect.gen(function* () {
