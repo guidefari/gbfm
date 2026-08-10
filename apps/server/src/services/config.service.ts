@@ -31,6 +31,16 @@ const secretNames = [
 
 type SecretName = (typeof secretNames)[number]
 
+// StorageConfigSchema only demands endpoint and credentials for the r2
+// provider; the aws provider resolves them from the instance role, so these
+// are legitimately blank in production.
+const optionalSecretNames: readonly SecretName[] = [
+  'StorageEndpoint',
+  'StorageAccessKeyId',
+  'StorageSecretAccessKey',
+  'StorageSigningEndpoint'
+]
+
 export type WorkerConfigBindings = Readonly<
   Record<SecretName, string | undefined> & {
     APP_STAGE: string
@@ -179,7 +189,9 @@ function requiredInProduction(isProd: boolean, bindings: WorkerConfigBindings | 
   if (!isProd) return
 
   const missing = secretNames.filter(
-    (name) => stringValue(secretValue(name, bindings), '').trim().length === 0
+    (name) =>
+      !optionalSecretNames.includes(name) &&
+      stringValue(secretValue(name, bindings), '').trim().length === 0
   )
   if (missing.length > 0) {
     throw new Error(`Missing required production secrets: ${missing.join(', ')}`)
