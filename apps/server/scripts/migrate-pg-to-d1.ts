@@ -23,7 +23,22 @@
 
 import type { D1Database, D1PreparedStatement } from '@cloudflare/workers-types'
 import { Miniflare } from 'miniflare'
-import { Client } from 'pg'
+import { Client, types } from 'pg'
+
+/**
+ * `timestamp without time zone` columns (auth.schema.ts's user/session/etc.)
+ * carry no timezone in Postgres. node-postgres's default type parser treats
+ * their text as a local wall-clock time in the running process's OS
+ * timezone, so the same row parses to a different instant depending on
+ * where this script runs. Production's deployed server reads that same text
+ * as UTC. Override the parser for both timestamp OIDs (1114 = timestamp,
+ * 1184 = timestamptz) so migrated values are deterministic and match
+ * production regardless of the machine's local TZ.
+ */
+const TIMESTAMP_OID = 1114
+const TIMESTAMPTZ_OID = 1184
+types.setTypeParser(TIMESTAMP_OID, (value: string) => `${value.replace(' ', 'T')}Z`)
+types.setTypeParser(TIMESTAMPTZ_OID, (value: string) => value)
 
 type Row = Record<string, unknown>
 
