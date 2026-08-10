@@ -41,13 +41,10 @@ import { Auth } from '@/lib/auth'
 import { AuthMiddlewareLive } from '@/middleware/auth.impl'
 import { IdentityResolverLive } from '@/middleware/optional-auth.impl'
 import { prepareAuthRequest } from '@/routes/user/better-auth.routes'
-import { appServicesContext } from '@/runtime'
 import { AppLoggerLive } from '@/services/logger.service'
+import type { AppLayer } from '@/runtime/services'
 
-// Reuses the app's already-built service instances (DB pool, S3 client, ...)
-// instead of Layer.provide(AppLayer), which would build a second, independent
-// copy of every singleton service.
-const AppServicesLive = Layer.effectContext(appServicesContext)
+type AppServicesLive = Layer.Layer<Layer.Success<ReturnType<typeof AppLayer>>>
 
 // better-auth owns its own routing; we can't redefine it as HttpApiEndpoints. Kept at
 // its own path (not under /api) since its basePath appears in emailed links.
@@ -74,11 +71,11 @@ const betterAuthRoute = HttpRouter.add('*', '/auth/*', (request) =>
 // fallback was removed once app.ts had zero remaining route mounts left to
 // forward to, and the parameter itself is gone now that nothing references
 // AppType anywhere in this file or its callers.
-export const createWebHandler = (options?: {
+export const createWebHandler = (options: {
   readonly healthDatabaseCheck?: Effect.Effect<void, ReadinessCheckFailedError>
-  readonly appServicesLive?: typeof AppServicesLive
+  readonly appServicesLive: AppServicesLive
 }) => {
-  const appServices = options?.appServicesLive ?? AppServicesLive
+  const appServices = options.appServicesLive
   const ApiLive = HttpApiBuilder.layer(Api).pipe(
     Layer.provide(makeHealthHandlers(options?.healthDatabaseCheck ?? checkDatabase)),
     Layer.provide(InternalHandlersLive),

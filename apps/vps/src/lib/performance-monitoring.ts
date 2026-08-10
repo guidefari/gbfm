@@ -1,4 +1,4 @@
-import * as Sentry from '@sentry/bun'
+import * as Sentry from '@sentry/core'
 import { Effect, Metric } from 'effect'
 
 const SLOW_REQUEST_THRESHOLD = 500

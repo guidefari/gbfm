@@ -66,13 +66,20 @@ Externalizing exactly that set, on the same entry point and commit:
 
 **The bundle gate PASSES.** The migration as specified fits the Worker limit.
 
-Two caveats for M4:
+## Post-Sentry Worker entry
 
-- The Cloudflare Sentry SDK is a replacement, not a deletion, and adds back an
-  unmeasured amount. Re-measure once it is wired.
-- MDX precompilation moves from required to recommended. Keeping MDX in the
-  Worker leaves ~256 KiB of margin, which the Sentry SDK could consume. Precompile
-  it if the margin tightens.
+Measured on 2026-08-10 after wiring `@sentry/cloudflare@10.52.0` at
+`src/worker.ts`. This uses the same browser/workerd target and ported-graph
+externals below, but does not externalize Sentry. The Worker bundle contains no
+`@sentry/bun`, `@sentry/node`, `@opentelemetry/sdk-trace-node`, or
+`@opentelemetry/context-async-hooks` input.
+
+| Build | Uncompressed bytes | Gzipped bytes | Gzipped MiB | Against 3 MiB |
+| --- | ---: | ---: | ---: | --- |
+| Worker entry with Cloudflare Sentry | 12,180,627 | 2,682,293 | 2.56 | **fits**, 463,435 bytes headroom |
+
+The Sentry replacement consumes about 2 KiB versus the previous ported-graph
+measurement. MDX remains externalized for this measured Worker graph.
 
 Reproduce with the base command plus:
 

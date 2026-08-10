@@ -1,3 +1,5 @@
+import { Layer } from 'effect'
+
 export const localVPSPort = Number(process.env.VPS_PORT ?? 3003)
 export const localVPSHostname = process.env.VPS_HOSTNAME ?? '0.0.0.0'
 
@@ -6,8 +8,13 @@ export const localVPSHostname = process.env.VPS_HOSTNAME ?? '0.0.0.0'
 // longer owns any route setup as of step 8; all real route serving lives in
 // http/routes.ts's createWebHandler.
 await import('./app')
-const { createWebHandler } = await import('./http/routes')
-export const effectWebHandler = createWebHandler()
+const [{ createWebHandler }, { appServicesContext }] = await Promise.all([
+  import('./http/routes'),
+  import('./runtime')
+])
+export const effectWebHandler = createWebHandler({
+  appServicesLive: Layer.effectContext(appServicesContext)
+})
 
 export default {
   port: localVPSPort,

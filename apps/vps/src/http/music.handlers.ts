@@ -31,7 +31,6 @@ import type {
 } from '@/db/music-entity.schema'
 import { FetchError, getErrorMessage } from '@/errors'
 import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
-import { runAppFork } from '@/runtime'
 import { ConfigService } from '@/services/config.service'
 import {
   type CreateAlbumInput as AlbumServiceCreateInput,
@@ -750,7 +749,7 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
             })
           )
         )
-        runAppFork(program)
+        yield* Effect.forkDetach(program)
 
         return { status: 'Queued' as const }
       })

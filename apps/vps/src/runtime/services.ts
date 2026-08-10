@@ -1,8 +1,9 @@
 import { Layer } from 'effect'
+import { OtelTracer } from '@effect/opentelemetry'
 import { Database } from '@/db/layer'
 import { AuthLive } from '@/lib/auth'
 import { MdxServiceLayer } from '@/lib/mdx'
-import { OtlpLive } from '@/lib/otel'
+import type { SentryService } from '@/services/sentry.service'
 import { SitemapCache } from '@/services/sitemap-cache'
 
 export { Database, DatabaseLayer } from '@/db/layer'
@@ -24,6 +25,7 @@ import { MusicEntityServiceLayer } from '@/services/music-entity'
 import { MusicLinkScraperServiceLayer } from '@/services/music-link-scraper.service'
 import { MusicReminderServiceLayer } from '@/services/music-reminder.service'
 import { NavigationRetentionServiceLayer } from '@/services/navigation-retention.service'
+import { type NavigationLock } from '@/services/navigation-lock'
 import { NavigationSessionServiceLayer } from '@/services/navigation.service'
 import { PostServiceLayer } from '@/services/post.service'
 import { ProfileServiceLayer } from '@/services/profile.service'
@@ -33,8 +35,6 @@ import { ReminderSignalServiceLayer } from '@/services/reminder-signal.service'
 import { ResolveServiceLayer } from '@/services/resolve.service'
 import { S3ServiceLayer } from '@/services/s3.service'
 import { SearchServiceLayer } from '@/services/search.service'
-import { SentryServiceLayer } from '@/services/sentry.service'
-import { SentryClientServiceLayer } from '@/services/sentry-client.service'
 import { ShowServiceLayer, ShowSubscriptionServiceLayer } from '@/services/show.service'
 import { SpotifyServiceLayer } from '@/services/spotify.service'
 import { UploadAssetServiceLayer } from '@/services/upload-asset.service'
@@ -43,18 +43,21 @@ import { ObjectStoreClientLayer } from '@/services/storage/object-store-client'
 
 const DevToolsLive: Layer.Layer<never> = Layer.empty
 
-const SentryClientLive = SentryClientServiceLayer.pipe(Layer.provide(ConfigServiceLayer))
-
 const UploadAssetDepsLive = Layer.mergeAll(ConfigServiceLayer, UploadAssetServiceLayer)
 const ObjectStoreClientLive = ObjectStoreClientLayer.pipe(Layer.provide(ConfigServiceLayer))
 
-// Takes the Database and SitemapCache layers as parameters instead of
-// building them from module-scope bindings: the composition seam
-// (worker.ts) is the only place that may see env.DB / env.SITEMAP, and it
-// builds these fresh per request.
+// Takes the Database, SitemapCache, Sentry, and Effect-tracing layers as
+// parameters instead of building them from module-scope bindings: Bun and
+// the Worker initialize Sentry and OpenTelemetry differently (@sentry/bun
+// vs @sentry/cloudflare, which cannot share a module -- see
+// sentry-client.service.ts and worker.ts), and the composition seam is the
+// only place that may choose between them.
 export const AppLayer = (
   databaseLive: Layer.Layer<Database>,
-  sitemapCacheLive: Layer.Layer<SitemapCache>
+  sitemapCacheLive: Layer.Layer<SitemapCache>,
+  navigationLockLive: Layer.Layer<NavigationLock>,
+  sentryLive: Layer.Layer<SentryService>,
+  tracingLive: Layer.Layer<OtelTracer.OtelTracer>
 ) => {
   const BaseServicesLayer = Layer.mergeAll(
     ConfigServiceLayer,
@@ -70,7 +73,8 @@ export const AppLayer = (
     NavigationSessionServiceLayer.pipe(
       Layer.provide(
         PostServiceLayer.pipe(Layer.provide(MdxServiceLayer), Layer.provide(UploadAssetDepsLive))
-      )
+      ),
+      Layer.provide(navigationLockLive)
     ),
     ReminderSignalServiceLayer,
     MusicLinkScraperServiceLayer.pipe(Layer.provide(SpotifyServiceLayer)),
@@ -81,8 +85,8 @@ export const AppLayer = (
     ReleaseServiceLayer,
     S3ServiceLayer.pipe(Layer.provide(Layer.mergeAll(ObjectStoreClientLive, ConfigServiceLayer))),
     SearchServiceLayer,
-    SentryServiceLayer.pipe(Layer.provide(SentryClientLive)),
-    OtlpLive.pipe(Layer.provide(SentryClientLive), Layer.provide(ConfigServiceLayer)),
+    sentryLive,
+    tracingLive,
     ShowServiceLayer,
     ShowSubscriptionServiceLayer,
     UploadAssetServiceLayer,

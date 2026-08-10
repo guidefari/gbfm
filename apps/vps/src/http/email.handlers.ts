@@ -26,7 +26,6 @@ import {
   canReceiveEmail,
   getActiveMixRecipients
 } from '@/repositories/email-preferences.repository'
-import { runAppFork } from '@/runtime'
 
 const dieOnDatabaseError = makeDieOnDatabaseError('email')
 const EmailMetadata = Schema.NullOr(Schema.Record(Schema.String, Schema.Unknown))
@@ -144,14 +143,11 @@ async function sendMixNotification(
     const username = user?.name || input.metadata?.username || recipient.split('@')[0] || 'listener'
 
     if (user && !(await canReceiveEmail(user.id, EMAIL_NOTIFICATION_TYPES.MIX_RELEASE, db))) {
-      Effect.annotateCurrentSpan('totalRecipients', recipients.length).pipe(runAppFork)
-      Effect.annotateCurrentSpan('mixSlug', input.mixSlug).pipe(runAppFork)
-      Effect.annotateCurrentSpan('mixTitle', input.metadata?.mixTitle || mix.title).pipe(runAppFork)
-      Effect.logInfo('[Email] Sending mix notification emails', {
+      console.info('[Email] Sending mix notification emails', {
         totalRecipients: recipients.length,
         mixSlug: input.mixSlug,
         mixTitle: input.metadata?.mixTitle || mix.title
-      }).pipe(runAppFork)
+      })
       skipped.push(recipient)
       continue
     }
@@ -192,14 +188,12 @@ async function sendMixNotification(
       sentTo.push(recipient)
       emailIds.push(deliveryLog.id)
     } catch (error: unknown) {
-      Effect.logError('[Email] Failed to send mix notification email', {
-        recipient,
+      console.error('[Email] Failed to send mix notification email', {
         userId: user?.id,
         mixSlug: input.mixSlug,
         mixTitle: input.metadata?.mixTitle || mix.title,
-        emailLogId: deliveryLog.id,
-        error: getErrorMessage(error)
-      }).pipe(runAppFork)
+        emailLogId: deliveryLog.id
+      })
       await markEmailDeliveryLogAsFailed(deliveryLog.id, getErrorMessage(error), db)
       errors.push(recipient)
     }

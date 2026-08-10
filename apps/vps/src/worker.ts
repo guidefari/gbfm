@@ -1,5 +1,6 @@
 import type {
   D1Database,
+  DurableObjectNamespace,
   ExecutionContext,
   KVNamespace,
   MessageBatch,
@@ -7,11 +8,24 @@ import type {
   R2Bucket,
   ScheduledController
 } from '@cloudflare/workers-types'
-import { Effect } from 'effect'
+import * as Sentry from '@sentry/cloudflare'
+import type { ErrorEvent, TracesSamplerSamplingContext, TransactionEvent } from '@sentry/core'
+import { traceSampleRate } from '@gbfm/core/observability/trace-sampling'
+import { Effect, Layer } from 'effect'
+import type { NavigationLockDurableObject } from '@/durable-objects/navigation-lock.do'
 import { DatabaseLayer } from '@/db/layer'
+import { DatabaseError, getErrorMessage } from '@/errors'
+import { sanitizeDatabaseSpan } from '@/lib/database-telemetry'
+import { hasLocalSentryContext, shouldEnableSentry } from '@/lib/sentry'
 import { createWebHandler } from '@/http/routes'
 import { regenerateSitemap } from '@/routes/redirect/seo/sitemap.service'
 import { AppLayer } from '@/runtime/services'
+import {
+  WorkerSentryEnabledLive,
+  WorkerSentryEnv,
+  WorkerTracingLive
+} from '@/runtime/sentry-worker'
+import { canonicalNavigationLockName, NavigationLock } from '@/services/navigation-lock'
 import {
   claimReminder,
   findReminderById,
@@ -20,6 +34,9 @@ import {
 } from '@/services/reminder-processor'
 import { ReminderQueue, ReminderQueueLayer, type ReminderJob } from '@/services/reminder-queue'
 import { SitemapCacheLayer } from '@/services/sitemap-cache'
+import { SentryServiceLayer } from '@/services/sentry.service'
+
+export { NavigationLockDurableObject } from '@/durable-objects/navigation-lock.do'
 
 // The only file that sees env, ExecutionContext, or a Cloudflare binding
 // type. Every other module receives capabilities named in domain terms
@@ -31,10 +48,101 @@ export type ApiEnv = {
   readonly MIXES: R2Bucket
   readonly SITEMAP: KVNamespace
   readonly REMINDERS: Queue<ReminderJob>
+  readonly NAVIGATION_LOCK: DurableObjectNamespace<NavigationLockDurableObject>
+  readonly SENTRY_DSN?: string
+  readonly SENTRY_ENVIRONMENT?: string
 }
 
+const workerSentryEnvLive = (env: ApiEnv) =>
+  Layer.succeed(WorkerSentryEnv, { dsn: env.SENTRY_DSN, environment: env.SENTRY_ENVIRONMENT })
+
+const workerSentryServiceLive = (env: ApiEnv) =>
+  SentryServiceLayer.pipe(
+    Layer.provide(WorkerSentryEnabledLive),
+    Layer.provide(workerSentryEnvLive(env))
+  )
+
+const navigationLockError = (operation: string, error: unknown) =>
+  new DatabaseError({
+    message: `Failed to ${operation} navigation lock: ${getErrorMessage(error)}`,
+    operation,
+    table: 'navigation_sessions'
+  })
+
+const navigationLockLive = (env: ApiEnv) =>
+  Layer.succeed(NavigationLock, {
+    decide: (identity, request) =>
+      Effect.tryPromise({
+        try: async () => {
+          const canonicalName = canonicalNavigationLockName(identity)
+          const stub = env.NAVIGATION_LOCK.get(env.NAVIGATION_LOCK.idFromName(canonicalName))
+          await stub.setIdentity(canonicalName)
+          return await stub.decide(request)
+        },
+        catch: (error) => navigationLockError('decide', error)
+      }),
+    commit: (identity, input) =>
+      Effect.tryPromise({
+        try: async () => {
+          const canonicalName = canonicalNavigationLockName(identity)
+          const stub = env.NAVIGATION_LOCK.get(env.NAVIGATION_LOCK.idFromName(canonicalName))
+          await stub.commit(input)
+        },
+        catch: (error) => navigationLockError('commit', error)
+      }),
+    sync: (identity, input) =>
+      Effect.tryPromise({
+        try: async () => {
+          const canonicalName = canonicalNavigationLockName(identity)
+          const stub = env.NAVIGATION_LOCK.get(env.NAVIGATION_LOCK.idFromName(canonicalName))
+          await stub.sync(input)
+        },
+        catch: (error) => navigationLockError('sync', error)
+      }),
+    reset: (identity) =>
+      Effect.tryPromise({
+        try: async () => {
+          const canonicalName = canonicalNavigationLockName(identity)
+          const stub = env.NAVIGATION_LOCK.get(env.NAVIGATION_LOCK.idFromName(canonicalName))
+          await stub.reset()
+        },
+        catch: (error) => navigationLockError('reset', error)
+      })
+  })
+
 const appServicesLive = (env: ApiEnv) =>
-  AppLayer(DatabaseLayer(env.DB), SitemapCacheLayer(env.SITEMAP))
+  AppLayer(
+    DatabaseLayer(env.DB),
+    SitemapCacheLayer(env.SITEMAP),
+    navigationLockLive(env),
+    workerSentryServiceLive(env),
+    WorkerTracingLive
+  )
+
+const sentryOptions = (env: ApiEnv) => {
+  const dsn = env.SENTRY_DSN ?? ''
+  const environment = env.SENTRY_ENVIRONMENT ?? 'development'
+
+  if (!shouldEnableSentry(dsn, environment)) return undefined
+
+  return {
+    dsn,
+    environment,
+    tracesSampler: ({
+      inheritOrSampleWith,
+      name,
+      normalizedRequest
+    }: TracesSamplerSamplingContext) =>
+      inheritOrSampleWith(traceSampleRate({ name, url: normalizedRequest?.url })),
+
+    sendDefaultPii: false,
+    enableLogs: true,
+    beforeSendSpan: sanitizeDatabaseSpan,
+    beforeSend: (event: ErrorEvent) => (hasLocalSentryContext(event) ? null : event),
+    beforeSendTransaction: (event: TransactionEvent) =>
+      hasLocalSentryContext(event) ? null : event
+  }
+}
 
 const reminderQueueLive = (env: ApiEnv) => ReminderQueueLayer(env.REMINDERS)
 
@@ -89,7 +197,7 @@ const processReminderMessage = (env: ApiEnv, job: ReminderJob) =>
     yield* sendClaimedReminder(reminder)
   }).pipe(Effect.provide(appServicesLive(env)))
 
-export default {
+export default Sentry.withSentry<ApiEnv, ReminderJob>(sentryOptions, {
   async fetch(request: Request, env: ApiEnv, _ctx: ExecutionContext): Promise<Response> {
     const webHandler = createWebHandler({ appServicesLive: appServicesLive(env) })
     try {
@@ -114,4 +222,4 @@ export default {
       }
     }
   }
-}
+})

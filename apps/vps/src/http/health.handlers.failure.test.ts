@@ -4,8 +4,11 @@ import { Effect } from 'effect'
 import { describe, expect, it } from 'vitest'
 import { DatabaseLayer } from '@/db/layer'
 import { AppLayer } from '@/runtime/services'
+import { WorkerTracingLive } from '@/runtime/sentry-worker'
+import { NavigationLockLocalLayer } from '@/services/navigation-lock'
 import { SitemapCacheLayer } from '@/services/sitemap-cache'
 import { d1 } from '@/test/database'
+import { testSentryServiceLive } from '@/test/http-handler'
 import { createWebHandler } from './routes'
 
 // Mirrors worker.ts's per-request AppLayer composition instead of the
@@ -20,7 +23,10 @@ const testAppServicesLive = AppLayer(
   SitemapCacheLayer({
     get: async () => null,
     put: async () => {}
-  })
+  }),
+  NavigationLockLocalLayer,
+  testSentryServiceLive,
+  WorkerTracingLive
 )
 
 // Separate file (docs/migration-effect-http-api.md, step 3a): each

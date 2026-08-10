@@ -34,15 +34,8 @@ const makeAuth = (database: DatabaseClient) =>
           to: user.email,
           resetUrl: url,
           expiresIn: '1 hour'
-        }).catch(async (err: Error) => {
-          const { runAppFork } = await import('@/runtime')
-          runAppFork(
-            Effect.logError('[Auth] Failed to send password reset email', {
-              userId: user.id,
-              email: user.email,
-              error: err.message
-            })
-          )
+        }).catch(() => {
+          console.error('[Auth] Failed to send password reset email', { userId: user.id })
         })
       }
     },
@@ -117,15 +110,10 @@ const makeAuth = (database: DatabaseClient) =>
                   database
                 )
               }
-            } catch (err) {
-              const { runAppFork } = await import('@/runtime')
-              runAppFork(
-                Effect.logError('[Auth] Failed to link newsletter subscription on signup', {
-                  userId: createdUser.id,
-                  email: createdUser.email,
-                  error: err instanceof Error ? err.message : String(err)
-                })
-              )
+            } catch {
+              console.error('[Auth] Failed to link newsletter subscription on signup', {
+                userId: createdUser.id
+              })
             }
 
             try {
@@ -135,15 +123,10 @@ const makeAuth = (database: DatabaseClient) =>
                 email: createdUser.email,
                 timestamp: new Date().toISOString()
               })
-            } catch (err) {
-              const { runAppFork } = await import('@/runtime')
-              runAppFork(
-                Effect.logError('[Auth] Failed to send new user admin notification', {
-                  userId: createdUser.id,
-                  email: createdUser.email,
-                  error: err instanceof Error ? err.message : String(err)
-                })
-              )
+            } catch {
+              console.error('[Auth] Failed to send new user admin notification', {
+                userId: createdUser.id
+              })
             }
           }
         }

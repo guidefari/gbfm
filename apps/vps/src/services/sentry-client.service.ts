@@ -10,6 +10,7 @@ import {
   shouldEnableSentry,
   withoutDatabaseAutoInstrumentation
 } from '@/lib/sentry'
+import { SentryEnabled } from './sentry.service'
 import { ConfigService } from './config.service'
 
 export interface SentryClientService {
@@ -23,7 +24,11 @@ export const SentryClientServiceLayer = Layer.effect(
   SentryClientService,
   Effect.gen(function* () {
     const { sentry } = yield* ConfigService
-    const enabled = shouldEnableSentry(sentry.dsn, sentry.environment)
+    const enabled = shouldEnableSentry(
+      sentry.dsn,
+      sentry.environment,
+      process.env.SENTRY_ENABLED === 'true'
+    )
 
     if (!enabled) {
       yield* Effect.logWarning(
@@ -74,5 +79,13 @@ export const SentryClientServiceLayer = Layer.effect(
     }
 
     return { client, enabled: true }
+  })
+)
+
+export const SentryEnabledLive = Layer.effect(
+  SentryEnabled,
+  Effect.gen(function* () {
+    const { enabled } = yield* SentryClientService
+    return { enabled }
   })
 )

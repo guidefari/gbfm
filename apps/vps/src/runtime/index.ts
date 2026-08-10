@@ -25,8 +25,10 @@ import type { SpotifyService } from '@/services/spotify.service'
 import type { UserService } from '@/services/user.service'
 import { Database } from '@/db/layer'
 import type { Auth } from '@/lib/auth'
+import { NavigationLockLocalLayer } from '@/services/navigation-lock'
 import { SitemapCache as SitemapCacheTag } from '@/services/sitemap-cache'
 import { AppLayer } from './services'
+import { BunSentryServiceLive, BunTracingLive } from './sentry-bun'
 
 // This module-level ManagedRuntime predates the Worker composition seam
 // (worker.ts) and cannot see a real D1 binding or KV namespace -- Workers
@@ -80,7 +82,13 @@ export type AppServices =
   | UserService
 
 const managedRuntime = ManagedRuntime.make(
-  AppLayer(UnavailableDatabaseLive, UnavailableSitemapCacheLive)
+  AppLayer(
+    UnavailableDatabaseLive,
+    UnavailableSitemapCacheLive,
+    NavigationLockLocalLayer,
+    BunSentryServiceLive,
+    BunTracingLive
+  )
 )
 
 // The app's built service instances (DB pool, S3 client, etc.) as an Effect,

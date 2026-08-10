@@ -1,4 +1,4 @@
-import type * as Sentry from '@sentry/bun'
+import type * as Sentry from '@sentry/core'
 
 const DATABASE_AUTO_INTEGRATIONS = new Set(['Postgres', 'PostgresJs'])
 
@@ -17,8 +17,8 @@ export const withoutDatabaseAutoInstrumentation = <T extends { readonly name: st
  * Local/dev Sentry is opt-in only. Production sends when a DSN is configured;
  * local and development runs must set SENTRY_ENABLED=true explicitly.
  */
-export const shouldEnableSentry = (dsn: string, environment: string) =>
-  (dsn.length > 0 && environment === 'production') || process.env.SENTRY_ENABLED === 'true'
+export const shouldEnableSentry = (dsn: string, environment: string, forceEnabled = false) =>
+  (dsn.length > 0 && environment === 'production') || forceEnabled
 
 /**
  * Drops events and transactions created by localhost/dev machines so local

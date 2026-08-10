@@ -1,5 +1,5 @@
 import { isRecord } from '@gbfm/core/utils'
-import * as Sentry from '@sentry/bun'
+import * as Sentry from '@sentry/core'
 import { Logger, References, type LogLevel } from 'effect'
 import pino from 'pino'
 import pretty from 'pino-pretty'

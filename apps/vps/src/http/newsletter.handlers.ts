@@ -4,7 +4,7 @@ import {
   sendNewsletterUnsubscribeLinkEmail,
   sendNewsletterWelcomeEmail
 } from '@gbfm/email/sender'
-import * as Sentry from '@sentry/bun'
+import * as Sentry from '@sentry/core'
 import { and, eq, isNull } from 'drizzle-orm'
 import { Effect } from 'effect'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'

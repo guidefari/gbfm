@@ -1,7 +1,11 @@
-import * as Sentry from '@sentry/bun'
+import * as Sentry from '@sentry/core'
 import { Context, Effect, Layer } from 'effect'
-import { SentryClientService } from './sentry-client.service'
 
+// Platform-agnostic on purpose: @sentry/core's captureException/captureMessage/
+// captureCheckIn operate on whichever client the platform SDK bound at init
+// time (@sentry/bun on the ECS/Bun runtime, @sentry/cloudflare on the Worker).
+// This service must not import either platform SDK directly, or it drags that
+// platform's Node/workerd-only init code into every consumer.
 type MonitorConfig = NonNullable<Parameters<typeof Sentry.captureCheckIn>[1]>
 
 export interface SentryService {
@@ -23,10 +27,16 @@ export interface SentryService {
 
 export const SentryService = Context.Service<SentryService>('SentryService')
 
+export interface SentryEnabled {
+  readonly enabled: boolean
+}
+
+export const SentryEnabled = Context.Service<SentryEnabled>('SentryEnabled')
+
 export const SentryServiceLayer = Layer.effect(
   SentryService,
   Effect.gen(function* () {
-    const { enabled } = yield* SentryClientService
+    const { enabled } = yield* SentryEnabled
 
     return {
       captureException: (error, context) =>
