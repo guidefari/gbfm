@@ -28,22 +28,24 @@ export const Route = createFileRoute('/tweet/$slug')({
   ),
   loader: async ({ params }) => {
     const client = await getApiClient()
-    const post = await Effect.runPromise(
-      client.post
-        .getMicroPostBySlug({ params: { slug: params.slug } })
-        .pipe(
-          Effect.tapError((error) =>
-            captureException(error, { endpoint: 'post.getMicroPostBySlug' })
+    const [post, navigation] = await Promise.all([
+      Effect.runPromise(
+        client.post
+          .getMicroPostBySlug({ params: { slug: params.slug } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'post.getMicroPostBySlug' })
+            )
           )
-        )
-    )
-    const navigation = await Effect.runPromise(
-      open(navigateMicroPostsEffect, {
-        from: params.slug,
-        slug: params.slug,
-        intentToken: crypto.randomUUID()
-      })
-    )
+      ),
+      Effect.runPromise(
+        open(navigateMicroPostsEffect, {
+          from: params.slug,
+          slug: params.slug,
+          intentToken: crypto.randomUUID()
+        })
+      )
+    ])
     return {
       navigation,
       post: {
