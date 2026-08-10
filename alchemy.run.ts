@@ -2,6 +2,7 @@ import * as Alchemy from 'alchemy'
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as Effect from 'effect/Effect'
 import type { NavigationLockDurableObject } from './apps/server/src/durable-objects/navigation-lock.do'
+import type { SpotifyImportResolverDurableObject } from './apps/server/src/durable-objects/spotify-import-resolver.do'
 
 export default Alchemy.Stack(
   'gbfm',
@@ -37,7 +38,13 @@ export default Alchemy.Stack(
         REMINDERS: reminders,
         NAVIGATION_LOCK: Cloudflare.DurableObject<NavigationLockDurableObject>('NavigationLock', {
           className: 'NavigationLockDurableObject'
-        })
+        }),
+        SPOTIFY_IMPORT_RESOLVER: Cloudflare.DurableObject<SpotifyImportResolverDurableObject>(
+          'SpotifyImportResolver',
+          {
+            className: 'SpotifyImportResolverDurableObject'
+          }
+        )
       }
     })
 

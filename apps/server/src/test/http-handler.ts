@@ -9,6 +9,7 @@ import {
   WorkerTracingLive
 } from '@/runtime/sentry-worker'
 import { NavigationLockLocalLayer } from '@/services/navigation-lock'
+import { SpotifyImportResolverLocalLayer } from '@/services/spotify-import-resolver.service'
 import { SentryServiceLayer } from '@/services/sentry.service'
 import { SitemapCacheLayer, type SitemapKv } from '@/services/sitemap-cache'
 
@@ -49,6 +50,7 @@ export const createTestWebHandler = (d1: D1Database) => {
     DatabaseLayer(d1),
     SitemapCacheLayer(inMemorySitemapKv()),
     NavigationLockLocalLayer,
+    SpotifyImportResolverLocalLayer,
     testSentryServiceLive,
     WorkerTracingLive
   )

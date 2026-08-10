@@ -26,6 +26,7 @@ import type { UserService } from '@/services/user.service'
 import { Database } from '@/db/layer'
 import type { Auth } from '@/lib/auth'
 import { NavigationLockLocalLayer } from '@/services/navigation-lock'
+import { SpotifyImportResolverLocalLayer } from '@/services/spotify-import-resolver.service'
 import { SitemapCache as SitemapCacheTag } from '@/services/sitemap-cache'
 import { AppLayer } from './services'
 import { BunSentryServiceLive, BunTracingLive } from './sentry-bun'
@@ -86,6 +87,7 @@ const managedRuntime = ManagedRuntime.make(
     UnavailableDatabaseLive,
     UnavailableSitemapCacheLive,
     NavigationLockLocalLayer,
+    SpotifyImportResolverLocalLayer,
     BunSentryServiceLive,
     BunTracingLive
   )

@@ -6,6 +6,7 @@ import { DatabaseLayer } from '@/db/layer'
 import { AppLayer } from '@/runtime/services'
 import { WorkerTracingLive } from '@/runtime/sentry-worker'
 import { NavigationLockLocalLayer } from '@/services/navigation-lock'
+import { SpotifyImportResolverLocalLayer } from '@/services/spotify-import-resolver.service'
 import { SitemapCacheLayer } from '@/services/sitemap-cache'
 import { d1 } from '@/test/database'
 import { testSentryServiceLive } from '@/test/http-handler'
@@ -25,6 +26,7 @@ const testAppServicesLive = AppLayer(
     put: async () => {}
   }),
   NavigationLockLocalLayer,
+  SpotifyImportResolverLocalLayer,
   testSentryServiceLive,
   WorkerTracingLive
 )

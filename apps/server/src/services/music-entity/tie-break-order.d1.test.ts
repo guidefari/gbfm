@@ -16,7 +16,7 @@ import { getPlaylistsEffect } from './playlist.service'
 import { getTracksEffect } from './track.service'
 
 const run = <A>(effect: Effect.Effect<A, unknown, Database>) =>
-  Effect.runPromise(effect.pipe(Effect.provideService(Database, db)) as Effect.Effect<A>)
+  Effect.runPromise(Effect.provideService(effect, Database, db))
 
 const TIED_CREATED_AT = new Date('2025-10-07T07:35:42.727Z')
 const PUBLISHED_AT = new Date('2020-01-01T00:00:00.000Z')

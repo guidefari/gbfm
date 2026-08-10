@@ -26,6 +26,7 @@ import { MusicLinkScraperServiceLayer } from '@/services/music-link-scraper.serv
 import { MusicReminderServiceLayer } from '@/services/music-reminder.service'
 import { NavigationRetentionServiceLayer } from '@/services/navigation-retention.service'
 import { type NavigationLock } from '@/services/navigation-lock'
+import { type SpotifyImportResolver } from '@/services/spotify-import-resolver.service'
 import { NavigationSessionServiceLayer } from '@/services/navigation.service'
 import { PostServiceLayer } from '@/services/post.service'
 import { ProfileServiceLayer } from '@/services/profile.service'
@@ -46,7 +47,7 @@ const DevToolsLive: Layer.Layer<never> = Layer.empty
 const UploadAssetDepsLive = Layer.mergeAll(ConfigServiceLayer, UploadAssetServiceLayer)
 const ObjectStoreClientLive = ObjectStoreClientLayer.pipe(Layer.provide(ConfigServiceLayer))
 
-// Takes the Database, SitemapCache, Sentry, and Effect-tracing layers as
+// Takes the Database, SitemapCache, coordination, Sentry, and Effect-tracing layers as
 // parameters instead of building them from module-scope bindings: Bun and
 // the Worker initialize Sentry and OpenTelemetry differently (@sentry/bun
 // vs @sentry/cloudflare, which cannot share a module -- see
@@ -56,6 +57,7 @@ export const AppLayer = (
   databaseLive: Layer.Layer<Database>,
   sitemapCacheLive: Layer.Layer<SitemapCache>,
   navigationLockLive: Layer.Layer<NavigationLock>,
+  spotifyImportResolverLive: Layer.Layer<SpotifyImportResolver, never, Database>,
   sentryLive: Layer.Layer<SentryService>,
   tracingLive: Layer.Layer<OtelTracer.OtelTracer>
 ) => {
@@ -70,6 +72,7 @@ export const AppLayer = (
     SpotifyServiceLayer,
     MusicReminderServiceLayer,
     NavigationRetentionServiceLayer,
+    spotifyImportResolverLive,
     NavigationSessionServiceLayer.pipe(
       Layer.provide(
         PostServiceLayer.pipe(Layer.provide(MdxServiceLayer), Layer.provide(UploadAssetDepsLive))

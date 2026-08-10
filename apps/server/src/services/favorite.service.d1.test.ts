@@ -58,15 +58,11 @@ describe('D1 concurrent favorites', () => {
     expect(failed.length).toBe(CONCURRENCY - 1)
 
     for (const exit of failed) {
-      expect(Exit.isFailure(exit)).toBe(true)
-      if (Exit.isFailure(exit)) {
-        expect(Cause.hasDies(exit.cause)).toBe(false)
-        const error = Cause.findErrorOption(exit.cause)
-        expect(error._tag).toBe('Some')
-        if (error._tag === 'Some') {
-          expect(error.value._tag).toBe('ConflictError')
-        }
-      }
+      expect(Cause.hasDies(exit.cause)).toBe(false)
+      expect(Cause.findErrorOption(exit.cause)).toMatchObject({
+        _tag: 'Some',
+        value: { _tag: 'ConflictError' }
+      })
     }
 
     const rows = await db
@@ -103,14 +99,11 @@ describe('D1 concurrent favorites', () => {
     expect(failed.length).toBe(CONCURRENCY - 1)
 
     for (const exit of failed) {
-      if (Exit.isFailure(exit)) {
-        expect(Cause.hasDies(exit.cause)).toBe(false)
-        const error = Cause.findErrorOption(exit.cause)
-        expect(error._tag).toBe('Some')
-        if (error._tag === 'Some') {
-          expect(error.value._tag).toBe('ConflictError')
-        }
-      }
+      expect(Cause.hasDies(exit.cause)).toBe(false)
+      expect(Cause.findErrorOption(exit.cause)).toMatchObject({
+        _tag: 'Some',
+        value: { _tag: 'ConflictError' }
+      })
     }
 
     const favoriteRows = await db

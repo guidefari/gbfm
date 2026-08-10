@@ -13,6 +13,7 @@ import type { ErrorEvent, TracesSamplerSamplingContext, TransactionEvent } from 
 import { traceSampleRate } from '@gbfm/core/observability/trace-sampling'
 import { Effect, Layer } from 'effect'
 import type { NavigationLockDurableObject } from '@/durable-objects/navigation-lock.do'
+import type { SpotifyImportResolverDurableObject } from '@/durable-objects/spotify-import-resolver.do'
 import { DatabaseLayer } from '@/db/layer'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { sanitizeDatabaseSpan } from '@/lib/database-telemetry'
@@ -27,6 +28,10 @@ import {
 } from '@/runtime/sentry-worker'
 import { canonicalNavigationLockName, NavigationLock } from '@/services/navigation-lock'
 import {
+  canonicalSpotifyImportResolverName,
+  SpotifyImportResolver
+} from '@/services/spotify-import-resolver.service'
+import {
   claimReminder,
   findReminderById,
   queryDueReminders,
@@ -37,6 +42,7 @@ import { SitemapCacheLayer } from '@/services/sitemap-cache'
 import { SentryServiceLayer } from '@/services/sentry.service'
 
 export { NavigationLockDurableObject } from '@/durable-objects/navigation-lock.do'
+export { SpotifyImportResolverDurableObject } from '@/durable-objects/spotify-import-resolver.do'
 
 // The only file that sees env, ExecutionContext, or a Cloudflare binding
 // type. Every other module receives capabilities named in domain terms
@@ -49,6 +55,7 @@ export type ApiEnv = {
   readonly SITEMAP: KVNamespace
   readonly REMINDERS: Queue<ReminderJob>
   readonly NAVIGATION_LOCK: DurableObjectNamespace<NavigationLockDurableObject>
+  readonly SPOTIFY_IMPORT_RESOLVER: DurableObjectNamespace<SpotifyImportResolverDurableObject>
   readonly SENTRY_DSN?: string
   readonly SENTRY_ENVIRONMENT?: string
 }
@@ -110,11 +117,45 @@ const navigationLockLive = (env: ApiEnv) =>
       })
   })
 
+const spotifyImportResolverError = (operation: string, error: unknown) =>
+  new DatabaseError({
+    message: `Failed to ${operation} Spotify import resolver: ${getErrorMessage(error)}`,
+    operation,
+    table: 'music_entity_links'
+  })
+
+const spotifyImportResolverLive = (env: ApiEnv) =>
+  Layer.succeed(SpotifyImportResolver, {
+    resolveTrack: (track) =>
+      Effect.tryPromise({
+        try: async () => {
+          const canonicalName = canonicalSpotifyImportResolverName('track', track.trackUrl)
+          const stub = env.SPOTIFY_IMPORT_RESOLVER.get(
+            env.SPOTIFY_IMPORT_RESOLVER.idFromName(canonicalName)
+          )
+          return await stub.resolveTrack(track)
+        },
+        catch: (error) => spotifyImportResolverError('resolve track', error)
+      }),
+    resolvePlaylist: (playlist, coverImageUrl, curatorId) =>
+      Effect.tryPromise({
+        try: async () => {
+          const canonicalName = canonicalSpotifyImportResolverName('playlist', playlist.playlistUrl)
+          const stub = env.SPOTIFY_IMPORT_RESOLVER.get(
+            env.SPOTIFY_IMPORT_RESOLVER.idFromName(canonicalName)
+          )
+          return await stub.resolvePlaylist(playlist, coverImageUrl, curatorId)
+        },
+        catch: (error) => spotifyImportResolverError('resolve playlist', error)
+      })
+  })
+
 const appServicesLive = (env: ApiEnv) =>
   AppLayer(
     DatabaseLayer(env.DB),
     SitemapCacheLayer(env.SITEMAP),
     navigationLockLive(env),
+    spotifyImportResolverLive(env),
     workerSentryServiceLive(env),
     WorkerTracingLive
   )

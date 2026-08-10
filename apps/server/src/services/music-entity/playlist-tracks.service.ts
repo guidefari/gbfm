@@ -1,14 +1,13 @@
 import { LINK_STATUS } from '@gbfm/core/status'
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import { Effect } from 'effect'
-import { Database, type DatabaseClient } from '@/db/layer'
+import { Database } from '@/db/layer'
 import {
   musicEntityLinksTable,
   musicPlaylistsTable,
   musicPlaylistTracksTable,
   musicTracksTable,
-  type SelectMusicEntityLink,
-  type SelectMusicPlaylist
+  type SelectMusicEntityLink
 } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage, SpotifyError } from '@/errors'
 import type { MusicLinkScraperService } from '@/services/music-link-scraper.service'
@@ -18,15 +17,9 @@ import {
   type SpotifyImportPlaylist,
   type SpotifyService
 } from '@/services/spotify.service'
-import { toSlug } from '@/services/to-slug'
 import { addLinkEffect, getLinksForEntityEffect } from './link.service'
-import {
-  FetchError,
-  findEntityIdBySpotifyUrl,
-  type ImportedTrackTarget,
-  requireInserted,
-  uniqueSlug
-} from './shared'
+import { type SpotifyImportResolverShape } from '@/services/spotify-import-resolver.service'
+import { FetchError, type ImportedTrackTarget, requireInserted } from './shared'
 import { updateTrackEffect } from './track.service'
 
 export const getPlaylistTracksEffect = (playlistId: string) =>
@@ -486,153 +479,10 @@ const refreshPlaylistCoverImageEffect = (
     })
   )
 
-const resolveSpotifyTrack = async (
-  db: DatabaseClient,
-  track: {
-    readonly trackUrl: string
-    readonly title: string
-    readonly artistNames: string[]
-    readonly albumImageUrl: string | null
-    readonly trackNumber: number | null
-    readonly spotifyTrackId: string
-    readonly durationMs: number | null
-    readonly previewUrl: string | null
-    readonly albumName: string | null
-    readonly albumSpotifyId: string | null
-  }
-) => {
-  const existingTrackId = await findEntityIdBySpotifyUrl(db, 'track', track.trackUrl)
-  if (existingTrackId) return { trackId: existingTrackId, created: false }
-
-  const trackId = crypto.randomUUID()
-  const slug = await uniqueSlug(
-    db,
-    musicTracksTable,
-    toSlug(`${track.artistNames.join(' ')} ${track.title}`)
-  )
-  const now = new Date()
-
-  await db.batch([
-    db
-      .insert(musicEntityLinksTable)
-      .values({
-        entityType: 'track',
-        entityId: trackId,
-        platform: 'spotify',
-        url: track.trackUrl,
-        status: LINK_STATUS.VERIFIED,
-        metadata: {
-          spotifyTrackId: track.spotifyTrackId,
-          durationMs: track.durationMs,
-          previewUrl: track.previewUrl,
-          albumName: track.albumName,
-          albumSpotifyId: track.albumSpotifyId
-        }
-      })
-      .onConflictDoNothing(),
-    db.insert(musicTracksTable).select(
-      db
-        .select({
-          id: sql<string>`${trackId}`.as('id'),
-          title: sql<string>`${track.title}`.as('title'),
-          artistNames: sql<string[]>`${JSON.stringify(track.artistNames)}`.as('artistNames'),
-          coverImageUrl: sql<string | null>`${track.albumImageUrl}`.as('coverImageUrl'),
-          trackNumber: sql<number | null>`${track.trackNumber}`.as('trackNumber'),
-          slug: sql<string>`${slug}`.as('slug'),
-          createdAt: sql<Date>`${now.getTime()}`.as('createdAt'),
-          updatedAt: sql<Date>`${now.getTime()}`.as('updatedAt')
-        })
-        .from(musicEntityLinksTable)
-        .where(
-          and(
-            eq(musicEntityLinksTable.entityType, 'track'),
-            eq(musicEntityLinksTable.platform, 'spotify'),
-            eq(musicEntityLinksTable.url, track.trackUrl),
-            eq(musicEntityLinksTable.entityId, trackId)
-          )
-        )
-    )
-  ])
-
-  const resolvedTrackId = await findEntityIdBySpotifyUrl(db, 'track', track.trackUrl)
-  if (!resolvedTrackId) throw new Error('Unable to resolve Spotify track identity')
-  return { trackId: resolvedTrackId, created: resolvedTrackId === trackId }
-}
-
-const resolveSpotifyPlaylist = async (
-  db: DatabaseClient,
-  playlist: SpotifyImportPlaylist,
-  coverImageUrl: string | null,
-  curatorId: string | null | undefined
-) => {
-  const existingPlaylistId = await findEntityIdBySpotifyUrl(db, 'playlist', playlist.playlistUrl)
-  if (existingPlaylistId) {
-    const rows = await db
-      .select()
-      .from(musicPlaylistsTable)
-      .where(eq(musicPlaylistsTable.id, existingPlaylistId))
-      .limit(1)
-    const existing = rows[0]
-    if (!existing) throw new Error('Spotify playlist link references no playlist')
-    return existing
-  }
-
-  const id = crypto.randomUUID()
-  const slug = await uniqueSlug(db, musicPlaylistsTable, toSlug(playlist.title))
-  const now = new Date()
-
-  await db.batch([
-    db
-      .insert(musicEntityLinksTable)
-      .values({
-        entityType: 'playlist',
-        entityId: id,
-        platform: 'spotify',
-        url: playlist.playlistUrl,
-        status: LINK_STATUS.VERIFIED,
-        metadata: { spotifyPlaylistId: playlist.spotifyPlaylistId }
-      })
-      .onConflictDoNothing(),
-    db.insert(musicPlaylistsTable).select(
-      db
-        .select({
-          id: sql<string>`${id}`.as('id'),
-          title: sql<string>`${playlist.title}`.as('title'),
-          description: sql<string | null>`${playlist.description}`.as('description'),
-          coverImageUrl: sql<string | null>`${coverImageUrl ?? playlist.coverImageUrl}`.as(
-            'coverImageUrl'
-          ),
-          curatorId: sql<string | null>`${curatorId ?? null}`.as('curatorId'),
-          slug: sql<string>`${slug}`.as('slug'),
-          createdAt: sql<Date>`${now.getTime()}`.as('createdAt'),
-          updatedAt: sql<Date>`${now.getTime()}`.as('updatedAt'),
-          revision: sql<number>`0`.as('revision')
-        })
-        .from(musicEntityLinksTable)
-        .where(
-          and(
-            eq(musicEntityLinksTable.entityType, 'playlist'),
-            eq(musicEntityLinksTable.platform, 'spotify'),
-            eq(musicEntityLinksTable.url, playlist.playlistUrl),
-            eq(musicEntityLinksTable.entityId, id)
-          )
-        )
-    )
-  ])
-
-  const resolvedPlaylistId = await findEntityIdBySpotifyUrl(db, 'playlist', playlist.playlistUrl)
-  if (!resolvedPlaylistId) throw new Error('Unable to resolve Spotify playlist identity')
-  const rows = await db
-    .select()
-    .from(musicPlaylistsTable)
-    .where(eq(musicPlaylistsTable.id, resolvedPlaylistId))
-    .limit(1)
-  const resolved = rows[0]
-  if (!resolved) throw new Error('Spotify playlist link references no playlist')
-  return resolved
-}
-
-export const addSpotifyTrackToPlaylistEffect = (spotify: SpotifyService) =>
+export const addSpotifyTrackToPlaylistEffect = (
+  spotify: SpotifyService,
+  resolver: SpotifyImportResolverShape
+) =>
   Effect.fn('musicEntity.addSpotifyTrackToPlaylist')(function* (
     playlistId: string,
     spotifyUrl: string
@@ -651,7 +501,7 @@ export const addSpotifyTrackToPlaylistEffect = (spotify: SpotifyService) =>
 
     return yield* Effect.tryPromise({
       try: async () => {
-        const track = await resolveSpotifyTrack(db, t)
+        const track = await Effect.runPromise(resolver.resolveTrack(t))
         await db.batch([
           db
             .insert(musicPlaylistTracksTable)
@@ -705,6 +555,7 @@ export const addSpotifyTrackToPlaylistEffect = (spotify: SpotifyService) =>
 
 export const importSpotifyPlaylistEffect = (
   spotify: SpotifyService,
+  resolver: SpotifyImportResolverShape,
   scraper: MusicLinkScraperService,
   s3: S3Service,
   cdnUrl: string,
@@ -730,10 +581,12 @@ export const importSpotifyPlaylistEffect = (
       : null
     const result = yield* Effect.tryPromise({
       try: async () => {
-        const playlist = await resolveSpotifyPlaylist(db, data, storedCoverImageUrl, curatorId)
+        const playlist = await Effect.runPromise(
+          resolver.resolvePlaylist(data, storedCoverImageUrl, curatorId)
+        )
         const tracks: Array<{ trackId: string; created: boolean }> = []
         for (const track of data.tracks) {
-          tracks.push(await resolveSpotifyTrack(db, track))
+          tracks.push(await Effect.runPromise(resolver.resolveTrack(track)))
         }
 
         for (let attempt = 0; attempt < 3; attempt += 1) {

@@ -41,6 +41,7 @@ import {
   type MusicScrapeInput
 } from '@/services/music-link-scraper.service'
 import { S3Service as S3ServiceTag } from '@/services/s3.service'
+import { SpotifyImportResolver } from '@/services/spotify-import-resolver.service'
 import { SpotifyService as SpotifyServiceTag } from '@/services/spotify.service'
 
 import {
@@ -311,6 +312,7 @@ export const MusicEntityServiceLayer = Layer.effect(
   Effect.gen(function* () {
     const scraper = yield* MusicLinkScraperServiceTag
     const spotify = yield* SpotifyServiceTag
+    const resolver = yield* SpotifyImportResolver
     const s3 = yield* S3ServiceTag
     const config = yield* ConfigServiceTag
     const db = yield* Database
@@ -372,11 +374,12 @@ export const MusicEntityServiceLayer = Layer.effect(
       reorderPlaylistTracks: (playlistId, trackIds) =>
         provideDb(reorderPlaylistTracksEffect(playlistId, trackIds)),
       addSpotifyTrackToPlaylist: (playlistId, spotifyUrl) =>
-        provideDb(addSpotifyTrackToPlaylistEffect(spotify)(playlistId, spotifyUrl)),
+        provideDb(addSpotifyTrackToPlaylistEffect(spotify, resolver)(playlistId, spotifyUrl)),
       importSpotifyPlaylist: (url, curatorId) =>
         provideDb(
           importSpotifyPlaylistEffect(
             spotify,
+            resolver,
             scraper,
             s3,
             config.urls.bucketRouter,
