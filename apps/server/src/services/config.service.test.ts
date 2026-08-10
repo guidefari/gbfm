@@ -53,9 +53,19 @@ describe('StorageConfigSchema', () => {
     })
   })
 
-  test('rejects R2 without its endpoint and credentials', () => {
+  test('derives the R2 account ID from the API endpoint binding', () => {
+    const config = createConfig({
+      ...workerBindings(),
+      StorageProvider: 'r2',
+      StorageEndpoint: 'https://test-account.r2.cloudflarestorage.com'
+    })
+
+    expect(config.storage.accountId).toBe('test-account')
+  })
+
+  test('rejects R2 without its account ID and credentials', () => {
     expect(() => decodeStorageConfig({ provider: 'r2', region: 'auto' })).toThrow(
-      /r2 provider requires endpoint and credentials/
+      /r2 provider requires an account ID and credentials/
     )
   })
 
@@ -64,6 +74,7 @@ describe('StorageConfigSchema', () => {
     const secretKey = 'r2-secret-key-for-test'
     const config = decodeStorageConfig({
       provider: 'r2',
+      accountId: 'account',
       endpoint: 'https://account.r2.cloudflarestorage.com',
       region: 'auto',
       accessKeyId: Redacted.make(accessKey),

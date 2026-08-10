@@ -26,6 +26,8 @@ import type { UserService } from '@/services/user.service'
 import { Database } from '@/db/layer'
 import type { Auth } from '@/lib/auth'
 import { NavigationLockLocalLayer } from '@/services/navigation-lock'
+import { ConfigServiceLayer } from '@/services/config.service'
+import { AwsObjectStoreClientLayer } from '@/services/storage/aws-object-store-client'
 import { SpotifyImportResolverLocalLayer } from '@/services/spotify-import-resolver.service'
 import { SitemapCache as SitemapCacheTag } from '@/services/sitemap-cache'
 import { AppLayer } from './services'
@@ -82,6 +84,9 @@ export type AppServices =
   | ShowSubscriptionService
   | UserService
 
+const configLive = ConfigServiceLayer
+const awsObjectStoreLive = AwsObjectStoreClientLayer.pipe(Layer.provide(configLive))
+
 const managedRuntime = ManagedRuntime.make(
   AppLayer(
     UnavailableDatabaseLive,
@@ -89,7 +94,9 @@ const managedRuntime = ManagedRuntime.make(
     NavigationLockLocalLayer,
     SpotifyImportResolverLocalLayer,
     BunSentryServiceLive,
-    BunTracingLive
+    BunTracingLive,
+    configLive,
+    awsObjectStoreLive
   )
 )
 

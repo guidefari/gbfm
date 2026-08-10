@@ -40,6 +40,7 @@ import {
 import { ReminderQueue, ReminderQueueLayer, type ReminderJob } from '@/services/reminder-queue'
 import { SitemapCacheLayer } from '@/services/sitemap-cache'
 import { SentryServiceLayer } from '@/services/sentry.service'
+import { R2ObjectStoreClientLayer } from '@/services/storage/r2-object-store-client'
 import { WorkerConfigServiceLayer, type WorkerConfigBindings } from '@/services/config.service'
 
 export { NavigationLockDurableObject } from '@/durable-objects/navigation-lock.do'
@@ -151,16 +152,24 @@ const spotifyImportResolverLive = (env: ApiEnv) =>
       })
   })
 
-const appServicesLive = (env: ApiEnv) =>
-  AppLayer(
+const appServicesLive = (env: ApiEnv) => {
+  const configLive = WorkerConfigServiceLayer(env)
+  const objectStoreLive = R2ObjectStoreClientLayer({
+    userContent: env.USER_CONTENT,
+    mixes: env.MIXES
+  }).pipe(Layer.provide(configLive))
+
+  return AppLayer(
     DatabaseLayer(env.DB),
     SitemapCacheLayer(env.SITEMAP),
     navigationLockLive(env),
     spotifyImportResolverLive(env),
     workerSentryServiceLive(env),
     WorkerTracingLive,
-    WorkerConfigServiceLayer(env)
+    configLive,
+    objectStoreLive
   )
+}
 
 const sentryOptions = (env: ApiEnv) => {
   const dsn = env.SENTRY_DSN ?? ''

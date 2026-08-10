@@ -1,5 +1,4 @@
 import { appendFile } from 'node:fs/promises'
-import { randomBytes } from 'node:crypto'
 import { PUBLIC_PROFILE_PATH } from '@gbfm/api/profile'
 import { Cause, Effect, Exit, Schema } from 'effect'
 import {
@@ -74,6 +73,8 @@ const program = Effect.gen(function* () {
     )
   )
 
+  const traceId = crypto.randomUUID().replaceAll('-', '')
+  const parentSpanId = crypto.randomUUID().replaceAll('-', '').slice(0, 16)
   const config: ProductionVerificationConfig = {
     app: environment.SST_APP,
     stage: environment.SST_STAGE,
@@ -82,8 +83,8 @@ const program = Effect.gen(function* () {
     baseUrl: environment.PRODUCTION_BASE_URL,
     profilePath: PUBLIC_PROFILE_PATH.replace(':username', 'guidefari'),
     profileTransaction: `GET ${PUBLIC_PROFILE_PATH}`,
-    traceId: randomBytes(16).toString('hex'),
-    parentSpanId: randomBytes(8).toString('hex'),
+    traceId,
+    parentSpanId,
     ecs: {
       attempts: 28,
       intervalMs: 15_000

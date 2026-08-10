@@ -18,6 +18,12 @@ export const CryptoService = Context.Service<CryptoService>('CryptoService')
 const ALGORITHM = 'aes-256-gcm'
 const IV_LENGTH = 12
 
+const toBase64Url = (bytes: Uint8Array) => {
+  let binary = ''
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '')
+}
+
 const resolveKey = (rootKey: string): Effect.Effect<Buffer, CryptoError> =>
   Effect.try({
     try: () => createHash('sha256').update(rootKey, 'utf8').digest(),
@@ -45,9 +51,9 @@ const encrypt = (
 
           return {
             keyId: 'sha256',
-            iv: iv.toString('base64url'),
-            authTag: cipher.getAuthTag().toString('base64url'),
-            payload: payload.toString('base64url')
+            iv: toBase64Url(iv),
+            authTag: toBase64Url(cipher.getAuthTag()),
+            payload: toBase64Url(payload)
           }
         },
         catch: () => new CryptoError({ message: 'Unable to encrypt secret', operation: 'encrypt' })

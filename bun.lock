@@ -6,6 +6,7 @@
       "name": "gbfm",
       "dependencies": {
         "@aws-sdk/client-s3": "3.1038.0",
+        "@aws-sdk/s3-request-presigner": "3.1038.0",
         "@effect/cli": "0.75.2",
         "@effect/platform": "0.96.2",
         "@effect/platform-bun": "4.0.0-beta.99",
@@ -89,8 +90,6 @@
     "apps/server": {
       "name": "@gbfm/server",
       "dependencies": {
-        "@aws-sdk/client-s3": "3.1038.0",
-        "@aws-sdk/s3-request-presigner": "3.1038.0",
         "@effect/cli": "0.75.2",
         "@effect/experimental": "0.60.0",
         "@effect/opentelemetry": "4.0.0-beta.93",

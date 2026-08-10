@@ -31,8 +31,7 @@ const secretNames = [
 
 type SecretName = (typeof secretNames)[number]
 
-// StorageConfigSchema only demands endpoint and credentials for the r2
-// provider; the aws provider resolves them from the instance role, so these
+// The aws provider resolves credentials from the ECS instance role, so these
 // are legitimately blank in production.
 const optionalSecretNames: readonly SecretName[] = [
   'StorageEndpoint',
@@ -98,6 +97,18 @@ function secretNumber(
   return numberValue(secretValue(name, bindings), fallback, name)
 }
 
+function r2AccountId(endpoint: string): string | undefined {
+  try {
+    const hostname = new URL(endpoint).hostname
+    const suffix = '.r2.cloudflarestorage.com'
+    if (!hostname.endsWith(suffix)) return undefined
+    const accountId = hostname.slice(0, -suffix.length)
+    return accountId || undefined
+  } catch {
+    return undefined
+  }
+}
+
 function resourceValue(name: string): unknown {
   const resource = getResource(name)
   return isRecord(resource) && 'value' in resource ? resource.value : resource
@@ -109,9 +120,10 @@ function resourceString(name: string, property: string, fallback: string): strin
   return stringValue(resource[property], fallback)
 }
 
-/** Parsed object storage configuration. R2 requires an endpoint and explicit credentials. */
+/** Parsed object storage configuration. R2 requires signing credentials and an account ID. */
 export const StorageConfigSchema = Schema.Struct({
   provider: Schema.Literals(['aws', 'r2']),
+  accountId: Schema.optional(Schema.String),
   endpoint: Schema.optional(Schema.String),
   region: Schema.String,
   accessKeyId: Schema.optional(Schema.Redacted(Schema.String)),
@@ -120,11 +132,11 @@ export const StorageConfigSchema = Schema.Struct({
 }).check(
   Schema.makeFilter((storage) =>
     storage.provider === 'aws' ||
-    (storage.endpoint !== undefined &&
+    (storage.accountId !== undefined &&
       storage.accessKeyId !== undefined &&
       storage.secretAccessKey !== undefined)
       ? undefined
-      : 'r2 provider requires endpoint and credentials'
+      : 'r2 provider requires an account ID and credentials'
   )
 )
 
@@ -241,6 +253,7 @@ export function createConfig(bindings?: WorkerConfigBindings): ConfigService {
     bindings?.MIXES_BUCKET_NAME ?? resourceString('Mixes', 'name', 'mixes-dev')
   const storage = Schema.decodeUnknownSync(StorageConfigSchema)({
     provider: secrets.StorageProvider,
+    accountId: r2AccountId(secrets.StorageEndpoint),
     endpoint: secrets.StorageEndpoint || undefined,
     region: secrets.StorageRegion,
     accessKeyId:

@@ -1,82 +1,87 @@
-import { S3Client, type S3ClientConfig } from '@aws-sdk/client-s3'
-import { Context, Effect, Layer, Redacted } from 'effect'
-import { ConfigService } from '../config.service'
-import { StorageProvider, type StorageProvider as StorageProviderType } from './provider'
+import { Context, Layer } from 'effect'
+import type { StorageProvider } from './provider'
 
-/** Configured S3-compatible clients used for object operations and presigning. */
-export interface ObjectStoreClient {
-  readonly client: S3Client
-  readonly provider: StorageProviderType
-  /** Signs direct browser writes against an object-store API host, never the public CDN. */
-  readonly signingClient: S3Client
+export interface StoredObjectMetadata {
+  readonly size: number
+  readonly metadata: Readonly<Record<string, string>>
 }
 
-/** Object-store client dependency. */
+export interface StoredObject {
+  readonly key: string
+  readonly lastModified: Date
+  readonly size: number
+}
+
+export interface MultipartPart {
+  readonly partNumber: number
+  readonly etag: string
+  readonly size: number
+}
+
+export interface ObjectStoreClient {
+  readonly provider: StorageProvider
+  readonly putObject: (input: {
+    readonly bucketName: string
+    readonly key: string
+    readonly body: Uint8Array | Blob | string
+    readonly contentType: string
+  }) => Promise<void>
+  readonly presignPutObject: (input: {
+    readonly bucketName: string
+    readonly key: string
+    readonly contentType: string
+    readonly expiresInSeconds: number
+  }) => Promise<string>
+  readonly deleteObject: (bucketName: string, key: string) => Promise<void>
+  readonly headObject: (bucketName: string, key: string) => Promise<StoredObjectMetadata | null>
+  readonly listObjects: (bucketName: string, prefix: string) => Promise<StoredObject[]>
+  readonly listBuckets: () => Promise<string[]>
+  readonly createMultipartUpload: (input: {
+    readonly bucketName: string
+    readonly key: string
+    readonly contentType: string
+    readonly expectedSize: number
+  }) => Promise<string>
+  readonly presignUploadPart: (input: {
+    readonly bucketName: string
+    readonly key: string
+    readonly uploadId: string
+    readonly partNumber: number
+    readonly expiresInSeconds: number
+  }) => Promise<string>
+  readonly completeMultipartUpload: (input: {
+    readonly bucketName: string
+    readonly key: string
+    readonly uploadId: string
+    readonly parts: ReadonlyArray<{ readonly partNumber: number; readonly etag: string }>
+  }) => Promise<void>
+  readonly abortMultipartUpload: (
+    bucketName: string,
+    key: string,
+    uploadId: string
+  ) => Promise<void>
+  readonly listMultipartParts: (
+    bucketName: string,
+    key: string,
+    uploadId: string
+  ) => Promise<MultipartPart[]>
+}
+
 export const ObjectStoreClient = Context.Service<ObjectStoreClient>('ObjectStoreClient')
 
-const makeS3Client = (config: S3ClientConfig) => new S3Client(config)
+const unavailable = () => Promise.reject(new Error('Object storage is unavailable in this runtime'))
 
-const destroyStore = (store: ObjectStoreClient) =>
-  Effect.sync(() => {
-    store.client.destroy()
-    if (store.signingClient !== store.client) store.signingClient.destroy()
-  })
-
-/** Constructs and owns the configured object-store clients. */
-export const ObjectStoreClientLayer: Layer.Layer<ObjectStoreClient, never, ConfigService> =
-  Layer.effect(
-    ObjectStoreClient,
-    Effect.gen(function* () {
-      const config = yield* ConfigService
-      const storage = config.storage
-
-      if (storage.provider === StorageProvider.aws) {
-        return yield* Effect.acquireRelease(
-          Effect.sync(() => {
-            const client = makeS3Client({})
-            return {
-              client,
-              provider: StorageProvider.aws,
-              signingClient: client
-            } satisfies ObjectStoreClient
-          }),
-          destroyStore
-        )
-      }
-
-      if (
-        storage.endpoint === undefined ||
-        storage.accessKeyId === undefined ||
-        storage.secretAccessKey === undefined
-      ) {
-        return yield* Effect.die(new Error('Parsed R2 storage configuration is incomplete'))
-      }
-      const endpoint = storage.endpoint
-      const accessKeyId = storage.accessKeyId
-      const secretAccessKey = storage.secretAccessKey
-
-      return yield* Effect.acquireRelease(
-        Effect.sync(() => {
-          const clientConfig: S3ClientConfig = {
-            endpoint,
-            region: storage.region,
-            credentials: {
-              accessKeyId: Redacted.value(accessKeyId),
-              secretAccessKey: Redacted.value(secretAccessKey)
-            }
-          }
-          const client = makeS3Client(clientConfig)
-          const signingClient =
-            storage.signingEndpoint === undefined || storage.signingEndpoint === endpoint
-              ? client
-              : makeS3Client({ ...clientConfig, endpoint: storage.signingEndpoint })
-          return {
-            client,
-            provider: StorageProvider.r2,
-            signingClient
-          } satisfies ObjectStoreClient
-        }),
-        destroyStore
-      )
-    })
-  )
+export const UnavailableObjectStoreClientLayer = Layer.succeed(ObjectStoreClient, {
+  provider: 'aws',
+  putObject: unavailable,
+  presignPutObject: unavailable,
+  deleteObject: unavailable,
+  headObject: unavailable,
+  listObjects: unavailable,
+  listBuckets: unavailable,
+  createMultipartUpload: unavailable,
+  presignUploadPart: unavailable,
+  completeMultipartUpload: unavailable,
+  abortMultipartUpload: unavailable,
+  listMultipartParts: unavailable
+} satisfies ObjectStoreClient)

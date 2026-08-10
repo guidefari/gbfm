@@ -21,8 +21,6 @@
     "db:deets:prod": "bun sst shell --stage=prod bun run ./scripts/db.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.1038.0",
-    "@aws-sdk/s3-request-presigner": "3.1038.0",
     "@effect/cli": "0.75.2",
     "@effect/experimental": "0.60.0",
     "@effect/opentelemetry": "4.0.0-beta.93",

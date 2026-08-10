@@ -40,7 +40,10 @@ import { ShowServiceLayer, ShowSubscriptionServiceLayer } from '@/services/show.
 import { SpotifyServiceLayer } from '@/services/spotify.service'
 import { UploadAssetServiceLayer } from '@/services/upload-asset.service'
 import { UserServiceLayer } from '@/services/user.service'
-import { ObjectStoreClientLayer } from '@/services/storage/object-store-client'
+import {
+  type ObjectStoreClient,
+  UnavailableObjectStoreClientLayer
+} from '@/services/storage/object-store-client'
 
 const DevToolsLive: Layer.Layer<never> = Layer.empty
 
@@ -57,10 +60,10 @@ export const AppLayer = (
   spotifyImportResolverLive: Layer.Layer<SpotifyImportResolver, never, Database>,
   sentryLive: Layer.Layer<SentryService>,
   tracingLive: Layer.Layer<OtelTracer.OtelTracer>,
-  configLive: Layer.Layer<ConfigService> = ConfigServiceLayer
+  configLive: Layer.Layer<ConfigService> = ConfigServiceLayer,
+  objectStoreLive: Layer.Layer<ObjectStoreClient> = UnavailableObjectStoreClientLayer
 ) => {
   const UploadAssetDepsLive = Layer.mergeAll(configLive, UploadAssetServiceLayer)
-  const ObjectStoreClientLive = ObjectStoreClientLayer.pipe(Layer.provide(configLive))
   const BaseServicesLayer = Layer.mergeAll(
     configLive,
     BlueskyClientLayer,
@@ -86,7 +89,7 @@ export const AppLayer = (
     ProfileServiceLayer,
     ResolveServiceLayer,
     ReleaseServiceLayer,
-    S3ServiceLayer.pipe(Layer.provide(Layer.mergeAll(ObjectStoreClientLive, configLive))),
+    S3ServiceLayer.pipe(Layer.provide(Layer.mergeAll(objectStoreLive, configLive))),
     SearchServiceLayer,
     sentryLive,
     tracingLive,
