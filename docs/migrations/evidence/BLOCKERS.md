@@ -93,6 +93,31 @@ implemented together:
 - the M4 navigation Durable Object or an explicitly approved alternative;
 - request-scoped Worker D1 composition replacing the PostgreSQL pool test setup.
 
+## 2026-08-10: M4 worker.ts cannot load the full AppLayer while SentryServiceLayer imports @sentry/bun
+
+`runtime/services.ts`'s `BaseServicesLayer` provides `SentryServiceLayer` to
+nearly every other service, and `sentry.service.ts` imports `@sentry/bun` at
+module scope. `@sentry/bun`'s ESM entry re-exports `@sentry/node`
+wholesale (`onUncaughtExceptionIntegration`, `httpIntegration`,
+`postgresIntegration`, and other Node-runtime-only integrations), which is the
+exact swap this spec's M4 file table defers to a later slice ("the
+`@sentry/bun` swap. Later slices.").
+
+This worker.ts slice wires the full `AppLayer` (parametrized on `Database`
+only, per the M4 db-composition blocker above, now resolved) because
+`http/routes.ts`'s `Api` groups depend on nearly every service in
+`BaseServicesLayer`, and `SentryServiceLayer` is not separable from it without
+touching every consuming service -- out of this slice's scope. So `worker.ts`
+currently imports `@sentry/bun` transitively through `AppLayer`.
+
+Whether this actually breaks at Worker bundle/runtime is unverified: this task
+explicitly forbids `alchemy dev`/`wrangler dev`/any real deploy, so the
+bundler was never run against `worker.ts`. If `@sentry/bun` fails to bundle or
+initialize under `workerd`, the Cloudflare Sentry SDK swap (already scoped as
+a separate slice) needs to land, or become a dependency, before this worker.ts
+can serve real traffic. Flagging now so the swap isn't scheduled after a
+deploy attempt already failed on it.
+
 ## 2026-08-09: M4 package rename collides with an existing workspace package
 
 HALT-CHAIN: `packages/api/package.json` already owns `@gbfm/api`, while
