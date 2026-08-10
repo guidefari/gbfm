@@ -153,17 +153,6 @@ export function TweetNav({ slug, initialCapabilities }: Props) {
     runNavigationIntent(
       command(crypto.randomUUID()).pipe(
         Effect.tap((result) => Effect.sync(() => setCapabilities(result.capabilities))),
-        Effect.tap((result) =>
-          Effect.promise(() =>
-            Promise.all(
-              [result.neighbours.back, result.neighbours.forward]
-                .filter((neighbour) => neighbour !== undefined)
-                .map((neighbour) =>
-                  router.preloadRoute({ to: '/tweet/$slug', params: { slug: neighbour } })
-                )
-            )
-          ).pipe(Effect.ignore)
-        ),
         Effect.flatMap((result) =>
           Effect.promise(() =>
             router.navigate({ to: '/tweet/$slug', params: { slug: result.destination.slug } })
