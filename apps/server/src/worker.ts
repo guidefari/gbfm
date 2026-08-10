@@ -39,6 +39,7 @@ import {
 } from '@/services/reminder-processor'
 import { ReminderQueue, ReminderQueueLayer, type ReminderJob } from '@/services/reminder-queue'
 import { SitemapCacheLayer } from '@/services/sitemap-cache'
+import { dispatchScheduledJob } from '@/scheduled'
 import { SentryServiceLayer } from '@/services/sentry.service'
 import { R2ObjectStoreClientLayer } from '@/services/storage/r2-object-store-client'
 import { WorkerConfigServiceLayer, type WorkerConfigBindings } from '@/services/config.service'
@@ -259,9 +260,11 @@ export default Sentry.withSentry<ApiEnv, ReminderJob>(sentryOptions, {
     }
   },
 
-  async scheduled(_controller: ScheduledController, env: ApiEnv): Promise<void> {
-    await Effect.runPromise(runSitemapRegeneration(env))
-    await Effect.runPromise(runReminderSweep(env))
+  scheduled(controller: ScheduledController, env: ApiEnv): Promise<void> {
+    return dispatchScheduledJob(controller.cron, {
+      regenerateSitemap: () => Effect.runPromise(runSitemapRegeneration(env)),
+      sweepReminders: () => Effect.runPromise(runReminderSweep(env))
+    })
   },
 
   async queue(batch: MessageBatch<ReminderJob>, env: ApiEnv): Promise<void> {
