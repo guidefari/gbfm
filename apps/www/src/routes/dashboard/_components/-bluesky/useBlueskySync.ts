@@ -3,6 +3,7 @@ import { Effect } from 'effect'
 import { useCallback, useEffect, useState } from 'react'
 import type { BlueskyAccount as BlueskyAccountSchema } from '@gbfm/api/bluesky'
 import { getApiClient } from '@/lib/api-client'
+import { fetcher } from '@/lib/http'
 import { apiUrl } from '@/lib/http-url'
 import { captureException } from '@/services/analytics'
 
@@ -10,11 +11,14 @@ export type BlueskyAccount = typeof BlueskyAccountSchema.Type
 
 export type SyncProgress = {
   status: 'running' | 'succeeded' | 'failed'
+  done: boolean
   created: number
   conflicted: number
   failed: number
   unresolved?: number
 }
+
+const SYNC_POLL_INTERVAL_MS = 1500
 
 const accountsQueryKey = ['integrations', 'bluesky'] as const
 
@@ -56,7 +60,7 @@ export function useBlueskySync() {
     },
     onSuccess: (handle) => {
       setError(null)
-      setProgress({ status: 'running', created: 0, conflicted: 0, failed: 0 })
+      setProgress({ status: 'running', done: false, created: 0, conflicted: 0, failed: 0 })
       setRunId(handle.runId)
     },
     onError: (err) => {
@@ -92,35 +96,34 @@ export function useBlueskySync() {
   useEffect(() => {
     if (!account || !runId) return
 
-    const events = new EventSource(
-      apiUrl(`/integrations/bluesky/${account.id}/sync/${runId}/events`),
-      { withCredentials: true }
-    )
+    let cancelled = false
 
-    const onSyncEvent = (event: Event) => {
-      if (!(event instanceof MessageEvent) || typeof event.data !== 'string') return
-      const update: SyncProgress = JSON.parse(event.data)
-      setProgress(update)
-      if (update.status === 'succeeded') {
-        invalidateImported()
-        events.close()
-      } else if (update.status === 'failed') {
-        setError('Import failed. Try running the sync again.')
-        events.close()
+    const pollOnce = async () => {
+      try {
+        const update = await fetcher<SyncProgress>(
+          apiUrl(`/integrations/bluesky/${account.id}/sync/${runId}/status`)
+        )
+        if (cancelled) return
+        setProgress(update)
+        if (update.done) {
+          if (update.status === 'succeeded') invalidateImported()
+          else if (update.status === 'failed')
+            setError('Import failed. Try running the sync again.')
+          clearInterval(intervalId)
+        }
+      } catch {
+        if (cancelled) return
+        setError('Connection interrupted while polling sync updates.')
+        clearInterval(intervalId)
       }
     }
-    const onError = () => setError('Connection interrupted while streaming sync updates.')
 
-    events.addEventListener('sync', onSyncEvent)
-    events.addEventListener('done', onSyncEvent)
-    events.addEventListener('fatal', onSyncEvent)
-    events.addEventListener('error', onError)
+    const intervalId = setInterval(pollOnce, SYNC_POLL_INTERVAL_MS)
+    void pollOnce()
+
     return () => {
-      events.removeEventListener('sync', onSyncEvent)
-      events.removeEventListener('done', onSyncEvent)
-      events.removeEventListener('fatal', onSyncEvent)
-      events.removeEventListener('error', onError)
-      events.close()
+      cancelled = true
+      clearInterval(intervalId)
     }
   }, [account, invalidateImported, runId])
 

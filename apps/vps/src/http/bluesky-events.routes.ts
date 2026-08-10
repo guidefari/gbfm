@@ -1,5 +1,5 @@
 import { and, eq } from 'drizzle-orm'
-import { Effect, Schedule, Stream } from 'effect'
+import { Effect } from 'effect'
 import { HttpRouter, HttpServerRequest, HttpServerResponse } from 'effect/unstable/http'
 import { Database } from '@/db/layer'
 import { blueskySyncRuns, externalAccounts } from '@/db/external-account.schema'
@@ -27,6 +27,7 @@ const toEvent = (row: {
 }) => ({
   runId: row.id,
   status: row.status,
+  done: terminalStatuses.has(row.status),
   discovered: row.discovered,
   qualifying: row.qualifying,
   created: row.created,
@@ -45,7 +46,7 @@ const unauthorized = HttpServerResponse.text('Unauthorized', { status: 401 })
 
 export const BlueskyEventsRoute = HttpRouter.add(
   'GET',
-  '/api/integrations/bluesky/:accountId/sync/:runId/events',
+  '/api/integrations/bluesky/:accountId/sync/:runId/status',
   HttpRouter.params.pipe(
     Effect.flatMap(({ accountId, runId }) =>
       Effect.gen(function* () {
@@ -60,7 +61,7 @@ export const BlueskyEventsRoute = HttpRouter.add(
         if (!session) return unauthorized
         const db = yield* Database
 
-        const load = Effect.tryPromise({
+        const row = yield* Effect.tryPromise({
           try: async () => {
             const [row] = await db
               .select({
@@ -97,34 +98,9 @@ export const BlueskyEventsRoute = HttpRouter.add(
           catch: () => null
         })
 
-        const initial = yield* load
-        if (!initial) return HttpServerResponse.text('Not found', { status: 404 })
+        if (!row) return HttpServerResponse.text('Not found', { status: 404 })
 
-        const stream = Stream.concat(
-          Stream.succeed(new TextEncoder().encode('retry: 3000\n\n')),
-          Stream.fromEffect(load).pipe(
-            Stream.filter((row): row is NonNullable<typeof row> => row !== null),
-            Stream.map(toEvent),
-            Stream.repeat(Schedule.spaced('1 second')),
-            Stream.takeUntil((event) => terminalStatuses.has(event.status)),
-            Stream.map((event) => {
-              const eventName =
-                event.status === 'succeeded' ? 'done' : event.status === 'failed' ? 'fatal' : 'sync'
-              return new TextEncoder().encode(
-                `event: ${eventName}\ndata: ${JSON.stringify(event)}\n\n`
-              )
-            })
-          )
-        )
-
-        return HttpServerResponse.stream(stream, {
-          contentType: 'text/event-stream',
-          headers: {
-            'cache-control': 'no-cache, no-transform',
-            connection: 'keep-alive',
-            'x-accel-buffering': 'no'
-          }
-        })
+        return yield* HttpServerResponse.json(toEvent(row)).pipe(Effect.orDie)
       })
     )
   )
