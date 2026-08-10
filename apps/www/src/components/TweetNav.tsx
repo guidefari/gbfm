@@ -5,7 +5,7 @@ import { useRouter } from '@tanstack/react-router'
 import { Effect, Fiber } from 'effect'
 import * as Atom from 'effect/unstable/reactivity/Atom'
 import { ChevronLeft, ChevronRight, LoaderCircle } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { HoldToRandomButton } from '@/components/HoldToRandomButton'
 import { jump, open, stepBack, stepForward } from '@/lib/navigation-commands'
 import { useNavigateMicroPosts } from '@/lib/http'
@@ -17,6 +17,7 @@ type Props = {
 }
 
 type Capabilities = NavigationResultResponse['capabilities']
+type Neighbours = NavigationResultResponse['neighbours']
 
 const emptyCapabilities: Capabilities = {
   canStepBack: false,
@@ -145,10 +146,38 @@ export function TweetNav({ slug }: Props) {
   const capabilities = useAtomValue(capabilitiesAtom)
   const setCapabilities = useAtomSet(capabilitiesAtom)
   const pendingRef = useRef(false)
+  const [neighbours, setNeighbours] = useState<Neighbours>({})
   const [isNavigating, setIsNavigating] = useState(false)
   const [isSyncing, setIsSyncing] = useState(true)
 
+  const acceptNavigation = useCallback(
+    (result: NavigationResultResponse) => {
+      setCapabilities(result.capabilities)
+      setNeighbours(result.neighbours)
+    },
+    [setCapabilities]
+  )
+  const preloadNeighbours = useCallback(
+    (neighboursToPreload: Neighbours) =>
+      Effect.forEach(
+        [neighboursToPreload.back, neighboursToPreload.forward].filter(
+          (neighbour) => neighbour !== undefined
+        ),
+        (neighbour) =>
+          Effect.promise(() =>
+            router.preloadRoute({ to: '/tweet/$slug', params: { slug: neighbour } })
+          ),
+        { concurrency: 'unbounded' }
+      ).pipe(Effect.ignore),
+    [router]
+  )
+
   useEffect(() => {
+    if (pendingRef.current) {
+      setIsSyncing(false)
+      return
+    }
+
     setIsSyncing(true)
     const fiber = Effect.runFork(
       open(navigateMicroPostsEffect, {
@@ -156,7 +185,7 @@ export function TweetNav({ slug }: Props) {
         slug,
         intentToken: crypto.randomUUID()
       }).pipe(
-        Effect.tap((result) => Effect.sync(() => setCapabilities(result.capabilities))),
+        Effect.tap((result) => Effect.sync(() => acceptNavigation(result))),
         Effect.ignore,
         Effect.ensuring(Effect.sync(() => setIsSyncing(false)))
       )
@@ -165,22 +194,53 @@ export function TweetNav({ slug }: Props) {
     return () => {
       Effect.runFork(Fiber.interrupt(fiber))
     }
-  }, [navigateMicroPostsEffect, setCapabilities, slug])
+  }, [acceptNavigation, navigateMicroPostsEffect, slug])
+
+  useEffect(() => {
+    const fiber = Effect.runFork(preloadNeighbours(neighbours))
+    return () => {
+      Effect.runFork(Fiber.interrupt(fiber))
+    }
+  }, [neighbours, preloadNeighbours])
 
   const navigate = (
-    command: (intentToken: string) => Effect.Effect<NavigationResultResponse, unknown>
+    command: (intentToken: string) => Effect.Effect<NavigationResultResponse, unknown>,
+    expectedSlug?: string
   ) => {
     if (pendingRef.current) return
 
     pendingRef.current = true
     setIsNavigating(true)
-    runNavigationIntent(
-      command(crypto.randomUUID()).pipe(
-        Effect.tap((result) => Effect.sync(() => setCapabilities(result.capabilities))),
-        Effect.flatMap((result) =>
-          Effect.promise(() =>
-            router.navigate({ to: '/tweet/$slug', params: { slug: result.destination.slug } })
+    const commandEffect = command(crypto.randomUUID()).pipe(
+      Effect.tap((result) => Effect.sync(() => acceptNavigation(result))),
+      expectedSlug
+        ? Effect.tapError(() =>
+            Effect.promise(() => router.navigate({ to: '/tweet/$slug', params: { slug } })).pipe(
+              Effect.ignore
+            )
           )
+        : (effect) => effect
+    )
+    const navigationEffect = expectedSlug
+      ? Effect.all(
+          {
+            result: commandEffect,
+            route: Effect.promise(() =>
+              router.navigate({ to: '/tweet/$slug', params: { slug: expectedSlug } })
+            )
+          },
+          { concurrency: 'unbounded' }
+        ).pipe(Effect.map(({ result }) => result))
+      : commandEffect
+
+    runNavigationIntent(
+      navigationEffect.pipe(
+        Effect.flatMap((result) =>
+          expectedSlug === result.destination.slug
+            ? Effect.succeed(result)
+            : Effect.promise(() =>
+                router.navigate({ to: '/tweet/$slug', params: { slug: result.destination.slug } })
+              ).pipe(Effect.as(result))
         ),
         Effect.asVoid,
         Effect.ensuring(
@@ -194,9 +254,15 @@ export function TweetNav({ slug }: Props) {
   }
 
   const goToPrev = () =>
-    navigate((intentToken) => stepBack(navigateMicroPostsEffect, { from: slug, intentToken }))
+    navigate(
+      (intentToken) => stepBack(navigateMicroPostsEffect, { from: slug, intentToken }),
+      neighbours.back
+    )
   const goToNext = () =>
-    navigate((intentToken) => stepForward(navigateMicroPostsEffect, { from: slug, intentToken }))
+    navigate(
+      (intentToken) => stepForward(navigateMicroPostsEffect, { from: slug, intentToken }),
+      neighbours.forward
+    )
   const onHoldComplete = () =>
     navigate((intentToken) => jump(navigateMicroPostsEffect, { from: slug, intentToken }))
 
