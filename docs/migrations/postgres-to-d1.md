@@ -531,6 +531,14 @@ export class ReminderQueueUnavailable extends Data.TaggedError('ReminderQueueUna
   Two accepted changes: the `x-ratelimit-*` response headers disappear (grep
   consumers first), and limiting becomes per-colo so a distributed client sees a
   higher effective ceiling.
+
+  **Status (OPS-248):** the middleware, its test, and `RateLimiterLive`'s
+  registration in `http/routes.ts` are deleted. Confirmed by grep that nothing
+  in `apps/www` or `apps/mobile` reads `x-ratelimit-limit`, `x-ratelimit-remaining`,
+  `x-ratelimit-reset`, or `retry-after`. **Operational gap: nothing enforces a
+  request limit between this commit and the day a Cloudflare Rate Limiting rule
+  is actually configured for this zone/route.** That rule must be created
+  before cutover, not after.
 - `services/qrcode.service.ts`, its routes, `pdf-lib`, `@pdf-lib/fontkit`,
   `qrcode`, and the two `BunFileSystem`/`BunPath` imports.
 - Graceful shutdown and signal handling in `app.ts`.

@@ -1,21 +1,17 @@
 import { Cause, Effect, Exit } from 'effect'
-import {
-  HttpMiddleware,
-  HttpRouter,
-  HttpServerRequest,
-  HttpServerResponse
-} from 'effect/unstable/http'
-import { InMemoryRateLimiter } from '@/middlewares/rate-limiter'
+import { HttpMiddleware, HttpRouter, HttpServerRequest } from 'effect/unstable/http'
 import { checkPerformanceHealth, recordRequest } from '@/lib/performance-monitoring'
 import { config } from '@/services/config.service'
 import { SentryService } from '@/services/sentry.service'
 
-// Step 8 (docs/migration-effect-http-api.md): the four global concerns that
-// used to be Hono middleware in apps/vps/src/lib/create-app.ts, ported to
+// Step 8 (docs/migration-effect-http-api.md): the global concerns that used
+// to be Hono middleware in apps/vps/src/lib/create-app.ts, ported to
 // Effect's global HttpRouter.middleware -- global (not endpoint-scoped)
-// because CORS/rate-limiting/logging/defect-reporting need to cover every
-// route including better-auth and the plain HttpRouter routes in
-// site-routes.ts, not just HttpApiBuilder endpoints.
+// because CORS/logging/defect-reporting need to cover every route including
+// better-auth and the plain HttpRouter routes in site-routes.ts, not just
+// HttpApiBuilder endpoints. Rate limiting (OPS-248) was dropped from this
+// list: it moved to Cloudflare's edge Rate Limiting rules, see
+// docs/migrations/postgres-to-d1.md's "Rate limiting" subsection.
 
 // ── CORS ──────────────────────────────────────────────────────
 // Matches apps/vps/src/lib/create-app.ts's corsConfig exactly. The old Hono
@@ -55,55 +51,7 @@ export const CorsLive = HttpRouter.middleware(
   { global: true }
 )
 
-// ── Rate limiting ─────────────────────────────────────────────
-// InMemoryRateLimiter (apps/vps/src/middlewares/rate-limiter.ts) is already
-// transport-agnostic. Only standardRateLimiter (60 req/min, applied
-// globally by the old create-app.ts) is still live -- strictRateLimiter/
-// relaxedRateLimiter/playTrackRateLimiter were per-route factories used by
-// Hono route groups that have all been migrated off Hono already (steps
-// 4-7), confirmed dead by grep (zero remaining call sites), so they are not
-// ported here.
-const limiter = new InMemoryRateLimiter()
-const RATE_LIMIT_EXCLUDED_PATHS = new Set(['/health', '/health/live', '/health/ready'])
-const RATE_LIMIT_CONFIG = { windowMs: 60_000, maxRequests: 60 }
-
 export const requestPath = (url: string) => new URL(url, 'http://localhost').pathname
-
-export const rateLimitClientKey = (headers: Readonly<Record<string, string | undefined>>) => {
-  const forwarded = headers['x-forwarded-for']
-  if (forwarded) return forwarded.split(',')[0]?.trim() || 'unknown'
-  return headers['x-real-ip'] ?? 'unknown'
-}
-
-export const RateLimiterLive = HttpRouter.middleware(
-  (httpEffect) =>
-    Effect.gen(function* () {
-      const request = yield* HttpServerRequest.HttpServerRequest
-      const path = requestPath(request.url)
-      if (RATE_LIMIT_EXCLUDED_PATHS.has(path)) return yield* httpEffect
-
-      const key = `${path}:${rateLimitClientKey(request.headers)}`
-      const result = limiter.check(key, RATE_LIMIT_CONFIG)
-
-      const headers = {
-        'x-ratelimit-limit': String(RATE_LIMIT_CONFIG.maxRequests),
-        'x-ratelimit-remaining': String(result.remaining),
-        'x-ratelimit-reset': String(Math.ceil(result.resetAt / 1000))
-      }
-
-      if (!result.allowed) {
-        const retryAfter = Math.ceil((result.resetAt - Date.now()) / 1000)
-        return HttpServerResponse.text('Too many requests', {
-          status: 429,
-          headers: { ...headers, 'retry-after': String(retryAfter) }
-        })
-      }
-
-      const response = yield* httpEffect
-      return HttpServerResponse.setHeaders(response, headers)
-    }),
-  { global: true }
-)
 
 // ── Performance metrics + slow-request warnings ──────────────────
 // Request events are emitted here so the application has one structured
