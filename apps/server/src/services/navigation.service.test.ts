@@ -253,7 +253,7 @@ describe('NavigationSessionService', () => {
     expect(session.cursor).toBe(2)
   })
 
-  test('does not write when replaying Step(Back)', async () => {
+  test('moves the cursor when replaying Step(Back)', async () => {
     const first = await createPost('replay-first', new Date('2026-06-01T00:00:00.000Z'))
     const last = await createPost('replay-last', new Date('2026-06-02T00:00:00.000Z'))
     const reader = identity()
@@ -268,7 +268,7 @@ describe('NavigationSessionService', () => {
     const after = await sessionFor(reader.deviceToken)
 
     expect(result.destination.slug).toBe(first.slug)
-    expect(after.updatedAt).toEqual(before.updatedAt)
-    expect(after.lastIntentToken).toBe(before.lastIntentToken)
+    expect(before.cursor).toBe(1)
+    expect(after.cursor).toBe(0)
   })
 })

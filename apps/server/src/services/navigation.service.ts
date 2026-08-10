@@ -526,10 +526,44 @@ export const NavigationSessionServiceLayer = Layer.effect(
         const phase = yield* readPhase(identity, command)
         yield* Effect.annotateCurrentSpan('trailLength', phase.length)
         yield* Effect.annotateCurrentSpan('cursor', phase.session?.cursor ?? -1)
-        if (phase.replay && phase.session && retryCount === 0) {
+        if (phase.replay && phase.session) {
           const replay = phase.replay
           const session = phase.session
           yield* Effect.annotateCurrentSpan('path', 'replay')
+          if (replay.position !== session.cursor) {
+            const updated = yield* Effect.tryPromise({
+              try: async () => {
+                const [row] = await db
+                  .update(navigationSessions)
+                  .set({
+                    cursor: replay.position,
+                    lastIntentToken: intentToken,
+                    updatedAt: new Date()
+                  })
+                  .where(
+                    and(
+                      eq(navigationSessions.id, session.id),
+                      eq(navigationSessions.cursor, session.cursor),
+                      eq(navigationSessions.updatedAt, session.updatedAt)
+                    )
+                  )
+                  .returning()
+                return row
+              },
+              catch: (error) => databaseError('update', error)
+            })
+            if (!updated) {
+              if (retryCount === MAX_NAVIGATION_LOCK_RETRIES) return yield* noSuchMove(command)
+              yield* Effect.sleep('1 millis')
+              return yield* resolve(identity, command, from, intentToken, retryCount + 1)
+            }
+            yield* lock.sync(identity, {
+              sessionId: updated.id,
+              position: replay.position,
+              intentToken,
+              updatedAtMs: updated.updatedAt.getTime()
+            })
+          }
           return yield* Effect.gen(function* () {
             const snapshot = yield* resultSnapshot(session.id, replay.position)
             return resultFor(
