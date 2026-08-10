@@ -12,11 +12,9 @@ remains human-only.
 differences once compared by id (only an accepted history-loss edge case, an
 accepted FTS5-ranking difference, and an ordering difference that is an
 artifact of production still running old code). Session issuance and
-validation work. But this pass surfaced two new, real blockers: a
-concurrent-write failure rate of roughly 30-40% against a representative
-write path, and a Cloudflare-edge-level outage lasting over 20 minutes on
-the deployed Worker immediately following a D1 Time Travel restore. Both are
-serious enough to block OPS-250 on their own.
+validation work. The Cloudflare Worker availability blocker is resolved in
+OPS-257. The concurrent-write failure rate of roughly 30-40% against a
+representative write path remains sufficient to block OPS-250.
 
 ## Now proven
 
@@ -104,17 +102,33 @@ serious enough to block OPS-250 on their own.
 - A D1 Time Travel restore was exercised end to end: captured a bookmark,
   wrote a canary row, restored to the bookmark, and confirmed the canary
   was gone with `PRAGMA foreign_key_check` returning zero violations. The
-  database-level restore mechanism works correctly. But the deployed
-  Worker's request path then returned Cloudflare edge error 1102 (`Worker
-  exceeded resource limits`) on roughly 30-70% of requests, oscillating,
-  for over 20 minutes afterward -- through two forced redeploys -- while
-  direct `wrangler d1 execute` queries against the same database succeeded
-  100% of the time throughout. Root cause not identified. No active
-  Cloudflare status-page incident was found for Workers, D1, or the WEUR/EU
-  region at the time.
+  database-level restore mechanism works correctly. The Worker availability
+  finding that followed is root-caused and resolved in OPS-257 below. No
+  active Cloudflare status-page incident was found for Workers, D1, or the
+  WEUR/EU region at the time.
 
 See [`d1-staging-rehearsal.md`](d1-staging-rehearsal.md) for commands and raw
 check outcomes.
+
+## OPS-257 Worker availability resolution
+
+`wrangler tail` captured the original failing `/health/live` invocations as
+`outcome: "exceededCpu"`, `status: 503`, and `cpuTime: 20` ms. A 50-request
+baseline returned 26 `200` and 24 `503` responses. Because `/health/live`
+returns only a static response, this ruled out D1 query execution.
+
+The Worker statically imported `@mdx-js/mdx` through `lib/mdx.ts`, so its MDX
+compiler was evaluated during isolate startup even though health routes never
+compile MDX. The generated Worker entry contained that compiler in its main
+module. `lib/mdx.ts` now loads the compiler with a dynamic import only when a
+content route calls `MdxService.compile`. The rebuilt Worker entry is 506,184
+bytes smaller and imports a separate 144,714-byte-gzipped MDX module on demand.
+
+After the `d1-staging`-only deployment, `wrangler tail` recorded 62 invocations
+of the new Worker version with 62 `ok` outcomes and zero `exceededCpu` outcomes.
+The required verification then returned 50 of 50 `200` for `/health/live` and
+20 of 20 `200` for `/health/ready`, with no `1102` body. A direct
+`compileMDX('# Hello')` check also returned compiled output after the lazy load.
 
 ## Rehearsal timing
 
@@ -151,41 +165,27 @@ the complete aggregate-only measurement and its limits.
    (retry-on-busy, a queued/transactional write path, or at minimum mapping
    the underlying D1 error to a structured 409/503 instead of an uncaught
    500) and a re-run of this drill before cutover.
-2. **Post-restore Worker instability.** The D1 Time Travel restore itself
-   works and leaves the database intact, but the deployed Worker's request
-   path took over 20 minutes to fully stabilize afterward, with a
-   fluctuating 30-70% failure rate (Cloudflare edge 1102) even through two
-   forced redeploys, while direct D1 queries stayed 100% reliable the whole
-   time. If Time Travel is ever needed as a real disaster-recovery path
-   in production, this means the recovery window must budget for double-digit
-   minutes of continued instability after the data itself is back, not
-   near-instant availability. Root cause not identified; needs investigation
-   before this can be treated as a viable production DR path.
-3. **Sentry transport.** The Cloudflare SDK boots, but staging has no DSN and
+2. **Sentry transport.** The Cloudflare SDK boots, but staging has no DSN and
    no event delivery or error ingestion was verified.
-4. **Reminder delivery.** The cron and queue consumer are registered, but no
+3. **Reminder delivery.** The cron and queue consumer are registered, but no
    message delivery was tested because this stage has no safe email setup.
-5. **Cloudflare Rate Limiting rule.** Confirm the target route has the required
+4. **Cloudflare Rate Limiting rule.** Confirm the target route has the required
    operational rule before cutover.
-6. **Avatar multipart upload.** The portable filesystem layer's compatibility
+5. **Avatar multipart upload.** The portable filesystem layer's compatibility
    with the existing avatar upload path was not exercised.
-7. **`profile.service.ts` ordering.** Editorials/tweets ordering still has no
+6. **`profile.service.ts` ordering.** Editorials/tweets ordering still has no
    secondary sort key (the OPS-249 fix only covered the five named
    `music-entity` call sites). Low severity given the null-content parity
    already holds, but still an open, known gap.
-8. **Human cutover operations.** Freezing writes, a final delta migration, DNS,
+7. **Human cutover operations.** Freezing writes, a final delta migration, DNS,
    and unfreezing writes are OPS-250 responsibilities. None were attempted.
 
 ## Recommendation
 
-Do not schedule OPS-250 from this evidence. Public API parity and session
-continuity are resolved. But the concurrent-write failure rate and the
-post-Time-Travel Worker instability are new, real findings from this pass
-that did not exist in the prior readiness assessment, and either one alone
-is a legitimate blocker: the first means real concurrent users will see
-avoidable 500s under ordinary load, and the second means the documented
-disaster-recovery path leaves the site substantially degraded for over 20
-minutes after data is restored. Fix and re-verify both, then run a safe
+Do not schedule OPS-250 from this evidence. Public API parity, session
+continuity, and Worker availability are resolved. The concurrent-write
+failure rate remains a legitimate blocker because real concurrent users will
+see avoidable 500s under ordinary load. Fix and re-verify it, then run a safe
 reminder-delivery rehearsal and confirm the Rate Limiting rule. Then have the
 human owner choose and rehearse the write-freeze sequence.
 

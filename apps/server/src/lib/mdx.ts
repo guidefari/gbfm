@@ -1,4 +1,3 @@
-import { compile } from '@mdx-js/mdx'
 import { Cache, Context, Data, Duration, Effect, Exit, Layer } from 'effect'
 
 // ── Error ─────────────────────────────────────────────────────────────────────
@@ -35,7 +34,9 @@ const ttl = (exit: Exit.Exit<string, MDXCompileError>) =>
   Exit.isSuccess(exit) ? Duration.hours(1) : Duration.zero
 
 const defaultFn = (content: string): Promise<string> =>
-  compile(content, { outputFormat: 'function-body' }).then((r) => r.toString())
+  import('@mdx-js/mdx').then(({ compile }) =>
+    compile(content, { outputFormat: 'function-body' }).then((result) => result.toString())
+  )
 
 const makeService = (fn: (content: string) => Promise<string>): Effect.Effect<MdxService> =>
   Effect.gen(function* () {
