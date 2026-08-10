@@ -1243,8 +1243,97 @@ const getMicroPostReferenceBySlugEffect = (slug: string) =>
 
 const getMicroPostBySlugEffect = (slug: string, mdx: MdxService) =>
   Effect.gen(function* () {
-    const post = yield* getBySlugEffect(slug, mdx)
-    return yield* toMicroPost(post).pipe(
+    const db = yield* Database
+    const postIds = db
+      .select({ id: postsTable.id })
+      .from(postsTable)
+      .where(
+        and(eq(postsTable.slug, slug), eq(postsTable.type, 'micro'), eq(postsTable.draft, false))
+      )
+      .limit(1)
+    const [postRecords, blueskySources, creators, labels] = yield* Effect.tryPromise({
+      try: () =>
+        db.batch([
+          db
+            .select()
+            .from(postsTable)
+            .where(
+              and(
+                eq(postsTable.slug, slug),
+                eq(postsTable.type, 'micro'),
+                eq(postsTable.draft, false)
+              )
+            )
+            .limit(1),
+          db
+            .select({
+              authorDid: blueskyPostSources.authorDid,
+              authorHandle: blueskyPostSources.authorHandle,
+              publicUrl: blueskyPostSources.publicUrl,
+              sourceCreatedAt: blueskyPostSources.sourceCreatedAt,
+              sourceStatus: blueskyPostSources.sourceStatus,
+              locallyEdited: blueskyPostSources.locallyEdited,
+              lastError: blueskyPostSources.lastError
+            })
+            .from(blueskyPostSources)
+            .where(inArray(blueskyPostSources.postId, postIds))
+            .limit(1),
+          db
+            .select({
+              id: usersTable.id,
+              name: usersTable.name,
+              username: usersTable.username
+            })
+            .from(postCreators)
+            .innerJoin(usersTable, eq(postCreators.creatorId, usersTable.id))
+            .where(inArray(postCreators.postId, postIds)),
+          db
+            .select({ kind: labelsTable.kind, name: labelsTable.name })
+            .from(entityLabelsTable)
+            .innerJoin(labelsTable, eq(entityLabelsTable.labelId, labelsTable.id))
+            .where(
+              and(
+                eq(entityLabelsTable.entityType, 'post'),
+                inArray(entityLabelsTable.entityId, postIds)
+              )
+            )
+            .orderBy(asc(labelsTable.kind), asc(entityLabelsTable.position))
+        ]),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch micro post: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'posts'
+        })
+    }).pipe(Effect.withSpan('post.getMicroPostBySlug.batch'))
+
+    const post = postRecords[0]
+    if (!post) {
+      return yield* new NotFoundError({
+        message: 'Micro post not found',
+        resource: 'post',
+        id: slug
+      })
+    }
+
+    const tags = labels.flatMap((label) => (label.kind === 'tag' ? [label.name] : []))
+    const genres = labels.flatMap((label) => (label.kind === 'genre' ? [label.name] : []))
+    const projectedPost = {
+      ...post,
+      tags: tags.length > 0 ? tags : null,
+      genres: genres.length > 0 ? genres : null
+    }
+    const compiledContent = projectedPost.content
+      ? yield* mdx.compile(projectedPost.content).pipe(Effect.orElseSucceed(() => ''))
+      : ''
+    const compiled = {
+      ...projectedPost,
+      compiledContent,
+      creators
+    } satisfies SelectMdxCompiledPost
+    const blueskySource = blueskySources[0]
+    const enriched = blueskySource ? { ...compiled, blueskySource } : compiled
+    return yield* toMicroPost(enriched).pipe(
       Effect.mapError(
         () =>
           new NotFoundError({

@@ -2687,6 +2687,60 @@ describe('quote-tweet (quotedPostId)', () => {
   })
 })
 
+describe('GET /api/content/posts/micro/:slug', () => {
+  it('returns the compiled tweet with creators and projected labels', async () => {
+    const suffix = crypto.randomUUID()
+    const userId = `micro-by-slug-${suffix}`
+    const slug = `micro-by-slug-${suffix}`
+    await db.insert(user).values({
+      id: userId,
+      name: 'Tweet Author',
+      username: `tweet-author-${suffix}`,
+      email: `${userId}@example.com`
+    })
+    const [post] = await db
+      .insert(postsTable)
+      .values({
+        title: null,
+        slug,
+        content: 'Fetchable **tweet**',
+        type: 'micro',
+        draft: false
+      })
+      .returning()
+    if (!post) throw new Error('Failed to seed post')
+    await db.insert(postCreators).values({ postId: post.id, creatorId: userId })
+    await replaceEntityLabels(db, 'post', post.id, { tags: ['performance'] })
+
+    try {
+      const res = await webHandler.handler(
+        new Request(`http://localhost/api/content/posts/micro/${slug}`)
+      )
+      expect(res.status).toBe(200)
+      const body = await decodeResponseBody(CompiledMicroPostResponse, res)
+      expect(body).toMatchObject({
+        id: post.id,
+        slug,
+        tags: ['performance'],
+        creators: [{ id: userId, name: 'Tweet Author', username: `tweet-author-${suffix}` }]
+      })
+      expect(body.compiledContent).toContain('tweet')
+    } finally {
+      await db.delete(entityLabelsTable).where(eq(entityLabelsTable.entityId, post.id))
+      await db.delete(postCreators).where(eq(postCreators.postId, post.id))
+      await db.delete(postsTable).where(eq(postsTable.id, post.id))
+      await db.delete(user).where(eq(user.id, userId))
+    }
+  })
+
+  it('404s for an unknown slug', async () => {
+    const res = await webHandler.handler(
+      new Request(`http://localhost/api/content/posts/micro/does-not-exist-${crypto.randomUUID()}`)
+    )
+    expect(res.status).toBe(404)
+  })
+})
+
 describe('GET /api/content/posts/micro/by-id/:id', () => {
   it('returns the post by id', async () => {
     const suffix = crypto.randomUUID()
