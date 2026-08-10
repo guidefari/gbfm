@@ -16,9 +16,24 @@ import { ThemeProvider } from './components/ThemeProvider'
 import { PlayerProvider } from './services/player'
 import { useSession } from './lib/auth-client'
 
+function RoutePending() {
+  return (
+    <div
+      role='status'
+      aria-live='polite'
+      className='flex min-h-[40vh] items-center justify-center gap-2 font-mono text-sm text-muted-foreground'>
+      <Loader2 aria-hidden className='h-5 w-5 animate-spin' />
+      Loading…
+    </div>
+  )
+}
+
 const router = createRouter({
   routeTree,
   defaultPreload: 'intent',
+  defaultPendingComponent: RoutePending,
+  defaultPendingMs: 100,
+  defaultPendingMinMs: 300,
   defaultViewTransition: true,
   scrollRestoration: true,
   scrollToTopSelectors: [() => document.getElementById(MAIN_SCROLL_CONTAINER_ID)],

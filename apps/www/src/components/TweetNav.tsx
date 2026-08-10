@@ -4,8 +4,8 @@ import { useHotkey } from '@tanstack/react-hotkeys'
 import { useRouter } from '@tanstack/react-router'
 import { Effect } from 'effect'
 import * as Atom from 'effect/unstable/reactivity/Atom'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useEffect, useMemo } from 'react'
+import { ChevronLeft, ChevronRight, LoaderCircle } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { HoldToRandomButton } from '@/components/HoldToRandomButton'
 import { jump, stepBack, stepForward } from '@/lib/navigation-commands'
 import { useNavigateMicroPosts } from '@/lib/http'
@@ -142,6 +142,8 @@ export function TweetNav({ slug, initialCapabilities }: Props) {
   )
   const capabilities = useAtomValue(capabilitiesAtom)
   const setCapabilities = useAtomSet(capabilitiesAtom)
+  const pendingRef = useRef(false)
+  const [isNavigating, setIsNavigating] = useState(false)
 
   useEffect(() => {
     setCapabilities(initialCapabilities)
@@ -149,7 +151,11 @@ export function TweetNav({ slug, initialCapabilities }: Props) {
 
   const navigate = (
     command: (intentToken: string) => Effect.Effect<NavigationResultResponse, unknown>
-  ) =>
+  ) => {
+    if (pendingRef.current) return
+
+    pendingRef.current = true
+    setIsNavigating(true)
     runNavigationIntent(
       command(crypto.randomUUID()).pipe(
         Effect.tap((result) => Effect.sync(() => setCapabilities(result.capabilities))),
@@ -158,9 +164,16 @@ export function TweetNav({ slug, initialCapabilities }: Props) {
             router.navigate({ to: '/tweet/$slug', params: { slug: result.destination.slug } })
           )
         ),
-        Effect.asVoid
+        Effect.asVoid,
+        Effect.ensuring(
+          Effect.sync(() => {
+            pendingRef.current = false
+            setIsNavigating(false)
+          })
+        )
       )
     )
+  }
 
   const goToPrev = () =>
     navigate((intentToken) => stepBack(navigateMicroPostsEffect, { from: slug, intentToken }))
@@ -175,24 +188,33 @@ export function TweetNav({ slug, initialCapabilities }: Props) {
   const { canStepBack, canStepForward, hasUnread } = capabilities
 
   return (
-    <>
+    <div aria-busy={isNavigating}>
       <div className='flex items-center gap-1 lg:hidden'>
-        <PrevLink enabled={canStepBack} onTap={goToPrev} />
+        <PrevLink enabled={canStepBack && !isNavigating} onTap={goToPrev} />
         <NextLink
-          enabled={canStepForward}
+          enabled={canStepForward && !isNavigating}
           hasUnread={hasUnread}
           onTap={goToNext}
           onHoldComplete={onHoldComplete}
         />
       </div>
+      {isNavigating && (
+        <div
+          role='status'
+          aria-live='polite'
+          className='mt-2 flex items-center gap-2 font-mono text-xs text-muted-foreground'>
+          <LoaderCircle aria-hidden className='h-3.5 w-3.5 animate-spin' />
+          Loading tweet…
+        </div>
+      )}
       <FlankingArrows
-        canStepBack={canStepBack}
-        canStepForward={canStepForward}
+        canStepBack={canStepBack && !isNavigating}
+        canStepForward={canStepForward && !isNavigating}
         hasUnread={hasUnread}
         onTapPrev={goToPrev}
         onTapNext={goToNext}
         onHoldComplete={onHoldComplete}
       />
-    </>
+    </div>
   )
 }
