@@ -1,6 +1,6 @@
 import { and, desc, eq } from 'drizzle-orm'
 import { Effect } from 'effect'
-import type { DatabaseClient } from '@/db/layer'
+import { Database } from '@/db/layer'
 import { musicEntityLinksTable, musicPlaylistsTable } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { toSlug } from '@/services/to-slug'
@@ -16,50 +16,56 @@ export interface CreatePlaylistInput {
   createdById?: string | null
 }
 
-export const createPlaylistEffect = (db: DatabaseClient) =>
-  Effect.fn('musicEntity.createPlaylist')(function* (data: CreatePlaylistInput) {
-    const rows = yield* Effect.tryPromise({
-      try: () => db.insert(musicPlaylistsTable).values(data).returning(),
+export const createPlaylistEffect = Effect.fn('musicEntity.createPlaylist')(function* (
+  data: CreatePlaylistInput
+) {
+  const db = yield* Database
+  const rows = yield* Effect.tryPromise({
+    try: () => db.insert(musicPlaylistsTable).values(data).returning(),
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to create playlist: ${getErrorMessage(e)}`,
+        operation: 'insert',
+        table: 'music_playlists'
+      })
+  })
+  return yield* requireInserted(rows, 'music_playlists')
+})
+
+export const getPlaylistsEffect = () =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    return yield* Effect.tryPromise({
+      try: async () => {
+        const rows = await db
+          .select({
+            playlist: musicPlaylistsTable,
+            spotifyUrl: musicEntityLinksTable.url
+          })
+          .from(musicPlaylistsTable)
+          .leftJoin(
+            musicEntityLinksTable,
+            and(
+              eq(musicEntityLinksTable.entityType, 'playlist'),
+              eq(musicEntityLinksTable.entityId, musicPlaylistsTable.id),
+              eq(musicEntityLinksTable.platform, 'spotify')
+            )
+          )
+          .orderBy(desc(musicPlaylistsTable.createdAt))
+        return rows.map((r) => ({ ...r.playlist, spotifyUrl: r.spotifyUrl }))
+      },
       catch: (e) =>
         new DatabaseError({
-          message: `Failed to create playlist: ${getErrorMessage(e)}`,
-          operation: 'insert',
+          message: `Failed to list playlists: ${getErrorMessage(e)}`,
+          operation: 'select',
           table: 'music_playlists'
         })
     })
-    return yield* requireInserted(rows, 'music_playlists')
-  })
-
-export const getPlaylistsEffect = (db: DatabaseClient) => () =>
-  Effect.tryPromise({
-    try: async () => {
-      const rows = await db
-        .select({
-          playlist: musicPlaylistsTable,
-          spotifyUrl: musicEntityLinksTable.url
-        })
-        .from(musicPlaylistsTable)
-        .leftJoin(
-          musicEntityLinksTable,
-          and(
-            eq(musicEntityLinksTable.entityType, 'playlist'),
-            eq(musicEntityLinksTable.entityId, musicPlaylistsTable.id),
-            eq(musicEntityLinksTable.platform, 'spotify')
-          )
-        )
-        .orderBy(desc(musicPlaylistsTable.createdAt))
-      return rows.map((r) => ({ ...r.playlist, spotifyUrl: r.spotifyUrl }))
-    },
-    catch: (e) =>
-      new DatabaseError({
-        message: `Failed to list playlists: ${getErrorMessage(e)}`,
-        operation: 'select',
-        table: 'music_playlists'
-      })
   }).pipe(Effect.withSpan('musicEntity.getPlaylists'))
 
-export const getPlaylistByIdEffect = (db: DatabaseClient) => (id: string) =>
+export const getPlaylistByIdEffect = (id: string) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const rows = yield* Effect.tryPromise({
       try: async () => {
         const result = await db
@@ -90,32 +96,33 @@ export const getPlaylistByIdEffect = (db: DatabaseClient) => (id: string) =>
     return yield* requireOne(rows, 'MusicPlaylist', id)
   }).pipe(Effect.withSpan('musicEntity.getPlaylistById', { attributes: { id } }))
 
-export const updatePlaylistEffect =
-  (db: DatabaseClient) => (id: string, data: Partial<CreatePlaylistInput>) =>
-    Effect.gen(function* () {
-      const updateData = { ...data }
-      if (updateData.title && !updateData.slug) {
-        updateData.slug = toSlug(updateData.title)
-      }
-      const rows = yield* Effect.tryPromise({
-        try: () =>
-          db
-            .update(musicPlaylistsTable)
-            .set({ ...updateData, updatedAt: new Date() })
-            .where(eq(musicPlaylistsTable.id, id))
-            .returning(),
-        catch: (e) =>
-          new DatabaseError({
-            message: `Failed to update playlist: ${getErrorMessage(e)}`,
-            operation: 'update',
-            table: 'music_playlists'
-          })
-      })
-      return yield* requireOne(rows, 'MusicPlaylist', id)
-    }).pipe(Effect.withSpan('musicEntity.updatePlaylist', { attributes: { id } }))
-
-export const deletePlaylistEffect = (db: DatabaseClient) => (id: string) =>
+export const updatePlaylistEffect = (id: string, data: Partial<CreatePlaylistInput>) =>
   Effect.gen(function* () {
+    const db = yield* Database
+    const updateData = { ...data }
+    if (updateData.title && !updateData.slug) {
+      updateData.slug = toSlug(updateData.title)
+    }
+    const rows = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .update(musicPlaylistsTable)
+          .set({ ...updateData, updatedAt: new Date() })
+          .where(eq(musicPlaylistsTable.id, id))
+          .returning(),
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to update playlist: ${getErrorMessage(e)}`,
+          operation: 'update',
+          table: 'music_playlists'
+        })
+    })
+    return yield* requireOne(rows, 'MusicPlaylist', id)
+  }).pipe(Effect.withSpan('musicEntity.updatePlaylist', { attributes: { id } }))
+
+export const deletePlaylistEffect = (id: string) =>
+  Effect.gen(function* () {
+    const db = yield* Database
     const rows = yield* Effect.tryPromise({
       try: () =>
         (async () => {

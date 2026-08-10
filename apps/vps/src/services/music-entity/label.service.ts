@@ -1,6 +1,6 @@
 import { and, desc, eq, lte } from 'drizzle-orm'
 import { Effect } from 'effect'
-import type { DatabaseClient } from '@/db/layer'
+import { Database } from '@/db/layer'
 import {
   projectEntityLabels,
   projectEntityLabelsForRows,
@@ -32,67 +32,73 @@ export interface CreateLabelInput {
   createdById?: string | null
 }
 
-export const createLabelEffect = (db: DatabaseClient) =>
-  Effect.fn('musicEntity.createLabel')(function* (data: CreateLabelInput) {
-    const { tags, genres, ...labelData } = data
-    const id = crypto.randomUUID()
-    const rows = yield* Effect.tryPromise({
-      try: async () => {
-        await db.batch([
-          db.insert(musicLabelsTable).values({ ...labelData, id }),
-          ...(labelData.createdById
-            ? [
-                db
-                  .insert(musicLabelCreatorsTable)
-                  .values({ labelId: id, creatorId: labelData.createdById })
-              ]
-            : [])
-        ])
-        const rows = await db
-          .select()
-          .from(musicLabelsTable)
-          .where(eq(musicLabelsTable.id, id))
-          .limit(1)
-        if (rows[0] && (tags !== undefined || genres !== undefined)) {
-          await replaceEntityLabels(db, 'musicLabel', id, { tags, genres })
-        }
-        return rows
-      },
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to create label: ${getErrorMessage(error)}`,
-          operation: 'insert',
-          table: 'music_labels'
-        })
-    })
-    const label = yield* requireInserted(rows, 'music_labels')
-    return yield* Effect.tryPromise({
-      try: () => projectEntityLabels(db, 'musicLabel', label),
-      catch: (error) =>
-        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
-    })
-  })
-
-export const getLabelsEffect = (db: DatabaseClient) => (includeDrafts: boolean) =>
-  Effect.tryPromise({
+export const createLabelEffect = Effect.fn('musicEntity.createLabel')(function* (
+  data: CreateLabelInput
+) {
+  const db = yield* Database
+  const { tags, genres, ...labelData } = data
+  const id = crypto.randomUUID()
+  const rows = yield* Effect.tryPromise({
     try: async () => {
-      const labels = await db
+      await db.batch([
+        db.insert(musicLabelsTable).values({ ...labelData, id }),
+        ...(labelData.createdById
+          ? [
+              db
+                .insert(musicLabelCreatorsTable)
+                .values({ labelId: id, creatorId: labelData.createdById })
+            ]
+          : [])
+      ])
+      const rows = await db
         .select()
         .from(musicLabelsTable)
-        .where(includeDrafts ? undefined : lte(musicLabelsTable.publishedAt, new Date()))
-        .orderBy(desc(musicLabelsTable.createdAt))
-      return projectEntityLabelsForRows(db, 'musicLabel', labels)
+        .where(eq(musicLabelsTable.id, id))
+        .limit(1)
+      if (rows[0] && (tags !== undefined || genres !== undefined)) {
+        await replaceEntityLabels(db, 'musicLabel', id, { tags, genres })
+      }
+      return rows
     },
     catch: (error) =>
       new DatabaseError({
-        message: `Failed to list labels: ${getErrorMessage(error)}`,
-        operation: 'select',
+        message: `Failed to create label: ${getErrorMessage(error)}`,
+        operation: 'insert',
         table: 'music_labels'
       })
+  })
+  const label = yield* requireInserted(rows, 'music_labels')
+  return yield* Effect.tryPromise({
+    try: () => projectEntityLabels(db, 'musicLabel', label),
+    catch: (error) =>
+      new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+  })
+})
+
+export const getLabelsEffect = (includeDrafts: boolean) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    return yield* Effect.tryPromise({
+      try: async () => {
+        const labels = await db
+          .select()
+          .from(musicLabelsTable)
+          .where(includeDrafts ? undefined : lte(musicLabelsTable.publishedAt, new Date()))
+          .orderBy(desc(musicLabelsTable.createdAt))
+        return projectEntityLabelsForRows(db, 'musicLabel', labels)
+      },
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to list labels: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'music_labels'
+        })
+    })
   }).pipe(Effect.withSpan('musicEntity.getLabels'))
 
-export const getLabelByIdEffect = (db: DatabaseClient) => (id: string) =>
+export const getLabelByIdEffect = (id: string) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const rows = yield* Effect.tryPromise({
       try: () => db.select().from(musicLabelsTable).where(eq(musicLabelsTable.id, id)).limit(1),
       catch: (error) =>
@@ -110,8 +116,9 @@ export const getLabelByIdEffect = (db: DatabaseClient) => (id: string) =>
     })
   }).pipe(Effect.withSpan('musicEntity.getLabelById', { attributes: { id } }))
 
-export const getLabelBySlugEffect = (db: DatabaseClient) => (slug: string) =>
+export const getLabelBySlugEffect = (slug: string) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const rows = yield* Effect.tryPromise({
       try: () =>
         db
@@ -166,56 +173,57 @@ export const getLabelBySlugEffect = (db: DatabaseClient) => (slug: string) =>
     return { ...projectedLabel, compiledContent, creators } satisfies SelectMdxCompiledMusicLabel
   }).pipe(Effect.withSpan('musicEntity.getLabelBySlug', { attributes: { slug } }))
 
-export const updateLabelEffect =
-  (db: DatabaseClient) => (id: string, data: Partial<CreateLabelInput>) =>
-    Effect.gen(function* () {
-      const { tags, genres, ...updateData } = data
-      if (updateData.name && !updateData.slug) updateData.slug = toSlug(updateData.name)
-      const rows = yield* Effect.tryPromise({
-        try: () =>
-          db
-            .update(musicLabelsTable)
-            .set({ ...updateData, updatedAt: new Date() })
-            .where(eq(musicLabelsTable.id, id))
-            .returning(),
-        catch: (error) =>
-          new DatabaseError({
-            message: `Failed to update label: ${getErrorMessage(error)}`,
-            operation: 'update',
-            table: 'music_labels'
-          })
-      })
-      const label = yield* requireOne(rows, 'MusicLabel', id)
-      if (tags !== undefined || genres !== undefined) {
-        yield* Effect.tryPromise({
-          try: async () => {
-            const current = await readEntityLabels(db, 'musicLabel', label.id)
-            await replaceEntityLabels(db, 'musicLabel', label.id, {
-              tags: tags === undefined ? current.tags : tags,
-              genres: genres === undefined ? current.genres : genres
-            })
-          },
-          catch: (error) =>
-            new DatabaseError({
-              message: getErrorMessage(error),
-              operation: 'update',
-              table: 'labels'
-            })
+export const updateLabelEffect = (id: string, data: Partial<CreateLabelInput>) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    const { tags, genres, ...updateData } = data
+    if (updateData.name && !updateData.slug) updateData.slug = toSlug(updateData.name)
+    const rows = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .update(musicLabelsTable)
+          .set({ ...updateData, updatedAt: new Date() })
+          .where(eq(musicLabelsTable.id, id))
+          .returning(),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to update label: ${getErrorMessage(error)}`,
+          operation: 'update',
+          table: 'music_labels'
         })
-      }
-      return yield* Effect.tryPromise({
-        try: () => projectEntityLabels(db, 'musicLabel', label),
+    })
+    const label = yield* requireOne(rows, 'MusicLabel', id)
+    if (tags !== undefined || genres !== undefined) {
+      yield* Effect.tryPromise({
+        try: async () => {
+          const current = await readEntityLabels(db, 'musicLabel', label.id)
+          await replaceEntityLabels(db, 'musicLabel', label.id, {
+            tags: tags === undefined ? current.tags : tags,
+            genres: genres === undefined ? current.genres : genres
+          })
+        },
         catch: (error) =>
           new DatabaseError({
             message: getErrorMessage(error),
-            operation: 'select',
+            operation: 'update',
             table: 'labels'
           })
       })
-    }).pipe(Effect.withSpan('musicEntity.updateLabel', { attributes: { id } }))
+    }
+    return yield* Effect.tryPromise({
+      try: () => projectEntityLabels(db, 'musicLabel', label),
+      catch: (error) =>
+        new DatabaseError({
+          message: getErrorMessage(error),
+          operation: 'select',
+          table: 'labels'
+        })
+    })
+  }).pipe(Effect.withSpan('musicEntity.updateLabel', { attributes: { id } }))
 
-export const deleteLabelEffect = (db: DatabaseClient) => (id: string) =>
+export const deleteLabelEffect = (id: string) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const rows = yield* Effect.tryPromise({
       try: () =>
         (async () => {

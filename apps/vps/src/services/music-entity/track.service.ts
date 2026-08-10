@@ -1,6 +1,6 @@
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { Effect } from 'effect'
-import type { DatabaseClient } from '@/db/layer'
+import { Database } from '@/db/layer'
 import { musicTrackArtistsTable, musicTracksTable } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { toSlug } from '@/services/to-slug'
@@ -18,15 +18,98 @@ export interface CreateTrackInput {
   createdById?: string | null
 }
 
-export const createTrackEffect = (db: DatabaseClient) =>
-  Effect.fn('musicEntity.createTrack')(function* (data: CreateTrackInput) {
+export const createTrackEffect = Effect.fn('musicEntity.createTrack')(function* (
+  data: CreateTrackInput
+) {
+  const db = yield* Database
+  const { artistIds, ...trackData } = data
+  const id = crypto.randomUUID()
+
+  const rows = yield* Effect.tryPromise({
+    try: async () => {
+      await db.batch([
+        db.insert(musicTracksTable).values({ ...trackData, id }),
+        ...(artistIds?.length
+          ? [
+              db
+                .insert(musicTrackArtistsTable)
+                .values(
+                  artistIds.map((artistId, displayOrder) => ({
+                    trackId: id,
+                    artistId,
+                    displayOrder
+                  }))
+                )
+                .onConflictDoUpdate({
+                  target: [musicTrackArtistsTable.trackId, musicTrackArtistsTable.artistId],
+                  set: { displayOrder: sql`excluded.displayOrder` }
+                })
+            ]
+          : [])
+      ])
+      const rows = await db
+        .select()
+        .from(musicTracksTable)
+        .where(eq(musicTracksTable.id, id))
+        .limit(1)
+      const track = rows[0]
+      if (!track) throw new Error('Insert returned no rows')
+      return track
+    },
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to create track: ${getErrorMessage(e)}`,
+        operation: 'insert',
+        table: 'music_tracks'
+      })
+  })
+  return rows
+})
+
+export const getTracksEffect = () =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    return yield* Effect.tryPromise({
+      try: () => db.select().from(musicTracksTable).orderBy(desc(musicTracksTable.createdAt)),
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to list tracks: ${getErrorMessage(e)}`,
+          operation: 'select',
+          table: 'music_tracks'
+        })
+    })
+  }).pipe(Effect.withSpan('musicEntity.getTracks'))
+
+export const getTrackByIdEffect = (id: string) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    const rows = yield* Effect.tryPromise({
+      try: () => db.select().from(musicTracksTable).where(eq(musicTracksTable.id, id)).limit(1),
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to get track: ${getErrorMessage(e)}`,
+          operation: 'select',
+          table: 'music_tracks'
+        })
+    })
+    return yield* requireOne(rows, 'MusicTrack', id)
+  }).pipe(Effect.withSpan('musicEntity.getTrackById', { attributes: { id } }))
+
+export const updateTrackEffect = (id: string, data: Partial<CreateTrackInput>) =>
+  Effect.gen(function* () {
+    const db = yield* Database
     const { artistIds, ...trackData } = data
-    const id = crypto.randomUUID()
+    if (trackData.title && !trackData.slug) {
+      trackData.slug = toSlug(trackData.title)
+    }
 
     const rows = yield* Effect.tryPromise({
       try: async () => {
         await db.batch([
-          db.insert(musicTracksTable).values({ ...trackData, id }),
+          db
+            .update(musicTracksTable)
+            .set({ ...trackData, updatedAt: new Date() })
+            .where(eq(musicTracksTable.id, id)),
           ...(artistIds?.length
             ? [
                 db
@@ -51,98 +134,22 @@ export const createTrackEffect = (db: DatabaseClient) =>
           .where(eq(musicTracksTable.id, id))
           .limit(1)
         const track = rows[0]
-        if (!track) throw new Error('Insert returned no rows')
+        if (!track) throw new Error('Track not found')
         return track
       },
       catch: (e) =>
         new DatabaseError({
-          message: `Failed to create track: ${getErrorMessage(e)}`,
-          operation: 'insert',
+          message: `Failed to update track: ${getErrorMessage(e)}`,
+          operation: 'update',
           table: 'music_tracks'
         })
     })
     return rows
-  })
+  }).pipe(Effect.withSpan('musicEntity.updateTrack', { attributes: { id } }))
 
-export const getTracksEffect = (db: DatabaseClient) => () =>
-  Effect.tryPromise({
-    try: () => db.select().from(musicTracksTable).orderBy(desc(musicTracksTable.createdAt)),
-    catch: (e) =>
-      new DatabaseError({
-        message: `Failed to list tracks: ${getErrorMessage(e)}`,
-        operation: 'select',
-        table: 'music_tracks'
-      })
-  }).pipe(Effect.withSpan('musicEntity.getTracks'))
-
-export const getTrackByIdEffect = (db: DatabaseClient) => (id: string) =>
+export const deleteTrackEffect = (id: string) =>
   Effect.gen(function* () {
-    const rows = yield* Effect.tryPromise({
-      try: () => db.select().from(musicTracksTable).where(eq(musicTracksTable.id, id)).limit(1),
-      catch: (e) =>
-        new DatabaseError({
-          message: `Failed to get track: ${getErrorMessage(e)}`,
-          operation: 'select',
-          table: 'music_tracks'
-        })
-    })
-    return yield* requireOne(rows, 'MusicTrack', id)
-  }).pipe(Effect.withSpan('musicEntity.getTrackById', { attributes: { id } }))
-
-export const updateTrackEffect =
-  (db: DatabaseClient) => (id: string, data: Partial<CreateTrackInput>) =>
-    Effect.gen(function* () {
-      const { artistIds, ...trackData } = data
-      if (trackData.title && !trackData.slug) {
-        trackData.slug = toSlug(trackData.title)
-      }
-
-      const rows = yield* Effect.tryPromise({
-        try: async () => {
-          await db.batch([
-            db
-              .update(musicTracksTable)
-              .set({ ...trackData, updatedAt: new Date() })
-              .where(eq(musicTracksTable.id, id)),
-            ...(artistIds?.length
-              ? [
-                  db
-                    .insert(musicTrackArtistsTable)
-                    .values(
-                      artistIds.map((artistId, displayOrder) => ({
-                        trackId: id,
-                        artistId,
-                        displayOrder
-                      }))
-                    )
-                    .onConflictDoUpdate({
-                      target: [musicTrackArtistsTable.trackId, musicTrackArtistsTable.artistId],
-                      set: { displayOrder: sql`excluded.displayOrder` }
-                    })
-                ]
-              : [])
-          ])
-          const rows = await db
-            .select()
-            .from(musicTracksTable)
-            .where(eq(musicTracksTable.id, id))
-            .limit(1)
-          const track = rows[0]
-          if (!track) throw new Error('Track not found')
-          return track
-        },
-        catch: (e) =>
-          new DatabaseError({
-            message: `Failed to update track: ${getErrorMessage(e)}`,
-            operation: 'update',
-            table: 'music_tracks'
-          })
-      })
-      return rows
-    }).pipe(Effect.withSpan('musicEntity.updateTrack', { attributes: { id } }))
-
-export const deleteTrackEffect = (db: DatabaseClient) => (id: string) =>
-  Effect.gen(function* () {
+    const db = yield* Database
     const rows = yield* Effect.tryPromise({
       try: () =>
         (async () => {
@@ -166,10 +173,14 @@ export const deleteTrackEffect = (db: DatabaseClient) => (id: string) =>
     yield* requireOne(rows, 'MusicTrack', id)
   }).pipe(Effect.withSpan('musicEntity.deleteTrack', { attributes: { id } }))
 
-export const addArtistToTrackEffect =
-  (db: DatabaseClient) =>
-  (trackId: string, artistId: string, opts?: { role?: string; displayOrder?: number }) =>
-    Effect.tryPromise({
+export const addArtistToTrackEffect = (
+  trackId: string,
+  artistId: string,
+  opts?: { role?: string; displayOrder?: number }
+) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    yield* Effect.tryPromise({
       try: () =>
         db
           .insert(musicTrackArtistsTable)
@@ -189,16 +200,17 @@ export const addArtistToTrackEffect =
           operation: 'insert',
           table: 'music_track_artists'
         })
-    }).pipe(
-      Effect.asVoid,
-      Effect.withSpan('musicEntity.addArtistToTrack', {
-        attributes: { trackId, artistId }
-      })
-    )
+    })
+  }).pipe(
+    Effect.withSpan('musicEntity.addArtistToTrack', {
+      attributes: { trackId, artistId }
+    })
+  )
 
-export const removeArtistFromTrackEffect =
-  (db: DatabaseClient) => (trackId: string, artistId: string) =>
-    Effect.tryPromise({
+export const removeArtistFromTrackEffect = (trackId: string, artistId: string) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    yield* Effect.tryPromise({
       try: () =>
         db
           .delete(musicTrackArtistsTable)
@@ -214,9 +226,9 @@ export const removeArtistFromTrackEffect =
           operation: 'delete',
           table: 'music_track_artists'
         })
-    }).pipe(
-      Effect.asVoid,
-      Effect.withSpan('musicEntity.removeArtistFromTrack', {
-        attributes: { trackId, artistId }
-      })
-    )
+    })
+  }).pipe(
+    Effect.withSpan('musicEntity.removeArtistFromTrack', {
+      attributes: { trackId, artistId }
+    })
+  )

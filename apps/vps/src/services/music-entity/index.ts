@@ -314,82 +314,106 @@ export const MusicEntityServiceLayer = Layer.effect(
     const s3 = yield* S3ServiceTag
     const config = yield* ConfigServiceTag
     const db = yield* Database
+    const provideDb = Effect.provideService(Database, db)
 
     return {
-      createArtist: createArtistEffect(db),
-      getArtists: getArtistsEffect(db),
-      getArtistById: getArtistByIdEffect(db),
-      updateArtist: updateArtistEffect(db),
-      deleteArtist: deleteArtistEffect(db),
+      createArtist: (data) => provideDb(createArtistEffect(data)),
+      getArtists: () => provideDb(getArtistsEffect()),
+      getArtistById: (id) => provideDb(getArtistByIdEffect(id)),
+      updateArtist: (id, data) => provideDb(updateArtistEffect(id, data)),
+      deleteArtist: (id) => provideDb(deleteArtistEffect(id)),
 
-      createAlbum: createAlbumEffect(db),
-      getAlbums: getAlbumsEffect(db),
-      getAlbumById: getAlbumByIdEffect(db),
-      updateAlbum: updateAlbumEffect(db),
-      deleteAlbum: deleteAlbumEffect(db),
+      createAlbum: (data) => provideDb(createAlbumEffect(data)),
+      getAlbums: () => provideDb(getAlbumsEffect()),
+      getAlbumById: (id) => provideDb(getAlbumByIdEffect(id)),
+      updateAlbum: (id, data) => provideDb(updateAlbumEffect(id, data)),
+      deleteAlbum: (id) => provideDb(deleteAlbumEffect(id)),
 
-      createTrack: createTrackEffect(db),
-      getTracks: getTracksEffect(db),
-      getTrackById: getTrackByIdEffect(db),
-      updateTrack: updateTrackEffect(db),
-      deleteTrack: deleteTrackEffect(db),
+      createTrack: (data) => provideDb(createTrackEffect(data)),
+      getTracks: () => provideDb(getTracksEffect()),
+      getTrackById: (id) => provideDb(getTrackByIdEffect(id)),
+      updateTrack: (id, data) => provideDb(updateTrackEffect(id, data)),
+      deleteTrack: (id) => provideDb(deleteTrackEffect(id)),
 
-      createPlaylist: createPlaylistEffect(db),
-      getPlaylists: getPlaylistsEffect(db),
-      getPlaylistById: getPlaylistByIdEffect(db),
-      updatePlaylist: updatePlaylistEffect(db),
-      deletePlaylist: deletePlaylistEffect(db),
+      createPlaylist: (data) => provideDb(createPlaylistEffect(data)),
+      getPlaylists: () => provideDb(getPlaylistsEffect()),
+      getPlaylistById: (id) => provideDb(getPlaylistByIdEffect(id)),
+      updatePlaylist: (id, data) => provideDb(updatePlaylistEffect(id, data)),
+      deletePlaylist: (id) => provideDb(deletePlaylistEffect(id)),
 
-      createLabel: createLabelEffect(db),
-      getLabels: getLabelsEffect(db),
-      getLabelById: getLabelByIdEffect(db),
-      getLabelBySlug: getLabelBySlugEffect(db),
-      updateLabel: updateLabelEffect(db),
-      deleteLabel: deleteLabelEffect(db),
+      createLabel: (data) => provideDb(createLabelEffect(data)),
+      getLabels: (includeDrafts) => provideDb(getLabelsEffect(includeDrafts)),
+      getLabelById: (id) => provideDb(getLabelByIdEffect(id)),
+      getLabelBySlug: (slug) => provideDb(getLabelBySlugEffect(slug)),
+      updateLabel: (id, data) => provideDb(updateLabelEffect(id, data)),
+      deleteLabel: (id) => provideDb(deleteLabelEffect(id)),
 
-      getArtistsForLabel: getArtistsForLabelEffect(db),
-      getPublishedArtistsForLabel: getPublishedArtistsForLabelEffect(db),
-      getAlbumsForLabel: getAlbumsForLabelEffect(db),
-      getPublishedAlbumsForLabel: getPublishedAlbumsForLabelEffect(db),
-      getLabelsForArtist: getLabelsForArtistEffect(db),
-      getLabelsForAlbum: getLabelsForAlbumEffect(db),
-      affiliateArtistWithLabel: affiliateArtistWithLabelEffect(db),
-      unaffiliateArtistFromLabel: unaffiliateArtistFromLabelEffect(db),
-      affiliateAlbumWithLabel: affiliateAlbumWithLabelEffect(db),
-      unaffiliateAlbumFromLabel: unaffiliateAlbumFromLabelEffect(db),
+      getArtistsForLabel: (labelId) => provideDb(getArtistsForLabelEffect(labelId)),
+      getPublishedArtistsForLabel: (labelId) =>
+        provideDb(getPublishedArtistsForLabelEffect(labelId)),
+      getAlbumsForLabel: (labelId) => provideDb(getAlbumsForLabelEffect(labelId)),
+      getPublishedAlbumsForLabel: (labelId) => provideDb(getPublishedAlbumsForLabelEffect(labelId)),
+      getLabelsForArtist: (artistId) => provideDb(getLabelsForArtistEffect(artistId)),
+      getLabelsForAlbum: (albumId) => provideDb(getLabelsForAlbumEffect(albumId)),
+      affiliateArtistWithLabel: (labelId, artistId) =>
+        provideDb(affiliateArtistWithLabelEffect(labelId, artistId)),
+      unaffiliateArtistFromLabel: (labelId, artistId) =>
+        provideDb(unaffiliateArtistFromLabelEffect(labelId, artistId)),
+      affiliateAlbumWithLabel: (labelId, albumId) =>
+        provideDb(affiliateAlbumWithLabelEffect(labelId, albumId)),
+      unaffiliateAlbumFromLabel: (labelId, albumId) =>
+        provideDb(unaffiliateAlbumFromLabelEffect(labelId, albumId)),
 
-      getPlaylistTracks: getPlaylistTracksEffect(db),
-      addTrackToPlaylist: addTrackToPlaylistEffect(db),
-      removeTrackFromPlaylist: removeTrackFromPlaylistEffect(db),
-      reorderPlaylistTracks: reorderPlaylistTracksEffect(db),
-      addSpotifyTrackToPlaylist: addSpotifyTrackToPlaylistEffect(db, spotify),
-      importSpotifyPlaylist: importSpotifyPlaylistEffect(
-        db,
-        spotify,
-        scraper,
-        s3,
-        config.urls.bucketRouter,
-        config.buckets.userContent
-      ),
-      syncPlaylistLinks: syncPlaylistLinksEffect(
-        db,
-        spotify,
-        scraper,
-        s3,
-        config.urls.bucketRouter,
-        config.buckets.userContent
-      ),
+      getPlaylistTracks: (playlistId) => provideDb(getPlaylistTracksEffect(playlistId)),
+      addTrackToPlaylist: (playlistId, trackId, position) =>
+        provideDb(addTrackToPlaylistEffect(playlistId, trackId, position)),
+      removeTrackFromPlaylist: (playlistId, trackId) =>
+        provideDb(removeTrackFromPlaylistEffect(playlistId, trackId)),
+      reorderPlaylistTracks: (playlistId, trackIds) =>
+        provideDb(reorderPlaylistTracksEffect(playlistId, trackIds)),
+      addSpotifyTrackToPlaylist: (playlistId, spotifyUrl) =>
+        provideDb(addSpotifyTrackToPlaylistEffect(spotify)(playlistId, spotifyUrl)),
+      importSpotifyPlaylist: (url, curatorId) =>
+        provideDb(
+          importSpotifyPlaylistEffect(
+            spotify,
+            scraper,
+            s3,
+            config.urls.bucketRouter,
+            config.buckets.userContent
+          )(url, curatorId)
+        ),
+      syncPlaylistLinks: (playlistId) =>
+        provideDb(
+          syncPlaylistLinksEffect(
+            spotify,
+            scraper,
+            s3,
+            config.urls.bucketRouter,
+            config.buckets.userContent
+          )(playlistId)
+        ),
 
-      addArtistToAlbum: addArtistToAlbumEffect(db),
-      removeArtistFromAlbum: removeArtistFromAlbumEffect(db),
-      addArtistToTrack: addArtistToTrackEffect(db),
-      removeArtistFromTrack: removeArtistFromTrackEffect(db),
+      addArtistToAlbum: (albumId, artistId, opts) =>
+        provideDb(addArtistToAlbumEffect(albumId, artistId, opts)),
+      removeArtistFromAlbum: (albumId, artistId) =>
+        provideDb(removeArtistFromAlbumEffect(albumId, artistId)),
+      addArtistToTrack: (trackId, artistId, opts) =>
+        provideDb(addArtistToTrackEffect(trackId, artistId, opts)),
+      removeArtistFromTrack: (trackId, artistId) =>
+        provideDb(removeArtistFromTrackEffect(trackId, artistId)),
 
-      getLinksForEntity: getLinksForEntityEffect(db),
-      addLink: addLinkEffect(db),
-      updateLinkStatus: updateLinkStatusEffect(db),
-      deleteLink: deleteLinkEffect(db),
-      scrapeAndCreateEntity: scrapeAndCreateEntityEffect(db, scraper)
+      getLinksForEntity: (entityType, entityId, statusFilter) =>
+        provideDb(getLinksForEntityEffect(entityType, entityId, statusFilter)),
+      addLink: (data) => provideDb(addLinkEffect(data)),
+      updateLinkStatus: (entityType, entityId, linkId, status, verifiedBy, metadata) =>
+        provideDb(
+          updateLinkStatusEffect(entityType, entityId, linkId, status, verifiedBy, metadata)
+        ),
+      deleteLink: (entityType, entityId, linkId) =>
+        provideDb(deleteLinkEffect(entityType, entityId, linkId)),
+      scrapeAndCreateEntity: (entityType, input) =>
+        provideDb(scrapeAndCreateEntityEffect(scraper, entityType, input))
     } satisfies MusicEntityService
   })
 )
