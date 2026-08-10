@@ -6,7 +6,7 @@ import {
   extractBandcampArtist,
   getBandcampMetadataWithSpan
 } from '@/services/bandcamp.service'
-import { config } from '@/services/config.service'
+import { ConfigService } from '@/services/config.service'
 import {
   cleanId,
   extractSpotifyId,
@@ -96,12 +96,7 @@ export interface SpotifyService {
 
 export const SpotifyService = Context.Service<SpotifyService>('SpotifyService')
 
-const spotifyClient = SpotifyApiClient.withClientCredentials(
-  config.spotify.clientId,
-  config.spotify.clientSecret
-)
-
-const getTrackEffect = (id: string) =>
+const getTrackEffect = (spotifyClient: SpotifyApiClient, id: string) =>
   Effect.gen(function* () {
     const sanitizedId = cleanId(id)
 
@@ -135,7 +130,7 @@ const getTrackEffect = (id: string) =>
     return track
   })
 
-const getAlbumEffect = (id: string) =>
+const getAlbumEffect = (spotifyClient: SpotifyApiClient, id: string) =>
   Effect.gen(function* () {
     const sanitizedId = cleanId(id)
 
@@ -174,7 +169,7 @@ const getAlbumEffect = (id: string) =>
     return album
   })
 
-const getPlaylistEffect = (id: string) =>
+const getPlaylistEffect = (spotifyClient: SpotifyApiClient, id: string) =>
   Effect.gen(function* () {
     const sanitizedId = cleanId(id)
 
@@ -216,7 +211,7 @@ const getPlaylistEffect = (id: string) =>
 const PLAYLIST_IMPORT_CACHE_TTL_MS = 60 * 60 * 1000
 const playlistImportCache = new Map<string, { value: SpotifyImportPlaylist; expiresAt: number }>()
 
-const getPlaylistForImportEffect = (id: string) =>
+const getPlaylistForImportEffect = (spotifyClient: SpotifyApiClient, id: string) =>
   Effect.gen(function* () {
     const sanitizedId = cleanId(id)
 
@@ -278,7 +273,12 @@ const getPlaylistForImportEffect = (id: string) =>
     return result
   })
 
-const searchAlbumsEffect = (query: string, limit = 10, offset = 0) =>
+const searchAlbumsEffect = (
+  spotifyClient: SpotifyApiClient,
+  query: string,
+  limit = 10,
+  offset = 0
+) =>
   Effect.gen(function* () {
     if (!query || query.trim() === '') {
       return yield* new SpotifyError({
@@ -320,7 +320,7 @@ const searchAlbumsEffect = (query: string, limit = 10, offset = 0) =>
     return searchResponse
   })
 
-const searchTrackByIsrcEffect = (isrc: string) =>
+const searchTrackByIsrcEffect = (spotifyClient: SpotifyApiClient, isrc: string) =>
   Effect.gen(function* () {
     if (!isrc || isrc.trim() === '') {
       return yield* new SpotifyError({
@@ -351,7 +351,11 @@ const searchTrackByIsrcEffect = (isrc: string) =>
     }
   })
 
-const searchAlbumByTitleArtistEffect = (title: string, artist: string) =>
+const searchAlbumByTitleArtistEffect = (
+  spotifyClient: SpotifyApiClient,
+  title: string,
+  artist: string
+) =>
   Effect.gen(function* () {
     if (!title || title.trim() === '') {
       return yield* new SpotifyError({
@@ -384,42 +388,46 @@ const searchAlbumByTitleArtistEffect = (title: string, artist: string) =>
     }
   })
 
-const searchTrackByIsrcWithSpan = (isrc: string) =>
-  searchTrackByIsrcEffect(isrc).pipe(
+const searchTrackByIsrcWithSpan = (spotifyClient: SpotifyApiClient, isrc: string) =>
+  searchTrackByIsrcEffect(spotifyClient, isrc).pipe(
     Effect.withSpan('spotify.searchTrackByIsrc', {
       attributes: { 'spotify.isrc': isrc, 'external.system': 'spotify' }
     })
   )
 
-const searchAlbumByTitleArtistWithSpan = (title: string, artist: string) =>
-  searchAlbumByTitleArtistEffect(title, artist).pipe(
+const searchAlbumByTitleArtistWithSpan = (
+  spotifyClient: SpotifyApiClient,
+  title: string,
+  artist: string
+) =>
+  searchAlbumByTitleArtistEffect(spotifyClient, title, artist).pipe(
     Effect.withSpan('spotify.searchAlbumByTitleArtist', {
       attributes: { 'spotify.title': title, 'spotify.artist': artist, 'external.system': 'spotify' }
     })
   )
 
-const getTrackWithSpan = (id: string) =>
-  getTrackEffect(id).pipe(
+const getTrackWithSpan = (spotifyClient: SpotifyApiClient, id: string) =>
+  getTrackEffect(spotifyClient, id).pipe(
     Effect.withSpan('spotify.getTrack', {
       attributes: { 'spotify.id': id, 'external.system': 'spotify' }
     })
   )
 
-const getAlbumWithSpan = (id: string) =>
-  getAlbumEffect(id).pipe(
+const getAlbumWithSpan = (spotifyClient: SpotifyApiClient, id: string) =>
+  getAlbumEffect(spotifyClient, id).pipe(
     Effect.withSpan('spotify.getAlbum', {
       attributes: { 'spotify.id': id, 'external.system': 'spotify' }
     })
   )
 
-const getPlaylistWithSpan = (id: string) =>
-  getPlaylistEffect(id).pipe(
+const getPlaylistWithSpan = (spotifyClient: SpotifyApiClient, id: string) =>
+  getPlaylistEffect(spotifyClient, id).pipe(
     Effect.withSpan('spotify.getPlaylist', {
       attributes: { 'spotify.id': id, 'external.system': 'spotify' }
     })
   )
 
-const getTrackForImportEffect = (id: string) =>
+const getTrackForImportEffect = (spotifyClient: SpotifyApiClient, id: string) =>
   Effect.gen(function* () {
     const sanitizedId = cleanId(id)
     if (!id || !sanitizedId) {
@@ -457,22 +465,27 @@ const getTrackForImportEffect = (id: string) =>
     return result
   })
 
-const getTrackForImportWithSpan = (id: string) =>
-  getTrackForImportEffect(id).pipe(
+const getTrackForImportWithSpan = (spotifyClient: SpotifyApiClient, id: string) =>
+  getTrackForImportEffect(spotifyClient, id).pipe(
     Effect.withSpan('spotify.getTrackForImport', {
       attributes: { 'spotify.id': id, 'external.system': 'spotify' }
     })
   )
 
-const getPlaylistForImportWithSpan = (id: string) =>
-  getPlaylistForImportEffect(id).pipe(
+const getPlaylistForImportWithSpan = (spotifyClient: SpotifyApiClient, id: string) =>
+  getPlaylistForImportEffect(spotifyClient, id).pipe(
     Effect.withSpan('spotify.getPlaylistForImport', {
       attributes: { 'spotify.id': id, 'external.system': 'spotify' }
     })
   )
 
-const searchAlbumsWithSpan = (query: string, limit = 10, offset = 0) =>
-  searchAlbumsEffect(query, limit, offset).pipe(
+const searchAlbumsWithSpan = (
+  spotifyClient: SpotifyApiClient,
+  query: string,
+  limit = 10,
+  offset = 0
+) =>
+  searchAlbumsEffect(spotifyClient, query, limit, offset).pipe(
     Effect.withSpan('spotify.searchAlbums', {
       attributes: {
         'spotify.query_length': query.length,
@@ -483,139 +496,152 @@ const searchAlbumsWithSpan = (query: string, limit = 10, offset = 0) =>
     })
   )
 
-const enrichTrackFromUrlWithSpan = Effect.fn('spotify.enrichTrackFromUrl')(function* (url: string) {
-  const platform = isSpotifyUrl(url)
-    ? 'spotify'
-    : isYouTubeUrl(url)
-      ? 'youtube'
-      : isAppleMusicUrl(url)
-        ? 'apple_music'
-        : isBandcampUrl(url)
-          ? 'bandcamp'
-          : 'other'
+const enrichTrackFromUrlWithSpan = (spotifyClient: SpotifyApiClient, url: string) =>
+  Effect.fn('spotify.enrichTrackFromUrl')(function* () {
+    const platform = isSpotifyUrl(url)
+      ? 'spotify'
+      : isYouTubeUrl(url)
+        ? 'youtube'
+        : isAppleMusicUrl(url)
+          ? 'apple_music'
+          : isBandcampUrl(url)
+            ? 'bandcamp'
+            : 'other'
 
-  yield* Effect.annotateCurrentSpan('music.platform', platform)
+    yield* Effect.annotateCurrentSpan('music.platform', platform)
 
-  let result: {
-    title: string
-    artist: string
-    url: string
-    platform: 'spotify' | 'youtube' | 'apple_music' | 'bandcamp' | 'other'
-    thumbnailUrl?: string
-    album?: string
-    duration?: number
-  }
-
-  if (isSpotifyUrl(url)) {
-    const id = extractSpotifyId(url)
-    if (!id) {
-      return yield* new SpotifyError({
-        message: 'Invalid Spotify URL',
-        operation: 'enrichTrackFromUrl',
-        statusCode: 400
-      })
+    let result: {
+      title: string
+      artist: string
+      url: string
+      platform: 'spotify' | 'youtube' | 'apple_music' | 'bandcamp' | 'other'
+      thumbnailUrl?: string
+      album?: string
+      duration?: number
     }
 
-    yield* Effect.annotateCurrentSpan('spotify.id', id)
-    yield* Effect.annotateCurrentSpan('url.type', url.includes('/album/') ? 'album' : 'track')
+    if (isSpotifyUrl(url)) {
+      const id = extractSpotifyId(url)
+      if (!id) {
+        return yield* new SpotifyError({
+          message: 'Invalid Spotify URL',
+          operation: 'enrichTrackFromUrl',
+          statusCode: 400
+        })
+      }
 
-    if (url.includes('/album/')) {
-      const data = yield* Effect.tryPromise({
-        try: () => spotifyClient.albums.get(id),
-        catch: (error) =>
-          new SpotifyError({
-            message: `Failed to fetch Spotify album: ${getErrorMessage(error)}`,
-            operation: 'enrichTrackFromUrl',
-            statusCode: 500
-          })
-      })
+      yield* Effect.annotateCurrentSpan('spotify.id', id)
+      yield* Effect.annotateCurrentSpan('url.type', url.includes('/album/') ? 'album' : 'track')
+
+      if (url.includes('/album/')) {
+        const data = yield* Effect.tryPromise({
+          try: () => spotifyClient.albums.get(id),
+          catch: (error) =>
+            new SpotifyError({
+              message: `Failed to fetch Spotify album: ${getErrorMessage(error)}`,
+              operation: 'enrichTrackFromUrl',
+              statusCode: 500
+            })
+        })
+
+        result = {
+          title: data.name,
+          artist: data.artists.map((artist) => artist.name).join(', '),
+          url: data.external_urls.spotify,
+          platform: 'spotify',
+          thumbnailUrl: data.images[0]?.url,
+          album: data.name,
+          duration: data.tracks.items.reduce((total, track) => total + track.duration_ms, 0) / 1000
+        }
+      } else {
+        const data = yield* Effect.tryPromise({
+          try: () => spotifyClient.tracks.get(id),
+          catch: (error) =>
+            new SpotifyError({
+              message: `Failed to fetch Spotify track: ${getErrorMessage(error)}`,
+              operation: 'enrichTrackFromUrl',
+              statusCode: 500
+            })
+        })
+
+        result = {
+          title: data.name,
+          artist: data.artists.map((artist) => artist.name).join(', '),
+          url: data.external_urls.spotify,
+          platform: 'spotify',
+          thumbnailUrl: data.album.images[0]?.url,
+          album: data.album.name,
+          duration: Math.floor(data.duration_ms / 1000)
+        }
+      }
+    } else if (isYouTubeUrl(url)) {
+      const videoId = extractYouTubeId(url)
+      if (!videoId) {
+        return yield* new SpotifyError({
+          message: 'Invalid YouTube URL',
+          operation: 'enrichTrackFromUrl',
+          statusCode: 400
+        })
+      }
 
       result = {
-        title: data.name,
-        artist: data.artists.map((artist) => artist.name).join(', '),
-        url: data.external_urls.spotify,
-        platform: 'spotify',
-        thumbnailUrl: data.images[0]?.url,
-        album: data.name,
-        duration: data.tracks.items.reduce((total, track) => total + track.duration_ms, 0) / 1000
+        title: 'YouTube Video',
+        artist: 'Unknown Artist',
+        url: `https://www.youtube.com/watch?v=${videoId}`,
+        platform: 'youtube',
+        thumbnailUrl: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
+      }
+    } else if (isAppleMusicUrl(url)) {
+      result = {
+        title: 'Apple Music Track',
+        artist: 'Unknown Artist',
+        url: url,
+        platform: 'apple_music'
+      }
+    } else if (isBandcampUrl(url)) {
+      const metadata = yield* getBandcampMetadataWithSpan(url)
+
+      result = {
+        title: metadata.name,
+        artist: extractBandcampArtist(metadata),
+        url: url,
+        platform: 'bandcamp',
+        thumbnailUrl: metadata.image,
+        album: metadata.name,
+        duration: calculateBandcampTotalDuration(metadata)
       }
     } else {
-      const data = yield* Effect.tryPromise({
-        try: () => spotifyClient.tracks.get(id),
-        catch: (error) =>
-          new SpotifyError({
-            message: `Failed to fetch Spotify track: ${getErrorMessage(error)}`,
-            operation: 'enrichTrackFromUrl',
-            statusCode: 500
-          })
-      })
-
       result = {
-        title: data.name,
-        artist: data.artists.map((artist) => artist.name).join(', '),
-        url: data.external_urls.spotify,
-        platform: 'spotify',
-        thumbnailUrl: data.album.images[0]?.url,
-        album: data.album.name,
-        duration: Math.floor(data.duration_ms / 1000)
+        title: 'External Track',
+        artist: 'Unknown Artist',
+        url: url,
+        platform: 'other'
       }
     }
-  } else if (isYouTubeUrl(url)) {
-    const videoId = extractYouTubeId(url)
-    if (!videoId) {
-      return yield* new SpotifyError({
-        message: 'Invalid YouTube URL',
-        operation: 'enrichTrackFromUrl',
-        statusCode: 400
-      })
-    }
 
-    result = {
-      title: 'YouTube Video',
-      artist: 'Unknown Artist',
-      url: `https://www.youtube.com/watch?v=${videoId}`,
-      platform: 'youtube',
-      thumbnailUrl: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
-    }
-  } else if (isAppleMusicUrl(url)) {
-    result = {
-      title: 'Apple Music Track',
-      artist: 'Unknown Artist',
-      url: url,
-      platform: 'apple_music'
-    }
-  } else if (isBandcampUrl(url)) {
-    const metadata = yield* getBandcampMetadataWithSpan(url)
+    return result
+  })()
 
-    result = {
-      title: metadata.name,
-      artist: extractBandcampArtist(metadata),
-      url: url,
-      platform: 'bandcamp',
-      thumbnailUrl: metadata.image,
-      album: metadata.name,
-      duration: calculateBandcampTotalDuration(metadata)
+export const SpotifyServiceLayer = Layer.effect(
+  SpotifyService,
+  Effect.gen(function* () {
+    const config = yield* ConfigService
+    const spotifyClient = SpotifyApiClient.withClientCredentials(
+      config.spotify.clientId,
+      config.spotify.clientSecret
+    )
+    return {
+      getTrack: (id) => getTrackWithSpan(spotifyClient, id),
+      getAlbum: (id) => getAlbumWithSpan(spotifyClient, id),
+      getPlaylist: (id) => getPlaylistWithSpan(spotifyClient, id),
+      getPlaylistForImport: (id) => getPlaylistForImportWithSpan(spotifyClient, id),
+      getTrackForImport: (id) => getTrackForImportWithSpan(spotifyClient, id),
+      searchAlbums: (query, limit, offset) =>
+        searchAlbumsWithSpan(spotifyClient, query, limit, offset),
+      searchTrackByIsrc: (isrc) => searchTrackByIsrcWithSpan(spotifyClient, isrc),
+      searchAlbumByTitleArtist: (title, artist) =>
+        searchAlbumByTitleArtistWithSpan(spotifyClient, title, artist),
+      enrichTrackFromUrl: (url) => enrichTrackFromUrlWithSpan(spotifyClient, url)
     }
-  } else {
-    result = {
-      title: 'External Track',
-      artist: 'Unknown Artist',
-      url: url,
-      platform: 'other'
-    }
-  }
-
-  return result
-})
-
-export const SpotifyServiceLayer = Layer.succeed(SpotifyService, {
-  getTrack: getTrackWithSpan,
-  getAlbum: getAlbumWithSpan,
-  getPlaylist: getPlaylistWithSpan,
-  getPlaylistForImport: getPlaylistForImportWithSpan,
-  getTrackForImport: getTrackForImportWithSpan,
-  searchAlbums: searchAlbumsWithSpan,
-  searchTrackByIsrc: searchTrackByIsrcWithSpan,
-  searchAlbumByTitleArtist: searchAlbumByTitleArtistWithSpan,
-  enrichTrackFromUrl: enrichTrackFromUrlWithSpan
-})
+  })
+)

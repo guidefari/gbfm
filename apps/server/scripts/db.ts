@@ -1,11 +1,8 @@
 #!/usr/bin/env bun
 
-import { config } from '../src/services/config.service'
+import { createConfig } from '../src/services/config.service'
 
-console.log(config.database.password)
-console.log(config.database.user)
-console.log(config.database.host)
-console.log(config.database.name)
+const config = createConfig()
 
 Bun.spawnSync(['psql'], {
   stdout: 'inherit',

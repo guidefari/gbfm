@@ -1,9 +1,9 @@
 import { isRecord } from '@gbfm/core/utils'
 import * as Sentry from '@sentry/core'
-import { Logger, References, type LogLevel } from 'effect'
+import { Effect, Layer, Logger, References, type LogLevel } from 'effect'
 import pino from 'pino'
 import pretty from 'pino-pretty'
-import { config } from './config.service'
+import { ConfigService } from './config.service'
 
 const REDACT_PATHS = [
   'password',
@@ -42,15 +42,14 @@ function redactValue(value: unknown, depth = 0): unknown {
   return value
 }
 
-const defaultLevel = config.app.nodeEnv === 'production' ? 'warn' : 'info'
-
-const pinoInstance = pino(
-  {
-    level: config.app.logLevel || defaultLevel,
-    redact: { paths: REDACT_PATHS, censor: '[Redacted]' }
-  },
-  config.app.nodeEnv === 'production' ? undefined : pretty()
-)
+const makePinoLogger = (nodeEnv: string, logLevel: string | undefined) =>
+  pino(
+    {
+      level: logLevel || (nodeEnv === 'production' ? 'warn' : 'info'),
+      redact: { paths: REDACT_PATHS, censor: '[Redacted]' }
+    },
+    nodeEnv === 'production' ? undefined : pretty()
+  )
 
 function pinoLevel(level: LogLevel.LogLevel): pino.Level {
   switch (level) {
@@ -79,44 +78,50 @@ function formatMessage(message: unknown): string {
   }
 }
 
-export const AppLogger = Logger.make(({ logLevel, message, cause, fiber, date }) => {
-  const msg = formatMessage(message)
-  const data = redactValue({
-    annotations: fiber.getRef(References.CurrentLogAnnotations),
-    cause,
-    fiberId: fiber.id,
-    date
+const makeAppLogger = (pinoInstance: pino.Logger) =>
+  Logger.make(({ logLevel, message, cause, fiber, date }) => {
+    const msg = formatMessage(message)
+    const data = redactValue({
+      annotations: fiber.getRef(References.CurrentLogAnnotations),
+      cause,
+      fiberId: fiber.id,
+      date
+    })
+    const payload = {
+      ...(isRecord(data) ? data : {}),
+      logLevel
+    }
+
+    pinoInstance[pinoLevel(logLevel)](payload, msg)
+
+    if (!Sentry.getClient() || ['Trace', 'Debug', 'Info'].includes(logLevel)) return
+
+    const sentryLogger = Sentry.logger
+    switch (logLevel) {
+      case 'Trace':
+      case 'Debug':
+        sentryLogger.debug(msg, payload)
+        break
+      case 'Info':
+        sentryLogger.info(msg, payload)
+        break
+      case 'Warn':
+        sentryLogger.warn(msg, payload)
+        break
+      case 'Error':
+        sentryLogger.error(msg, payload)
+        break
+      case 'Fatal':
+        sentryLogger.fatal(msg, payload)
+        break
+      default:
+        sentryLogger.info(msg, payload)
+    }
   })
-  const payload = {
-    ...(isRecord(data) ? data : {}),
-    logLevel
-  }
 
-  pinoInstance[pinoLevel(logLevel)](payload, msg)
-
-  if (!Sentry.getClient() || ['Trace', 'Debug', 'Info'].includes(logLevel)) return
-
-  const sentryLogger = Sentry.logger
-  switch (logLevel) {
-    case 'Trace':
-    case 'Debug':
-      sentryLogger.debug(msg, payload)
-      break
-    case 'Info':
-      sentryLogger.info(msg, payload)
-      break
-    case 'Warn':
-      sentryLogger.warn(msg, payload)
-      break
-    case 'Error':
-      sentryLogger.error(msg, payload)
-      break
-    case 'Fatal':
-      sentryLogger.fatal(msg, payload)
-      break
-    default:
-      sentryLogger.info(msg, payload)
-  }
-})
-
-export const AppLoggerLive = Logger.layer([AppLogger])
+export const AppLoggerLive = Layer.unwrap(
+  Effect.gen(function* () {
+    const config = yield* ConfigService
+    return Logger.layer([makeAppLogger(makePinoLogger(config.app.nodeEnv, config.app.logLevel))])
+  })
+)

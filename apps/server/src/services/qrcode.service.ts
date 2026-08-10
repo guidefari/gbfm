@@ -2,7 +2,7 @@ import { Context, Effect, Layer } from 'effect'
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 import QRCode from 'qrcode'
 import { DatabaseError, getErrorMessage } from '@/errors'
-import { config } from '@/services/config.service'
+import { ConfigService, type ConfigService as Config } from '@/services/config.service'
 import { S3Service } from '@/services/s3.service'
 
 interface MixData {
@@ -231,7 +231,12 @@ const generateQROnlyPdf = (mix: MixData, qrDataUrl: string) =>
     })
   })
 
-const generateMixQRPdfEffect = (mix: MixData, s3Service: S3Service, force?: boolean) =>
+const generateMixQRPdfEffect = (
+  config: Config,
+  mix: MixData,
+  s3Service: S3Service,
+  force?: boolean
+) =>
   Effect.gen(function* () {
     const bucketName = config.buckets.userContent
     const cdnUrl = config.urls.bucketRouter
@@ -265,7 +270,12 @@ const generateMixQRPdfEffect = (mix: MixData, s3Service: S3Service, force?: bool
     return { url, cached: false }
   })
 
-const generateShowQRPdfEffect = (show: ShowData, s3Service: S3Service, force?: boolean) =>
+const generateShowQRPdfEffect = (
+  config: Config,
+  show: ShowData,
+  s3Service: S3Service,
+  force?: boolean
+) =>
   Effect.gen(function* () {
     const bucketName = config.buckets.userContent
     const cdnUrl = config.urls.bucketRouter
@@ -311,15 +321,16 @@ export const QRCodeServiceLayer = Layer.effect(
   QRCodeService,
   Effect.gen(function* () {
     const s3Service = yield* S3Service
+    const config = yield* ConfigService
     return {
       generateMixQRPdf: (mix: MixData, force?: boolean) =>
-        generateMixQRPdfEffect(mix, s3Service, force).pipe(
+        generateMixQRPdfEffect(config, mix, s3Service, force).pipe(
           Effect.withSpan('qrcode.generateMixQRPdf', {
             attributes: { slug: mix.slug }
           })
         ),
       generateShowQRPdf: (show: ShowData, force?: boolean) =>
-        generateShowQRPdfEffect(show, s3Service, force).pipe(
+        generateShowQRPdfEffect(config, show, s3Service, force).pipe(
           Effect.withSpan('qrcode.generateShowQRPdf', {
             attributes: { slug: show.slug }
           })

@@ -13,24 +13,26 @@ import { newsletterSubscribersTable } from '@/db/newsletter.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
 import { globalUnsubscribe } from '@/repositories/email-preferences.repository'
-import { config } from '@/services/config.service'
+import { ConfigService } from '@/services/config.service'
 
 const dieOnDatabaseError = makeDieOnDatabaseError('newsletter')
 
-function notifyAdmin(event: 'subscribed' | 'unsubscribed', email: string): void {
-  if (!config.adminEmail) return
-  sendNewsletterAdminNotificationEmail({
-    to: config.adminEmail,
-    event,
-    email
-  }).catch((err) => console.error('Admin newsletter notification failed:', err))
-  Sentry.addBreadcrumb({
-    category: 'newsletter',
-    message: `newsletter.${event}`,
-    level: 'info',
-    data: { email }
+const notifyAdmin = (event: 'subscribed' | 'unsubscribed', email: string) =>
+  Effect.gen(function* () {
+    const config = yield* ConfigService
+    if (!config.adminEmail) return
+    sendNewsletterAdminNotificationEmail({
+      to: config.adminEmail,
+      event,
+      email
+    }).catch((err) => console.error('Admin newsletter notification failed:', err))
+    Sentry.addBreadcrumb({
+      category: 'newsletter',
+      message: `newsletter.${event}`,
+      level: 'info',
+      data: { email }
+    })
   })
-}
 
 export const NewsletterHandlersLive = HttpApiBuilder.group(Api, 'newsletter', (handlers) =>
   handlers
@@ -72,7 +74,7 @@ export const NewsletterHandlersLive = HttpApiBuilder.group(Api, 'newsletter', (h
           )
         }
 
-        notifyAdmin('subscribed', normalizedEmail)
+        yield* notifyAdmin('subscribed', normalizedEmail)
 
         return { subscribed: true, email: normalizedEmail }
       })
@@ -114,7 +116,7 @@ export const NewsletterHandlersLive = HttpApiBuilder.group(Api, 'newsletter', (h
           )
         }
 
-        notifyAdmin('unsubscribed', result[0]?.email ?? payload.token)
+        yield* notifyAdmin('unsubscribed', result[0]?.email ?? payload.token)
 
         return { success: true }
       })

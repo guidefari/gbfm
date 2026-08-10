@@ -1,5 +1,3 @@
-import { config } from '@/services/config.service'
-
 const DEFAULT_IMAGE = 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'
 
 export const escapeHtml = (text: string): string => {
@@ -38,14 +36,13 @@ export interface ErrorPageData {
   statusCode: 400 | 404 | 500
 }
 
-const getSiteUrl = (): string => {
-  const frontendUrl = config.urls.frontend
+const getSiteUrl = (frontendUrl = 'https://goosebumps.fm'): string => {
   // Ensure no trailing slash
   return frontendUrl.endsWith('/') ? frontendUrl.slice(0, -1) : frontendUrl
 }
 
-export const buildOGHtml = (data: OGData): string => {
-  const siteUrl = getSiteUrl()
+export const buildOGHtml = (data: OGData, frontendUrl?: string): string => {
+  const siteUrl = getSiteUrl(frontendUrl)
   const canonicalUrl = `${siteUrl}${data.canonicalPath}`
   const image = data.image || DEFAULT_IMAGE
   const imageAlt = data.imageAlt || `${data.title} cover art`
@@ -248,8 +245,8 @@ const buildTypeSpecificTags = (data: OGData, creatorNames: string | null): strin
   return tags.length ? tags.join('\n') : ''
 }
 
-export const buildErrorHtml = (data: ErrorPageData): string => {
-  const siteUrl = getSiteUrl()
+export const buildErrorHtml = (data: ErrorPageData, frontendUrl?: string): string => {
+  const siteUrl = getSiteUrl(frontendUrl)
 
   return `<!DOCTYPE html>
 <html lang="en">

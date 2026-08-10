@@ -1,8 +1,9 @@
-import { config } from '@/services/config.service'
+import { createConfig } from '@/services/config.service'
 import 'dotenv/config'
 import { Pool } from 'pg'
 import { instrumentDatabaseClient } from '@/lib/database-instrumentation'
 
+const config = createConfig()
 const stage = config.app.stage
 
 const sslByStage: Record<string, boolean | { rejectUnauthorized: boolean }> = {

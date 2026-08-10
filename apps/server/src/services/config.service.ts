@@ -6,6 +6,41 @@ try {
   Resource = require('sst').Resource
 } catch {}
 
+const secretNames = [
+  'SpotifyClientId',
+  'SpotifyClientSecret',
+  'DatabaseHost',
+  'DatabaseUser',
+  'DatabasePassword',
+  'DatabasePort',
+  'DatabaseName',
+  'SENTRY_BACKEND_DSN',
+  'VITE_PUBLIC_SENTRY_DSN',
+  'OTEL_EXPORTER_OTLP_ENDPOINT',
+  'OTEL_EXPORTER_OTLP_HEADERS',
+  'BETTER_AUTH_SECRET',
+  'BETTER_AUTH_URL',
+  'GBFM_ENCRYPTION_ROOT_KEY',
+  'StorageProvider',
+  'StorageEndpoint',
+  'StorageRegion',
+  'StorageAccessKeyId',
+  'StorageSecretAccessKey',
+  'StorageSigningEndpoint'
+] as const
+
+type SecretName = (typeof secretNames)[number]
+
+export type WorkerConfigBindings = Readonly<
+  Record<SecretName, string | undefined> & {
+    APP_STAGE: string
+    USER_CONTENT_BUCKET_NAME: string
+    MIXES_BUCKET_NAME: string
+    SENTRY_ENVIRONMENT?: string
+    ADMIN_EMAIL?: string
+  }
+>
+
 function getResource(name: string): unknown {
   try {
     return Resource?.[name]
@@ -15,7 +50,7 @@ function getResource(name: string): unknown {
 }
 
 function stringValue(value: unknown, fallback: string): string {
-  if (typeof value === 'string') return value
+  if (typeof value === 'string' && value.length > 0) return value
   if (typeof value === 'number') return String(value)
   return fallback
 }
@@ -31,16 +66,31 @@ function numberValue(value: unknown, fallback: number, name: string): number {
   return parsedValue
 }
 
-function secretString(name: string, fallback: string): string {
+function secretValue(name: SecretName, bindings: WorkerConfigBindings | undefined): unknown {
+  if (bindings) return bindings[name]
   const resource = getResource(name)
-  const value = isRecord(resource) && 'value' in resource ? resource.value : resource
-  return stringValue(value, fallback)
+  return isRecord(resource) && 'value' in resource ? resource.value : resource
 }
 
-function secretNumber(name: string, fallback: number): number {
+function secretString(
+  name: SecretName,
+  fallback: string,
+  bindings: WorkerConfigBindings | undefined
+): string {
+  return stringValue(secretValue(name, bindings), fallback)
+}
+
+function secretNumber(
+  name: 'DatabasePort',
+  fallback: number,
+  bindings: WorkerConfigBindings | undefined
+): number {
+  return numberValue(secretValue(name, bindings), fallback, name)
+}
+
+function resourceValue(name: string): unknown {
   const resource = getResource(name)
-  const value = isRecord(resource) && 'value' in resource ? resource.value : resource
-  return numberValue(value, fallback, name)
+  return isRecord(resource) && 'value' in resource ? resource.value : resource
 }
 
 function resourceString(name: string, property: string, fallback: string): string {
@@ -125,69 +175,85 @@ export interface ConfigService extends ConfigSchemaType {}
 
 export const ConfigService = Context.Service<ConfigService>('ConfigService')
 
-export function createConfig(): ConfigService {
-  const appStage = resourceString('App', 'stage', 'dev')
+function requiredInProduction(isProd: boolean, bindings: WorkerConfigBindings | undefined): void {
+  if (!isProd) return
+
+  const missing = secretNames.filter(
+    (name) => stringValue(secretValue(name, bindings), '').trim().length === 0
+  )
+  if (missing.length > 0) {
+    throw new Error(`Missing required production secrets: ${missing.join(', ')}`)
+  }
+}
+
+export function createConfig(bindings?: WorkerConfigBindings): ConfigService {
+  const appStage = bindings?.APP_STAGE ?? resourceString('App', 'stage', 'dev')
   const isProd = appStage === 'prod'
 
-  const databaseHost = secretString('DatabaseHost', 'localhost')
-  const databasePort = secretNumber('DatabasePort', 5432)
-  const databaseUser = secretString('DatabaseUser', 'postgres')
-  const databasePassword = secretString('DatabasePassword', 'postgres')
-  const databaseName = secretString('DatabaseName', 'postgres')
+  const secrets = {
+    SpotifyClientId: secretString('SpotifyClientId', '', bindings),
+    SpotifyClientSecret: secretString('SpotifyClientSecret', '', bindings),
+    DatabaseHost: secretString('DatabaseHost', 'localhost', bindings),
+    DatabaseUser: secretString('DatabaseUser', 'postgres', bindings),
+    DatabasePassword: secretString('DatabasePassword', 'postgres', bindings),
+    DatabasePort: secretString('DatabasePort', '5432', bindings),
+    DatabaseName: secretString('DatabaseName', 'postgres', bindings),
+    SENTRY_BACKEND_DSN: secretString('SENTRY_BACKEND_DSN', '', bindings),
+    VITE_PUBLIC_SENTRY_DSN: secretString('VITE_PUBLIC_SENTRY_DSN', '', bindings),
+    OTEL_EXPORTER_OTLP_ENDPOINT: secretString('OTEL_EXPORTER_OTLP_ENDPOINT', '', bindings),
+    OTEL_EXPORTER_OTLP_HEADERS: secretString('OTEL_EXPORTER_OTLP_HEADERS', '', bindings),
+    BETTER_AUTH_SECRET: secretString('BETTER_AUTH_SECRET', '', bindings),
+    BETTER_AUTH_URL: secretString('BETTER_AUTH_URL', '', bindings),
+    GBFM_ENCRYPTION_ROOT_KEY: secretString(
+      'GBFM_ENCRYPTION_ROOT_KEY',
+      'local-development-encryption-key',
+      bindings
+    ),
+    StorageProvider: secretString('StorageProvider', 'aws', bindings),
+    StorageEndpoint: secretString('StorageEndpoint', '', bindings),
+    StorageRegion: secretString('StorageRegion', 'auto', bindings),
+    StorageAccessKeyId: secretString('StorageAccessKeyId', '', bindings),
+    StorageSecretAccessKey: secretString('StorageSecretAccessKey', '', bindings),
+    StorageSigningEndpoint: secretString('StorageSigningEndpoint', '', bindings)
+  }
+
+  requiredInProduction(isProd, bindings)
 
   const frontendUrl = resourceString('Urls', 'site', 'http://127.0.0.1:5173')
   const vpsUrl = resourceString('Urls', 'vps', 'http://127.0.0.1:3003')
   const bucketRouterUrl = 'https://cdn.goosebumps.fm'
-
   const emailSender = resourceString('Email', 'sender', '')
-  const accessTokenSecret = 'secret'
-  const refreshTokenSecret = 'secret'
-  const betterAuthSecret = secretString('BETTER_AUTH_SECRET', '')
-  const betterAuthUrl = secretString('BETTER_AUTH_URL', '')
-  const encryptionRootKey = secretString(
-    'GBFM_ENCRYPTION_ROOT_KEY',
-    'local-development-encryption-key'
-  )
-
-  const spotifyClientId = secretString('SpotifyClientId', '')
-  const spotifyClientSecret = secretString('SpotifyClientSecret', '')
-
-  const userContentBucketName = resourceString('User_Content', 'name', 'user-content-dev')
-  const mixesBucketName = resourceString('Mixes', 'name', 'mixes-dev')
-
-  const storageAccessKeyId = secretString('StorageAccessKeyId', '')
-  const storageSecretAccessKey = secretString('StorageSecretAccessKey', '')
+  const userContentBucketName =
+    bindings?.USER_CONTENT_BUCKET_NAME ?? resourceString('User_Content', 'name', 'user-content-dev')
+  const mixesBucketName =
+    bindings?.MIXES_BUCKET_NAME ?? resourceString('Mixes', 'name', 'mixes-dev')
   const storage = Schema.decodeUnknownSync(StorageConfigSchema)({
-    provider: secretString('StorageProvider', 'aws'),
-    endpoint: secretString('StorageEndpoint', '') || undefined,
-    region: secretString('StorageRegion', 'auto'),
-    accessKeyId: storageAccessKeyId.length === 0 ? undefined : Redacted.make(storageAccessKeyId),
+    provider: secrets.StorageProvider,
+    endpoint: secrets.StorageEndpoint || undefined,
+    region: secrets.StorageRegion,
+    accessKeyId:
+      secrets.StorageAccessKeyId.length === 0
+        ? undefined
+        : Redacted.make(secrets.StorageAccessKeyId),
     secretAccessKey:
-      storageSecretAccessKey.length === 0 ? undefined : Redacted.make(storageSecretAccessKey),
-    signingEndpoint: secretString('StorageSigningEndpoint', '') || undefined
+      secrets.StorageSecretAccessKey.length === 0
+        ? undefined
+        : Redacted.make(secrets.StorageSecretAccessKey),
+    signingEndpoint: secrets.StorageSigningEndpoint || undefined
   })
 
   const nodeEnv = isProd ? 'production' : 'development'
-  const dbStage = isProd ? 'prod' : undefined
-  const logLevel = undefined
-
   const otelEndpoint =
-    secretString('OTEL_EXPORTER_OTLP_ENDPOINT', '') ||
+    secrets.OTEL_EXPORTER_OTLP_ENDPOINT ||
     (['dev', 'local'].includes(appStage) ? 'http://localhost:4318' : '')
-  const otelHeaders = secretString('OTEL_EXPORTER_OTLP_HEADERS', '')
-
-  const adminEmail = secretString('AdminEmail', 'guidefari@icloud.com')
-
-  const sentryDsn = secretString('SENTRY_BACKEND_DSN', '')
-  const sentryEnvironment = isProd ? 'production' : 'development'
 
   return {
     database: {
-      host: databaseHost,
-      port: databasePort,
-      user: databaseUser,
-      password: databasePassword,
-      name: databaseName
+      host: secrets.DatabaseHost,
+      port: secretNumber('DatabasePort', 5432, bindings),
+      user: secrets.DatabaseUser,
+      password: secrets.DatabasePassword,
+      name: secrets.DatabaseName
     },
     urls: {
       frontend: frontendUrl,
@@ -196,17 +262,17 @@ export function createConfig(): ConfigService {
     },
     auth: {
       emailSender,
-      accessTokenSecret,
-      refreshTokenSecret,
-      betterAuthSecret,
-      betterAuthUrl
+      accessTokenSecret: 'secret',
+      refreshTokenSecret: 'secret',
+      betterAuthSecret: secrets.BETTER_AUTH_SECRET,
+      betterAuthUrl: secrets.BETTER_AUTH_URL
     },
     encryption: {
-      rootKey: encryptionRootKey
+      rootKey: secrets.GBFM_ENCRYPTION_ROOT_KEY
     },
     spotify: {
-      clientId: spotifyClientId,
-      clientSecret: spotifyClientSecret
+      clientId: secrets.SpotifyClientId,
+      clientSecret: secrets.SpotifyClientSecret
     },
     buckets: {
       userContent: userContentBucketName,
@@ -216,28 +282,34 @@ export function createConfig(): ConfigService {
     app: {
       stage: appStage,
       nodeEnv,
-      dbStage,
-      logLevel
+      dbStage: isProd ? 'prod' : undefined,
+      logLevel: undefined
     },
     otel: {
       endpoint: otelEndpoint,
-      headers: otelHeaders
+      headers: secrets.OTEL_EXPORTER_OTLP_HEADERS || undefined
     },
     sentry: {
-      dsn: sentryDsn,
-      environment: sentryEnvironment
+      dsn: secrets.SENTRY_BACKEND_DSN,
+      environment: bindings?.SENTRY_ENVIRONMENT ?? (isProd ? 'production' : 'development')
     },
-    adminEmail,
+    adminEmail: stringValue(
+      bindings?.ADMIN_EMAIL ?? resourceValue('AdminEmail'),
+      'guidefari@icloud.com'
+    ),
     resources: {
-      available: Resource !== null
+      available: bindings !== undefined || Resource !== null
     }
   }
 }
 
-// Create a singleton config instance for synchronous access
-export const config = createConfig()
+const makeConfigServiceLayer = (bindings?: WorkerConfigBindings) =>
+  Layer.effect(
+    ConfigService,
+    Effect.sync(() => Schema.decodeUnknownSync(ConfigSchema)(createConfig(bindings)))
+  )
 
-export const ConfigServiceLayer = Layer.effect(
-  ConfigService,
-  Effect.sync(() => Schema.decodeUnknownSync(ConfigSchema)(config))
-)
+export const ConfigServiceLayer = makeConfigServiceLayer()
+
+export const WorkerConfigServiceLayer = (bindings: WorkerConfigBindings) =>
+  makeConfigServiceLayer(bindings)

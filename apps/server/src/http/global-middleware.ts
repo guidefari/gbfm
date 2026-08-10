@@ -1,7 +1,7 @@
-import { Cause, Effect, Exit } from 'effect'
+import { Cause, Effect, Exit, Layer } from 'effect'
 import { HttpMiddleware, HttpRouter, HttpServerRequest } from 'effect/unstable/http'
 import { checkPerformanceHealth, recordRequest } from '@/lib/performance-monitoring'
-import { config } from '@/services/config.service'
+import { ConfigService } from '@/services/config.service'
 import { SentryService } from '@/services/sentry.service'
 
 // Step 8 (docs/migration-effect-http-api.md): the global concerns that used
@@ -28,27 +28,30 @@ const ALLOWED_ORIGINS = [
   'https://goosebumps.fm'
 ]
 
-const isAllowedOrigin = (origin: string) =>
-  ALLOWED_ORIGINS.includes(origin) || origin === config.urls.frontend
-
-export const CorsLive = HttpRouter.middleware(
-  HttpMiddleware.cors({
-    allowedOrigins: isAllowedOrigin,
-    allowedMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'Cookie',
-      'Refresh-Token',
-      'sentry-trace',
-      'baggage',
-      'b3',
-      'traceparent'
-    ],
-    exposedHeaders: ['Set-Cookie'],
-    credentials: true
-  }),
-  { global: true }
+export const CorsLive = Layer.unwrap(
+  Effect.gen(function* () {
+    const config = yield* ConfigService
+    return HttpRouter.middleware(
+      HttpMiddleware.cors({
+        allowedOrigins: (origin) =>
+          ALLOWED_ORIGINS.includes(origin) || origin === config.urls.frontend,
+        allowedMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+        allowedHeaders: [
+          'Content-Type',
+          'Authorization',
+          'Cookie',
+          'Refresh-Token',
+          'sentry-trace',
+          'baggage',
+          'b3',
+          'traceparent'
+        ],
+        exposedHeaders: ['Set-Cookie'],
+        credentials: true
+      }),
+      { global: true }
+    )
+  })
 )
 
 export const requestPath = (url: string) => new URL(url, 'http://localhost').pathname

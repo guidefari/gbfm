@@ -2,11 +2,12 @@ import { readFile, readdir } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { Effect, Layer, Redacted } from 'effect'
 import { describe, expect, test } from 'vitest'
-import { config, ConfigService } from './config.service'
+import { createConfig, ConfigService } from './config.service'
 import { S3Service, S3ServiceLayer } from './s3.service'
 import { ObjectStoreClientLayer } from './storage/object-store-client'
 
 const sourceRoot = new URL('../', import.meta.url)
+const config = createConfig()
 
 describe('S3Service client ownership', () => {
   test('sends object operations through ObjectStoreClient', async () => {

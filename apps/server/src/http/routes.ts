@@ -119,7 +119,7 @@ export const createWebHandler = (options: {
       SearchCacheHeaderLive,
       SiteRoutesLive,
       DocsLive,
-      CorsLive,
+      CorsLive.pipe(Layer.provide(appServices)),
       RequestLoggerLive,
       SentryDefectLive
     ).pipe(
@@ -135,7 +135,7 @@ export const createWebHandler = (options: {
       // Effect.logError inside health handlers must reach the app's real
       // Pino + Sentry logger, not Effect's bare default console logger --
       // otherwise a DB outage's cause is logged nowhere on-call looks.
-      Layer.provideMerge(AppLoggerLive)
+      Layer.provideMerge(AppLoggerLive.pipe(Layer.provide(appServices)))
     ),
     { disableLogger: true }
   )

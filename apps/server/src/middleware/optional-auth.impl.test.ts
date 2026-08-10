@@ -2,6 +2,7 @@ import { Effect, Layer } from 'effect'
 import { HttpEffect, HttpServerResponse } from 'effect/unstable/http'
 import { describe, expect, it } from 'vitest'
 import { AuthLive } from '@/lib/auth'
+import { ConfigServiceLayer } from '@/services/config.service'
 import { DatabaseTestLayer } from '@/test/database'
 import { IdentityResolver, IdentityResolverLive } from './optional-auth.impl'
 
@@ -12,7 +13,11 @@ const handler = HttpEffect.toWebHandler(
     return HttpServerResponse.jsonUnsafe(identity)
   }).pipe(
     Effect.provide(
-      IdentityResolverLive.pipe(Layer.provide(AuthLive.pipe(Layer.provide(DatabaseTestLayer))))
+      IdentityResolverLive.pipe(
+        Layer.provide(
+          AuthLive.pipe(Layer.provide(Layer.mergeAll(DatabaseTestLayer, ConfigServiceLayer)))
+        )
+      )
     )
   )
 )

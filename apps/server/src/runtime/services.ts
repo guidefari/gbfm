@@ -9,7 +9,7 @@ import { SitemapCache } from '@/services/sitemap-cache'
 export { Database, DatabaseLayer } from '@/db/layer'
 
 import { AudioServiceLayer } from '@/services/audio.service'
-import { ConfigServiceLayer } from '@/services/config.service'
+import { ConfigServiceLayer, type ConfigService } from '@/services/config.service'
 import { BlueskyAccountServiceLayer } from '@/services/bluesky-account.service'
 import { BlueskyArchiveServiceLayer } from '@/services/bluesky-archive.service'
 import { BlueskyClientLayer } from '@/services/bluesky-client.service'
@@ -44,9 +44,6 @@ import { ObjectStoreClientLayer } from '@/services/storage/object-store-client'
 
 const DevToolsLive: Layer.Layer<never> = Layer.empty
 
-const UploadAssetDepsLive = Layer.mergeAll(ConfigServiceLayer, UploadAssetServiceLayer)
-const ObjectStoreClientLive = ObjectStoreClientLayer.pipe(Layer.provide(ConfigServiceLayer))
-
 // Takes the Database, SitemapCache, coordination, Sentry, and Effect-tracing layers as
 // parameters instead of building them from module-scope bindings: Bun and
 // the Worker initialize Sentry and OpenTelemetry differently (@sentry/bun
@@ -59,17 +56,20 @@ export const AppLayer = (
   navigationLockLive: Layer.Layer<NavigationLock>,
   spotifyImportResolverLive: Layer.Layer<SpotifyImportResolver, never, Database>,
   sentryLive: Layer.Layer<SentryService>,
-  tracingLive: Layer.Layer<OtelTracer.OtelTracer>
+  tracingLive: Layer.Layer<OtelTracer.OtelTracer>,
+  configLive: Layer.Layer<ConfigService> = ConfigServiceLayer
 ) => {
+  const UploadAssetDepsLive = Layer.mergeAll(configLive, UploadAssetServiceLayer)
+  const ObjectStoreClientLive = ObjectStoreClientLayer.pipe(Layer.provide(configLive))
   const BaseServicesLayer = Layer.mergeAll(
-    ConfigServiceLayer,
+    configLive,
     BlueskyClientLayer,
     BlueskyImportServiceLayer,
     LockServiceLayer,
-    CryptoServiceLayer.pipe(Layer.provide(ConfigServiceLayer)),
+    CryptoServiceLayer.pipe(Layer.provide(configLive)),
     EmailServiceLayer,
     FavoriteServiceLayer,
-    SpotifyServiceLayer,
+    SpotifyServiceLayer.pipe(Layer.provide(configLive)),
     MusicReminderServiceLayer,
     NavigationRetentionServiceLayer,
     spotifyImportResolverLive,
@@ -86,7 +86,7 @@ export const AppLayer = (
     ProfileServiceLayer,
     ResolveServiceLayer,
     ReleaseServiceLayer,
-    S3ServiceLayer.pipe(Layer.provide(Layer.mergeAll(ObjectStoreClientLive, ConfigServiceLayer))),
+    S3ServiceLayer.pipe(Layer.provide(Layer.mergeAll(ObjectStoreClientLive, configLive))),
     SearchServiceLayer,
     sentryLive,
     tracingLive,
@@ -119,6 +119,7 @@ export const AppLayer = (
     ServicesLayer,
     databaseLive,
     sitemapCacheLive,
-    AuthLive.pipe(Layer.provide(databaseLive))
-  ).pipe(Layer.provideMerge(AppLoggerLive))
+    AuthLive.pipe(Layer.provide(Layer.mergeAll(databaseLive, configLive))),
+    AppLoggerLive.pipe(Layer.provide(configLive))
+  ).pipe(Layer.provide(configLive))
 }

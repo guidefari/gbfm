@@ -8,7 +8,7 @@ import { postsTable } from '@/db/post.schema'
 import { releasesTable } from '@/db/release.schema'
 import { showsTable } from '@/db/show.schema'
 import { DatabaseError } from '@/errors'
-import { config } from '@/services/config.service'
+import { ConfigService } from '@/services/config.service'
 import { SitemapCache } from '@/services/sitemap-cache'
 import { buildSitemapXml, type SitemapData } from './sitemap.utils'
 
@@ -151,6 +151,7 @@ export const fetchSitemapData = Effect.gen(function* () {
 export const regenerateSitemap = Effect.gen(function* () {
   const cache = yield* SitemapCache
   const data = yield* fetchSitemapData
+  const config = yield* ConfigService
   const siteUrl = config.urls.frontend.replace(/\/$/, '')
   const vpsUrl = config.urls.vps.replace(/\/$/, '')
   const xml = buildSitemapXml(data, siteUrl, vpsUrl)

@@ -14,7 +14,7 @@ import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
 import { buildErrorHtml, buildOGHtml } from '@/routes/redirect/redirect.template'
 import { getCachedSitemap } from '@/routes/redirect/seo/sitemap.service'
 import { ResolveService } from '@/services/resolve.service'
-import { config } from '@/services/config.service'
+import { ConfigService } from '@/services/config.service'
 
 // These are externally-referenced public URLs (RSS readers, share links,
 // search-engine crawlers) -- kept as plain HttpRouter routes, not
@@ -597,7 +597,8 @@ const faviconIco = Effect.sync(() =>
   )
 )
 
-const robotsTxt = Effect.sync(() => {
+const robotsTxt = Effect.gen(function* () {
+  const config = yield* ConfigService
   const siteUrl = config.urls.frontend.replace(/\/$/, '')
   const robots = `# https://www.robotstxt.org/robotstxt.html
 User-agent: *

@@ -1,7 +1,9 @@
 import { Effect, Layer, Redacted } from 'effect'
 import { afterEach, describe, expect, test } from 'vitest'
-import { config, ConfigService } from '../config.service'
+import { createConfig, ConfigService } from '../config.service'
 import { ObjectStoreClient, ObjectStoreClientLayer } from './object-store-client'
+
+const config = createConfig()
 
 const originalAwsRegion = process.env.AWS_REGION
 

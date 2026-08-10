@@ -17,7 +17,7 @@ import {
   markEmailDeliveryLogAsFailed,
   markEmailDeliveryLogAsSent
 } from '@/repositories/email-delivery-log.repository'
-import { config } from '@/services/config.service'
+import { ConfigService } from '@/services/config.service'
 
 const dieOnDatabaseError = makeDieOnDatabaseError('invite')
 
@@ -80,6 +80,7 @@ export const InviteHandlersLive = HttpApiBuilder.group(Api, 'invite', (handlers)
           })
         )
 
+        const config = yield* ConfigService
         const inviteUrl = `${config.urls.frontend}/auth/reset-password?token=${token}`
 
         const deliveryLog = yield* dieOnDatabaseError(

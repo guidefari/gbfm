@@ -17,10 +17,10 @@ import {
   updateEmailPreferences
 } from '@/repositories/email-preferences.repository'
 import { linkOrCreateSubscriberForUser } from '@/repositories/newsletter.repository'
-import { config } from '@/services/config.service'
+import { ConfigService, type ConfigService as Config } from '@/services/config.service'
 import { ac, admin as adminRole, creator, editor, userRole } from './auth-permissions'
 
-const makeAuth = (database: DatabaseClient) =>
+const makeAuth = (database: DatabaseClient, config: Config) =>
   betterAuth({
     database: drizzleAdapter(database, {
       provider: 'sqlite',
@@ -182,7 +182,8 @@ export const AuthLive = Layer.effect(
   Auth,
   Effect.gen(function* () {
     const database = yield* Database
-    return Auth.of(makeAuth(database))
+    const config = yield* ConfigService
+    return Auth.of(makeAuth(database, config))
   })
 )
 

@@ -1,4 +1,5 @@
-import { Cause, Data, Effect, Exit } from 'effect'
+import { Cause, Data, Effect, Exit, Layer } from 'effect'
+import { ConfigServiceLayer } from '@/services/config.service'
 import { AppLoggerLive } from '@/services/logger.service'
 
 const SLOW_QUERY_THRESHOLD = 100
@@ -42,7 +43,9 @@ export async function timeQuery<T>(queryFn: () => Promise<T>, context: string): 
     Effect.withSpan('db.query', { attributes: { 'db.context': context } })
   )
 
-  const exit = await Effect.runPromiseExit(program.pipe(Effect.provide(AppLoggerLive)))
+  const exit = await Effect.runPromiseExit(
+    program.pipe(Effect.provide(AppLoggerLive.pipe(Layer.provide(ConfigServiceLayer))))
+  )
   if (Exit.isSuccess(exit)) return exit.value
 
   const failure = exit.cause.reasons.find(Cause.isFailReason)

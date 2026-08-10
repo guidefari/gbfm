@@ -1,5 +1,5 @@
 import { Effect } from 'effect'
-import { config } from '@/services/config.service'
+import { ConfigService } from '@/services/config.service'
 import { S3Service } from '@/services/s3.service'
 
 const QR_PDFS_PREFIX = 'qr-pdfs/'
@@ -8,6 +8,7 @@ const MAX_AGE_MS = 30 * 60 * 1000
 export const cleanupExpiredQrPdfs = Effect.gen(function* () {
   yield* Effect.logInfo('Running QR cache cleanup...')
   const s3 = yield* S3Service
+  const config = yield* ConfigService
   const bucketName = config.buckets.userContent
   yield* Effect.logInfo(`Using bucket: ${bucketName}`)
 

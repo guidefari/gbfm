@@ -40,6 +40,7 @@ import {
 import { ReminderQueue, ReminderQueueLayer, type ReminderJob } from '@/services/reminder-queue'
 import { SitemapCacheLayer } from '@/services/sitemap-cache'
 import { SentryServiceLayer } from '@/services/sentry.service'
+import { WorkerConfigServiceLayer, type WorkerConfigBindings } from '@/services/config.service'
 
 export { NavigationLockDurableObject } from '@/durable-objects/navigation-lock.do'
 export { SpotifyImportResolverDurableObject } from '@/durable-objects/spotify-import-resolver.do'
@@ -48,7 +49,7 @@ export { SpotifyImportResolverDurableObject } from '@/durable-objects/spotify-im
 // type. Every other module receives capabilities named in domain terms
 // (Database, SitemapCache, ReminderQueue), never D1Database/KVNamespace/Queue
 // directly.
-export type ApiEnv = {
+export type ApiEnv = WorkerConfigBindings & {
   readonly DB: D1Database
   readonly USER_CONTENT: R2Bucket
   readonly MIXES: R2Bucket
@@ -157,7 +158,8 @@ const appServicesLive = (env: ApiEnv) =>
     navigationLockLive(env),
     spotifyImportResolverLive(env),
     workerSentryServiceLive(env),
-    WorkerTracingLive
+    WorkerTracingLive,
+    WorkerConfigServiceLayer(env)
   )
 
 const sentryOptions = (env: ApiEnv) => {
