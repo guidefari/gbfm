@@ -287,6 +287,82 @@ export const NavigationSessionServiceLayer = Layer.effect(
         catch: (error) => databaseError('count', error)
       })
 
+    const readSnapshot = (session: SessionRow) =>
+      Effect.tryPromise({
+        try: async () => {
+          const [entryRows, lengthRows, indexRows, unreadRows] = await db.batch([
+            db
+              .select({
+                slug: navigationTrailEntries.slug,
+                postId: navigationTrailEntries.postId,
+                position: navigationTrailEntries.position,
+                arrivedBy: navigationTrailEntries.arrivedBy,
+                visitedAt: navigationTrailEntries.visitedAt
+              })
+              .from(navigationTrailEntries)
+              .innerJoin(postsTable, eq(navigationTrailEntries.postId, postsTable.id))
+              .where(
+                and(
+                  eq(navigationTrailEntries.sessionId, session.id),
+                  eq(navigationTrailEntries.position, session.cursor),
+                  eq(postsTable.draft, false)
+                )
+              )
+              .limit(1),
+            db
+              .select({ count: sql<number>`CAST(count(*) AS INTEGER)` })
+              .from(navigationTrailEntries)
+              .innerJoin(postsTable, eq(navigationTrailEntries.postId, postsTable.id))
+              .where(
+                and(eq(navigationTrailEntries.sessionId, session.id), eq(postsTable.draft, false))
+              ),
+            db
+              .select({ count: sql<number>`CAST(count(*) AS INTEGER)` })
+              .from(navigationTrailEntries)
+              .innerJoin(postsTable, eq(navigationTrailEntries.postId, postsTable.id))
+              .where(
+                and(
+                  eq(navigationTrailEntries.sessionId, session.id),
+                  lt(navigationTrailEntries.position, session.cursor),
+                  eq(postsTable.draft, false)
+                )
+              ),
+            db
+              .select({ slug: postsTable.slug })
+              .from(postsTable)
+              .where(
+                and(
+                  eq(postsTable.type, 'micro'),
+                  eq(postsTable.draft, false),
+                  isNull(postsTable.parentPostId),
+                  notExists(
+                    db
+                      .select()
+                      .from(navigationSeenPosts)
+                      .where(
+                        and(
+                          eq(navigationSeenPosts.sessionId, session.id),
+                          eq(navigationSeenPosts.slug, postsTable.slug)
+                        )
+                      )
+                  )
+                )
+              )
+              .limit(1)
+          ])
+          const entry = entryRows[0]
+          return {
+            entry: entry
+              ? { ...entry, slug: asSlug(entry.slug), arrivedBy: arrivedBy(entry.arrivedBy) }
+              : undefined,
+            length: lengthRows[0]?.count ?? 0,
+            index: indexRows[0]?.count ?? 0,
+            hasUnread: unreadRows.length > 0
+          }
+        },
+        catch: (error) => databaseError('read', error)
+      })
+
     const readPhase = (identity: NavigationIdentity, command: NavigationCommand) =>
       Effect.gen(function* () {
         const session = yield* Effect.tryPromise({
@@ -553,21 +629,18 @@ export const NavigationSessionServiceLayer = Layer.effect(
             capabilities: { canStepBack: false, canStepForward: false, hasUnread: false }
           }
         }
-        const { entry, length, index, unread } = yield* Effect.all({
-          entry: entryAtPosition(session.id, session.cursor),
-          length: trailLength(session.id),
-          index: entryIndex(session.id, session.cursor),
-          unread: hasUnread(session.id)
-        })
-        if (!entry || length === 0) {
+        const snapshot = yield* readSnapshot(session)
+        if (!snapshot.entry || snapshot.length === 0) {
           return {
             slug: null,
             capabilities: { canStepBack: false, canStepForward: false, hasUnread: false }
           }
         }
         return {
-          slug: entry.slug,
-          capabilities: capabilitiesOf(index, length, { hasUnread: unread })
+          slug: snapshot.entry.slug,
+          capabilities: capabilitiesOf(snapshot.index, snapshot.length, {
+            hasUnread: snapshot.hasUnread
+          })
         }
       })
 
