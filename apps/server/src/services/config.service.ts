@@ -43,6 +43,7 @@ const optionalSecretNames: readonly SecretName[] = [
 export type WorkerConfigBindings = Readonly<
   Record<SecretName, string | undefined> & {
     APP_STAGE: string
+    R2AccountId?: string
     USER_CONTENT_BUCKET_NAME: string
     MIXES_BUCKET_NAME: string
     SENTRY_ENVIRONMENT?: string
@@ -120,7 +121,7 @@ function resourceString(name: string, property: string, fallback: string): strin
   return stringValue(resource[property], fallback)
 }
 
-/** Parsed object storage configuration. R2 requires signing credentials and an account ID. */
+/** Parsed object storage configuration. R2 requires an account ID; signing checks credentials at use. */
 export const StorageConfigSchema = Schema.Struct({
   provider: Schema.Literals(['aws', 'r2']),
   accountId: Schema.optional(Schema.String),
@@ -131,12 +132,9 @@ export const StorageConfigSchema = Schema.Struct({
   signingEndpoint: Schema.optional(Schema.String)
 }).check(
   Schema.makeFilter((storage) =>
-    storage.provider === 'aws' ||
-    (storage.accountId !== undefined &&
-      storage.accessKeyId !== undefined &&
-      storage.secretAccessKey !== undefined)
+    storage.provider === 'aws' || storage.accountId !== undefined
       ? undefined
-      : 'r2 provider requires an account ID and credentials'
+      : 'r2 provider requires an account ID'
   )
 )
 
@@ -253,7 +251,7 @@ export function createConfig(bindings?: WorkerConfigBindings): ConfigService {
     bindings?.MIXES_BUCKET_NAME ?? resourceString('Mixes', 'name', 'mixes-dev')
   const storage = Schema.decodeUnknownSync(StorageConfigSchema)({
     provider: secrets.StorageProvider,
-    accountId: r2AccountId(secrets.StorageEndpoint),
+    accountId: bindings?.R2AccountId ?? r2AccountId(secrets.StorageEndpoint),
     endpoint: secrets.StorageEndpoint || undefined,
     region: secrets.StorageRegion,
     accessKeyId:

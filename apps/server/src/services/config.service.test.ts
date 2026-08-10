@@ -53,19 +53,19 @@ describe('StorageConfigSchema', () => {
     })
   })
 
-  test('derives the R2 account ID from the API endpoint binding', () => {
+  test('uses the R2 account ID Worker binding', () => {
     const config = createConfig({
       ...workerBindings(),
       StorageProvider: 'r2',
-      StorageEndpoint: 'https://test-account.r2.cloudflarestorage.com'
+      R2AccountId: 'test-account'
     })
 
     expect(config.storage.accountId).toBe('test-account')
   })
 
-  test('rejects R2 without its account ID and credentials', () => {
+  test('rejects R2 without its account ID', () => {
     expect(() => decodeStorageConfig({ provider: 'r2', region: 'auto' })).toThrow(
-      /r2 provider requires an account ID and credentials/
+      /r2 provider requires an account ID/
     )
   })
 
