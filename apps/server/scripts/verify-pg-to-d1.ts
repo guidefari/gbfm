@@ -260,6 +260,13 @@ const runReferentialChecks = async (db: D1Database): Promise<ReferentialCheck[]>
   return checks
 }
 
+type ForeignKeyCheckRow = { readonly table: string }
+
+const runForeignKeyCheck = async (db: D1Database) => {
+  const result = await db.prepare('pragma foreign_key_check').bind().all<ForeignKeyCheckRow>()
+  return result.results.length
+}
+
 type SpotCheck = { readonly name: string; readonly pass: boolean; readonly detail: string }
 
 type IdRow = { readonly id: string }
@@ -277,11 +284,7 @@ type D1CiphertextRow = {
   readonly app_password: string | null
   readonly session: string | null
 }
-type MusicLabelArraysRow = {
-  readonly id: string
-  readonly tags: ReadonlyArray<string> | null
-  readonly genres: ReadonlyArray<string> | null
-}
+type ArrayFanOutRow = { readonly id: string; readonly values: ReadonlyArray<string> | null }
 type LabelNameRow = { readonly name: string }
 type ArtistNamesRow = { readonly id: string; readonly artistNames: ReadonlyArray<string> | null }
 type D1ArtistNamesRow = { readonly id: string; readonly artistNames: string | null }
@@ -289,36 +292,37 @@ type D1ArtistNamesRow = { readonly id: string; readonly artistNames: string | nu
 const runSpotChecks = async (pg: Client, db: D1Database): Promise<SpotCheck[]> => {
   const checks: SpotCheck[] = []
 
-  // UUID byte-for-byte identity: compare a known-populated table's PKs verbatim.
   const pgUserIds = await pg.query<IdRow>('select id from "user" order by id')
   const d1UserIdsResult = await db.prepare('select id from "user" order by id').bind().all<IdRow>()
-  const d1UserIds = d1UserIdsResult.results.map((r) => r.id)
-  const pgUserIdList = pgUserIds.rows.map((r) => r.id)
+  const d1UserIds = d1UserIdsResult.results.map((row) => row.id)
+  const pgUserIdList = pgUserIds.rows.map((row) => row.id)
   checks.push({
     name: 'uuid identity: user.id byte-for-byte',
     pass: JSON.stringify(pgUserIdList) === JSON.stringify(d1UserIds),
-    detail: `pg=${JSON.stringify(pgUserIdList)} d1=${JSON.stringify(d1UserIds)}`
+    detail: `checked ${pgUserIdList.length} user row(s)`
   })
 
-  // Timestamp equality: pick a row with an explicit sub-second timestamp.
   const pgTimestamp = await pg.query<UserTimestampRow>(
-    'select id, updated_at from "user" where id = $1',
-    ['11111111-1111-1111-1111-111111111111']
+    'select id, updated_at from "user" order by id'
   )
   const d1Timestamp = await db
-    .prepare('select id, updated_at from "user" where id = ?')
-    .bind('11111111-1111-1111-1111-111111111111')
+    .prepare('select id, updated_at from "user" order by id')
+    .bind()
     .all<D1TimestampRow>()
-  const pgRow = pgTimestamp.rows[0]
-  const d1Row = d1Timestamp.results[0]
-  const pgEpochMs = pgRow ? new Date(pgRow.updated_at).getTime() : null
+  const timestampsMatch =
+    pgTimestamp.rows.length === d1Timestamp.results.length &&
+    pgTimestamp.rows.every((row, index) => {
+      const d1Row = d1Timestamp.results[index]
+      return (
+        d1Row !== undefined && row.id === d1Row.id && row.updated_at.getTime() === d1Row.updated_at
+      )
+    })
   checks.push({
-    name: 'timestamp equality: user.updated_at epoch ms, sub-second precision preserved',
-    pass: pgEpochMs !== null && d1Row !== undefined && pgEpochMs === d1Row.updated_at,
-    detail: `pg_epoch_ms=${pgEpochMs} d1_epoch_ms=${d1Row?.updated_at}`
+    name: 'timestamp equality: user.updated_at epoch ms',
+    pass: timestampsMatch,
+    detail: `checked ${pgTimestamp.rows.length} user row(s) at epoch-ms precision`
   })
 
-  // Boolean translation: 0/1 in D1 matches boolean in Postgres.
   const pgBoolean = await pg.query<UserBooleanRow>(
     'select id, email_verified from "user" order by id'
   )
@@ -326,15 +330,20 @@ const runSpotChecks = async (pg: Client, db: D1Database): Promise<SpotCheck[]> =
     .prepare('select id, email_verified from "user" order by id')
     .bind()
     .all<D1BooleanRow>()
-  const pgBooleans = pgBoolean.rows.map((r) => ({ id: r.id, value: r.email_verified ? 1 : 0 }))
-  const d1Booleans = d1BooleanResult.results.map((r) => ({ id: r.id, value: r.email_verified }))
   const booleansMatch =
-    pgBooleans.length === d1Booleans.length &&
-    pgBooleans.every((row, i) => row.id === d1Booleans[i]?.id && row.value === d1Booleans[i]?.value)
+    pgBoolean.rows.length === d1BooleanResult.results.length &&
+    pgBoolean.rows.every((row, index) => {
+      const d1Row = d1BooleanResult.results[index]
+      return (
+        d1Row !== undefined &&
+        row.id === d1Row.id &&
+        (row.email_verified ? 1 : 0) === d1Row.email_verified
+      )
+    })
   checks.push({
     name: 'boolean translation: user.email_verified 0/1',
     pass: booleansMatch,
-    detail: `pg=${JSON.stringify(pgBooleans)} d1=${JSON.stringify(d1Booleans)}`
+    detail: `checked ${pgBoolean.rows.length} user row(s)`
   })
 
   // jsonb round-trip: CiphertextEnvelope on external_account_sessions.
@@ -365,62 +374,62 @@ const runSpotChecks = async (pg: Client, db: D1Database): Promise<SpotCheck[]> =
     detail: `checked ${pgCiphertext.rows.length} external_account_sessions row(s)`
   })
 
-  // Tag order preservation: music_labels has both tags and genres arrays.
-  const pgLabelArrays = await pg.query<MusicLabelArraysRow>(
-    'select id, tags, genres from music_labels order by id'
-  )
-  const orderChecks: string[] = []
-  let orderOk = true
-  for (const row of pgLabelArrays.rows) {
-    for (const [kind, values] of [
-      ['tag', row.tags],
-      ['genre', row.genres]
-    ] as const) {
-      const expectedOrder = [...new Set(values ?? [])]
+  let arrayCellsChecked = 0
+  let arrayOrderMatches = true
+  for (const fanOut of ARRAY_FAN_OUTS) {
+    const pgArrays = await pg.query<ArrayFanOutRow>(
+      `select id, ${quoteIdentifier(fanOut.column)} as values from ${quoteIdentifier(fanOut.sourceTable)} order by id`
+    )
+    for (const row of pgArrays.rows) {
+      const expectedOrder = [...new Set(row.values ?? [])]
       const d1Order = await db
         .prepare(
           `select labels.name from entity_labels
            inner join labels on labels.id = entity_labels.label_id
-           where entity_labels.entity_type = 'musicLabel' and entity_labels.entity_id = ?
-             and labels.kind = ?
+           where entity_labels.entity_type = ? and entity_labels.entity_id = ? and labels.kind = ?
            order by entity_labels.position`
         )
-        .bind(row.id, kind)
+        .bind(fanOut.entityType, row.id, fanOut.kind)
         .all<LabelNameRow>()
-      const actualOrder = d1Order.results.map((r) => r.name)
-      const matches = JSON.stringify(expectedOrder) === JSON.stringify(actualOrder)
-      orderOk = orderOk && matches
-      orderChecks.push(
-        `${row.id}/${kind}: expected=${JSON.stringify(expectedOrder)} actual=${JSON.stringify(actualOrder)} match=${matches}`
-      )
+      const actualOrder = d1Order.results.map((label) => label.name)
+      arrayOrderMatches =
+        arrayOrderMatches && JSON.stringify(expectedOrder) === JSON.stringify(actualOrder)
+      arrayCellsChecked += 1
     }
   }
   checks.push({
-    name: 'tag/genre order preservation: music_labels.tags and .genres via entity_labels.position',
-    pass: orderOk,
-    detail: orderChecks.join('; ')
+    name: 'array fan-out order: all nine source columns via entity_labels.position',
+    pass: arrayOrderMatches,
+    detail: `checked ${arrayCellsChecked} source array cell(s)`
   })
 
-  // artistNames: denormalized JSON column, NOT fanned out, order preserved verbatim.
-  const pgArtistNames = await pg.query<ArtistNamesRow>(
-    'select id, "artistNames" from music_tracks order by id'
-  )
-  const d1ArtistNamesResult = await db
-    .prepare('select id, "artistNames" from music_tracks order by id')
-    .bind()
-    .all<D1ArtistNamesRow>()
-  const artistNamesMatch =
-    pgArtistNames.rows.length === d1ArtistNamesResult.results.length &&
-    pgArtistNames.rows.every((pgRow, i) => {
-      const d1RowAt = d1ArtistNamesResult.results[i]
-      if (!d1RowAt) return false
-      const d1Parsed = d1RowAt.artistNames ? JSON.parse(d1RowAt.artistNames) : null
-      return JSON.stringify(pgRow.artistNames) === JSON.stringify(d1Parsed)
-    })
+  let artistNamesRowsChecked = 0
+  let artistNamesMatch = true
+  for (const table of ['music_albums', 'music_tracks']) {
+    const pgArtistNames = await pg.query<ArtistNamesRow>(
+      `select id, "artistNames" from ${quoteIdentifier(table)} order by id`
+    )
+    const d1ArtistNamesResult = await db
+      .prepare(`select id, "artistNames" from ${quoteIdentifier(table)} order by id`)
+      .bind()
+      .all<D1ArtistNamesRow>()
+    artistNamesMatch =
+      artistNamesMatch &&
+      pgArtistNames.rows.length === d1ArtistNamesResult.results.length &&
+      pgArtistNames.rows.every((pgRow, index) => {
+        const d1Row = d1ArtistNamesResult.results[index]
+        if (!d1Row) return false
+        const d1Parsed = d1Row.artistNames ? JSON.parse(d1Row.artistNames) : null
+        return (
+          pgRow.id === d1Row.id && JSON.stringify(pgRow.artistNames) === JSON.stringify(d1Parsed)
+        )
+      })
+    artistNamesRowsChecked += pgArtistNames.rows.length
+  }
   checks.push({
     name: 'artistNames stays denormalized JSON text, order preserved verbatim (not fanned out)',
     pass: artistNamesMatch,
-    detail: `checked ${pgArtistNames.rows.length} music_tracks row(s)`
+    detail: `checked ${artistNamesRowsChecked} music album and track row(s)`
   })
 
   return checks
@@ -432,9 +441,10 @@ const renderMarkdown = (params: {
   readonly checksums: ReadonlyArray<ChecksumResult>
   readonly fanOuts: ReadonlyArray<LabelFanOutResult>
   readonly referential: ReadonlyArray<ReferentialCheck>
+  readonly foreignKeyViolations: number
   readonly spotChecks: ReadonlyArray<SpotCheck>
 }) => {
-  const { rowCounts, checksums, fanOuts, referential, spotChecks } = params
+  const { rowCounts, checksums, fanOuts, referential, foreignKeyViolations, spotChecks } = params
   const rowCountMismatches = rowCounts.filter((r) => !r.match)
   const checksumMismatches = checksums.filter((c) => !c.match)
   const fanOutMismatches = fanOuts.filter((f) => !f.match)
@@ -448,7 +458,7 @@ const renderMarkdown = (params: {
   lines.push('')
   lines.push(
     params.usedRealProductionData
-      ? '**Data source: real production Postgres (read-only).**'
+      ? '**Data source: read-only production pg_dump, restored to a local throwaway Postgres.**'
       : '**Data source: synthetic local Postgres clone, not production data.** ' +
           'No production database was reached in this environment. See `docs/migrations/evidence/d1-cutover-readiness.md` ' +
           'for what that does and does not prove.'
@@ -523,6 +533,15 @@ const renderMarkdown = (params: {
   )
   lines.push('')
 
+  lines.push('### Exhaustive D1 foreign-key check')
+  lines.push('')
+  lines.push(
+    foreignKeyViolations === 0
+      ? 'PASS: `pragma foreign_key_check` returned 0 violation rows.'
+      : `**FAIL: \`pragma foreign_key_check\` returned ${foreignKeyViolations} violation row(s).**`
+  )
+  lines.push('')
+
   lines.push('## Sharp-type spot checks')
   lines.push('')
   for (const s of spotChecks) {
@@ -543,13 +562,12 @@ const renderMarkdown = (params: {
     checksumMismatches.length === 0 &&
     fanOutMismatches.length === 0 &&
     referentialFailures.length === 0 &&
+    foreignKeyViolations === 0 &&
     spotCheckFailures.length === 0
 
   lines.push('## Overall result')
   lines.push('')
-  lines.push(
-    overallPass ? '**PASS** — all checks above passed.' : '**FAIL** — see mismatches above.'
-  )
+  lines.push(overallPass ? '**PASS:** all checks above passed.' : '**FAIL:** see mismatches above.')
   lines.push('')
 
   return lines.join('\n')
@@ -584,6 +602,9 @@ const main = async () => {
       console.log(`[verify] referential ${r.description}: orphans=${r.orphanCount} ok=${r.ok}`)
     }
 
+    const foreignKeyViolations = await runForeignKeyCheck(database)
+    console.log(`[verify] exhaustive foreign-key check: violations=${foreignKeyViolations}`)
+
     const spotChecks = await runSpotChecks(pg, database)
     for (const s of spotChecks) {
       console.log(`[verify] spot check "${s.name}": pass=${s.pass}`)
@@ -595,6 +616,7 @@ const main = async () => {
       checksums,
       fanOuts,
       referential,
+      foreignKeyViolations,
       spotChecks
     })
 
@@ -610,6 +632,7 @@ const main = async () => {
       checksums.some((c) => !c.match) ||
       fanOuts.some((f) => !f.match) ||
       referential.some((r) => !r.ok) ||
+      foreignKeyViolations !== 0 ||
       spotChecks.some((s) => !s.pass)
 
     if (failed) {

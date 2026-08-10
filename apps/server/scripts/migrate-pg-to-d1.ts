@@ -31,6 +31,7 @@ type TableSpec = {
   readonly source: string
   readonly target: string
   readonly columns: ReadonlyArray<ColumnSpec>
+  readonly selfReferenceColumns?: ReadonlyArray<string>
 }
 
 type ColumnKind = 'text' | 'timestamp' | 'boolean' | 'json' | 'integer'
@@ -233,6 +234,7 @@ const TABLES: ReadonlyArray<TableSpec> = [
   {
     source: 'posts',
     target: 'posts',
+    selfReferenceColumns: ['parent_post_id', 'root_post_id', 'quoted_post_id'],
     columns: [
       same('id', 'text'),
       same('title', 'text'),
@@ -713,6 +715,44 @@ const runBatched = async (db: D1Database, statements: ReadonlyArray<D1PreparedSt
   }
 }
 
+const orderRowsBySelfReferences = (table: TableSpec, rows: ReadonlyArray<Row>) => {
+  const selfReferenceColumns = table.selfReferenceColumns
+  if (!selfReferenceColumns || selfReferenceColumns.length === 0) return rows
+
+  const pending = new Map<string, Row>()
+  for (const row of rows) {
+    const id = row.id
+    if (typeof id !== 'string') {
+      throw new Error(`Expected a string id while ordering ${table.source}`)
+    }
+    pending.set(id, row)
+  }
+
+  const ordered: Row[] = []
+  while (pending.size > 0) {
+    let progressed = false
+    for (const [id, row] of pending) {
+      const blocked = selfReferenceColumns.some((column) => {
+        const reference = row[column]
+        if (reference === null || reference === undefined || reference === id) return false
+        if (typeof reference !== 'string') {
+          throw new Error(`Expected a string ${column} while ordering ${table.source}`)
+        }
+        return pending.has(reference)
+      })
+      if (blocked) continue
+      pending.delete(id)
+      ordered.push(row)
+      progressed = true
+    }
+    if (!progressed) {
+      throw new Error(`Cannot resolve self-referential dependencies in ${table.source}`)
+    }
+  }
+
+  return ordered
+}
+
 const migrateTable = async (
   pg: Client,
   db: D1Database,
@@ -720,7 +760,7 @@ const migrateTable = async (
 ): Promise<{ table: string; rowCount: number }> => {
   const result = await pg.query<Row>(buildSelectQuery(table))
   const targetColumns = table.columns.map((c) => c.target)
-  const statements = result.rows.map((row) => {
+  const statements = orderRowsBySelfReferences(table, result.rows).map((row) => {
     const values = table.columns.map((c) => transformValue(row[c.target], c.kind))
     return buildInsertStatement(db, table.target, targetColumns, values)
   })
@@ -895,6 +935,7 @@ export {
   transformValue,
   isoToEpochMs,
   buildSelectQuery,
+  orderRowsBySelfReferences,
   type TableSpec,
   type ColumnSpec,
   type ArrayFanOut

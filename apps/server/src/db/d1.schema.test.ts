@@ -81,14 +81,23 @@ describe('D1 schema', () => {
     ])
   })
 
-  test('orders null release dates last', async () => {
-    const rows = await db.all<{ id: string }>(sql`
-      SELECT id FROM (
-        SELECT 'dated' AS id, 1 AS release_date
-        UNION ALL SELECT 'unknown', NULL
-      ) ORDER BY release_date IS NULL, release_date DESC
+  test('matches the release-date ordering fixture', async () => {
+    const rows = await db.all<{ title: string }>(sql`
+      SELECT title FROM (
+        SELECT 'Alpha 2024' AS title, 1717200000000 AS release_date
+        UNION ALL SELECT 'Beta 2024', 1717200000000
+        UNION ALL SELECT 'Gamma 2022', 1640995200000
+        UNION ALL SELECT 'Alpha Null', NULL
+        UNION ALL SELECT 'Zulu Null', NULL
+      ) ORDER BY release_date IS NULL ASC, release_date DESC, title ASC
     `)
 
-    expect(rows.map((row) => row.id)).toEqual(['dated', 'unknown'])
+    expect(rows.map((row) => row.title)).toEqual([
+      'Alpha 2024',
+      'Beta 2024',
+      'Gamma 2022',
+      'Alpha Null',
+      'Zulu Null'
+    ])
   })
 })

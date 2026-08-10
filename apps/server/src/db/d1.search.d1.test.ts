@@ -139,7 +139,23 @@ describe('D1 search fixture', () => {
     expect(slugs(empty.posts)).toEqual(['aurora-dispatch', 'coal-notes'])
   })
 
-  test('rejects a stale playlist revision write', async () => {
+  test('rolls back a failed batch and rejects a stale playlist revision write', async () => {
+    await expect(
+      d1.batch([
+        d1
+          .prepare('INSERT INTO labels (id, kind, name) VALUES (?, ?, ?)')
+          .bind('batch-atomicity-label', 'tag', 'batch-atomicity'),
+        d1
+          .prepare('INSERT INTO labels (id, kind, name) VALUES (?, ?, ?)')
+          .bind('batch-atomicity-label', 'tag', 'batch-atomicity-duplicate')
+      ])
+    ).rejects.toThrow()
+    const batchRows = await d1
+      .prepare('SELECT count(*) AS count FROM labels WHERE id = ?')
+      .bind('batch-atomicity-label')
+      .all<{ count: number }>()
+    expect(batchRows.results[0]?.count).toBe(0)
+
     await d1
       .prepare(
         'INSERT INTO music_playlists (id, title, slug, createdAt, updatedAt, revision) VALUES (?, ?, ?, ?, ?, ?)'

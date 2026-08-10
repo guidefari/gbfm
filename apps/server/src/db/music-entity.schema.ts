@@ -336,7 +336,11 @@ export const musicEntityLinksTable = sqliteTable(
     index('music_entity_links_entity_idx').on(table.entityType, table.entityId),
     index('music_entity_links_status_idx').on(table.status),
     index('music_entity_links_platform_idx').on(table.platform),
-    uniqueIndex('music_entity_links_identity_uq').on(table.entityType, table.platform, table.url)
+    uniqueIndex('music_entity_links_identity_uq').on(
+      table.entityType,
+      table.entityId,
+      table.platform
+    )
   ]
 )
 

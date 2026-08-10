@@ -317,7 +317,7 @@ CREATE TABLE `music_entity_links` (
 CREATE INDEX `music_entity_links_entity_idx` ON `music_entity_links` (`entity_type`,`entityId`);--> statement-breakpoint
 CREATE INDEX `music_entity_links_status_idx` ON `music_entity_links` (`status`);--> statement-breakpoint
 CREATE INDEX `music_entity_links_platform_idx` ON `music_entity_links` (`platform`);--> statement-breakpoint
-CREATE UNIQUE INDEX `music_entity_links_identity_uq` ON `music_entity_links` (`entity_type`,`platform`,`url`);--> statement-breakpoint
+CREATE UNIQUE INDEX `music_entity_links_identity_uq` ON `music_entity_links` (`entity_type`,`entityId`,`platform`);--> statement-breakpoint
 CREATE TABLE `music_entity_types` (
 	`id` text PRIMARY KEY NOT NULL,
 	`displayName` text NOT NULL
