@@ -77,6 +77,14 @@ export class ReminderProcessingError extends Data.TaggedError('ReminderProcessin
   readonly stage: 'query' | 'email' | 'update'
 }> {}
 
+export class SitemapCacheError extends Data.TaggedError('SitemapCacheError')<{
+  readonly message: string
+}> {}
+
+export class ReminderQueueUnavailable extends Data.TaggedError('ReminderQueueUnavailable')<{
+  readonly reminderId: string
+}> {}
+
 export class NotFoundError extends Data.TaggedError('NotFoundError')<{
   readonly message: string
   readonly resource?: string
