@@ -1,4 +1,5 @@
 import { Cause, Data, Effect, Exit } from 'effect'
+import { AppLoggerLive } from '@/services/logger.service'
 
 const SLOW_QUERY_THRESHOLD = 100
 const VERY_SLOW_QUERY_THRESHOLD = 500
@@ -7,15 +8,7 @@ class QueryFailure extends Data.TaggedError('QueryFailure')<{
   readonly cause: unknown
 }> {}
 
-let runtimePromise: Promise<typeof import('@/runtime').AppRuntime> | undefined
-const getRuntime = () => {
-  runtimePromise ??= import('@/runtime').then((m) => m.AppRuntime)
-  return runtimePromise
-}
-
 export async function timeQuery<T>(queryFn: () => Promise<T>, context: string): Promise<T> {
-  const AppRuntime = await getRuntime()
-
   const program = Effect.gen(function* () {
     const start = performance.now()
     const result = yield* Effect.tryPromise({
@@ -49,7 +42,7 @@ export async function timeQuery<T>(queryFn: () => Promise<T>, context: string): 
     Effect.withSpan('db.query', { attributes: { 'db.context': context } })
   )
 
-  const exit = await AppRuntime.runPromiseExit(program)
+  const exit = await Effect.runPromiseExit(program.pipe(Effect.provide(AppLoggerLive)))
   if (Exit.isSuccess(exit)) return exit.value
 
   const failure = exit.cause.reasons.find(Cause.isFailReason)
