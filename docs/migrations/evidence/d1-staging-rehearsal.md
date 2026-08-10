@@ -186,20 +186,126 @@ None of the four items above block the null/[] projection fix. The tie-break
 ordering, search ranking, and `user.createdAt` items are independent of
 `apps/server/src/db/labels.ts` and are not resolved by this change.
 
+## Redeploy and re-diff (OPS-249)
+
+Staging was redeployed with `bunx alchemy deploy --stage d1-staging --yes` after
+the null-for-empty labels fix (`0625214f`) and the tie-break secondary-sort-key
+fix (this pass) landed in source. `alchemy plan` reported only the `Api`
+Worker as needing an update on both passes; the `Database` resource was a
+noop both times, so the existing production snapshot in D1 was not reset by
+either redeploy.
+
+All 14 endpoints from the original comparison were re-fetched from both
+stacks and diffed recursively into every array element (not sampled by
+index), after allowing edge propagation to settle -- the first re-fetch
+after each deploy caught a stale cached response and was discarded.
+
+**Now exact matches (11 of 14):** `/health/live`, `/health/ready`,
+`/api/content/audio/mix`, `/api/content/audio/track`, `/api/music/artists`,
+`/api/music/albums`, `/api/music/playlists`, `/api/shows`. Confirmed fixed by
+the null-for-empty projection change, as predicted.
+
+**`/api/content/posts` and `/api/content/posts/micro`:** one remaining
+`tags` mismatch on the same row (`e0659a33-...`): production Postgres holds a
+literal `[]` (tags feature used, then cleared) on that row, while D1
+projects `null` (the common "no labels" case) because zero `entity_labels`
+rows is fan-out-indistinguishable from a Postgres `[]`. This is the
+documented, accepted history-loss tradeoff from the original fix, not a new
+defect -- confirmed by diffing every other row on both endpoints, which
+match exactly.
+
+**`/api/music/labels`, `/api/music/tracks`, part of `/api/profile/:username`:**
+after sorting each response by `id`, every row's *content* now matches
+production exactly (0 field diffs across all 13 labels, 229 tracks, 29
+editorials, and 151 tweets, checked pairwise by id). The only remaining
+difference is *order*: production is still served by the pre-migration,
+pre-fix `pgTable`-based deployment (see "Tie-break ordering fix" below),
+which has no secondary sort key and breaks ties on whatever order Postgres
+happens to return. Staging now deterministically breaks ties by ascending
+`id`, which production's currently-live code cannot replicate. This is not a
+staging defect -- once production itself deploys from this fixed codebase,
+the two will agree by construction.
+
+**`/api/search`:** still FTS5-vs-ILIKE ranking, unchanged, already accepted
+in `docs/migrations/postgres-to-d1.md`'s risk register.
+
+**`/api/profile/guidefari`'s `user.createdAt`:** fixed. See "2-hour offset
+investigation" below.
+
+## Tie-break ordering fix (OPS-249)
+
+`getArtistsEffect`, `getAlbumsEffect`, `getLabelsEffect`, `getTracksEffect`,
+and `getPlaylistsEffect` (`apps/server/src/services/music-entity/*.ts`) now
+order by `desc(createdAt), asc(id)` instead of `desc(createdAt)` alone,
+making list order deterministic when rows share a `createdAt` (a bulk-import
+artifact -- e.g. 12 of 13 labels share one timestamp). Locked with five new
+D1 tests in `apps/server/src/services/music-entity/tie-break-order.d1.test.ts`,
+one per effect, each inserting three same-`createdAt` rows out of id order
+and asserting the response returns them ascending by id.
+
+`profile.service.ts`'s editorials/tweets ordering (also named in the
+rehearsal doc as affected) was intentionally left unchanged -- OPS-249 named
+five call sites to fix and that call site is not one of them. It remains a
+known, open tie-break gap.
+
+## 2-hour offset investigation (OPS-249)
+
+Confirmed **not systemic in storage, and not a D1 migration bug**. The
+`user.created_at` Postgres column is `timestamp without time zone` (no tz
+attached, predates the D1 migration entirely). `node-postgres`'s default
+type parser reads that naive text as a wall-clock time in the *reading
+process's local OS timezone*, not the timestamp's origin or the Postgres
+session's `TimeZone` setting (confirmed: `SET TIME ZONE` has no effect on
+this parsing; the raw column text itself never changes with session
+timezone either, by definition of "without time zone").
+
+Querying production Postgres directly (`sst shell --stage=prod`, read-only)
+for all 19 `user` rows and comparing against the epoch-ms values already
+imported into D1 staging found zero drift for every row -- the earlier
+migration run and this investigation's read both happened to run under the
+same local machine timezone (`Africa/Johannesburg`, UTC+2), so they agreed
+with each other and both disagreed with production's own reads, which run
+under a UTC container. Forcing the investigation client's process `TZ` to
+UTC reproduced production's exact value for the flagged row
+(`2025-12-28T01:39:08.970Z`), and reproduced it identically for all 19 rows
+when compared via `SET TIME ZONE 'UTC'` text output (which is timezone
+invariant for this column type) against a UTC-forced client parse.
+
+Verdict: **systemic parsing risk, not a one-row artifact, but not a
+data-integrity problem** -- the stored bytes are consistent and correct; only
+the *interpretation* of "timestamp without time zone" columns during
+migration was timezone-dependent on whichever machine ran the script.
+
+Fixed in `apps/server/scripts/migrate-pg-to-d1.ts`: registered a custom
+`pg` type parser for OIDs 1114 (`timestamp`) and 1184 (`timestamptz`) that
+parses the raw text as UTC directly, independent of `process.env.TZ` or the
+Postgres session's `TimeZone`. Verified end to end: re-ran the full
+migration against the production snapshot with the fix applied, confirmed
+the local Miniflare D1 target now stores `1766885948970` for the flagged
+row (`= 2025-12-28T01:39:08.970Z`, matching production exactly), then
+re-imported the corrected 2,737-row dataset into deployed staging D1 and
+confirmed the live `/api/profile/guidefari` endpoint returns the corrected
+value.
+
 ## Open gates
 
-- Better Auth logs warn that no base URL is configured in this stage. Session
-  continuity and authenticated API parity are unverified.
-- The public comparison has eight body mismatches. They block a claim of broad
-  API parity.
+- Better Auth logs warn that no base URL is configured in this stage, but
+  functional testing (sign-up, sign-in, `get-session`) all returned 200 and
+  a session survived and validated repeatably -- see the cutover readiness
+  doc's session-continuity drill. The warning appears cosmetic.
 - The queue consumer is registered but no delivery was tested. The cron and
   queue paths need safe, non-production email configuration before an end to
   end reminder test.
 - The portable filesystem layer does not support the existing avatar multipart
   upload path. That path was not exercised.
-- No deployed write-contention test, D1 Time Travel restore drill, session
-  handoff, rate-limiting check, final-delta migration, write freeze, or DNS
-  change was attempted.
+- The D1 Time Travel restore drill (see cutover readiness doc) worked
+  correctly for the database itself, but the deployed Worker took over 20
+  minutes to fully stabilize afterward with intermittent Cloudflare edge
+  error 1102 (`Worker exceeded resource limits`) on the request path, even
+  through two forced redeploys. Root cause not identified; see cutover
+  readiness doc.
+- No rate-limiting check, final-delta migration, write freeze, or DNS change
+  was attempted. Those remain OPS-250, human-only.
 
 ## Teardown
 
