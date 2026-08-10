@@ -1,4 +1,4 @@
-import { desc, eq, sql } from 'drizzle-orm'
+import { asc, desc, eq, sql } from 'drizzle-orm'
 import { Effect } from 'effect'
 import { Database } from '@/db/layer'
 import { projectEntityLabels, projectEntityLabelsForRows, replaceEntityLabels } from '@/db/labels'
@@ -82,7 +82,7 @@ export const getAlbumsEffect = () =>
         const albums = await db
           .select()
           .from(musicAlbumsTable)
-          .orderBy(desc(musicAlbumsTable.createdAt))
+          .orderBy(desc(musicAlbumsTable.createdAt), asc(musicAlbumsTable.id))
         const projected = await projectEntityLabelsForRows(db, 'album', albums)
         return projected.map(({ tags: _tags, genres, ...album }) => ({ ...album, genres }))
       },

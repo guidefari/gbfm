@@ -1,4 +1,4 @@
-import { and, desc, eq, lte } from 'drizzle-orm'
+import { and, asc, desc, eq, lte } from 'drizzle-orm'
 import { Effect } from 'effect'
 import { Database } from '@/db/layer'
 import {
@@ -84,7 +84,7 @@ export const getLabelsEffect = (includeDrafts: boolean) =>
           .select()
           .from(musicLabelsTable)
           .where(includeDrafts ? undefined : lte(musicLabelsTable.publishedAt, new Date()))
-          .orderBy(desc(musicLabelsTable.createdAt))
+          .orderBy(desc(musicLabelsTable.createdAt), asc(musicLabelsTable.id))
         return projectEntityLabelsForRows(db, 'musicLabel', labels)
       },
       catch: (error) =>

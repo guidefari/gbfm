@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, sql } from 'drizzle-orm'
 import { Effect } from 'effect'
 import { Database } from '@/db/layer'
 import { musicTrackArtistsTable, musicTracksTable } from '@/db/music-entity.schema'
@@ -70,7 +70,11 @@ export const getTracksEffect = () =>
   Effect.gen(function* () {
     const db = yield* Database
     return yield* Effect.tryPromise({
-      try: () => db.select().from(musicTracksTable).orderBy(desc(musicTracksTable.createdAt)),
+      try: () =>
+        db
+          .select()
+          .from(musicTracksTable)
+          .orderBy(desc(musicTracksTable.createdAt), asc(musicTracksTable.id)),
       catch: (e) =>
         new DatabaseError({
           message: `Failed to list tracks: ${getErrorMessage(e)}`,

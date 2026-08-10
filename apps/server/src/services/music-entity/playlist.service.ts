@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm'
+import { and, asc, desc, eq } from 'drizzle-orm'
 import { Effect } from 'effect'
 import { Database } from '@/db/layer'
 import { musicEntityLinksTable, musicPlaylistsTable } from '@/db/music-entity.schema'
@@ -51,7 +51,7 @@ export const getPlaylistsEffect = () =>
               eq(musicEntityLinksTable.platform, 'spotify')
             )
           )
-          .orderBy(desc(musicPlaylistsTable.createdAt))
+          .orderBy(desc(musicPlaylistsTable.createdAt), asc(musicPlaylistsTable.id))
         return rows.map((r) => ({ ...r.playlist, spotifyUrl: r.spotifyUrl }))
       },
       catch: (e) =>
