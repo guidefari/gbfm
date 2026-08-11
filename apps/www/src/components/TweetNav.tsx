@@ -277,7 +277,7 @@ export function TweetNav({ slug }: Props) {
   const isPending = isNavigating || isSyncing
 
   return (
-    <div aria-busy={isPending}>
+    <div aria-busy={isPending} className='relative'>
       <div className='flex items-center gap-1 lg:hidden'>
         <PrevLink enabled={canStepBack && !isPending} onTap={goToPrev} />
         <NextLink
@@ -291,8 +291,8 @@ export function TweetNav({ slug }: Props) {
         <div
           role='status'
           aria-live='polite'
-          className='mt-2 flex items-center gap-2 font-mono text-xs text-muted-foreground'>
-          <LoaderCircle aria-hidden className='h-3.5 w-3.5 animate-spin' />
+          className='pointer-events-none absolute right-0 top-0 z-40 flex min-h-8 items-center gap-2 whitespace-nowrap rounded-md border border-border/60 bg-background/95 px-3 py-1.5 font-mono text-xs text-muted-foreground shadow-lg backdrop-blur-sm lg:fixed lg:bottom-20 lg:left-1/2 lg:right-auto lg:top-auto lg:-translate-x-1/2'>
+          <LoaderCircle aria-hidden className='h-3.5 w-3.5 motion-safe:animate-spin' />
           {isRoutePending
             ? 'Loading tweet…'
             : isNavigating
