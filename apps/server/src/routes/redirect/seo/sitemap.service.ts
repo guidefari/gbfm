@@ -17,8 +17,9 @@ export type { PostEntry, ProfileEntry, SitemapData, SitemapEntry } from './sitem
 export { buildSitemapIndexXml, buildSitemapXml, buildUrlEntry, formatDate } from './sitemap.utils'
 
 // Database fetchers
-const fetchMixes = (db: Database['Service']) =>
-  Effect.tryPromise({
+const fetchMixes = Effect.gen(function* () {
+  const db = yield* Database
+  return yield* Effect.tryPromise({
     try: () =>
       db
         .select({ slug: audioTable.slug, updatedAt: audioTable.updatedAt })
@@ -31,9 +32,11 @@ const fetchMixes = (db: Database['Service']) =>
         table: 'audio'
       })
   })
+})
 
-const fetchShows = (db: Database['Service']) =>
-  Effect.tryPromise({
+const fetchShows = Effect.gen(function* () {
+  const db = yield* Database
+  return yield* Effect.tryPromise({
     try: () =>
       db
         .select({ slug: showsTable.slug, updatedAt: showsTable.updatedAt })
@@ -46,9 +49,11 @@ const fetchShows = (db: Database['Service']) =>
         table: 'shows'
       })
   })
+})
 
-const fetchReleases = (db: Database['Service']) =>
-  Effect.tryPromise({
+const fetchReleases = Effect.gen(function* () {
+  const db = yield* Database
+  return yield* Effect.tryPromise({
     try: () =>
       db
         .select({
@@ -79,9 +84,11 @@ const fetchReleases = (db: Database['Service']) =>
         table: 'releases'
       })
   })
+})
 
-const fetchLabels = (db: Database['Service']) =>
-  Effect.tryPromise({
+const fetchLabels = Effect.gen(function* () {
+  const db = yield* Database
+  return yield* Effect.tryPromise({
     try: () =>
       db
         .select({ slug: musicLabelsTable.slug, updatedAt: musicLabelsTable.updatedAt })
@@ -94,9 +101,11 @@ const fetchLabels = (db: Database['Service']) =>
         table: 'music_labels'
       })
   })
+})
 
-const fetchProfiles = (db: Database['Service']) =>
-  Effect.tryPromise({
+const fetchProfiles = Effect.gen(function* () {
+  const db = yield* Database
+  return yield* Effect.tryPromise({
     try: () =>
       db
         .select({
@@ -112,9 +121,11 @@ const fetchProfiles = (db: Database['Service']) =>
         table: 'user'
       })
   })
+})
 
-const fetchPosts = (db: Database['Service']) =>
-  Effect.tryPromise({
+const fetchPosts = Effect.gen(function* () {
+  const db = yield* Database
+  return yield* Effect.tryPromise({
     try: () =>
       db
         .select({
@@ -131,17 +142,17 @@ const fetchPosts = (db: Database['Service']) =>
         table: 'posts'
       })
   })
+})
 
 // Effect to fetch all sitemap data
 export const fetchSitemapData = Effect.gen(function* () {
-  const db = yield* Database
   const [mixes, shows, releases, labels, profiles, posts] = yield* Effect.all([
-    fetchMixes(db),
-    fetchShows(db),
-    fetchReleases(db),
-    fetchLabels(db),
-    fetchProfiles(db),
-    fetchPosts(db)
+    fetchMixes,
+    fetchShows,
+    fetchReleases,
+    fetchLabels,
+    fetchProfiles,
+    fetchPosts
   ])
   const sitemapData: SitemapData = { mixes, shows, releases, labels, profiles, posts }
   return sitemapData

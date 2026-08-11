@@ -25,7 +25,6 @@ import {
   EmailDelivery,
   EmailDeliveryPersistenceError,
   EmailDeliveryRejected,
-  type EmailDeliveryService,
   EmailDeliveryUnavailable
 } from '@/services/email-delivery.service'
 
@@ -112,12 +111,10 @@ const databaseEffect = <A>(
       })
   })
 
-const sendMixNotification = (
-  db: Database['Service'],
-  input: SendMixNotificationInput,
-  delivery: EmailDeliveryService
-) =>
+const sendMixNotification = (input: SendMixNotificationInput) =>
   Effect.gen(function* () {
+    const db = yield* Database
+    const delivery = yield* EmailDelivery
     const recipients =
       input.recipients && input.recipients.length > 0
         ? input.recipients.map(normalizeRecipientEmail)
@@ -251,9 +248,7 @@ export const EmailHandlersLive = HttpApiBuilder.group(Api, 'email', (handlers) =
     .handle('sendMixNotification', ({ payload }) =>
       Effect.gen(function* () {
         yield* requireAdmin
-        const db = yield* Database
-        const delivery = yield* EmailDelivery
-        return yield* sendMixNotification(db, payload, delivery).pipe(dieOnDatabaseError)
+        return yield* sendMixNotification(payload).pipe(dieOnDatabaseError)
       })
     )
     .handle('getEmailLogs', ({ query }) =>
