@@ -22,8 +22,8 @@ function RoutePending() {
     <div
       role='status'
       aria-live='polite'
-      className='flex min-h-[40vh] items-center justify-center gap-2 font-mono text-sm text-muted-foreground'>
-      <Loader2 aria-hidden className='h-5 w-5 animate-spin' />
+      className='pointer-events-none fixed bottom-20 left-1/2 z-40 flex min-h-8 -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-md border border-border/60 bg-background/95 px-3 py-1.5 font-mono text-xs text-muted-foreground shadow-lg backdrop-blur-sm'>
+      <Loader2 aria-hidden className='h-3.5 w-3.5 motion-safe:animate-spin' />
       Loading…
     </div>
   )

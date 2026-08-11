@@ -22,20 +22,37 @@ import { getApiClient } from '@/lib/api-client'
 import {
   microPostByIdQueryOptions,
   microPostRepliesQueryOptions,
+  spotifyAlbumProxyQueryOptions,
+  spotifyPlaylistProxyQueryOptions,
+  spotifyTrackProxyQueryOptions,
   useMicroPostReplies
 } from '@/lib/http'
+import { mdxMusicReferences } from '@/lib/mdx-music-references'
 import { queryClient } from '@/lib/query-client'
 import { generateMicroPostSEO, generateSEOMeta } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
 
 type PostDependencyReference = {
+  content?: string | null
   musicEntityType?: string | null
   musicEntityId?: string | null
   quotedPostId?: string | null
 }
 
+const prefetchMdxDependencies = (content: string | null): Array<Promise<void>> =>
+  mdxMusicReferences(content).map((reference) => {
+    switch (reference.type) {
+      case 'album':
+        return queryClient.prefetchQuery(spotifyAlbumProxyQueryOptions(reference.encodedUrl))
+      case 'track':
+        return queryClient.prefetchQuery(spotifyTrackProxyQueryOptions(reference.encodedUrl))
+      case 'playlist':
+        return queryClient.prefetchQuery(spotifyPlaylistProxyQueryOptions(reference.encodedUrl))
+    }
+  })
+
 const prefetchPostDependencies = (post: PostDependencyReference): Array<Promise<void>> => {
-  const prefetches: Array<Promise<void>> = []
+  const prefetches = prefetchMdxDependencies(post.content ?? null)
   if (post.musicEntityType && isMusicEntityType(post.musicEntityType) && post.musicEntityId) {
     prefetches.push(
       queryClient.prefetchQuery(musicEntityQueryOptions(post.musicEntityType, post.musicEntityId)),
@@ -57,7 +74,10 @@ export const Route = createFileRoute('/tweet/$slug')({
       <RouteError error={error} />
     </div>
   ),
-  loader: async ({ params, preload }) => {
+  loader: async ({ params }) => {
+    const repliesPromise = queryClient
+      .fetchQuery(microPostRepliesQueryOptions(params.slug))
+      .catch(() => undefined)
     const client = await getApiClient()
     const post = await Effect.runPromise(
       client.post
@@ -68,9 +88,6 @@ export const Route = createFileRoute('/tweet/$slug')({
           )
         )
     )
-    const repliesPromise = queryClient
-      .fetchQuery(microPostRepliesQueryOptions(params.slug))
-      .catch(() => undefined)
     const rootDependenciesPromise = Promise.all([
       ...prefetchPostDependencies(post),
       ...(post.parentPostId
@@ -81,7 +98,7 @@ export const Route = createFileRoute('/tweet/$slug')({
       ([replies]) =>
         replies ? Promise.all(replies.data.flatMap(prefetchPostDependencies)) : undefined
     )
-    if (preload) await dependenciesReady
+    await dependenciesReady
 
     return {
       post: {

@@ -622,10 +622,10 @@ type SpotifyProxyInput<T extends SpotifyContentType> = {
   spotifyContentType: T
 }
 
-const useSpotifyAlbumProxy = (id: string, enabled: boolean) => {
-  const { data, error, isLoading } = useQuery<AlbumApiResponse>({
+export const spotifyAlbumProxyQueryOptions = (id: string) =>
+  queryOptions({
     queryKey: ['spotify/proxy', 'album', id],
-    queryFn: async () => {
+    queryFn: async (): Promise<AlbumApiResponse> => {
       const client = await getApiClient()
       const album = await Effect.runPromise(
         client.spotify
@@ -638,16 +638,21 @@ const useSpotifyAlbumProxy = (id: string, enabled: boolean) => {
       )
       return { ...album, tracks: album.tracks.map((track) => ({ ...track })) }
     },
-    enabled,
     staleTime: 15 * 60 * 1000
+  })
+
+const useSpotifyAlbumProxy = (id: string, enabled: boolean) => {
+  const { data, error, isLoading } = useQuery({
+    ...spotifyAlbumProxyQueryOptions(id),
+    enabled
   })
   return { data, isLoading, error }
 }
 
-const useSpotifyTrackProxy = (id: string, enabled: boolean) => {
-  const { data, error, isLoading } = useQuery<TrackAPIResponse>({
+export const spotifyTrackProxyQueryOptions = (id: string) =>
+  queryOptions({
     queryKey: ['spotify/proxy', 'track', id],
-    queryFn: async () => {
+    queryFn: async (): Promise<TrackAPIResponse> => {
       const client = await getApiClient()
       return Effect.runPromise(
         client.spotify
@@ -659,16 +664,21 @@ const useSpotifyTrackProxy = (id: string, enabled: boolean) => {
           )
       )
     },
-    enabled,
     staleTime: 15 * 60 * 1000
+  })
+
+const useSpotifyTrackProxy = (id: string, enabled: boolean) => {
+  const { data, error, isLoading } = useQuery({
+    ...spotifyTrackProxyQueryOptions(id),
+    enabled
   })
   return { data, isLoading, error }
 }
 
-const useSpotifyPlaylistProxy = (id: string, enabled: boolean) => {
-  const { data, error, isLoading } = useQuery<PlaylistApiResponse>({
+export const spotifyPlaylistProxyQueryOptions = (id: string) =>
+  queryOptions({
     queryKey: ['spotify/proxy', 'playlist', id],
-    queryFn: async () => {
+    queryFn: async (): Promise<PlaylistApiResponse> => {
       const client = await getApiClient()
       const playlist = await Effect.runPromise(
         client.spotify
@@ -687,8 +697,13 @@ const useSpotifyPlaylistProxy = (id: string, enabled: boolean) => {
         tracks: playlist.tracks.map((track) => ({ ...track }))
       }
     },
-    enabled,
     staleTime: 15 * 60 * 1000
+  })
+
+const useSpotifyPlaylistProxy = (id: string, enabled: boolean) => {
+  const { data, error, isLoading } = useQuery({
+    ...spotifyPlaylistProxyQueryOptions(id),
+    enabled
   })
   return { data, isLoading, error }
 }
