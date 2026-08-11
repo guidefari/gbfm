@@ -477,18 +477,24 @@ export const NavigationSessionServiceLayer = Layer.effect(
             : command._tag === 'Step'
               ? liveEntry(session.id, session.cursor, command.direction)
               : Effect.succeed(undefined)
-        const { length, replay } = yield* Effect.all({
-          length: trailLength(session.id),
-          replay: replayEffect
-        })
+        const { length, replay } = yield* Effect.all(
+          {
+            length: trailLength(session.id),
+            replay: replayEffect
+          },
+          { concurrency: 'unbounded' }
+        )
         return { session, length, replay } satisfies Phase
       }).pipe(Effect.withSpan('navigation.session.read'))
 
     const neighboursFor = (sessionId: string, position: number) =>
-      Effect.all({
-        back: liveEntry(sessionId, position, 'Back'),
-        forward: liveEntry(sessionId, position, 'Forward')
-      }).pipe(
+      Effect.all(
+        {
+          back: liveEntry(sessionId, position, 'Back'),
+          forward: liveEntry(sessionId, position, 'Forward')
+        },
+        { concurrency: 'unbounded' }
+      ).pipe(
         Effect.map(({ back, forward }) => ({
           ...(back ? { back: back.slug } : {}),
           ...(forward ? { forward: forward.slug } : {})
