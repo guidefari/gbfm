@@ -15,63 +15,45 @@ const mockSession = {
   }
 }
 
-test.describe('Theme Provider', () => {
-  test('defaults to dark theme', async ({ page }) => {
-    await page.addInitScript(() => {
-      window.localStorage.clear()
-    })
-
-    await page.goto('/')
-
-    await expect(page.locator('html')).toHaveClass(/dark/)
+test('user can select a theme and keep it after reload', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.clear()
   })
 
-  test('honors a stored light theme', async ({ page }) => {
-    await page.addInitScript(() => {
-      window.localStorage.setItem('vite-ui-theme', 'light')
+  await page.goto('/')
+  await expect(page.locator('html')).toHaveClass(/dark/)
+
+  await page.route('**/auth/get-session**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(mockSession)
     })
-
-    await page.goto('/')
-
-    await expect(page.locator('html')).toHaveClass(/light/)
   })
 
-  test('toggles theme from settings', async ({ page }) => {
-    await page.route('**/auth/get-session**', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockSession)
-      })
-    })
+  await page.goto('/settings')
 
-    await page.addInitScript(() => {
-      window.localStorage.clear()
-    })
+  const appearanceTab = page.getByRole('button', { name: /appearance/i })
+  await expect(appearanceTab).toBeVisible()
+  await appearanceTab.click()
 
-    await page.goto('/settings')
+  const lightButton = page.getByRole('button', { name: /light/i })
+  await expect(lightButton).toBeVisible()
+  await lightButton.click()
 
-    const appearanceTab = page.getByRole('button', { name: /appearance/i })
-    await expect(appearanceTab).toBeVisible()
-    await appearanceTab.click()
+  await expect(page.locator('html')).toHaveClass(/light/)
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('vite-ui-theme'))).toBe('light')
 
-    const lightButton = page.getByRole('button', { name: /light/i })
-    await expect(lightButton).toBeVisible()
-    await lightButton.click()
+  await page.reload()
+  await expect(page.locator('html')).toHaveClass(/light/)
+})
 
-    await expect(page.locator('html')).toHaveClass(/light/)
-    const storedTheme = await page.evaluate(() => localStorage.getItem('vite-ui-theme'))
-    expect(storedTheme).toBe('light')
+test('applies a stored theme during startup', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem('vite-ui-theme', 'light')
   })
 
-  test('keeps the selected theme after reload', async ({ page }) => {
-    await page.addInitScript(() => {
-      window.localStorage.setItem('vite-ui-theme', 'light')
-    })
+  await page.goto('/')
 
-    await page.goto('/')
-    await page.reload()
-
-    await expect(page.locator('html')).toHaveClass(/light/)
-  })
+  await expect(page.locator('html')).toHaveClass(/light/)
 })
