@@ -234,9 +234,10 @@ sending identity plus the `EMAIL` binding. The secret file must provide
 `StorageAccessKeyId`, `StorageSecretAccessKey`, and `StorageSigningEndpoint`.
 The operator must then use the deployed Worker to send each critical template to
 that controlled recipient and inspect Cloudflare acceptance, D1 receipts, and
-received authentication headers. Do not add a local workerd `send_email` test:
-Alchemy's local binding is remote and that test could send a real email. This is
-a live staging gate, not automated proof.
+received authentication headers. Record the result in
+[`evidence/email-staging-gate.md`](evidence/email-staging-gate.md). Do not add a
+local workerd `send_email` test: Alchemy's local binding is remote and that test
+could send a real email. This is a live staging gate, not automated proof.
 
 ### Cloudflare limits
 
