@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, isNull, lt, lte, notExists, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, isNull, lt, lte, ne, notExists, sql } from 'drizzle-orm'
 import { Context, Effect, Layer, Schema } from 'effect'
 import {
   capabilitiesOf,
@@ -502,36 +502,72 @@ export const NavigationSessionServiceLayer = Layer.effect(
         Effect.withSpan('navigation.neighbours.read')
       )
 
-    const findUnread = (pick: 'NextByDate' | 'Random', from: Slug, seen: ReadonlySet<Slug>) =>
-      Effect.gen(function* () {
-        if (pick === 'Random') {
-          const picked = yield* posts.getRandomMicroPost([...seen])
-          if (seen.has(asSlug(picked.slug))) return yield* new CorpusExhausted()
+    const findNextUnread = (sessionId: string | undefined, from: Slug) => {
+      const currentPostCreatedAt = db
+        .select({ createdAt: postsTable.createdAt })
+        .from(postsTable)
+        .where(and(eq(postsTable.slug, from), eq(postsTable.type, 'micro')))
+        .limit(1)
+      return Effect.tryPromise({
+        try: async () => {
+          const [post] = await db
+            .select({ id: postsTable.id, slug: postsTable.slug })
+            .from(postsTable)
+            .where(
+              and(
+                eq(postsTable.type, 'micro'),
+                eq(postsTable.draft, false),
+                isNull(postsTable.parentPostId),
+                ne(postsTable.slug, from),
+                lte(postsTable.createdAt, currentPostCreatedAt),
+                sessionId
+                  ? notExists(
+                      db
+                        .select()
+                        .from(navigationSeenPosts)
+                        .where(
+                          and(
+                            eq(navigationSeenPosts.sessionId, sessionId),
+                            eq(navigationSeenPosts.slug, postsTable.slug)
+                          )
+                        )
+                    )
+                  : undefined
+              )
+            )
+            .orderBy(desc(postsTable.createdAt))
+            .limit(1)
+          if (!post) throw new CorpusExhausted()
           return {
-            slug: asSlug(picked.slug),
-            postId: picked.id,
+            slug: asSlug(post.slug),
+            postId: post.id,
             visitedAt: Date.now()
           } satisfies ResolvedDestination
-        }
-
-        let current = from
-        while (true) {
-          const adjacent = yield* posts.getAdjacentMicroPosts(current)
-          if (!adjacent.next) return yield* new CorpusExhausted()
-          current = asSlug(adjacent.next.slug)
-          if (!seen.has(current)) {
-            return {
-              slug: current,
-              postId: adjacent.next.id,
-              visitedAt: Date.now()
-            } satisfies ResolvedDestination
-          }
-        }
+        },
+        catch: (error) =>
+          error instanceof CorpusExhausted
+            ? error
+            : databaseError('resolve next unread destination', error)
       }).pipe(
+        Effect.withSpan('navigation.destination.resolve', { attributes: { pick: 'NextByDate' } })
+      )
+    }
+
+    const findRandomUnread = (seen: ReadonlySet<Slug>) =>
+      posts.getRandomMicroPost([...seen]).pipe(
+        Effect.flatMap((picked) =>
+          seen.has(asSlug(picked.slug))
+            ? Effect.fail(new CorpusExhausted())
+            : Effect.succeed({
+                slug: asSlug(picked.slug),
+                postId: picked.id,
+                visitedAt: Date.now()
+              } satisfies ResolvedDestination)
+        ),
         Effect.mapError((error) =>
           error instanceof NotFoundError ? new CorpusExhausted() : error
         ),
-        Effect.withSpan('navigation.destination.resolve', { attributes: { pick } })
+        Effect.withSpan('navigation.destination.resolve', { attributes: { pick: 'Random' } })
       )
 
     const resolve = (
@@ -550,8 +586,11 @@ export const NavigationSessionServiceLayer = Layer.effect(
           const replay = phase.replay
           const session = phase.session
           yield* Effect.annotateCurrentSpan('path', 'replay')
+          const snapshotEffect = resultSnapshot(session.id, replay.position).pipe(
+            Effect.withSpan('navigation.result.read')
+          )
           if (replay.position !== session.cursor) {
-            const updated = yield* Effect.tryPromise({
+            const updateEffect = Effect.tryPromise({
               try: async () => {
                 const [row] = await db
                   .update(navigationSessions)
@@ -571,7 +610,11 @@ export const NavigationSessionServiceLayer = Layer.effect(
                 return row
               },
               catch: (error) => databaseError('update', error)
-            })
+            }).pipe(Effect.withSpan('navigation.cursor.update'))
+            const { updated, snapshot } = yield* Effect.all(
+              { updated: updateEffect, snapshot: snapshotEffect },
+              { concurrency: 'unbounded' }
+            )
             if (!updated) {
               if (retryCount === MAX_NAVIGATION_LOCK_RETRIES) return yield* noSuchMove(command)
               yield* Effect.sleep('1 millis')
@@ -583,9 +626,6 @@ export const NavigationSessionServiceLayer = Layer.effect(
               intentToken,
               updatedAtMs: updated.updatedAt.getTime()
             })
-          }
-          return yield* Effect.gen(function* () {
-            const snapshot = yield* resultSnapshot(session.id, replay.position)
             return resultFor(
               replay,
               snapshot.index,
@@ -593,7 +633,15 @@ export const NavigationSessionServiceLayer = Layer.effect(
               snapshot.hasUnread,
               snapshot.neighbours
             )
-          }).pipe(Effect.withSpan('navigation.result.read'))
+          }
+          const snapshot = yield* snapshotEffect
+          return resultFor(
+            replay,
+            snapshot.index,
+            snapshot.length,
+            snapshot.hasUnread,
+            snapshot.neighbours
+          )
         }
         if (command._tag === 'Step' && command.direction === 'Back') {
           yield* Effect.annotateCurrentSpan('path', 'rejected')
@@ -601,29 +649,32 @@ export const NavigationSessionServiceLayer = Layer.effect(
         }
 
         yield* Effect.annotateCurrentSpan('path', 'append')
-        const seen = phase.session
-          ? yield* Effect.tryPromise({
-              try: () =>
-                db
-                  .select({ slug: navigationSeenPosts.slug })
-                  .from(navigationSeenPosts)
-                  .where(eq(navigationSeenPosts.sessionId, phase.session?.id ?? '')),
-              catch: (error) => databaseError('read', error)
-            }).pipe(Effect.map((rows) => new Set(rows.map((row) => asSlug(row.slug)))))
-          : new Set<Slug>()
-        const destination =
-          command._tag === 'Open'
-            ? yield* posts.getMicroPostReferenceBySlug(command.slug).pipe(
-                Effect.map((post) => ({
-                  slug: asSlug(post.slug),
-                  postId: post.id,
-                  visitedAt: Date.now()
-                })),
-                Effect.mapError((error) =>
-                  error instanceof NotFoundError ? new CorpusExhausted() : error
-                )
+        const destination = yield* (() => {
+          if (command._tag === 'Open') {
+            return posts.getMicroPostReferenceBySlug(command.slug).pipe(
+              Effect.map((post) => ({
+                slug: asSlug(post.slug),
+                postId: post.id,
+                visitedAt: Date.now()
+              })),
+              Effect.mapError((error) =>
+                error instanceof NotFoundError ? new CorpusExhausted() : error
               )
-            : yield* findUnread(command._tag === 'Jump' ? 'Random' : 'NextByDate', from, seen)
+            )
+          }
+          if (command._tag === 'Step') return findNextUnread(phase.session?.id, from)
+          const seenEffect = phase.session
+            ? Effect.tryPromise({
+                try: () =>
+                  db
+                    .select({ slug: navigationSeenPosts.slug })
+                    .from(navigationSeenPosts)
+                    .where(eq(navigationSeenPosts.sessionId, phase.session?.id ?? '')),
+                catch: (error) => databaseError('read', error)
+              }).pipe(Effect.map((rows) => new Set(rows.map((row) => asSlug(row.slug)))))
+            : Effect.succeed(new Set<Slug>())
+          return seenEffect.pipe(Effect.flatMap(findRandomUnread))
+        })()
 
         const decision = yield* lock
           .decide(identity, {
@@ -647,18 +698,25 @@ export const NavigationSessionServiceLayer = Layer.effect(
             catch: (error) => databaseError('read', error)
           })
 
-        const appendAndAdvance = (sessionId: string | null, position: number) =>
+        const appendAndAdvance = (
+          sessionId: string | null,
+          position: number,
+          knownSession: SessionRow | undefined
+        ) =>
           Effect.tryPromise({
             try: async () => {
-              const existing = sessionId
-                ? (
-                    await db
-                      .select()
-                      .from(navigationSessions)
-                      .where(eq(navigationSessions.id, sessionId))
-                      .limit(1)
-                  )[0]
-                : undefined
+              const existing =
+                knownSession?.id === sessionId
+                  ? knownSession
+                  : sessionId
+                    ? (
+                        await db
+                          .select()
+                          .from(navigationSessions)
+                          .where(eq(navigationSessions.id, sessionId))
+                          .limit(1)
+                      )[0]
+                    : undefined
               const created = existing
                 ? undefined
                 : (
@@ -679,22 +737,25 @@ export const NavigationSessionServiceLayer = Layer.effect(
                   await db.select().from(navigationSessions).where(identityWhere(identity)).limit(1)
                 )[0]
               if (!active) throw new Error('Failed to create navigation session')
-              await db.insert(navigationTrailEntries).values({
-                sessionId: active.id,
-                postId: destination.postId,
-                slug: destination.slug,
-                position,
-                arrivedBy: command._tag
-              })
-              await db
-                .insert(navigationSeenPosts)
-                .values({ sessionId: active.id, slug: destination.slug })
-                .onConflictDoNothing()
-              const [updated] = await db
-                .update(navigationSessions)
-                .set({ cursor: position, lastIntentToken: intentToken, updatedAt: new Date() })
-                .where(eq(navigationSessions.id, active.id))
-                .returning()
+              const [, , updatedRows] = await db.batch([
+                db.insert(navigationTrailEntries).values({
+                  sessionId: active.id,
+                  postId: destination.postId,
+                  slug: destination.slug,
+                  position,
+                  arrivedBy: command._tag
+                }),
+                db
+                  .insert(navigationSeenPosts)
+                  .values({ sessionId: active.id, slug: destination.slug })
+                  .onConflictDoNothing(),
+                db
+                  .update(navigationSessions)
+                  .set({ cursor: position, lastIntentToken: intentToken, updatedAt: new Date() })
+                  .where(eq(navigationSessions.id, active.id))
+                  .returning()
+              ])
+              const updated = updatedRows[0]
               if (!updated) throw new Error('Failed to update navigation session')
               return updated
             },
@@ -714,9 +775,11 @@ export const NavigationSessionServiceLayer = Layer.effect(
             return { _tag: 'Duplicate' as const, session }
           }
 
-          const updated = yield* appendAndAdvance(decision.sessionId, decision.position).pipe(
-            Effect.tapError(() => lock.reset(identity).pipe(Effect.ignore))
-          )
+          const updated = yield* appendAndAdvance(
+            decision.sessionId,
+            decision.position,
+            phase.session
+          ).pipe(Effect.tapError(() => lock.reset(identity).pipe(Effect.ignore)))
           return { _tag: 'Appended' as const, session: updated, position: decision.position }
         }).pipe(Effect.withSpan('navigation.append.write'))
 
