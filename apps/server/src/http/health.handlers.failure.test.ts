@@ -20,20 +20,18 @@ import { createWebHandler } from './routes'
 // handler group against this same appServicesLive -- including its own
 // SentryServiceLayer, so unlike before, nothing here needs @/app's
 // side-effecting SentryService init anymore.
-const testAppServicesLive = AppLayer(
-  DatabaseLayer(d1),
-  SitemapCacheLayer({
+const testAppServicesLive = AppLayer({
+  database: DatabaseLayer(d1),
+  sitemapCache: SitemapCacheLayer({
     get: async () => null,
     put: async () => {}
   }),
-  NavigationLockLocalLayer,
-  SpotifyImportResolverLocalLayer,
-  testSentryServiceLive,
-  WorkerTracingLive,
-  undefined,
-  undefined,
-  RecordingEmailTransportLayer
-)
+  navigationLock: NavigationLockLocalLayer,
+  spotifyImportResolver: SpotifyImportResolverLocalLayer,
+  sentry: testSentryServiceLive,
+  tracing: WorkerTracingLive,
+  emailTransport: RecordingEmailTransportLayer
+})
 
 // Separate file (docs/migration-effect-http-api.md, step 3a): each
 // createWebHandler builds its own cached readiness check (health.handlers.ts,
