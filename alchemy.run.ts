@@ -16,25 +16,31 @@ export default Alchemy.Stack(
   Effect.gen(function* () {
     const stack = yield* Alchemy.Stack
     const isProduction = stack.stage === 'prod'
+    const isLocalDev = yield* Alchemy.ALCHEMY_DEV
     const secret = (name: string, sourceName = name) => Redacted.make(process.env[sourceName] ?? '')
     const emailConfig = emailDeploymentConfig({
       stage: stack.stage,
-      testRecipient: process.env.EMAIL_TEST_RECIPIENT
+      testRecipient: process.env.EMAIL_TEST_RECIPIENT,
+      localDev: isLocalDev
     })
 
-    const routing = yield* Cloudflare.Email.Routing('EmailRouting', { zone: 'goosebumps.fm' })
-    yield* Cloudflare.Email.SendingSubdomain('EmailSending', {
-      zoneId: routing.zoneId,
-      name: emailConfig.sendingDomain
+    const email = yield* Effect.gen(function* () {
+      if (emailConfig.transport === 'recording') return undefined
+
+      const routing = yield* Cloudflare.Email.Routing('EmailRouting', { zone: 'goosebumps.fm' })
+      yield* Cloudflare.Email.SendingSubdomain('EmailSending', {
+        zoneId: routing.zoneId,
+        name: emailConfig.sendingDomain
+      })
+      return isProduction
+        ? yield* Cloudflare.Email.SendEmail('EMAIL', {
+            allowedSenderAddresses: [emailConfig.emailSender]
+          })
+        : yield* Cloudflare.Email.SendEmail('EMAIL', {
+            allowedSenderAddresses: [emailConfig.emailSender],
+            destinationAddress: emailConfig.destinationAddress
+          })
     })
-    const email = isProduction
-      ? yield* Cloudflare.Email.SendEmail('EMAIL', {
-          allowedSenderAddresses: [emailConfig.emailSender]
-        })
-      : yield* Cloudflare.Email.SendEmail('EMAIL', {
-          allowedSenderAddresses: [emailConfig.emailSender],
-          destinationAddress: emailConfig.destinationAddress
-        })
 
     const db = yield* Cloudflare.D1.Database('Database', {
       migrationsDir: './apps/server/drizzle-d1'
@@ -58,8 +64,9 @@ export default Alchemy.Stack(
         MIXES: mixes,
         SITEMAP: sitemap,
         REMINDERS: reminders,
-        EMAIL: email,
+        ...(email === undefined ? {} : { EMAIL: email }),
         EMAIL_SENDER: emailConfig.emailSender,
+        EMAIL_TRANSPORT_MODE: emailConfig.transport,
         NAVIGATION_LOCK: Cloudflare.DurableObject<NavigationLockDurableObject>('NavigationLock', {
           className: 'NavigationLockDurableObject'
         }),

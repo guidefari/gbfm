@@ -6,7 +6,8 @@ describe('emailDeploymentConfig', () => {
     expect(emailDeploymentConfig({ stage: 'prod' })).toEqual({
       sendingDomain: 'mail.goosebumps.fm',
       emailSender: 'noreply@mail.goosebumps.fm',
-      destinationAddress: undefined
+      destinationAddress: undefined,
+      transport: 'cloudflare'
     })
   })
 
@@ -16,7 +17,28 @@ describe('emailDeploymentConfig', () => {
     ).toEqual({
       sendingDomain: 'mail-email-staging.goosebumps.fm',
       emailSender: 'noreply@mail-email-staging.goosebumps.fm',
-      destinationAddress: 'listener@example.com'
+      destinationAddress: 'listener@example.com',
+      transport: 'cloudflare'
+    })
+  })
+
+  test.each([
+    {
+      stage: 'dev',
+      sendingDomain: 'mail-dev.goosebumps.fm',
+      emailSender: 'noreply@mail-dev.goosebumps.fm'
+    },
+    {
+      stage: 'prod',
+      sendingDomain: 'mail.goosebumps.fm',
+      emailSender: 'noreply@mail.goosebumps.fm'
+    }
+  ])('uses the recording transport without requiring a recipient in local dev %#', (input) => {
+    expect(emailDeploymentConfig({ stage: input.stage, localDev: true })).toEqual({
+      sendingDomain: input.sendingDomain,
+      emailSender: input.emailSender,
+      destinationAddress: undefined,
+      transport: 'recording'
     })
   })
 

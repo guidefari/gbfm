@@ -43,6 +43,10 @@ import { SitemapCacheLayer } from '@/services/sitemap-cache'
 import { dispatchScheduledJob } from '@/scheduled'
 import { SentryServiceLayer } from '@/services/sentry.service'
 import { CloudflareEmailTransportLayer } from '@/services/cloudflare-email.adapter'
+import {
+  RecordingEmailTransportLayer,
+  UnconfiguredEmailTransportLayer
+} from '@/services/email-transport.service'
 import { R2ObjectStoreClientLayer } from '@/services/storage/r2-object-store-client'
 import { WorkerConfigServiceLayer, type WorkerConfigBindings } from '@/services/config.service'
 
@@ -59,7 +63,8 @@ export type ApiEnv = WorkerConfigBindings & {
   readonly MIXES: R2Bucket
   readonly SITEMAP: KVNamespace
   readonly REMINDERS: Queue<ReminderJob>
-  readonly EMAIL: SendEmail
+  readonly EMAIL?: SendEmail
+  readonly EMAIL_TRANSPORT_MODE?: 'cloudflare' | 'recording'
   readonly NAVIGATION_LOCK: DurableObjectNamespace<NavigationLockDurableObject>
   readonly SPOTIFY_IMPORT_RESOLVER: DurableObjectNamespace<SpotifyImportResolverDurableObject>
   readonly SENTRY_DSN?: string
@@ -172,7 +177,11 @@ const appServicesLive = (env: ApiEnv) => {
     WorkerTracingLive,
     configLive,
     objectStoreLive,
-    CloudflareEmailTransportLayer(env.EMAIL)
+    env.EMAIL !== undefined
+      ? CloudflareEmailTransportLayer(env.EMAIL)
+      : env.EMAIL_TRANSPORT_MODE === 'recording'
+        ? RecordingEmailTransportLayer
+        : UnconfiguredEmailTransportLayer
   )
 }
 

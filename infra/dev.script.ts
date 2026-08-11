@@ -1,4 +1,29 @@
-import { allSecrets } from './secret'
+import { allSecrets, secret } from './secret'
+
+new sst.x.DevCommand('Alchemy', {
+  dev: {
+    command: 'bunx alchemy dev --stage=dev',
+    directory: './',
+    autostart: true
+  }
+})
+
+new sst.x.DevCommand('Postgres_To_D1', {
+  link: allSecrets,
+  dev: {
+    command: 'bun run scripts/migrate-pg-to-d1.ts',
+    directory: './apps/server',
+    autostart: false
+  },
+  environment: {
+    PG_HOST: process.env.PG_HOST ?? secret.DatabaseHost.value,
+    PG_PORT: process.env.PG_PORT ?? secret.DatabasePort.value,
+    PG_USER: process.env.PG_USER ?? secret.DatabaseUser.value,
+    PG_PASSWORD: process.env.PG_PASSWORD ?? secret.DatabasePassword.value,
+    PG_DATABASE: process.env.PG_DATABASE ?? secret.DatabaseName.value,
+    PG_SSL: process.env.PG_SSL ?? (process.env.PG_HOST === undefined ? 'true' : 'false')
+  }
+})
 
 new sst.x.DevCommand('Mobile_Expo', {
   dev: {
