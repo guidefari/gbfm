@@ -54,17 +54,29 @@ const DevToolsLive: Layer.Layer<never> = Layer.empty
 // vs @sentry/cloudflare, which cannot share a module -- see
 // sentry-client.service.ts and worker.ts), and the composition seam is the
 // only place that may choose between them.
-export const AppLayer = (
-  databaseLive: Layer.Layer<Database>,
-  sitemapCacheLive: Layer.Layer<SitemapCache>,
-  navigationLockLive: Layer.Layer<NavigationLock>,
-  spotifyImportResolverLive: Layer.Layer<SpotifyImportResolver, never, Database>,
-  sentryLive: Layer.Layer<SentryService>,
-  tracingLive: Layer.Layer<OtelTracer.OtelTracer>,
-  configLive: Layer.Layer<ConfigService> = ConfigServiceLayer,
-  objectStoreLive: Layer.Layer<ObjectStoreClient> = UnavailableObjectStoreClientLayer,
-  emailTransportLive: Layer.Layer<EmailTransportService>
-) => {
+export interface AppLayerOptions {
+  readonly database: Layer.Layer<Database>
+  readonly sitemapCache: Layer.Layer<SitemapCache>
+  readonly navigationLock: Layer.Layer<NavigationLock>
+  readonly spotifyImportResolver: Layer.Layer<SpotifyImportResolver, never, Database>
+  readonly sentry: Layer.Layer<SentryService>
+  readonly tracing: Layer.Layer<OtelTracer.OtelTracer>
+  readonly emailTransport: Layer.Layer<EmailTransportService>
+  readonly config?: Layer.Layer<ConfigService>
+  readonly objectStore?: Layer.Layer<ObjectStoreClient>
+}
+
+export const AppLayer = ({
+  database: databaseLive,
+  sitemapCache: sitemapCacheLive,
+  navigationLock: navigationLockLive,
+  spotifyImportResolver: spotifyImportResolverLive,
+  sentry: sentryLive,
+  tracing: tracingLive,
+  emailTransport: emailTransportLive,
+  config: configLive = ConfigServiceLayer,
+  objectStore: objectStoreLive = UnavailableObjectStoreClientLayer
+}: AppLayerOptions) => {
   const EmailDeliveryWithDependencies = EmailDeliveryLive.pipe(
     Layer.provide(Layer.mergeAll(databaseLive, configLive, emailTransportLive))
   )

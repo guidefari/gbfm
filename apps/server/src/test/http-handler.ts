@@ -54,16 +54,14 @@ export const createTestWebHandler = (
   d1: D1Database,
   emailTransportLive: Layer.Layer<EmailTransportService> = RecordingEmailTransportLayer
 ) => {
-  const appServicesLive = AppLayer(
-    DatabaseLayer(d1),
-    SitemapCacheLayer(inMemorySitemapKv()),
-    NavigationLockLocalLayer,
-    SpotifyImportResolverLocalLayer,
-    testSentryServiceLive,
-    WorkerTracingLive,
-    undefined,
-    undefined,
-    emailTransportLive
-  )
+  const appServicesLive = AppLayer({
+    database: DatabaseLayer(d1),
+    sitemapCache: SitemapCacheLayer(inMemorySitemapKv()),
+    navigationLock: NavigationLockLocalLayer,
+    spotifyImportResolver: SpotifyImportResolverLocalLayer,
+    sentry: testSentryServiceLive,
+    tracing: WorkerTracingLive,
+    emailTransport: emailTransportLive
+  })
   return createWebHandler({ appServicesLive })
 }

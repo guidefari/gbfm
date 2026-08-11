@@ -163,17 +163,17 @@ const appServicesLive = (env: ApiEnv) => {
     mixes: env.MIXES
   }).pipe(Layer.provide(configLive))
 
-  return AppLayer(
-    DatabaseLayer(env.DB),
-    SitemapCacheLayer(env.SITEMAP),
-    navigationLockLive(env),
-    spotifyImportResolverLive(env),
-    workerSentryServiceLive(env),
-    WorkerTracingLive,
-    configLive,
-    objectStoreLive,
-    CloudflareEmailTransportLayer(env.EMAIL)
-  )
+  return AppLayer({
+    database: DatabaseLayer(env.DB),
+    sitemapCache: SitemapCacheLayer(env.SITEMAP),
+    navigationLock: navigationLockLive(env),
+    spotifyImportResolver: spotifyImportResolverLive(env),
+    sentry: workerSentryServiceLive(env),
+    tracing: WorkerTracingLive,
+    config: configLive,
+    objectStore: objectStoreLive,
+    emailTransport: CloudflareEmailTransportLayer(env.EMAIL)
+  })
 }
 
 const sentryOptions = (env: ApiEnv) => {
