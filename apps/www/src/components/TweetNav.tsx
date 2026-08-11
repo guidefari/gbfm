@@ -148,6 +148,7 @@ export function TweetNav({ slug }: Props) {
   const pendingRef = useRef(false)
   const [neighbours, setNeighbours] = useState<Neighbours>({})
   const [isNavigating, setIsNavigating] = useState(false)
+  const [isRoutePending, setIsRoutePending] = useState(false)
   const [isSyncing, setIsSyncing] = useState(true)
 
   const acceptNavigation = useCallback(
@@ -211,23 +212,27 @@ export function TweetNav({ slug }: Props) {
 
     pendingRef.current = true
     setIsNavigating(true)
+    setIsRoutePending(true)
+    const navigateTo = (destinationSlug: string) =>
+      Effect.sync(() => setIsRoutePending(true)).pipe(
+        Effect.andThen(
+          Effect.promise(() =>
+            router.navigate({ to: '/tweet/$slug', params: { slug: destinationSlug } })
+          )
+        ),
+        Effect.ensuring(Effect.sync(() => setIsRoutePending(false)))
+      )
     const commandEffect = command(crypto.randomUUID()).pipe(
       Effect.tap((result) => Effect.sync(() => acceptNavigation(result))),
       expectedSlug
-        ? Effect.tapError(() =>
-            Effect.promise(() => router.navigate({ to: '/tweet/$slug', params: { slug } })).pipe(
-              Effect.ignore
-            )
-          )
+        ? Effect.tapError(() => navigateTo(slug).pipe(Effect.ignore))
         : (effect) => effect
     )
     const navigationEffect = expectedSlug
       ? Effect.all(
           {
             result: commandEffect,
-            route: Effect.promise(() =>
-              router.navigate({ to: '/tweet/$slug', params: { slug: expectedSlug } })
-            )
+            route: navigateTo(expectedSlug)
           },
           { concurrency: 'unbounded' }
         ).pipe(Effect.map(({ result }) => result))
@@ -238,15 +243,14 @@ export function TweetNav({ slug }: Props) {
         Effect.flatMap((result) =>
           expectedSlug === result.destination.slug
             ? Effect.succeed(result)
-            : Effect.promise(() =>
-                router.navigate({ to: '/tweet/$slug', params: { slug: result.destination.slug } })
-              ).pipe(Effect.as(result))
+            : navigateTo(result.destination.slug).pipe(Effect.as(result))
         ),
         Effect.asVoid,
         Effect.ensuring(
           Effect.sync(() => {
             pendingRef.current = false
             setIsNavigating(false)
+            setIsRoutePending(false)
           })
         )
       )
@@ -289,7 +293,11 @@ export function TweetNav({ slug }: Props) {
           aria-live='polite'
           className='mt-2 flex items-center gap-2 font-mono text-xs text-muted-foreground'>
           <LoaderCircle aria-hidden className='h-3.5 w-3.5 animate-spin' />
-          {isNavigating ? 'Loading tweet…' : 'Preparing navigation…'}
+          {isRoutePending
+            ? 'Loading tweet…'
+            : isNavigating
+              ? 'Syncing navigation…'
+              : 'Preparing navigation…'}
         </div>
       )}
       <FlankingArrows
