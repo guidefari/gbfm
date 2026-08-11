@@ -9,7 +9,7 @@ import {
   Input,
   useToast
 } from '@gbfm/ui'
-import { useQuery } from '@tanstack/react-query'
+import { queryOptions, useQuery } from '@tanstack/react-query'
 import { Bell, Music4 } from 'lucide-react'
 import { useState } from 'react'
 import { StreamLinks } from '@/components/StreamLinks'
@@ -52,31 +52,43 @@ type Props = {
   entityId: string
 }
 
-function isMusicEntityType(value: string): value is MusicEntityType {
+export function isMusicEntityType(value: string): value is MusicEntityType {
   return value === 'album' || value === 'track' || value === 'playlist'
 }
+
+export const musicEntityQueryOptions = (entityType: string, entityId: string) =>
+  queryOptions({
+    queryKey: ['music-entity', entityType, entityId],
+    queryFn: () => {
+      if (!isMusicEntityType(entityType)) throw new Error('Unsupported music entity type')
+      return fetcher<MusicEntityPreview>(
+        apiUrl(`/music/${entityPathByType[entityType]}/${entityId}`)
+      )
+    }
+  })
+
+export const musicEntityLinksQueryOptions = (entityType: string, entityId: string) =>
+  queryOptions({
+    queryKey: ['music-entity-links', entityType, entityId],
+    queryFn: () => {
+      if (!isMusicEntityType(entityType)) throw new Error('Unsupported music entity type')
+      return fetcher<EntityLink[]>(apiUrl(`/music/${entityType}/${entityId}/links?status=verified`))
+    }
+  })
 
 export function TweetMusicEntityCard({ entityType, entityId }: Props) {
   const supportedType: MusicEntityType | null = isMusicEntityType(entityType) ? entityType : null
   const { data: session } = useSession()
   const isAuthenticated = Boolean(session?.user)
 
-  const { data, isPending } = useQuery<MusicEntityPreview>({
-    queryKey: ['music-entity', entityType, entityId],
-    queryFn: () => {
-      if (!supportedType) {
-        return Promise.reject(new Error('Unsupported music entity type'))
-      }
-
-      return fetcher(apiUrl(`/music/${entityPathByType[supportedType]}/${entityId}`))
-    },
+  const { data, isPending } = useQuery({
+    ...musicEntityQueryOptions(entityType, entityId),
     enabled: Boolean(supportedType && entityId)
   })
 
   // todo: we can probs consolidate this into the music entity query above
-  const { data: links, isPending: isLinksPending } = useQuery<EntityLink[]>({
-    queryKey: ['music-entity-links', entityType, entityId],
-    queryFn: () => fetcher(apiUrl(`/music/${entityType}/${entityId}/links?status=verified`)),
+  const { data: links, isPending: isLinksPending } = useQuery({
+    ...musicEntityLinksQueryOptions(entityType, entityId),
     enabled: Boolean(supportedType && entityId)
   })
 

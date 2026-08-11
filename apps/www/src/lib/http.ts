@@ -19,7 +19,13 @@ import type {
 import { useCallback } from 'react'
 import { Effect, Option, Schema } from 'effect'
 import { HttpApiError } from 'effect/unstable/httpapi'
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  queryOptions,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient
+} from '@tanstack/react-query'
 import { RuntimeClient } from '@/runtime'
 import { captureException } from '@/services/analytics'
 import { getApiClient } from './api-client'
@@ -513,8 +519,8 @@ export function useMicroPostBySlug(slug: string) {
   }
 }
 
-export function useMicroPostById(id: string) {
-  const { data, error, isPending } = useQuery<SelectMdxCompiledMicroPost, Error>({
+export const microPostByIdQueryOptions = (id: string) =>
+  queryOptions({
     queryKey: ['post', 'micro', 'by-id', id],
     queryFn: async () => {
       const client = await getApiClient()
@@ -539,6 +545,9 @@ export function useMicroPostById(id: string) {
     enabled: Boolean(id)
   })
 
+export function useMicroPostById(id: string) {
+  const { data, error, isPending } = useQuery(microPostByIdQueryOptions(id))
+
   return {
     data,
     error,
@@ -548,8 +557,8 @@ export function useMicroPostById(id: string) {
 
 const microPostRepliesQueryKey = (parentSlug: string) => ['micro-post-replies', parentSlug]
 
-export function useMicroPostReplies(parentSlug: string, limit = 20) {
-  return useQuery({
+export const microPostRepliesQueryOptions = (parentSlug: string, limit = 20) =>
+  queryOptions({
     queryKey: microPostRepliesQueryKey(parentSlug),
     queryFn: async () => {
       const client = await getApiClient()
@@ -565,6 +574,9 @@ export function useMicroPostReplies(parentSlug: string, limit = 20) {
     },
     enabled: Boolean(parentSlug)
   })
+
+export function useMicroPostReplies(parentSlug: string, limit = 20) {
+  return useQuery(microPostRepliesQueryOptions(parentSlug, limit))
 }
 
 export type CreateMicroPostReplyPayload = {

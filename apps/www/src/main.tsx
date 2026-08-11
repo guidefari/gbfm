@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/react'
 import { traceSampleRate } from '@gbfm/core/observability/trace-sampling'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { createRouter, RouterProvider } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import React from 'react'
@@ -10,6 +10,7 @@ import { RuntimeClient } from '@/runtime'
 import { page } from '@/services/analytics'
 
 import { MAIN_SCROLL_CONTAINER_ID } from './lib/constants'
+import { queryClient } from './lib/query-client'
 import { routeTree } from './routeTree.gen'
 import './styles/main.css'
 import { ThemeProvider } from './components/ThemeProvider'
@@ -50,14 +51,6 @@ declare module '@tanstack/react-router' {
     router: typeof router
   }
 }
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5
-    }
-  }
-})
 
 const isLocalUrl = (value: unknown) =>
   typeof value === 'string' && (value.includes('127.0.0.1') || value.includes('localhost'))

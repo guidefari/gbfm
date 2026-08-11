@@ -5,7 +5,12 @@ import { RouteError } from '@/components/RouteError'
 import { TweetActionsMenu } from '@/components/TweetActionsMenu'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
 import { TweetCardActions } from '@/components/TweetCardActions'
-import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
+import {
+  isMusicEntityType,
+  musicEntityLinksQueryOptions,
+  musicEntityQueryOptions,
+  TweetMusicEntityCard
+} from '@/components/TweetMusicEntityCard'
 import { TweetNav } from '@/components/TweetNav'
 import { TweetParentPreview } from '@/components/TweetParentPreview'
 import { TweetQuoteCard } from '@/components/TweetQuoteCard'
@@ -14,9 +19,36 @@ import { TweetReplyList } from '@/components/TweetReplyList'
 import { TweetTagLinks } from '@/components/TweetTagLinks'
 import { useSession } from '@/lib/auth-client'
 import { getApiClient } from '@/lib/api-client'
-import { useMicroPostReplies } from '@/lib/http'
+import {
+  microPostByIdQueryOptions,
+  microPostRepliesQueryOptions,
+  useMicroPostReplies
+} from '@/lib/http'
+import { queryClient } from '@/lib/query-client'
 import { generateMicroPostSEO, generateSEOMeta } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
+
+type PostDependencyReference = {
+  musicEntityType?: string | null
+  musicEntityId?: string | null
+  quotedPostId?: string | null
+}
+
+const prefetchPostDependencies = (post: PostDependencyReference): Array<Promise<void>> => {
+  const prefetches: Array<Promise<void>> = []
+  if (post.musicEntityType && isMusicEntityType(post.musicEntityType) && post.musicEntityId) {
+    prefetches.push(
+      queryClient.prefetchQuery(musicEntityQueryOptions(post.musicEntityType, post.musicEntityId)),
+      queryClient.prefetchQuery(
+        musicEntityLinksQueryOptions(post.musicEntityType, post.musicEntityId)
+      )
+    )
+  }
+  if (post.quotedPostId) {
+    prefetches.push(queryClient.prefetchQuery(microPostByIdQueryOptions(post.quotedPostId)))
+  }
+  return prefetches
+}
 
 export const Route = createFileRoute('/tweet/$slug')({
   component: TweetPostPage,
@@ -25,7 +57,7 @@ export const Route = createFileRoute('/tweet/$slug')({
       <RouteError error={error} />
     </div>
   ),
-  loader: async ({ params }) => {
+  loader: async ({ params, preload }) => {
     const client = await getApiClient()
     const post = await Effect.runPromise(
       client.post
@@ -36,6 +68,21 @@ export const Route = createFileRoute('/tweet/$slug')({
           )
         )
     )
+    const repliesPromise = queryClient
+      .fetchQuery(microPostRepliesQueryOptions(params.slug))
+      .catch(() => undefined)
+    const rootDependenciesPromise = Promise.all([
+      ...prefetchPostDependencies(post),
+      ...(post.parentPostId
+        ? [queryClient.prefetchQuery(microPostByIdQueryOptions(post.parentPostId))]
+        : [])
+    ])
+    const dependenciesReady = Promise.all([repliesPromise, rootDependenciesPromise]).then(
+      ([replies]) =>
+        replies ? Promise.all(replies.data.flatMap(prefetchPostDependencies)) : undefined
+    )
+    if (preload) await dependenciesReady
+
     return {
       post: {
         ...post,

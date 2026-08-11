@@ -146,8 +146,10 @@ export function TweetNav({ slug }: Props) {
   const capabilities = useAtomValue(capabilitiesAtom)
   const setCapabilities = useAtomSet(capabilitiesAtom)
   const pendingRef = useRef(false)
+  const preloadGenerationRef = useRef(0)
   const [neighbours, setNeighbours] = useState<Neighbours>({})
   const [isNavigating, setIsNavigating] = useState(false)
+  const [isPreloadingNeighbours, setIsPreloadingNeighbours] = useState(false)
   const [isRoutePending, setIsRoutePending] = useState(false)
   const [isSyncing, setIsSyncing] = useState(true)
 
@@ -198,7 +200,23 @@ export function TweetNav({ slug }: Props) {
   }, [acceptNavigation, navigateMicroPostsEffect, slug])
 
   useEffect(() => {
-    const fiber = Effect.runFork(preloadNeighbours(neighbours))
+    const generation = preloadGenerationRef.current + 1
+    preloadGenerationRef.current = generation
+    if (!neighbours.back && !neighbours.forward) {
+      setIsPreloadingNeighbours(false)
+      return
+    }
+
+    setIsPreloadingNeighbours(true)
+    const fiber = Effect.runFork(
+      preloadNeighbours(neighbours).pipe(
+        Effect.ensuring(
+          Effect.sync(() => {
+            if (preloadGenerationRef.current === generation) setIsPreloadingNeighbours(false)
+          })
+        )
+      )
+    )
     return () => {
       Effect.runFork(Fiber.interrupt(fiber))
     }
@@ -274,7 +292,7 @@ export function TweetNav({ slug }: Props) {
   useHotkey('ArrowRight', goToNext)
 
   const { canStepBack, canStepForward, hasUnread } = capabilities
-  const isPending = isNavigating || isSyncing
+  const isPending = isNavigating || isPreloadingNeighbours || isSyncing
 
   return (
     <div aria-busy={isPending} className='relative'>

@@ -1,6 +1,6 @@
 import { Toaster } from '@gbfm/ui'
 import { FPSMeter } from '@overengineering/fps-meter'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { createRootRouteWithContext, HeadContent, Outlet } from '@tanstack/react-router'
 import { lazy, Suspense } from 'react'
 import { VerifyEmailBanner } from '@/components/Auth/VerifyEmailBanner'
@@ -10,6 +10,7 @@ import { OfflineBanner } from '@/components/OfflineBanner'
 import { SpotifyConnectionProvider } from '@/components/spotify/SpotifyConnectionProvider'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { env } from '@/env'
+import { queryClient } from '@/lib/query-client'
 
 const AuthPromptDialog = lazy(() =>
   import('@/components/AuthPromptDialog').then((m) => ({ default: m.AuthPromptDialog }))
@@ -29,16 +30,6 @@ export interface MyRouterContext {
     isAuthenticated: boolean
   }
 }
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 2 * 60 * 1000, // 5 minutes
-      refetchOnWindowFocus: false,
-      retry: 1
-    }
-  }
-})
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   head: () => ({
