@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { expect, test } from 'vitest'
 import {
   dispatchScheduledJob,
   reminderSweepCron,
@@ -6,24 +6,16 @@ import {
   type ScheduledJobs
 } from './scheduled'
 
-describe('worker scheduled handler', () => {
-  test('regenerates the sitemap only on the hourly cron', async () => {
-    const jobs = createRecordingJobs()
+test('scheduled jobs dispatch only the job assigned to each cron', async () => {
+  const hourlyJobs = createRecordingJobs()
+  await dispatchScheduledJob(sitemapRegenerationCron, hourlyJobs)
+  expect(hourlyJobs.sitemapRegenerations).toBe(1)
+  expect(hourlyJobs.reminderSweeps).toBe(0)
 
-    await dispatchScheduledJob(sitemapRegenerationCron, jobs)
-
-    expect(jobs.sitemapRegenerations).toBe(1)
-    expect(jobs.reminderSweeps).toBe(0)
-  })
-
-  test('sweeps reminders only on the per-minute cron', async () => {
-    const jobs = createRecordingJobs()
-
-    await dispatchScheduledJob(reminderSweepCron, jobs)
-
-    expect(jobs.sitemapRegenerations).toBe(0)
-    expect(jobs.reminderSweeps).toBe(1)
-  })
+  const minutelyJobs = createRecordingJobs()
+  await dispatchScheduledJob(reminderSweepCron, minutelyJobs)
+  expect(minutelyJobs.sitemapRegenerations).toBe(0)
+  expect(minutelyJobs.reminderSweeps).toBe(1)
 })
 
 const createRecordingJobs = () => {
