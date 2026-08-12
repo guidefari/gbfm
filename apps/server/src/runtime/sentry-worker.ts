@@ -8,12 +8,12 @@ import { SentryEnabled } from '@/services/sentry.service'
 // worker.ts), not by calling init() at module scope, so there is no client to
 // hold here -- only the enabled flag, read from per-request env instead of
 // process.env/sst Resource (neither exists on workerd).
-export interface WorkerSentryEnvShape {
+export interface WorkerSentryEnvironment {
   readonly dsn: string | undefined
   readonly environment: string | undefined
 }
 
-export class WorkerSentryEnv extends Context.Service<WorkerSentryEnv, WorkerSentryEnvShape>()(
+export class WorkerSentryEnv extends Context.Service<WorkerSentryEnv, WorkerSentryEnvironment>()(
   'WorkerSentryEnv'
 ) {}
 

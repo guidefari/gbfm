@@ -1,9 +1,23 @@
-import { isRecord } from '@gbfm/core/utils'
 import { Context, Effect, Layer, Redacted, Schema } from 'effect'
 
-let Resource: { [key: string]: unknown } | null = null
+const ResourceScalar = Schema.Union([Schema.String, Schema.Number])
+const ResourceEntry = Schema.Union([
+  ResourceScalar,
+  Schema.Struct({
+    value: Schema.optional(ResourceScalar),
+    stage: Schema.optional(ResourceScalar),
+    site: Schema.optional(ResourceScalar),
+    vps: Schema.optional(ResourceScalar),
+    name: Schema.optional(ResourceScalar)
+  })
+])
+const ResourceCollection = Schema.Record(Schema.String, ResourceEntry)
+type ResourceScalar = typeof ResourceScalar.Type
+type ResourceEntry = typeof ResourceEntry.Type
+
+let Resource: typeof ResourceCollection.Type | null = null
 try {
-  Resource = require('sst').Resource
+  Resource = Schema.decodeUnknownSync(ResourceCollection)(require('sst').Resource)
 } catch {}
 
 const secretNames = [
@@ -52,7 +66,7 @@ export type WorkerConfigBindings = Readonly<
   }
 >
 
-function getResource(name: string): unknown {
+function getResource(name: string): ResourceEntry | undefined {
   try {
     return Resource?.[name]
   } catch {
@@ -60,27 +74,28 @@ function getResource(name: string): unknown {
   }
 }
 
-function stringValue(value: unknown, fallback: string): string {
-  if (typeof value === 'string' && value.length > 0) return value
-  if (typeof value === 'number') return String(value)
+function stringValue(value: ResourceScalar | undefined, fallback: string): string {
+  if (value !== undefined && String(value).length > 0) return String(value)
   return fallback
 }
 
-function numberValue(value: unknown, fallback: number, name: string): number {
-  const parsedValue =
-    typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : fallback
+function numberValue(value: ResourceScalar | undefined, fallback: number, name: string): number {
+  const parsedValue = value === undefined ? fallback : Number(value)
 
   if (Number.isNaN(parsedValue)) {
-    throw new Error(`Invalid number value for ${name}: ${value}`)
+    throw new Error(`Invalid number value for ${name}: ${String(value)}`)
   }
 
   return parsedValue
 }
 
-function secretValue(name: SecretName, bindings: WorkerConfigBindings | undefined): unknown {
+function secretValue(
+  name: SecretName,
+  bindings: WorkerConfigBindings | undefined
+): ResourceScalar | undefined {
   if (bindings) return bindings[name]
   const resource = getResource(name)
-  return isRecord(resource) && 'value' in resource ? resource.value : resource
+  return Schema.is(ResourceScalar)(resource) ? resource : resource?.value
 }
 
 function secretString(
@@ -111,14 +126,18 @@ function r2AccountId(endpoint: string): string | undefined {
   }
 }
 
-function resourceValue(name: string): unknown {
+function resourceValue(name: string): ResourceScalar | undefined {
   const resource = getResource(name)
-  return isRecord(resource) && 'value' in resource ? resource.value : resource
+  return Schema.is(ResourceScalar)(resource) ? resource : resource?.value
 }
 
-function resourceString(name: string, property: string, fallback: string): string {
+function resourceString(
+  name: string,
+  property: 'stage' | 'site' | 'vps' | 'name',
+  fallback: string
+): string {
   const resource = getResource(name)
-  if (!isRecord(resource) || !(property in resource)) return fallback
+  if (resource === undefined || Schema.is(ResourceScalar)(resource)) return fallback
   return stringValue(resource[property], fallback)
 }
 

@@ -1,6 +1,6 @@
 import { isRecord } from '@gbfm/core/utils'
 import * as Sentry from '@sentry/core'
-import { Effect, Layer, Logger, References, type LogLevel } from 'effect'
+import { Effect, Layer, Logger, Option, References, Schema, type LogLevel } from 'effect'
 import pino from 'pino'
 import pretty from 'pino-pretty'
 import { ConfigService } from './config.service'
@@ -28,18 +28,30 @@ const REDACT_PATHS = [
 
 const PII_KEY_PATTERN = /password|token|authorization|cookie|secret|email|session/i
 
-function redactValue(value: unknown, depth = 0): unknown {
+type RedactedLogValue =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | readonly RedactedLogValue[]
+  | { readonly [key: string]: RedactedLogValue }
+type EffectLogMessage = Logger.Options<unknown>['message']
+
+const LogScalar = Schema.Union([Schema.String, Schema.Number, Schema.Boolean, Schema.Null])
+
+function redactValue(value: EffectLogMessage, depth = 0): RedactedLogValue {
   if (depth > 4) return '[Truncated]'
-  if (value === null || value === undefined) return value
-  if (Array.isArray(value)) return value.map((v) => redactValue(v, depth + 1))
+  if (value === undefined) return undefined
+  if (Array.isArray(value)) return value.map((entry) => redactValue(entry, depth + 1))
   if (isRecord(value)) {
-    const out: Record<string, unknown> = {}
+    const out: Record<string, RedactedLogValue> = {}
     for (const [k, v] of Object.entries(value)) {
       out[k] = PII_KEY_PATTERN.test(k) ? '[Redacted]' : redactValue(v, depth + 1)
     }
     return out
   }
-  return value
+  return Option.getOrElse(Schema.decodeUnknownOption(LogScalar)(value), () => String(value))
 }
 
 const makePinoLogger = (nodeEnv: string, logLevel: string | undefined) =>
@@ -68,13 +80,14 @@ function pinoLevel(level: LogLevel.LogLevel): pino.Level {
   }
 }
 
-function formatMessage(message: unknown): string {
-  if (typeof message === 'string') return message
-  if (Array.isArray(message)) return message.map(formatMessage).join(' ')
+function formatMessage(value: EffectLogMessage): string {
+  const message = Schema.decodeUnknownOption(Schema.String)(value)
+  if (Option.isSome(message)) return message.value
+  if (Array.isArray(value)) return value.map(formatMessage).join(' ')
   try {
-    return JSON.stringify(message)
+    return JSON.stringify(value)
   } catch {
-    return String(message)
+    return String(value)
   }
 }
 
@@ -87,10 +100,7 @@ const makeAppLogger = (pinoInstance: pino.Logger) =>
       fiberId: fiber.id,
       date
     })
-    const payload = {
-      ...(isRecord(data) ? data : {}),
-      logLevel
-    }
+    const payload = isRecord(data) ? Object.assign({}, data, { logLevel }) : { logLevel }
 
     pinoInstance[pinoLevel(logLevel)](payload, msg)
 

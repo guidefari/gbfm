@@ -13,7 +13,7 @@ import {
   type CompletedPart
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
-import { Effect, Layer } from 'effect'
+import { Effect, Layer, Option, Schema } from 'effect'
 import { ConfigService } from '@/services/config.service'
 import {
   ObjectStoreClient,
@@ -21,15 +21,20 @@ import {
 } from './object-store-client'
 import { StorageProvider } from './provider'
 
-const isNotFoundError = (error: unknown) =>
-  error instanceof Error &&
-  (error.name === 'NotFound' ||
-    error.name === 'NoSuchKey' ||
-    ('$metadata' in error &&
-      typeof error.$metadata === 'object' &&
-      error.$metadata !== null &&
-      'httpStatusCode' in error.$metadata &&
-      error.$metadata.httpStatusCode === 404))
+const AwsFailure = Schema.Struct({
+  name: Schema.String,
+  $metadata: Schema.optional(Schema.Struct({ httpStatusCode: Schema.optional(Schema.Number) }))
+})
+
+const isNotFoundError = (cause: unknown) => {
+  const failure = Option.getOrUndefined(Schema.decodeUnknownOption(AwsFailure)(cause))
+  return (
+    failure !== undefined &&
+    (failure.name === 'NotFound' ||
+      failure.name === 'NoSuchKey' ||
+      failure.$metadata?.httpStatusCode === 404)
+  )
+}
 
 const destroyClient = (client: S3Client) =>
   Effect.sync(() => {

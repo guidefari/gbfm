@@ -54,7 +54,7 @@ export const OtlpLive = Effect.gen(function* () {
         new BatchSpanProcessor(
           new OTLPTraceExporter({
             url,
-            ...(headers ? { headers } : {})
+            headers
           }),
           // Keep local traces close to real time without making every span end
           // perform its own export. Production keeps the SDK batch defaults.

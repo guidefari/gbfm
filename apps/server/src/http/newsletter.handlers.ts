@@ -83,7 +83,7 @@ export const NewsletterHandlersLive = HttpApiBuilder.group(Api, 'newsletter', (h
                 .insert(newsletterSubscribersTable)
                 .values({
                   email: normalizedEmail,
-                  ...(payload.name ? { name: payload.name.trim() } : {}),
+                  name: payload.name ? payload.name.trim() : undefined,
                   source: payload.source || 'subscribe_page'
                 })
                 .onConflictDoNothing({ target: newsletterSubscribersTable.email })

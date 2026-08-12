@@ -31,22 +31,26 @@ const toDateStrings = <
   }
 >(
   post: T
-) => ({
-  ...post,
-  createdAt: post.createdAt.toISOString(),
-  updatedAt: post.updatedAt.toISOString(),
-  ...(post.blueskySource
-    ? {
-        blueskySource: {
-          ...post.blueskySource,
-          sourceCreatedAt:
-            typeof post.blueskySource.sourceCreatedAt === 'string'
-              ? post.blueskySource.sourceCreatedAt
-              : post.blueskySource.sourceCreatedAt.toISOString()
-        }
-      }
-    : {})
-})
+) => {
+  const { blueskySource, ...rest } = post
+  const response = {
+    ...rest,
+    createdAt: post.createdAt.toISOString(),
+    updatedAt: post.updatedAt.toISOString()
+  }
+  if (!blueskySource) return response
+
+  return {
+    ...response,
+    blueskySource: {
+      ...blueskySource,
+      sourceCreatedAt:
+        blueskySource.sourceCreatedAt instanceof Date
+          ? blueskySource.sourceCreatedAt.toISOString()
+          : blueskySource.sourceCreatedAt
+    }
+  }
+}
 
 export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
   handlers

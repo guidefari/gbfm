@@ -1,14 +1,14 @@
 const DEFAULT_IMAGE = 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'
 
 export const escapeHtml = (text: string): string => {
-  const map: Record<string, string> = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;'
-  }
-  return text.replace(/[&<>"']/g, (char) => map[char] || char)
+  const replacements = new Map([
+    ['&', '&amp;'],
+    ['<', '&lt;'],
+    ['>', '&gt;'],
+    ['"', '&quot;'],
+    ["'", '&#039;']
+  ])
+  return text.replace(/[&<>"']/g, (char) => replacements.get(char) ?? char)
 }
 
 export type OGType = 'music.song' | 'music.album' | 'profile' | 'article' | 'website'
@@ -34,6 +34,29 @@ export interface ErrorPageData {
   title: string
   message: string
   statusCode: 400 | 404 | 500
+}
+
+interface MusicJsonLd {
+  '@context': string
+  '@type': string
+  name: string
+  description: string
+  image: string
+  url: string
+  byArtist?: Array<{ '@type': string; name: string }>
+  audio?: { '@type': string; contentUrl: string }
+}
+
+interface ArticleJsonLd {
+  '@context': string
+  '@type': string
+  name: string
+  description: string
+  image: string
+  url: string
+  publisher: { '@type': string; name: string; url: string }
+  author?: Array<{ '@type': string; name: string }>
+  dateModified?: string
 }
 
 const getSiteUrl = (frontendUrl = 'https://goosebumps.fm'): string => {
@@ -177,7 +200,7 @@ const buildJsonLd = (
   }
 
   if (data.type === 'music.song' || data.type === 'music.album') {
-    const schema: Record<string, unknown> = {
+    const schema: MusicJsonLd = {
       ...base,
       '@type': data.type === 'music.album' ? 'MusicAlbum' : 'MusicRecording'
     }
@@ -194,7 +217,7 @@ const buildJsonLd = (
   }
 
   if (data.type === 'article') {
-    const schema: Record<string, unknown> = {
+    const schema: ArticleJsonLd = {
       ...base,
       '@type': 'Article',
       publisher: {

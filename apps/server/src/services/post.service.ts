@@ -213,11 +213,11 @@ export const PostService = Context.Service<PostService>('PostService')
 
 type PostRow = Omit<SelectPost, 'tags'> & { tags?: string[] | null }
 
-const isNonBlankString = (value: unknown): value is string =>
-  typeof value === 'string' && value.trim().length > 0
+const isNonBlankString = (value: string | null | undefined): value is string =>
+  value?.trim().length !== 0 && value !== null && value !== undefined
 
 const normalizeBlankString = (value: string | null | undefined) =>
-  typeof value === 'string' && value.trim().length === 0 ? null : value
+  value?.trim().length === 0 ? null : value
 
 export const validatePostData = (
   data: Partial<InsertPost>

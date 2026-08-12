@@ -4,14 +4,19 @@ import { InMemorySpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-tr
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
 import { Effect, Layer } from 'effect'
 import { describe, expect, test, vi } from 'vitest'
-import { instrumentDatabaseClient } from './database-instrumentation'
+import { instrumentDatabaseClient, type DatabaseSpanOptions } from './database-instrumentation'
+
+type TestQueryInput = string | { readonly text: string; readonly values?: readonly string[] }
 
 describe('instrumentDatabaseClient', () => {
   test('emits a safe span around query config objects and preserves query behavior', async () => {
     const secret = 'secret-user-id'
-    const query = vi.fn(async (_queryConfig: unknown) => ({ rows: [{ id: 'audio-1' }] }))
-    const spans: unknown[] = []
-    const runSpan = <A>(options: unknown, evaluate: () => A): A => {
+    const query = vi.fn(async (queryConfig: TestQueryInput) => {
+      void queryConfig
+      return { rows: [{ id: 'audio-1' }] }
+    })
+    const spans: DatabaseSpanOptions[] = []
+    const runSpan = <A>(options: DatabaseSpanOptions, evaluate: () => A): A => {
       spans.push(options)
       return evaluate()
     }
@@ -47,9 +52,12 @@ describe('instrumentDatabaseClient', () => {
   })
 
   test('takes the direct query path when there is no active request span', async () => {
-    const query = vi.fn(async (_queryConfig: unknown) => 'ok')
+    const query = vi.fn(async (queryConfig: TestQueryInput) => {
+      void queryConfig
+      return 'ok'
+    })
     let spanStarted = false
-    const runSpan = <A>(_options: unknown, evaluate: () => A): A => {
+    const runSpan = <A>(_options: DatabaseSpanOptions, evaluate: () => A): A => {
       spanStarted = true
       return evaluate()
     }
@@ -66,11 +74,14 @@ describe('instrumentDatabaseClient', () => {
   })
 
   test('does not wrap a database client more than once', async () => {
-    const query = vi.fn(async (_queryConfig: unknown) => 'ok')
+    const query = vi.fn(async (queryConfig: TestQueryInput) => {
+      void queryConfig
+      return 'ok'
+    })
     let spanCount = 0
     const instrumentation = {
       hasActiveSpan: () => true,
-      runSpan: <A>(_options: unknown, evaluate: () => A): A => {
+      runSpan: <A>(_options: DatabaseSpanOptions, evaluate: () => A): A => {
         spanCount += 1
         return evaluate()
       }
@@ -96,9 +107,12 @@ describe('instrumentDatabaseClient', () => {
     )
 
     try {
-      const clientQuery = vi.fn(async (_queryConfig: unknown) => 'ok')
+      const clientQuery = vi.fn(async (queryConfig: TestQueryInput) => {
+        void queryConfig
+        return 'ok'
+      })
       const client = instrumentDatabaseClient({ query: clientQuery })
-      const poolQuery = vi.fn(async (queryConfig: unknown) => {
+      const poolQuery = vi.fn(async (queryConfig: TestQueryInput) => {
         await Promise.resolve()
         return client.query(queryConfig)
       })

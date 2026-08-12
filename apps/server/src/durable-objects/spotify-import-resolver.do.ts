@@ -21,6 +21,10 @@ type IdentityRow = {
   readonly createdAtMs: number
 }
 
+type SpotifyImportResolverHeartbeat = {
+  readonly canonicalName: string | null
+}
+
 const CREATE_IDENTITY_TABLE = `
   CREATE TABLE IF NOT EXISTS _identity (
     canonical_name TEXT PRIMARY KEY,
@@ -71,7 +75,7 @@ export class SpotifyImportResolverDurableObject extends DurableObject<SpotifyImp
     return resolveSpotifyPlaylist(this.db, playlist, coverImageUrl, curatorId)
   }
 
-  heartbeat(): { readonly canonicalName: string | null } {
+  heartbeat(): SpotifyImportResolverHeartbeat {
     return { canonicalName: this.getIdentity()?.canonicalName ?? null }
   }
 }

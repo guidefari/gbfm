@@ -18,7 +18,7 @@ import {
   type SpotifyService
 } from '@/services/spotify.service'
 import { addLinkEffect, getLinksForEntityEffect } from './link.service'
-import { type SpotifyImportResolverShape } from '@/services/spotify-import-resolver.service'
+import { type SpotifyImportResolverContract } from '@/services/spotify-import-resolver.service'
 import { FetchError, type ImportedTrackTarget, requireInserted } from './shared'
 import { updateTrackEffect } from './track.service'
 
@@ -481,7 +481,7 @@ const refreshPlaylistCoverImageEffect = (
 
 export const addSpotifyTrackToPlaylistEffect = (
   spotify: SpotifyService,
-  resolver: SpotifyImportResolverShape
+  resolver: SpotifyImportResolverContract
 ) =>
   Effect.fn('musicEntity.addSpotifyTrackToPlaylist')(function* (
     playlistId: string,
@@ -555,7 +555,7 @@ export const addSpotifyTrackToPlaylistEffect = (
 
 export const importSpotifyPlaylistEffect = (
   spotify: SpotifyService,
-  resolver: SpotifyImportResolverShape,
+  resolver: SpotifyImportResolverContract,
   scraper: MusicLinkScraperService,
   s3: S3Service,
   cdnUrl: string,

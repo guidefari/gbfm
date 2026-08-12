@@ -24,7 +24,7 @@ export type LockCommit = {
 export const canonicalNavigationLockName = (identity: NavigationIdentity): string =>
   identity._tag === 'User' ? `user:${identity.userId}` : `device:${identity.deviceToken}`
 
-export interface NavigationLockShape {
+export interface NavigationLockContract {
   readonly decide: (
     identity: NavigationIdentity,
     request: LockRequest
@@ -40,7 +40,7 @@ export interface NavigationLockShape {
   readonly reset: (identity: NavigationIdentity) => Effect.Effect<void, DatabaseError>
 }
 
-export class NavigationLock extends Context.Service<NavigationLock, NavigationLockShape>()(
+export class NavigationLock extends Context.Service<NavigationLock, NavigationLockContract>()(
   'NavigationLock'
 ) {}
 

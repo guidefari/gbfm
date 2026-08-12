@@ -120,9 +120,9 @@ export class ProductionVerificationError extends Data.TaggedError('ProductionVer
 /**
  * Converts a typed verifier failure into a credential-safe operator summary.
  */
-export const summarizeProductionVerificationFailure = (error: unknown) =>
-  error instanceof ProductionVerificationError
-    ? `${error.phase}: ${error.summary}`
+export const summarizeProductionVerificationFailure = (cause: unknown) =>
+  cause instanceof ProductionVerificationError
+    ? `${cause.phase}: ${cause.summary}`
     : 'configuration: unexpected production verification defect'
 
 /**
@@ -200,7 +200,7 @@ const fail = (
 ): Effect.Effect<never, ProductionVerificationError> =>
   Effect.fail(new ProductionVerificationError({ phase, summary }))
 
-const decodeResources = (input: unknown) =>
+const decodeResources = <Input>(input: Input) =>
   Schema.decodeUnknownEffect(TaggedResourceResponse)(input).pipe(
     Effect.mapError(
       () =>
@@ -211,7 +211,7 @@ const decodeResources = (input: unknown) =>
     )
   )
 
-const decodeEcsService = (input: unknown) =>
+const decodeEcsService = <Input>(input: Input) =>
   Schema.decodeUnknownEffect(DescribeServicesResponse)(input).pipe(
     Effect.mapError(
       () =>
@@ -222,7 +222,7 @@ const decodeEcsService = (input: unknown) =>
     )
   )
 
-const decodeTaskDefinition = (input: unknown) =>
+const decodeTaskDefinition = <Input>(input: Input) =>
   Schema.decodeUnknownEffect(DescribeTaskDefinitionResponse)(input).pipe(
     Effect.mapError(
       () =>
@@ -233,7 +233,7 @@ const decodeTaskDefinition = (input: unknown) =>
     )
   )
 
-const decodeSentrySpans = (input: unknown, phase: 'sentry-ingestion' | 'sentry-privacy') =>
+const decodeSentrySpans = <Input>(input: Input, phase: 'sentry-ingestion' | 'sentry-privacy') =>
   Schema.decodeUnknownEffect(SentrySpansResponse)(input).pipe(
     Effect.mapError(
       () =>
@@ -244,8 +244,8 @@ const decodeSentrySpans = (input: unknown, phase: 'sentry-ingestion' | 'sentry-p
     )
   )
 
-const parseEcsResources = (
-  input: unknown
+const parseEcsResources = <Input>(
+  input: Input
 ): Effect.Effect<EcsResources, ProductionVerificationError> =>
   Effect.gen(function* () {
     const response = yield* decodeResources(input)

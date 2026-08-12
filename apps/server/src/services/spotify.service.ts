@@ -56,6 +56,16 @@ export interface SpotifyImportPlaylist {
   tracks: SpotifyImportTrack[]
 }
 
+export interface EnrichedTrack {
+  title: string
+  artist: string
+  url: string
+  platform: 'spotify' | 'youtube' | 'apple_music' | 'bandcamp' | 'other'
+  thumbnailUrl?: string
+  album?: string
+  duration?: number
+}
+
 export interface SpotifyService {
   readonly getTrack: (id: string) => Effect.Effect<Track, SpotifyError>
   readonly getAlbum: (id: string) => Effect.Effect<Album, SpotifyError>
@@ -80,18 +90,7 @@ export interface SpotifyService {
     { id: string; url: string; title: string; artist: string } | null,
     SpotifyError
   >
-  readonly enrichTrackFromUrl: (url: string) => Effect.Effect<
-    {
-      title: string
-      artist: string
-      url: string
-      platform: 'spotify' | 'youtube' | 'apple_music' | 'bandcamp' | 'other'
-      thumbnailUrl?: string
-      album?: string
-      duration?: number
-    },
-    SpotifyError
-  >
+  readonly enrichTrackFromUrl: (url: string) => Effect.Effect<EnrichedTrack, SpotifyError>
 }
 
 export const SpotifyService = Context.Service<SpotifyService>('SpotifyService')
@@ -510,15 +509,7 @@ const enrichTrackFromUrlWithSpan = (spotifyClient: SpotifyApiClient, url: string
 
     yield* Effect.annotateCurrentSpan('music.platform', platform)
 
-    let result: {
-      title: string
-      artist: string
-      url: string
-      platform: 'spotify' | 'youtube' | 'apple_music' | 'bandcamp' | 'other'
-      thumbnailUrl?: string
-      album?: string
-      duration?: number
-    }
+    let result: EnrichedTrack
 
     if (isSpotifyUrl(url)) {
       const id = extractSpotifyId(url)

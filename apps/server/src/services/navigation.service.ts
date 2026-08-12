@@ -44,6 +44,11 @@ type Phase = {
   readonly replay: TrailRow | undefined
 }
 
+type MutableNeighbours = {
+  back?: Slug
+  forward?: Slug
+}
+
 type Locked =
   | { readonly _tag: 'Duplicate'; readonly session: SessionRow }
   | { readonly _tag: 'Retry' }
@@ -85,7 +90,7 @@ const arrivedBy = (value: string): TrailRow['arrivedBy'] => {
   }
 }
 
-const databaseError = (operation: string, error: unknown) =>
+const databaseError = (operation: string, error: Parameters<typeof getErrorMessage>[0]) =>
   new DatabaseError({
     message: `Failed to ${operation} navigation session: ${getErrorMessage(error)}`,
     operation,
@@ -449,13 +454,13 @@ export const NavigationSessionServiceLayer = Layer.effect(
           ])
           const back = backRows[0]
           const forward = forwardRows[0] ?? unreadRows[0]
+          const neighbours: MutableNeighbours = {}
+          if (back) neighbours.back = asSlug(back.slug)
+          if (forward) neighbours.forward = asSlug(forward.slug)
           return {
             length: lengthRows[0]?.count ?? 0,
             index: indexRows[0]?.count ?? 0,
-            neighbours: {
-              ...(back ? { back: asSlug(back.slug) } : {}),
-              ...(forward ? { forward: asSlug(forward.slug) } : {})
-            },
+            neighbours,
             hasUnread: unreadRows.length > 0
           }
         },
@@ -495,10 +500,12 @@ export const NavigationSessionServiceLayer = Layer.effect(
         },
         { concurrency: 'unbounded' }
       ).pipe(
-        Effect.map(({ back, forward }) => ({
-          ...(back ? { back: back.slug } : {}),
-          ...(forward ? { forward: forward.slug } : {})
-        })),
+        Effect.map(({ back, forward }) => {
+          const neighbours: MutableNeighbours = {}
+          if (back) neighbours.back = back.slug
+          if (forward) neighbours.forward = forward.slug
+          return neighbours
+        }),
         Effect.withSpan('navigation.neighbours.read')
       )
 
@@ -855,11 +862,14 @@ export const NavigationSessionServiceLayer = Layer.effect(
         resolve(identity, command, from, intentToken, 0).pipe(
           Effect.tapError((error) => Effect.annotateCurrentSpan('errorType', error._tag)),
           Effect.withSpan('navigation.resolve', {
-            attributes: {
-              command: command._tag,
-              ...(command._tag === 'Step' ? { direction: command.direction } : {}),
-              identityKind: identity._tag
-            }
+            attributes:
+              command._tag === 'Step'
+                ? {
+                    command: command._tag,
+                    direction: command.direction,
+                    identityKind: identity._tag
+                  }
+                : { command: command._tag, identityKind: identity._tag }
           })
         ),
       read,

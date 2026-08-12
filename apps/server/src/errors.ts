@@ -31,13 +31,14 @@ function databaseFailureSummary(error: Error): string {
  * getErrorMessage({ code: 500 })
  * // => 'Unknown error'
  */
-export function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return DRIZZLE_QUERY_FAILURE.test(error.message)
-      ? databaseFailureSummary(error)
-      : error.message.replace(/\nparams:[\s\S]*$/i, '')
+export function getErrorMessage(cause: unknown): string {
+  if (cause instanceof Error) {
+    return DRIZZLE_QUERY_FAILURE.test(cause.message)
+      ? databaseFailureSummary(cause)
+      : cause.message.replace(/\nparams:[\s\S]*$/i, '')
   }
-  if (typeof error === 'string') return error
+  const message = Schema.decodeUnknownOption(Schema.String)(cause)
+  if (Option.isSome(message)) return message.value
   return 'Unknown error'
 }
 

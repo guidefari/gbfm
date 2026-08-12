@@ -31,14 +31,16 @@ const decodeCachedSession = Schema.decodeUnknownOption(CachedSession)
 export const MAX_CONSECUTIVE_FAILURES = 5
 const MAX_BACKOFF_MS = 60 * 60 * 1000
 
-export const nextScheduleAfterFailure = (
-  consecutiveFailures: number,
-  now: Date
-): {
+type FailureSchedule = {
   readonly consecutiveFailures: number
   readonly scheduled: boolean
   readonly nextEligibleAt: Date | null
-} => {
+}
+
+export const nextScheduleAfterFailure = (
+  consecutiveFailures: number,
+  now: Date
+): FailureSchedule => {
   const failures = consecutiveFailures + 1
   if (failures >= MAX_CONSECUTIVE_FAILURES) {
     return { consecutiveFailures: failures, scheduled: false, nextEligibleAt: null }

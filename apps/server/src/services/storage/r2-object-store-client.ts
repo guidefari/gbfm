@@ -147,9 +147,7 @@ export const R2ObjectStoreClientLayer = (buckets: R2ObjectStoreBuckets) =>
           let cursor: string | undefined
 
           do {
-            const options: { prefix?: string; cursor?: string } = {}
-            if (prefix) options.prefix = prefix
-            if (cursor) options.cursor = cursor
+            const options = { prefix: prefix || undefined, cursor }
             const page = await bucket(bucketName).list(options)
             objects.push(
               ...page.objects.map((object) => ({

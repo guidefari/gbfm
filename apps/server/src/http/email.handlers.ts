@@ -30,26 +30,26 @@ import {
 
 const dieOnDatabaseError = makeDieOnDatabaseError('email')
 
-const EMAIL_TYPE_NORMALIZATION_MAP: Record<string, EmailNotificationType> = {
-  TRANSACTIONAL: EMAIL_NOTIFICATION_TYPES.TRANSACTIONAL,
-  MIX_RELEASE: EMAIL_NOTIFICATION_TYPES.MIX_RELEASE,
-  MIXRELEASE: EMAIL_NOTIFICATION_TYPES.MIX_RELEASE,
-  MIX_NOTIFICATION: EMAIL_NOTIFICATION_TYPES.MIX_RELEASE,
-  MUSIC_REMINDER: EMAIL_NOTIFICATION_TYPES.MIX_RELEASE,
-  PROMOTIONAL: EMAIL_NOTIFICATION_TYPES.PROMOTIONAL,
-  SYSTEM: EMAIL_NOTIFICATION_TYPES.SYSTEM
-}
+const EMAIL_TYPE_NORMALIZATION_MAP = new Map<string, EmailNotificationType>([
+  ['TRANSACTIONAL', EMAIL_NOTIFICATION_TYPES.TRANSACTIONAL],
+  ['MIX_RELEASE', EMAIL_NOTIFICATION_TYPES.MIX_RELEASE],
+  ['MIXRELEASE', EMAIL_NOTIFICATION_TYPES.MIX_RELEASE],
+  ['MIX_NOTIFICATION', EMAIL_NOTIFICATION_TYPES.MIX_RELEASE],
+  ['MUSIC_REMINDER', EMAIL_NOTIFICATION_TYPES.MIX_RELEASE],
+  ['PROMOTIONAL', EMAIL_NOTIFICATION_TYPES.PROMOTIONAL],
+  ['SYSTEM', EMAIL_NOTIFICATION_TYPES.SYSTEM]
+])
 
-const EMAIL_STATUS_NORMALIZATION_MAP: Record<string, EmailDeliveryStatus> = {
-  PENDING: EMAIL_DELIVERY_STATUSES.PENDING,
-  SENT: EMAIL_DELIVERY_STATUSES.SENT,
-  DELIVERED: EMAIL_DELIVERY_STATUSES.DELIVERED,
-  BOUNCED: EMAIL_DELIVERY_STATUSES.BOUNCED,
-  COMPLAINED: EMAIL_DELIVERY_STATUSES.COMPLAINED,
-  FAILED: EMAIL_DELIVERY_STATUSES.FAILED,
-  SUCCESS: EMAIL_DELIVERY_STATUSES.SENT,
-  FAILURE: EMAIL_DELIVERY_STATUSES.FAILED
-}
+const EMAIL_STATUS_NORMALIZATION_MAP = new Map<string, EmailDeliveryStatus>([
+  ['PENDING', EMAIL_DELIVERY_STATUSES.PENDING],
+  ['SENT', EMAIL_DELIVERY_STATUSES.SENT],
+  ['DELIVERED', EMAIL_DELIVERY_STATUSES.DELIVERED],
+  ['BOUNCED', EMAIL_DELIVERY_STATUSES.BOUNCED],
+  ['COMPLAINED', EMAIL_DELIVERY_STATUSES.COMPLAINED],
+  ['FAILED', EMAIL_DELIVERY_STATUSES.FAILED],
+  ['SUCCESS', EMAIL_DELIVERY_STATUSES.SENT],
+  ['FAILURE', EMAIL_DELIVERY_STATUSES.FAILED]
+])
 
 const MIX_NOTIFICATION_SEND_CONCURRENCY = 5
 
@@ -79,10 +79,12 @@ function toEmailLogResponse(log: SelectEmailDeliveryLog) {
     userId: log.userId,
     recipientEmail: log.recipientEmail,
     recipientName: log.recipientName,
-    emailType: EMAIL_TYPE_NORMALIZATION_MAP[normalizedTypeToken] ?? EMAIL_NOTIFICATION_TYPES.SYSTEM,
+    emailType:
+      EMAIL_TYPE_NORMALIZATION_MAP.get(normalizedTypeToken) ?? EMAIL_NOTIFICATION_TYPES.SYSTEM,
     templateName: log.templateName,
     subject: log.subject,
-    status: EMAIL_STATUS_NORMALIZATION_MAP[normalizedStatusToken] ?? EMAIL_DELIVERY_STATUSES.FAILED,
+    status:
+      EMAIL_STATUS_NORMALIZATION_MAP.get(normalizedStatusToken) ?? EMAIL_DELIVERY_STATUSES.FAILED,
     provider: log.provider,
     providerMessageId: log.providerMessageId,
     failureCategory: log.failureCategory,
@@ -257,9 +259,9 @@ export const EmailHandlersLive = HttpApiBuilder.group(Api, 'email', (handlers) =
         const db = yield* Database
         const result = yield* Effect.tryPromise({
           try: () => getAdminEmailLogs(query, db),
-          catch: (error: unknown) =>
+          catch: (cause) =>
             new DatabaseError({
-              message: `Failed to fetch email logs: ${getErrorMessage(error)}`,
+              message: `Failed to fetch email logs: ${getErrorMessage(cause)}`,
               operation: 'select',
               table: 'email_delivery_logs'
             })

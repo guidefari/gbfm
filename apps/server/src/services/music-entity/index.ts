@@ -285,7 +285,7 @@ export interface MusicEntityService {
     linkId: string,
     status: LinkStatus,
     verifiedBy?: string,
-    metadata?: Record<string, unknown>
+    metadata?: InsertMusicEntityLink['metadata']
   ) => Effect.Effect<SelectMusicEntityLink, DatabaseError | NotFoundError>
   readonly deleteLink: (
     entityType: MusicEntityType,

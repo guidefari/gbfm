@@ -1,9 +1,12 @@
 import type * as Sentry from '@sentry/core'
+import { Option, Schema } from 'effect'
 
 const DATABASE_AUTO_INTEGRATIONS = new Set(['Postgres', 'PostgresJs'])
 
-const isLocalUrl = (value: unknown) =>
-  typeof value === 'string' && (value.includes('127.0.0.1') || value.includes('localhost'))
+const isLocalUrl = (cause: Sentry.SpanAttributeValue | string | undefined) => {
+  const value = Option.getOrUndefined(Schema.decodeUnknownOption(Schema.String)(cause))
+  return value !== undefined && (value.includes('127.0.0.1') || value.includes('localhost'))
+}
 
 /**
  * Database queries use the explicit client wrapper so raw SQL never enters telemetry.

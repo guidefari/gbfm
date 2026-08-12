@@ -6,7 +6,9 @@ import {
   normalizeBlueskyRecord
 } from './bluesky-importer.service'
 
-const entry = (overrides: Record<string, unknown> = {}) => ({
+type EntryOverrides = { readonly reason?: Record<never, never> }
+
+const entry = (overrides: EntryOverrides = {}) => ({
   post: {
     uri: 'at://did:plc:author/app.bsky.feed.post/3abc',
     cid: 'bafy-cid',
@@ -81,6 +83,10 @@ describe('normalizeBlueskyRecord', () => {
       kind: 'skip',
       reason: 'repost'
     })
+    expect(normalizeBlueskyRecord({ reason: {} }, 'did:plc:author')).toEqual({
+      kind: 'skip',
+      reason: 'repost'
+    })
     expect(normalizeBlueskyRecord(entry(), 'did:plc:other')).toEqual({
       kind: 'skip',
       reason: 'different-author'
@@ -96,6 +102,29 @@ describe('normalizeBlueskyRecord', () => {
     expect(normalizeBlueskyRecord(nonMusic, 'did:plc:author')).toEqual({
       kind: 'skip',
       reason: 'not-qualifying'
+    })
+  })
+
+  test('ignores malformed optional facets and embeds', () => {
+    const valid = entry()
+    const input = {
+      ...valid,
+      post: {
+        ...valid.post,
+        record: {
+          ...valid.post.record,
+          facets: [
+            ...valid.post.record.facets,
+            { index: { byteStart: 0, byteEnd: 1 }, features: [null] }
+          ],
+          embed: { $type: 'app.bsky.embed.external' }
+        }
+      }
+    }
+
+    expect(normalizeBlueskyRecord(input, 'did:plc:author')).toMatchObject({
+      kind: 'import',
+      record: { candidateUrls: ['https://open.spotify.com/track/123'] }
     })
   })
 })

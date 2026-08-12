@@ -80,9 +80,9 @@ const workerSentryServiceLive = (env: ApiEnv) =>
     Layer.provide(workerSentryEnvLive(env))
   )
 
-const navigationLockError = (operation: string, error: unknown) =>
+const navigationLockError = (operation: string, cause: unknown) =>
   new DatabaseError({
-    message: `Failed to ${operation} navigation lock: ${getErrorMessage(error)}`,
+    message: `Failed to ${operation} navigation lock: ${getErrorMessage(cause)}`,
     operation,
     table: 'navigation_sessions'
   })
@@ -128,9 +128,9 @@ const navigationLockLive = (env: ApiEnv) =>
       })
   })
 
-const spotifyImportResolverError = (operation: string, error: unknown) =>
+const spotifyImportResolverError = (operation: string, cause: unknown) =>
   new DatabaseError({
-    message: `Failed to ${operation} Spotify import resolver: ${getErrorMessage(error)}`,
+    message: `Failed to ${operation} Spotify import resolver: ${getErrorMessage(cause)}`,
     operation,
     table: 'music_entity_links'
   })

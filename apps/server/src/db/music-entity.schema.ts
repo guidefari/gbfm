@@ -47,6 +47,16 @@ export type MusicPlatform = (typeof MUSIC_PLATFORMS)[number]
 export const ALBUM_TYPES = ['LP', 'EP', 'single', 'compilation'] as const
 export type AlbumType = (typeof ALBUM_TYPES)[number]
 
+export type MusicEntityMetadataValue =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | ReadonlyArray<MusicEntityMetadataValue>
+  | { readonly [key: string]: MusicEntityMetadataValue }
+export type MusicEntityMetadata = Record<string, MusicEntityMetadataValue>
+
 // ---------------------------------------------------------------------------
 // Seeded lookup tables
 // ---------------------------------------------------------------------------
@@ -324,7 +334,7 @@ export const musicEntityLinksTable = sqliteTable(
     scrapedAt: integer({ mode: 'timestamp_ms' }),
     verifiedAt: integer({ mode: 'timestamp_ms' }),
     verifiedBy: text().references(() => user.id, { onDelete: 'set null' }),
-    metadata: text({ mode: 'json' }).$type<Record<string, unknown>>(),
+    metadata: text({ mode: 'json' }).$type<MusicEntityMetadata>(),
     createdAt: integer({ mode: 'timestamp_ms' })
       .notNull()
       .$defaultFn(() => new Date()),
@@ -646,6 +656,8 @@ export const updateMusicLabelSchema = insertMusicLabelSchema.partial()
 // Drizzle types varchar FK columns as plain string; enum validation is
 // enforced on inputs only.
 
+export const musicEntityMetadataSchema = z.record(z.string(), z.json())
+
 export const insertMusicEntityLinkSchema = z.object({
   entityType: entityTypeEnum,
   entityId: z.string().uuid(),
@@ -653,7 +665,7 @@ export const insertMusicEntityLinkSchema = z.object({
   url: z.string().url(),
   status: linkStatusEnum.optional().default(LINK_STATUS.VERIFIED),
   scrapedAt: z.coerce.date().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional()
+  metadata: musicEntityMetadataSchema.optional()
 })
 
 export const selectMusicEntityLinkSchema = z.object({
@@ -666,14 +678,14 @@ export const selectMusicEntityLinkSchema = z.object({
   scrapedAt: z.date().nullable(),
   verifiedAt: z.date().nullable(),
   verifiedBy: z.string().nullable(),
-  metadata: z.record(z.string(), z.unknown()).nullable(),
+  metadata: musicEntityMetadataSchema.nullable(),
   createdAt: z.date(),
   updatedAt: z.date()
 })
 
 export const updateMusicEntityLinkStatusSchema = z.object({
   status: linkStatusEnum,
-  metadata: z.record(z.string(), z.unknown()).optional()
+  metadata: musicEntityMetadataSchema.optional()
 })
 
 // --- Artist junction schemas ---

@@ -61,10 +61,20 @@ class AudioCreateConflict extends Error {
   }
 }
 
-const canonicalize = (value: unknown): unknown => {
+type CanonicalValue =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | Date
+  | readonly CanonicalValue[]
+  | { readonly [key: string]: CanonicalValue }
+
+const canonicalize = (value: CanonicalValue): CanonicalValue => {
   if (value instanceof Date) return value.toISOString()
   if (Array.isArray(value)) return value.map(canonicalize)
-  if (value !== null && typeof value === 'object') {
+  if (value instanceof Object) {
     return Object.fromEntries(
       Object.entries(value)
         .filter(([, entry]) => entry !== undefined)

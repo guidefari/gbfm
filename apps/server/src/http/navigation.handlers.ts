@@ -53,10 +53,10 @@ export const NavigationHandlersLive = HttpApiBuilder.group(Api, 'navigation', (h
         return result
       }).pipe(
         Effect.withSpan('navigation.request', {
-          attributes: {
-            command: command._tag,
-            ...(command._tag === 'Step' ? { direction: command.direction } : {})
-          }
+          attributes:
+            command._tag === 'Step'
+              ? { command: command._tag, direction: command.direction }
+              : { command: command._tag }
         })
       )
     })

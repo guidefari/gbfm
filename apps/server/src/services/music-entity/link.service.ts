@@ -88,7 +88,7 @@ export const updateLinkStatusEffect = (
   linkId: string,
   status: LinkStatus,
   verifiedBy?: string,
-  metadata?: Record<string, unknown>
+  metadata?: InsertMusicEntityLink['metadata']
 ) =>
   Effect.gen(function* () {
     const db = yield* Database

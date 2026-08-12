@@ -51,6 +51,18 @@ const requireAdmin = Effect.gen(function* () {
 type UserProfile = Effect.Success<ReturnType<UserService['getUserById']>>
 type SocialLink = Effect.Success<ReturnType<UserService['getUserSocialLinks']>>[number]
 
+interface UserProfileUpdate {
+  email?: string
+  image?: string | null
+  username?: string
+  bio?: string | null
+}
+
+interface UserBioUpdate {
+  bio?: string | null
+  image?: string | null
+}
+
 const toProfileResponse = (profile: UserProfile, socialLinks: ReadonlyArray<SocialLink>) => ({
   ...profile,
   avatarUrl: profile.image,
@@ -63,12 +75,7 @@ export const UserHandlersLive = HttpApiBuilder.group(Api, 'user', (handlers) =>
     .handle('updateProfile', ({ payload }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
-        const updateData: {
-          email?: string
-          image?: string | null
-          username?: string
-          bio?: string | null
-        } = {}
+        const updateData: UserProfileUpdate = {}
 
         // Both branches of the payload union (JSON and multipart) share the
         // same email/username/bio fields; `avatar`/`image` only exist on one
@@ -168,7 +175,7 @@ export const UserHandlersLive = HttpApiBuilder.group(Api, 'user', (handlers) =>
     .handle('updateAdminUserBio', ({ params, payload }) =>
       Effect.gen(function* () {
         yield* requireAdmin
-        const updateData: { bio?: string | null; image?: string | null } = {}
+        const updateData: UserBioUpdate = {}
         if (payload.bio !== null) updateData.bio = payload.bio
         if (payload.image !== undefined) updateData.image = payload.image
 

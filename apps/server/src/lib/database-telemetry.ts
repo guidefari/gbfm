@@ -1,4 +1,17 @@
+import { Option, Schema } from 'effect'
+import type { SpanAttributes, SpanJSON } from '@sentry/core'
+
+type DatabaseTelemetryValue =
+  | SpanAttributes[string]
+  | { readonly text: string; readonly values?: readonly (string | number | boolean | null)[] }
+type DatabaseTelemetrySpan = {
+  readonly data: Readonly<Record<string, DatabaseTelemetryValue>>
+  readonly description?: string
+  readonly op?: string
+}
+
 const DATABASE_QUERY_ATTRIBUTE_KEYS = ['db.statement', 'db.query', 'db.query.text'] as const
+const SafeDatabaseAttribute = Schema.Union([Schema.String, Schema.Number, Schema.Boolean])
 const SAFE_DATABASE_ATTRIBUTE_KEYS = new Set([
   'db.system',
   'db.system.name',
@@ -8,18 +21,12 @@ const SAFE_DATABASE_ATTRIBUTE_KEYS = new Set([
   'server.address',
   'server.port'
 ])
-const TABLE_PATTERNS: Readonly<Record<string, RegExp>> = {
+const TABLE_PATTERNS = {
   SELECT: /\bfrom\s+((?:"[^"]+"|[\w$]+)(?:\s*\.\s*(?:"[^"]+"|[\w$]+))?)/i,
   INSERT: /\binsert\s+into\s+((?:"[^"]+"|[\w$]+)(?:\s*\.\s*(?:"[^"]+"|[\w$]+))?)/i,
   UPDATE: /\bupdate\s+((?:"[^"]+"|[\w$]+)(?:\s*\.\s*(?:"[^"]+"|[\w$]+))?)/i,
   DELETE: /\bdelete\s+from\s+((?:"[^"]+"|[\w$]+)(?:\s*\.\s*(?:"[^"]+"|[\w$]+))?)/i
-}
-
-type DatabaseSpan = {
-  readonly data: Readonly<Record<string, unknown>>
-  readonly description?: string
-  readonly op?: string
-}
+} satisfies Readonly<Record<SqlOperation, RegExp>>
 
 export type DatabaseQuerySummary = {
   readonly operation: string
@@ -109,10 +116,12 @@ function findTopLevelOperation(
   return undefined
 }
 
-export function extractDatabaseQueryText(value: unknown): string | undefined {
-  if (typeof value === 'string') return value
-  if (typeof value !== 'object' || value === null || !('text' in value)) return undefined
-  return typeof value.text === 'string' ? value.text : undefined
+export function extractDatabaseQueryText<Input>(value: Input): string | undefined {
+  const text = Schema.decodeUnknownOption(Schema.String)(value)
+  if (Option.isSome(text)) return text.value
+  return Option.getOrUndefined(
+    Schema.decodeUnknownOption(Schema.Struct({ text: Schema.String }))(value)
+  )?.text
 }
 
 /**
@@ -124,7 +133,8 @@ export function summarizeDatabaseQuery(query: string): DatabaseQuerySummary {
   const match = findTopLevelOperation(query)
   const operation = match?.operation ?? 'QUERY'
   const operationQuery = match ? query.slice(match.index) : query
-  const tableMatch = TABLE_PATTERNS[operation]?.exec(operationQuery)
+  const tableMatch =
+    operation === 'QUERY' ? undefined : TABLE_PATTERNS[operation].exec(operationQuery)
   const table = tableMatch?.[1] ? unquoteIdentifier(tableMatch[1]) : 'unknown'
 
   return {
@@ -137,20 +147,25 @@ export function summarizeDatabaseQuery(query: string): DatabaseQuerySummary {
 /**
  * Removes raw SQL and parameters from a Sentry database span while preserving useful DB semantics.
  */
-export function sanitizeDatabaseSpan<T extends DatabaseSpan>(span: T): T {
+export function sanitizeDatabaseSpan(span: SpanJSON): SpanJSON
+export function sanitizeDatabaseSpan<T extends DatabaseTelemetrySpan>(span: T): T
+export function sanitizeDatabaseSpan<T extends DatabaseTelemetrySpan>(span: T): T {
   const dbSystem = span.data['db.system.name'] ?? span.data['db.system']
-  if (typeof dbSystem !== 'string') return span
+  if (dbSystem === undefined || !Schema.is(Schema.String)(dbSystem)) return span
 
   const rawQuery = DATABASE_QUERY_ATTRIBUTE_KEYS.flatMap((key) => {
     const query = extractDatabaseQueryText(span.data[key])
     return query ? [query] : []
   })[0]
   const summary = summarizeDatabaseQuery(rawQuery ?? span.description ?? '')
-  const data: Record<string, unknown> = {}
+  const data: SpanAttributes = {}
 
   for (const [key, value] of Object.entries(span.data)) {
     if (SAFE_DATABASE_ATTRIBUTE_KEYS.has(key)) {
-      data[key] = value
+      const safeValue = Option.getOrUndefined(
+        Schema.decodeUnknownOption(SafeDatabaseAttribute)(value)
+      )
+      if (safeValue !== undefined) data[key] = safeValue
     }
   }
 

@@ -6,12 +6,12 @@ export interface SitemapXml {
   readonly generatedAt: Date
 }
 
-export interface SitemapCacheShape {
+export interface SitemapCacheService {
   readonly read: () => Effect.Effect<Option.Option<SitemapXml>, never>
   readonly write: (xml: SitemapXml) => Effect.Effect<void, SitemapCacheError>
 }
 
-export class SitemapCache extends Context.Service<SitemapCache, SitemapCacheShape>()(
+export class SitemapCache extends Context.Service<SitemapCache, SitemapCacheService>()(
   'SitemapCache'
 ) {}
 

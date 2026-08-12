@@ -25,7 +25,7 @@ export type ResolvedSpotifyTrack = {
   readonly created: boolean
 }
 
-export interface SpotifyImportResolverShape {
+export interface SpotifyImportResolverContract {
   readonly resolveTrack: (
     track: SpotifyImportTrack
   ) => Effect.Effect<ResolvedSpotifyTrack, DatabaseError>
@@ -38,7 +38,7 @@ export interface SpotifyImportResolverShape {
 
 export class SpotifyImportResolver extends Context.Service<
   SpotifyImportResolver,
-  SpotifyImportResolverShape
+  SpotifyImportResolverContract
 >()('SpotifyImportResolver') {}
 
 export const resolveSpotifyTrack = async (
@@ -195,6 +195,6 @@ export const SpotifyImportResolverLocalLayer = Layer.effect(
         resolve('playlist', playlist.playlistUrl, () =>
           resolveSpotifyPlaylist(db, playlist, coverImageUrl, curatorId)
         )
-    } satisfies SpotifyImportResolverShape
+    } satisfies SpotifyImportResolverContract
   })
 )

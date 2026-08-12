@@ -1,4 +1,4 @@
-import { Effect, Layer } from 'effect'
+import { Effect, Layer, Option, Schema } from 'effect'
 import {
   EmailRejected,
   EmailTransport,
@@ -45,12 +45,11 @@ const rejectionReasons = {
 const isCloudflareRejectionCode = (value: string): value is CloudflareRejectedProviderCode =>
   Object.hasOwn(rejectionReasons, value)
 
+const CloudflareError = Schema.Struct({ code: Schema.String })
+
 const providerCodeFrom = (cause: unknown): string | undefined => {
-  if (typeof cause !== 'object' || cause === null || !Object.hasOwn(cause, 'code')) {
-    return undefined
-  }
-  const code = Object.getOwnPropertyDescriptor(cause, 'code')?.value
-  return typeof code === 'string' ? code : undefined
+  const parsed = Schema.decodeUnknownOption(CloudflareError)(cause)
+  return Option.isSome(parsed) ? parsed.value.code : undefined
 }
 
 const classifyCloudflareError = (cause: unknown): EmailRejected | EmailUnavailable => {
@@ -61,14 +60,16 @@ const classifyCloudflareError = (cause: unknown): EmailRejected | EmailUnavailab
   return new EmailUnavailable({ providerCode: 'unknown' })
 }
 
-const toCloudflareMessage = (message: OutboundEmailMessage): CloudflareEmailMessage => ({
-  from: { email: message.from, name: message.fromName },
-  to: message.to,
-  subject: message.subject,
-  html: message.html,
-  text: message.text,
-  ...(message.replyTo === undefined ? {} : { replyTo: message.replyTo })
-})
+const toCloudflareMessage = (message: OutboundEmailMessage): CloudflareEmailMessage => {
+  const base = {
+    from: { email: message.from, name: message.fromName },
+    to: message.to,
+    subject: message.subject,
+    html: message.html,
+    text: message.text
+  }
+  return message.replyTo === undefined ? base : { ...base, replyTo: message.replyTo }
+}
 
 const sendWithCloudflare = (binding: CloudflareEmailBinding, message: OutboundEmailMessage) =>
   Effect.tryPromise({

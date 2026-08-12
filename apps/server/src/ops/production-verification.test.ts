@@ -4,7 +4,7 @@ import {
   ProductionVerificationPort,
   ProductionVerificationError,
   type ProductionVerificationConfig,
-  type ProductionVerificationPort as ProductionVerificationPortShape,
+  type ProductionVerificationPort as ProductionVerificationPortService,
   summarizeProductionVerificationFailure,
   verifyProductionDeployment
 } from './production-verification'
@@ -138,10 +138,10 @@ const makeTestLayer = (overrides: TestOverrides = {}) => {
   const probes: Array<{ readonly url: string; readonly traceparent?: string }> = []
   let waits = 0
 
-  const take = (values: Array<unknown>, fallback: unknown) =>
+  const take = <T>(values: Array<T>, fallback: T) =>
     values.length > 1 ? (values.shift() ?? fallback) : (values[0] ?? fallback)
 
-  const port: ProductionVerificationPortShape = {
+  const port: ProductionVerificationPortService = {
     discoverEcsResources: () => Effect.succeed(resources),
     describeEcsService: () => Effect.succeed(take(ecsResponses, ecsService())),
     describeTaskDefinition: () =>

@@ -31,6 +31,13 @@ type SessionRow = {
   readonly lastIntentToken: string | null
 }
 
+type NavigationLockEnv = Record<never, never>
+
+type NavigationLockHeartbeat = {
+  readonly canonicalName: string | null
+  readonly hasSession: boolean
+}
+
 const CREATE_IDENTITY_TABLE = `
   CREATE TABLE IF NOT EXISTS _identity (
     canonical_name TEXT PRIMARY KEY,
@@ -48,8 +55,8 @@ const CREATE_SESSION_TABLE = `
   )
 `
 
-export class NavigationLockDurableObject extends DurableObject<unknown> {
-  constructor(ctx: ConstructorParameters<typeof DurableObject>[0], env: unknown) {
+export class NavigationLockDurableObject extends DurableObject<NavigationLockEnv> {
+  constructor(ctx: ConstructorParameters<typeof DurableObject>[0], env: NavigationLockEnv) {
     super(ctx, env)
     ctx.blockConcurrencyWhile(async () => {
       this.ctx.storage.sql.exec(CREATE_IDENTITY_TABLE)
@@ -142,7 +149,7 @@ export class NavigationLockDurableObject extends DurableObject<unknown> {
     this.ctx.storage.sql.exec('DELETE FROM session_state')
   }
 
-  heartbeat(): { readonly canonicalName: string | null; readonly hasSession: boolean } {
+  heartbeat(): NavigationLockHeartbeat {
     const identity = this.getIdentity()
     const session = this.readSession()
     return { canonicalName: identity?.canonicalName ?? null, hasSession: session !== null }

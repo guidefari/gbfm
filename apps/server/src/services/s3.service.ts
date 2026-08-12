@@ -81,9 +81,9 @@ export const S3Service = Context.Service<S3Service>('S3Service')
 
 const getKeyPrefix = (key: string): string => key.split('/')[0] ?? 'root'
 
-const storageError = (operation: string, key: string, error: unknown) =>
+const storageError = (operation: string, key: string, cause: unknown) =>
   new S3Error({
-    message: `Failed to ${operation}: ${getErrorMessage(error)}`,
+    message: `Failed to ${operation}: ${getErrorMessage(cause)}`,
     operation,
     key
   })

@@ -1,11 +1,12 @@
 import { SpanStatusCode, trace } from '@opentelemetry/api'
 import { AsyncLocalStorage } from 'node:async_hooks'
+import { isPromise } from 'node:util/types'
 import { extractDatabaseQueryText, summarizeDatabaseQuery } from './database-telemetry'
 
 const INSTRUMENTED_DATABASE_CLIENT = Symbol('instrumented-database-client')
 const activeDatabaseQuery = new AsyncLocalStorage<boolean>()
 
-type DatabaseSpanOptions = {
+export type DatabaseSpanOptions = {
   readonly name: string
   readonly op: 'db.query'
   readonly attributes: Readonly<Record<string, string>>
@@ -16,8 +17,9 @@ type DatabaseInstrumentation = {
   readonly runSpan: (options: DatabaseSpanOptions, evaluate: () => unknown) => unknown
 }
 
+type QueryFunction = (...arguments_: never[]) => unknown
 type QueryableClient = {
-  readonly query: unknown
+  readonly query: QueryFunction
   readonly [INSTRUMENTED_DATABASE_CLIENT]?: true
 }
 
@@ -42,12 +44,7 @@ function runOpenTelemetrySpan(options: DatabaseSpanOptions, evaluate: () => unkn
         throw error
       }
 
-      if (
-        typeof result === 'object' &&
-        result !== null &&
-        'then' in result &&
-        typeof result.then === 'function'
-      ) {
+      if (isPromise(result)) {
         return Promise.resolve(result).then(
           (value) => {
             span.end()
@@ -85,12 +82,12 @@ export function instrumentDatabaseClient<T extends QueryableClient>(
   client: T,
   instrumentation: DatabaseInstrumentation = openTelemetryDatabaseInstrumentation
 ): T {
-  if (client[INSTRUMENTED_DATABASE_CLIENT] || typeof client.query !== 'function') return client
+  if (client[INSTRUMENTED_DATABASE_CLIENT]) return client
 
   const originalQuery = client.query
   const instrumentedQuery = function (
-    this: unknown,
-    queryConfig: unknown,
+    this: T,
+    queryConfig: Parameters<T['query']>[0],
     ...arguments_: readonly unknown[]
   ): unknown {
     if (activeDatabaseQuery.getStore() || !instrumentation.hasActiveSpan()) {

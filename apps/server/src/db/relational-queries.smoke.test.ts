@@ -19,7 +19,7 @@ const actorId = `smoke-${randomUUID()}`
 
 describe('relational query smoke matrix', () => {
   test('audio.service getByType, both visibility branches', async () => {
-    const shape = (where: ReturnType<typeof and>) =>
+    const query = (where: ReturnType<typeof and>) =>
       db.query.audioTable.findMany({
         where,
         limit: 1,
@@ -32,10 +32,10 @@ describe('relational query smoke matrix', () => {
       })
 
     await expect(
-      shape(and(eq(audioTable.type, 'mix'), eq(audioTable.draft, false)))
+      query(and(eq(audioTable.type, 'mix'), eq(audioTable.draft, false)))
     ).resolves.toBeDefined()
     await expect(
-      shape(and(eq(audioTable.type, 'mix'), audioIdsForCreator(db, actorId)))
+      query(and(eq(audioTable.type, 'mix'), audioIdsForCreator(db, actorId)))
     ).resolves.toBeDefined()
   })
 
@@ -86,7 +86,7 @@ describe('relational query smoke matrix', () => {
   })
 
   test('show.service getAll, both visibility branches', async () => {
-    const shape = (where: ReturnType<typeof and>) =>
+    const query = (where: ReturnType<typeof and>) =>
       db.query.showsTable.findMany({
         where,
         limit: 1,
@@ -95,8 +95,8 @@ describe('relational query smoke matrix', () => {
         with: { showCreators: { with: { creator: true } } }
       })
 
-    await expect(shape(eq(showsTable.draft, false))).resolves.toBeDefined()
-    await expect(shape(showIdsForCreator(db, actorId))).resolves.toBeDefined()
+    await expect(query(eq(showsTable.draft, false))).resolves.toBeDefined()
+    await expect(query(showIdsForCreator(db, actorId))).resolves.toBeDefined()
   })
 
   test('show.service getBySlug, getEpisodes, showCreators', async () => {

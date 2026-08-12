@@ -12,6 +12,25 @@ const musicHosts = new Set([
   'audiomack.com'
 ])
 
+const FacetFeature = Schema.Struct({
+  $type: Schema.optional(Schema.String),
+  uri: Schema.optional(Schema.String),
+  tag: Schema.optional(Schema.String)
+})
+
+const Facet = Schema.Struct({
+  index: Schema.Struct({
+    byteStart: Schema.Number,
+    byteEnd: Schema.Number
+  }),
+  features: Schema.Array(Schema.Unknown)
+})
+
+const ExternalEmbed = Schema.Struct({
+  $type: Schema.String,
+  external: Schema.Struct({ uri: Schema.optional(Schema.String) })
+})
+
 const FeedEntry = Schema.Struct({
   post: Schema.Struct({
     uri: Schema.NonEmptyString,
@@ -31,8 +50,14 @@ const FeedEntry = Schema.Struct({
 })
 
 type FeedEntryRecord = Schema.Schema.Type<typeof FeedEntry>['post']['record']
+type FeedEntryInput = Parameters<typeof decodeFeedEntry>[0]
 
+const RepostMarker = Schema.Struct({ reason: Schema.Unknown })
+const decodeRepostMarker = Schema.decodeUnknownOption(RepostMarker)
 const decodeFeedEntry = Schema.decodeUnknownOption(FeedEntry)
+const decodeFacet = Schema.decodeUnknownOption(Facet)
+const decodeFacetFeature = Schema.decodeUnknownOption(FacetFeature)
+const decodeExternalEmbed = Schema.decodeUnknownOption(ExternalEmbed)
 
 const isIsoTimestamp = (value: string): boolean => !Number.isNaN(Date.parse(value))
 
@@ -70,15 +95,6 @@ export const BlueskyImportService = Context.Service<BlueskyImportService>('Blues
 export type NormalizedBlueskyRecord =
   | { readonly kind: 'import'; readonly record: ImportedRecord }
   | { readonly kind: 'skip'; readonly reason: ImportSkipReason }
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value)
-
-const getString = (value: unknown, key: string): string | undefined => {
-  if (!isRecord(value)) return undefined
-  const candidate = value[key]
-  return typeof candidate === 'string' ? candidate : undefined
-}
 
 const isLinkHost = (value: string): boolean => {
   try {
@@ -122,36 +138,36 @@ const extractSignals = (record: FeedEntryRecord) => {
   const tags: Array<string> = []
   const replacements: Array<{ start: number; end: number; uri: string }> = []
 
-  for (const facet of record.facets ?? []) {
-    if (!isRecord(facet)) continue
-    const index = isRecord(facet.index) ? facet.index : undefined
-    const start = index?.byteStart
-    const end = index?.byteEnd
-    if (typeof start !== 'number' || typeof end !== 'number') continue
+  for (const facetInput of record.facets ?? []) {
+    const facet = decodeFacet(facetInput)
+    if (Option.isNone(facet)) continue
+    const start = facet.value.index.byteStart
+    const end = facet.value.index.byteEnd
 
-    for (const feature of Array.isArray(facet.features) ? facet.features : []) {
-      const type = getString(feature, '$type')
+    for (const featureInput of facet.value.features) {
+      const feature = decodeFacetFeature(featureInput)
+      if (Option.isNone(feature)) continue
+      const type = feature.value.$type
       if (type?.endsWith('#link')) {
-        const uri = getString(feature, 'uri')
+        const uri = feature.value.uri
         if (uri) {
           urls.push(uri)
           replacements.push({ start, end, uri })
         }
       }
       if (type?.endsWith('#tag')) {
-        const tag = getString(feature, 'tag')
+        const tag = feature.value.tag
         if (tag) tags.push(tag.toLowerCase())
       }
     }
   }
 
-  const embed = isRecord(record.embed) ? record.embed : undefined
+  const embed = Option.getOrUndefined(decodeExternalEmbed(record.embed))
   if (
     embed?.$type === 'app.bsky.embed.external' ||
     embed?.$type === 'app.bsky.embed.external#view'
   ) {
-    const external = isRecord(embed.external) ? embed.external : undefined
-    const uri = getString(external, 'uri')
+    const uri = embed.external.uri
     if (uri) urls.push(uri)
   }
 
@@ -159,10 +175,13 @@ const extractSignals = (record: FeedEntryRecord) => {
 }
 
 export const normalizeBlueskyRecord = (
-  input: unknown,
+  input: FeedEntryInput,
   expectedAuthorDid: string
 ): NormalizedBlueskyRecord => {
-  if (isRecord(input) && input.reason !== undefined) return { kind: 'skip', reason: 'repost' }
+  const repost = decodeRepostMarker(input)
+  if (Option.isSome(repost) && repost.value.reason !== undefined) {
+    return { kind: 'skip', reason: 'repost' }
+  }
 
   const parsed = decodeFeedEntry(input)
   if (Option.isNone(parsed)) return { kind: 'skip', reason: 'malformed' }
@@ -197,7 +216,9 @@ export const normalizeBlueskyRecord = (
   }
 }
 
-const emptySkipped = (): Record<ImportSkipReason, number> => ({
+type SkipCounts = Record<ImportSkipReason, number>
+
+const emptySkipped = (): SkipCounts => ({
   repost: 0,
   'different-author': 0,
   malformed: 0,

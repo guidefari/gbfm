@@ -27,7 +27,7 @@ import { getErrorMessage } from '@/errors'
 import { extractBandcampArtist, getBandcampMetadataWithSpan } from '@/services/bandcamp.service'
 import { isBandcampUrl } from '@/services/url-utils'
 import { SpotifyService } from '@/services/spotify.service'
-import type { MusicPlatform } from '../db/music-entity.schema'
+import type { InsertMusicEntityLink, MusicPlatform } from '../db/music-entity.schema'
 
 // ---------------------------------------------------------------------------
 // Error type
@@ -60,7 +60,7 @@ export interface ScrapedLink {
   platform: MusicPlatform
   url: string
   scrapedAt: Date
-  metadata?: Record<string, unknown>
+  metadata?: InsertMusicEntityLink['metadata']
 }
 
 export interface EntityMeta {
@@ -104,17 +104,17 @@ export interface MusicDataProvider {
 //   Docs: https://odesli.co (no auth required for reasonable usage)
 // ---------------------------------------------------------------------------
 
-const ODESLI_PLATFORM_MAP: Record<string, MusicPlatform> = {
-  spotify: 'spotify',
-  youtube: 'youtube',
-  youtubeMusic: 'youtube_music',
-  appleMusic: 'apple_music',
-  tidal: 'tidal',
-  deezer: 'deezer',
-  amazonMusic: 'amazon_music',
-  soundcloud: 'soundcloud',
-  bandcamp: 'bandcamp'
-}
+const ODESLI_PLATFORM_MAP = new Map<string, MusicPlatform>([
+  ['spotify', 'spotify'],
+  ['youtube', 'youtube'],
+  ['youtubeMusic', 'youtube_music'],
+  ['appleMusic', 'apple_music'],
+  ['tidal', 'tidal'],
+  ['deezer', 'deezer'],
+  ['amazonMusic', 'amazon_music'],
+  ['soundcloud', 'soundcloud'],
+  ['bandcamp', 'bandcamp']
+])
 
 interface OdesliPlatformLink {
   country: string
@@ -217,18 +217,23 @@ export class OdesliProvider implements MusicDataProvider {
 
       const links: ScrapedLink[] = Object.entries(data.linksByPlatform).flatMap(
         ([key, platformData]) => {
-          const platform = ODESLI_PLATFORM_MAP[key]
+          const platform = ODESLI_PLATFORM_MAP.get(key)
           if (!platform) return []
+          const metadata: NonNullable<ScrapedLink['metadata']> = {
+            odesliEntityId: platformData.entityUniqueId
+          }
+          if (platformData.nativeAppUriMobile) {
+            metadata.nativeAppUriMobile = platformData.nativeAppUriMobile
+          }
+          if (platformData.nativeAppUriDesktop) {
+            metadata.nativeAppUriDesktop = platformData.nativeAppUriDesktop
+          }
           return [
             {
               platform,
               url: platformData.url,
               scrapedAt,
-              metadata: {
-                odesliEntityId: platformData.entityUniqueId,
-                nativeAppUriMobile: platformData.nativeAppUriMobile,
-                nativeAppUriDesktop: platformData.nativeAppUriDesktop
-              }
+              metadata
             } satisfies ScrapedLink
           ]
         }
@@ -290,7 +295,10 @@ const MusicBrainzSearchResponseSchema = Schema.Struct({
 
 const decodeMusicBrainzSearchResponse = Schema.decodeUnknownSync(MusicBrainzSearchResponseSchema)
 
-async function decodeResponseJson<T>(response: Response, decode: (raw: unknown) => T): Promise<T> {
+type JsonInput = Parameters<typeof decodeOdesliResponse>[0]
+type JsonDecoder<T> = (raw: JsonInput) => T
+
+async function decodeResponseJson<T>(response: Response, decode: JsonDecoder<T>): Promise<T> {
   const raw: unknown = JSON.parse(await response.text())
   return decode(raw)
 }

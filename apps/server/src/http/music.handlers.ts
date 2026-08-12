@@ -20,10 +20,12 @@ import type {
 } from '@gbfm/api/music'
 import { Effect } from 'effect'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
+import { musicEntityMetadataSchema } from '@/db/music-entity.schema'
 import type {
   SelectMusicAlbum,
   SelectMusicArtist,
   SelectMusicEntityLink,
+  MusicEntityMetadataValue,
   SelectMdxCompiledMusicLabel,
   SelectMusicLabel,
   SelectMusicPlaylist,
@@ -208,7 +210,11 @@ const requireAdmin = Effect.gen(function* () {
 // ScrapeEntityLinksResponse both use Schema.Record) -- same looseness the
 // old Hono handler had via z.record(z.string(), z.unknown()). Dates need
 // converting or they'd serialize inconsistently.
-const toJsonEntity = (entity: Record<string, unknown>): Record<string, unknown> =>
+type JsonEntityValue = MusicEntityMetadataValue | Date
+
+const toJsonEntity = (
+  entity: Record<string, JsonEntityValue>
+): Record<string, MusicEntityMetadataValue> =>
   Object.fromEntries(
     Object.entries(entity).map(([key, value]) => [
       key,
@@ -856,7 +862,9 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
               params.linkId,
               payload.status,
               userId,
-              payload.metadata ?? undefined
+              payload.metadata === undefined
+                ? undefined
+                : musicEntityMetadataSchema.parse(payload.metadata)
             )
             .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
         )
