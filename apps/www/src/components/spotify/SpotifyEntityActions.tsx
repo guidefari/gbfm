@@ -20,11 +20,11 @@ type Props = {
   url: string
 }
 
-const entityNoun: Record<SpotifyEntityRef['kind'], string> = {
+const entityNoun = {
   [SPOTIFY_ENTITY_KIND.TRACK]: 'Track',
   [SPOTIFY_ENTITY_KIND.ALBUM]: 'Album',
   [SPOTIFY_ENTITY_KIND.PLAYLIST]: 'Playlist'
-}
+} satisfies Record<SpotifyEntityRef['kind'], string>
 
 const actionClass =
   'inline-flex h-full items-center gap-1.5 border-r border-border px-2.5 text-xs font-medium text-muted-foreground transition-colors last:border-r-0 hover:bg-muted hover:text-foreground disabled:opacity-50'

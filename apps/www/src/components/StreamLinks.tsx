@@ -2,19 +2,19 @@ import { ExternalLink } from 'lucide-react'
 import { SPOTIFY_GREEN, SpotifyIcon } from '@/components/icons/BrandIcons'
 import { SpotifyEntityActions } from '@/components/spotify/SpotifyEntityActions'
 
-const PLATFORM_LABELS: Record<string, string> = {
-  spotify: 'Spotify',
-  youtube: 'YouTube',
-  youtube_music: 'YT Music',
-  apple_music: 'Apple Music',
-  bandcamp: 'Bandcamp',
-  soundcloud: 'SoundCloud',
-  tidal: 'Tidal',
-  deezer: 'Deezer',
-  amazon_music: 'Amazon Music',
-  website: 'Website',
-  other: 'Link'
-}
+const PLATFORM_LABELS = new Map([
+  ['spotify', 'Spotify'],
+  ['youtube', 'YouTube'],
+  ['youtube_music', 'YT Music'],
+  ['apple_music', 'Apple Music'],
+  ['bandcamp', 'Bandcamp'],
+  ['soundcloud', 'SoundCloud'],
+  ['tidal', 'Tidal'],
+  ['deezer', 'Deezer'],
+  ['amazon_music', 'Amazon Music'],
+  ['website', 'Website'],
+  ['other', 'Link']
+])
 
 type StreamLink = {
   platform: string
@@ -33,7 +33,7 @@ export function StreamLinks({ links }: Props) {
   return (
     <div className='pointer-events-auto flex flex-wrap items-center gap-2'>
       {links.map((link) => {
-        const label = PLATFORM_LABELS[link.platform] ?? link.platform
+        const label = PLATFORM_LABELS.get(link.platform) ?? link.platform
 
         return (
           <a

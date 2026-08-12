@@ -10,7 +10,7 @@ export function VerifyEmailBanner() {
   const { data: session } = useSession()
   const user = session?.user
   const [dismissed, setDismissed] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false
+    if (!('window' in globalThis)) return false
     return sessionStorage.getItem(DISMISS_KEY) === '1'
   })
   const [isResending, setIsResending] = useState(false)

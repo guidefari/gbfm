@@ -21,14 +21,14 @@ export const SOCIAL_LINK_PLATFORM_OPTIONS: SocialLinkPlatform[] = [
   'tiktok'
 ]
 
-export const SOCIAL_LINK_PLATFORM_LABELS: Record<SocialLinkPlatform, string> = {
+export const SOCIAL_LINK_PLATFORM_LABELS = {
   bandcamp: 'Bandcamp',
   substack: 'Substack',
   soundcloud: 'SoundCloud',
   instagram: 'IG',
   twitter: 'Twitter',
   tiktok: 'TikTok'
-}
+} satisfies Record<SocialLinkPlatform, string>
 
 export function SortableSocialLinkRow({
   link,

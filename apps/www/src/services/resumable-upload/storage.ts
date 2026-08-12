@@ -6,7 +6,7 @@ import { parsePersistedUpload, type PersistedResumableUpload } from '@/lib/uploa
 
 const KEY = (fingerprint: string) => `gbfm:resumable-upload:${fingerprint}`
 
-export interface ResumableUploadStorageShape {
+export interface ResumableUploadStorageService {
   read: (fileFingerprint: string) => Effect.Effect<PersistedResumableUpload | null>
   write: (value: PersistedResumableUpload) => Effect.Effect<void>
   clear: (fileFingerprint: string) => Effect.Effect<void>
@@ -14,7 +14,7 @@ export interface ResumableUploadStorageShape {
 
 export class ResumableUploadStorage extends Context.Service<
   ResumableUploadStorage,
-  ResumableUploadStorageShape
+  ResumableUploadStorageService
 >()('@gbfm/www/ResumableUploadStorage') {}
 
 export const ResumableUploadStorageLive = Layer.sync(ResumableUploadStorage, () => ({

@@ -3,11 +3,10 @@ import {
   makeAudioPlayback,
   PlayReporter,
   PlayerStorage,
-  type AudioPlaybackShape,
   type QueueTrackType
 } from '@gbfm/player'
 import { useAtomSet, useAtomValue } from '@effect/atom-react'
-import { Effect, Layer, ManagedRuntime } from 'effect'
+import { Effect, Layer, ManagedRuntime, Option, Schema } from 'effect'
 import {
   createContext,
   use,
@@ -57,6 +56,8 @@ type PlayerActions = {
   readonly closeFullscreen: () => void
 }
 
+type AudioPlayback = Effect.Success<ReturnType<typeof makeAudioPlayback>>
+
 const PlayerActionsContext = createContext<PlayerActions | null>(null)
 
 export const usePlayerActions = (): PlayerActions => {
@@ -73,21 +74,16 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
     AudioEngine | PlayerStorage | PlayReporter,
     never
   > | null>(null)
-  const playbackRef = useRef<AudioPlaybackShape | null>(null)
+  const playbackRef = useRef<AudioPlayback | null>(null)
 
-  const runPlayback = useCallback(
-    (operation: (playback: AudioPlaybackShape) => Effect.Effect<void>) => {
-      const playback = playbackRef.current
-      const runtime = runtimeRef.current
-      if (!playback || !runtime) return
-      runtime.runFork(operation(playback))
-    },
-    []
-  )
+  const runPlayback = useCallback((operation: (playback: AudioPlayback) => Effect.Effect<void>) => {
+    const playback = playbackRef.current
+    const runtime = runtimeRef.current
+    if (!playback || !runtime) return
+    runtime.runFork(operation(playback))
+  }, [])
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
-
     const audio = new Audio()
 
     const runtime = ManagedRuntime.make(
@@ -123,15 +119,14 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
             }),
           onError: (message, error) =>
             Effect.sync(() => {
+              const parsedMessage = Schema.decodeUnknownOption(Schema.String)(error)
               trackAudioError({
                 trackId: null,
                 title: 'unknown',
                 errorMessage:
                   error instanceof Error
                     ? error.message
-                    : typeof error === 'string'
-                      ? error
-                      : message
+                    : Option.getOrElse(parsedMessage, () => message)
               })
             })
         })

@@ -3,6 +3,7 @@ import * as Schedule from 'effect/Schedule'
 import { apiUrl } from '@/lib/http-url'
 import {
   type PersistedResumableUpload,
+  type JsonInput,
   type ResumablePart,
   type ResumableUploadPhase,
   type ResumableUploadResult,
@@ -68,7 +69,7 @@ const persistCheckpoint = (options: UploadOptions, checkpoint: PersistedResumabl
     Effect.andThen(Effect.sync(() => options.onCheckpoint(checkpoint)))
   )
 
-const decodeOrFail = <A>(decode: (raw: unknown) => A, raw: unknown, label: string): A => {
+const decodeOrFail = <A>(decode: (raw: JsonInput) => A, raw: JsonInput, label: string): A => {
   try {
     return decode(raw)
   } catch (error) {
@@ -112,7 +113,7 @@ const httpRequest = (
 const retryableJsonRequest = <A>(
   url: string,
   init: Omit<RequestInit, 'signal'> & { signal: AbortSignal },
-  decode: (raw: unknown) => A,
+  decode: (raw: JsonInput) => A,
   label: string,
   times: number
 ): Effect.Effect<A, ResumableUploadError, never> =>

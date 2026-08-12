@@ -5,7 +5,15 @@ import type * as Effect from 'effect/Effect'
  * Generic event payload shape shared across analytics providers.
  * Keep values serializable for compatibility across backends.
  */
-export type AnalyticsProperties = Record<string, unknown>
+export type AnalyticsValue =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | readonly AnalyticsValue[]
+  | { readonly [key: string]: AnalyticsValue }
+export type AnalyticsProperties = Readonly<Record<string, AnalyticsValue>>
 
 /**
  * Effect service contract for analytics/event tracking.

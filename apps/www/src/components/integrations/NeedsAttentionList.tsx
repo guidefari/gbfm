@@ -5,11 +5,11 @@ import type { BlueskyPostSource as BlueskyPostSourceSchema } from '@gbfm/api/blu
 
 type PostSource = typeof BlueskyPostSourceSchema.Type
 
-const explanation: Record<string, string> = {
-  conflict: 'Edited here and changed on Bluesky, so the import left it alone.',
-  error: 'The import could not finish this post.',
-  unavailable: 'The original post could not be read from Bluesky.'
-}
+const explanation = new Map<PostSource['sourceStatus'], string>([
+  ['conflict', 'Edited here and changed on Bluesky, so the import left it alone.'],
+  ['error', 'The import could not finish this post.'],
+  ['unavailable', 'The original post could not be read from Bluesky.']
+])
 
 export function NeedsAttentionList({
   sources,
@@ -49,7 +49,7 @@ export function NeedsAttentionList({
           ) : null}
 
           <p className='text-xs text-muted-foreground'>
-            {explanation[source.sourceStatus] ?? 'This import needs a look.'}
+            {explanation.get(source.sourceStatus) ?? 'This import needs a look.'}
           </p>
 
           {source.lastError ? <p className='text-xs text-destructive'>{source.lastError}</p> : null}

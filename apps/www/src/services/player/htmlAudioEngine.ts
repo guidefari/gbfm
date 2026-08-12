@@ -130,7 +130,7 @@ const makeHtmlAudioEngine = (audio: HtmlAudioPort) =>
       play: Effect.suspend(() =>
         Effect.tryPromise({
           try: () => audio.play(),
-          catch: (error: unknown) => {
+          catch: (error) => {
             log('error', 'Unable to start playback', { error })
             return new PlaybackRejected({ cause: error })
           }

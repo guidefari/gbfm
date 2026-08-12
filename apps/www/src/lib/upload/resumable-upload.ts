@@ -106,26 +106,34 @@ const persistedUploadSchema = Schema.Struct({
   updatedAt: Schema.Number
 })
 
-export const parseInitResponse = (raw: unknown): MultipartInitResponse =>
+export type JsonInput =
+  | string
+  | number
+  | boolean
+  | null
+  | readonly JsonInput[]
+  | { readonly [key: string]: JsonInput }
+
+export const parseInitResponse = (raw: JsonInput): MultipartInitResponse =>
   Schema.decodeUnknownSync(multipartInitResponseSchema)(raw)
 
-export const parsePresignPartResponse = (raw: unknown): PresignPartResponse =>
+export const parsePresignPartResponse = (raw: JsonInput): PresignPartResponse =>
   Schema.decodeUnknownSync(presignPartResponseSchema)(raw)
 
-export const parseStatusResponse = (raw: unknown): MultipartStatusResponse => {
+export const parseStatusResponse = (raw: JsonInput): MultipartStatusResponse => {
   const decoded = Schema.decodeUnknownSync(multipartStatusResponseSchema)(raw)
   return {
     parts: decoded.parts.map((p) => ({ partNumber: p.partNumber, etag: p.etag, size: p.size }))
   }
 }
 
-export const parseAbortResponse = (raw: unknown): MultipartAbortResponse =>
+export const parseAbortResponse = (raw: JsonInput): MultipartAbortResponse =>
   Schema.decodeUnknownSync(multipartAbortResponseSchema)(raw)
 
-export const parseCompleteResponse = (raw: unknown): { url: string; key: string } =>
+export const parseCompleteResponse = (raw: JsonInput): { url: string; key: string } =>
   Schema.decodeUnknownSync(multipartCompleteResponseSchema)(raw)
 
-export const parsePersistedUpload = (raw: unknown): PersistedResumableUpload | null => {
+export const parsePersistedUpload = (raw: JsonInput): PersistedResumableUpload | null => {
   try {
     const decoded = Schema.decodeUnknownSync(persistedUploadSchema)(raw)
     return {

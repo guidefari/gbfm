@@ -17,10 +17,10 @@ import { PosterFrame, SleeveFrame, type TweetExportData } from './frames'
 
 const EXPORT_WIDTH = 540
 
-const isWebKit = () =>
-  typeof navigator !== 'undefined' &&
-  /AppleWebKit/.test(navigator.userAgent) &&
-  !/Chrome\//.test(navigator.userAgent)
+const isWebKit = () => {
+  if (!('navigator' in globalThis)) return false
+  return /AppleWebKit/.test(navigator.userAgent) && !/Chrome\//.test(navigator.userAgent)
+}
 
 const formats = [
   { key: 'poster', name: 'poster', Frame: PosterFrame },

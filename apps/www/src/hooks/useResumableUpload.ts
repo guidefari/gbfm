@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as Cause from 'effect/Cause'
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
+import * as Predicate from 'effect/Predicate'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { runAppEffect } from '@/runtime'
 import {
@@ -108,7 +109,7 @@ export function useResumableUpload(): UseResumableUploadReturn {
     ) =>
       setState((prev) => ({
         ...prev,
-        ...(typeof patch === 'function' ? patch(prev) : patch)
+        ...(Predicate.isFunction(patch) ? patch(prev) : patch)
       })),
     []
   )

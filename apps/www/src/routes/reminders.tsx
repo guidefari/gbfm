@@ -57,7 +57,7 @@ function MusicReminders() {
 
   const handleDateInputPointerDown = () => {
     const input = dateInputRef.current
-    if (input && 'showPicker' in input && typeof input.showPicker === 'function') {
+    if (input && 'showPicker' in input) {
       input.showPicker()
     }
   }

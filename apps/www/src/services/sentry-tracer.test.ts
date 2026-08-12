@@ -2,27 +2,36 @@ import * as Effect from 'effect/Effect'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const started: Array<{ name: string; forceTransaction?: boolean }> = []
-const ended: Array<{ name: string; status?: { message: string; code: number } }> = []
-const attributesByName = new Map<string, Record<string, unknown>>()
+interface SpanStatusRecord {
+  message: string
+  code: number
+}
+interface EndedSpanRecord {
+  name: string
+  status?: SpanStatusRecord
+}
+type SentryAttribute = string | number | boolean
+const ended: EndedSpanRecord[] = []
+const attributesByName = new Map<string, Record<string, SentryAttribute>>()
 
 vi.mock('@sentry/react', () => ({
   startInactiveSpan: (options: { name: string; forceTransaction?: boolean }) => {
     started.push({ name: options.name, forceTransaction: options.forceTransaction })
-    const record: { name: string; status?: { message: string; code: number } } = {
+    const record: EndedSpanRecord = {
       name: options.name
     }
     attributesByName.set(options.name, {})
     return {
       spanContext: () => ({ spanId: 'abcdef0123456789', traceId: 'a'.repeat(32) }),
-      setAttribute: (key: string, value: unknown) => {
+      setAttribute: (key: string, value: SentryAttribute) => {
         const bag = attributesByName.get(options.name)
         if (bag) bag[key] = value
       },
-      setAttributes: (values: Record<string, unknown>) => {
+      setAttributes: (values: Record<string, SentryAttribute>) => {
         const bag = attributesByName.get(options.name)
         if (bag) Object.assign(bag, values)
       },
-      setStatus: (status: { message: string; code: number }) => {
+      setStatus: (status: SpanStatusRecord) => {
         record.status = status
       },
       end: () => {

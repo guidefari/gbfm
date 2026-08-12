@@ -29,8 +29,9 @@ export function ProfileCard({ user }: ProfileCardProps) {
       setSelectedFile(file)
       const reader = new FileReader()
       reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setImagePreview(reader.result)
+        const result = reader.result
+        if (result && !(result instanceof ArrayBuffer)) {
+          setImagePreview(result)
         }
       }
       reader.readAsDataURL(file)

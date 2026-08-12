@@ -4,7 +4,14 @@ import type {
   SendMixNotificationResponse
 } from '@gbfm/api/email'
 import type { CreateMusicReminderInput } from '@gbfm/api/music-reminders'
-import type { LabelResponse } from '@gbfm/api/music'
+import type {
+  EntityLinkResponse,
+  LabelResponse,
+  UpdateAlbumInput,
+  UpdateArtistInput,
+  UpdateLabelInput,
+  UpdateTrackInput
+} from '@gbfm/api/music'
 import type { LinkStatus } from '@gbfm/core/status'
 import type {
   SelectAudio,
@@ -2015,7 +2022,7 @@ export function useAdminLabel(id: string) {
 export function useUpdateAdminLabel() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Record<string, unknown> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: UpdateLabelInput }) => {
       const client = await getApiClient()
       return mapMusicLabel(
         await Effect.runPromise(client.music.updateLabel({ params: { id }, payload: data }))
@@ -2054,7 +2061,7 @@ export interface AdminMusicEntityLink {
   scrapedAt: string | null
   verifiedAt: string | null
   verifiedBy: string | null
-  metadata: Record<string, unknown> | null
+  metadata: EntityLinkResponse['metadata']
   createdAt: string
   updatedAt: string
 }
@@ -2097,7 +2104,7 @@ export function useAdminArtist(id: string) {
 export function useUpdateAdminArtist() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Record<string, unknown> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: UpdateArtistInput }) => {
       const client = await getApiClient()
       const artist = await Effect.runPromise(
         client.music
@@ -2153,7 +2160,7 @@ export function useAdminAlbum(id: string) {
 export function useUpdateAdminAlbum() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
+    mutationFn: ({ id, data }: { id: string; data: UpdateAlbumInput }) =>
       fetcher<MusicAlbum>(apiUrl(`/music/albums/${id}`), {
         method: 'PATCH',
         body: JSON.stringify(data)
@@ -2302,7 +2309,7 @@ export function useAdminTrack(id: string) {
 export function useUpdateAdminTrack() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
+    mutationFn: ({ id, data }: { id: string; data: UpdateTrackInput }) =>
       fetcher<MusicTrack>(apiUrl(`/music/tracks/${id}`), {
         method: 'PATCH',
         body: JSON.stringify(data)

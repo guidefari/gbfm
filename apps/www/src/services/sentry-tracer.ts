@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/react'
-import { Exit, Layer, Option, Tracer } from 'effect'
+import { Exit, Layer, Option, Predicate, Tracer } from 'effect'
 
 const NANOS_PER_MILLI = 1_000_000n
 
@@ -12,8 +12,10 @@ const randomHex = (bytes: number) => {
 }
 
 /** Sentry attributes accept primitives only, so anything richer is stringified. */
-const toSentryAttribute = (value: unknown): string | number | boolean => {
-  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+const toSentryAttribute = (
+  value: Parameters<Tracer.Span['attribute']>[1]
+): string | number | boolean => {
+  if (Predicate.isString(value) || Predicate.isNumber(value) || Predicate.isBoolean(value)) {
     return value
   }
   return String(value)
@@ -76,12 +78,13 @@ const makeSentryTracer = () =>
           sentrySpan.setAttribute(key, toSentryAttribute(value))
         },
         event(name, startTime, eventAttributes) {
-          Sentry.addBreadcrumb({
+          const breadcrumb: Sentry.Breadcrumb = {
             category: 'effect.span',
             message: `${options.name}: ${name}`,
-            timestamp: toMillis(startTime) / 1000,
-            ...(eventAttributes ? { data: eventAttributes } : {})
-          })
+            timestamp: toMillis(startTime) / 1000
+          }
+          if (eventAttributes) breadcrumb.data = eventAttributes
+          Sentry.addBreadcrumb(breadcrumb)
         },
         addLinks(newLinks) {
           links.push(...newLinks)

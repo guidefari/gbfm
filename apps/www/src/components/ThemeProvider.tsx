@@ -3,7 +3,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 
 type Theme = 'dark' | 'light' | 'system'
 
-const themeColors: Record<string, string> = {
+const themeColors = {
   dark: dark.backgroundHex,
   light: light.backgroundHex,
   studio: studio.backgroundHex

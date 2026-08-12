@@ -9,7 +9,7 @@ export const buildRecordPayload = (input: SubmitRecordInput) => {
           .join('\n')}`
       : ''
 
-  return {
+  const payload = {
     title: input.formData.title,
     description: input.formData.description,
     slug: input.formData.slug || generateSlug(input.formData.title),
@@ -24,7 +24,10 @@ export const buildRecordPayload = (input: SubmitRecordInput) => {
         ? input.userId
         : input.formData.creatorId || input.userId
     ].filter(Boolean),
-    showId: input.formData.showId,
-    ...(input.formData.episodeNumber ? { episodeNumber: Number(input.formData.episodeNumber) } : {})
+    showId: input.formData.showId
   }
+
+  return input.formData.episodeNumber
+    ? { ...payload, episodeNumber: Number(input.formData.episodeNumber) }
+    : payload
 }

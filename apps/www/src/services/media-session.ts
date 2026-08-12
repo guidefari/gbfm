@@ -12,7 +12,7 @@ export interface MediaSessionHandlers {
   onSeekTo: (time: number) => void
 }
 
-export interface MediaSessionServiceShape {
+export interface MediaSessionServiceContract {
   setMetadata: (title: string, artists: string[], artwork?: string) => Effect.Effect<void>
   clearMetadata: () => Effect.Effect<void>
   setPlaybackState: (state: 'playing' | 'paused' | 'none') => Effect.Effect<void>
@@ -20,11 +20,11 @@ export interface MediaSessionServiceShape {
   setActionHandlers: (handlers: MediaSessionHandlers | null) => Effect.Effect<void>
 }
 
-const hasMediaSession = () => typeof navigator !== 'undefined' && 'mediaSession' in navigator
+const hasMediaSession = () => 'navigator' in globalThis && 'mediaSession' in navigator
 
 export class MediaSessionService extends Context.Service<
   MediaSessionService,
-  MediaSessionServiceShape
+  MediaSessionServiceContract
 >()('@gbfm/www/MediaSessionService') {}
 
 export const MediaSessionServiceLayer = Layer.sync(MediaSessionService, () => ({

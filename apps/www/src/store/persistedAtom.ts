@@ -13,7 +13,7 @@ export const persistedAtom = <S extends Schema.Top & { readonly DecodingServices
   readonly fallback: S['Type']
 }) => {
   const read = (): S['Type'] => {
-    if (typeof window === 'undefined') return fallback
+    if (!('window' in globalThis)) return fallback
     const raw = window.localStorage.getItem(key)
     if (!raw) return fallback
 
@@ -26,7 +26,7 @@ export const persistedAtom = <S extends Schema.Top & { readonly DecodingServices
   }
 
   const write = (value: S['Type']) => {
-    if (typeof window === 'undefined') return
+    if (!('window' in globalThis)) return
     try {
       window.localStorage.setItem(key, JSON.stringify(value))
     } catch {}

@@ -72,7 +72,7 @@ const StoredVisibility = Schema.Struct({
 })
 
 export const readStoredVisibility = (): VisibilityState => {
-  if (typeof window === 'undefined') return defaultVisibility
+  if (!('window' in globalThis)) return defaultVisibility
   const raw = window.localStorage.getItem(VISIBILITY_KEY)
   if (!raw) return defaultVisibility
 
@@ -85,7 +85,7 @@ export const readStoredVisibility = (): VisibilityState => {
 }
 
 export const persistVisibility = (_state: VisibilityState) => {
-  if (typeof window === 'undefined') return
+  if (!('window' in globalThis)) return
 }
 
 export const visibilityAtom = Atom.make<VisibilityState>(defaultVisibility).pipe(Atom.keepAlive)

@@ -3,7 +3,7 @@ const FULLSCREEN_VISIBILITY_KEY = 'gbfm-player-fullscreen'
 type VisibilityStorage = Pick<Storage, 'getItem' | 'setItem'>
 
 const browserStorage = (): VisibilityStorage | undefined => {
-  if (typeof window === 'undefined') return undefined
+  if (!('window' in globalThis)) return undefined
 
   try {
     return window.localStorage

@@ -372,8 +372,8 @@ export function EditorialPage() {
   const handleInputChange = (field: keyof PostFormData, value: string | boolean) => {
     setFormData((prev) => {
       const updated = { ...prev, [field]: value }
-      if (field === 'title' && !prev.slug && typeof value === 'string') {
-        updated.slug = generateSlug(value)
+      if (field === 'title' && !prev.slug) {
+        updated.slug = generateSlug(updated.title)
       }
       return updated
     })

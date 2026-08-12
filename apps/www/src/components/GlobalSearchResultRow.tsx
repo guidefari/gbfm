@@ -6,14 +6,14 @@ type Props = {
   onClick: () => void
 }
 
-const typeLabel: Record<string, string> = {
-  show: 'show',
-  mix: 'mix',
-  track: 'track',
-  misc: 'audio',
-  micro: 'tweet',
-  post: 'editorial'
-}
+const typeLabel = new Map([
+  ['show', 'show'],
+  ['mix', 'mix'],
+  ['track', 'track'],
+  ['misc', 'audio'],
+  ['micro', 'tweet'],
+  ['post', 'editorial']
+])
 
 function resultLinkProps(result: SearchResultItem) {
   if (result.type === 'show') {
@@ -33,7 +33,7 @@ function resultLinkProps(result: SearchResultItem) {
 
 export function GlobalSearchResultRow({ result, onClick }: Props) {
   const linkProps = resultLinkProps(result)
-  const label = typeLabel[result.type] ?? result.type
+  const label = typeLabel.get(result.type) ?? result.type
 
   const content = (
     <>

@@ -106,7 +106,7 @@ export function ContentManager({
           url: values.url,
           tags: values.tags,
           draft: values.draft,
-          ...(values.episodeNumber ? { episodeNumber: Number(values.episodeNumber) } : {})
+          episodeNumber: values.episodeNumber ? Number(values.episodeNumber) : undefined
         })
       }),
     onSuccess: () => {

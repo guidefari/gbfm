@@ -1,12 +1,14 @@
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
 import * as Sentry from '@sentry/react'
-import { Logger, type LogAttributes, type LogSeverity } from './service'
+import { Logger, type LogAttributes, type LogSeverity, type LogValue } from './service'
 
-const serializeError = (error: unknown): Record<string, unknown> =>
-  error instanceof Error
-    ? { name: error.name, message: error.message, stack: error.stack }
-    : { value: String(error) }
+const serializeError = (
+  cause: Parameters<typeof Sentry.captureException>[0]
+): Readonly<Record<string, LogValue>> =>
+  cause instanceof Error
+    ? { name: cause.name, message: cause.message, stack: cause.stack }
+    : { value: String(cause) }
 
 const normalizeAttributes = (attributes?: LogAttributes): LogAttributes | undefined => {
   if (attributes === undefined) return undefined

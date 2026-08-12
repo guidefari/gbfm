@@ -4,7 +4,7 @@ import { env } from '@/env'
 import { getSpotifyRedirectUri } from '@/lib/spotify-pkce'
 import { type Analytics, SentryAnalyticsLayer, NoopAnalyticsLayer } from '@/services/analytics'
 import { type MediaSessionService, MediaSessionServiceLayer } from '@/services/media-session'
-import { PlayerStorage, type PersistedQueueType, type PlayerStorageShape } from '@gbfm/player'
+import { PlayerStorage, type PersistedQueueType } from '@gbfm/player'
 import { PlayerStorageLive } from '@/services/player/storage'
 import { log, type Logger, LoggerLive, NoopLogger } from '@/services/logger'
 import { SentryTracerLive } from '@/services/sentry-tracer'
@@ -72,7 +72,7 @@ export const RuntimeClient = {
   runPromise: runAppEffect
 }
 
-const useStorage = <A, E>(operation: (storage: PlayerStorageShape) => Effect.Effect<A, E>) =>
+const useStorage = <A, E>(operation: (storage: PlayerStorage['Service']) => Effect.Effect<A, E>) =>
   Effect.tryPromise({
     try: () => runAppEffect(Effect.flatMap(PlayerStorage, operation)),
     catch: (error) => error

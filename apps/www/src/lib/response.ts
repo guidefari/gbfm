@@ -5,7 +5,7 @@ const ErrorResponseSchema = Schema.Struct({
 })
 
 export async function readResponseErrorMessage(res: Response, fallback: string): Promise<string> {
-  const raw = await res.json().catch((): unknown => ({}))
+  const raw = await res.json().catch(() => null)
 
   try {
     const decoded = Schema.decodeUnknownSync(ErrorResponseSchema)(raw)

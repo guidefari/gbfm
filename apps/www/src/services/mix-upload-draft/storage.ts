@@ -6,7 +6,7 @@ import { type MixUploadDraft, parseMixUploadDraft } from './types'
 
 const STORAGE_KEY = 'gbfm:mix-upload-draft:v1'
 
-export interface MixUploadDraftStorageShape {
+export interface MixUploadDraftStorageService {
   read: () => Effect.Effect<MixUploadDraft | null>
   write: (value: MixUploadDraft) => Effect.Effect<void>
   clear: () => Effect.Effect<void>
@@ -14,7 +14,7 @@ export interface MixUploadDraftStorageShape {
 
 export class MixUploadDraftStorage extends Context.Service<
   MixUploadDraftStorage,
-  MixUploadDraftStorageShape
+  MixUploadDraftStorageService
 >()('@gbfm/www/MixUploadDraftStorage') {}
 
 export const MixUploadDraftStorageLive = Layer.sync(MixUploadDraftStorage, () => ({

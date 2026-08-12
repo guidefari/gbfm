@@ -35,17 +35,17 @@ type EntityLink = {
   status: string
 }
 
-const entityPathByType: Record<MusicEntityType, string> = {
+const entityPathByType = {
   album: 'albums',
   track: 'tracks',
   playlist: 'playlists'
-}
+} satisfies Record<MusicEntityType, string>
 
-const entityLabelByType: Record<MusicEntityType, string> = {
+const entityLabelByType = {
   album: 'Album',
   track: 'Track',
   playlist: 'Playlist'
-}
+} satisfies Record<MusicEntityType, string>
 
 type Props = {
   entityType: string

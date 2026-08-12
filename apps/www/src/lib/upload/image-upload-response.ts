@@ -14,5 +14,13 @@ const presignResponseSchema = Schema.Struct({
   expiresInSeconds: Schema.Number
 })
 
-export const parsePresignImageResponse = (raw: unknown): PresignImageResponse =>
+type PresignResponseInput =
+  | string
+  | number
+  | boolean
+  | null
+  | readonly PresignResponseInput[]
+  | { readonly [key: string]: PresignResponseInput }
+
+export const parsePresignImageResponse = (raw: PresignResponseInput): PresignImageResponse =>
   Schema.decodeUnknownSync(presignResponseSchema)(raw)

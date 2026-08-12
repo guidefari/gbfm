@@ -10,11 +10,11 @@ type MusicEntityPreview = {
   artistNames?: string[] | null
 }
 
-const entityPathByType: Record<MusicEntityType, string> = {
+const entityPathByType = {
   album: 'albums',
   track: 'tracks',
   playlist: 'playlists'
-}
+} satisfies Record<MusicEntityType, string>
 
 function isMusicEntityType(value: string | null): value is MusicEntityType {
   return value === 'album' || value === 'track' || value === 'playlist'

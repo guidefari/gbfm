@@ -3,6 +3,7 @@ import { traceSampleRate } from '@gbfm/core/observability/trace-sampling'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { createRouter, RouterProvider } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
+import { Schema } from 'effect'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { env } from '@/env'
@@ -52,8 +53,12 @@ declare module '@tanstack/react-router' {
   }
 }
 
-const isLocalUrl = (value: unknown) =>
-  typeof value === 'string' && (value.includes('127.0.0.1') || value.includes('localhost'))
+type SentryUrlCandidate =
+  | NonNullable<Sentry.Event['request']>['url']
+  | NonNullable<Sentry.Event['spans']>[number]['data'][string]
+
+const isLocalUrl = (value: SentryUrlCandidate) =>
+  Schema.is(Schema.String)(value) && (value.includes('127.0.0.1') || value.includes('localhost'))
 
 const hasLocalUrl = (event: Sentry.Event) =>
   isLocalUrl(event.request?.url) ||

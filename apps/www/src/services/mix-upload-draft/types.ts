@@ -25,6 +25,15 @@ export const MixUploadDraftSchema = Schema.Struct({
   updatedAt: Schema.Number
 })
 
+type StoredDraftInput =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | readonly StoredDraftInput[]
+  | { readonly [key: string]: StoredDraftInput }
+
 export type MixUploadDraft = {
   readonly title: string
   readonly description: string
@@ -63,7 +72,7 @@ export const emptyMixUploadDraft = (): MixUploadDraft => ({
   updatedAt: Date.now()
 })
 
-export const parseMixUploadDraft = (raw: unknown): MixUploadDraft | null => {
+export const parseMixUploadDraft = (raw: StoredDraftInput): MixUploadDraft | null => {
   try {
     const decoded = Schema.decodeUnknownSync(MixUploadDraftSchema)(raw)
     return {

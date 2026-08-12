@@ -1,10 +1,10 @@
 import { RuntimeClient } from '@/runtime'
-import { track } from '@/services/analytics'
+import { track, type AnalyticsProperties } from '@/services/analytics'
 import { buildPausedProperties } from './playerAnalyticsHelpers'
 
-const pageUrl = () => (typeof window !== 'undefined' ? window.location.pathname : '/')
+const pageUrl = () => ('window' in globalThis ? window.location.pathname : '/')
 
-const emit = (event: string, properties: Record<string, unknown>) => {
+const emit = (event: string, properties: AnalyticsProperties) => {
   void RuntimeClient.runPromise(track(event, properties)).catch(() => undefined)
 }
 

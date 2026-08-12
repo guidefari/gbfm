@@ -77,11 +77,11 @@ interface PostItem {
   }
 }
 
-const entityPathByType: Record<MusicEntityType, string> = {
+const entityPathByType = {
   album: 'albums',
   track: 'tracks',
   playlist: 'playlists'
-}
+} satisfies Record<MusicEntityType, string>
 
 function TweetComposerCard({
   title,
@@ -556,7 +556,7 @@ export function TweetCapturePage() {
         musicEntityType: resolved.data?.entityType ?? existingPost?.musicEntityType ?? null,
         musicEntityId: resolved.data?.entity?.id ?? existingPost?.musicEntityId ?? null,
         quotedPostId: resolvedQuote.data?.id ?? existingPost?.quotedPostId ?? null,
-        ...(creatorIds ? { creatorIds } : {})
+        creatorIds: creatorIds || undefined
       }
 
       const endpoint = isEditMode

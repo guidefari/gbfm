@@ -47,7 +47,10 @@ const SentryAnalyticsImpl = Layer.sync(Analytics, () => {
 
 export const SentryAnalyticsLayer = SentryAnalyticsImpl
 
-export const captureException = (error: unknown, context?: AnalyticsProperties) =>
+export const captureException = (
+  error: Parameters<typeof Sentry.captureException>[0],
+  context?: AnalyticsProperties
+) =>
   Effect.sync(() => {
     Sentry.captureException(error, context ? { extra: context } : undefined)
   })

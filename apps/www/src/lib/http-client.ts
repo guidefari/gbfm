@@ -3,11 +3,13 @@ import { log as defaultLog } from '@/services/logger'
 
 export type HttpRequestInput = RequestInfo | URL
 
+export type HttpFailureContext = Readonly<Record<string, string | number | boolean | undefined>>
+
 export type ApiFailureInput = {
   error: unknown
   input: HttpRequestInput
   init: RequestInit
-  context?: Record<string, unknown>
+  context?: HttpFailureContext
 }
 
 type FetcherOptions = {
@@ -15,13 +17,13 @@ type FetcherOptions = {
   onUnauthorized?: () => void
   reportFailure?: (failure: ApiFailureInput) => Effect.Effect<void>
   runEffect?: (effect: Effect.Effect<void>) => Promise<void>
-  logError?: (error: unknown, context?: Record<string, unknown>) => void
+  logError?: (cause: unknown, context?: HttpFailureContext) => void
 }
 
 export function getRequestUrl(input: HttpRequestInput) {
-  if (typeof input === 'string') return input
   if (input instanceof URL) return input.toString()
-  return input.url
+  if (input instanceof Request) return input.url
+  return input
 }
 
 export function getRequestMethod(input: HttpRequestInput, init: RequestInit) {
@@ -40,14 +42,14 @@ export function createFetcher({
   logError = (error, context) => defaultLog('error', 'HTTP request failed', { error, ...context })
 }: FetcherOptions = {}) {
   const runFailureReport = (
-    error: unknown,
+    cause: unknown,
     input: HttpRequestInput,
     init: RequestInit,
-    context: Record<string, unknown> = {}
+    context: HttpFailureContext = {}
   ) => {
     if (!reportFailure || !runEffect) return
 
-    void runEffect(reportFailure({ error, input, init, context })).catch((reportError) =>
+    void runEffect(reportFailure({ error: cause, input, init, context })).catch((reportError) =>
       logError(reportError, { failureType: 'report_failure' })
     )
   }
@@ -55,9 +57,9 @@ export function createFetcher({
   return async function fetcher<T>(input: HttpRequestInput, init: RequestInit = {}): Promise<T> {
     try {
       const isFormData = init.body instanceof FormData
-      const headers = {
-        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-        ...init.headers
+      const headers = new Headers(init.headers)
+      if (!isFormData && !headers.has('Content-Type')) {
+        headers.set('Content-Type', 'application/json')
       }
 
       const res = await request(input, {

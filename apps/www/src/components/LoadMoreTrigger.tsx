@@ -31,7 +31,7 @@ export const LoadMoreTrigger = forwardRef<HTMLDivElement, LoadMoreTriggerProps>(
       <div
         ref={(node) => {
           triggerRef.current = node
-          if (typeof ref === 'function') {
+          if (ref && !('current' in ref)) {
             ref(node)
           } else if (ref) {
             ref.current = node

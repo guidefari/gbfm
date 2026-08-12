@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import {
   MediaSessionService,
   type MediaSessionHandlers,
-  type MediaSessionServiceShape
+  type MediaSessionServiceContract
 } from '@/services/media-session'
 import { HtmlAudioEngineLayer, type HtmlAudioPort } from './htmlAudioEngine'
 
@@ -25,7 +25,7 @@ const makeRecordingMediaSession = () => {
     clearedMetadata: 0
   }
 
-  const shape: MediaSessionServiceShape = {
+  const service: MediaSessionServiceContract = {
     setMetadata: (title, artists, artwork) =>
       Effect.sync(() => {
         record.metadata.push({ title, artists, artwork })
@@ -49,7 +49,7 @@ const makeRecordingMediaSession = () => {
       })
   }
 
-  return { layer: Layer.succeed(MediaSessionService, shape), record }
+  return { layer: Layer.succeed(MediaSessionService, service), record }
 }
 
 class FakeAudio extends EventTarget implements HtmlAudioPort {

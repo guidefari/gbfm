@@ -58,7 +58,7 @@ export async function uploadImageDirectToS3(
     )
   }
 
-  const raw: unknown = await presignResponse.json()
+  const raw = await presignResponse.json()
   const { uploadUrl, publicUrl, key } = parsePresignImageResponse(raw)
 
   const putResponse = await fetch(uploadUrl, {

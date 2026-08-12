@@ -37,40 +37,40 @@ export interface PlaylistTrackRow {
   links: PlaylistTrackLink[]
 }
 
-const PLATFORM_LABELS: Record<string, string> = {
-  spotify: 'Spotify',
-  youtube: 'YouTube',
-  youtube_music: 'YouTube Music',
-  apple_music: 'Apple Music',
-  bandcamp: 'Bandcamp',
-  soundcloud: 'SoundCloud',
-  tidal: 'Tidal',
-  deezer: 'Deezer',
-  amazon_music: 'Amazon Music',
-  discord: 'Discord',
-  website: 'Website',
-  instagram: 'Instagram',
-  twitter: 'Twitter',
-  musicbrainz: 'MusicBrainz',
-  other: 'Other'
-}
+const PLATFORM_LABELS = new Map([
+  ['spotify', 'Spotify'],
+  ['youtube', 'YouTube'],
+  ['youtube_music', 'YouTube Music'],
+  ['apple_music', 'Apple Music'],
+  ['bandcamp', 'Bandcamp'],
+  ['soundcloud', 'SoundCloud'],
+  ['tidal', 'Tidal'],
+  ['deezer', 'Deezer'],
+  ['amazon_music', 'Amazon Music'],
+  ['discord', 'Discord'],
+  ['website', 'Website'],
+  ['instagram', 'Instagram'],
+  ['twitter', 'Twitter'],
+  ['musicbrainz', 'MusicBrainz'],
+  ['other', 'Other']
+])
 
-const PLATFORM_ICONS: Record<
+const PLATFORM_ICONS = new Map<
   string,
   { Icon: ComponentType<SVGProps<SVGSVGElement>>; color: string }
-> = {
-  spotify: { Icon: SpotifyIcon, color: '#1DB954' },
-  youtube: { Icon: YoutubeIcon, color: '#FF0000' },
-  youtube_music: { Icon: YoutubeMusicIcon, color: '#FF0000' },
-  apple_music: { Icon: AppleMusicIcon, color: '#FA243C' },
-  bandcamp: { Icon: BandcampIcon, color: '#629AA9' },
-  soundcloud: { Icon: SoundcloudIcon, color: '#FF5500' },
-  tidal: { Icon: TidalIcon, color: '#000000' },
-  discord: { Icon: DiscordIcon, color: '#5865F2' },
-  instagram: { Icon: InstagramIcon, color: '#E4405F' },
-  twitter: { Icon: XIcon, color: '#000000' },
-  musicbrainz: { Icon: MusicbrainzIcon, color: '#BA478F' }
-}
+>([
+  ['spotify', { Icon: SpotifyIcon, color: '#1DB954' }],
+  ['youtube', { Icon: YoutubeIcon, color: '#FF0000' }],
+  ['youtube_music', { Icon: YoutubeMusicIcon, color: '#FF0000' }],
+  ['apple_music', { Icon: AppleMusicIcon, color: '#FA243C' }],
+  ['bandcamp', { Icon: BandcampIcon, color: '#629AA9' }],
+  ['soundcloud', { Icon: SoundcloudIcon, color: '#FF5500' }],
+  ['tidal', { Icon: TidalIcon, color: '#000000' }],
+  ['discord', { Icon: DiscordIcon, color: '#5865F2' }],
+  ['instagram', { Icon: InstagramIcon, color: '#E4405F' }],
+  ['twitter', { Icon: XIcon, color: '#000000' }],
+  ['musicbrainz', { Icon: MusicbrainzIcon, color: '#BA478F' }]
+])
 
 const PLATFORM_PRIORITY = ['spotify', 'apple_music', 'youtube_music', 'youtube', 'bandcamp']
 
@@ -93,7 +93,7 @@ function TrackTitle({ title, links }: { title: string; links: PlaylistTrackLink[
       target='_blank'
       rel='noopener noreferrer'
       className='hover:underline'
-      title={`Open on ${PLATFORM_LABELS[primary.platform] ?? primary.platform}`}>
+      title={`Open on ${PLATFORM_LABELS.get(primary.platform) ?? primary.platform}`}>
       {title}
     </a>
   )
@@ -158,9 +158,9 @@ export function SortableTrackRow({
 
       <div className='hidden items-center gap-1.5 md:flex'>
         {track.links.slice(0, 6).map((link) => {
-          const entry = PLATFORM_ICONS[link.platform]
+          const entry = PLATFORM_ICONS.get(link.platform)
           const Icon = entry?.Icon ?? ExternalLink
-          const label = PLATFORM_LABELS[link.platform] ?? link.platform
+          const label = PLATFORM_LABELS.get(link.platform) ?? link.platform
           return (
             <a
               key={link.id}

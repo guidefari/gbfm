@@ -2,7 +2,15 @@ import * as Effect from 'effect/Effect'
 import { describe, expect, test, vi } from 'vitest'
 import { createFetcher, getRequestMethod, getRequestUrl, type ApiFailureInput } from './http-client'
 
-function jsonResponse(body: unknown, init?: ResponseInit) {
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | readonly JsonValue[]
+  | { readonly [key: string]: JsonValue }
+
+function jsonResponse(body: JsonValue, init?: ResponseInit) {
   return new Response(JSON.stringify(body), init)
 }
 
@@ -20,7 +28,7 @@ describe('createFetcher', () => {
     await expect(fetcher('/api/test')).resolves.toEqual({ ok: true })
 
     expect(observedInit?.credentials).toBe('include')
-    expect(observedInit?.headers).toEqual({ 'Content-Type': 'application/json' })
+    expect(new Headers(observedInit?.headers).get('Content-Type')).toBe('application/json')
   })
 
   test('does not add JSON content type for FormData bodies', async () => {
@@ -36,7 +44,7 @@ describe('createFetcher', () => {
 
     await fetcher('/api/upload', { method: 'POST', body })
 
-    expect(observedInit?.headers).toEqual({})
+    expect([...new Headers(observedInit?.headers)]).toEqual([])
   })
 
   test('returns undefined for empty successful responses', async () => {
