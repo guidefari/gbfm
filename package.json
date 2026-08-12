@@ -40,6 +40,7 @@
   },
   "devDependencies": {
     "@effect/language-service": "0.86.4",
+    "@oxlint/plugins": "1.78.0",
     "@semantic-release/changelog": "6.0.3",
     "@semantic-release/git": "10.0.1",
     "@semantic-release/github": "12.0.8",
@@ -49,7 +50,7 @@
     "lefthook": "2.1.9",
     "madge": "8.0.0",
     "oxfmt": "0.54.0",
-    "oxlint": "1.69.0",
+    "oxlint": "1.78.0",
     "semantic-release": "25.0.5",
     "typescript": "6.0.3"
   },
