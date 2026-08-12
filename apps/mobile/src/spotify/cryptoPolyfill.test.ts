@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, expect, test, vi } from 'vitest'
 
 vi.mock('expo-crypto', () => ({
   getRandomValues: (bytes: Uint8Array) => bytes,
@@ -24,44 +24,30 @@ afterEach(() => {
   replaceGlobal('crypto', originalCrypto)
 })
 
-describe('installSpotifyCryptoPolyfill', () => {
-  it('installs btoa that matches the platform implementation', () => {
-    replaceGlobal('btoa', undefined)
-    installSpotifyCryptoPolyfill()
+test('installs working base64 and crypto primitives when the platform globals are missing', async () => {
+  replaceGlobal('btoa', undefined)
+  replaceGlobal('crypto', undefined)
+  expect(hasGlobal('crypto')).toBe(false)
 
-    expect(globalThis.btoa('hello')).toBe(originalBtoa('hello'))
-    expect(globalThis.btoa('')).toBe(originalBtoa(''))
-    expect(globalThis.btoa('a')).toBe(originalBtoa('a'))
-    expect(globalThis.btoa('ab')).toBe(originalBtoa('ab'))
-    expect(globalThis.btoa('abc')).toBe(originalBtoa('abc'))
-    expect(globalThis.btoa('abcd')).toBe(originalBtoa('abcd'))
-  })
+  installSpotifyCryptoPolyfill()
 
-  it('does not overwrite an existing btoa', () => {
-    const customBtoa = (value: string) => `custom:${value}`
-    replaceGlobal('btoa', customBtoa)
+  for (const value of ['', 'a', 'ab', 'abc', 'abcd', 'hello']) {
+    expect(globalThis.btoa(value)).toBe(originalBtoa(value))
+  }
 
-    installSpotifyCryptoPolyfill()
+  const bytes = new Uint8Array([1, 2, 3])
+  expect(globalThis.crypto.getRandomValues(bytes)).toBe(bytes)
+  await expect(globalThis.crypto.subtle.digest('SHA-256', bytes)).resolves.toEqual(bytes.buffer)
+})
 
-    expect(globalThis.btoa('hello')).toBe('custom:hello')
-  })
+test('preserves base64 and crypto primitives already supplied by the platform', () => {
+  const customBtoa = (value: string) => `custom:${value}`
+  const customCrypto = { marker: 'existing' }
+  replaceGlobal('btoa', customBtoa)
+  replaceGlobal('crypto', customCrypto)
 
-  it('does not overwrite an existing crypto global', () => {
-    const customCrypto = { marker: 'existing' }
-    replaceGlobal('crypto', customCrypto)
+  installSpotifyCryptoPolyfill()
 
-    installSpotifyCryptoPolyfill()
-
-    expect(globalThis.crypto).toBe(customCrypto)
-  })
-
-  it('installs crypto.getRandomValues and crypto.subtle.digest when crypto is missing', () => {
-    replaceGlobal('crypto', undefined)
-    expect(hasGlobal('crypto')).toBe(false)
-
-    installSpotifyCryptoPolyfill()
-
-    expect(globalThis.crypto.getRandomValues).toBeTypeOf('function')
-    expect(globalThis.crypto.subtle.digest).toBeTypeOf('function')
-  })
+  expect(globalThis.btoa('hello')).toBe('custom:hello')
+  expect(globalThis.crypto).toBe(customCrypto)
 })

@@ -1,34 +1,48 @@
-import { Effect } from 'effect'
-import { describe, expect, test } from 'vitest'
-import { createPlayDelivery } from '@gbfm/player'
+import { PlayReporter, PlayerStorage } from '@gbfm/player'
+import { Effect, Layer } from 'effect'
+import { expect, test, vi } from 'vitest'
 
-describe('audio play delivery', () => {
-  test('delivers over the network when the local dedup read fails', async () => {
-    const delivered: Array<string> = []
-    const deliver = createPlayDelivery({
-      isWithinDedupWindow: () => Effect.fail('storage unavailable'),
-      deliver: (id) => Effect.sync(() => delivered.push(id)).pipe(Effect.asVoid),
-      remember: () => Effect.void,
-      now: () => 1_000
+type TrackAudioPlayRequest = { readonly params: { readonly id: string } }
+
+const api = vi.hoisted<{ calls: Array<TrackAudioPlayRequest> }>(() => ({ calls: [] }))
+
+vi.mock('@/api/client', async () => {
+  const { Effect } = await import('effect')
+  return {
+    getApiClient: Effect.succeed({
+      audio: {
+        trackAudioPlay: (request: TrackAudioPlayRequest) =>
+          Effect.sync(() => {
+            api.calls.push(request)
+          })
+      }
     })
+  }
+})
 
-    await Effect.runPromise(deliver('track-1'))
+const { PlayReporterLive } = await import('./playTracker')
 
-    expect(delivered).toEqual(['track-1'])
+test('reports each new track once even when local play-dedup storage is unavailable', async () => {
+  api.calls.length = 0
+  const unavailableStorage = Layer.succeed(PlayerStorage, {
+    loadQueue: () => Effect.succeed(null),
+    saveQueue: () => Effect.void,
+    loadVolume: () => Effect.succeed(null),
+    saveVolume: () => Effect.void,
+    loadPosition: () => Effect.succeed(null),
+    savePosition: () => Effect.void,
+    clearPosition: () => Effect.void,
+    recordPlay: () => Effect.fail('storage unavailable'),
+    isWithinDedupWindow: () => Effect.fail('storage unavailable')
   })
+  const layer = PlayReporterLive.pipe(Layer.provideMerge(unavailableStorage))
 
-  test('remembers successful delivery in memory when persistence fails', async () => {
-    const delivered: Array<string> = []
-    const deliver = createPlayDelivery({
-      isWithinDedupWindow: () => Effect.succeed(false),
-      deliver: (id) => Effect.sync(() => delivered.push(id)).pipe(Effect.asVoid),
-      remember: () => Effect.fail('storage unavailable'),
-      now: () => 1_000
-    })
+  await Effect.gen(function* () {
+    const reporter = yield* PlayReporter
+    yield* reporter.recordPlay('track-1')
+    yield* reporter.recordPlay('track-1')
+    yield* reporter.recordPlay('track-2')
+  }).pipe(Effect.provide(layer), Effect.runPromise)
 
-    await Effect.runPromise(deliver('track-1'))
-    await Effect.runPromise(deliver('track-1'))
-
-    expect(delivered).toEqual(['track-1'])
-  })
+  expect(api.calls).toEqual([{ params: { id: 'track-1' } }, { params: { id: 'track-2' } }])
 })
