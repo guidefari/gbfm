@@ -172,9 +172,11 @@ describe('resumable upload contracts', () => {
       partNumber: 1,
       expiresInSeconds: 300
     })
-    expect(parseStatusResponse({ parts: [{ partNumber: 1, etag: 'e', size: 10 }] })).toEqual({
+    const status = parseStatusResponse({ parts: [{ partNumber: 1, etag: 'e', size: 10 }] })
+    expect(status).toEqual({
       parts: [{ partNumber: 1, etag: 'e', size: 10 }]
     })
+    expect(() => status.parts.push({ partNumber: 2, etag: 'next', size: 20 })).not.toThrow()
     expect(parseAbortResponse({ ok: true })).toEqual({ ok: true })
     expect(parseCompleteResponse({ url: 'https://cdn.example/mix.mp3', key: 'k' })).toEqual({
       url: 'https://cdn.example/mix.mp3',
@@ -202,6 +204,10 @@ describe('resumable upload contracts', () => {
       createdAt: 0,
       updatedAt: 0
     }
-    expect(parsePersistedUpload(checkpoint)).toEqual(checkpoint)
+    const restored = parsePersistedUpload(checkpoint)
+    expect(restored).toEqual(checkpoint)
+    expect(() =>
+      restored?.completedParts.push({ partNumber: 2, etag: 'next', size: 20 })
+    ).not.toThrow()
   })
 })

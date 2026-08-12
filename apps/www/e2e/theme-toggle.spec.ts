@@ -27,6 +27,9 @@ test('user chooses an appearance preference and it is restored on the next visit
   })
 
   await page.goto('/dashboard/appearance')
+  await page.evaluate(() => localStorage.clear())
+  await page.reload()
+  await expect(page.locator('html')).toHaveClass(/dark/)
 
   const lightButton = page.getByRole('button', { name: /light/i })
   await expect(lightButton).toBeVisible()
@@ -37,5 +40,5 @@ test('user chooses an appearance preference and it is restored on the next visit
 
   await page.reload()
   await expect(page.locator('html')).toHaveClass(/light/)
-  await expect(lightButton).toHaveClass(/border-primary/)
+  await expect(lightButton).toHaveClass(/border-primary bg-muted/)
 })

@@ -22,7 +22,7 @@ vi.mock('@sentry/react', () => ({
     }
     attributesByName.set(options.name, {})
     return {
-      spanContext: () => ({ spanId: 'abcdef0123456789', traceId: 'a'.repeat(32) }),
+      spanContext: () => ({ spanId: 'abcdef0123456789' }),
       setAttribute: (key: string, value: SentryAttribute) => {
         const bag = attributesByName.get(options.name)
         if (bag) bag[key] = value
@@ -63,6 +63,21 @@ describe('SentryTracerLive', () => {
     const record = ended.find((e) => e.name === 'playSpotifyEntity')
     expect(record?.status).toEqual({ message: 'Success', code: 1 })
     expect(attributesByName.get('playSpotifyEntity')?.['entity.kind']).toBe('album')
+
+    const traceIds = await run(
+      Effect.withSpan('outer')(
+        Effect.gen(function* () {
+          const outer = yield* Effect.currentSpan
+          const inner = yield* Effect.withSpan('inner')(Effect.currentSpan)
+          return { outer: outer.traceId, inner: inner.traceId }
+        })
+      )
+    )
+    expect(traceIds).toEqual({
+      outer: expect.stringMatching(/^[a-f0-9]{32}$/),
+      inner: expect.stringMatching(/^[a-f0-9]{32}$/)
+    })
+    expect(traceIds.inner).toBe(traceIds.outer)
   })
 
   it('marks a failed span with an error status and records the cause', async () => {
