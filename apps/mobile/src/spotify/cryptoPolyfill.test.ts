@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('expo-crypto', () => ({
   getRandomValues: (bytes: Uint8Array) => bytes,
-  digest: async (_algorithm: unknown, bytes: Uint8Array) => bytes.buffer,
+  digest: async (_algorithm: AlgorithmIdentifier, bytes: Uint8Array) => bytes.buffer,
   CryptoDigestAlgorithm: { SHA256: 'SHA256' }
 }))
 
@@ -12,7 +12,7 @@ const { installSpotifyCryptoPolyfill } = await import('./cryptoPolyfill')
 const originalBtoa = globalThis.btoa
 const originalCrypto = globalThis.crypto
 
-const replaceGlobal = (key: 'btoa' | 'crypto', value: unknown) => {
+const replaceGlobal = <Value>(key: 'btoa' | 'crypto', value: Value) => {
   Reflect.deleteProperty(globalThis, key)
   if (value !== undefined) {
     Object.defineProperty(globalThis, key, { value, configurable: true, writable: true })
@@ -61,7 +61,7 @@ describe('installSpotifyCryptoPolyfill', () => {
 
     installSpotifyCryptoPolyfill()
 
-    expect(typeof globalThis.crypto.getRandomValues).toBe('function')
-    expect(typeof globalThis.crypto.subtle.digest).toBe('function')
+    expect(globalThis.crypto.getRandomValues).toBeTypeOf('function')
+    expect(globalThis.crypto.subtle.digest).toBeTypeOf('function')
   })
 })

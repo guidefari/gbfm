@@ -1,4 +1,3 @@
-import { isRecord } from '@gbfm/core/utils'
 import * as Sentry from '@sentry/core'
 import { Effect, Layer, Logger, Option, References, Schema, type LogLevel } from 'effect'
 import pino from 'pino'
@@ -39,19 +38,29 @@ type RedactedLogValue =
 type EffectLogMessage = Logger.Options<unknown>['message']
 
 const LogScalar = Schema.Union([Schema.String, Schema.Number, Schema.Boolean, Schema.Null])
+const LogRecord = Schema.Record(Schema.String, Schema.Unknown)
 
 function redactValue(value: EffectLogMessage, depth = 0): RedactedLogValue {
   if (depth > 4) return '[Truncated]'
   if (value === undefined) return undefined
   if (Array.isArray(value)) return value.map((entry) => redactValue(entry, depth + 1))
-  if (isRecord(value)) {
+  const record = Schema.decodeUnknownOption(LogRecord)(value)
+  if (Option.isSome(record)) {
     const out: Record<string, RedactedLogValue> = {}
-    for (const [k, v] of Object.entries(value)) {
+    for (const [k, v] of Object.entries(record.value)) {
       out[k] = PII_KEY_PATTERN.test(k) ? '[Redacted]' : redactValue(v, depth + 1)
     }
     return out
   }
   return Option.getOrElse(Schema.decodeUnknownOption(LogScalar)(value), () => String(value))
+}
+
+function redactAttributes(
+  attributes: Record<string, EffectLogMessage>
+): Record<string, RedactedLogValue> {
+  return Object.fromEntries(
+    Object.entries(attributes).map(([key, value]) => [key, redactValue(value)])
+  )
 }
 
 const makePinoLogger = (nodeEnv: string, logLevel: string | undefined) =>
@@ -94,13 +103,13 @@ function formatMessage(value: EffectLogMessage): string {
 const makeAppLogger = (pinoInstance: pino.Logger) =>
   Logger.make(({ logLevel, message, cause, fiber, date }) => {
     const msg = formatMessage(message)
-    const data = redactValue({
+    const data = redactAttributes({
       annotations: fiber.getRef(References.CurrentLogAnnotations),
       cause,
       fiberId: fiber.id,
       date
     })
-    const payload = isRecord(data) ? Object.assign({}, data, { logLevel }) : { logLevel }
+    const payload = { ...data, logLevel }
 
     pinoInstance[pinoLevel(logLevel)](payload, msg)
 

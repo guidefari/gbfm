@@ -22,11 +22,11 @@ type Props = {
   onNotice: (message: string) => void
 }
 
-const entityNoun: Record<SpotifyEntityRef['kind'], string> = {
+const entityNoun = {
   [SPOTIFY_ENTITY_KIND.TRACK]: 'Track',
   [SPOTIFY_ENTITY_KIND.ALBUM]: 'Album',
   [SPOTIFY_ENTITY_KIND.PLAYLIST]: 'Playlist'
-}
+} satisfies Record<SpotifyEntityRef['kind'], string>
 
 export function SpotifyEntityActions({ url, onNotice }: Props) {
   const session = useSpotifyConnection((state) => state.session)

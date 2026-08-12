@@ -57,7 +57,7 @@ describe('audio player status adapter', () => {
   test('polls web currentStatus because expo-audio does not emit from onended', () => {
     const source = createPlayer()
     const received: Array<AudioStatus> = []
-    const polling: { callback?: () => void } = {}
+    let poll: (() => void) | undefined
     let cleared = false
     const subscription = subscribeToPlaybackStatus(
       source.player,
@@ -65,7 +65,7 @@ describe('audio player status adapter', () => {
       (next) => received.push(next),
       {
         setInterval: (callback) => {
-          polling.callback = callback
+          poll = callback
           return setInterval(() => undefined, 60_000)
         },
         clearInterval: (interval) => {
@@ -77,7 +77,7 @@ describe('audio player status adapter', () => {
     const completed = status(true)
     source.player.currentStatus = completed
 
-    polling.callback?.()
+    poll?.()
     subscription.remove()
 
     expect(received).toEqual([completed])

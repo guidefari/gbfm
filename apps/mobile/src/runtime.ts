@@ -1,4 +1,4 @@
-import { PlayerStorage, type PersistedQueueType, type PlayerStorageShape } from '@gbfm/player'
+import { PlayerStorage, type PersistedQueueType, type PlayerStorageContract } from '@gbfm/player'
 import { Effect, Layer, Scope } from 'effect'
 import { PlayerStorageLive } from '@/audio/queueStorage'
 
@@ -8,7 +8,7 @@ const contextPromise = Effect.runPromise(Layer.buildWithScope(PlayerStorageLive,
 export const runAppEffect = <A, E>(effect: Effect.Effect<A, E, PlayerStorage>) =>
   contextPromise.then((context) => Effect.runPromiseWith(context)(effect))
 
-const use = <A, E>(operation: (storage: PlayerStorageShape) => Effect.Effect<A, E>) =>
+const use = <A, E>(operation: (storage: PlayerStorageContract) => Effect.Effect<A, E>) =>
   Effect.tryPromise({
     try: () => runAppEffect(Effect.flatMap(PlayerStorage, operation)),
     catch: (error) => error

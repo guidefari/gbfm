@@ -36,7 +36,7 @@ const digestPolyfill = async (
   algorithm: AlgorithmIdentifier,
   data: BufferSource
 ): Promise<ArrayBuffer> => {
-  const name = typeof algorithm === 'string' ? algorithm : algorithm.name
+  const name = Reflect.get(Object(algorithm), 'name') ?? algorithm
   if (name !== 'SHA-256') {
     throw new Error(`Unsupported digest algorithm on mobile Spotify crypto shim: ${name}`)
   }

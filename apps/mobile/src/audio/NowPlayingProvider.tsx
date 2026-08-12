@@ -4,7 +4,7 @@ import {
   makeAudioPlayback,
   PlayReporter,
   PlayerStorage,
-  type AudioPlaybackShape,
+  type AudioPlaybackController,
   type PlaybackSnapshot,
   type QueueTrackType
 } from '@gbfm/player'
@@ -92,10 +92,10 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
     AudioEngine | PlayerStorage | PlayReporter,
     never
   > | null>(null)
-  const playbackRef = useRef<AudioPlaybackShape | null>(null)
+  const playbackRef = useRef<AudioPlaybackController | null>(null)
 
   const runPlayback = useCallback(
-    (operation: (playback: AudioPlaybackShape) => Effect.Effect<void>) => {
+    (operation: (playback: AudioPlaybackController) => Effect.Effect<void>) => {
       const playback = playbackRef.current
       const runtime = runtimeRef.current
       if (!playback || !runtime) return

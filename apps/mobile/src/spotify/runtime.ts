@@ -43,7 +43,7 @@ let contextPromise: Promise<Context.Context<SpotifyBrowser>> | null = null
 
 const getSpotifyContext = () => {
   if (!contextPromise) {
-    contextPromise = buildSpotifyContext().catch((error: unknown) => {
+    contextPromise = buildSpotifyContext().catch((error) => {
       contextPromise = null
       throw error
     })
