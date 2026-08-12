@@ -18,8 +18,8 @@ test('returns safe user-facing messages without leaking database queries or requ
   ).toBe('Database query failed')
 
   for (const cause of [undefined, null, { code: 23505 }]) {
-    expect(
-      getErrorMessage(new Error('Failed query: select private_data', { cause }))
-    ).toBe('Database query failed')
+    expect(getErrorMessage(new Error('Failed query: select private_data', { cause }))).toBe(
+      'Database query failed'
+    )
   }
 })

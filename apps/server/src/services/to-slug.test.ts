@@ -19,7 +19,8 @@ test('generates unique URL-safe slugs for the titles users submit', () => {
     expect(getSlugSuffix(slug)).toMatch(/^[a-f0-9]{8}$/)
   }
 
-  const longTitle = 'This is a very long title that should not keep going forever in the generated slug'
+  const longTitle =
+    'This is a very long title that should not keep going forever in the generated slug'
   expect(stripSlugSuffix(toSlug(longTitle))).toBe('this-is-a-very-long-title-that-s')
 
   const first = toSlug('Same Title')

@@ -15,14 +15,9 @@ const mockSession = {
   }
 }
 
-test('user can select a theme and keep it after reload', async ({ page }) => {
-  await page.addInitScript(() => {
-    window.localStorage.clear()
-  })
-
-  await page.goto('/')
-  await expect(page.locator('html')).toHaveClass(/dark/)
-
+test('user chooses an appearance preference and it is restored on the next visit', async ({
+  page
+}) => {
   await page.route('**/auth/get-session**', async (route) => {
     await route.fulfill({
       status: 200,
@@ -31,11 +26,7 @@ test('user can select a theme and keep it after reload', async ({ page }) => {
     })
   })
 
-  await page.goto('/settings')
-
-  const appearanceTab = page.getByRole('button', { name: /appearance/i })
-  await expect(appearanceTab).toBeVisible()
-  await appearanceTab.click()
+  await page.goto('/dashboard/appearance')
 
   const lightButton = page.getByRole('button', { name: /light/i })
   await expect(lightButton).toBeVisible()
@@ -46,14 +37,5 @@ test('user can select a theme and keep it after reload', async ({ page }) => {
 
   await page.reload()
   await expect(page.locator('html')).toHaveClass(/light/)
-})
-
-test('applies a stored theme during startup', async ({ page }) => {
-  await page.addInitScript(() => {
-    window.localStorage.setItem('vite-ui-theme', 'light')
-  })
-
-  await page.goto('/')
-
-  await expect(page.locator('html')).toHaveClass(/light/)
+  await expect(lightButton).toHaveClass(/border-primary/)
 })

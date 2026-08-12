@@ -1,5 +1,5 @@
 import { AudioEngine, PlaybackRejected } from '@gbfm/player'
-import { Effect, Layer, Stream } from 'effect'
+import { Effect, Fiber, Layer, Stream } from 'effect'
 import { describe, expect, it } from 'vitest'
 import {
   MediaSessionService,
@@ -61,6 +61,7 @@ class FakeAudio extends EventTarget implements HtmlAudioPort {
   readyState = 0
   volume = 1
   muted = false
+  removedListeners: string[] = []
   private shouldRejectPlay = false
 
   load() {
@@ -92,6 +93,21 @@ class FakeAudio extends EventTarget implements HtmlAudioPort {
     this.duration = duration
     this.dispatchEvent(new Event('loadedmetadata'))
   }
+
+  markEnded() {
+    this.paused = true
+    this.ended = true
+    this.dispatchEvent(new Event('ended'))
+  }
+
+  override removeEventListener(
+    type: string,
+    callback: EventListenerOrEventListenerObject | null,
+    options?: EventListenerOptions | boolean
+  ) {
+    this.removedListeners.push(type)
+    super.removeEventListener(type, callback, options)
+  }
 }
 
 const provideEngine = (audio: HtmlAudioPort, media: ReturnType<typeof makeRecordingMediaSession>) =>
@@ -111,101 +127,107 @@ describe('HtmlAudioEngineLayer', () => {
     expect(error).toBeInstanceOf(PlaybackRejected)
   })
 
-  it('tags statuses with the generation installed by replace', async () => {
+  it('drives an audio lifecycle and keeps browser playback integrations synchronized', async () => {
     const audio = new FakeAudio()
     const media = makeRecordingMediaSession()
+    const statuses: Array<{
+      sourceGeneration: number | null
+      isLoaded: boolean
+      playing: boolean
+      didJustFinish: boolean
+      currentTime: number
+      duration: number
+      isBuffering: boolean
+    }> = []
 
-    const status = await Effect.gen(function* () {
+    const clearedStatus = await Effect.gen(function* () {
       const engine = yield* AudioEngine
       yield* engine.replace('https://cdn.example/a.mp3', 7)
+
+      yield* Effect.forkChild(
+        engine.changes.pipe(
+          Stream.runForEach((status) =>
+            Effect.sync(() => {
+              statuses.push(status)
+            })
+          )
+        )
+      )
+      yield* Effect.yieldNow
+      yield* Effect.yieldNow
+
+      const pendingSeek = yield* Effect.forkChild(engine.seekTo(42))
       audio.markLoaded(90)
-      return yield* engine.currentStatus
-    }).pipe(Effect.provide(provideEngine(audio, media)), Effect.scoped, Effect.runPromise)
+      yield* Fiber.join(pendingSeek)
 
-    expect(status.sourceGeneration).toBe(7)
-    expect(status.isLoaded).toBe(true)
-    expect(status.duration).toBe(90)
-  })
+      yield* engine.setNowPlaying({
+        title: 'Night Mix',
+        artist: 'DJ Test',
+        artworkUrl: 'https://cdn.example/art.jpg'
+      })
+      yield* engine.setPositionState(90, 42)
+      yield* engine.setCommandHandlers({
+        onPlay: () => undefined,
+        onPause: () => undefined,
+        onSeekBackward: () => undefined,
+        onSeekForward: () => undefined,
+        onPreviousTrack: () => undefined,
+        onNextTrack: () => undefined,
+        onSeekTo: () => undefined
+      })
+      yield* engine.setVolume(1.5)
+      yield* engine.setMuted(true)
+      yield* engine.play
+      yield* Effect.yieldNow
+      yield* engine.pause
+      yield* Effect.yieldNow
+      audio.markEnded()
+      yield* Effect.yieldNow
 
-  it('clears the source generation when the source is reset', async () => {
-    const audio = new FakeAudio()
-    const media = makeRecordingMediaSession()
-
-    const status = await Effect.gen(function* () {
-      const engine = yield* AudioEngine
-      yield* engine.replace('https://cdn.example/a.mp3', 7)
+      yield* engine.setCommandHandlers(null)
+      yield* engine.setNowPlaying(null)
       yield* engine.clearSource
       return yield* engine.currentStatus
     }).pipe(Effect.provide(provideEngine(audio, media)), Effect.scoped, Effect.runPromise)
 
-    expect(status.sourceGeneration).toBeNull()
-    expect(status.isLoaded).toBe(false)
-    expect(status.playing).toBe(false)
-  })
-
-  it('applies volume and mute changes to the audio element', async () => {
-    const audio = new FakeAudio()
-    const media = makeRecordingMediaSession()
-
-    await Effect.gen(function* () {
-      const engine = yield* AudioEngine
-      yield* engine.setVolume(0.25)
-      yield* engine.setMuted(true)
-    }).pipe(Effect.provide(provideEngine(audio, media)), Effect.scoped, Effect.runPromise)
-
-    expect(audio.volume).toBe(0.25)
+    expect(audio.src).toBe('')
+    expect(audio.currentTime).toBe(42)
+    expect(audio.volume).toBe(1)
     expect(audio.muted).toBe(true)
-  })
-
-  it('updates Media Session on play and removes listeners when the scope closes', async () => {
-    const audio = new FakeAudio()
-    const media = makeRecordingMediaSession()
-    let streamFinalized = false
-
-    await Effect.gen(function* () {
-      const engine = yield* AudioEngine
-      yield* engine.replace('https://cdn.example/a.mp3', 1)
-
-      yield* Effect.forkChild(
-        engine.changes.pipe(
-          Stream.ensuring(
-            Effect.sync(() => {
-              streamFinalized = true
-            })
-          ),
-          Stream.runDrain
-        )
-      )
-
-      yield* Effect.yieldNow
-      yield* Effect.yieldNow
-
-      audio.markLoaded(60)
-      yield* engine.play
-      yield* Effect.yieldNow
-      yield* Effect.yieldNow
-    }).pipe(Effect.provide(provideEngine(audio, media)), Effect.scoped, Effect.runPromise)
-
-    expect(media.record.playbackStates).toContain('playing')
-    expect(streamFinalized).toBe(true)
-    expect(() => {
-      audio.dispatchEvent(new Event('timeupdate'))
-      audio.dispatchEvent(new Event('play'))
-    }).not.toThrow()
-  })
-
-  it('clears Media Session when now playing is null', async () => {
-    const audio = new FakeAudio()
-    const media = makeRecordingMediaSession()
-
-    await Effect.gen(function* () {
-      const engine = yield* AudioEngine
-      yield* engine.setNowPlaying({ title: 'Mix', artist: 'DJ' })
-      yield* engine.setNowPlaying(null)
-    }).pipe(Effect.provide(provideEngine(audio, media)), Effect.scoped, Effect.runPromise)
-
-    expect(media.record.metadata).toEqual([{ title: 'Mix', artists: ['DJ'], artwork: undefined }])
+    expect(clearedStatus).toMatchObject({
+      sourceGeneration: null,
+      isLoaded: false,
+      playing: false
+    })
+    expect(statuses).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ sourceGeneration: 7, isLoaded: true, duration: 90 }),
+        expect.objectContaining({ sourceGeneration: 7, playing: true }),
+        expect.objectContaining({ sourceGeneration: 7, didJustFinish: true })
+      ])
+    )
+    expect(media.record.metadata).toEqual([
+      {
+        title: 'Night Mix',
+        artists: ['DJ Test'],
+        artwork: 'https://cdn.example/art.jpg'
+      }
+    ])
+    expect(media.record.positions).toEqual([{ duration: 90, position: 42 }])
+    expect(media.record.handlers).toEqual([expect.any(Object), null])
+    expect(media.record.playbackStates).toEqual(
+      expect.arrayContaining(['playing', 'paused', 'none'])
+    )
     expect(media.record.clearedMetadata).toBe(1)
-    expect(media.record.playbackStates).toContain('none')
+    expect(audio.removedListeners).toEqual([
+      'timeupdate',
+      'loadedmetadata',
+      'durationchange',
+      'canplay',
+      'waiting',
+      'play',
+      'pause',
+      'ended'
+    ])
   })
 })

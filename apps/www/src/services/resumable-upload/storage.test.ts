@@ -25,87 +25,47 @@ const makePersisted = (
   ...overrides
 })
 
-const buildTestLayer = () => {
-  const store = new Map<string, PersistedResumableUpload>()
-  return Layer.succeed(ResumableUploadStorage, {
-    read: (fingerprint: string) => Effect.sync(() => store.get(fingerprint) ?? null),
-    write: (value: PersistedResumableUpload) =>
-      Effect.sync(() => {
-        store.set(value.fileFingerprint, value)
-      }),
-    clear: (fingerprint: string) =>
-      Effect.sync(() => {
-        store.delete(fingerprint)
-      })
-  })
-}
-
 const runWith = <A, E>(
   layer: Layer.Layer<ResumableUploadStorage>,
   effect: Effect.Effect<A, E, ResumableUploadStorage>
 ) => Effect.runPromise(Effect.provide(effect, layer))
 
 describe('ResumableUploadStorage in-memory', () => {
-  test('returns null for an unknown fingerprint', async () => {
-    const layer = buildTestLayer()
-    const result = await runWith(
-      layer,
-      Effect.andThen(ResumableUploadStorage, (storage) => storage.read('missing'))
-    )
-    expect(result).toBeNull()
-  })
-
-  test('round-trips a persisted upload', async () => {
-    const layer = buildTestLayer()
-    const persisted = makePersisted()
-    const result = await runWith(
-      layer,
+  test('stores checkpoints independently by fingerprint until they are cleared', async () => {
+    const first = makePersisted()
+    const second = makePersisted({ fileFingerprint: '456:other.mp3:2', uploadId: 'upload-2' })
+    const lifecycle = await runWith(
+      ResumableUploadStorageInMemory,
       Effect.gen(function* () {
         const storage = yield* ResumableUploadStorage
-        yield* storage.write(persisted)
-        return yield* storage.read(persisted.fileFingerprint)
+        const unknown = yield* storage.read('missing')
+        yield* storage.write(first)
+        yield* storage.write(second)
+        const storedFirst = yield* storage.read(first.fileFingerprint)
+        const storedSecond = yield* storage.read(second.fileFingerprint)
+        yield* storage.clear(first.fileFingerprint)
+        const clearedFirst = yield* storage.read(first.fileFingerprint)
+        const retainedSecond = yield* storage.read(second.fileFingerprint)
+        return { unknown, storedFirst, storedSecond, clearedFirst, retainedSecond }
       })
     )
-    expect(result).toEqual(persisted)
+
+    expect(lifecycle).toEqual({
+      unknown: null,
+      storedFirst: first,
+      storedSecond: second,
+      clearedFirst: null,
+      retainedSecond: second
+    })
   })
 
-  test('clears a persisted upload', async () => {
-    const layer = buildTestLayer()
-    const persisted = makePersisted()
-    const result = await runWith(
-      layer,
-      Effect.gen(function* () {
-        const storage = yield* ResumableUploadStorage
-        yield* storage.write(persisted)
-        yield* storage.clear(persisted.fileFingerprint)
-        return yield* storage.read(persisted.fileFingerprint)
-      })
-    )
-    expect(result).toBeNull()
-  })
-
-  test('ResumableUploadStorageInMemory is also usable', async () => {
-    const layer = ResumableUploadStorageInMemory
-    const persisted = makePersisted({ fileFingerprint: 'abc' })
-    const result = await runWith(
-      layer,
-      Effect.gen(function* () {
-        const storage = yield* ResumableUploadStorage
-        yield* storage.write(persisted)
-        return yield* storage.read(persisted.fileFingerprint)
-      })
-    )
-    expect(result?.uploadId).toBe('upload-1')
-  })
-
-  test('cancel clears the checkpoint even when remote abort is already canceled', async () => {
-    const layer = buildTestLayer()
+  test('clears the local checkpoint when cancellation cannot abort remotely', async () => {
     const persisted = makePersisted()
     const controller = new AbortController()
     controller.abort()
 
     const result = await runWith(
-      layer,
+      ResumableUploadStorageInMemory,
       Effect.gen(function* () {
         const storage = yield* ResumableUploadStorage
         yield* storage.write(persisted)

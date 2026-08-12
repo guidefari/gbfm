@@ -2,34 +2,26 @@ import { describe, expect, test } from 'vitest'
 import { DEFAULT_PAGE_SIZE, getNextOffsetPageParam, setPaginationParams } from './http-pagination'
 
 describe('http pagination helpers', () => {
-  test('sets default limit and offset search params', () => {
-    const url = new URL('https://www.goosebumps.fm/api/content/audio/mix')
+  test('applies default or explicit pagination parameters to request URLs', () => {
+    const defaultPage = new URL('https://www.goosebumps.fm/api/content/audio/mix')
+    const customPage = new URL('https://www.goosebumps.fm/api/content/audio/mix')
 
-    setPaginationParams(url, 10)
+    setPaginationParams(defaultPage, 10)
+    setPaginationParams(customPage, 15, { limit: 20 })
 
-    expect(url.searchParams.get('limit')).toBe(String(DEFAULT_PAGE_SIZE))
-    expect(url.searchParams.get('offset')).toBe('10')
+    expect(defaultPage.searchParams.get('limit')).toBe(String(DEFAULT_PAGE_SIZE))
+    expect(defaultPage.searchParams.get('offset')).toBe('10')
+    expect(customPage.searchParams.get('limit')).toBe('20')
+    expect(customPage.searchParams.get('offset')).toBe('15')
   })
 
-  test('sets explicit limit and offset search params', () => {
-    const url = new URL('https://www.goosebumps.fm/api/content/audio/mix')
-
-    setPaginationParams(url, 15, { limit: 20 })
-
-    expect(url.searchParams.get('limit')).toBe('20')
-    expect(url.searchParams.get('offset')).toBe('15')
-  })
-
-  test('returns the next offset when more pages exist', () => {
+  test('advances by the page size only while more pages exist', () => {
     expect(
       getNextOffsetPageParam({
         data: ['mix'],
         pagination: { total: 10, limit: 5, offset: 5, hasMore: true }
       })
     ).toBe(10)
-  })
-
-  test('returns undefined when no more pages exist', () => {
     expect(
       getNextOffsetPageParam({
         data: ['mix'],
