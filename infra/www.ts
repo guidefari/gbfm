@@ -3,6 +3,9 @@ import { secret } from './secret'
 import { isLocal } from './stage'
 import { vps_gateway } from './vps'
 
+const wwwDomain =
+  $app.stage === 'prod' ? { name: `www.${domain}`, aliases: [domain] } : { name: `www.${domain}` }
+
 export const www = new sst.cloudflare.StaticSiteV2('gbfm-www', {
   path: './apps/www',
   build: {
@@ -16,10 +19,7 @@ export const www = new sst.cloudflare.StaticSiteV2('gbfm-www', {
     VITE_PUBLIC_SENTRY_RELEASE: process.env.SENTRY_RELEASE ?? '',
     VITE_SPOTIFY_CLIENT_ID: secret.SpotifyClientId.value
   },
-  domain: {
-    name: `www.${domain}`,
-    ...($app.stage === 'prod' ? { aliases: [domain] } : {})
-  }
+  domain: wwwDomain
 })
 
 export const outputs = {

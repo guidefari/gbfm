@@ -1,6 +1,11 @@
 import { Effect, Layer, PubSub, Stream } from 'effect'
 import { describe, expect, it } from 'vitest'
-import { AudioEngine, PlaybackRejected, type AudioEngineShape, type EngineStatus } from './engine'
+import {
+  AudioEngine,
+  PlaybackRejected,
+  type AudioEngineContract,
+  type EngineStatus
+} from './engine'
 import type { QueueTrackType } from './persistedQueue'
 import { PlayReporter } from './playReporter'
 import { makePlayerCore } from './playerCore'
@@ -32,7 +37,7 @@ const makeRecordingEngine = (options: { readonly rejectPlay?: boolean } = {}) =>
     const calls: Array<string> = []
     let status = idleStatus
 
-    const engine: AudioEngineShape = {
+    const engine: AudioEngineContract = {
       replace: (url, sourceGeneration) =>
         Effect.sync(() => {
           status = { ...status, sourceGeneration }
@@ -736,7 +741,7 @@ describe('makePlayerCore', () => {
       const pubsub = yield* PubSub.unbounded<EngineStatus>()
       let status = idleStatus
 
-      const engine: AudioEngineShape = {
+      const engine: AudioEngineContract = {
         replace: (_url, sourceGeneration) =>
           Effect.sync(() => {
             status = { ...status, sourceGeneration }

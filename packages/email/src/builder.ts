@@ -35,16 +35,16 @@ export interface BuildTestEmailInput extends EmailRecipientInput {
 export function buildTestEmail(
   input: BuildTestEmailInput
 ): Effect.Effect<RenderedEmail<'test'>, EmailRenderError> {
+  const componentProperties = { sentAt: input.sentAt }
+  if (input.name !== undefined) Object.assign(componentProperties, { name: input.name })
+  if (input.message !== undefined) Object.assign(componentProperties, { message: input.message })
+
   return renderEmail({
     templateName: 'test',
     to: input.to,
     replyTo: input.replyTo,
     subject: '🧪 Test Email from goosebumps.fm',
-    component: React.createElement(TestEmail, {
-      ...(input.name === undefined ? {} : { name: input.name }),
-      ...(input.message === undefined ? {} : { message: input.message }),
-      sentAt: input.sentAt
-    })
+    component: React.createElement(TestEmail, componentProperties)
   })
 }
 
@@ -84,15 +84,17 @@ export interface BuildPasswordResetEmailInput extends EmailRecipientInput {
 export function buildPasswordResetEmail(
   input: BuildPasswordResetEmailInput
 ): Effect.Effect<RenderedEmail<'password-reset'>, EmailRenderError> {
+  const componentProperties = { resetUrl: input.resetUrl }
+  if (input.expiresIn !== undefined) {
+    Object.assign(componentProperties, { expiresIn: input.expiresIn })
+  }
+
   return renderEmail({
     templateName: 'password-reset',
     to: input.to,
     replyTo: input.replyTo,
     subject: 'Reset your goosebumps.fm password',
-    component: React.createElement(PasswordResetEmail, {
-      resetUrl: input.resetUrl,
-      ...(input.expiresIn === undefined ? {} : { expiresIn: input.expiresIn })
-    })
+    component: React.createElement(PasswordResetEmail, componentProperties)
   })
 }
 
@@ -112,17 +114,18 @@ export interface BuildInviteEmailInput extends EmailRecipientInput {
 export function buildInviteEmail(
   input: BuildInviteEmailInput
 ): Effect.Effect<RenderedEmail<'invite'>, EmailRenderError> {
+  const componentProperties = { name: input.name, inviteUrl: input.inviteUrl }
+  if (input.role !== undefined) Object.assign(componentProperties, { role: input.role })
+  if (input.expiresIn !== undefined) {
+    Object.assign(componentProperties, { expiresIn: input.expiresIn })
+  }
+
   return renderEmail({
     templateName: 'invite',
     to: input.to,
     replyTo: input.replyTo,
     subject: "You've been invited to goosebumps.fm",
-    component: React.createElement(InviteEmail, {
-      name: input.name,
-      inviteUrl: input.inviteUrl,
-      ...(input.role === undefined ? {} : { role: input.role }),
-      ...(input.expiresIn === undefined ? {} : { expiresIn: input.expiresIn })
-    })
+    component: React.createElement(InviteEmail, componentProperties)
   })
 }
 
@@ -148,22 +151,26 @@ export interface BuildMusicReminderEmailInput extends EmailRecipientInput {
 export function buildMusicReminderEmail(
   input: BuildMusicReminderEmailInput
 ): Effect.Effect<RenderedEmail<'music-reminder'>, EmailRenderError> {
+  const componentProperties = {
+    username: input.username,
+    musicTitle: input.musicTitle,
+    artistName: input.artistName,
+    musicUrl: input.musicUrl,
+    reminderDate: input.reminderDate
+  }
+  if (input.notes !== null && input.notes !== undefined) {
+    Object.assign(componentProperties, { notes: input.notes })
+  }
+  if (input.albumCoverUrl !== null && input.albumCoverUrl !== undefined) {
+    Object.assign(componentProperties, { albumCoverUrl: input.albumCoverUrl })
+  }
+
   return renderEmail({
     templateName: 'music-reminder',
     to: input.to,
     replyTo: input.replyTo,
     subject: `🎵 Time to listen: ${input.musicTitle} by ${input.artistName}`,
-    component: React.createElement(MusicReminderEmail, {
-      username: input.username,
-      musicTitle: input.musicTitle,
-      artistName: input.artistName,
-      musicUrl: input.musicUrl,
-      reminderDate: input.reminderDate,
-      ...(input.notes === null || input.notes === undefined ? {} : { notes: input.notes }),
-      ...(input.albumCoverUrl === null || input.albumCoverUrl === undefined
-        ? {}
-        : { albumCoverUrl: input.albumCoverUrl })
-    })
+    component: React.createElement(MusicReminderEmail, componentProperties)
   })
 }
 
@@ -187,19 +194,25 @@ export interface BuildNewMixNotificationEmailInput extends EmailRecipientInput {
 export function buildNewMixNotificationEmail(
   input: BuildNewMixNotificationEmailInput
 ): Effect.Effect<RenderedEmail<'mix-notification'>, EmailRenderError> {
+  const componentProperties = {
+    username: input.username,
+    mixTitle: input.mixTitle,
+    artistName: input.artistName,
+    mixUrl: input.mixUrl
+  }
+  if (input.coverImageUrl !== undefined) {
+    Object.assign(componentProperties, { coverImageUrl: input.coverImageUrl })
+  }
+  if (input.releaseDate !== undefined) {
+    Object.assign(componentProperties, { releaseDate: input.releaseDate })
+  }
+
   return renderEmail({
     templateName: 'mix-notification',
     to: input.to,
     replyTo: input.replyTo,
     subject: `New mix: ${input.mixTitle}`,
-    component: React.createElement(NewMixNotification, {
-      username: input.username,
-      mixTitle: input.mixTitle,
-      artistName: input.artistName,
-      mixUrl: input.mixUrl,
-      ...(input.coverImageUrl === undefined ? {} : { coverImageUrl: input.coverImageUrl }),
-      ...(input.releaseDate === undefined ? {} : { releaseDate: input.releaseDate })
-    })
+    component: React.createElement(NewMixNotification, componentProperties)
   })
 }
 

@@ -36,7 +36,7 @@ export const makeQueueAtom = ({
   saveQueue,
   onError = (message, error) => console.error(message, error)
 }: QueueAtomStorage & {
-  readonly onError?: (message: string, error: unknown) => void
+  readonly onError?: (message: string, error: Error) => void
 }): QueueAtomHandle => {
   let queueWriteTail: Promise<void> = Promise.resolve()
   let hydration: { readonly token: symbol; readonly pending: Array<QueueAction> } | null = null
@@ -45,8 +45,11 @@ export const makeQueueAtom = ({
     queueWriteTail = queueWriteTail
       .catch(() => undefined)
       .then(() => Effect.runPromise(saveQueue(state)))
-      .catch((error: unknown) => {
-        onError('Unable to persist audio queue', error)
+      .catch((cause) => {
+        onError(
+          'Unable to persist audio queue',
+          new Error('Unable to persist audio queue', { cause })
+        )
       })
   }
 
@@ -55,7 +58,10 @@ export const makeQueueAtom = ({
     hydration = { token, pending: [] }
     const hydrate = Effect.match(loadQueue(), {
       onFailure: (error) => {
-        onError('Unable to hydrate audio queue', error)
+        onError(
+          'Unable to hydrate audio queue',
+          new Error('Unable to hydrate audio queue', { cause: error })
+        )
         if (hydration?.token === token) {
           ctx.set(queueAtom, { _tag: 'hydrate', state: initialQueueState, token })
         }

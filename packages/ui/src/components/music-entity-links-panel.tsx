@@ -42,7 +42,6 @@ export interface MusicEntityLink {
   scrapedAt?: Date | string | null
   verifiedAt?: Date | string | null
   verifiedBy?: string | null
-  metadata?: Record<string, unknown> | null
   createdAt: Date | string
   updatedAt: Date | string
 }
@@ -66,9 +65,10 @@ const PLATFORMS: MusicPlatform[] = [
   'other'
 ]
 
-const STATUS_DOTS: Record<string, string> = {
-  verified: 'bg-gb-pastel-green-1',
-  rejected: 'bg-destructive'
+function getStatusDot(status: string): string {
+  if (status === 'verified') return 'bg-gb-pastel-green-1'
+  if (status === 'rejected') return 'bg-destructive'
+  return 'bg-muted-foreground/40'
 }
 
 export interface MusicEntityLinksPanelProps {
@@ -168,7 +168,7 @@ export function MusicEntityLinksPanel({
             key={link.id}
             className='group flex items-center gap-2.5 px-2.5 py-2 text-base first:rounded-t-md last:rounded-b-md hover:bg-muted/40'>
             <span
-              className={`size-2 shrink-0 rounded-full ${STATUS_DOTS[link.status] ?? 'bg-muted-foreground/40'}`}
+              className={`size-2 shrink-0 rounded-full ${getStatusDot(link.status)}`}
               title={link.status.replace('_', ' ')}
             />
             <a

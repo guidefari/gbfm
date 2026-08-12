@@ -48,6 +48,11 @@ type SourceCompletion = {
   readonly completed: boolean
 }
 
+type SourceCompletionTransition = {
+  readonly state: SourceCompletion
+  readonly shouldFinish: boolean
+}
+
 const transitionSourceCompletion = (
   state: SourceCompletion,
   event: {
@@ -55,7 +60,7 @@ const transitionSourceCompletion = (
     readonly didJustFinish: boolean
     readonly playing: boolean
   }
-): { readonly state: SourceCompletion; readonly shouldFinish: boolean } => {
+): SourceCompletionTransition => {
   if (event.generation !== state.generation) return { state, shouldFinish: false }
 
   const armed =
@@ -86,10 +91,15 @@ type SourcePreparationEvent =
     }
   | { readonly _tag: 'checkpointLoaded'; readonly generation: number }
 
+type SourcePreparationTransition = {
+  readonly state: SourcePreparation
+  readonly shouldPrepare: boolean
+}
+
 const transitionSourcePreparation = (
   state: SourcePreparation,
   event: SourcePreparationEvent
-): { readonly state: SourcePreparation; readonly shouldPrepare: boolean } => {
+): SourcePreparationTransition => {
   if (event.generation !== state.generation || state.preparing) {
     return { state, shouldPrepare: false }
   }
@@ -117,7 +127,7 @@ export type PlayerCoreCallbacks = {
   readonly onStatus: (status: EngineStatus) => void
   readonly onTrackStarted?: (track: QueueTrackType) => void
   readonly onTrackFinished: () => void
-  readonly onError?: (message: string, error: unknown) => void
+  readonly onError?: (message: string, error: Error) => void
 }
 
 type SourceSession = {
@@ -140,7 +150,7 @@ const buildMetadata = (track: QueueTrackType): NowPlayingMetadata => {
   }
 }
 
-export interface PlayerCoreShape {
+export interface PlayerCoreController {
   readonly setSource: (track: QueueTrackType | null) => Effect.Effect<void>
   readonly play: (trackId: string) => Effect.Effect<void>
   readonly pause: Effect.Effect<void>
@@ -159,14 +169,14 @@ export interface PlayerCoreShape {
  *  interrupted when the enclosing scope closes. */
 export const makePlayerCore = (
   callbacks: PlayerCoreCallbacks
-): Effect.Effect<PlayerCoreShape, never, AudioEngine | PlayerStorage | PlayReporter | Scope> =>
+): Effect.Effect<PlayerCoreController, never, AudioEngine | PlayerStorage | PlayReporter | Scope> =>
   Effect.gen(function* () {
     const engine = yield* AudioEngine
     const storage = yield* PlayerStorage
     const playReporter = yield* PlayReporter
 
     const onError =
-      callbacks.onError ?? ((message: string, error: unknown) => console.error(message, error))
+      callbacks.onError ?? ((message: string, error: Error) => console.error(message, error))
 
     let generationCounter = 0
     let session: SourceSession | null = null
@@ -175,7 +185,9 @@ export const makePlayerCore = (
 
     const runDetached = (label: string, effect: Effect.Effect<void, unknown>) =>
       effect.pipe(
-        Effect.catchCause((cause) => Effect.sync(() => onError(label, cause))),
+        Effect.catchCause((cause) =>
+          Effect.sync(() => onError(label, new Error(label, { cause })))
+        ),
         Effect.forkDetach,
         Effect.asVoid
       )
@@ -236,7 +248,12 @@ export const makePlayerCore = (
           .seekTo(checkpoint)
           .pipe(
             Effect.catchCause((cause) =>
-              Effect.sync(() => onError('Unable to restore audio position', cause))
+              Effect.sync(() =>
+                onError(
+                  'Unable to restore audio position',
+                  new Error('Unable to restore audio position', { cause })
+                )
+              )
             )
           )
         if (session !== active) return
@@ -302,7 +319,11 @@ export const makePlayerCore = (
 
     yield* engine.changes.pipe(
       Stream.runForEach(observeStatus),
-      Effect.catchCause((cause) => Effect.sync(() => onError('Audio status stream failed', cause))),
+      Effect.catchCause((cause) =>
+        Effect.sync(() =>
+          onError('Audio status stream failed', new Error('Audio status stream failed', { cause }))
+        )
+      ),
       Effect.forkScoped
     )
 
@@ -351,7 +372,10 @@ export const makePlayerCore = (
           const saved = yield* storage.loadPosition(track.id).pipe(
             Effect.catchCause((cause) =>
               Effect.sync(() => {
-                onError('Unable to load audio position', cause)
+                onError(
+                  'Unable to load audio position',
+                  new Error('Unable to load audio position', { cause })
+                )
                 return null
               })
             )
@@ -379,7 +403,12 @@ export const makePlayerCore = (
               .seekTo(0)
               .pipe(
                 Effect.catchCause((cause) =>
-                  Effect.sync(() => onError('Unable to restart completed audio', cause))
+                  Effect.sync(() =>
+                    onError(
+                      'Unable to restart completed audio',
+                      new Error('Unable to restart completed audio', { cause })
+                    )
+                  )
                 )
               )
           }
@@ -413,7 +442,11 @@ export const makePlayerCore = (
             storage.savePosition(active.id, seconds)
           )
         }).pipe(
-          Effect.catchCause((cause) => Effect.sync(() => onError('Unable to seek audio', cause)))
+          Effect.catchCause((cause) =>
+            Effect.sync(() =>
+              onError('Unable to seek audio', new Error('Unable to seek audio', { cause }))
+            )
+          )
         ),
 
       /** Mark the next source change as user-initiated so it plays once ready. */

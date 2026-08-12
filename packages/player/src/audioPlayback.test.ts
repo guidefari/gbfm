@@ -8,12 +8,12 @@ import {
 import {
   AudioEngine,
   PlaybackRejected,
-  type AudioEngineShape,
+  type AudioEngineContract,
   type EngineStatus,
   type PlaybackCommandHandlers
 } from './engine'
 import { PlayReporter } from './playReporter'
-import { PlayerStorage, type PlayerStorageShape, type PositionRecord } from './playerStorage'
+import { PlayerStorage, type PlayerStorageContract, type PositionRecord } from './playerStorage'
 import type { VolumeRecordType } from './audioStorage'
 import type { QueueTrackType, PersistedQueueType } from './persistedQueue'
 
@@ -48,7 +48,7 @@ const makeRecordingEngine = (options: { readonly rejectPlay?: boolean } = {}) =>
     let status = idleStatus
     let handlers: PlaybackCommandHandlers | null = null
 
-    const engine: AudioEngineShape = {
+    const engine: AudioEngineContract = {
       replace: (url, sourceGeneration) =>
         Effect.sync(() => {
           status = { ...status, sourceGeneration }
@@ -184,7 +184,7 @@ const makeRecordingPlayReporter = () => {
 }
 
 const makeRuntime = (
-  engine: AudioEngineShape,
+  engine: AudioEngineContract,
   storage: ReturnType<typeof makeRecordingStorage>,
   playReporter: ReturnType<typeof makeRecordingPlayReporter>
 ) =>

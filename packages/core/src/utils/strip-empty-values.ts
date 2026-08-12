@@ -3,10 +3,9 @@ import { Effect } from 'effect'
 type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue }
 
 function isEmptyValue(value: JsonValue): boolean {
-  if (value === null || value === undefined) return true
-  if (typeof value === 'string' && value.trim() === '') return true
+  if (value === null) return true
   if (Array.isArray(value) && value.length === 0) return true
-  return false
+  return value === String(value) && value.trim() === ''
 }
 
 function stripEmptyValuesSync<T extends Record<string, JsonValue>>(obj: T): Partial<T> {

@@ -7,7 +7,7 @@ import { createAudioStorage } from './audioStorage'
 
 export type PositionRecord = { readonly position: number; readonly updatedAt: number }
 
-export interface PlayerStorageShape {
+export interface PlayerStorageContract {
   readonly loadQueue: () => Effect.Effect<PersistedQueueType | null, unknown>
   readonly saveQueue: (queue: PersistedQueueType) => Effect.Effect<void, unknown>
   readonly loadVolume: () => Effect.Effect<VolumeRecordType | null, unknown>
@@ -19,7 +19,7 @@ export interface PlayerStorageShape {
   readonly isWithinDedupWindow: (trackId: string) => Effect.Effect<boolean, unknown>
 }
 
-export class PlayerStorage extends Context.Service<PlayerStorage, PlayerStorageShape>()(
+export class PlayerStorage extends Context.Service<PlayerStorage, PlayerStorageContract>()(
   '@gbfm/player/PlayerStorage'
 ) {}
 

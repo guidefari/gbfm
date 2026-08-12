@@ -5,13 +5,13 @@ import * as Semaphore from 'effect/Semaphore'
 import { createPlayDelivery } from './playDelivery'
 import { PlayerStorage } from './playerStorage'
 
-export interface PlayReporterShape {
+export interface PlayReporterContract {
   /** Report that a track started playing. Implementations dedup and deliver to
    *  the API; failures must not interrupt playback. */
   readonly recordPlay: (trackId: string) => Effect.Effect<void>
 }
 
-export class PlayReporter extends Context.Service<PlayReporter, PlayReporterShape>()(
+export class PlayReporter extends Context.Service<PlayReporter, PlayReporterContract>()(
   '@gbfm/player/PlayReporter'
 ) {}
 

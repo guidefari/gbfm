@@ -24,31 +24,29 @@ export type AudioStorageAdapter = {
 type BrowserStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 type BrowserStorageSource = BrowserStorage | (() => BrowserStorage | undefined) | undefined
 
-export const createWebAudioStorageAdapter = (
-  source: BrowserStorageSource
-): AudioStorageAdapter => ({
-  read: (key) => {
-    const storage = typeof source === 'function' ? source() : source
-    return Promise.resolve(storage?.getItem(key) ?? null)
-  },
-  write: (key, value) => {
-    const storage = typeof source === 'function' ? source() : source
-    storage?.setItem(key, value)
-    return Promise.resolve()
-  },
-  remove: (key) => {
-    const storage = typeof source === 'function' ? source() : source
-    storage?.removeItem(key)
-    return Promise.resolve()
+export const createWebAudioStorageAdapter = (source: BrowserStorageSource): AudioStorageAdapter => {
+  const resolveStorage = () =>
+    source === undefined ? undefined : 'getItem' in source ? source : source()
+
+  return {
+    read: (key) => Promise.resolve(resolveStorage()?.getItem(key) ?? null),
+    write: (key, value) => {
+      resolveStorage()?.setItem(key, value)
+      return Promise.resolve()
+    },
+    remove: (key) => {
+      resolveStorage()?.removeItem(key)
+      return Promise.resolve()
+    }
   }
-})
+}
 
 const keyForTrack = (prefix: string, trackId: string) =>
   `${prefix}${encodeURIComponent(trackId)}.json`
 
-const parseJson = (raw: string): Effect.Effect<unknown, AudioStorageError, never> =>
+const parseJson = (raw: string): Effect.Effect<Schema.Json, AudioStorageError, never> =>
   Effect.try({
-    try: (): unknown => JSON.parse(raw),
+    try: (): Schema.Json => JSON.parse(raw),
     catch: (cause) => new AudioStorageError('parse', cause)
   })
 

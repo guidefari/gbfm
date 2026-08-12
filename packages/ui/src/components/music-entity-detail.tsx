@@ -20,21 +20,21 @@ export interface MusicEntityDetailProps {
   actionsSlot?: React.ReactNode
 }
 
-const TYPE_LABELS: Record<MusicEntityType, string> = {
+const TYPE_LABELS = {
   artist: 'Artist',
   album: 'Album',
   track: 'Track',
   playlist: 'Playlist',
   label: 'Label'
-}
+} satisfies Record<MusicEntityType, string>
 
-const TYPE_GLYPHS: Record<MusicEntityType, string> = {
+const TYPE_GLYPHS = {
   artist: '🎤',
   album: '💿',
   track: '🎵',
   playlist: '📋',
   label: '🏷️'
-}
+} satisfies Record<MusicEntityType, string>
 
 function Separator() {
   return (

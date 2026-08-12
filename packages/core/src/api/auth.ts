@@ -1,10 +1,12 @@
 import { Data, Effect } from 'effect'
 import { z } from 'zod'
 
+type AuthLogValue = string | number | boolean | null | undefined
+
 function logAuthEvent(
   level: 'info' | 'warn' | 'error',
   message: string,
-  details?: Record<string, unknown>
+  details?: Readonly<Record<string, AuthLogValue>>
 ) {
   const logData = {
     message,
@@ -76,6 +78,8 @@ export const refreshTokenResponseSchema = z.object({
 
 export type RefreshTokenResponse = z.infer<typeof refreshTokenResponseSchema>
 
+const serializedDateSchema = z.union([z.string(), z.date().transform((date) => date.toISOString())])
+
 export async function login(baseUrl: string, credentials: LoginRequest): Promise<LoginResponse> {
   logAuthEvent('info', 'Login attempt', {
     url: `${baseUrl}/auth/signin`,
@@ -126,9 +130,11 @@ export async function login(baseUrl: string, credentials: LoginRequest): Promise
         }
       })
 
-      logAuthEvent('warn', 'Login error response', { errorData })
-
       const errorMessage = z.object({ message: z.string() }).safeParse(errorData)
+      logAuthEvent('warn', 'Login error response', {
+        status: response.status,
+        message: errorMessage.success ? errorMessage.data.message : 'Unrecognized error response'
+      })
 
       return yield* Effect.fail(
         new AuthError({
@@ -164,8 +170,8 @@ export async function login(baseUrl: string, credentials: LoginRequest): Promise
           email: z.string(),
           emailVerified: z.boolean(),
           image: z.string().nullable().optional(),
-          createdAt: z.string().or(z.date()),
-          updatedAt: z.string().or(z.date())
+          createdAt: serializedDateSchema,
+          updatedAt: serializedDateSchema
         }),
         token: z.string()
       })
@@ -173,7 +179,6 @@ export async function login(baseUrl: string, credentials: LoginRequest): Promise
 
     if (!validatedData.success) {
       logAuthEvent('error', 'Login response validation failed', {
-        receivedData: data,
         validationError: validatedData.error.message
       })
       return yield* Effect.fail(
@@ -194,10 +199,8 @@ export async function login(baseUrl: string, credentials: LoginRequest): Promise
         email: baUser.email,
         avatarUrl: baUser.image || null,
         verified: baUser.emailVerified,
-        createdAt:
-          typeof baUser.createdAt === 'string' ? baUser.createdAt : baUser.createdAt.toISOString(),
-        updatedAt:
-          typeof baUser.updatedAt === 'string' ? baUser.updatedAt : baUser.updatedAt.toISOString()
+        createdAt: baUser.createdAt,
+        updatedAt: baUser.updatedAt
       },
       accessToken: token,
       refreshToken: token
@@ -282,7 +285,6 @@ export async function refreshAccessToken(
 
     if (!parseResult.success) {
       logAuthEvent('error', 'Refresh token response validation failed', {
-        receivedData: data,
         validationError: parseResult.error.message
       })
       return yield* Effect.fail(
@@ -364,7 +366,6 @@ export async function getProfile(baseUrl: string, accessToken: string): Promise<
 
     if (!profileData.success) {
       logAuthEvent('error', 'Get profile response structure invalid', {
-        receivedData: data,
         validationError: profileData.error.message
       })
       return yield* Effect.fail(
@@ -379,7 +380,6 @@ export async function getProfile(baseUrl: string, accessToken: string): Promise<
 
     if (!userParseResult.success) {
       logAuthEvent('error', 'Get profile user data invalid', {
-        receivedUser: profileData.data.user,
         validationError: userParseResult.error.message
       })
       return yield* Effect.fail(

@@ -55,7 +55,7 @@ export type AudioPlaybackReporter = {
     readonly trackId?: string
     readonly queueLength: number
   }) => Effect.Effect<void>
-  readonly onError?: (message: string, error: unknown) => Effect.Effect<void>
+  readonly onError?: (message: string, error: Error) => Effect.Effect<void>
 }
 
 export type AudioPlaybackCallbacks = AudioPlaybackReporter
@@ -118,7 +118,7 @@ const trackFromQueueIndex = (state: typeof initialQueueState, index: number) =>
 
 const currentTrack = (state: typeof initialQueueState) => selectQueueView(state).current
 
-export interface AudioPlaybackShape {
+export interface AudioPlaybackController {
   readonly getSnapshot: () => PlaybackSnapshot
   readonly subscribeSnapshot: (listener: SnapshotListener) => () => void
   readonly play: () => Effect.Effect<void>
@@ -145,16 +145,20 @@ export interface AudioPlaybackShape {
 export const makeAudioPlayback = (
   runtime: PlaybackRuntime,
   reporter: AudioPlaybackReporter = noopReporter
-): Effect.Effect<AudioPlaybackShape, never, AudioEngine | PlayerStorage | PlayReporter | Scope> =>
+): Effect.Effect<
+  AudioPlaybackController,
+  never,
+  AudioEngine | PlayerStorage | PlayReporter | Scope
+> =>
   Effect.gen(function* () {
     const engine = yield* AudioEngine
     const storage = yield* PlayerStorage
 
     const onError =
       reporter.onError ??
-      ((message: string, error: unknown) => Effect.sync(() => console.error(message, error)))
+      ((message: string, error: Error) => Effect.sync(() => console.error(message, error)))
 
-    const reportError = (message: string, error: unknown) => onError(message, error)
+    const reportError = (message: string, error: Error) => onError(message, error)
 
     let queueState = initialQueueState
     let transportState = initialTransport
@@ -186,9 +190,14 @@ export const makeAudioPlayback = (
       queueWriteTail = queueWriteTail
         .catch(() => undefined)
         .then(() => runtime.runPromise(storage.saveQueue(state)))
-        .catch((error: unknown) => {
+        .catch((cause) => {
           void runtime
-            .runPromise(reportError('Unable to persist audio queue', error))
+            .runPromise(
+              reportError(
+                'Unable to persist audio queue',
+                new Error('Unable to persist audio queue', { cause })
+              )
+            )
             .catch(() => undefined)
         })
     }
@@ -197,9 +206,14 @@ export const makeAudioPlayback = (
       volumeWriteTail = volumeWriteTail
         .catch(() => undefined)
         .then(() => runtime.runPromise(storage.saveVolume(state)))
-        .catch((error: unknown) => {
+        .catch((cause) => {
           void runtime
-            .runPromise(reportError('Unable to persist audio volume', error))
+            .runPromise(
+              reportError(
+                'Unable to persist audio volume',
+                new Error('Unable to persist audio volume', { cause })
+              )
+            )
             .catch(() => undefined)
         })
     }
@@ -280,7 +294,11 @@ export const makeAudioPlayback = (
           )
         }
         yield* core.seekTo(seconds)
-      }).pipe(Effect.catchCause((cause) => reportError('Unable to seek audio', cause)))
+      }).pipe(
+        Effect.catchCause((cause) =>
+          reportError('Unable to seek audio', new Error('Unable to seek audio', { cause }))
+        )
+      )
 
     const playFromQueue = (index: number, autoplay = true) =>
       Effect.gen(function* () {
@@ -382,7 +400,10 @@ export const makeAudioPlayback = (
         .loadQueue()
         .pipe(
           Effect.catchCause((cause) =>
-            reportError('Unable to hydrate audio queue', cause).pipe(Effect.as(null))
+            reportError(
+              'Unable to hydrate audio queue',
+              new Error('Unable to hydrate audio queue', { cause })
+            ).pipe(Effect.as(null))
           )
         )
       if (queueHydration?.token !== queueHydrationToken) return
@@ -404,7 +425,10 @@ export const makeAudioPlayback = (
         .loadVolume()
         .pipe(
           Effect.catchCause((cause) =>
-            reportError('Unable to hydrate audio volume', cause).pipe(Effect.as(null))
+            reportError(
+              'Unable to hydrate audio volume',
+              new Error('Unable to hydrate audio volume', { cause })
+            ).pipe(Effect.as(null))
           )
         )
       if (volumeHydration?.token !== volumeHydrationToken) return

@@ -40,7 +40,7 @@ export class AudioStorageError extends Error {
 /** Decode and validate persisted queue state. Rejects fractional/out-of-range
  *  indexes, invalid empty-queue indexes, and duplicate track IDs. */
 export const parsePersistedQueue = (
-  value: unknown
+  value: Schema.Json
 ): Effect.Effect<PersistedQueueType, AudioStorageError, never> =>
   Schema.decodeUnknownEffect(PersistedQueue)(value).pipe(
     Effect.mapError((cause) => new AudioStorageError('parse', cause)),

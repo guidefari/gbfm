@@ -17,14 +17,14 @@ const writeObjectHeaders = (object: R2Object, headers: Headers) => {
 }
 
 const resolveRange = (range: R2Range, objectSize: number) => {
-  if ('suffix' in range && typeof range.suffix === 'number') {
+  if ('suffix' in range && range.suffix !== undefined) {
     const length = Math.min(range.suffix, objectSize)
     return { offset: objectSize - length, length }
   }
 
-  const offset = 'offset' in range && typeof range.offset === 'number' ? range.offset : 0
+  const offset = 'offset' in range && range.offset !== undefined ? range.offset : 0
   const length =
-    'length' in range && typeof range.length === 'number' ? range.length : objectSize - offset
+    'length' in range && range.length !== undefined ? range.length : objectSize - offset
   return { offset, length }
 }
 

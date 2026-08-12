@@ -24,13 +24,13 @@ export {
   PlayReporter,
   PlayReporterNoop,
   makePlayReporterLayer,
-  type PlayReporterShape
+  type PlayReporterContract
 } from './playReporter'
 
 export {
   AudioEngine,
   PlaybackRejected,
-  type AudioEngineShape,
+  type AudioEngineContract,
   type EngineStatus,
   type NowPlayingMetadata,
   type PlaybackCommandHandlers
@@ -50,7 +50,7 @@ export {
   savePosition,
   saveQueue,
   saveVolume,
-  type PlayerStorageShape,
+  type PlayerStorageContract,
   type PositionRecord
 } from './playerStorage'
 
@@ -59,13 +59,13 @@ export {
   selectQueueView,
   type AudioPlaybackCallbacks,
   type AudioPlaybackReporter,
-  type AudioPlaybackShape,
+  type AudioPlaybackController,
   type PlaybackSnapshot,
   type PlaybackTransportSnapshot,
   type QueueView
 } from './audioPlayback'
 
-export { makePlayerCore, type PlayerCoreCallbacks, type PlayerCoreShape } from './playerCore'
+export { makePlayerCore, type PlayerCoreCallbacks, type PlayerCoreController } from './playerCore'
 
 export {
   makeQueueAtom,
