@@ -1,57 +1,29 @@
-import { describe, expect, test } from 'vitest'
+import { expect, test } from 'vitest'
 import { getSlugSuffix, stripSlugSuffix, toSlug } from './to-slug'
 
-describe('toSlug', () => {
-  test('lowercases text', () => {
-    expect(stripSlugSuffix(toSlug('Burial'))).toBe('burial')
-  })
+test('generates unique URL-safe slugs for the titles users submit', () => {
+  const userTitles = [
+    ['Burial', 'burial'],
+    ['Four Tet', 'four-tet'],
+    ['Burial & Four Tet!', 'burial-four-tet'],
+    ['Burial --- Four Tet', 'burial-four-tet'],
+    ['---Burial---', 'burial'],
+    ['Björk', 'bj-rk'],
+    ['Album 2024', 'album-2024'],
+    ['!!!', 'item']
+  ] as const
 
-  test('replaces spaces with hyphens', () => {
-    expect(stripSlugSuffix(toSlug('Four Tet'))).toBe('four-tet')
-  })
+  for (const [title, expectedBase] of userTitles) {
+    const slug = toSlug(title)
+    expect(stripSlugSuffix(slug)).toBe(expectedBase)
+    expect(getSlugSuffix(slug)).toMatch(/^[a-f0-9]{8}$/)
+  }
 
-  test('replaces special characters with hyphens', () => {
-    expect(stripSlugSuffix(toSlug('Burial & Four Tet!'))).toBe('burial-four-tet')
-  })
+  const longTitle = 'This is a very long title that should not keep going forever in the generated slug'
+  expect(stripSlugSuffix(toSlug(longTitle))).toBe('this-is-a-very-long-title-that-s')
 
-  test('collapses consecutive special chars into single hyphen', () => {
-    expect(stripSlugSuffix(toSlug('Burial --- Four Tet'))).toBe('burial-four-tet')
-  })
-
-  test('strips leading and trailing hyphens before suffix', () => {
-    expect(stripSlugSuffix(toSlug('---Burial---'))).toBe('burial')
-  })
-
-  test('handles unicode characters', () => {
-    expect(stripSlugSuffix(toSlug('Björk'))).toBe('bj-rk')
-  })
-
-  test('appends an 8-character suffix', () => {
-    const suffix = getSlugSuffix(toSlug('test'))
-    expect(suffix).toHaveLength(8)
-  })
-
-  test('generates unique slugs for same input', () => {
-    const slug1 = toSlug('Same Title')
-    const slug2 = toSlug('Same Title')
-    expect(slug1).not.toBe(slug2)
-    expect(stripSlugSuffix(slug1)).toBe(stripSlugSuffix(slug2))
-  })
-
-  test('handles numbers', () => {
-    expect(stripSlugSuffix(toSlug('Album 2024'))).toBe('album-2024')
-  })
-
-  test('truncates long slug bases', () => {
-    const slugBase = stripSlugSuffix(
-      toSlug('This is a very long title that should not keep going forever in the generated slug')
-    )
-
-    expect(slugBase).toBe('this-is-a-very-long-title-that-s')
-    expect(slugBase.length).toBeLessThanOrEqual(32)
-  })
-
-  test('falls back when the text has no slug characters', () => {
-    expect(stripSlugSuffix(toSlug('!!!'))).toBe('item')
-  })
+  const first = toSlug('Same Title')
+  const second = toSlug('Same Title')
+  expect(first).not.toBe(second)
+  expect(stripSlugSuffix(first)).toBe(stripSlugSuffix(second))
 })
