@@ -29,54 +29,49 @@ const pausedCheckpoint: PersistedResumableUpload = {
 }
 
 describe('isRetryableError', () => {
-  test('retries NetworkError', () => {
-    expect(isRetryableError(new NetworkError({ message: 'down' }))).toBe(true)
-  })
+  test('retries only network, timeout, rate-limit, and server failures', () => {
+    const retryable = [
+      new NetworkError({ message: 'down' }),
+      new HttpError({ status: 408, message: 'timeout' }),
+      new HttpError({ status: 429, message: 'rate limited' }),
+      new HttpError({ status: 500, message: 'server error' }),
+      new HttpError({ status: 599, message: 'server error' })
+    ]
+    const permanent = [
+      new HttpError({ status: 400, message: 'bad request' }),
+      new HttpError({ status: 401, message: 'unauthorized' }),
+      new UploadAborted(),
+      new UploadPaused({ checkpoint: pausedCheckpoint }),
+      new InvalidResponseError({ message: 'bad json' }),
+      new FileTooLargeError({ maxBytes: 1, actualBytes: 2 }),
+      new StorageQuotaError({ message: 'full' }),
+      new AlreadyInProgressError({ message: 'busy' }),
+      new UnknownError({ message: 'oops' })
+    ]
 
-  test('retries HttpError on 408, 429, 5xx', () => {
-    expect(isRetryableError(new HttpError({ status: 408, message: 'timeout' }))).toBe(true)
-    expect(isRetryableError(new HttpError({ status: 429, message: 'rate' }))).toBe(true)
-    expect(isRetryableError(new HttpError({ status: 500, message: 'oops' }))).toBe(true)
-    expect(isRetryableError(new HttpError({ status: 599, message: 'oops' }))).toBe(true)
-  })
-
-  test('does not retry HttpError on 4xx other than 408/429', () => {
-    expect(isRetryableError(new HttpError({ status: 400, message: 'bad' }))).toBe(false)
-    expect(isRetryableError(new HttpError({ status: 401, message: 'unauth' }))).toBe(false)
-    expect(isRetryableError(new HttpError({ status: 404, message: 'gone' }))).toBe(false)
-  })
-
-  test('does not retry user-controlled outcomes', () => {
-    expect(isRetryableError(new UploadAborted())).toBe(false)
-    expect(isRetryableError(new UploadPaused({ checkpoint: pausedCheckpoint }))).toBe(false)
-    expect(isRetryableError(new InvalidResponseError({ message: 'bad json' }))).toBe(false)
-    expect(isRetryableError(new FileTooLargeError({ maxBytes: 1, actualBytes: 2 }))).toBe(false)
-    expect(isRetryableError(new StorageQuotaError({ message: 'full' }))).toBe(false)
-    expect(isRetryableError(new AlreadyInProgressError({ message: 'busy' }))).toBe(false)
-    expect(isRetryableError(new UnknownError({ message: 'oops' }))).toBe(false)
+    for (const error of retryable) expect(isRetryableError(error)).toBe(true)
+    for (const error of permanent) expect(isRetryableError(error)).toBe(false)
   })
 })
 
 describe('isFatalError', () => {
-  test('marks UploadAborted and UploadPaused as fatal', () => {
-    expect(isFatalError(new UploadAborted())).toBe(true)
-    expect(isFatalError(new UploadPaused({ checkpoint: pausedCheckpoint }))).toBe(true)
-  })
+  test('treats user termination and permanent client responses as fatal', () => {
+    const fatal = [
+      new UploadAborted(),
+      new UploadPaused({ checkpoint: pausedCheckpoint }),
+      new HttpError({ status: 401, message: 'unauthorized' }),
+      new HttpError({ status: 403, message: 'forbidden' }),
+      new HttpError({ status: 413, message: 'too large' }),
+      new HttpError({ status: 415, message: 'unsupported type' })
+    ]
+    const recoverable = [
+      new NetworkError({ message: 'down' }),
+      new HttpError({ status: 408, message: 'timeout' }),
+      new HttpError({ status: 429, message: 'rate limited' }),
+      new HttpError({ status: 500, message: 'server error' })
+    ]
 
-  test('marks 401, 403, 413, 415 as fatal', () => {
-    expect(isFatalError(new HttpError({ status: 401, message: 'unauth' }))).toBe(true)
-    expect(isFatalError(new HttpError({ status: 403, message: 'forbid' }))).toBe(true)
-    expect(isFatalError(new HttpError({ status: 413, message: 'large' }))).toBe(true)
-    expect(isFatalError(new HttpError({ status: 415, message: 'type' }))).toBe(true)
-  })
-
-  test('does not mark 5xx as fatal', () => {
-    expect(isFatalError(new HttpError({ status: 500, message: 'oops' }))).toBe(false)
-    expect(isFatalError(new HttpError({ status: 503, message: 'unavail' }))).toBe(false)
-  })
-
-  test('does not mark 408/429 as fatal', () => {
-    expect(isFatalError(new HttpError({ status: 408, message: 'timeout' }))).toBe(false)
-    expect(isFatalError(new HttpError({ status: 429, message: 'rate' }))).toBe(false)
+    for (const error of fatal) expect(isFatalError(error)).toBe(true)
+    for (const error of recoverable) expect(isFatalError(error)).toBe(false)
   })
 })

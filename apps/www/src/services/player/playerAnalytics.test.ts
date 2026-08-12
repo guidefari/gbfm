@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildPausedProperties } from './playerAnalyticsHelpers'
 
 describe('playerAnalyticsHelpers', () => {
-  it('computes progress percent for pause events', () => {
+  it('builds pause analytics for known and unknown durations', () => {
     expect(
       buildPausedProperties({
         trackId: 't1',
@@ -16,9 +16,6 @@ describe('playerAnalyticsHelpers', () => {
       currentTime: 30,
       progressPercent: 30
     })
-  })
-
-  it('uses zero progress when duration is unknown', () => {
     expect(
       buildPausedProperties({
         trackId: null,

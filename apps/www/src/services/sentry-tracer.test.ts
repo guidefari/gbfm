@@ -22,7 +22,7 @@ vi.mock('@sentry/react', () => ({
     }
     attributesByName.set(options.name, {})
     return {
-      spanContext: () => ({ spanId: 'abcdef0123456789', traceId: 'a'.repeat(32) }),
+      spanContext: () => ({ spanId: 'abcdef0123456789' }),
       setAttribute: (key: string, value: SentryAttribute) => {
         const bag = attributesByName.get(options.name)
         if (bag) bag[key] = value
@@ -54,12 +54,30 @@ describe('SentryTracerLive', () => {
     attributesByName.clear()
   })
 
-  it('forwards a successful Effect span to Sentry and ends it as ok', async () => {
-    await run(Effect.withSpan('playSpotifyEntity')(Effect.succeed('done')))
+  it('mirrors successful Effect spans, attributes, and completion status to Sentry', async () => {
+    await run(
+      Effect.withSpan('playSpotifyEntity')(Effect.annotateCurrentSpan('entity.kind', 'album'))
+    )
 
     expect(started.map((s) => s.name)).toContain('playSpotifyEntity')
     const record = ended.find((e) => e.name === 'playSpotifyEntity')
     expect(record?.status).toEqual({ message: 'Success', code: 1 })
+    expect(attributesByName.get('playSpotifyEntity')?.['entity.kind']).toBe('album')
+
+    const traceIds = await run(
+      Effect.withSpan('outer')(
+        Effect.gen(function* () {
+          const outer = yield* Effect.currentSpan
+          const inner = yield* Effect.withSpan('inner')(Effect.currentSpan)
+          return { outer: outer.traceId, inner: inner.traceId }
+        })
+      )
+    )
+    expect(traceIds).toEqual({
+      outer: expect.stringMatching(/^[a-f0-9]{32}$/),
+      inner: expect.stringMatching(/^[a-f0-9]{32}$/)
+    })
+    expect(traceIds.inner).toBe(traceIds.outer)
   })
 
   it('marks a failed span with an error status and records the cause', async () => {
@@ -68,20 +86,5 @@ describe('SentryTracerLive', () => {
     const record = ended.find((e) => e.name === 'queueSpotifyEntity')
     expect(record?.status?.code).toBe(2)
     expect(attributesByName.get('queueSpotifyEntity')?.['effect.cause']).toContain('no device')
-  })
-
-  it('propagates span attributes set inside the effect', async () => {
-    await run(
-      Effect.withSpan('fetchSpotifyProfile')(Effect.annotateCurrentSpan('entity.kind', 'album'))
-    )
-
-    expect(attributesByName.get('fetchSpotifyProfile')?.['entity.kind']).toBe('album')
-  })
-
-  it('nests child spans under the parent trace', async () => {
-    await run(Effect.withSpan('outer')(Effect.withSpan('inner')(Effect.succeed(1))))
-
-    expect(started.map((s) => s.name)).toEqual(expect.arrayContaining(['outer', 'inner']))
-    expect(ended.map((e) => e.name)).toEqual(expect.arrayContaining(['outer', 'inner']))
   })
 })

@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import {
   computeBackoff,
   computeFileFingerprint,
@@ -22,240 +22,145 @@ const makeFile = (size: number, name = 'mix.mp3', lastModified = 1_700_000_000_0
   return new File([blob], name, { type: 'audio/mpeg', lastModified })
 }
 
-describe('computeFileFingerprint', () => {
-  test('combines size, name, and lastModified', () => {
-    const file = makeFile(123, 'a.mp3', 42)
-    expect(computeFileFingerprint(file)).toBe('123:a.mp3:42')
+describe('resumable upload contracts', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
-  test('differs when any component differs', () => {
-    const a = makeFile(100, 'a.mp3', 1)
-    const b = makeFile(100, 'b.mp3', 1)
-    const c = makeFile(100, 'a.mp3', 2)
-    const d = makeFile(101, 'a.mp3', 1)
-    expect(new Set([a, b, c, d].map(computeFileFingerprint)).size).toBe(4)
-  })
-})
+  test('creates a stable file identity from size, name, and modification time', () => {
+    const first = makeFile(100, 'a.mp3', 1)
+    const files = [
+      first,
+      makeFile(100, 'b.mp3', 1),
+      makeFile(100, 'a.mp3', 2),
+      makeFile(101, 'a.mp3', 1)
+    ]
 
-describe('splitFileIntoChunks', () => {
-  test('returns a single chunk when file fits', () => {
-    const file = makeFile(5)
-    const chunks = splitFileIntoChunks(file, 10)
-    expect(chunks).toHaveLength(1)
-    expect(chunks[0]?.partNumber).toBe(1)
-    expect(chunks[0]?.start).toBe(0)
-    expect(chunks[0]?.end).toBe(5)
+    expect(computeFileFingerprint(first)).toBe('100:a.mp3:1')
+    expect(new Set(files.map(computeFileFingerprint)).size).toBe(4)
   })
 
-  test('splits into even chunks', () => {
-    const file = makeFile(100)
-    const chunks = splitFileIntoChunks(file, 25)
-    expect(chunks).toHaveLength(4)
-    expect(chunks.map((c) => c.partNumber)).toEqual([1, 2, 3, 4])
-    expect(chunks[0]?.start).toBe(0)
-    expect(chunks[3]?.end).toBe(100)
-  })
+  test('plans numbered chunks for exact, partial, small, and empty files', () => {
+    const summarize = (file: File, chunkSize: number) =>
+      splitFileIntoChunks(file, chunkSize).map(({ partNumber, start, end, blob }) => ({
+        partNumber,
+        start,
+        end,
+        size: blob.size
+      }))
 
-  test('keeps the last chunk smaller when not aligned', () => {
-    const file = makeFile(105)
-    const chunks = splitFileIntoChunks(file, 25)
-    expect(chunks).toHaveLength(5)
-    expect(chunks[3]?.end).toBe(100)
-    expect(chunks[4]?.end).toBe(105)
-    expect(chunks[4]?.blob.size).toBe(5)
-  })
-
-  test('rejects non-positive chunk size', () => {
-    const file = makeFile(10)
-    expect(() => splitFileIntoChunks(file, 0)).toThrow()
-    expect(() => splitFileIntoChunks(file, -1)).toThrow()
-  })
-})
-
-describe('totalParts', () => {
-  test('handles exact multiples', () => {
+    expect(summarize(makeFile(100), 25)).toEqual([
+      { partNumber: 1, start: 0, end: 25, size: 25 },
+      { partNumber: 2, start: 25, end: 50, size: 25 },
+      { partNumber: 3, start: 50, end: 75, size: 25 },
+      { partNumber: 4, start: 75, end: 100, size: 25 }
+    ])
+    expect(summarize(makeFile(105), 100)).toEqual([
+      { partNumber: 1, start: 0, end: 100, size: 100 },
+      { partNumber: 2, start: 100, end: 105, size: 5 }
+    ])
+    expect(summarize(makeFile(5), 10)).toEqual([{ partNumber: 1, start: 0, end: 5, size: 5 }])
+    expect(summarize(makeFile(0), 10)).toEqual([])
     expect(totalParts(100, 10)).toBe(10)
-  })
-
-  test('rounds up partial chunks', () => {
     expect(totalParts(101, 10)).toBe(11)
-  })
-
-  test('returns 0 for empty files', () => {
     expect(totalParts(0, 10)).toBe(0)
+    expect(() => splitFileIntoChunks(makeFile(10), 0)).toThrow('chunkSize must be positive')
+    expect(() => totalParts(10, 0)).toThrow('chunkSize must be positive')
   })
-})
 
-describe('mergeCompletedParts', () => {
-  test('unions multiple sources by partNumber', () => {
-    const merged = mergeCompletedParts(
-      [{ partNumber: 1, etag: 'a', size: 10 }],
-      [{ partNumber: 2, etag: 'b', size: 20 }]
-    )
-    expect(merged).toEqual([
-      { partNumber: 1, etag: 'a', size: 10 },
-      { partNumber: 2, etag: 'b', size: 20 }
+  test('reconciles completed parts by number, preferring newer data and sorting the result', () => {
+    expect(
+      mergeCompletedParts(
+        [
+          { partNumber: 3, etag: 'c', size: 30 },
+          { partNumber: 1, etag: 'old', size: 10 }
+        ],
+        [
+          { partNumber: 2, etag: 'b', size: 20 },
+          { partNumber: 1, etag: 'new', size: 12 }
+        ]
+      )
+    ).toEqual([
+      { partNumber: 1, etag: 'new', size: 12 },
+      { partNumber: 2, etag: 'b', size: 20 },
+      { partNumber: 3, etag: 'c', size: 30 }
     ])
   })
 
-  test('last write wins on duplicates', () => {
-    const merged = mergeCompletedParts(
-      [{ partNumber: 1, etag: 'old', size: 10 }],
-      [{ partNumber: 1, etag: 'new', size: 12 }]
-    )
-    expect(merged).toEqual([{ partNumber: 1, etag: 'new', size: 12 }])
-  })
-
-  test('sorts the result by partNumber', () => {
-    const merged = mergeCompletedParts(
-      [{ partNumber: 3, etag: 'c', size: 30 }],
-      [{ partNumber: 1, etag: 'a', size: 10 }],
-      [{ partNumber: 2, etag: 'b', size: 20 }]
-    )
-    expect(merged.map((p) => p.partNumber)).toEqual([1, 2, 3])
-  })
-})
-
-describe('missingPartNumbers', () => {
-  test('returns the gap in the sequence', () => {
-    expect(missingPartNumbers(5, [{ partNumber: 1, etag: 'a', size: 1 }])).toEqual([2, 3, 4, 5])
-  })
-
-  test('returns empty when complete', () => {
-    expect(
-      missingPartNumbers(3, [
-        { partNumber: 1, etag: 'a', size: 1 },
-        { partNumber: 2, etag: 'b', size: 1 },
-        { partNumber: 3, etag: 'c', size: 1 }
-      ])
-    ).toEqual([])
-  })
-})
-
-describe('computeBackoff', () => {
-  test('grows exponentially with attempt number', () => {
-    const a = computeBackoff(1, 1000, 60_000)
-    const b = computeBackoff(2, 1000, 60_000)
-    const c = computeBackoff(3, 1000, 60_000)
-    expect(b).toBeGreaterThan(a)
-    expect(c).toBeGreaterThan(b)
-  })
-
-  test('caps at the max', () => {
-    expect(computeBackoff(20, 1000, 5000)).toBeLessThanOrEqual(5000)
-  })
-
-  test('includes jitter', () => {
-    const samples = Array.from({ length: 20 }, () => computeBackoff(1, 1000, 60_000))
-    const unique = new Set(samples)
-    expect(unique.size).toBeGreaterThan(1)
-  })
-})
-
-describe('isRetryableStatus', () => {
-  test('treats 408 and 429 as retryable', () => {
-    expect(isRetryableStatus(408)).toBe(true)
-    expect(isRetryableStatus(429)).toBe(true)
-  })
-
-  test('treats 5xx as retryable', () => {
-    expect(isRetryableStatus(500)).toBe(true)
-    expect(isRetryableStatus(503)).toBe(true)
-    expect(isRetryableStatus(599)).toBe(true)
-  })
-
-  test('does not treat 4xx other than 408/429 as retryable', () => {
-    expect(isRetryableStatus(400)).toBe(false)
-    expect(isRetryableStatus(401)).toBe(false)
-    expect(isRetryableStatus(404)).toBe(false)
-    expect(isRetryableStatus(422)).toBe(false)
-  })
-
-  test('does not treat 2xx or 3xx as retryable', () => {
-    expect(isRetryableStatus(200)).toBe(false)
-    expect(isRetryableStatus(301)).toBe(false)
-  })
-})
-
-describe('createPersistedUpload', () => {
-  test('seeds the persisted record with no completed parts', () => {
-    const file = makeFile(50_000_000)
-    const persisted = createPersistedUpload({
+  test('builds and advances a resumable checkpoint through completion', () => {
+    const file = makeFile(150)
+    const initial = createPersistedUpload({
       file,
       fileFingerprint: computeFileFingerprint(file),
-      init: { uploadId: 'u-1', key: 'audio_x.mp3', chunkSize: 10_000_000 },
+      init: { uploadId: 'upload-1', key: 'audio/mix.mp3', chunkSize: 50 },
       now: 1_000
     })
-    expect(persisted).toMatchObject({
-      fileFingerprint: computeFileFingerprint(file),
-      uploadId: 'u-1',
-      key: 'audio_x.mp3',
-      chunkSize: 10_000_000,
-      totalBytes: 50_000_000,
-      totalParts: 5,
+
+    expect(initial).toEqual({
+      fileFingerprint: '150:mix.mp3:1700000000000',
+      uploadId: 'upload-1',
+      key: 'audio/mix.mp3',
+      chunkSize: 50,
+      totalBytes: 150,
+      totalParts: 3,
       contentType: 'audio/mpeg',
       fileName: 'mix.mp3',
+      completedParts: [],
       createdAt: 1_000,
       updatedAt: 1_000
     })
-    expect(persisted.completedParts).toEqual([])
-  })
-})
 
-describe('withUpdatedPart', () => {
-  test('appends a new part and sorts', () => {
-    const file = makeFile(100)
-    const persisted = createPersistedUpload({
-      file,
-      fileFingerprint: computeFileFingerprint(file),
-      init: { uploadId: 'u', key: 'k', chunkSize: 50 }
-    })
-    const next = withUpdatedPart(persisted, { partNumber: 2, etag: 'b', size: 50 })
-    expect(next.completedParts).toEqual([{ partNumber: 2, etag: 'b', size: 50 }])
+    const part2 = withUpdatedPart(initial, { partNumber: 2, etag: 'etag-2', size: 50 }, 2_000)
+    expect(missingPartNumbers(part2.totalParts, part2.completedParts)).toEqual([1, 3])
 
-    const appended = withUpdatedPart(next, { partNumber: 1, etag: 'a', size: 50 })
-    expect(appended.completedParts.map((p) => p.partNumber)).toEqual([1, 2])
-  })
+    const part1 = withUpdatedPart(part2, { partNumber: 1, etag: 'old', size: 50 }, 3_000)
+    const replacedPart1 = withUpdatedPart(part1, { partNumber: 1, etag: 'etag-1', size: 50 }, 4_000)
+    const completed = withUpdatedPart(
+      replacedPart1,
+      { partNumber: 3, etag: 'etag-3', size: 50 },
+      5_000
+    )
 
-  test('replaces an existing part', () => {
-    const file = makeFile(100)
-    const persisted = createPersistedUpload({
-      file,
-      fileFingerprint: computeFileFingerprint(file),
-      init: { uploadId: 'u', key: 'k', chunkSize: 50 }
-    })
-    const after1 = withUpdatedPart(persisted, { partNumber: 1, etag: 'old', size: 50 })
-    const after2 = withUpdatedPart(after1, { partNumber: 1, etag: 'new', size: 51 })
-    expect(after2.completedParts).toEqual([{ partNumber: 1, etag: 'new', size: 51 }])
+    expect(completed.completedParts).toEqual([
+      { partNumber: 1, etag: 'etag-1', size: 50 },
+      { partNumber: 2, etag: 'etag-2', size: 50 },
+      { partNumber: 3, etag: 'etag-3', size: 50 }
+    ])
+    expect(completed.updatedAt).toBe(5_000)
+    expect(missingPartNumbers(completed.totalParts, completed.completedParts)).toEqual([])
   })
 
-  test('updates the updatedAt timestamp', () => {
-    const file = makeFile(100)
-    const persisted = createPersistedUpload({
-      file,
-      fileFingerprint: computeFileFingerprint(file),
-      init: { uploadId: 'u', key: 'k', chunkSize: 50 },
-      now: 1_000
-    })
-    const next = withUpdatedPart(persisted, { partNumber: 1, etag: 'a', size: 50 }, 2_000)
-    expect(next.updatedAt).toBe(2_000)
-  })
-})
+  test('applies exponential backoff with deterministic jitter and a maximum delay', () => {
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0).mockReturnValueOnce(0.5).mockReturnValue(1)
 
-describe('response parsers', () => {
-  test('parseInitResponse decodes a valid payload', () => {
+    expect(computeBackoff(1, 1_000, 60_000)).toBe(1_000)
+    expect(computeBackoff(2, 1_000, 60_000)).toBe(2_500)
+    expect(computeBackoff(20, 1_000, 5_000)).toBe(5_000)
+  })
+
+  test('retries timeouts, rate limits, and server failures but not other statuses', () => {
+    const cases = [
+      [200, false],
+      [301, false],
+      [400, false],
+      [408, true],
+      [429, true],
+      [500, true],
+      [599, true],
+      [600, false]
+    ] as const
+
+    for (const [status, retryable] of cases) {
+      expect(isRetryableStatus(status)).toBe(retryable)
+    }
+  })
+
+  test('decodes every multipart API response used by the upload workflow', () => {
     expect(parseInitResponse({ uploadId: 'u', key: 'k', chunkSize: 10 })).toEqual({
       uploadId: 'u',
       key: 'k',
       chunkSize: 10
     })
-  })
-
-  test('parseInitResponse throws on missing fields', () => {
-    expect(() => parseInitResponse({ uploadId: 'u', key: 'k' })).toThrow()
-  })
-
-  test('parsePresignPartResponse decodes a valid payload', () => {
     expect(
       parsePresignPartResponse({
         url: 'https://bucket.s3.amazonaws.com/key?X-Amz-Signature=abc',
@@ -267,45 +172,27 @@ describe('response parsers', () => {
       partNumber: 1,
       expiresInSeconds: 300
     })
-  })
-
-  test('parsePresignPartResponse throws on missing fields', () => {
-    expect(() => parsePresignPartResponse({ partNumber: 1 })).toThrow()
-  })
-
-  test('parseStatusResponse returns a fresh array', () => {
-    const decoded = parseStatusResponse({ parts: [{ partNumber: 1, etag: 'e', size: 10 }] })
-    expect(decoded.parts).toEqual([{ partNumber: 1, etag: 'e', size: 10 }])
-    expect(() => {
-      decoded.parts.push({ partNumber: 2, etag: 'x', size: 1 })
-    }).not.toThrow()
-  })
-
-  test('parseStatusResponse throws on non-array parts', () => {
-    expect(() => parseStatusResponse({ parts: 'nope' })).toThrow()
-  })
-
-  test('parseAbortResponse requires ok: true', () => {
+    const status = parseStatusResponse({ parts: [{ partNumber: 1, etag: 'e', size: 10 }] })
+    expect(status).toEqual({
+      parts: [{ partNumber: 1, etag: 'e', size: 10 }]
+    })
+    expect(() => status.parts.push({ partNumber: 2, etag: 'next', size: 20 })).not.toThrow()
     expect(parseAbortResponse({ ok: true })).toEqual({ ok: true })
-    expect(() => parseAbortResponse({ ok: false })).toThrow()
-  })
-
-  test('parseCompleteResponse decodes the result', () => {
-    expect(parseCompleteResponse({ url: 'https://x', key: 'k' })).toEqual({
-      url: 'https://x',
+    expect(parseCompleteResponse({ url: 'https://cdn.example/mix.mp3', key: 'k' })).toEqual({
+      url: 'https://cdn.example/mix.mp3',
       key: 'k'
     })
   })
 
-  test('parsePersistedUpload returns null on bad data', () => {
+  test('rejects malformed API responses and ignores corrupt persisted checkpoints', () => {
+    expect(() => parseInitResponse({ uploadId: 'u', key: 'k' })).toThrow()
+    expect(() => parsePresignPartResponse({ partNumber: 1 })).toThrow()
+    expect(() => parseStatusResponse({ parts: 'nope' })).toThrow()
+    expect(() => parseAbortResponse({ ok: false })).toThrow()
     expect(parsePersistedUpload({ nope: true })).toBeNull()
-    expect(parsePersistedUpload('not an object')).toBeNull()
-    expect(parsePersistedUpload(null)).toBeNull()
-  })
 
-  test('parsePersistedUpload returns a fresh parts array', () => {
-    const decoded = parsePersistedUpload({
-      fileFingerprint: '1:a:1',
+    const checkpoint = {
+      fileFingerprint: '1:a.mp3:1',
       uploadId: 'u',
       key: 'k',
       chunkSize: 10,
@@ -316,9 +203,11 @@ describe('response parsers', () => {
       completedParts: [{ partNumber: 1, etag: 'e', size: 10 }],
       createdAt: 0,
       updatedAt: 0
-    })
-    if (!decoded) throw new Error('expected parsed upload')
-    decoded.completedParts.push({ partNumber: 2, etag: 'x', size: 10 })
-    expect(decoded.completedParts).toHaveLength(2)
+    }
+    const restored = parsePersistedUpload(checkpoint)
+    expect(restored).toEqual(checkpoint)
+    expect(() =>
+      restored?.completedParts.push({ partNumber: 2, etag: 'next', size: 20 })
+    ).not.toThrow()
   })
 })

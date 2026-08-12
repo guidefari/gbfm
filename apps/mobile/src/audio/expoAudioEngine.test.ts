@@ -1,7 +1,7 @@
 import { AudioEngine, PlaybackRejected } from '@gbfm/player'
 import { Effect } from 'effect'
 import type { AudioStatus } from 'expo-audio'
-import { describe, expect, test } from 'vitest'
+import { expect, test } from 'vitest'
 import { ExpoAudioEngineLayer, type ExpoAudioEnginePlayer } from './expoAudioEngine'
 
 const currentStatus: AudioStatus = {
@@ -69,46 +69,38 @@ const makePlayer = (play: () => void): ExpoAudioEnginePlayer => {
   }
 }
 
-describe('ExpoAudioEngineLayer', () => {
-  test('translates platform play failures into PlaybackRejected', async () => {
-    const failure = new Error('audio session unavailable')
-    const player = makePlayer(() => {
-      throw failure
-    })
-
-    const error = await Effect.gen(function* () {
-      const engine = yield* AudioEngine
-      return yield* Effect.flip(engine.play)
-    }).pipe(Effect.provide(ExpoAudioEngineLayer(player, 'native')), Effect.runPromise)
-
-    expect(error).toBeInstanceOf(PlaybackRejected)
-    expect(error.cause).toBe(failure)
+test('translates a platform play failure into PlaybackRejected without hiding its cause', async () => {
+  const failure = new Error('audio session unavailable')
+  const player = makePlayer(() => {
+    throw failure
   })
 
-  test('applies volume and mute changes to the player', async () => {
-    const player = makePlayer(() => undefined)
+  const error = await Effect.gen(function* () {
+    const engine = yield* AudioEngine
+    return yield* Effect.flip(engine.play)
+  }).pipe(Effect.provide(ExpoAudioEngineLayer(player, 'native')), Effect.runPromise)
 
-    await Effect.gen(function* () {
-      const engine = yield* AudioEngine
-      yield* engine.setVolume(0.25)
-      yield* engine.setMuted(true)
-    }).pipe(Effect.provide(ExpoAudioEngineLayer(player, 'native')), Effect.runPromise)
+  expect(error).toBeInstanceOf(PlaybackRejected)
+  expect(error.cause).toBe(failure)
+})
 
-    expect(player.volume).toBe(0.25)
-    expect(player.muted).toBe(true)
-  })
+test('drives player settings and source state through a complete replace-and-reset workflow', async () => {
+  const player = makePlayer(() => undefined)
 
-  test('clears the source when reset', async () => {
-    const player = makePlayer(() => undefined)
+  const statuses = await Effect.gen(function* () {
+    const engine = yield* AudioEngine
+    yield* engine.setVolume(0.25)
+    yield* engine.setMuted(true)
+    yield* engine.replace('https://cdn.example/track.mp3', 9)
+    const loaded = yield* engine.currentStatus
+    yield* engine.clearSource
+    const cleared = yield* engine.currentStatus
+    return { loaded, cleared }
+  }).pipe(Effect.provide(ExpoAudioEngineLayer(player, 'native')), Effect.runPromise)
 
-    const status = await Effect.gen(function* () {
-      const engine = yield* AudioEngine
-      yield* engine.replace('https://cdn.example/track.mp3', 9)
-      yield* engine.clearSource
-      return yield* engine.currentStatus
-    }).pipe(Effect.provide(ExpoAudioEngineLayer(player, 'native')), Effect.runPromise)
-
-    expect(status.sourceGeneration).toBeNull()
-    expect(status.isLoaded).toBe(false)
-  })
+  expect(player.volume).toBe(0.25)
+  expect(player.muted).toBe(true)
+  expect(statuses.loaded.sourceGeneration).toBe(9)
+  expect(statuses.cleared.sourceGeneration).toBeNull()
+  expect(statuses.cleared.isLoaded).toBe(false)
 })

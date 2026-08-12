@@ -15,20 +15,23 @@ function jsonResponse(body: JsonValue, init?: ResponseInit) {
 }
 
 describe('createFetcher', () => {
-  test('adds JSON content type and includes credentials by default', async () => {
-    let observedInit: RequestInit | undefined
+  test('performs default JSON requests and accepts empty success responses', async () => {
+    const observed: RequestInit[] = []
     const fetcher = createFetcher({
       request: async (_input, init) => {
-        observedInit = init
-        return jsonResponse({ ok: true })
+        observed.push(init ?? {})
+        return observed.length === 1
+          ? jsonResponse({ ok: true })
+          : new Response('', { status: 200 })
       },
       logError: () => {}
     })
 
     await expect(fetcher('/api/test')).resolves.toEqual({ ok: true })
+    await expect(fetcher('/api/empty')).resolves.toBeUndefined()
 
-    expect(observedInit?.credentials).toBe('include')
-    expect(new Headers(observedInit?.headers).get('Content-Type')).toBe('application/json')
+    expect(observed[0]?.credentials).toBe('include')
+    expect(new Headers(observed[0]?.headers).get('Content-Type')).toBe('application/json')
   })
 
   test('does not add JSON content type for FormData bodies', async () => {
@@ -47,16 +50,7 @@ describe('createFetcher', () => {
     expect([...new Headers(observedInit?.headers)]).toEqual([])
   })
 
-  test('returns undefined for empty successful responses', async () => {
-    const fetcher = createFetcher({
-      request: async () => new Response('', { status: 200 }),
-      logError: () => {}
-    })
-
-    await expect(fetcher('/api/empty')).resolves.toBeUndefined()
-  })
-
-  test('redirects on 401 before throwing unauthorized', async () => {
+  test('redirects and rejects unauthorized responses', async () => {
     let redirected = false
     const fetcher = createFetcher({
       request: async () => new Response('nope', { status: 401 }),
@@ -70,58 +64,44 @@ describe('createFetcher', () => {
     expect(redirected).toBe(true)
   })
 
-  test('reports server responses with request context', async () => {
-    let failure: ApiFailureInput | undefined
+  test('reports reportable failures and logs every rejected request with its context', async () => {
+    const failures: ApiFailureInput[] = []
+    const logError = vi.fn()
     const fetcher = createFetcher({
-      request: async () => new Response('failed', { status: 500, statusText: 'Server Error' }),
+      request: vi
+        .fn()
+        .mockResolvedValueOnce(new Response('failed', { status: 500, statusText: 'Server Error' }))
+        .mockRejectedValueOnce(new TypeError('network down'))
+        .mockRejectedValueOnce(new Error('boom')),
       reportFailure: (input) => {
-        failure = input
+        failures.push(input)
         return Effect.void
       },
       runEffect: Effect.runPromise,
-      logError: () => {}
+      logError
     })
 
     await expect(fetcher('/api/broken', { method: 'PATCH' })).rejects.toThrow('HTTP 500: failed')
-    expect(failure?.input).toBe('/api/broken')
-    expect(failure?.init.method).toBe('PATCH')
-    expect(failure?.context).toEqual({
+    await expect(fetcher('/api/network')).rejects.toThrow('network down')
+    await expect(fetcher('/api/boom')).rejects.toThrow('boom')
+
+    expect(failures).toHaveLength(2)
+    expect(failures[0]).toMatchObject({ input: '/api/broken', init: { method: 'PATCH' } })
+    expect(failures[0]?.context).toEqual({
       status: 500,
       statusText: 'Server Error',
       failureType: 'server_response'
     })
-  })
-
-  test('reports network TypeError failures', async () => {
-    let failure: ApiFailureInput | undefined
-    const fetcher = createFetcher({
-      request: async () => {
-        throw new TypeError('network down')
-      },
-      reportFailure: (input) => {
-        failure = input
-        return Effect.void
-      },
-      runEffect: Effect.runPromise,
-      logError: () => {}
+    expect(failures[1]?.context).toEqual({ failureType: 'network' })
+    expect(logError).toHaveBeenNthCalledWith(1, expect.any(Error), {
+      url: '/api/broken',
+      method: 'PATCH'
     })
-
-    await expect(fetcher('/api/network')).rejects.toThrow('network down')
-    expect(failure?.context).toEqual({ failureType: 'network' })
-  })
-
-  test('logs thrown failures', async () => {
-    const logError = vi.fn()
-    const error = new Error('boom')
-    const fetcher = createFetcher({
-      request: async () => {
-        throw error
-      },
-      logError
+    expect(logError).toHaveBeenNthCalledWith(2, expect.any(TypeError), {
+      url: '/api/network',
+      method: 'GET'
     })
-
-    await expect(fetcher('/api/boom')).rejects.toThrow('boom')
-    expect(logError).toHaveBeenCalledWith(error, {
+    expect(logError).toHaveBeenNthCalledWith(3, expect.any(Error), {
       url: '/api/boom',
       method: 'GET'
     })
@@ -129,15 +109,16 @@ describe('createFetcher', () => {
 })
 
 describe('request metadata helpers', () => {
-  test('reads URL and method from string requests', () => {
-    expect(getRequestUrl('/api/test')).toBe('/api/test')
-    expect(getRequestMethod('/api/test', { method: 'POST' })).toBe('POST')
-  })
-
-  test('reads URL and method from Request objects', () => {
+  test('derives effective URLs and methods from strings, URLs, requests, and overrides', () => {
+    const url = new URL('https://www.goosebumps.fm/api/url')
     const request = new Request('https://www.goosebumps.fm/api/test', { method: 'DELETE' })
 
+    expect(getRequestUrl('/api/test')).toBe('/api/test')
+    expect(getRequestUrl(url)).toBe('https://www.goosebumps.fm/api/url')
     expect(getRequestUrl(request)).toBe('https://www.goosebumps.fm/api/test')
+    expect(getRequestMethod('/api/test', {})).toBe('GET')
+    expect(getRequestMethod('/api/test', { method: 'POST' })).toBe('POST')
     expect(getRequestMethod(request, {})).toBe('DELETE')
+    expect(getRequestMethod(request, { method: 'PATCH' })).toBe('PATCH')
   })
 })

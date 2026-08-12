@@ -1,28 +1,26 @@
-import { describe, expect, it } from 'vitest'
+import { expect, test } from 'vitest'
 import { canCreatePosts, hasMinRole } from './index'
 
-describe('hasMinRole', () => {
-  it('ranks roles from user up to admin', () => {
-    expect(hasMinRole('admin', 'editor')).toBe(true)
-    expect(hasMinRole('editor', 'editor')).toBe(true)
-    expect(hasMinRole('creator', 'editor')).toBe(false)
-    expect(hasMinRole('user', 'creator')).toBe(false)
-  })
+test('enforces the role hierarchy and denies post creation to missing or unrecognized roles', () => {
+  expect([
+    hasMinRole('admin', 'editor'),
+    hasMinRole('editor', 'editor'),
+    hasMinRole('creator', 'editor'),
+    hasMinRole('user', 'creator')
+  ]).toEqual([true, true, false, false])
 
-  it('treats missing and unknown roles as no access', () => {
-    expect(hasMinRole(null, 'creator')).toBe(false)
-    expect(hasMinRole(undefined, 'creator')).toBe(false)
-    expect(hasMinRole('', 'creator')).toBe(false)
-    expect(hasMinRole('superuser', 'creator')).toBe(false)
-  })
-})
+  expect([null, undefined, '', 'superuser'].map((role) => hasMinRole(role, 'creator'))).toEqual([
+    false,
+    false,
+    false,
+    false
+  ])
 
-describe('canCreatePosts', () => {
-  it('admits exactly the roles the old POST_CREATE_ROLES set admitted', () => {
-    expect(canCreatePosts('creator')).toBe(true)
-    expect(canCreatePosts('editor')).toBe(true)
-    expect(canCreatePosts('admin')).toBe(true)
-    expect(canCreatePosts('user')).toBe(false)
-    expect(canCreatePosts(null)).toBe(false)
-  })
+  expect(['creator', 'editor', 'admin', 'user', null].map(canCreatePosts)).toEqual([
+    true,
+    true,
+    true,
+    false,
+    false
+  ])
 })

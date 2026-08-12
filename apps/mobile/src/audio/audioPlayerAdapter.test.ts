@@ -1,5 +1,5 @@
 import type { AudioStatus } from 'expo-audio'
-import { describe, expect, test } from 'vitest'
+import { expect, test } from 'vitest'
 import { subscribeToPlaybackStatus } from './audioPlayerAdapter'
 
 const status = (didJustFinish: boolean): AudioStatus => ({
@@ -38,49 +38,48 @@ const createPlayer = () => {
   }
 }
 
-describe('audio player status adapter', () => {
-  test('forwards the native event payload rather than rereading currentStatus', () => {
-    const source = createPlayer()
-    const received: Array<AudioStatus> = []
-    const subscription = subscribeToPlaybackStatus(source.player, 'native', (next) =>
-      received.push(next)
-    )
-    const completed = status(true)
+test('forwards the native event payload and removes the native subscription', () => {
+  const source = createPlayer()
+  const received: Array<AudioStatus> = []
+  const subscription = subscribeToPlaybackStatus(source.player, 'native', (next) =>
+    received.push(next)
+  )
+  const completed = status(true)
 
-    source.emit(completed)
-    subscription.remove()
+  source.emit(completed)
+  subscription.remove()
 
-    expect(received).toEqual([completed])
-    expect(source.wasRemoved()).toBe(true)
-  })
+  expect(received).toEqual([completed])
+  expect(source.wasRemoved()).toBe(true)
+})
 
-  test('polls web currentStatus because expo-audio does not emit from onended', () => {
-    const source = createPlayer()
-    const received: Array<AudioStatus> = []
-    let poll: (() => void) | undefined
-    let cleared = false
-    const subscription = subscribeToPlaybackStatus(
-      source.player,
-      'web',
-      (next) => received.push(next),
-      {
-        setInterval: (callback) => {
-          poll = callback
-          return setInterval(() => undefined, 60_000)
-        },
-        clearInterval: (interval) => {
-          clearInterval(interval)
-          cleared = true
-        }
+test('polls web completion status and disposes both status sources', () => {
+  const source = createPlayer()
+  const received: Array<AudioStatus> = []
+  let poll: (() => void) | undefined
+  let cleared = false
+  const subscription = subscribeToPlaybackStatus(
+    source.player,
+    'web',
+    (next) => received.push(next),
+    {
+      setInterval: (callback) => {
+        poll = callback
+        return setInterval(() => undefined, 60_000)
+      },
+      clearInterval: (interval) => {
+        clearInterval(interval)
+        cleared = true
       }
-    )
-    const completed = status(true)
-    source.player.currentStatus = completed
+    }
+  )
+  const completed = status(true)
+  source.player.currentStatus = completed
 
-    poll?.()
-    subscription.remove()
+  poll?.()
+  subscription.remove()
 
-    expect(received).toEqual([completed])
-    expect(cleared).toBe(true)
-  })
+  expect(received).toEqual([completed])
+  expect(source.wasRemoved()).toBe(true)
+  expect(cleared).toBe(true)
 })

@@ -3,27 +3,16 @@ import { HttpStatusError, uploadImageDirectToS3 } from './image-upload'
 import { parsePresignImageResponse } from './image-upload-response'
 
 describe('parsePresignImageResponse', () => {
-  test('decodes a valid presign payload', () => {
-    expect(
-      parsePresignImageResponse({
-        uploadUrl: 'https://bucket.s3.amazonaws.com/key?X-Amz-Signature=abc',
-        publicUrl: 'https://cdn.goosebumps.fm/user-content/key.png',
-        key: 'user123/image/abc-def/artwork.png',
-        expiresInSeconds: 300
-      })
-    ).toEqual({
+  test('decodes valid image presign data and rejects malformed responses', () => {
+    const response = {
       uploadUrl: 'https://bucket.s3.amazonaws.com/key?X-Amz-Signature=abc',
       publicUrl: 'https://cdn.goosebumps.fm/user-content/key.png',
       key: 'user123/image/abc-def/artwork.png',
       expiresInSeconds: 300
-    })
-  })
+    }
 
-  test('throws on missing fields', () => {
+    expect(parsePresignImageResponse(response)).toEqual(response)
     expect(() => parsePresignImageResponse({ key: 'k' })).toThrow()
-  })
-
-  test('throws on a non-object payload', () => {
     expect(() => parsePresignImageResponse(null)).toThrow()
   })
 })
@@ -39,7 +28,7 @@ describe('uploadImageDirectToS3', () => {
   // from presign (file too large, bad content-type) must surface a status
   // so isPageRetryable in -program.ts can fail fast instead of retrying
   // RETRY_TIMES and re-presigning (orphaning pending upload_assets rows).
-  test('throws HttpStatusError carrying the presign response status on a 4xx', async () => {
+  test('surfaces a permanent presign rejection without attempting an upload', async () => {
     const fetchMock = vi
       .fn()
       .mockImplementation(
@@ -47,12 +36,14 @@ describe('uploadImageDirectToS3', () => {
       )
     vi.stubGlobal('fetch', fetchMock)
 
-    await expect(uploadImageDirectToS3(makeFile())).rejects.toBeInstanceOf(HttpStatusError)
-    await expect(uploadImageDirectToS3(makeFile())).rejects.toMatchObject({ status: 413 })
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    const error = await uploadImageDirectToS3(makeFile()).catch((cause: unknown) => cause)
+
+    expect(error).toBeInstanceOf(HttpStatusError)
+    expect(error).toMatchObject({ status: 413 })
+    expect(fetchMock).toHaveBeenCalledOnce()
   })
 
-  test('throws HttpStatusError carrying the S3 PUT response status on a failed upload', async () => {
+  test('surfaces the S3 response status after a successful presign', async () => {
     const presignBody = {
       uploadUrl: 'https://bucket.s3.amazonaws.com/key?X-Amz-Signature=abc',
       publicUrl: 'https://cdn.goosebumps.fm/user-content/key.png',
@@ -66,9 +57,12 @@ describe('uploadImageDirectToS3', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(uploadImageDirectToS3(makeFile())).rejects.toMatchObject({ status: 500 })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock.mock.calls[1]?.[0]).toBe(presignBody.uploadUrl)
+    expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({ method: 'PUT' })
   })
 
-  test('resolves with the public URL and key on success', async () => {
+  test('presigns and uploads an image before returning its public location', async () => {
     const presignBody = {
       uploadUrl: 'https://bucket.s3.amazonaws.com/key?X-Amz-Signature=abc',
       publicUrl: 'https://cdn.goosebumps.fm/user-content/key.png',
@@ -81,9 +75,28 @@ describe('uploadImageDirectToS3', () => {
       .mockResolvedValueOnce(new Response('', { status: 200 }))
     vi.stubGlobal('fetch', fetchMock)
 
-    await expect(uploadImageDirectToS3(makeFile())).resolves.toEqual({
+    const file = makeFile()
+    await expect(uploadImageDirectToS3(file)).resolves.toEqual({
       url: presignBody.publicUrl,
       key: presignBody.key
     })
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      '/api/upload/image/presign',
+      expect.objectContaining({
+        method: 'POST',
+        credentials: 'include',
+        body: JSON.stringify({
+          fileName: 'artwork.png',
+          contentType: 'image/png',
+          fileSize: 3
+        })
+      })
+    )
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      presignBody.uploadUrl,
+      expect.objectContaining({ method: 'PUT', body: file })
+    )
   })
 })
