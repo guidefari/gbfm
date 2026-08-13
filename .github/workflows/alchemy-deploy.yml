@@ -26,6 +26,47 @@ jobs:
 
       - uses: ./.github/actions/setup-bun-workspace
 
+      # Alchemy patches any secret whose value differs from its state, so a
+      # missing variable would reach Cloudflare as an empty string and wipe the
+      # stored secret. Fail before the deploy touches anything.
+      - name: Check every secret is present
+        env:
+          REQUIRED: >-
+            CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID SPOTIFY_CLIENT_ID
+            SPOTIFY_CLIENT_SECRET DatabaseHost DatabaseUser DatabasePassword
+            DatabasePort DatabaseName SENTRY_BACKEND_DSN VITE_PUBLIC_SENTRY_DSN
+            OTEL_EXPORTER_OTLP_ENDPOINT OTEL_EXPORTER_OTLP_HEADERS
+            BETTER_AUTH_SECRET GBFM_ENCRYPTION_ROOT_KEY StorageRegion
+            StorageAccessKeyId StorageSecretAccessKey
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_DEFAULT_ACCOUNT_ID }}
+          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+          DatabaseHost: ${{ secrets.DB_HOST }}
+          DatabaseUser: ${{ secrets.DB_USER }}
+          DatabasePassword: ${{ secrets.DB_PASSWORD }}
+          DatabasePort: ${{ secrets.DB_PORT }}
+          DatabaseName: ${{ secrets.DB_NAME }}
+          SENTRY_BACKEND_DSN: ${{ secrets.SENTRY_BACKEND_DSN }}
+          VITE_PUBLIC_SENTRY_DSN: ${{ secrets.VITE_PUBLIC_SENTRY_DSN }}
+          OTEL_EXPORTER_OTLP_ENDPOINT: ${{ secrets.OTEL_EXPORTER_OTLP_ENDPOINT }}
+          OTEL_EXPORTER_OTLP_HEADERS: ${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          GBFM_ENCRYPTION_ROOT_KEY: ${{ secrets.GBFM_ENCRYPTION_ROOT_KEY }}
+          StorageRegion: ${{ secrets.STORAGE_REGION }}
+          StorageAccessKeyId: ${{ secrets.STORAGE_ACCESS_KEY_ID }}
+          StorageSecretAccessKey: ${{ secrets.STORAGE_SECRET_ACCESS_KEY }}
+        run: |
+          missing=""
+          for name in $REQUIRED; do
+            [ -n "${!name:-}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "Missing repository secrets for:$missing" >&2
+            exit 1
+          fi
+          echo "All $(echo $REQUIRED | wc -w) secrets present."
+
       - name: Deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -33,11 +74,11 @@ jobs:
           SENTRY_RELEASE: ${{ github.sha }}
           SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
           SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
-          DatabaseHost: ${{ secrets.DATABASE_HOST }}
-          DatabaseUser: ${{ secrets.DATABASE_USER }}
-          DatabasePassword: ${{ secrets.DATABASE_PASSWORD }}
-          DatabasePort: ${{ secrets.DATABASE_PORT }}
-          DatabaseName: ${{ secrets.DATABASE_NAME }}
+          DatabaseHost: ${{ secrets.DB_HOST }}
+          DatabaseUser: ${{ secrets.DB_USER }}
+          DatabasePassword: ${{ secrets.DB_PASSWORD }}
+          DatabasePort: ${{ secrets.DB_PORT }}
+          DatabaseName: ${{ secrets.DB_NAME }}
           SENTRY_BACKEND_DSN: ${{ secrets.SENTRY_BACKEND_DSN }}
           VITE_PUBLIC_SENTRY_DSN: ${{ secrets.VITE_PUBLIC_SENTRY_DSN }}
           OTEL_EXPORTER_OTLP_ENDPOINT: ${{ secrets.OTEL_EXPORTER_OTLP_ENDPOINT }}
