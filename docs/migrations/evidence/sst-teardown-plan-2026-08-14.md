@@ -27,20 +27,37 @@ domains, 2 R2 buckets, 1 ruleset, 2 Worker scripts, plus the AWS estate
 
 | Resource | Live object | Why |
 | --- | --- | --- |
-| `EmailTXTRecordDmarcgoosebumpsfm` | `_dmarc` TXT | Deleting breaks DMARC |
-| `EmailCNAMERecord…3sybgtfwdm…` | DKIM CNAME | Deleting breaks SES deliverability |
-| `EmailCNAMERecordRjjbcedugk…` | DKIM CNAME | Same |
-| `EmailCNAMERecordThdzddrc4…` | DKIM CNAME | Same |
-| `MixesR2Bucket` | `gbfm-mixes` | Holds 25 mixes |
-| `UserContentR2Bucket` | `gbfm-user-content` | Holds 3 audio objects |
+| `EmailTXTRecordDmarcgoosebumpsfm` | `_dmarc` TXT | DMARC policy for the apex; Cloudflare's own DKIM relies on it |
+| `DatabaseBackupsBucket` | `gbfm-prod-databasebackupsbucket-*` | Two pre-D1 Postgres dumps, no other copy |
 
-Email is still on SES, so the DKIM and DMARC records are load-bearing.
+Email sends through **Cloudflare**, not SES. `email-deployment-config.ts` only
+supports `'cloudflare' | 'recording'`, and the live zone carries
+`cf2024-1._domainkey`, `cf-bounce.mail` and an SPF record pointing at
+`_spf.mx.cloudflare.net`.
 
-The two buckets are the pre-Alchemy originals. Production serves from
-`gbfm-mixes-prod-*` and `gbfm-usercontent-prod-*` instead. The mixes were
-verified byte-identical between old and new by diffing key+size listings, so
-these are a redundant copy rather than live data. They are worth keeping until
-the copy is deliberately retired.
+The three `*.dkim.amazonses.com` CNAMEs in state are SES leftovers signing for
+a provider no longer in use. They are safe to delete. The `_dmarc` TXT at the
+apex is not.
+
+### Verified replicated, safe to destroy
+
+Every user-facing asset exists in the Alchemy R2 buckets. Confirmed by diffing
+key+size listings.
+
+| SST bucket | Objects | Alchemy equivalent | Result |
+| --- | --- | --- | --- |
+| `gbfm-prod-usercontentbucket-*` | 198 (983 MB) | `gbfm-usercontent-prod-*` | Identical |
+| `gbfm-prod-mixesbucket-*` | 25 (3.79 GB) | `gbfm-mixes-prod-*` | Identical |
+| `gbfm-user-content` (R2) | 3 | superseded | Subset |
+| `gbfm-mixes` (R2) | 25 | `gbfm-mixes-prod-*` | Identical |
+
+The database backups bucket is the exception: two `.sql` dumps from
+2026-08-07, taken before the D1 cutover, with no equivalent anywhere else.
+Losing them removes the only rollback path to Postgres state.
+
+When comparing, note that `aws s3 ls` output can be truncated before it reaches
+a pipe. Take counts from `--summarize` totals, and cross-check the line count,
+rather than trusting a piped listing.
 
 ### Safe to leave in state
 
@@ -78,16 +95,27 @@ Each command prints the resource plus every dependency reference it will drop,
 then prompts `Do you want to commit these changes? (Y/n)`. Read the list before
 confirming.
 
+Download the database backups first. They are the only copy.
+
+Resolve the bucket name from state rather than hardcoding it:
+
 ```bash
 cd /Users/guidefari/source/oss/gbfm
+mkdir -p ~/gbfm-backups
 
+BACKUPS=$(./node_modules/.bin/sst state export --stage prod \
+  | jq -r '.latest.resources[]
+      | select(.urn | endswith("::DatabaseBackupsBucket"))
+      | .outputs.bucket')
+
+aws s3 sync "s3://$BACKUPS" ~/gbfm-backups/
+```
+
+Then drop from state what must survive the teardown:
+
+```bash
 ./node_modules/.bin/sst state remove EmailTXTRecordDmarcgoosebumpsfm --stage prod
-./node_modules/.bin/sst state remove EmailCNAMERecord3sybgtfwdm4iyym7m5hcjpeamz5bviegdomainkeygoosebumpsfm --stage prod
-./node_modules/.bin/sst state remove EmailCNAMERecordRjjbcedugk5o2ttwdisezyzgj3iq73rsdomainkeygoosebumpsfm --stage prod
-./node_modules/.bin/sst state remove EmailCNAMERecordThdzddrc4ncngui3irzbkzuw3feibd3ndomainkeygoosebumpsfm --stage prod
-
-./node_modules/.bin/sst state remove MixesR2Bucket --stage prod
-./node_modules/.bin/sst state remove UserContentR2Bucket --stage prod
+./node_modules/.bin/sst state remove DatabaseBackupsBucket --stage prod
 ```
 
 Optional, only if `r2-cdn.goosebumps.fm` should survive:
@@ -95,6 +123,10 @@ Optional, only if `r2-cdn.goosebumps.fm` should survive:
 ```bash
 ./node_modules/.bin/sst state remove CdnRouterWorkerScript --stage prod
 ```
+
+Everything else can go. The R2 buckets `gbfm-mixes` and `gbfm-user-content`
+may also be dropped from state if the redundant copies are worth keeping, but
+their contents exist in the Alchemy buckets either way.
 
 Verify before tearing anything down:
 
@@ -108,6 +140,34 @@ Expect the 4 email records and both R2 buckets to be absent. Then:
 ```bash
 ./node_modules/.bin/sst remove --stage prod
 ```
+
+## The AWS estate being torn down
+
+None of this serves production traffic except where noted. This is the bulk of
+the remaining AWS bill.
+
+| Group | Resources |
+| --- | --- |
+| Network | VPC, 4 subnets, 4 route tables + associations, internet gateway, 2 security groups, Cloudmap namespace |
+| Bastion | EC2 instance, keypair, IAM role + instance profile, SSM parameter holding the private key |
+| ECS | Cluster, capacity providers, `gbfm_vps` service, 2 task definitions, autoscaling target + 2 policies, Cloudmap service |
+| API Gateway | HTTP API, stage, route, integration, VPC link, domain name, API mapping |
+| CloudFront | Distribution, cache policy, request function, KV store |
+| Certificates | 2 ACM certs + validations (`cdn`, `vps`) |
+| Bluesky cron | EventBridge schedule, task definition, 3 IAM roles, log group |
+| Email | SES v2 identity, configuration set, domain verification |
+| Logs | 3 CloudWatch log groups |
+| S3 | 3 buckets with CORS, policy, public access block, plus `QrPdfLifecycle` |
+
+`vps.goosebumps.fm` still returns **200**. The ECS service is live and serving
+even though nothing in the codebase points at it any more: `apps/www` builds
+against `api.goosebumps.fm`, and the redirect ruleset moved to the Worker. It
+is the intended casualty of the teardown, but it is a working endpoint, not a
+corpse. Anything external still calling it breaks at removal.
+
+`QrPdfLifecycle` expired `qr-pdfs/` after a day. Its replacement is the
+`cleanupExpiredQrPdfs` sweep on the `17 * * * *` cron, added 2026-08-14. Note
+the service uses a 30 minute window rather than the lifecycle rule's one day.
 
 ## Syntax notes
 
@@ -131,6 +191,10 @@ The confirmation prompt cannot be answered from a non-interactive shell.
 - `gbfm-user-content` confirmed to hold 3 audio objects
 - `sst state remove` syntax established against a dead ACM validation record;
   state left unchanged because the prompt could not be answered
+- All 198 user-content objects diffed on key+size between the S3 bucket and
+  `gbfm-usercontent-prod-*`: identical
+- Live zone DNS inspected to confirm email sends through Cloudflare, not SES
+- `vps.goosebumps.fm` probed and returning 200; no code references remain
 
 ## Open items
 
