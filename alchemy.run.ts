@@ -83,7 +83,6 @@ export default Alchemy.Stack(
         ADMIN_EMAIL: process.env.ADMIN_EMAIL ?? '',
         ...secrets,
         SENTRY_DSN: secrets.SENTRY_BACKEND_DSN,
-        StorageProvider: 'r2',
         R2AccountId: userContent.accountId
       }
     })

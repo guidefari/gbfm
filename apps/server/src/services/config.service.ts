@@ -50,6 +50,8 @@ export const secretBindingNames = secretNames
 // The aws provider resolves credentials from the ECS instance role, so these
 // are legitimately blank in production.
 const optionalSecretNames: readonly SecretName[] = [
+  // Derived from whether an R2 account ID is bound, so it is never set directly.
+  'StorageProvider',
   'StorageEndpoint',
   'StorageAccessKeyId',
   'StorageSecretAccessKey',
@@ -257,7 +259,7 @@ export function createConfig(bindings?: WorkerConfigBindings): ConfigService {
       'local-development-encryption-key',
       bindings
     ),
-    StorageProvider: secretString('StorageProvider', 'aws', bindings),
+    StorageProvider: secretString('StorageProvider', '', bindings),
     StorageEndpoint: secretString('StorageEndpoint', '', bindings),
     StorageRegion: secretString('StorageRegion', 'auto', bindings),
     StorageAccessKeyId: secretString('StorageAccessKeyId', '', bindings),
@@ -275,9 +277,13 @@ export function createConfig(bindings?: WorkerConfigBindings): ConfigService {
     bindings?.USER_CONTENT_BUCKET_NAME ?? resourceString('User_Content', 'name', 'user-content-dev')
   const mixesBucketName =
     bindings?.MIXES_BUCKET_NAME ?? resourceString('Mixes', 'name', 'mixes-dev')
+  const accountId = bindings?.R2AccountId ?? r2AccountId(secrets.StorageEndpoint)
   const storage = Schema.decodeUnknownSync(StorageConfigSchema)({
-    provider: secrets.StorageProvider,
-    accountId: bindings?.R2AccountId ?? r2AccountId(secrets.StorageEndpoint),
+    // r2 is the deployment target, so an account ID is enough to select it.
+    // Without one there is nothing to address a bucket with, and the aws
+    // provider's instance-role credentials are the only thing left that works.
+    provider: secrets.StorageProvider || (accountId === undefined ? 'aws' : 'r2'),
+    accountId,
     endpoint: secrets.StorageEndpoint || undefined,
     region: secrets.StorageRegion,
     accessKeyId:
