@@ -11,9 +11,9 @@ switched.
 
 | Resource | State |
 | --- | --- |
-| Worker `gbfm-api-prod-yphgo2gectab2vz5` | live, 38 bindings |
+| Worker `gbfm-api-prod-<suffix>` | live, 38 bindings |
 | `api.goosebumps.fm` | bound, proxied AAAA, cert issued |
-| D1 `cc3c4fe8-6461-419a-ac1d-3804d47f5238` | all 41 tables imported |
+| D1 `<d1-database-id>` | all 41 tables imported |
 | Secrets Store | 17 `prod-*` secrets in `default_secrets_store` |
 | `EMAIL` binding | bound, routing enabled, DKIM/MX present |
 
@@ -169,8 +169,8 @@ back:
 
 ```sh
 # rollback state: both were attached to gbfm-prod-gbfmwwwrouterscript
-DELETE /accounts/{account}/workers/domains/d3244f5b22532b42982b5d17abccfd70730d88e3  # apex
-DELETE /accounts/{account}/workers/domains/a14cfcbdf9d80967ae1c06757e64caf3ad0586d4  # www
+DELETE /accounts/{account}/workers/domains/<apex-domain-binding-id>  # apex
+DELETE /accounts/{account}/workers/domains/<www-domain-binding-id>  # www
 ```
 
 Rollback is re-attaching those two hostnames to the SST Worker, which is still
@@ -207,7 +207,7 @@ Also moved with the client:
 ### BETTER_AUTH_URL pointed at staging
 
 Production's stored value was
-`https://gbfm-api-d1-staging-mebtavpzy2m53eso.guideg6.workers.dev`, so emailed
+`https://<staging-worker>.workers.dev`, so emailed
 password-reset and verification links were built for a **staging** Worker. This
 was a live defect, not a migration artifact, and it survived an earlier check
 here that confirmed the value's length without looking at its host.
@@ -245,13 +245,13 @@ All production content now lives in the buckets the prod Worker binds:
 
 | Bucket | Objects | Bytes | Method |
 | --- | ---: | ---: | --- |
-| `gbfm-mixes-prod-krgzgvi7bpxoobjx` | 25 | 3,794,106,703 | R2-to-R2 server-side copy |
-| `gbfm-usercontent-prod-2qaxujeklu4sdgz5` | 198 | 983,213,381 | Super Slurper from S3 |
+| `gbfm-mixes-prod-<suffix>` | 25 | 3,794,106,703 | R2-to-R2 server-side copy |
+| `gbfm-usercontent-prod-<suffix>` | 198 | 983,213,381 | Super Slurper from S3 |
 
 Both match their sources exactly on count and bytes.
 
 **Bucket names are not obvious and cost real time.** Alchemy created
-`gbfm-usercontent-prod-2qaxujeklu4sdgz5` and `gbfm-mixes-prod-krgzgvi7bpxoobjx`,
+`gbfm-usercontent-prod-<suffix>` and `gbfm-mixes-prod-<suffix>`,
 while the SST-era buckets are `gbfm-user-content` and `gbfm-mixes`. Read the
 Worker's bindings before copying anything:
 
@@ -283,9 +283,9 @@ and `Mixes` resources the API Worker uses, published to a **staging hostname**
 so it could be verified before anything user-facing moved:
 
 ```
-https://r2-cdn-next.goosebumps.fm   ->  gbfm-cdnrouter-prod-7oiy3ihfwepsbpoo
-  USER_CONTENT -> gbfm-usercontent-prod-2qaxujeklu4sdgz5
-  MIXES        -> gbfm-mixes-prod-krgzgvi7bpxoobjx
+https://r2-cdn-next.goosebumps.fm   ->  gbfm-cdnrouter-prod-<suffix>
+  USER_CONTENT -> gbfm-usercontent-prod-<suffix>
+  MIXES        -> gbfm-mixes-prod-<suffix>
 ```
 
 Verified against the new hostname:
@@ -314,7 +314,7 @@ unchanged, so no asset URL in the database was touched.
 **It is a Worker custom domain, not a DNS edit.** The zone has no worker routes;
 every Worker hostname is an entry in
 `/accounts/{account}/workers/domains`. `cdn.goosebumps.fm` was an *unproxied*
-`CNAME` to `d3gcs4niff2erb.cloudfront.net`, and Cloudflare will not attach a
+`CNAME` to `<distribution>.cloudfront.net`, and Cloudflare will not attach a
 custom domain over an existing record. So the sequence is:
 
 1. delete the CloudFront `CNAME`
@@ -328,7 +328,7 @@ down here verbatim:
 
 ```json
 { "type": "CNAME", "name": "cdn.goosebumps.fm",
-  "content": "d3gcs4niff2erb.cloudfront.net", "proxied": false, "ttl": 60 }
+  "content": "<distribution>.cloudfront.net", "proxied": false, "ttl": 60 }
 ```
 
 CloudFront and the S3 origin are untouched and still serve, so rollback stays
