@@ -27,7 +27,6 @@ const secretSources = {
   OTEL_EXPORTER_OTLP_ENDPOINT: 'OTEL_EXPORTER_OTLP_ENDPOINT',
   OTEL_EXPORTER_OTLP_HEADERS: 'OTEL_EXPORTER_OTLP_HEADERS',
   BETTER_AUTH_SECRET: 'BETTER_AUTH_SECRET',
-  BETTER_AUTH_URL: 'BETTER_AUTH_URL',
   GBFM_ENCRYPTION_ROOT_KEY: 'GBFM_ENCRYPTION_ROOT_KEY',
   StorageRegion: 'StorageRegion',
   StorageAccessKeyId: 'StorageAccessKeyId',
@@ -58,24 +57,35 @@ const missingSources = () =>
  * Cloudflare allows one store per account, so names are stage-scoped to keep
  * prod and staging from overwriting each other.
  */
-export const secretsStore = Effect.gen(function* () {
-  const stack = yield* Alchemy.Stack
+export const secretsStore = (apiUrl: string) =>
+  Effect.gen(function* () {
+    const stack = yield* Alchemy.Stack
 
-  const missing = missingSources()
-  if (missing.length > 0) return yield* Effect.die(new IncompleteSecretsError(missing))
+    const missing = missingSources()
+    if (missing.length > 0) return yield* Effect.die(new IncompleteSecretsError(missing))
 
-  const store = yield* Cloudflare.SecretsStore.Store('Secrets')
+    const store = yield* Cloudflare.SecretsStore.Store('Secrets')
 
-  const entries = yield* Effect.forEach(
-    Object.entries(secretSources),
-    ([name, sourceName]) =>
-      Cloudflare.SecretsStore.Secret(`Secret${name}`, {
-        store,
-        name: `${stack.stage}-${name}`,
-        value: Redacted.make(process.env[sourceName] ?? '')
-      }).pipe(Effect.map((secret) => [name, secret] as const)),
-    { concurrency: 4 }
-  )
+    // Derived from the stack rather than the environment. Better Auth builds
+    // emailed links from this, so a stale inherited value sends real users to
+    // whichever host it last named: production's pointed at a staging Worker.
+    const sources: Record<string, string> = {
+      ...Object.fromEntries(
+        Object.entries(secretSources).map(([name, source]) => [name, process.env[source] ?? ''])
+      ),
+      BETTER_AUTH_URL: apiUrl
+    }
 
-  return Object.fromEntries(entries)
-})
+    const entries = yield* Effect.forEach(
+      Object.keys(sources),
+      (name) =>
+        Cloudflare.SecretsStore.Secret(`Secret${name}`, {
+          store,
+          name: `${stack.stage}-${name}`,
+          value: Redacted.make(sources[name] ?? '')
+        }).pipe(Effect.map((secret) => [name, secret] as const)),
+      { concurrency: 4 }
+    )
+
+    return Object.fromEntries(entries)
+  })

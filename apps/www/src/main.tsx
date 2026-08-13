@@ -66,7 +66,13 @@ const hasLocalUrl = (event: Sentry.Event) =>
 
 const tracePropagationTargets = env.isDev
   ? [/^\//, 'http://127.0.0.1:3003', 'http://localhost:3003']
-  : [/^\//, 'https://goosebumps.fm', 'https://www.goosebumps.fm', 'https://vps.goosebumps.fm']
+  : [
+      /^\//,
+      'https://goosebumps.fm',
+      'https://www.goosebumps.fm',
+      'https://api.goosebumps.fm',
+      'https://vps.goosebumps.fm'
+    ]
 
 if (env.sentryDsn && (!env.isDev || env.sentryEnableLocal)) {
   Sentry.init({

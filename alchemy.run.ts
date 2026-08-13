@@ -1,4 +1,5 @@
 import * as Alchemy from 'alchemy'
+import { adopt } from 'alchemy/AdoptPolicy'
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as Effect from 'effect/Effect'
 import { secretsStore } from './alchemy/secrets'
@@ -17,7 +18,10 @@ export default Alchemy.Stack(
     const stack = yield* Alchemy.Stack
     const isProduction = stack.stage === 'prod'
     const isLocalDev = yield* Alchemy.ALCHEMY_DEV
-    const secrets = yield* secretsStore
+    const apiUrl = isProduction
+      ? 'https://api.goosebumps.fm'
+      : `https://api.${stack.stage}.goosebumps.fm`
+    const secrets = yield* secretsStore(apiUrl)
     const emailConfig = emailDeploymentConfig({
       stage: stack.stage,
       testRecipient: process.env.EMAIL_TEST_RECIPIENT,
@@ -97,6 +101,66 @@ export default Alchemy.Stack(
       }
     })
 
+    if (isProduction) {
+      const zone = yield* Cloudflare.Zone.Zone('Zone', { name: 'goosebumps.fm' }).pipe(adopt(true))
+
+      // These served /rss.xml, /sitemap.xml and /s/* off the VPS. The Worker
+      // serves the same routes, so they move with the client rather than
+      // pointing at a host that is being retired.
+      yield* Cloudflare.Ruleset.Ruleset('VpsRedirects', {
+        zone,
+        phase: 'http_request_dynamic_redirect',
+        name: 'Dynamic route redirects',
+        rules: [
+          {
+            action: 'redirect',
+            description: 'Redirect RSS feeds to the API',
+            expression: `((http.request.uri.path eq "/rss.xml") or (http.request.uri.path eq "/rss")) and (http.host eq "goosebumps.fm")`,
+            actionParameters: {
+              fromValue: { statusCode: 301, targetUrl: { value: `${apiUrl}/rss.xml` } }
+            }
+          },
+          {
+            action: 'redirect',
+            description: 'Redirect sitemap to the API',
+            expression: `(http.request.uri.path eq "/sitemap.xml") and (http.host eq "goosebumps.fm")`,
+            actionParameters: {
+              fromValue: { statusCode: 301, targetUrl: { value: `${apiUrl}/sitemap.xml` } }
+            }
+          },
+          {
+            action: 'redirect',
+            description: 'Redirect share routes to the API OG handlers',
+            expression: `starts_with(http.request.uri.path, "/s/") and (http.host eq "goosebumps.fm")`,
+            actionParameters: {
+              fromValue: {
+                statusCode: 301,
+                targetUrl: { expression: `concat("${apiUrl}", http.request.uri.path)` },
+                preserveQueryString: true
+              }
+            }
+          }
+        ]
+      })
+    }
+
+    const www = yield* Cloudflare.Website.StaticSite('Www', {
+      cwd: 'apps/www',
+      command: 'bun run build',
+      outdir: 'dist',
+      ...(isProduction && process.env.WWW_TAKEOVER === 'true'
+        ? { domain: ['www.goosebumps.fm', 'goosebumps.fm'] }
+        : { url: true }),
+      assets: { notFoundHandling: 'single-page-application' },
+      env: {
+        VITE_VPS_BASE_URL: apiUrl,
+        VITE_PUBLIC_SENTRY_DSN: process.env.VITE_PUBLIC_SENTRY_DSN ?? '',
+        VITE_PUBLIC_SENTRY_ENVIRONMENT: stack.stage,
+        VITE_PUBLIC_SENTRY_RELEASE: process.env.SENTRY_RELEASE ?? '',
+        VITE_SPOTIFY_CLIENT_ID: process.env.SPOTIFY_CLIENT_ID ?? ''
+      }
+    })
+
     yield* Cloudflare.Queues.Consumer('ReminderConsumer', {
       queueId: reminders.queueId,
       scriptName: api.workerName
@@ -107,6 +171,8 @@ export default Alchemy.Stack(
       apiDomains: api.domains,
       cdnRouterUrl: cdnRouter.url,
       cdnRouterDomains: cdnRouter.domains,
+      wwwUrl: www.url,
+      wwwDomains: www.domains,
       databaseName: db.databaseName,
       userContentBucketName: userContent.bucketName,
       mixesBucketName: mixes.bucketName
