@@ -186,21 +186,46 @@ object listing before considering a copy finished.
 Super Slurper's job API nests credentials under `source.secret` / `target.secret`
 and rejects `target.accountId`.
 
-### Blocking the `cdn` flip
+### CDN router ported to Alchemy
 
-`r2-cdn.goosebumps.fm` is served by `gbfm-prod-cdnrouterworkerscript`, which is
-still declared only in SST (`infra/bucket.ts`) and binds the **old** buckets:
+`r2-cdn.goosebumps.fm` was served by `gbfm-prod-cdnrouterworkerscript`, declared
+only in SST (`infra/bucket.ts`) and bound to the **old** buckets (`gbfm-mixes`,
+`gbfm-user-content`). It therefore did not serve the freshly copied content: a
+live image 404'd through `r2-cdn` while present in the prod bucket, and the two
+assets that did resolve were coincidences of the old buckets' contents.
+
+The router source was already portable, so the port was a stack declaration
+only. It is now `CdnRouter` in `alchemy.run.ts`, bound to the same `UserContent`
+and `Mixes` resources the API Worker uses, published to a **staging hostname**
+so it could be verified before anything user-facing moved:
 
 ```
-MIXES        -> gbfm-mixes
-USER_CONTENT -> gbfm-user-content
+https://r2-cdn-next.goosebumps.fm   ->  gbfm-cdnrouter-prod-7oiy3ihfwepsbpoo
+  USER_CONTENT -> gbfm-usercontent-prod-2qaxujeklu4sdgz5
+  MIXES        -> gbfm-mixes-prod-krgzgvi7bpxoobjx
 ```
 
-So it does not serve the freshly copied content. A spot check found a live image
-404ing through `r2-cdn` while present in the prod bucket; the two assets that did
-resolve were coincidences of the old buckets' contents.
+Verified against the new hostname:
 
-The CDN router must be ported into Alchemy and bound to the prod buckets before
-`cdn.goosebumps.fm` can be pointed at it. The flip itself is then a DNS change
-from the CloudFront/S3 router to the Worker, keeping the same hostname so no
-asset URL in the database changes.
+| Check | Result |
+| --- | --- |
+| The image that 404'd on the old router | `200`, 175,825 bytes, `image/jpeg` |
+| 18 sampled keys across both prefixes | 18/18 `200` with correct content types |
+| SHA-256 vs live `cdn.goosebumps.fm` | identical (2 images, plus an 8 MB audio prefix) |
+| Range, conditional, HEAD | `206` with correct `content-range`, `304`, `200` |
+| `POST`, missing key, bare prefix, unrouted path | `405`, `404`, `404`, `404` |
+
+**CORS was a gap the port would have introduced.** The CloudFront CDN sends
+`access-control-allow-origin: *` today; the Worker sent nothing. Nothing in the
+client currently needs it (`new Audio()` in `PlayerProvider.tsx:87` sets no
+`crossOrigin`, and there is no `AudioContext` or `fetch` of CDN media), but
+flipping would have silently dropped a header production has always sent. The
+router now sends CORS on every path, 304 included, which is worth an explicit
+test because a `Response` can carry immutable headers.
+
+### Remaining for the flip
+
+Only the DNS change: point `cdn.goosebumps.fm` at the Worker instead of
+CloudFront/S3. The hostname does not change, so no asset URL in the database
+changes. Roll back by pointing the record back at CloudFront, which keeps
+serving from S3 until it is torn down.
