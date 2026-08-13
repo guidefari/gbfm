@@ -49,7 +49,7 @@ export const secretBindingNames = secretNames
 
 // The aws provider resolves credentials from the ECS instance role, so these
 // are legitimately blank in production.
-const optionalSecretNames: readonly SecretName[] = [
+const optionalSecretNames = [
   // Derived from whether an R2 account ID is bound, so it is never set directly.
   'StorageProvider',
   'StorageEndpoint',
@@ -65,18 +65,23 @@ const optionalSecretNames: readonly SecretName[] = [
   'DatabasePassword',
   'DatabasePort',
   'DatabaseName'
-]
+] as const satisfies readonly SecretName[]
 
+type OptionalSecretName = (typeof optionalSecretNames)[number]
+
+// The optional names are genuinely absent from a D1 deployment's bindings, not
+// merely undefined, so they must not be required keys.
 export type WorkerConfigBindings = Readonly<
-  Record<SecretName, string | undefined> & {
-    APP_STAGE: string
-    R2AccountId?: string
-    USER_CONTENT_BUCKET_NAME: string
-    MIXES_BUCKET_NAME: string
-    SENTRY_ENVIRONMENT?: string
-    ADMIN_EMAIL?: string
-    EMAIL_SENDER?: string
-  }
+  Record<Exclude<SecretName, OptionalSecretName>, string | undefined> &
+    Partial<Record<OptionalSecretName, string>> & {
+      APP_STAGE: string
+      R2AccountId?: string
+      USER_CONTENT_BUCKET_NAME: string
+      MIXES_BUCKET_NAME: string
+      SENTRY_ENVIRONMENT?: string
+      ADMIN_EMAIL?: string
+      EMAIL_SENDER?: string
+    }
 >
 
 function getResource(name: string): ResourceEntry | undefined {
@@ -235,10 +240,10 @@ export const ConfigService = Context.Service<ConfigService>('ConfigService')
 function requiredInProduction(isProd: boolean, bindings: WorkerConfigBindings | undefined): void {
   if (!isProd) return
 
+  const optional: readonly string[] = optionalSecretNames
   const missing = secretNames.filter(
     (name) =>
-      !optionalSecretNames.includes(name) &&
-      stringValue(secretValue(name, bindings), '').trim().length === 0
+      !optional.includes(name) && stringValue(secretValue(name, bindings), '').trim().length === 0
   )
   if (missing.length > 0) {
     throw new Error(`Missing required production secrets: ${missing.join(', ')}`)

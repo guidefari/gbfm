@@ -70,38 +70,9 @@ jobs:
       - name: Build www package
         run: cd apps/www && bun run build
 
-  build-vps-images:
-    runs-on: ubuntu-24.04
-    needs: [lint, typecheck, tests, build-www]
-    permissions:
-      actions: write
-      contents: read
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 1
-
-      - uses: ./.github/actions/setup-bun-workspace
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build apps/server release image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/server/Dockerfile
-          target: release
-          push: false
-          load: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
   release:
     runs-on: ubuntu-24.04
-    needs: [lint, typecheck, tests, build-www, build-vps-images]
+    needs: [lint, typecheck, tests, build-www]
     if: github.event_name == 'push' && github.ref == 'refs/heads/prod'
     permissions:
       actions: write
@@ -130,5 +101,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          LATEST_TAG=$(git describe --tags --abbrev=0)
-          gh workflow run deploy.yml --ref=prod -f ref="$LATEST_TAG"
+          gh workflow run alchemy-deploy.yml --ref=prod

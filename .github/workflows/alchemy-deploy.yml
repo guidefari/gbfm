@@ -3,9 +3,10 @@ name: Deploy (Alchemy)
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+# Deploys are gated behind Release, which runs lint, typecheck, tests and the
+# www build first and then triggers this workflow. Deploying straight off a
+# push would race those checks and ship a commit they reject.
 on:
-  push:
-    branches: [prod]
   workflow_dispatch:
 
 concurrency:
