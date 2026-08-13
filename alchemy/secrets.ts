@@ -17,11 +17,6 @@ import * as Redacted from 'effect/Redacted'
 const secretSources = {
   SpotifyClientId: 'SPOTIFY_CLIENT_ID',
   SpotifyClientSecret: 'SPOTIFY_CLIENT_SECRET',
-  DatabaseHost: 'DatabaseHost',
-  DatabaseUser: 'DatabaseUser',
-  DatabasePassword: 'DatabasePassword',
-  DatabasePort: 'DatabasePort',
-  DatabaseName: 'DatabaseName',
   SENTRY_BACKEND_DSN: 'SENTRY_BACKEND_DSN',
   VITE_PUBLIC_SENTRY_DSN: 'VITE_PUBLIC_SENTRY_DSN',
   OTEL_EXPORTER_OTLP_ENDPOINT: 'OTEL_EXPORTER_OTLP_ENDPOINT',

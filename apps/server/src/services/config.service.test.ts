@@ -63,6 +63,18 @@ describe('StorageConfigSchema', () => {
     ).toThrow('Missing required production secrets: BETTER_AUTH_SECRET')
   })
 
+  // A D1 Worker binds no Postgres credentials: it reaches the database through
+  // its `DB` binding. Requiring them here takes the Worker down at boot.
+  test('boots in production without the Postgres credentials', () => {
+    const { DatabaseHost, DatabaseUser, DatabasePassword, DatabasePort, DatabaseName, ...d1 } =
+      workerBindings()
+
+    const config = createConfig({ ...d1, APP_STAGE: 'prod', R2AccountId: 'account' })
+
+    expect(config.app.stage).toBe('prod')
+    expect(config.database.port).toBe(5432)
+  })
+
   test('accepts AWS with ambient credentials', () => {
     expect(decodeStorageConfig({ provider: 'aws', region: 'us-east-1' })).toMatchObject({
       provider: 'aws',

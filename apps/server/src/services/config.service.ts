@@ -55,7 +55,16 @@ const optionalSecretNames: readonly SecretName[] = [
   'StorageEndpoint',
   'StorageAccessKeyId',
   'StorageSecretAccessKey',
-  'StorageSigningEndpoint'
+  'StorageSigningEndpoint',
+  // Only the Bun/Postgres entrypoint opens a pool from these (`db/index.ts`).
+  // The Worker reaches D1 through its `DB` binding and never imports that
+  // module, so a D1 deployment has nothing to put here and the defaults below
+  // keep the pool config well-formed for the Bun path.
+  'DatabaseHost',
+  'DatabaseUser',
+  'DatabasePassword',
+  'DatabasePort',
+  'DatabaseName'
 ]
 
 export type WorkerConfigBindings = Readonly<
