@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test'
+import { describe, expect, it } from 'vitest'
 import * as Effect from 'effect/Effect'
 import { resolveSecretBindings } from './secrets-store.service'
 

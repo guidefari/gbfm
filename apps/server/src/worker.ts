@@ -41,6 +41,8 @@ import {
 import { ReminderQueue, ReminderQueueLayer, type ReminderJob } from '@/services/reminder-queue'
 import { SitemapCacheLayer } from '@/services/sitemap-cache'
 import { dispatchScheduledJob } from '@/scheduled'
+import { BlueskySyncService } from '@/services/bluesky-sync.service'
+import { NavigationRetentionService } from '@/services/navigation-retention.service'
 import { SentryServiceLayer } from '@/services/sentry.service'
 import { CloudflareEmailTransportLayer } from '@/services/cloudflare-email.adapter'
 import {
@@ -256,6 +258,31 @@ const runSitemapRegeneration = (env: ApiEnv) =>
     )
   )
 
+// Ported from the AWS `BlueskySyncTask`. Each sweep is isolated so a failure
+// in one still lets the other run, which is what the standalone task did.
+const runMaintenanceSweep = (env: ApiEnv) =>
+  Effect.gen(function* () {
+    const retention = yield* NavigationRetentionService
+    const report = yield* retention.sweepExpiredAnonymousSessions(new Date())
+    yield* Effect.logInfo('[worker.scheduled] navigation retention sweep finished', report)
+  }).pipe(
+    Effect.catch((error) =>
+      Effect.logError('[worker.scheduled] navigation retention sweep failed', { error })
+    ),
+    Effect.andThen(
+      Effect.gen(function* () {
+        const sync = yield* BlueskySyncService
+        const report = yield* sync.syncScheduled()
+        yield* Effect.logInfo('[worker.scheduled] bluesky sync finished', report)
+      }).pipe(
+        Effect.catch((error) =>
+          Effect.logError('[worker.scheduled] bluesky sync failed', { error })
+        )
+      )
+    ),
+    Effect.provide(appServicesLive(env))
+  )
+
 // Claims a reminder with a guarded UPDATE from PENDING or FAILED. FAILED is
 // retry-eligible after a prior delivery invocation returns an error. Zero rows
 // means another invocation owns the reminder, so this delivery can be acked.
@@ -287,7 +314,8 @@ export default Sentry.withSentry<ApiEnv, ReminderJob>(sentryOptions, {
   scheduled(controller: ScheduledController, env: ApiEnv): Promise<void> {
     return dispatchScheduledJob(controller.cron, {
       regenerateSitemap: () => Effect.runPromise(runSitemapRegeneration(env)),
-      sweepReminders: () => Effect.runPromise(runReminderSweep(env))
+      sweepReminders: () => Effect.runPromise(runReminderSweep(env)),
+      runMaintenance: () => Effect.runPromise(runMaintenanceSweep(env))
     })
   },
 

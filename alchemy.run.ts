@@ -3,7 +3,11 @@ import { adopt } from 'alchemy/AdoptPolicy'
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as Effect from 'effect/Effect'
 import { secretsStore } from './alchemy/secrets'
-import { reminderSweepCron, sitemapRegenerationCron } from './apps/server/src/scheduled'
+import {
+  maintenanceSweepCron,
+  reminderSweepCron,
+  sitemapRegenerationCron
+} from './apps/server/src/scheduled'
 import type { NavigationLockDurableObject } from './apps/server/src/durable-objects/navigation-lock.do'
 import type { SpotifyImportResolverDurableObject } from './apps/server/src/durable-objects/spotify-import-resolver.do'
 import { emailDeploymentConfig } from './apps/server/src/email-deployment-config'
@@ -61,7 +65,7 @@ export default Alchemy.Stack(
       main: './apps/server/src/worker.ts',
       ...(isProduction ? { domain: 'api.goosebumps.fm' } : { url: true }),
       compatibility: { date: '2026-08-09', flags: ['nodejs_compat'] },
-      crons: [reminderSweepCron, sitemapRegenerationCron],
+      crons: [reminderSweepCron, sitemapRegenerationCron, maintenanceSweepCron],
       env: {
         DB: db,
         USER_CONTENT: userContent,
