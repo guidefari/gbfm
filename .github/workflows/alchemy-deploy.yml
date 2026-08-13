@@ -35,7 +35,7 @@ jobs:
             SPOTIFY_CLIENT_SECRET SENTRY_BACKEND_DSN VITE_PUBLIC_SENTRY_DSN
             OTEL_EXPORTER_OTLP_ENDPOINT OTEL_EXPORTER_OTLP_HEADERS
             BETTER_AUTH_SECRET GBFM_ENCRYPTION_ROOT_KEY StorageRegion
-            StorageAccessKeyId StorageSecretAccessKey
+            StorageAccessKeyId StorageSecretAccessKey ADMIN_EMAIL
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_DEFAULT_ACCOUNT_ID }}
           SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
@@ -49,6 +49,7 @@ jobs:
           StorageRegion: ${{ secrets.STORAGE_REGION }}
           StorageAccessKeyId: ${{ secrets.STORAGE_ACCESS_KEY_ID }}
           StorageSecretAccessKey: ${{ secrets.STORAGE_SECRET_ACCESS_KEY }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
         run: |
           missing=""
           for name in $REQUIRED; do
@@ -81,10 +82,17 @@ jobs:
 
       - name: Verify the deploy serves traffic
         run: |
-          set -euo pipefail
+          set -uo pipefail
           fail=0
+          # /health caches its readiness result for 5s, so a probe that lands in
+          # the deploy window can serve a stale failure from a Worker that is
+          # already healthy. Retry rather than fail a good deploy.
           check() {
-            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$1")
+            for attempt in 1 2 3 4 5; do
+              code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$1" || echo 000)
+              [ "$code" = "$2" ] && break
+              sleep 10
+            done
             printf '%-46s %s\n' "$1" "$code"
             [ "$code" = "$2" ] || fail=1
           }
@@ -92,4 +100,5 @@ jobs:
           check https://api.goosebumps.fm/api/shows 200
           check https://cdn.goosebumps.fm/mixes/gb52.mp3 200
           check https://www.goosebumps.fm/ 200
+          check https://goosebumps.fm/rss.xml 301
           exit $fail
