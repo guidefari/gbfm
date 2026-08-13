@@ -223,9 +223,42 @@ flipping would have silently dropped a header production has always sent. The
 router now sends CORS on every path, 304 included, which is worth an explicit
 test because a `Response` can carry immutable headers.
 
-### Remaining for the flip
+### The flip, done
 
-Only the DNS change: point `cdn.goosebumps.fm` at the Worker instead of
-CloudFront/S3. The hostname does not change, so no asset URL in the database
-changes. Roll back by pointing the record back at CloudFront, which keeps
-serving from S3 until it is torn down.
+`cdn.goosebumps.fm` now serves from the R2-backed Worker. The hostname is
+unchanged, so no asset URL in the database was touched.
+
+**It is a Worker custom domain, not a DNS edit.** The zone has no worker routes;
+every Worker hostname is an entry in
+`/accounts/{account}/workers/domains`. `cdn.goosebumps.fm` was an *unproxied*
+`CNAME` to `d3gcs4niff2erb.cloudfront.net`, and Cloudflare will not attach a
+custom domain over an existing record. So the sequence is:
+
+1. delete the CloudFront `CNAME`
+2. deploy with `domain: 'cdn.goosebumps.fm'` on the router
+
+Alchemy then creates the proxied `AAAA 100::` and issues the cert. **The
+hostname is down between those two steps**, so run them back to back.
+
+Rollback is recreating the record exactly as it was, which is why it is written
+down here verbatim:
+
+```json
+{ "type": "CNAME", "name": "cdn.goosebumps.fm",
+  "content": "d3gcs4niff2erb.cloudfront.net", "proxied": false, "ttl": 60 }
+```
+
+CloudFront and the S3 origin are untouched and still serve, so rollback stays
+available until they are deliberately torn down.
+
+Verified after the flip: 17/17 sampled assets `200` across both prefixes, range
+requests `206` with the correct `content-range`, CORS present, and the
+certificate verifying (`ssl_verify_result: 0`) from two different Cloudflare
+edge IPs.
+
+**A stale local resolver will make a healthy flip look like an outage.** Deleting
+the `CNAME` left this machine caching `NXDOMAIN`, so every request returned
+`status=000` / `Could not resolve host` while the hostname was serving fine
+worldwide. Confirm against `1.1.1.1`, `dns.google`, or the authoritative
+nameservers, and fetch with `curl --resolve` to bypass the local cache before
+concluding anything is broken.
