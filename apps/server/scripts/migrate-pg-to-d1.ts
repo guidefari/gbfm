@@ -19,12 +19,17 @@
  *
  * Target D1: a local Miniflare-backed database persisted to D1_PERSIST_PATH
  * (default ./.migration-d1) unless D1_PERSIST_PATH=":memory:" is set.
+ *
+ * Setting D1_DATABASE_ID instead targets a deployed D1 through the REST API
+ * (see remote-d1.ts), which also needs CLOUDFLARE_API_TOKEN and
+ * CLOUDFLARE_DEFAULT_ACCOUNT_ID. This overwrites the deployed database.
  */
 
 import type { D1Database, D1PreparedStatement } from '@cloudflare/workers-types'
 import { readFile } from 'node:fs/promises'
 import { Miniflare } from 'miniflare'
 import { Client, types } from 'pg'
+import { createRemoteD1, remoteD1OptionsFromEnv } from './remote-d1'
 
 /**
  * `timestamp without time zone` columns (auth.schema.ts's user/session/etc.)
@@ -873,6 +878,13 @@ const migrateArrayFanOuts = async (
 }
 
 const createTargetDatabase = async () => {
+  if (process.env.D1_DATABASE_ID) {
+    return {
+      miniflare: { dispose: async () => {} },
+      database: createRemoteD1(remoteD1OptionsFromEnv())
+    }
+  }
+
   const miniflare = new Miniflare({
     script: 'export default { fetch() { return new Response() } }',
     modules: true,
