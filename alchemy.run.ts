@@ -148,9 +148,7 @@ export default Alchemy.Stack(
       cwd: 'apps/www',
       command: 'bun run build',
       outdir: 'dist',
-      ...(isProduction && process.env.WWW_TAKEOVER === 'true'
-        ? { domain: ['www.goosebumps.fm', 'goosebumps.fm'] }
-        : { url: true }),
+      ...(isProduction ? { domain: ['www.goosebumps.fm', 'goosebumps.fm'] } : { url: true }),
       assets: { notFoundHandling: 'single-page-application' },
       env: {
         VITE_VPS_BASE_URL: apiUrl,
