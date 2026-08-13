@@ -150,10 +150,93 @@ Note: [`email-staging-gate.md`](email-staging-gate.md) still describes a separat
 staging environment. It needs rewriting against the one-stage reality before it
 can be signed off.
 
+## The client cutover: goosebumps.fm now runs on Alchemy
+
+`www.goosebumps.fm` and the apex are served by the Alchemy site Worker,
+built with `VITE_VPS_BASE_URL=https://api.goosebumps.fm`. The VPS no longer
+receives browser traffic.
+
+**Attaching a hostname that another Worker owns fails, by design:**
+
+```
+Cannot attach hostname 'www.goosebumps.fm' to Worker '...': it is already
+attached to Worker 'gbfm-prod-gbfmwwwrouterscript'.
+```
+
+The deploy stopped there and left the site up. As with `cdn`, the sequence is
+detach then reattach, and **the site is down in between**, so run them back to
+back:
+
+```sh
+# rollback state: both were attached to gbfm-prod-gbfmwwwrouterscript
+DELETE /accounts/{account}/workers/domains/d3244f5b22532b42982b5d17abccfd70730d88e3  # apex
+DELETE /accounts/{account}/workers/domains/a14cfcbdf9d80967ae1c06757e64caf3ad0586d4  # www
+```
+
+Rollback is re-attaching those two hostnames to the SST Worker, which is still
+deployed.
+
+**The CAA records look like a blocker and are not.** The zone pins issuance to
+`amazonaws.com`, but every hostname Cloudflare already serves (`api`, `cdn`, and
+the site itself) presents a Google Trust Services certificate. The records are
+stale AWS leftovers.
+
+**A preview URL cannot fully verify the client.** On its `workers.dev` URL the
+new build's API calls failed: preflight returned 204, then the GET was rejected
+because that origin is not in `trustedOrigins` (`auth.ts:141-151`). The same
+call from `www.goosebumps.fm` returns 200 with
+`access-control-allow-origin` set, and the payload is byte-identical to the VPS
+apart from a `playCount` the check itself incremented. So the CORS failure is an
+artifact of the preview origin and resolves at the real hostname, but it does
+mean **the client can only be fully verified after the hostname moves**.
+
+Verified after the takeover, in a browser: cover art renders, a mix streams and
+advances, `/shows` lists shows with episodes and thumbnails, and
+`/api/shows`, `/api/shows/:slug/episodes` and `/auth/get-session` all return 200
+from `api.goosebumps.fm`.
+
+Also moved with the client:
+
+- The dynamic-redirect ruleset (`/rss.xml`, `/sitemap.xml`, `/s/*`) now targets
+  the API. `goosebumps.fm/rss.xml` redirects to `api.goosebumps.fm/rss.xml` and
+  serves the feed.
+- `api.goosebumps.fm` added to Sentry's `tracePropagationTargets`
+  (`apps/www/src/main.tsx`), which otherwise silently drops distributed tracing
+  once the client stops calling the VPS.
+
+### BETTER_AUTH_URL pointed at staging
+
+Production's stored value was
+`https://gbfm-api-d1-staging-mebtavpzy2m53eso.guideg6.workers.dev`, so emailed
+password-reset and verification links were built for a **staging** Worker. This
+was a live defect, not a migration artifact, and it survived an earlier check
+here that confirmed the value's length without looking at its host.
+
+It is now derived from the stack (`alchemy.run.ts` passes `apiUrl` into
+`secretsStore`) rather than inherited from the environment, so it cannot drift
+to whatever a shell happened to export.
+
+### CI deploys need every secret, not two
+
+The goal was two GitHub secrets. It is not reachable on this Alchemy beta:
+
+- `value` is a **required** input on `Cloudflare.SecretsStore.Secret`, and
+  `ReadSecret` takes a `Secret` resource, so neither can bind by name alone.
+- Secret bindings are declared by the Worker's `env`. Omitting them does not
+  preserve what is deployed: it **removes all 18 bindings** and the Worker boots
+  with no database password.
+
+`diff` does compare against state, so unchanged values are a true no-op and a
+deploy with correct values costs nothing. But the values must be present.
+`.github/workflows/alchemy-deploy.yml` therefore carries all 17, gated on the
+`production` environment, and fails the run if `api`, `cdn` or `www` stop
+serving after the deploy.
+
 ## Still open
 
 - Remaining email templates (verification, mix release, reminders) unsent.
-- Clients still point at `vps.goosebumps.fm`.
+- `infra/cron.ts` still runs the hourly Bluesky sync on AWS.
+- `infra/vps.ts` and `infra/dev.script.ts` not ported; `sst remove` last.
 - OPS-256 rate limiting rule.
 
 ## R2 content copy — done, but the router is not wired
