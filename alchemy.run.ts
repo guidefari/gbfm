@@ -1,7 +1,7 @@
 import * as Alchemy from 'alchemy'
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as Effect from 'effect/Effect'
-import * as Redacted from 'effect/Redacted'
+import { secretsStore } from './infra/secrets'
 import { reminderSweepCron, sitemapRegenerationCron } from './apps/server/src/scheduled'
 import type { NavigationLockDurableObject } from './apps/server/src/durable-objects/navigation-lock.do'
 import type { SpotifyImportResolverDurableObject } from './apps/server/src/durable-objects/spotify-import-resolver.do'
@@ -17,7 +17,7 @@ export default Alchemy.Stack(
     const stack = yield* Alchemy.Stack
     const isProduction = stack.stage === 'prod'
     const isLocalDev = yield* Alchemy.ALCHEMY_DEV
-    const secret = (name: string, sourceName = name) => Redacted.make(process.env[sourceName] ?? '')
+    const secrets = yield* secretsStore
     const emailConfig = emailDeploymentConfig({
       stage: stack.stage,
       testRecipient: process.env.EMAIL_TEST_RECIPIENT,
@@ -81,28 +81,10 @@ export default Alchemy.Stack(
         MIXES_BUCKET_NAME: mixes.bucketName,
         SENTRY_ENVIRONMENT: stack.stage,
         ADMIN_EMAIL: process.env.ADMIN_EMAIL ?? '',
-        SpotifyClientId: secret('SpotifyClientId', 'SPOTIFY_CLIENT_ID'),
-        SpotifyClientSecret: secret('SpotifyClientSecret', 'SPOTIFY_CLIENT_SECRET'),
-        DatabaseHost: secret('DatabaseHost'),
-        DatabaseUser: secret('DatabaseUser'),
-        DatabasePassword: secret('DatabasePassword'),
-        DatabasePort: secret('DatabasePort'),
-        DatabaseName: secret('DatabaseName'),
-        SENTRY_BACKEND_DSN: secret('SENTRY_BACKEND_DSN'),
-        SENTRY_DSN: secret('SENTRY_BACKEND_DSN'),
-        VITE_PUBLIC_SENTRY_DSN: secret('VITE_PUBLIC_SENTRY_DSN'),
-        OTEL_EXPORTER_OTLP_ENDPOINT: secret('OTEL_EXPORTER_OTLP_ENDPOINT'),
-        OTEL_EXPORTER_OTLP_HEADERS: secret('OTEL_EXPORTER_OTLP_HEADERS'),
-        BETTER_AUTH_SECRET: secret('BETTER_AUTH_SECRET'),
-        BETTER_AUTH_URL: secret('BETTER_AUTH_URL'),
-        GBFM_ENCRYPTION_ROOT_KEY: secret('GBFM_ENCRYPTION_ROOT_KEY'),
+        ...secrets,
+        SENTRY_DSN: secrets.SENTRY_BACKEND_DSN,
         StorageProvider: 'r2',
-        R2AccountId: userContent.accountId,
-        StorageEndpoint: secret('StorageEndpoint'),
-        StorageRegion: secret('StorageRegion'),
-        StorageAccessKeyId: secret('StorageAccessKeyId'),
-        StorageSecretAccessKey: secret('StorageSecretAccessKey'),
-        StorageSigningEndpoint: secret('StorageSigningEndpoint')
+        R2AccountId: userContent.accountId
       }
     })
 
