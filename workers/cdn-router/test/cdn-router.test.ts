@@ -74,6 +74,21 @@ describe('CDN router Worker', () => {
     expect(unmatched.status).toBe(404)
   })
 
+  test('sends CORS headers on hits, misses and rejected methods', async () => {
+    await env.MIXES.put('cors.mp3', 'audio bytes')
+
+    const hit = await fetchWorker(new Request('https://cdn.example/mixes/cors.mp3'))
+    const miss = await fetchWorker(new Request('https://cdn.example/mixes/absent.mp3'))
+    const rejected = await fetchWorker(
+      new Request('https://cdn.example/mixes/cors.mp3', { method: 'POST' })
+    )
+
+    for (const response of [hit, miss, rejected]) {
+      expect(response.headers.get('access-control-allow-origin')).toBe('*')
+      expect(response.headers.get('access-control-expose-headers')).toBe('ETag')
+    }
+  })
+
   test('exposes only the two public R2 bucket bindings', () => {
     const publicBindings = Object.keys(env).filter((name) => !name.startsWith('__VITEST_'))
     expect(publicBindings.toSorted()).toEqual(['MIXES', 'USER_CONTENT'])

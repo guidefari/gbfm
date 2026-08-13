@@ -87,6 +87,16 @@ export default Alchemy.Stack(
       }
     })
 
+    const cdnRouter = yield* Cloudflare.Worker('CdnRouter', {
+      main: './workers/cdn-router/src/index.ts',
+      ...(isProduction ? { domain: 'r2-cdn-next.goosebumps.fm' } : { url: true }),
+      compatibility: { date: '2026-08-09' },
+      env: {
+        USER_CONTENT: userContent,
+        MIXES: mixes
+      }
+    })
+
     yield* Cloudflare.Queues.Consumer('ReminderConsumer', {
       queueId: reminders.queueId,
       scriptName: api.workerName
@@ -95,6 +105,8 @@ export default Alchemy.Stack(
     return {
       apiUrl: api.url,
       apiDomains: api.domains,
+      cdnRouterUrl: cdnRouter.url,
+      cdnRouterDomains: cdnRouter.domains,
       databaseName: db.databaseName,
       userContentBucketName: userContent.bucketName,
       mixesBucketName: mixes.bucketName

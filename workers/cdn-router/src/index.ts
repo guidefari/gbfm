@@ -1,5 +1,18 @@
 import { matchRoute } from './route'
 
+const corsHeaders = {
+  'access-control-allow-origin': '*',
+  'access-control-allow-methods': 'GET, HEAD',
+  'access-control-expose-headers': 'ETag'
+}
+
+const withCors = (response: Response) => {
+  for (const [name, value] of Object.entries(corsHeaders)) {
+    response.headers.set(name, value)
+  }
+  return response
+}
+
 const notFound = () => new Response(null, { status: 404 })
 
 const methodNotAllowed = () =>
@@ -36,16 +49,18 @@ const fetchObject = async (request: Request, bucket: R2Bucket, key: string) => {
     onlyIf: request.headers,
     range: request.headers
   })
-  if (object === null) return notFound()
+  if (object === null) return withCors(notFound())
 
   const headers = new Headers()
   writeObjectHeaders(object, headers)
 
   if (!('body' in object)) {
-    return new Response(null, {
-      status: failedPreconditionStatus(request.headers),
-      headers
-    })
+    return withCors(
+      new Response(null, {
+        status: failedPreconditionStatus(request.headers),
+        headers
+      })
+    )
   }
 
   let status = 200
@@ -61,17 +76,19 @@ const fetchObject = async (request: Request, bucket: R2Bucket, key: string) => {
   }
   headers.set('content-length', String(contentLength))
 
-  return new Response(request.method === 'HEAD' ? null : object.body, {
-    status,
-    headers
-  })
+  return withCors(
+    new Response(request.method === 'HEAD' ? null : object.body, {
+      status,
+      headers
+    })
+  )
 }
 
 export default {
   async fetch(request, env): Promise<Response> {
     const route = matchRoute(new URL(request.url).pathname, env)
-    if (route === null) return notFound()
-    if (request.method !== 'GET' && request.method !== 'HEAD') return methodNotAllowed()
+    if (route === null) return withCors(notFound())
+    if (request.method !== 'GET' && request.method !== 'HEAD') return withCors(methodNotAllowed())
     return fetchObject(request, route.bucket, route.key)
   }
 } satisfies ExportedHandler<Env>
