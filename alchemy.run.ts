@@ -89,7 +89,7 @@ export default Alchemy.Stack(
 
     const cdnRouter = yield* Cloudflare.Worker('CdnRouter', {
       main: './workers/cdn-router/src/index.ts',
-      ...(isProduction ? { domain: 'r2-cdn-next.goosebumps.fm' } : { url: true }),
+      ...(isProduction ? { domain: 'cdn.goosebumps.fm' } : { url: true }),
       compatibility: { date: '2026-08-09' },
       env: {
         USER_CONTENT: userContent,
