@@ -154,17 +154,22 @@ transactions and 3,589 database-level tuple writes, but those are cumulative.
 The required D1 write-path load test remains open. See the sizing evidence for
 the complete aggregate-only measurement and its limits.
 
+> **Superseded in part, 2026-08-13.** Item 1 below is cleared, and the Time
+> Travel restore was re-run end to end against the deployed stack (stable at
+> t+1s, versus the 20+ minute recovery seen originally), confirming the
+> OPS-257 resolution recorded above. See
+> [`d1-drill-rerun-2026-08-13.md`](d1-drill-rerun-2026-08-13.md). The rest
+> still stand.
+
 ## Still open and blocking
 
-1. **Concurrent write failure rate.** Roughly 30-40% of concurrent writes to
-   the same rows via `POST /api/favorites` failed with `500`/`503` (empty
-   bodies, uncaught) rather than a clean, structured conflict response. D1
-   serializes writes; this application's check-then-insert pattern in
-   `favorite.service.ts` (and likely similar patterns elsewhere) does not
-   handle that serialization gracefully under contention. This needs a fix
-   (retry-on-busy, a queued/transactional write path, or at minimum mapping
-   the underlying D1 error to a structured 409/503 instead of an uncaught
-   500) and a re-run of this drill before cutover.
+1. ~~**Concurrent write failure rate.**~~ **CLEARED 2026-08-13.** Roughly
+   30-40% of concurrent writes to the same rows via `POST /api/favorites`
+   failed with `500`/`503` (empty bodies, uncaught) rather than a clean,
+   structured conflict response, because `favorite.service.ts` used
+   check-then-insert against D1's serialized writes. Fixed in `36ac95cc` with
+   a guarded upsert. The re-drill returns 1 created and 19 typed 409s with no
+   5xx on both the audio and show favorite paths.
 2. **Sentry transport.** The Cloudflare SDK boots, but staging has no DSN and
    no event delivery or error ingestion was verified.
 3. **Reminder delivery.** The cron and queue consumer are registered, but no
@@ -182,12 +187,23 @@ the complete aggregate-only measurement and its limits.
 
 ## Recommendation
 
-Do not schedule OPS-250 from this evidence. Public API parity, session
-continuity, and Worker availability are resolved. The concurrent-write
-failure rate remains a legitimate blocker because real concurrent users will
-see avoidable 500s under ordinary load. Fix and re-verify it, then run a safe
-reminder-delivery rehearsal and confirm the Rate Limiting rule. Then have the
-human owner choose and rehearse the write-freeze sequence.
+**Superseded 2026-08-13.** The original verdict below was written when the
+concurrent-write failure rate and the Time Travel restore were both open.
+Both now pass against the deployed staging stack.
+
+What still gates OPS-250 is no longer a defect in the D1 port: it is the
+email staging gate (never run, and the deployed staging Worker has no `EMAIL`
+binding), the Rate Limiting rule, unverified Sentry and reminder delivery, and
+the unrehearsed human freeze/DNS sequence.
+
+Original verdict, retained:
+
+> Do not schedule OPS-250 from this evidence. Public API parity, session
+> continuity, and Worker availability are resolved. The concurrent-write
+> failure rate remains a legitimate blocker because real concurrent users will
+> see avoidable 500s under ordinary load. Fix and re-verify it, then run a safe
+> reminder-delivery rehearsal and confirm the Rate Limiting rule. Then have the
+> human owner choose and rehearse the write-freeze sequence.
 
 ## Staging stack (leave running, do not tear down)
 
