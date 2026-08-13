@@ -1,7 +1,7 @@
 import * as Alchemy from 'alchemy'
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as Effect from 'effect/Effect'
-import { secretsStore } from './infra/secrets'
+import { secretsStore } from './alchemy/secrets'
 import { reminderSweepCron, sitemapRegenerationCron } from './apps/server/src/scheduled'
 import type { NavigationLockDurableObject } from './apps/server/src/durable-objects/navigation-lock.do'
 import type { SpotifyImportResolverDurableObject } from './apps/server/src/durable-objects/spotify-import-resolver.do'

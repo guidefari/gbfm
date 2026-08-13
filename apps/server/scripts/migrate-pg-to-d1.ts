@@ -927,6 +927,30 @@ const applyExistingSchemaBaseline = async (database: D1Database) => {
     .first()
   if (applied) return
 
+  // A deployed target has its migrations applied by the deploy itself, which
+  // records them in Cloudflare's own `d1_migrations` ledger. Trust that when
+  // it exists: the schema-marker probes below only know about the migrations
+  // that existed when they were written, so a newer one would be re-applied
+  // against a schema that already has it.
+  if (await databaseObjectExists(database, 'd1_migrations')) {
+    const deployed = await database
+      .prepare('select name from d1_migrations')
+      .bind()
+      .all<{ name: string }>()
+    const names = deployed.results.map((row) => row.name)
+    if (names.length > 0) {
+      await database.batch(
+        names.map((name) =>
+          database
+            .prepare(`insert or ignore into ${migrationLedgerTable} (name) values (?)`)
+            .bind(name)
+        )
+      )
+      console.log(`[migrate] baselined from d1_migrations: ${names.join(', ')}`)
+      return
+    }
+  }
+
   const knownExistingMigrations: Array<string> = []
   if (await databaseObjectExists(database, 'user')) {
     knownExistingMigrations.push('0000_public_thunderbolt.sql')
