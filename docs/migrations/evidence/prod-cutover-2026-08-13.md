@@ -216,6 +216,47 @@ It is now derived from the stack (`alchemy.run.ts` passes `apiUrl` into
 `secretsStore`) rather than inherited from the environment, so it cannot drift
 to whatever a shell happened to export.
 
+### The Bluesky sync had been dead for months
+
+`infra/cron.ts` ran an hourly ECS task whose Dockerfile target copies
+`apps/vps`. That directory was renamed to `apps/server` in OPS-248, so the
+image could not build and the sweep stopped running at that commit. Prod D1
+still holds 7 historical runs and one configured account.
+
+It is now a third Worker cron at `:17`, chosen to stay clear of the hourly
+sitemap job:
+
+```
+* * * * *   reminders
+0 * * * *   sitemap
+17 * * * *  maintenance (bluesky sync + anonymous-session retention)
+```
+
+Each sweep is isolated so one failing does not skip the other, matching what
+the standalone script did. The ECS task, its cron, the Dockerfile target and
+the orphaned script are all deleted.
+
+### The Worker needs no Postgres credentials
+
+Only the Bun entrypoint opens a pool (`db/index.ts`); the Worker reaches the
+database through its `DB` binding and never imports that module. But
+`requiredInProduction` still demanded all five `Database*` secrets, so removing
+them from the stack **took the API down at boot**:
+
+```
+Missing required production secrets: DatabaseHost, DatabaseUser,
+DatabasePassword, DatabasePort, DatabaseName
+```
+
+They are optional now, and `config.service.test.ts` covers booting a production
+config without them. That drops CI from 18 secrets to 13.
+
+**`/health` caches its readiness result for 5 seconds.** A probe that lands in
+the deploy window can serve a stale failure from a Worker that is already
+healthy, which looks exactly like a broken deploy. Retry before concluding
+anything: three retries returned 200 while `/api/shows` had been serving D1
+queries the whole time.
+
 ### CI deploys need every secret, not two
 
 The goal was two GitHub secrets. It is not reachable on this Alchemy beta:
