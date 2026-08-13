@@ -45,6 +45,8 @@ const secretNames = [
 
 type SecretName = (typeof secretNames)[number]
 
+export const secretBindingNames = secretNames
+
 // The aws provider resolves credentials from the ECS instance role, so these
 // are legitimately blank in production.
 const optionalSecretNames: readonly SecretName[] = [
@@ -360,3 +362,13 @@ export const ConfigServiceLayer = makeConfigServiceLayer()
 
 export const WorkerConfigServiceLayer = (bindings: WorkerConfigBindings) =>
   makeConfigServiceLayer(bindings)
+
+export const WorkerConfigServiceLayerEffect = <E>(
+  bindings: Effect.Effect<WorkerConfigBindings, E>
+) =>
+  Layer.effect(
+    ConfigService,
+    bindings.pipe(
+      Effect.map((resolved) => Schema.decodeUnknownSync(ConfigSchema)(createConfig(resolved)))
+    )
+  )

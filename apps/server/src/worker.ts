@@ -48,7 +48,11 @@ import {
   UnconfiguredEmailTransportLayer
 } from '@/services/email-transport.service'
 import { R2ObjectStoreClientLayer } from '@/services/storage/r2-object-store-client'
-import { WorkerConfigServiceLayer, type WorkerConfigBindings } from '@/services/config.service'
+import {
+  WorkerConfigServiceLayerEffect,
+  type WorkerConfigBindings
+} from '@/services/config.service'
+import { resolveSecretBindings } from '@/services/secrets-store.service'
 
 export { NavigationLockDurableObject } from '@/durable-objects/navigation-lock.do'
 export { SpotifyImportResolverDurableObject } from '@/durable-objects/spotify-import-resolver.do'
@@ -162,7 +166,14 @@ const spotifyImportResolverLive = (env: ApiEnv) =>
   })
 
 const appServicesLive = (env: ApiEnv) => {
-  const configLive = WorkerConfigServiceLayer(env)
+  const configLive = WorkerConfigServiceLayerEffect(
+    resolveSecretBindings(env).pipe(
+      Effect.map((secrets) => ({ ...env, ...secrets })),
+      // An unreadable secret cannot degrade to blank config: that would boot a
+      // Worker with no database password and surface as confusing auth errors.
+      Effect.orDie
+    )
+  )
   const objectStoreLive = R2ObjectStoreClientLayer({
     userContent: env.USER_CONTENT,
     mixes: env.MIXES
