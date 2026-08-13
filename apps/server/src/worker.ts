@@ -39,6 +39,7 @@ import {
   sendClaimedReminder
 } from '@/services/reminder-processor'
 import { ReminderQueue, ReminderQueueLayer, type ReminderJob } from '@/services/reminder-queue'
+import { cleanupExpiredQrPdfs } from '@/services/qr-cache-cleanup'
 import { SitemapCacheLayer } from '@/services/sitemap-cache'
 import { dispatchScheduledJob } from '@/scheduled'
 import { BlueskySyncService } from '@/services/bluesky-sync.service'
@@ -278,6 +279,19 @@ const runMaintenanceSweep = (env: ApiEnv) =>
         Effect.catch((error) =>
           Effect.logError('[worker.scheduled] bluesky sync failed', { error })
         )
+      )
+    ),
+    // Replaces the S3 lifecycle rule that expired `qr-pdfs/` after a day. R2
+    // lifecycle rules cannot target a prefix, so the sweep does it instead.
+    Effect.andThen(
+      cleanupExpiredQrPdfs.pipe(
+        Effect.tap((report) =>
+          Effect.logInfo('[worker.scheduled] qr pdf cleanup finished', report)
+        ),
+        Effect.catch((error) =>
+          Effect.logError('[worker.scheduled] qr pdf cleanup failed', { error })
+        ),
+        Effect.asVoid
       )
     ),
     Effect.provide(appServicesLive(env))

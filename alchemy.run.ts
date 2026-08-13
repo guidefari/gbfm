@@ -54,7 +54,24 @@ export default Alchemy.Stack(
       migrationsDir: './apps/server/drizzle-d1'
     })
 
-    const userContent = yield* Cloudflare.R2.Bucket('UserContent')
+    // The browser PUTs image and audio bytes straight to the bucket with a
+    // presigned URL, so the bucket itself has to allow the cross-origin PUT.
+    // Ported from the S3 bucket's CORS block; without it every upload fails
+    // the preflight.
+    const userContent = yield* Cloudflare.R2.Bucket('UserContent', {
+      cors: [
+        {
+          id: 'browser-presigned-uploads',
+          allowedOrigins: isProduction
+            ? ['https://www.goosebumps.fm', 'https://goosebumps.fm']
+            : ['*'],
+          allowedMethods: ['PUT'],
+          allowedHeaders: ['*'],
+          exposeHeaders: ['ETag'],
+          maxAgeSeconds: 3600
+        }
+      ]
+    })
     const mixes = yield* Cloudflare.R2.Bucket('Mixes')
 
     const sitemap = yield* Cloudflare.KV.Namespace('Sitemap')
