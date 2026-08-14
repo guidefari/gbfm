@@ -1,10 +1,11 @@
 import { LINK_STATUS } from '@gbfm/core/status'
-import { and, eq } from 'drizzle-orm'
-import { Effect } from 'effect'
+import { and, eq, isNull } from 'drizzle-orm'
+import { Data, Effect, Schedule } from 'effect'
 import { Database } from '@/db/layer'
 import {
   type MusicEntityType,
   type MusicPlatform,
+  musicEntityResolutionClaimsTable,
   musicEntityLinksTable,
   type SelectMusicAlbum,
   type SelectMusicArtist,
@@ -33,6 +34,13 @@ import { createTrackEffect, getTrackByIdEffect } from './track.service'
 
 type ScrapeableMusicEntityType = Exclude<MusicEntityType, 'label'>
 type CanonicalSourceLink = { readonly platform: MusicPlatform; readonly url: string }
+type ResolvedMusicEntity =
+  | SelectMusicArtist
+  | SelectMusicAlbum
+  | SelectMusicTrack
+  | SelectMusicPlaylist
+
+class MusicEntityResolutionPending extends Data.TaggedError('MusicEntityResolutionPending') {}
 
 const SCRAPEABLE_MUSIC_ENTITY_TYPES: readonly ScrapeableMusicEntityType[] = [
   'artist',
@@ -69,6 +77,164 @@ const findExistingEntityByUrl = (url: string, entityType: ScrapeableMusicEntityT
     })
   }).pipe(Effect.withSpan('musicEntity.findExistingEntityByUrl'))
 
+const getClaimedEntity = (entityType: ScrapeableMusicEntityType, canonicalUrl: string) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    const claims = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select()
+          .from(musicEntityResolutionClaimsTable)
+          .where(
+            and(
+              eq(musicEntityResolutionClaimsTable.entityType, entityType),
+              eq(musicEntityResolutionClaimsTable.canonicalUrl, canonicalUrl)
+            )
+          )
+          .limit(1),
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to get music resolution claim: ${getErrorMessage(e)}`,
+          operation: 'select',
+          table: 'music_entity_resolution_claims'
+        })
+    })
+    const claim = claims[0]
+    if (!claim?.entityId) return yield* new MusicEntityResolutionPending()
+
+    const entity = yield* Effect.catchTag(
+      getEntityById(entityType, claim.entityId),
+      'NotFoundError',
+      () => Effect.succeed(null)
+    )
+    if (!entity) {
+      yield* deleteCompletedResolutionClaim(entityType, canonicalUrl, claim.entityId)
+      return yield* new MusicEntityResolutionPending()
+    }
+
+    const links = yield* getLinksForEntityEffect(entityType, entity.id)
+    return { entity, links } satisfies {
+      entity: ResolvedMusicEntity
+      links: SelectMusicEntityLink[]
+    }
+  })
+
+const claimResolution = (entityType: ScrapeableMusicEntityType, canonicalUrl: string) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    const inserted = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .insert(musicEntityResolutionClaimsTable)
+          .values({ entityType, canonicalUrl })
+          .onConflictDoNothing()
+          .returning(),
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to claim music resolution: ${getErrorMessage(e)}`,
+          operation: 'insert',
+          table: 'music_entity_resolution_claims'
+        })
+    })
+    if (inserted[0]) return { owner: true } as const
+    return yield* getClaimedEntity(entityType, canonicalUrl)
+  }).pipe(
+    Effect.retry({
+      schedule: Schedule.spaced('50 millis'),
+      while: (error) => error._tag === 'MusicEntityResolutionPending'
+    }),
+    Effect.catchTag(
+      'MusicEntityResolutionPending',
+      () =>
+        new DatabaseError({
+          message: 'Music resolution claim did not reach a terminal state',
+          operation: 'select',
+          table: 'music_entity_resolution_claims'
+        })
+    )
+  )
+
+const completeResolutionClaim = (
+  entityType: ScrapeableMusicEntityType,
+  canonicalUrl: string,
+  entityId: string
+) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    yield* Effect.tryPromise({
+      try: () =>
+        db
+          .update(musicEntityResolutionClaimsTable)
+          .set({ entityId, updatedAt: new Date() })
+          .where(
+            and(
+              eq(musicEntityResolutionClaimsTable.entityType, entityType),
+              eq(musicEntityResolutionClaimsTable.canonicalUrl, canonicalUrl),
+              isNull(musicEntityResolutionClaimsTable.entityId)
+            )
+          ),
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to complete music resolution claim: ${getErrorMessage(e)}`,
+          operation: 'update',
+          table: 'music_entity_resolution_claims'
+        })
+    })
+  })
+
+const deleteUnresolvedResolutionClaim = (
+  entityType: ScrapeableMusicEntityType,
+  canonicalUrl: string
+) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    yield* Effect.tryPromise({
+      try: () =>
+        db
+          .delete(musicEntityResolutionClaimsTable)
+          .where(
+            and(
+              eq(musicEntityResolutionClaimsTable.entityType, entityType),
+              eq(musicEntityResolutionClaimsTable.canonicalUrl, canonicalUrl),
+              isNull(musicEntityResolutionClaimsTable.entityId)
+            )
+          ),
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to release music resolution claim: ${getErrorMessage(e)}`,
+          operation: 'delete',
+          table: 'music_entity_resolution_claims'
+        })
+    })
+  })
+
+const deleteCompletedResolutionClaim = (
+  entityType: ScrapeableMusicEntityType,
+  canonicalUrl: string,
+  entityId: string
+) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    yield* Effect.tryPromise({
+      try: () =>
+        db
+          .delete(musicEntityResolutionClaimsTable)
+          .where(
+            and(
+              eq(musicEntityResolutionClaimsTable.entityType, entityType),
+              eq(musicEntityResolutionClaimsTable.canonicalUrl, canonicalUrl),
+              eq(musicEntityResolutionClaimsTable.entityId, entityId)
+            )
+          ),
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to delete stale music resolution claim: ${getErrorMessage(e)}`,
+          operation: 'delete',
+          table: 'music_entity_resolution_claims'
+        })
+    })
+  })
+
 const getEntityById = (
   entityType: ScrapeableMusicEntityType,
   entityId: string
@@ -93,8 +259,10 @@ export const scrapeAndCreateEntityEffect = (
   scraper: MusicLinkScraperService,
   entityType: ScrapeableMusicEntityType,
   input: MusicScrapeInput
-) =>
-  Effect.gen(function* () {
+) => {
+  let ownsResolutionClaim = false
+
+  return Effect.gen(function* () {
     const source = input.url ? canonicalSourceLink(input.url) : undefined
 
     if (source) {
@@ -113,6 +281,13 @@ export const scrapeAndCreateEntityEffect = (
           )
           return { entity, links }
         }
+      }
+
+      const resolution = yield* claimResolution(entityType, source.url)
+      if ('owner' in resolution) {
+        ownsResolutionClaim = true
+      } else {
+        return resolution
       }
     }
 
@@ -210,13 +385,22 @@ export const scrapeAndCreateEntityEffect = (
     yield* Effect.logInfo(
       `[MusicEntity] Scraped ${inserted.length} links for ${entityType}:${entityId}`
     )
+    if (source) {
+      yield* completeResolutionClaim(entityType, source.url, entityId)
+    }
 
     return { entity, links: inserted }
   }).pipe(
+    Effect.tapError(() =>
+      ownsResolutionClaim && input.url
+        ? deleteUnresolvedResolutionClaim(entityType, canonicalSourceLink(input.url).url)
+        : Effect.void
+    ),
     Effect.withSpan('musicEntity.scrapeAndCreateEntity', {
       attributes: { entityType }
     })
   )
+}
 
 export const rescrapeOdesliLinksEffect = (
   scraper: MusicLinkScraperService,

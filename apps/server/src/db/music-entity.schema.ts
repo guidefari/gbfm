@@ -354,6 +354,24 @@ export const musicEntityLinksTable = sqliteTable(
   ]
 )
 
+export const musicEntityResolutionClaimsTable = sqliteTable(
+  'music_entity_resolution_claims',
+  {
+    entityType: text('entity_type')
+      .notNull()
+      .references(() => musicEntityTypesTable.id),
+    canonicalUrl: text('canonical_url').notNull(),
+    entityId: text('entity_id'),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date())
+  },
+  (table) => [primaryKey({ columns: [table.entityType, table.canonicalUrl] })]
+)
+
 // ---------------------------------------------------------------------------
 // TypeScript types
 // ---------------------------------------------------------------------------
@@ -392,6 +410,9 @@ export type InsertMusicPlaylistTrack = InferInsertModel<typeof musicPlaylistTrac
 
 export type SelectMusicEntityLink = InferSelectModel<typeof musicEntityLinksTable>
 export type InsertMusicEntityLink = InferInsertModel<typeof musicEntityLinksTable>
+export type SelectMusicEntityResolutionClaim = InferSelectModel<
+  typeof musicEntityResolutionClaimsTable
+>
 
 // ---------------------------------------------------------------------------
 // Drizzle relations

@@ -3,6 +3,7 @@ import { beforeAll, describe, expect, test } from 'vitest'
 import { Database } from '@/db/layer'
 import {
   musicEntityLinksTable,
+  musicEntityResolutionClaimsTable,
   musicEntityTypesTable,
   musicPlatformsTable,
   musicTracksTable
@@ -108,6 +109,77 @@ describe('scrapeAndCreateEntityEffect', () => {
 
     expect(second.entity.id).toBe(first.entity.id)
     expect(second.links).toHaveLength(2)
+  })
+
+  test('reserves one canonical URL claim for concurrent resolutions', async () => {
+    const sourceUrl = `https://open.spotify.com/track/${crypto.randomUUID()}?si=tracking`
+    const gate = Promise.withResolvers<void>()
+    const started = Promise.withResolvers<void>()
+    let scrapeCalls = 0
+    const scraper: MusicLinkScraperService = {
+      scrape: () =>
+        Effect.promise(async () => {
+          scrapeCalls += 1
+          started.resolve()
+          await gate.promise
+          return {
+            links: [
+              {
+                platform: 'youtube',
+                url: 'https://youtube.com/watch?v=resolved',
+                scrapedAt: new Date()
+              }
+            ],
+            entityMeta: {
+              title: 'Concurrent Track',
+              artistName: 'Concurrent Artist',
+              type: 'song'
+            }
+          }
+        }),
+      scrapeOdesli: () => Effect.succeed({ links: [] })
+    }
+
+    const first = Effect.runPromise(
+      scrapeAndCreateEntityEffect(scraper, 'track', { url: sourceUrl }).pipe(
+        Effect.provideService(Database, db)
+      )
+    )
+    await started.promise
+    const second = Effect.runPromise(
+      scrapeAndCreateEntityEffect(scraper, 'track', { url: sourceUrl }).pipe(
+        Effect.provideService(Database, db)
+      )
+    )
+    gate.resolve()
+
+    const [firstResult, secondResult] = await Promise.all([first, second])
+    const canonicalUrl = sourceUrl.split('?')[0] ?? sourceUrl
+    const claims = (await db.select().from(musicEntityResolutionClaimsTable)).filter(
+      (claim) => claim.canonicalUrl === canonicalUrl
+    )
+
+    expect(scrapeCalls).toBe(1)
+    expect(secondResult.entity.id).toBe(firstResult.entity.id)
+    expect(claims).toEqual([
+      expect.objectContaining({ entityId: firstResult.entity.id, entityType: 'track' })
+    ])
+  })
+
+  test('releases an unfinished canonical URL claim after resolution fails', async () => {
+    const sourceUrl = `https://open.spotify.com/track/${crypto.randomUUID()}?si=tracking`
+    const exit = await Effect.runPromiseExit(
+      scrapeAndCreateEntityEffect(emptyScraper, 'track', { url: sourceUrl }).pipe(
+        Effect.provideService(Database, db)
+      )
+    )
+    const canonicalUrl = sourceUrl.split('?')[0]
+    const claims = (await db.select().from(musicEntityResolutionClaimsTable)).filter(
+      (claim) => claim.canonicalUrl === canonicalUrl
+    )
+
+    expect(Exit.isFailure(exit)).toBe(true)
+    expect(claims).toHaveLength(0)
   })
 
   test('refreshes scraped and verified timestamps when a link already exists', async () => {

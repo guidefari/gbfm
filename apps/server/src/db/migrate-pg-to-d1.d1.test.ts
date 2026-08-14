@@ -66,4 +66,64 @@ describe('PG-to-D1 email delivery-log transform', () => {
       await rm(persistencePath, { force: true, recursive: true })
     }
   })
+
+  test('backfills one canonical music resolution claim for each existing entity link URL', async () => {
+    const persistencePath = await mkdtemp(path.join(tmpdir(), 'gbfm-d1-music-claims-'))
+    const target = new Miniflare({
+      script: 'export default { fetch() { return new Response() } }',
+      modules: true,
+      d1Databases: { DB: 'music-claims-target' },
+      resourcePersistencePath: persistencePath
+    })
+
+    try {
+      const d1 = await target.getD1Database('DB')
+      await applyD1Migrations(d1, ['0000_public_thunderbolt.sql'])
+      await d1
+        .prepare("INSERT INTO music_entity_types (id, displayName) VALUES ('track', 'Track')")
+        .run()
+      await d1
+        .prepare("INSERT INTO music_platforms (id, displayName) VALUES ('spotify', 'Spotify')")
+        .run()
+      await d1
+        .prepare(
+          "INSERT INTO music_entity_links (id, entity_type, entityId, platform, url, status, createdAt, updatedAt) VALUES (?, 'track', ?, 'spotify', 'https://open.spotify.com/track/existing', 'verified', 1, 1)"
+        )
+        .bind('first-link', 'first-entity')
+        .run()
+      await d1
+        .prepare(
+          "INSERT INTO music_entity_links (id, entity_type, entityId, platform, url, status, createdAt, updatedAt) VALUES (?, 'track', ?, 'spotify', 'https://open.spotify.com/track/existing', 'verified', 2, 2)"
+        )
+        .bind('second-link', 'second-entity')
+        .run()
+
+      await applyD1Migrations(d1, ['0003_music_entity_resolution_claim.sql'])
+
+      const claims = await d1
+        .prepare(
+          'SELECT entity_type, canonical_url, entity_id, created_at, updated_at FROM music_entity_resolution_claims'
+        )
+        .all<{
+          entity_type: string
+          canonical_url: string
+          entity_id: string
+          created_at: number
+          updated_at: number
+        }>()
+
+      expect(claims.results).toEqual([
+        {
+          entity_type: 'track',
+          canonical_url: 'https://open.spotify.com/track/existing',
+          entity_id: 'first-entity',
+          created_at: 1,
+          updated_at: 1
+        }
+      ])
+    } finally {
+      await target.dispose()
+      await rm(persistencePath, { force: true, recursive: true })
+    }
+  })
 })
