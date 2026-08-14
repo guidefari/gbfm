@@ -16,9 +16,9 @@
     "db:yeet": "drizzle-kit push",
     "db:migrate": "drizzle-kit migrate && bun run scripts/seed-music-lookups.ts",
     "db:gen": "drizzle-kit generate",
-    "db:migrate:prod": "bun sst shell --stage=prod bun run src/migrate.ts",
+    "db:migrate:prod": "bun --env-file=../../.env run src/migrate.ts",
     "db:seed:music-lookups": "bun run scripts/seed-music-lookups.ts",
-    "db:deets:prod": "bun sst shell --stage=prod bun run ./scripts/db.ts"
+    "db:deets:prod": "bun --env-file=../../.env run ./scripts/db.ts"
   },
   "dependencies": {
     "@effect/cli": "0.75.2",
