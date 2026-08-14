@@ -3,5 +3,15 @@
   "compilerOptions": {
     "noEmit": true
   },
-  "files": ["alchemy.run.ts", "alchemy/secrets.ts"]
+  "files": [
+    "alchemy.run.ts",
+    "alchemy/api.ts",
+    "alchemy/cdn.ts",
+    "alchemy/dns.ts",
+    "alchemy/email.ts",
+    "alchemy/secrets.ts",
+    "alchemy/stage.ts",
+    "alchemy/storage.ts",
+    "alchemy/www.ts"
+  ]
 }
