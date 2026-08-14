@@ -1,3 +1,14 @@
+## [2.86.1](https://github.com/guidefari/gbfm/compare/v2.86.0...v2.86.1) (2026-08-14)
+
+
+### Bug Fixes
+
+* **mobile:** satisfy type-aware linting ([ef80286](https://github.com/guidefari/gbfm/commit/ef802868f8dc9c1fa7475050fa15336e4b62c42f))
+* **packages:** satisfy type-aware linting ([39f9c45](https://github.com/guidefari/gbfm/commit/39f9c45ab99ba12e89e1f30469c771389cb8a1ef))
+* **server:** satisfy type-aware linting ([a122627](https://github.com/guidefari/gbfm/commit/a122627f93c854a501efe5a75125ae5d3130ccea))
+* **tooling:** declare Worker types for root checks ([b1a83db](https://github.com/guidefari/gbfm/commit/b1a83dbbc17e2519c3c7ac86e124d5079c4c1a5b))
+* **www:** satisfy type-aware linting ([2d52f6b](https://github.com/guidefari/gbfm/commit/2d52f6b5e50fe37b30570ed9c83e2b3e06a63e5b))
+
 # [2.86.0](https://github.com/guidefari/gbfm/compare/v2.85.0...v2.86.0) (2026-08-14)
 
 
