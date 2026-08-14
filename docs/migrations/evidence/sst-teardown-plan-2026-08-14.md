@@ -74,14 +74,18 @@ longer exist as it remembers them.
 | `RouterCdnCNAMERecordCdngoosebumpsfm` | `cdn` CNAME to CloudFront, superseded |
 | Both `…SslCNAMERecord…` records | ACM validation records for retired certs |
 
-### Needs a decision
+### Decided: r2-cdn.goosebumps.fm goes
 
 `r2-cdn.goosebumps.fm` is a **separate hostname** from `cdn.goosebumps.fm`. It
-is still live and still bound to SST's `gbfm-prod-cdnrouterworkerscript`.
-Nothing else serves it.
+is still live and still bound to SST's `gbfm-prod-cdnrouterworkerscript`, but
+it was a migration-era test hostname for OPS-238 (see
+[`r2-router-smoke-2026-08-08.md`](r2-router-smoke-2026-08-08.md)) and nothing
+in app code references it. Confirmed 2026-08-14: grepped `apps/*` and every
+package for `r2-cdn` and found no live dependency, only SST's own infra
+declaration in `infra/bucket.ts` and historical migration docs.
 
-- If anything still links to `r2-cdn.goosebumps.fm`, remove it from state.
-- If nothing does, let `sst remove` take it.
+Decision: let `sst remove` destroy it. `CdnRouterWorkerScript` is **not**
+removed from state.
 
 `vps.goosebumps.fm` is in the same category: its DNS record and the API Gateway
 behind it go when the AWS estate goes. That is the intended outcome, but it is
@@ -95,15 +99,18 @@ Each command prints the resource plus every dependency reference it will drop,
 then prompts `Do you want to commit these changes? (Y/n)`. Read the list before
 confirming.
 
-Download the database backups first. They are the only copy.
+Download the database backups first for an offline copy, even though the
+bucket itself is being allowed to go (decided 2026-08-14, see teardown log).
 
-Resolve the bucket name from state rather than hardcoding it:
+Resolve the bucket name from state rather than hardcoding it. Shown in fish
+syntax since that is the shell in use; swap `set NAME (...)` for
+`NAME=$(...)` under bash:
 
-```bash
+```fish
 cd /Users/guidefari/source/oss/gbfm
 mkdir -p ~/gbfm-backups
 
-BACKUPS=$(./node_modules/.bin/sst state export --stage prod \
+set BACKUPS (./node_modules/.bin/sst state export --stage prod \
   | jq -r '.latest.resources[]
       | select(.urn | endswith("::DatabaseBackupsBucket"))
       | .outputs.bucket')
@@ -111,22 +118,19 @@ BACKUPS=$(./node_modules/.bin/sst state export --stage prod \
 aws s3 sync "s3://$BACKUPS" ~/gbfm-backups/
 ```
 
-Then drop from state what must survive the teardown:
+Then drop from state the one thing that must survive the teardown, the DMARC
+record:
 
-```bash
+```fish
 ./node_modules/.bin/sst state remove EmailTXTRecordDmarcgoosebumpsfm --stage prod
-./node_modules/.bin/sst state remove DatabaseBackupsBucket --stage prod
 ```
 
-Optional, only if `r2-cdn.goosebumps.fm` should survive:
-
-```bash
-./node_modules/.bin/sst state remove CdnRouterWorkerScript --stage prod
-```
-
-Everything else can go. The R2 buckets `gbfm-mixes` and `gbfm-user-content`
-may also be dropped from state if the redundant copies are worth keeping, but
-their contents exist in the Alchemy buckets either way.
+`DatabaseBackupsBucket` and `CdnRouterWorkerScript` are deliberately **not**
+removed from state. Both are decided to be destroyed by `sst remove` (see
+[Decided: r2-cdn.goosebumps.fm goes](#decided-r2-cdngoosebumpsfm-goes) and the
+teardown log). The R2 buckets `gbfm-mixes` and `gbfm-user-content` are also
+left in state and will be destroyed; their contents exist in the Alchemy
+buckets either way.
 
 Verify before tearing anything down:
 
@@ -135,7 +139,9 @@ Verify before tearing anything down:
   | jq -r '.latest.resources[] | select(.type | test("dnsRecord|r2Bucket")) | .urn'
 ```
 
-Expect the 4 email records and both R2 buckets to be absent. Then:
+Expect only the `_dmarc` TXT record gone from the dnsRecord list; the R2
+buckets and everything else are expected to still be present here; `sst remove`
+destroys them next. Then:
 
 ```bash
 ./node_modules/.bin/sst remove --stage prod
@@ -211,6 +217,15 @@ Steps completed against this plan, newest last.
   `apps/server/scripts/verify-production-deployment.ts` is now orphaned; it
   probes `vps.goosebumps.fm` and inspects the ECS service, so it stops being
   meaningful once the AWS estate goes. Left in place for now.
+
+- **2026-08-14 — Decisions made on the two open items.** `r2-cdn.goosebumps.fm`
+  confirmed dead (no app-code references) and approved to let `sst remove`
+  destroy it; `CdnRouterWorkerScript` will not be removed from state.
+  `DatabaseBackupsBucket` is also approved for destruction rather than
+  preservation; the local `aws s3 sync` backup step still runs first for an
+  offline copy, but the bucket itself is not being kept out of state. Only
+  `EmailTXTRecordDmarcgoosebumpsfm` remains a required state-remove before
+  `sst remove --stage prod` runs.
 
 ## Open items
 
