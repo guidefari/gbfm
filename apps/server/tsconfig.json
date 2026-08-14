@@ -27,7 +27,7 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src/**/*", "drizzle/**/*", "sst-env.d.ts", "scripts/**/*"],
+  "include": ["src/**/*", "drizzle/**/*", "scripts/**/*"],
   "exclude": [
     "src/archive",
     "node_modules",
