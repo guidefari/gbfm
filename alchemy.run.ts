@@ -44,9 +44,17 @@ export default Alchemy.Stack(
         ? yield* Cloudflare.Email.SendEmail('EMAIL', {
             allowedSenderAddresses: [emailConfig.emailSender]
           })
-        : yield* Cloudflare.Email.SendEmail('EMAIL', {
-            allowedSenderAddresses: [emailConfig.emailSender],
-            destinationAddress: emailConfig.destinationAddress
+        : yield* Effect.gen(function* () {
+            const destinationAddress = emailConfig.destinationAddress
+            if (destinationAddress === undefined) {
+              return yield* Effect.die(
+                new Error('Non-production email requires a destination address')
+              )
+            }
+            return yield* Cloudflare.Email.SendEmail('EMAIL', {
+              allowedSenderAddresses: [emailConfig.emailSender],
+              destinationAddress
+            })
           })
     })
 
@@ -77,6 +85,10 @@ export default Alchemy.Stack(
     const sitemap = yield* Cloudflare.KV.Namespace('Sitemap')
 
     const reminders = yield* Cloudflare.Queues.Queue('Reminders')
+    const sentryDsn = secrets.SENTRY_BACKEND_DSN
+    if (sentryDsn === undefined) {
+      return yield* Effect.die(new Error('SENTRY_BACKEND_DSN secret is missing'))
+    }
 
     const api = yield* Cloudflare.Worker('Api', {
       main: './apps/server/src/worker.ts',
@@ -89,7 +101,7 @@ export default Alchemy.Stack(
         MIXES: mixes,
         SITEMAP: sitemap,
         REMINDERS: reminders,
-        ...(email === undefined ? {} : { EMAIL: email }),
+        ...(email === undefined ? undefined : { EMAIL: email }),
         EMAIL_SENDER: emailConfig.emailSender,
         EMAIL_TRANSPORT_MODE: emailConfig.transport,
         NAVIGATION_LOCK: Cloudflare.DurableObject<NavigationLockDurableObject>('NavigationLock', {
@@ -107,7 +119,7 @@ export default Alchemy.Stack(
         SENTRY_ENVIRONMENT: stack.stage,
         ADMIN_EMAIL: process.env.ADMIN_EMAIL ?? '',
         ...secrets,
-        SENTRY_DSN: secrets.SENTRY_BACKEND_DSN,
+        SENTRY_DSN: sentryDsn,
         R2AccountId: userContent.accountId
       }
     })

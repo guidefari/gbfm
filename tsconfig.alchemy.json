@@ -1,0 +1,7 @@
+{
+  "extends": "./apps/server/tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "files": ["alchemy.run.ts", "alchemy/secrets.ts"]
+}

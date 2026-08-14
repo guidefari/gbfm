@@ -1,4 +1,5 @@
 {
+  "$schema": "./node_modules/@effect/tsgo/schema.json",
   "extends": "@tsconfig/bun/tsconfig.json",
   "compilerOptions": {
     "target": "ES2022",
@@ -17,7 +18,7 @@
     "sourceMap": true,
     "incremental": true,
     "composite": true,
-    "plugins": [{ "name": "@effect/language-service" }]
+    "plugins": [{ "name": "@effect/language-service", "diagnostics": false }]
   },
   "files": []
 }

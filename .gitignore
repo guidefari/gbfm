@@ -13,7 +13,7 @@ premium-music-player
 logs
 apps/www/test-results/
 apps/www/playwright-report
-**/*tsconfig.tsbuildinfo
+**/*.tsbuildinfo
 docs/refactor.md
 session.md
 apps/server/.alchemy

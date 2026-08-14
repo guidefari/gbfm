@@ -64,20 +64,20 @@ export const secretsStore = (apiUrl: string) =>
     // Derived from the stack rather than the environment. Better Auth builds
     // emailed links from this, so a stale inherited value sends real users to
     // whichever host it last named: production's pointed at a staging Worker.
-    const sources: Record<string, string> = {
+    const sources = {
       ...Object.fromEntries(
         Object.entries(secretSources).map(([name, source]) => [name, process.env[source] ?? ''])
       ),
       BETTER_AUTH_URL: apiUrl
-    }
+    } satisfies Record<string, string>
 
     const entries = yield* Effect.forEach(
-      Object.keys(sources),
-      (name) =>
+      Object.entries(sources),
+      ([name, value]) =>
         Cloudflare.SecretsStore.Secret(`Secret${name}`, {
           store,
           name: `${stack.stage}-${name}`,
-          value: Redacted.make(sources[name] ?? '')
+          value: Redacted.make(value)
         }).pipe(Effect.map((secret) => [name, secret] as const)),
       { concurrency: 4 }
     )

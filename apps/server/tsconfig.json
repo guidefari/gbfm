@@ -20,7 +20,7 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
-    "plugins": [{ "name": "@effect/language-service" }],
+    "plugins": [{ "name": "@effect/language-service", "diagnostics": false }],
     "types": ["@cloudflare/workers-types", "@types/bun"],
     "paths": {
       "*": ["./*"],

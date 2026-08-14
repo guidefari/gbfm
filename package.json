@@ -15,17 +15,17 @@
     "ui:playground": "bun --filter @gbfm/ui dev",
     "otel": "docker compose up jaeger -d",
     "release": "semantic-release",
-    "typecheck": "tsgo --noEmit && bun --filter='*' typecheck",
+    "typecheck": "tsgo --noEmit && tsgo --project tsconfig.alchemy.json --noEmit && bun --filter='*' typecheck",
     "test": "cd packages/core && bun run test && cd ../theme && bun run test && cd ../player && bun run test && cd ../../apps/mobile && bun run test && cd ../server && bun run test && cd ../../workers/cdn-router && bun run test",
-    "lint": "bun ./node_modules/oxlint/dist/cli.js apps/*/src packages workers '*.{js,ts,tsx,jsx}' --no-error-on-unmatched-pattern",
-    "lint:fix": "bun ./node_modules/oxlint/dist/cli.js apps/*/src packages workers '*.{js,ts,tsx,jsx}' --fix --no-error-on-unmatched-pattern",
+    "lint": "bun ./node_modules/oxlint/dist/cli.js alchemy alchemy.run.ts apps/*/src packages workers '*.{js,ts,tsx,jsx}' --no-error-on-unmatched-pattern",
+    "lint:fix": "bun ./node_modules/oxlint/dist/cli.js alchemy alchemy.run.ts apps/*/src packages workers '*.{js,ts,tsx,jsx}' --fix --no-error-on-unmatched-pattern",
     "format": "node ./node_modules/oxfmt/dist/cli.js apps/*/src packages workers '*.{js,ts,tsx,jsx,json,css}' --write --no-error-on-unmatched-pattern",
     "format:check": "node ./node_modules/oxfmt/dist/cli.js apps/*/src packages workers '*.{js,ts,tsx,jsx,json,css}' --check --no-error-on-unmatched-pattern",
     "check": "bun run format && bun run lint:fix",
     "oxc:ci": "bun run format:check && bun run lint",
     "precommit": "bun run check && bun run typecheck",
     "ci": "bun run oxc:ci && bun run typecheck && bun run test && cd apps/www && bun run build",
-    "prepare": "effect-language-service patch",
+    "prepare": "effect-tsgo patch --typescript --oxlint",
     "init:lefthook": "lefthook install"
   },
   "dependencies": {
@@ -42,7 +42,7 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@effect/language-service": "0.86.4",
+    "@effect/tsgo": "0.36.4",
     "@oxlint/plugins": "1.78.0",
     "@semantic-release/changelog": "6.0.3",
     "@semantic-release/git": "10.0.1",
@@ -53,9 +53,10 @@
     "lefthook": "2.1.9",
     "madge": "8.0.0",
     "oxfmt": "0.54.0",
-    "oxlint": "1.78.0",
+    "oxlint": "1.77.0",
+    "oxlint-tsgolint": "7.0.2001",
     "semantic-release": "25.0.5",
-    "typescript": "6.0.3"
+    "typescript": "7.0.2"
   },
   "overrides": {
     "react": "19.2.7",

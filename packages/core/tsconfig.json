@@ -13,7 +13,7 @@
     "declaration": true,
     "declarationMap": true,
     "types": ["@types/bun"],
-    "plugins": [{ "name": "@effect/language-service" }]
+    "plugins": [{ "name": "@effect/language-service", "diagnostics": false }]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

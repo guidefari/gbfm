@@ -1,5 +1,6 @@
 {
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "$schema": "./node_modules/@effect/tsgo/oxlint-schema.json",
+  "extends": ["./node_modules/@effect/tsgo/oxlint-presets/correctness.json"],
   "categories": {
     "correctness": "error",
     "suspicious": "error"
@@ -55,6 +56,10 @@
     "react/no-unstable-nested-components": "off",
     "react/react-in-jsx-scope": "off",
     "typescript/no-empty-object-type": "off",
+    "typescript/no-unnecessary-type-arguments": "off",
+    "typescript/no-unnecessary-type-parameters": "off",
+    "typescript/no-useless-default-assignment": "off",
+    "typescript/restrict-template-expressions": "off",
     "typescript/consistent-type-assertions": [
       "error",
       {
