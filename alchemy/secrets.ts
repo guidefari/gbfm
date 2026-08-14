@@ -84,3 +84,5 @@ export const secretsStore = (apiUrl: string) =>
 
     return Object.fromEntries(entries)
   })
+
+export type SecretBindings = Effect.Success<ReturnType<typeof secretsStore>>

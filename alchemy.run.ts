@@ -1,15 +1,14 @@
 import * as Alchemy from 'alchemy'
-import { adopt } from 'alchemy/AdoptPolicy'
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as Effect from 'effect/Effect'
+import { apiWorker } from './alchemy/api'
+import { cdnRouter } from './alchemy/cdn'
+import { dnsRedirects } from './alchemy/dns'
+import { emailResources } from './alchemy/email'
 import { secretsStore } from './alchemy/secrets'
-import {
-  maintenanceSweepCron,
-  reminderSweepCron,
-  sitemapRegenerationCron
-} from './apps/server/src/scheduled'
-import type { NavigationLockDurableObject } from './apps/server/src/durable-objects/navigation-lock.do'
-import type { SpotifyImportResolverDurableObject } from './apps/server/src/durable-objects/spotify-import-resolver.do'
+import { stageConfig } from './alchemy/stage'
+import { storage } from './alchemy/storage'
+import { website } from './alchemy/www'
 import { emailDeploymentConfig } from './apps/server/src/email-deployment-config'
 
 export default Alchemy.Stack(
@@ -19,194 +18,33 @@ export default Alchemy.Stack(
     state: Cloudflare.state()
   },
   Effect.gen(function* () {
-    const stack = yield* Alchemy.Stack
-    const isProduction = stack.stage === 'prod'
-    const isLocalDev = yield* Alchemy.ALCHEMY_DEV
-    const apiUrl = isProduction
-      ? 'https://api.goosebumps.fm'
-      : `https://api.${stack.stage}.goosebumps.fm`
-    const secrets = yield* secretsStore(apiUrl)
+    const config = yield* stageConfig
+    const secrets = yield* secretsStore(config.apiUrl)
     const emailConfig = emailDeploymentConfig({
-      stage: stack.stage,
+      stage: config.stage,
       testRecipient: process.env.EMAIL_TEST_RECIPIENT,
-      localDev: isLocalDev
+      localDev: config.isLocalDev
     })
 
-    const email = yield* Effect.gen(function* () {
-      if (emailConfig.transport === 'recording') return undefined
+    const email = yield* emailResources(config, emailConfig)
+    const store = yield* storage(config)
+    const api = yield* apiWorker({ config, store, secrets, email, emailConfig })
+    const cdn = yield* cdnRouter(config, store)
 
-      const routing = yield* Cloudflare.Email.Routing('EmailRouting', { zone: 'goosebumps.fm' })
-      yield* Cloudflare.Email.SendingSubdomain('EmailSending', {
-        zoneId: routing.zoneId,
-        name: emailConfig.sendingDomain
-      })
-      return isProduction
-        ? yield* Cloudflare.Email.SendEmail('EMAIL', {
-            allowedSenderAddresses: [emailConfig.emailSender]
-          })
-        : yield* Effect.gen(function* () {
-            const destinationAddress = emailConfig.destinationAddress
-            if (destinationAddress === undefined) {
-              return yield* Effect.die(
-                new Error('Non-production email requires a destination address')
-              )
-            }
-            return yield* Cloudflare.Email.SendEmail('EMAIL', {
-              allowedSenderAddresses: [emailConfig.emailSender],
-              destinationAddress
-            })
-          })
-    })
+    yield* dnsRedirects(config)
 
-    const db = yield* Cloudflare.D1.Database('Database', {
-      migrationsDir: './apps/server/drizzle-d1'
-    })
-
-    // The browser PUTs image and audio bytes straight to the bucket with a
-    // presigned URL, so the bucket itself has to allow the cross-origin PUT.
-    // Ported from the S3 bucket's CORS block; without it every upload fails
-    // the preflight.
-    const userContent = yield* Cloudflare.R2.Bucket('UserContent', {
-      cors: [
-        {
-          id: 'browser-presigned-uploads',
-          allowedOrigins: isProduction
-            ? ['https://www.goosebumps.fm', 'https://goosebumps.fm']
-            : ['*'],
-          allowedMethods: ['PUT'],
-          allowedHeaders: ['*'],
-          exposeHeaders: ['ETag'],
-          maxAgeSeconds: 3600
-        }
-      ]
-    })
-    const mixes = yield* Cloudflare.R2.Bucket('Mixes')
-
-    const sitemap = yield* Cloudflare.KV.Namespace('Sitemap')
-
-    const reminders = yield* Cloudflare.Queues.Queue('Reminders')
-    const sentryDsn = secrets.SENTRY_BACKEND_DSN
-    if (sentryDsn === undefined) {
-      return yield* Effect.die(new Error('SENTRY_BACKEND_DSN secret is missing'))
-    }
-
-    const api = yield* Cloudflare.Worker('Api', {
-      main: './apps/server/src/worker.ts',
-      ...(isProduction ? { domain: 'api.goosebumps.fm' } : { url: true }),
-      compatibility: { date: '2026-08-09', flags: ['nodejs_compat'] },
-      crons: [reminderSweepCron, sitemapRegenerationCron, maintenanceSweepCron],
-      env: {
-        DB: db,
-        USER_CONTENT: userContent,
-        MIXES: mixes,
-        SITEMAP: sitemap,
-        REMINDERS: reminders,
-        ...(email === undefined ? undefined : { EMAIL: email }),
-        EMAIL_SENDER: emailConfig.emailSender,
-        EMAIL_TRANSPORT_MODE: emailConfig.transport,
-        NAVIGATION_LOCK: Cloudflare.DurableObject<NavigationLockDurableObject>('NavigationLock', {
-          className: 'NavigationLockDurableObject'
-        }),
-        SPOTIFY_IMPORT_RESOLVER: Cloudflare.DurableObject<SpotifyImportResolverDurableObject>(
-          'SpotifyImportResolver',
-          {
-            className: 'SpotifyImportResolverDurableObject'
-          }
-        ),
-        APP_STAGE: stack.stage,
-        USER_CONTENT_BUCKET_NAME: userContent.bucketName,
-        MIXES_BUCKET_NAME: mixes.bucketName,
-        SENTRY_ENVIRONMENT: stack.stage,
-        ADMIN_EMAIL: process.env.ADMIN_EMAIL ?? '',
-        ...secrets,
-        SENTRY_DSN: sentryDsn,
-        R2AccountId: userContent.accountId
-      }
-    })
-
-    const cdnRouter = yield* Cloudflare.Worker('CdnRouter', {
-      main: './apps/cdn-router/src/index.ts',
-      ...(isProduction ? { domain: 'cdn.goosebumps.fm' } : { url: true }),
-      compatibility: { date: '2026-08-09' },
-      env: {
-        USER_CONTENT: userContent,
-        MIXES: mixes
-      }
-    })
-
-    if (isProduction) {
-      const zone = yield* Cloudflare.Zone.Zone('Zone', { name: 'goosebumps.fm' }).pipe(adopt(true))
-
-      // These served /rss.xml, /sitemap.xml and /s/* off the VPS. The Worker
-      // serves the same routes, so they move with the client rather than
-      // pointing at a host that is being retired.
-      yield* Cloudflare.Ruleset.Ruleset('VpsRedirects', {
-        zone,
-        phase: 'http_request_dynamic_redirect',
-        name: 'Dynamic route redirects',
-        rules: [
-          {
-            action: 'redirect',
-            description: 'Redirect RSS feeds to the API',
-            expression: `((http.request.uri.path eq "/rss.xml") or (http.request.uri.path eq "/rss")) and (http.host eq "goosebumps.fm")`,
-            actionParameters: {
-              fromValue: { statusCode: 301, targetUrl: { value: `${apiUrl}/rss.xml` } }
-            }
-          },
-          {
-            action: 'redirect',
-            description: 'Redirect sitemap to the API',
-            expression: `(http.request.uri.path eq "/sitemap.xml") and (http.host eq "goosebumps.fm")`,
-            actionParameters: {
-              fromValue: { statusCode: 301, targetUrl: { value: `${apiUrl}/sitemap.xml` } }
-            }
-          },
-          {
-            action: 'redirect',
-            description: 'Redirect share routes to the API OG handlers',
-            expression: `starts_with(http.request.uri.path, "/s/") and (http.host eq "goosebumps.fm")`,
-            actionParameters: {
-              fromValue: {
-                statusCode: 301,
-                targetUrl: { expression: `concat("${apiUrl}", http.request.uri.path)` },
-                preserveQueryString: true
-              }
-            }
-          }
-        ]
-      })
-    }
-
-    const www = yield* Cloudflare.Website.StaticSite('Www', {
-      cwd: 'apps/www',
-      command: 'bun run build',
-      outdir: 'dist',
-      ...(isProduction ? { domain: ['www.goosebumps.fm', 'goosebumps.fm'] } : { url: true }),
-      assets: { notFoundHandling: 'single-page-application' },
-      env: {
-        VITE_VPS_BASE_URL: apiUrl,
-        VITE_PUBLIC_SENTRY_DSN: process.env.VITE_PUBLIC_SENTRY_DSN ?? '',
-        VITE_PUBLIC_SENTRY_ENVIRONMENT: stack.stage,
-        VITE_PUBLIC_SENTRY_RELEASE: process.env.SENTRY_RELEASE ?? '',
-        VITE_SPOTIFY_CLIENT_ID: process.env.SPOTIFY_CLIENT_ID ?? ''
-      }
-    })
-
-    yield* Cloudflare.Queues.Consumer('ReminderConsumer', {
-      queueId: reminders.queueId,
-      scriptName: api.workerName
-    })
+    const www = yield* website(config)
 
     return {
       apiUrl: api.url,
       apiDomains: api.domains,
-      cdnRouterUrl: cdnRouter.url,
-      cdnRouterDomains: cdnRouter.domains,
+      cdnRouterUrl: cdn.url,
+      cdnRouterDomains: cdn.domains,
       wwwUrl: www.url,
       wwwDomains: www.domains,
-      databaseName: db.databaseName,
-      userContentBucketName: userContent.bucketName,
-      mixesBucketName: mixes.bucketName
+      databaseName: store.db.databaseName,
+      userContentBucketName: store.userContent.bucketName,
+      mixesBucketName: store.mixes.bucketName
     }
   })
 )
