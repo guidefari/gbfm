@@ -2414,6 +2414,27 @@ export function useDeleteAdminEntityLink() {
   })
 }
 
+export function useAdminRescrapeEntityLinks() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      entityType,
+      entityId
+    }: {
+      entityType: 'album' | 'track' | 'playlist'
+      entityId: string
+    }) =>
+      fetcher<{ links: AdminMusicEntityLink[] }>(
+        apiUrl(`/music/${entityType}/${entityId}/links/rescrape`),
+        { method: 'POST' }
+      ),
+    onSuccess: (_, { entityType, entityId }) =>
+      qc.invalidateQueries({
+        queryKey: ['admin', 'links', entityType, entityId]
+      })
+  })
+}
+
 export function useAddArtistToAlbum() {
   const qc = useQueryClient()
   return useMutation({

@@ -1,4 +1,4 @@
-import { MoreHorizontal, Plus } from 'lucide-react'
+import { Loader2, MoreHorizontal, Plus, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from './button'
 import { Card, CardContent, CardHeader } from './card'
@@ -77,6 +77,8 @@ export interface MusicEntityLinksPanelProps {
   onEdit?: (linkId: string, platform: MusicPlatform, url: string) => void
   onUpdateStatus?: (linkId: string, status: LinkStatus) => void
   onDelete?: (linkId: string) => void
+  onRescrape?: () => void
+  isRescraping?: boolean
   readOnly?: boolean
   embedded?: boolean
 }
@@ -92,6 +94,8 @@ export function MusicEntityLinksPanel({
   onEdit,
   onUpdateStatus,
   onDelete,
+  onRescrape,
+  isRescraping = false,
   readOnly = false,
   embedded = false
 }: MusicEntityLinksPanelProps) {
@@ -141,6 +145,21 @@ export function MusicEntityLinksPanel({
         </span>
       </div>
       <div className='flex items-center gap-1'>
+        {onRescrape && (
+          <Button
+            size='sm'
+            variant='ghost'
+            className='h-7 rounded-sm px-2 text-xs'
+            disabled={isRescraping}
+            onClick={onRescrape}>
+            {isRescraping ? (
+              <Loader2 className='mr-1 size-3 animate-spin' />
+            ) : (
+              <RefreshCw className='mr-1 size-3' />
+            )}
+            Rescrape links
+          </Button>
+        )}
         {!readOnly && (
           <Button
             size='sm'

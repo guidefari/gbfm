@@ -27,6 +27,7 @@ import {
   useAdminLabel,
   useAdminLabels,
   useAdminEntityLinks,
+  useAdminRescrapeEntityLinks,
   useAdminTrack,
   useAffiliateAlbumWithLabel,
   useAffiliateArtistWithLabel,
@@ -523,6 +524,12 @@ interface LinksPanelProps {
   deleteLink: ReturnType<typeof useDeleteAdminEntityLink>
 }
 
+function isRescrapeableEntityType(
+  entityType: string
+): entityType is 'album' | 'track' | 'playlist' {
+  return entityType === 'album' || entityType === 'track' || entityType === 'playlist'
+}
+
 function LinksPanel({
   links,
   entityType,
@@ -531,6 +538,8 @@ function LinksPanel({
   updateLinkStatus,
   deleteLink
 }: LinksPanelProps) {
+  const rescrape = useAdminRescrapeEntityLinks()
+
   function handleEdit(linkId: string, platform: string, url: string) {
     const existingLink = links.find((link) => link.id === linkId)
     addLink.mutate(
@@ -572,6 +581,24 @@ function LinksPanel({
         updateLinkStatus.mutate({ entityType, entityId, linkId, status })
       }
       onDelete={(linkId) => deleteLink.mutate({ entityType, entityId, linkId })}
+      onRescrape={
+        isRescrapeableEntityType(entityType)
+          ? () =>
+              rescrape.mutate(
+                { entityType, entityId },
+                {
+                  onSuccess: () => toast({ title: 'Links rescraped' }),
+                  onError: (error) =>
+                    toast({
+                      title: 'Failed to rescrape links',
+                      description: error.message,
+                      variant: 'destructive'
+                    })
+                }
+              )
+          : undefined
+      }
+      isRescraping={rescrape.isPending}
     />
   )
 }

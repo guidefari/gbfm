@@ -33,6 +33,7 @@ import {
   fetcher,
   useAddAdminEntityLink,
   useAdminEntityLinks,
+  useAdminRescrapeEntityLinks,
   useDeleteAdminEntityLink,
   useMicroPostBySlug,
   useMicroTags,
@@ -448,6 +449,7 @@ export function TweetCapturePage() {
   const addLink = useAddAdminEntityLink()
   const updateLinkStatus = useUpdateAdminEntityLinkStatus()
   const deleteLink = useDeleteAdminEntityLink()
+  const rescrapeLinks = useAdminRescrapeEntityLinks()
   const canManageLinks = user?.role === 'admin'
 
   function handleAddLink(platform: string, url: string) {
@@ -519,6 +521,22 @@ export function TweetCapturePage() {
       entityId: currentEntityId,
       linkId
     })
+  }
+
+  function handleRescrapeLinks() {
+    if (!currentEntityType || !currentEntityId) return
+    rescrapeLinks.mutate(
+      { entityType: currentEntityType, entityId: currentEntityId },
+      {
+        onSuccess: () => toast({ title: 'Links rescraped' }),
+        onError: (error) =>
+          toast({
+            title: 'Failed to rescrape links',
+            description: error.message,
+            variant: 'destructive'
+          })
+      }
+    )
   }
 
   function handleSubmitShortcut(event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) {
@@ -712,6 +730,8 @@ export function TweetCapturePage() {
                   onEdit={handleEditLink}
                   onUpdateStatus={handleUpdateLinkStatus}
                   onDelete={handleDeleteLink}
+                  onRescrape={canManageLinks ? handleRescrapeLinks : undefined}
+                  isRescraping={rescrapeLinks.isPending}
                 />
               ) : null
             }

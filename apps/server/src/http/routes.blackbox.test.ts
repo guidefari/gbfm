@@ -29,6 +29,7 @@ import { navigationSessions } from '@/db/navigation.schema'
 import {
   musicAlbumsTable,
   musicArtistsTable,
+  musicTracksTable,
   musicLabelAlbumsTable,
   musicLabelArtistsTable,
   musicLabelCreatorsTable,
@@ -626,6 +627,57 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
     )
 
     expect(res.status).toBe(401)
+  })
+
+  it('POST /api/music/track/:id/links/rescrape returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request(
+        'http://localhost/api/music/track/00000000-0000-0000-0000-000000000000/links/rescrape',
+        { method: 'POST' }
+      )
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('POST /api/music/track/:id/links/rescrape returns 404 when no Spotify source link exists', async () => {
+    const suffix = crypto.randomUUID()
+    const userId = `rescrape-admin-${suffix}`
+    const token = `rescrape-admin-token-${suffix}`
+    const trackId = crypto.randomUUID()
+
+    await db.insert(user).values({
+      id: userId,
+      name: 'Admin user',
+      email: `${userId}@example.com`,
+      role: 'admin'
+    })
+    await db.insert(session).values({
+      id: crypto.randomUUID(),
+      token,
+      userId,
+      expiresAt: new Date(Date.now() + 60_000)
+    })
+    await db.insert(musicTracksTable).values({
+      id: trackId,
+      title: 'Track without Spotify',
+      slug: `track-without-spotify-${suffix}`
+    })
+
+    try {
+      const res = await webHandler.handler(
+        new Request(`http://localhost/api/music/track/${trackId}/links/rescrape`, {
+          method: 'POST',
+          headers: { authorization: `Bearer ${token}` }
+        })
+      )
+
+      expect(res.status).toBe(404)
+    } finally {
+      await db.delete(musicTracksTable).where(eq(musicTracksTable.id, trackId))
+      await db.delete(session).where(eq(session.userId, userId))
+      await db.delete(user).where(eq(user.id, userId))
+    }
   })
 })
 

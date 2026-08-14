@@ -379,6 +379,10 @@ export const ScrapeEntityLinksResponse = Schema.Struct({
   links: Schema.Array(EntityLinkResponse)
 })
 
+export const RescrapeEntityLinksResponse = Schema.Struct({
+  links: EntityLinkListResponse
+})
+
 export const MusicGroup = HttpApiGroup.make('music')
   .add(HttpApiEndpoint.get('listArtists', '/api/music/artists', { success: ArtistListResponse }))
   .add(
@@ -759,6 +763,13 @@ export const MusicGroup = HttpApiGroup.make('music')
       params: { ...entityLinkParams, linkId: Schema.String },
       success: HttpApiSchema.NoContent,
       error: [HttpApiError.NotFound, HttpApiError.Forbidden]
+    }).middleware(AuthMiddleware)
+  )
+  .add(
+    HttpApiEndpoint.post('rescrapeEntityLinks', '/api/music/:entityType/:entityId/links/rescrape', {
+      params: { entityType: ScrapeEntityType, entityId: Schema.String },
+      success: RescrapeEntityLinksResponse,
+      error: [HttpApiError.NotFound, HttpApiError.Forbidden, HttpApiError.ServiceUnavailable]
     }).middleware(AuthMiddleware)
   )
   // ---------------------------------------------------------------------
