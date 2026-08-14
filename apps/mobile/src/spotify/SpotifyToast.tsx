@@ -24,7 +24,7 @@ export function SpotifyToast({ notice }: { notice: SpotifyToastNotice | null }) 
   const [message, setMessage] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!notice) return
+    if (!notice) return undefined
     setMessage(notice.message)
     AccessibilityInfo.announceForAccessibility(notice.message)
     progress.stopAnimation()

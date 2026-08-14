@@ -56,7 +56,7 @@ vi.mock('@spotify-effect/browser', () => ({
       Layer.effect(
         SpotifyBrowserTag,
         hoisted.layerBuildShouldFail
-          ? Effect.fail(new Error('layer build failed'))
+          ? Effect.fail({ _tag: 'LayerBuildFailed' })
           : Effect.succeed('spotify-browser-service')
       )
   })

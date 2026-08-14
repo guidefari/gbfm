@@ -119,7 +119,7 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
         playbackRef.current = playback
         const unsubscribe = playback.subscribeSnapshot(setSnapshot)
         yield* Effect.addFinalizer(() => Effect.sync(unsubscribe))
-        yield* Effect.never
+        return yield* Effect.never
       }).pipe(Effect.scoped)
     )
 

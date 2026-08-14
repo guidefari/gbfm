@@ -1,5 +1,5 @@
 import { AudioEngine, PlaybackRejected } from '@gbfm/player'
-import { Effect } from 'effect'
+import { Effect, ManagedRuntime } from 'effect'
 import type { AudioStatus } from 'expo-audio'
 import { expect, test } from 'vitest'
 import { ExpoAudioEngineLayer, type ExpoAudioEnginePlayer } from './expoAudioEngine'
@@ -75,10 +75,14 @@ test('translates a platform play failure into PlaybackRejected without hiding it
     throw failure
   })
 
-  const error = await Effect.gen(function* () {
-    const engine = yield* AudioEngine
-    return yield* Effect.flip(engine.play)
-  }).pipe(Effect.provide(ExpoAudioEngineLayer(player, 'native')), Effect.runPromise)
+  const runtime = ManagedRuntime.make(ExpoAudioEngineLayer(player, 'native'))
+  const error = await runtime.runPromise(
+    Effect.gen(function* () {
+      const engine = yield* AudioEngine
+      return yield* Effect.flip(engine.play)
+    })
+  )
+  await runtime.dispose()
 
   expect(error).toBeInstanceOf(PlaybackRejected)
   expect(error.cause).toBe(failure)
@@ -87,16 +91,20 @@ test('translates a platform play failure into PlaybackRejected without hiding it
 test('drives player settings and source state through a complete replace-and-reset workflow', async () => {
   const player = makePlayer(() => undefined)
 
-  const statuses = await Effect.gen(function* () {
-    const engine = yield* AudioEngine
-    yield* engine.setVolume(0.25)
-    yield* engine.setMuted(true)
-    yield* engine.replace('https://cdn.example/track.mp3', 9)
-    const loaded = yield* engine.currentStatus
-    yield* engine.clearSource
-    const cleared = yield* engine.currentStatus
-    return { loaded, cleared }
-  }).pipe(Effect.provide(ExpoAudioEngineLayer(player, 'native')), Effect.runPromise)
+  const runtime = ManagedRuntime.make(ExpoAudioEngineLayer(player, 'native'))
+  const statuses = await runtime.runPromise(
+    Effect.gen(function* () {
+      const engine = yield* AudioEngine
+      yield* engine.setVolume(0.25)
+      yield* engine.setMuted(true)
+      yield* engine.replace('https://cdn.example/track.mp3', 9)
+      const loaded = yield* engine.currentStatus
+      yield* engine.clearSource
+      const cleared = yield* engine.currentStatus
+      return { loaded, cleared }
+    })
+  )
+  await runtime.dispose()
 
   expect(player.volume).toBe(0.25)
   expect(player.muted).toBe(true)

@@ -7,7 +7,7 @@ import { Effect } from 'effect'
 
 export const fontsReadyAtom = Atom.make<boolean>(false).pipe(Atom.keepAlive)
 
-const hideSplash = Effect.sync(() => SplashScreen.hideAsync())
+const hideSplash = Effect.promise(() => SplashScreen.hideAsync())
 
 export const splashHideAtom = Atom.make(hideSplash)
 

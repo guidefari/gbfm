@@ -1,6 +1,7 @@
 import type { FullUser, LoginRequest } from '@gbfm/core/api'
 import { Data, Effect, Schema } from 'effect'
-import { FetchHttpClient, HttpClient, HttpClientRequest } from 'effect/unstable/http'
+import { HttpClientRequest } from 'effect/unstable/http'
+import { getHttpClient } from '@/api/client'
 import { env } from '@/env'
 
 export class LoginFailed extends Data.TaggedError('LoginFailed')<{
@@ -44,7 +45,7 @@ const toFullUser = (user: typeof BetterAuthUser.Type): FullUser => ({
 
 export const login = (credentials: LoginRequest) =>
   Effect.gen(function* () {
-    const client = yield* HttpClient.HttpClient
+    const client = yield* getHttpClient
     const request = yield* HttpClientRequest.bodyJson(
       HttpClientRequest.post(`${env.EXPO_PUBLIC_API_URL}/auth/sign-in/email`),
       credentials
@@ -59,11 +60,11 @@ export const login = (credentials: LoginRequest) =>
       Effect.flatMap(Schema.decodeUnknownEffect(BetterAuthLoginResponse))
     )
     return { user: toFullUser(data.user), sessionToken: data.token }
-  }).pipe(Effect.provide(FetchHttpClient.layer))
+  })
 
 export const getSession = (sessionToken: string) =>
   Effect.gen(function* () {
-    const client = yield* HttpClient.HttpClient
+    const client = yield* getHttpClient
     const request = HttpClientRequest.get(`${env.EXPO_PUBLIC_API_URL}/auth/get-session`).pipe(
       HttpClientRequest.setHeader('Authorization', `Bearer ${sessionToken}`)
     )
@@ -83,4 +84,4 @@ export const getSession = (sessionToken: string) =>
       Effect.mapError(() => new SessionExpired())
     )
     return toFullUser(data.user)
-  }).pipe(Effect.provide(FetchHttpClient.layer))
+  })

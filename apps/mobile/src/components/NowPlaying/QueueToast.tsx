@@ -18,7 +18,7 @@ export function QueueToast() {
   const [message, setMessage] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!queueNotice) return
+    if (!queueNotice) return undefined
     setMessage(queueNotice.message)
     AccessibilityInfo.announceForAccessibility(queueNotice.message)
     progress.stopAnimation()

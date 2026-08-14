@@ -1,6 +1,10 @@
 import { setAudioModeAsync } from 'expo-audio'
 import * as Atom from 'effect/unstable/reactivity/Atom'
-import { Effect } from 'effect'
+import { Data, Effect } from 'effect'
+
+class AudioModeUnavailable extends Data.TaggedError('AudioModeUnavailable')<{
+  readonly cause: unknown
+}> {}
 
 const setAudioMode = Effect.tryPromise({
   try: () =>
@@ -11,7 +15,7 @@ const setAudioMode = Effect.tryPromise({
       shouldPlayInBackground: true,
       shouldRouteThroughEarpiece: false
     }),
-  catch: (error) => error
+  catch: (cause) => new AudioModeUnavailable({ cause })
 })
 
 export const audioModeAtom = Atom.make(setAudioMode)

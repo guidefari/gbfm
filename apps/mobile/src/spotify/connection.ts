@@ -105,14 +105,7 @@ export const useConnectSpotify = () => {
 
     try {
       const authUrl = await runSpotifyEffect(
-        startSpotifyPkceLoginEffect(SPOTIFY_WEB_SCOPES, SPOTIFY_REDIRECT_URI).pipe(
-          Effect.catch((error: SpotifyRequestError) =>
-            Effect.sync(() => {
-              setState((state) => ({ ...state, error: spotifyErrorMessage(error) }))
-              return undefined
-            })
-          )
-        )
+        startSpotifyPkceLoginEffect(SPOTIFY_WEB_SCOPES, SPOTIFY_REDIRECT_URI)
       )
       if (!authUrl) return
 
