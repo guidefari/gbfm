@@ -281,7 +281,7 @@ export class OdesliProvider implements MusicDataProvider {
         )
       ),
       Effect.withSpan('musicScraper.odesli', {
-        attributes: { 'scraper.seed_url': seedUrl }
+        attributes: { 'scraper.seed_host': urlHostname(seedUrl) }
       })
     )
   }
@@ -377,7 +377,9 @@ export class FirecrawlProvider implements MusicDataProvider {
       })
 
       if (!response.ok) {
-        yield* Effect.logWarning(`[firecrawl] ${response.status} for ${pageUrl} — skipping`)
+        yield* Effect.logWarning(
+          `[firecrawl] ${response.status} for ${urlHostname(pageUrl)} — skipping`
+        )
         return { links: [] } satisfies ProviderResult
       }
 
@@ -402,7 +404,7 @@ export class FirecrawlProvider implements MusicDataProvider {
       return { links } satisfies ProviderResult
     }).pipe(
       Effect.withSpan('musicScraper.firecrawl', {
-        attributes: { 'scraper.page_url': pageUrl }
+        attributes: { 'scraper.page_host': urlHostname(pageUrl) }
       })
     )
   }
@@ -555,7 +557,7 @@ export class BandcampProvider implements MusicDataProvider {
       return { links: [], entityMeta } satisfies ProviderResult
     }).pipe(
       Effect.withSpan('musicScraper.bandcamp', {
-        attributes: { 'scraper.seed_url': url }
+        attributes: { 'scraper.seed_host': urlHostname(url) }
       })
     )
   }
@@ -740,5 +742,13 @@ function isSpotifyTrackUrl(url: string | undefined): url is string {
     )
   } catch {
     return false
+  }
+}
+
+function urlHostname(url: string): string {
+  try {
+    return new URL(url).hostname
+  } catch {
+    return 'invalid'
   }
 }

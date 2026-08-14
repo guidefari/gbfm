@@ -53,6 +53,14 @@ export const addLinkEffect = Effect.fn('musicEntity.addLink')(function* (
   data: InsertMusicEntityLink
 ) {
   const db = yield* Database
+  const updateData: Partial<typeof musicEntityLinksTable.$inferInsert> = {
+    url: data.url,
+    status: data.status ?? LINK_STATUS.VERIFIED,
+    metadata: data.metadata,
+    updatedAt: new Date()
+  }
+  if (data.scrapedAt) updateData.scrapedAt = data.scrapedAt
+  if (data.verifiedAt) updateData.verifiedAt = data.verifiedAt
   const rows = yield* Effect.tryPromise({
     try: () =>
       db
@@ -64,12 +72,7 @@ export const addLinkEffect = Effect.fn('musicEntity.addLink')(function* (
             musicEntityLinksTable.entityId,
             musicEntityLinksTable.platform
           ],
-          set: {
-            url: data.url,
-            status: data.status ?? LINK_STATUS.VERIFIED,
-            metadata: data.metadata,
-            updatedAt: new Date()
-          }
+          set: updateData
         })
         .returning(),
     catch: (e) =>

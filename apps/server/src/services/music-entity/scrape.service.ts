@@ -4,6 +4,7 @@ import { Effect } from 'effect'
 import { Database } from '@/db/layer'
 import {
   type MusicEntityType,
+  type MusicPlatform,
   musicEntityLinksTable,
   type SelectMusicAlbum,
   type SelectMusicArtist,
@@ -11,7 +12,7 @@ import {
   type SelectMusicPlaylist,
   type SelectMusicTrack
 } from '@/db/music-entity.schema'
-import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
+import { DatabaseError, getErrorMessage, NotFoundError, ValidationError } from '@/errors'
 import type {
   MusicLinkScraperService,
   MusicScrapeInput,
@@ -31,6 +32,7 @@ import { createPlaylistEffect, getPlaylistByIdEffect } from './playlist.service'
 import { createTrackEffect, getTrackByIdEffect } from './track.service'
 
 type ScrapeableMusicEntityType = Exclude<MusicEntityType, 'label'>
+type CanonicalSourceLink = { readonly platform: MusicPlatform; readonly url: string }
 
 const SCRAPEABLE_MUSIC_ENTITY_TYPES: readonly ScrapeableMusicEntityType[] = [
   'artist',
@@ -93,8 +95,10 @@ export const scrapeAndCreateEntityEffect = (
   input: MusicScrapeInput
 ) =>
   Effect.gen(function* () {
-    if (input.url) {
-      const existingLinks = yield* findExistingEntityByUrl(input.url, entityType)
+    const source = input.url ? canonicalSourceLink(input.url) : undefined
+
+    if (source) {
+      const existingLinks = yield* findExistingEntityByUrl(source.url, entityType)
       const match = existingLinks[0]
       if (match && isScrapeableMusicEntityType(match.entityType)) {
         const entity = yield* Effect.catchTag(
@@ -116,10 +120,9 @@ export const scrapeAndCreateEntityEffect = (
     const meta = result.entityMeta
 
     if (!hasUsableScrapeResult(result)) {
-      return yield* new DatabaseError({
+      return yield* new ValidationError({
         message: 'Music URL resolution returned no metadata or links',
-        operation: 'insert',
-        table: 'music_entities'
+        field: 'url'
       })
     }
 
@@ -172,7 +175,18 @@ export const scrapeAndCreateEntityEffect = (
 
     const entityId = entity.id
     const inserted: SelectMusicEntityLink[] = []
+    if (source) {
+      const sourceLink = yield* addLinkEffect({
+        entityType,
+        entityId,
+        platform: source.platform,
+        url: source.url,
+        status: LINK_STATUS.VERIFIED
+      })
+      inserted.push(sourceLink)
+    }
     for (const link of result.links) {
+      if (link.platform === source?.platform) continue
       const row = yield* Effect.catch(
         addLinkEffect({
           entityType,
@@ -264,3 +278,40 @@ const hasUsableScrapeResult = (result: {
     result.entityMeta?.thumbnailUrl ||
     result.entityMeta?.isrc
   )
+
+function canonicalSourceLink(url: string): CanonicalSourceLink {
+  try {
+    const parsed = new URL(url)
+    const hostname = parsed.hostname.toLowerCase()
+    const segments = parsed.pathname.split('/').filter(Boolean)
+    if (hostname.endsWith('spotify.com') && segments.length >= 2) {
+      const [type, id] = segments
+      if ((type === 'track' || type === 'album' || type === 'playlist') && id) {
+        return { platform: 'spotify', url: `https://open.spotify.com/${type}/${id}` }
+      }
+    }
+    if (hostname === 'youtube.com' || hostname === 'www.youtube.com' || hostname === 'youtu.be') {
+      const id =
+        hostname === 'youtu.be'
+          ? segments[0]
+          : (parsed.searchParams.get('v') ?? (segments[0] === 'embed' ? segments[1] : undefined))
+      if (id) return { platform: 'youtube', url: `https://www.youtube.com/watch?v=${id}` }
+    }
+
+    parsed.hash = ''
+    return { platform: platformForHostname(hostname), url: parsed.toString() }
+  } catch {
+    return { platform: 'other', url }
+  }
+}
+
+function platformForHostname(hostname: string): MusicPlatform {
+  if (hostname.endsWith('bandcamp.com')) return 'bandcamp'
+  if (hostname.endsWith('soundcloud.com')) return 'soundcloud'
+  if (hostname.endsWith('music.apple.com')) return 'apple_music'
+  if (hostname.endsWith('youtube.com') || hostname === 'youtu.be') return 'youtube'
+  if (hostname.endsWith('tidal.com')) return 'tidal'
+  if (hostname.endsWith('deezer.com')) return 'deezer'
+  if (hostname.endsWith('amazon.com')) return 'amazon_music'
+  return 'other'
+}

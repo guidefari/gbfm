@@ -12,7 +12,7 @@ import type {
   SelectMusicPlaylistTrack,
   SelectMusicTrack
 } from '@/db/music-entity.schema'
-import type { DatabaseError, NotFoundError, SpotifyError } from '@/errors'
+import type { DatabaseError, NotFoundError, SpotifyError, ValidationError } from '@/errors'
 import { ConfigService as ConfigServiceTag } from '@/services/config.service'
 import { Database } from '@/db/layer'
 import {
@@ -303,7 +303,7 @@ export interface MusicEntityService {
       entity: SelectMusicArtist | SelectMusicAlbum | SelectMusicTrack | SelectMusicPlaylist
       links: SelectMusicEntityLink[]
     },
-    DatabaseError
+    DatabaseError | ValidationError
   >
   readonly rescrapeOdesliLinks: (
     entityType: ScrapeableMusicEntityType,

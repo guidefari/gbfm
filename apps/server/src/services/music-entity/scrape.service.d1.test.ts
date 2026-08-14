@@ -7,7 +7,7 @@ import {
   musicPlatformsTable,
   musicTracksTable
 } from '@/db/music-entity.schema'
-import { DatabaseError, NotFoundError } from '@/errors'
+import { NotFoundError, ValidationError } from '@/errors'
 import type {
   MusicLinkScraperService,
   MusicScrapeOptions,
@@ -15,6 +15,7 @@ import type {
 } from '@/services/music-link-scraper.service'
 import { MusicScraperError } from '@/services/music-link-scraper.service'
 import { db } from '@/test/d1'
+import { addLinkEffect } from './link.service'
 import { rescrapeOdesliLinksEffect, scrapeAndCreateEntityEffect } from './scrape.service'
 
 const emptyScraper: MusicLinkScraperService = {
@@ -51,7 +52,7 @@ describe('scrapeAndCreateEntityEffect', () => {
     )
 
     const error = Result.getOrThrow(Exit.findError(exit))
-    expect(error).toBeInstanceOf(DatabaseError)
+    expect(error).toBeInstanceOf(ValidationError)
     expect(error.message).toBe('Music URL resolution returned no metadata or links')
   })
 
@@ -75,6 +76,70 @@ describe('scrapeAndCreateEntityEffect', () => {
     expect(result.entity.id).toBe(id)
     expect(result.links).toHaveLength(1)
     expect(result.links[0]?.url).toBe(url)
+  })
+
+  test('returns the original entity when a resolved source URL is retried', async () => {
+    const sourceUrl = `https://open.spotify.com/track/${crypto.randomUUID()}?si=tracking`
+    const scraper: MusicLinkScraperService = {
+      scrape: () =>
+        Effect.succeed({
+          links: [
+            {
+              platform: 'youtube',
+              url: 'https://youtube.com/watch?v=resolved',
+              scrapedAt: new Date()
+            }
+          ],
+          entityMeta: { title: 'Resolved Track', artistName: 'Resolved Artist', type: 'song' }
+        }),
+      scrapeOdesli: () => Effect.succeed({ links: [] })
+    }
+
+    const first = await Effect.runPromise(
+      scrapeAndCreateEntityEffect(scraper, 'track', { url: sourceUrl }).pipe(
+        Effect.provideService(Database, db)
+      )
+    )
+    const second = await Effect.runPromise(
+      scrapeAndCreateEntityEffect(scraper, 'track', { url: sourceUrl }).pipe(
+        Effect.provideService(Database, db)
+      )
+    )
+
+    expect(second.entity.id).toBe(first.entity.id)
+    expect(second.links).toHaveLength(2)
+  })
+
+  test('refreshes scraped and verified timestamps when a link already exists', async () => {
+    const id = crypto.randomUUID()
+    const original = new Date('2024-01-01T00:00:00.000Z')
+    const refreshed = new Date('2025-01-01T00:00:00.000Z')
+    await db.insert(musicTracksTable).values({ id, title: 'Track', slug: id })
+    await Effect.runPromise(
+      addLinkEffect({
+        entityType: 'track',
+        entityId: id,
+        platform: 'youtube',
+        url: 'https://youtube.com/watch?v=old',
+        scrapedAt: original,
+        verifiedAt: original
+      }).pipe(Effect.provideService(Database, db))
+    )
+
+    const link = await Effect.runPromise(
+      addLinkEffect({
+        entityType: 'track',
+        entityId: id,
+        platform: 'youtube',
+        url: 'https://youtube.com/watch?v=new',
+        scrapedAt: refreshed,
+        verifiedAt: refreshed
+      }).pipe(Effect.provideService(Database, db))
+    )
+
+    expect(link.url).toBe('https://youtube.com/watch?v=new')
+    expect(link.scrapedAt).toEqual(refreshed)
+    expect(link.verifiedAt).toEqual(refreshed)
   })
 
   test('upserts Odesli provider links without changing entity metadata', async () => {
