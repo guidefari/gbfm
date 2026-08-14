@@ -1,19 +1,12 @@
-# [2.85.0](https://github.com/guidefari/gbfm/compare/v2.84.1...v2.85.0) (2026-08-14)
+# [2.85.0](https://github.com/guidefari/gbfm/compare/v2.84.1...v2.85.0) (2026-08-13)
 
 
 ### Bug Fixes
 
 * **dev:** proxy www dev server to the D1 worker without going cross-site ([830ae1c](https://github.com/guidefari/gbfm/commit/830ae1c62793cc092f63163408e27b6f102c3abc))
-* **infra:** restore R2 bucket CORS and port the QR PDF expiry sweep ([dca249e](https://github.com/guidefari/gbfm/commit/dca249e04c3ac6e74653352f4452199e1cc72875))
 * make ox tooling production-ready ([c3b14e6](https://github.com/guidefari/gbfm/commit/c3b14e6fa5443f07f87c43e7ebd38f869d819bc2))
 * **migrate:** baseline the migration ledger from Cloudflare's d1_migrations ([950e875](https://github.com/guidefari/gbfm/commit/950e875822c11fdccd7f106f30d4b8ec26c7e5f5))
 * **mobile:** satisfy anti-slop lint rules ([3ff99fe](https://github.com/guidefari/gbfm/commit/3ff99fe18de2b231bfb790424c5133c4aee099dd))
-* **music:** expose resolution unavailability ([8a8cf01](https://github.com/guidefari/gbfm/commit/8a8cf01d09c14a287d5b5899f21e235d17bcb4bf))
-* **music:** identify goosebumps.fm to MusicBrainz ([00ada0b](https://github.com/guidefari/gbfm/commit/00ada0b6979883cfdfd280484ad5b2eba7b1cbca))
-* **music:** make URL resolution idempotent ([58d730f](https://github.com/guidefari/gbfm/commit/58d730f92d46e8d5564f0b9e05c1c294ea38573c))
-* **music:** map resolution contention ([e6effb0](https://github.com/guidefari/gbfm/commit/e6effb097567c0da8b02002733eeb9ad1169492a))
-* **music:** recover stale resolution claims ([7dac630](https://github.com/guidefari/gbfm/commit/7dac630173a0452b8c1cdfd97bd5af568a337d12))
-* **music:** return bad request for unresolved links ([1ee388c](https://github.com/guidefari/gbfm/commit/1ee388c6e07073d85d3cc32c73d1667086f8485c))
 * **navigation:** persist replayed cursor moves ([b693976](https://github.com/guidefari/gbfm/commit/b693976bf5fe85051287fe143bb1ea5d4cdd9773))
 * restore anti-slop enforcement ([bcccd7c](https://github.com/guidefari/gbfm/commit/bcccd7c3b48b9f7ceb4eec5215e14712b9febb7d))
 * satisfy anti-slop lint in libraries ([617d810](https://github.com/guidefari/gbfm/commit/617d810dcb5eef1239bbe80f05d47548ce214d7e))
@@ -25,8 +18,6 @@
 * **server:** defer MDX compiler evaluation (OPS-257) ([754779a](https://github.com/guidefari/gbfm/commit/754779ae1aef3e6b5f0cb45bbfc72f16c3e2cda7))
 * **server:** guard favorite writes against D1 concurrent-insert races (OPS-258) ([36ac95c](https://github.com/guidefari/gbfm/commit/36ac95cc62b96cb7d4ea89b6f6fd22cb0344e027))
 * **server:** harden D1 production migration (OPS-249) ([840db8f](https://github.com/guidefari/gbfm/commit/840db8f677df621a5c0bb6a779260ed24ff4c9df))
-* **server:** harden music resolution persistence ([936308b](https://github.com/guidefari/gbfm/commit/936308b51bd9335c837dc5e9454fdaef2d831cf6))
-* **server:** harden music URL resolution ([5e78fd5](https://github.com/guidefari/gbfm/commit/5e78fd5116dde05455d308fa5608f337768426c1))
 * **server:** parse Postgres naive timestamps as UTC in the D1 migration script (OPS-249) ([52a0a1c](https://github.com/guidefari/gbfm/commit/52a0a1c1c25bf7eab4ee61d0383c30d9d5c4a3b0))
 * **server:** repair 0013 migration so it replays on a fresh chain (OPS-252) ([a7c0b77](https://github.com/guidefari/gbfm/commit/a7c0b774e50a13f4c7dafa1240b0ac30db1dec7d))
 * **server:** return null, not [], for entities with no tags or genres (OPS-249) ([0625214](https://github.com/guidefari/gbfm/commit/0625214f1c3eb937ed7eb30fff2de6920413ec83))
@@ -44,7 +35,6 @@
 * **worker:** bind the R2 signing account (OPS-244) ([f7ed96c](https://github.com/guidefari/gbfm/commit/f7ed96c4d837e2c2d66694ed9054f256aae3e81a))
 * **worker:** split scheduled jobs by cron (OPS-244) ([09a12f3](https://github.com/guidefari/gbfm/commit/09a12f31067a453041b9c2c6e1dd3a22d34f4170))
 * **worker:** use native R2 storage (OPS-244) ([563af34](https://github.com/guidefari/gbfm/commit/563af3479f0d7dd9519a9821bc7fbbc38b4fb902))
-* **www:** add music resolution retry UX ([7281839](https://github.com/guidefari/gbfm/commit/72818395268372770ff3e208d3e538b5563ae70e))
 * **www:** satisfy anti-slop lint rules ([57ae96c](https://github.com/guidefari/gbfm/commit/57ae96cc83b6049706a478442e65f1c530d38b91))
 
 
@@ -61,12 +51,10 @@
 * **infra:** port www, redirects and auth URL into Alchemy ([665b837](https://github.com/guidefari/gbfm/commit/665b8375e2bc653ebcd08c86cf11274860d9727a))
 * **infra:** serve goosebumps.fm from the Alchemy site worker ([d4b0545](https://github.com/guidefari/gbfm/commit/d4b0545efca87e8b25e553fbd376afb3e730c948))
 * **migration:** target deployed D1 from the pg import ([b1e114c](https://github.com/guidefari/gbfm/commit/b1e114c1e144912656d990c639272573a1b629d8))
-* **music:** add admin link rescrape ([2e8926a](https://github.com/guidefari/gbfm/commit/2e8926a053fcd56a8be1922c89e59d5f77d545b0))
 * **navigation:** expose effective forward destination ([0495d25](https://github.com/guidefari/gbfm/commit/0495d2537d9f1a4991f4b08ae00c3ba6fbc728e4))
 * **navigation:** show pending route feedback ([1d96140](https://github.com/guidefari/gbfm/commit/1d961401fe93edc9cc80424918807ad7a428c072))
 * **server:** add Postgres to D1 data migration tooling (OPS-249) ([0dcac42](https://github.com/guidefari/gbfm/commit/0dcac42beecadc727c4a2f6d60c78a026d4014a9))
 * **server:** read secrets from the Cloudflare Secrets Store ([7ba398a](https://github.com/guidefari/gbfm/commit/7ba398ae14c5c5dae25f6270a421984a8b68b5bb))
-* **server:** rescrape Odesli entity links ([d68f150](https://github.com/guidefari/gbfm/commit/d68f1509a76209ad511fee5f402e260519616729))
 * **server:** run the Bluesky sync and retention sweep on a Worker cron ([b70fefb](https://github.com/guidefari/gbfm/commit/b70fefb2ddbfaff242fd5901706ecf12323ea265))
 * **vps:** add ReminderQueue capability and idempotent claim (OPS-248) ([63fdbb1](https://github.com/guidefari/gbfm/commit/63fdbb1fe5494ac549bfe2200df3256928ae7903))
 * **vps:** add SitemapCache KV-backed capability (OPS-248) ([4421c7c](https://github.com/guidefari/gbfm/commit/4421c7c02f8b86b04c068b28e9bc10786d20c003))
