@@ -311,7 +311,7 @@ const userContentR2Bucket = new sst.cloudflare.Bucket('UserContentR2', { /* name
 const mixesR2Bucket = new sst.cloudflare.Bucket('MixesR2', { /* name */ })
 
 const cdnRouterWorker = new sst.cloudflare.Worker('CdnRouterWorker', {
-  handler: 'workers/cdn-router/src/index.ts',
+  handler: 'apps/cdn-router/src/index.ts',
   domain: `r2-cdn.${domain}`,
   transform: {
     worker: (args) => {
@@ -348,7 +348,7 @@ The fetch handler preserves, per I2: GET/HEAD; `Range` → 206 with `Content-Ran
 | `ObjectStoreClient` | client construction, endpoint, credential unwrapping | `S3Client` beyond `S3Service` |
 | `S3Service` | operation semantics, `S3Error` translation, spans | AWS SDK command types to handlers |
 | `ConfigService.storage` | provider selection, parsed and refined config | raw credentials into logs/errors/spans |
-| `workers/cdn-router` | path→bucket routing, HTTP response semantics | any binding to a non-public bucket |
+| `apps/cdn-router` | path→bucket routing, HTTP response semantics | any binding to a non-public bucket |
 | `infra/bucket.ts` | all Cloudflare + AWS resource declarations | resource ownership to any non-SST tool (I7) |
 
 `Redacted.value` is unwrapped **only** inside `ObjectStoreClientLayer`.
@@ -455,10 +455,10 @@ Effect.annotateCurrentSpan('storage.provider', store.provider)
 | `apps/vps/src/services/storage/object-store-client.ts` | Single client construction, credential unwrapping |
 | `apps/vps/src/services/storage/object-store-client.test.ts` | Config→client mapping, refinement rejection |
 | `apps/vps/src/services/s3.service.contract.test.ts` | Live contract tests |
-| `workers/cdn-router/src/index.ts` | Worker fetch handler |
-| `workers/cdn-router/src/route.ts` | Pure `matchRoute` |
-| `workers/cdn-router/src/route.test.ts` | Routing unit tests |
-| `workers/cdn-router/test/cdn-router.test.ts` | `vitest-pool-workers` R2 semantics |
+| `apps/cdn-router/src/index.ts` | Worker fetch handler |
+| `apps/cdn-router/src/route.ts` | Pure `matchRoute` |
+| `apps/cdn-router/src/route.test.ts` | Routing unit tests |
+| `apps/cdn-router/test/cdn-router.test.ts` | `vitest-pool-workers` R2 semantics |
 | `scripts/inventory-buckets.ts` | Read-only inventory |
 | `scripts/verify-r2-parity.ts` | Post-copy reconciliation |
 | `docs/migrations/evidence/` | Inventory + PlanetScale backup-ownership evidence |
