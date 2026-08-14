@@ -12,5 +12,5 @@ export const NoopAnalyticsLayer = Layer.succeed(Analytics, {
   track: () => logLocalOnly('track'),
   identify: () => logLocalOnly('identify'),
   page: () => logLocalOnly('page'),
-  reset: () => logLocalOnly('reset')
+  reset: logLocalOnly('reset')
 })

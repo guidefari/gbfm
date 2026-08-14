@@ -54,12 +54,12 @@ export function TweetReplyCard({
         aria-label={`Open reply by ${reply.creators?.[0]?.name ?? 'author'}`}
         onClick={(event) => {
           if (isInteractiveTarget(event)) return
-          openReply()
+          void openReply()
         }}
         onKeyDown={(event) => {
           if (event.key !== 'Enter') return
           if (event.target !== event.currentTarget) return
-          openReply()
+          void openReply()
         }}
         className={cn(
           'cursor-pointer space-y-2 rounded-lg border border-border/40 bg-card p-3 transition-colors hover:bg-card/80',

@@ -1,3 +1,4 @@
+/* oxlint-disable effecttsgo/strict-effect-provide -- Each test invokes Effect.runPromise, making it an Effect application entry point. */
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
 import { describe, expect, test } from 'vitest'
@@ -27,11 +28,11 @@ describe('MixUploadDraftStorage in-memory', () => {
       MixUploadDraftStorageInMemory,
       Effect.gen(function* () {
         const storage = yield* MixUploadDraftStorage
-        const beforeWrite = yield* storage.read()
+        const beforeWrite = yield* storage.read
         yield* storage.write(draft)
-        const afterWrite = yield* storage.read()
-        yield* storage.clear()
-        const afterClear = yield* storage.read()
+        const afterWrite = yield* storage.read
+        yield* storage.clear
+        const afterClear = yield* storage.read
         return { beforeWrite, afterWrite, afterClear }
       })
     )

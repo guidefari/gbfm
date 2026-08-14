@@ -75,8 +75,8 @@ export function ShowMetadataManager({ show }: ShowMetadataManagerProps) {
       }),
     onSuccess: () => {
       setOpen(false)
-      queryClient.invalidateQueries({ queryKey: ['admin', 'shows'] })
-      router.invalidate()
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'shows'] })
+      void router.invalidate()
       toast({ title: 'Show updated' })
     },
     onError: (err: Error) => {

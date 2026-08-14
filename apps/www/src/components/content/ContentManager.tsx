@@ -88,9 +88,9 @@ export function ContentManager({
   })
 
   const invalidatePostQueries = () => {
-    queryClient.invalidateQueries({ queryKey: ['admin', 'posts', 'post'] })
-    queryClient.invalidateQueries({ queryKey: ['admin', 'posts', 'micro'] })
-    queryClient.invalidateQueries({ queryKey: ['posts', 'editorials'] })
+    void queryClient.invalidateQueries({ queryKey: ['admin', 'posts', 'post'] })
+    void queryClient.invalidateQueries({ queryKey: ['admin', 'posts', 'micro'] })
+    void queryClient.invalidateQueries({ queryKey: ['posts', 'editorials'] })
   }
 
   const updateMixMutation = useMutation({
@@ -110,8 +110,8 @@ export function ContentManager({
         })
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'mixes'] })
-      queryClient.invalidateQueries({ queryKey: ['audio', 'mix'] })
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'mixes'] })
+      void queryClient.invalidateQueries({ queryKey: ['audio', 'mix'] })
       setEditDialog({
         open: false,
         mix: null,

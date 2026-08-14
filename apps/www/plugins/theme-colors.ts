@@ -14,17 +14,15 @@
 import type { Plugin } from 'vite'
 import { dark, light } from '../../../packages/theme/src/tokens/shadcn.ts'
 
+export const transformThemeColors = (html: string) =>
+  html
+    .replace(/<!-- theme-color:dark -->([^<]*)<!-- \/theme-color:dark -->/g, dark.backgroundHex)
+    .replace(/<!-- theme-color:light -->([^<]*)<!-- \/theme-color:light -->/g, light.backgroundHex)
+
 export function themeColorsPlugin(): Plugin {
   return {
     name: 'theme-colors',
     enforce: 'pre',
-    transformIndexHtml(html) {
-      return html
-        .replace(/<!-- theme-color:dark -->([^<]*)<!-- \/theme-color:dark -->/g, dark.backgroundHex)
-        .replace(
-          /<!-- theme-color:light -->([^<]*)<!-- \/theme-color:light -->/g,
-          light.backgroundHex
-        )
-    }
+    transformIndexHtml: transformThemeColors
   }
 }

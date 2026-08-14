@@ -51,7 +51,7 @@ function ResetPasswordPage() {
     },
     onSuccess: async () => {
       await refetchSession()
-      navigate({ to: '/' })
+      void navigate({ to: '/' })
     }
   })
 

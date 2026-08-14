@@ -39,9 +39,9 @@ export function useBlueskySync() {
   const account = accounts.data?.[0]
 
   const invalidateImported = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: accountsQueryKey })
-    queryClient.invalidateQueries({ queryKey: ['admin', 'bluesky', 'imported'] })
-    queryClient.invalidateQueries({ queryKey: ['admin', 'posts'] })
+    void queryClient.invalidateQueries({ queryKey: accountsQueryKey })
+    void queryClient.invalidateQueries({ queryKey: ['admin', 'bluesky', 'imported'] })
+    void queryClient.invalidateQueries({ queryKey: ['admin', 'posts'] })
   }, [queryClient])
 
   const connect = useMutation({
@@ -65,7 +65,7 @@ export function useBlueskySync() {
     },
     onError: (err) => {
       setError(err.message)
-      captureException(err, { endpoint: 'bluesky.syncBluesky' })
+      Effect.runSync(captureException(err, { endpoint: 'bluesky.syncBluesky' }))
     }
   })
 
@@ -94,7 +94,7 @@ export function useBlueskySync() {
   })
 
   useEffect(() => {
-    if (!account || !runId) return
+    if (!account || !runId) return undefined
 
     let cancelled = false
 

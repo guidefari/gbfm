@@ -44,8 +44,8 @@ export const MinimalCard: React.FC<Props> = ({
 }) => {
   const isShareEnabled = useFeatureFlag('ui.share')
 
-  const constructUrl = () => {
-    if (!downloadUrl) return
+  const constructUrl = (): string | undefined => {
+    if (!downloadUrl) return undefined
     const safeTitle = encodeURIComponent(title)
     const safeDlUrl = encodeURIComponent(downloadUrl)
     return `/api/dl?fileUrl=${safeDlUrl}&title=${safeTitle}`
@@ -70,7 +70,7 @@ export const MinimalCard: React.FC<Props> = ({
     }
   }
 
-  const artistsAndTitle = `${artists ?? null} ${' - '} ${title ?? null}`
+  const artistsAndTitle = `${artists ?? null}  -  ${title ?? null}`
 
   return (
     <div

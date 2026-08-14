@@ -1,5 +1,5 @@
 import { SpotifyBrowser } from '@spotify-effect/browser'
-import { Effect, Layer, Scope } from 'effect'
+import { Data, Effect, Layer, Scope } from 'effect'
 import { env } from '@/env'
 import { getSpotifyRedirectUri } from '@/lib/spotify-pkce'
 import { type Analytics, SentryAnalyticsLayer, NoopAnalyticsLayer } from '@/services/analytics'
@@ -57,6 +57,10 @@ type AppServices =
   | MixUploadDraftStorage
   | Logger
 
+class AppEffectFailure extends Data.TaggedError('AppEffectFailure')<{
+  readonly cause: unknown
+}> {}
+
 const appScope = Scope.makeUnsafe()
 const appContextPromise = Effect.runPromise(Layer.buildWithScope(mainLayer, appScope))
 
@@ -72,15 +76,17 @@ export const RuntimeClient = {
   runPromise: runAppEffect
 }
 
-const useStorage = <A, E>(operation: (storage: PlayerStorage['Service']) => Effect.Effect<A, E>) =>
+const useStorage = <A, E>(
+  operation: (storage: PlayerStorage['Service']) => Effect.Effect<A, E>
+): Effect.Effect<A, AppEffectFailure> =>
   Effect.tryPromise({
     try: () => runAppEffect(Effect.flatMap(PlayerStorage, operation)),
-    catch: (error) => error
+    catch: (cause) => new AppEffectFailure({ cause })
   })
 
 /** Queue persistence bound to the app context, for the queue atom, which runs
  *  outside React and so cannot use the player's per-mount runtime. */
 export const queuePersistence = {
-  loadQueue: () => useStorage((storage) => storage.loadQueue()),
+  loadQueue: () => useStorage((storage) => storage.loadQueue),
   saveQueue: (queue: PersistedQueueType) => useStorage((storage) => storage.saveQueue(queue))
 }

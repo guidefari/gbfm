@@ -4,7 +4,7 @@ export function useCooldown(seconds: number) {
   const [remaining, setRemaining] = useState(0)
 
   useEffect(() => {
-    if (remaining <= 0) return
+    if (remaining <= 0) return undefined
     const id = setTimeout(() => setRemaining((s) => s - 1), 1000)
     return () => clearTimeout(id)
   }, [remaining])

@@ -20,7 +20,7 @@ export function NavAccountFooter({ onNavigate }: { onNavigate?: () => void }) {
     onNavigate?.()
     await signOut()
     resetUI()
-    navigate({ to: '/' })
+    void navigate({ to: '/' })
   }, [onNavigate, resetUI, navigate])
 
   if (!isAuthenticated) {

@@ -1,12 +1,10 @@
-import {
-  IntentToken,
-  Slug,
-  type NavigateInput,
-  type NavigationResultResponse
-} from '@gbfm/api/navigation'
-import { type Effect, Schema } from 'effect'
+import { IntentToken, Slug, type NavigateInput } from '@gbfm/api/navigation'
+import { Schema } from 'effect'
+import type { ApiClient } from '@/lib/api-client'
 
-type NavigateMicroPosts = (input: NavigateInput) => Effect.Effect<NavigationResultResponse, unknown>
+type NavigateMicroPostsRequest = ApiClient['navigation']['navigateMicroPosts']
+
+export type NavigateMicroPosts = (input: NavigateInput) => ReturnType<NavigateMicroPostsRequest>
 
 type CommandInput = {
   readonly from: string

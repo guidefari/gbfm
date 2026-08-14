@@ -290,7 +290,7 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
   }
 
   const handleEdit = () => {
-    navigate({
+    void navigate({
       to: '/mix-upload',
       search: {
         edit: mix.slug,

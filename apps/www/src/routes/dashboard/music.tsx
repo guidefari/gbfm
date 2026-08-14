@@ -129,7 +129,7 @@ function LabelsTab() {
         slug: `untitled-label-${Date.now()}`,
         content: ''
       })
-      navigate({
+      void navigate({
         to: '/dashboard/music-entity/$entityType/$id',
         params: { entityType: 'label', id: label.id }
       })

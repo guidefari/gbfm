@@ -1,3 +1,4 @@
+/* oxlint-disable effecttsgo/strict-effect-provide -- Each test invokes Effect.runPromise, making it an Effect application entry point. */
 import { Effect } from 'effect'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
@@ -86,7 +87,7 @@ describe('MediaSessionService', () => {
       Effect.gen(function* () {
         const media = yield* MediaSessionService
         yield* media.setActionHandlers(null)
-        yield* media.clearMetadata()
+        yield* media.clearMetadata
       })
     )
 
@@ -103,7 +104,7 @@ describe('MediaSessionService', () => {
         Effect.gen(function* () {
           const media = yield* MediaSessionService
           yield* media.setMetadata('Title', ['Artist'])
-          yield* media.clearMetadata()
+          yield* media.clearMetadata
           yield* media.setPlaybackState('playing')
           yield* media.setPositionState(1, 0)
           yield* media.setActionHandlers(null)

@@ -51,6 +51,8 @@ const readStatus = (
 
 const makeHtmlAudioEngine = (audio: HtmlAudioPort) =>
   Effect.gen(function* () {
+    const effectContext = yield* Effect.context<never>()
+
     const mediaSession = yield* MediaSessionService
     let justFinished = false
     let sourceGeneration: number | null = null
@@ -58,7 +60,7 @@ const makeHtmlAudioEngine = (audio: HtmlAudioPort) =>
     // DOM listeners are plain callbacks, so mediaSession effects are run
     // detached rather than yielded.
     const runDetached = (effect: Effect.Effect<void>) => {
-      Effect.runFork(effect)
+      Effect.runForkWith(effectContext)(effect)
     }
 
     const changes = Stream.callback<EngineStatus>((queue) =>
@@ -166,7 +168,7 @@ const makeHtmlAudioEngine = (audio: HtmlAudioPort) =>
 
       setNowPlaying: (metadata: NowPlayingMetadata | null) =>
         metadata === null
-          ? mediaSession.clearMetadata()
+          ? mediaSession.clearMetadata
           : mediaSession.setMetadata(
               metadata.title,
               metadata.artist ? [metadata.artist] : [],

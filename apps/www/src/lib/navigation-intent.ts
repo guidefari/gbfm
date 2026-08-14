@@ -1,8 +1,14 @@
-import { Effect, Fiber } from 'effect'
+import { Data, Effect, Fiber } from 'effect'
 
-let currentIntent: Fiber.Fiber<void, unknown> | null = null
+class NavigationIntentFailure extends Data.TaggedError('NavigationIntentFailure')<{
+  readonly cause: unknown
+}> {}
 
-export const runNavigationIntent = (intent: Effect.Effect<void, unknown>) => {
+let currentIntent: Fiber.Fiber<void, NavigationIntentFailure> | null = null
+
+export const runNavigationIntent = <E>(intent: Effect.Effect<void, E>) => {
   if (currentIntent) Effect.runFork(Fiber.interrupt(currentIntent))
-  currentIntent = Effect.runFork(intent)
+  currentIntent = Effect.runFork(
+    intent.pipe(Effect.mapError((cause) => new NavigationIntentFailure({ cause })))
+  )
 }

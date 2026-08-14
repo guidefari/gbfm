@@ -83,7 +83,7 @@ function ArtistDetailPage({ id }: { id: string }) {
     try {
       await del.mutateAsync(id)
       toast({ title: 'Artist deleted' })
-      navigate({ to: '/dashboard/music' })
+      void navigate({ to: '/dashboard/music' })
     } catch (e) {
       toast({
         title: 'Failed to delete artist',
@@ -174,7 +174,7 @@ function AlbumDetailPage({ id }: { id: string }) {
     if (!confirm(`Delete album "${data?.title}"? This cannot be undone.`)) return
     await del.mutateAsync(id)
     toast({ title: 'Album deleted' })
-    navigate({ to: '/dashboard/music' })
+    void navigate({ to: '/dashboard/music' })
   }
 
   return (
@@ -254,7 +254,7 @@ function TrackDetailPage({ id }: { id: string }) {
     if (!confirm(`Delete track "${data?.title}"? This cannot be undone.`)) return
     await del.mutateAsync(id)
     toast({ title: 'Track deleted' })
-    navigate({ to: '/dashboard/music' })
+    void navigate({ to: '/dashboard/music' })
   }
 
   return (
@@ -324,7 +324,7 @@ function LabelDetailPage({ id }: { id: string }) {
     try {
       await del.mutateAsync(id)
       toast({ title: 'Label deleted' })
-      navigate({ to: '/dashboard/music' })
+      void navigate({ to: '/dashboard/music' })
     } catch (error) {
       toast({
         title: 'Failed to delete label',

@@ -601,7 +601,7 @@ export function TweetCapturePage() {
         description: `Saved as ${savedPost.slug}`
       })
 
-      router.navigate({ to: '/tweet/$slug', params: { slug: savedPost.slug } })
+      void router.navigate({ to: '/tweet/$slug', params: { slug: savedPost.slug } })
     },
     onError: (error) => {
       toast({

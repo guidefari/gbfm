@@ -80,7 +80,7 @@ export function PlaylistEditor({ playlist }: Props) {
   }, [tracksQuery.data])
 
   useEffect(() => {
-    if (!tracksQuery.data) return
+    if (!tracksQuery.data) return undefined
 
     const spotifyTrackIds = Array.from(
       new Set(
@@ -95,7 +95,7 @@ export function PlaylistEditor({ playlist }: Props) {
     )
 
     let active = true
-    runAppEffect(checkSavedTracksEffect(spotifyTrackIds))
+    void runAppEffect(checkSavedTracksEffect(spotifyTrackIds))
       .then((results) => {
         if (active) setSavedSpotifyTrackIds(results)
       })
@@ -143,7 +143,7 @@ export function PlaylistEditor({ playlist }: Props) {
         description: error.message,
         variant: 'destructive'
       })
-      tracksQuery.refetch()
+      void tracksQuery.refetch()
     }
   })
 
@@ -153,7 +153,7 @@ export function PlaylistEditor({ playlist }: Props) {
         method: 'DELETE'
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: ['playlist-tracks', playlist.id]
       })
     },
@@ -174,7 +174,7 @@ export function PlaylistEditor({ playlist }: Props) {
       }),
     onSuccess: () => {
       setSpotifyTrackUrl('')
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: ['playlist-tracks', playlist.id]
       })
       toast({ title: 'Track added' })
@@ -218,7 +218,7 @@ export function PlaylistEditor({ playlist }: Props) {
         body: JSON.stringify(data)
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['playlists'] })
+      void queryClient.invalidateQueries({ queryKey: ['playlists'] })
       toast({ title: 'Playlist updated' })
     },
     onError: (error: Error) => {

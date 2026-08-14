@@ -617,7 +617,7 @@ export function useCreateMicroPostReply(parentSlug: string) {
       )
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: microPostRepliesQueryKey(parentSlug) })
+      void queryClient.invalidateQueries({ queryKey: microPostRepliesQueryKey(parentSlug) })
     }
   })
 }
@@ -898,7 +898,7 @@ export function useReplaceSocialLinks() {
       return result.map((link) => ({ ...link }))
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user', 'social-links'] })
+      void queryClient.invalidateQueries({ queryKey: ['user', 'social-links'] })
     }
   })
 }
@@ -940,7 +940,7 @@ export function useReplaceAdminUserSocialLinks() {
       return result.map((link) => ({ ...link }))
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: ['admin', 'user-social-links', variables.userId]
       })
     }
@@ -1232,7 +1232,7 @@ export function useAddFavorite() {
       )
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: favoritesQueryKey() })
+      void queryClient.invalidateQueries({ queryKey: favoritesQueryKey() })
     }
   })
 
@@ -1262,7 +1262,7 @@ export function useRemoveFavorite() {
       )
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: favoritesQueryKey() })
+      void queryClient.invalidateQueries({ queryKey: favoritesQueryKey() })
     }
   })
 
@@ -1292,7 +1292,7 @@ export function useAddShowFavorite() {
       )
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: favoritesQueryKey() })
+      void queryClient.invalidateQueries({ queryKey: favoritesQueryKey() })
     }
   })
 
@@ -1322,7 +1322,7 @@ export function useRemoveShowFavorite() {
       )
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: favoritesQueryKey() })
+      void queryClient.invalidateQueries({ queryKey: favoritesQueryKey() })
     }
   })
 
@@ -1559,7 +1559,7 @@ export function useSubscribeToShow() {
       return { ...result, createdAt: new Date(result.createdAt) }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userSubscriptionsQueryKey() })
+      void queryClient.invalidateQueries({ queryKey: userSubscriptionsQueryKey() })
     }
   })
 
@@ -1585,7 +1585,7 @@ export function useUnsubscribeFromShow() {
       )
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userSubscriptionsQueryKey() })
+      void queryClient.invalidateQueries({ queryKey: userSubscriptionsQueryKey() })
     }
   })
 
@@ -2032,9 +2032,9 @@ export function useUpdateAdminLabel() {
       )
     },
     onSuccess: (_, { id }) => {
-      qc.invalidateQueries({ queryKey: ['admin', 'labels', id] })
-      qc.invalidateQueries({ queryKey: ['admin', 'labels'] })
-      qc.invalidateQueries({ queryKey: ['labels'] })
+      void qc.invalidateQueries({ queryKey: ['admin', 'labels', id] })
+      void qc.invalidateQueries({ queryKey: ['admin', 'labels'] })
+      void qc.invalidateQueries({ queryKey: ['labels'] })
     }
   })
 }
@@ -2047,9 +2047,9 @@ export function useDeleteAdminLabel() {
       await Effect.runPromise(client.music.deleteLabel({ params: { id } }))
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'labels'] })
-      qc.invalidateQueries({ queryKey: ['admin', 'affiliations'] })
-      qc.invalidateQueries({ queryKey: ['labels'] })
+      void qc.invalidateQueries({ queryKey: ['admin', 'labels'] })
+      void qc.invalidateQueries({ queryKey: ['admin', 'affiliations'] })
+      void qc.invalidateQueries({ queryKey: ['labels'] })
     }
   })
 }
@@ -2119,8 +2119,8 @@ export function useUpdateAdminArtist() {
       return mapMusicArtist(artist)
     },
     onSuccess: (_, { id }) => {
-      qc.invalidateQueries({ queryKey: ['admin', 'artists', id] })
-      qc.invalidateQueries({ queryKey: ['admin', 'artists'] })
+      void qc.invalidateQueries({ queryKey: ['admin', 'artists', id] })
+      void qc.invalidateQueries({ queryKey: ['admin', 'artists'] })
     }
   })
 }
@@ -2139,8 +2139,8 @@ export function useDeleteAdminArtist() {
       )
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'artists'] })
-      qc.invalidateQueries({ queryKey: ['admin', 'affiliations'] })
+      void qc.invalidateQueries({ queryKey: ['admin', 'artists'] })
+      void qc.invalidateQueries({ queryKey: ['admin', 'affiliations'] })
     }
   })
 }
@@ -2169,8 +2169,8 @@ export function useUpdateAdminAlbum() {
         body: JSON.stringify(data)
       }),
     onSuccess: (_, { id }) => {
-      qc.invalidateQueries({ queryKey: ['admin', 'albums', id] })
-      qc.invalidateQueries({ queryKey: ['admin', 'albums'] })
+      void qc.invalidateQueries({ queryKey: ['admin', 'albums', id] })
+      void qc.invalidateQueries({ queryKey: ['admin', 'albums'] })
     }
   })
 }
@@ -2180,8 +2180,8 @@ export function useDeleteAdminAlbum() {
   return useMutation({
     mutationFn: (id: string) => fetcher(apiUrl(`/music/albums/${id}`), { method: 'DELETE' }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'albums'] })
-      qc.invalidateQueries({ queryKey: ['admin', 'affiliations'] })
+      void qc.invalidateQueries({ queryKey: ['admin', 'albums'] })
+      void qc.invalidateQueries({ queryKey: ['admin', 'affiliations'] })
     }
   })
 }
@@ -2239,9 +2239,11 @@ const invalidateArtistAffiliations = (
   labelId: string,
   artistId: string
 ) => {
-  queryClient.invalidateQueries({ queryKey: affiliationQueryKey('label', labelId, 'artists') })
-  queryClient.invalidateQueries({ queryKey: affiliationQueryKey('artist', artistId, 'labels') })
-  queryClient.invalidateQueries({ queryKey: ['label'] })
+  void queryClient.invalidateQueries({ queryKey: affiliationQueryKey('label', labelId, 'artists') })
+  void queryClient.invalidateQueries({
+    queryKey: affiliationQueryKey('artist', artistId, 'labels')
+  })
+  void queryClient.invalidateQueries({ queryKey: ['label'] })
 }
 
 const invalidateAlbumAffiliations = (
@@ -2249,9 +2251,9 @@ const invalidateAlbumAffiliations = (
   labelId: string,
   albumId: string
 ) => {
-  queryClient.invalidateQueries({ queryKey: affiliationQueryKey('label', labelId, 'albums') })
-  queryClient.invalidateQueries({ queryKey: affiliationQueryKey('album', albumId, 'labels') })
-  queryClient.invalidateQueries({ queryKey: ['label'] })
+  void queryClient.invalidateQueries({ queryKey: affiliationQueryKey('label', labelId, 'albums') })
+  void queryClient.invalidateQueries({ queryKey: affiliationQueryKey('album', albumId, 'labels') })
+  void queryClient.invalidateQueries({ queryKey: ['label'] })
 }
 
 export function useAffiliateArtistWithLabel() {
@@ -2318,8 +2320,8 @@ export function useUpdateAdminTrack() {
         body: JSON.stringify(data)
       }),
     onSuccess: (_, { id }) => {
-      qc.invalidateQueries({ queryKey: ['admin', 'tracks', id] })
-      qc.invalidateQueries({ queryKey: ['admin', 'tracks'] })
+      void qc.invalidateQueries({ queryKey: ['admin', 'tracks', id] })
+      void qc.invalidateQueries({ queryKey: ['admin', 'tracks'] })
     }
   })
 }
@@ -2570,7 +2572,7 @@ export function useCreateMusicReminder() {
       )
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: musicRemindersQueryKey() })
+      void queryClient.invalidateQueries({ queryKey: musicRemindersQueryKey() })
     }
   })
 }
@@ -2591,7 +2593,7 @@ export function useDeleteMusicReminder() {
       )
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: musicRemindersQueryKey() })
+      void queryClient.invalidateQueries({ queryKey: musicRemindersQueryKey() })
     }
   })
 }

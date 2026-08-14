@@ -23,8 +23,10 @@ const vpsProxy = {
   changeOrigin: true
 }
 
-const isDocumentRequest = (req: IncomingMessage) =>
-  typeof req.headers.accept === 'string' && req.headers.accept.includes('text/html')
+const isDocumentRequest = (req: IncomingMessage) => {
+  const { accept } = req.headers
+  return !Array.isArray(accept) && (accept?.includes('text/html') ?? false)
+}
 
 const authProxy = {
   ...vpsProxy,

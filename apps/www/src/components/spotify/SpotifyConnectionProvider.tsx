@@ -102,10 +102,7 @@ export function SpotifyConnectionProvider({ children }: { children: ReactNode })
 
     await runAppEffect(
       startSpotifyPkceLoginEffect(SPOTIFY_WEB_SCOPES, getSpotifyRedirectUri()).pipe(
-        Effect.map((url) => window.location.assign(url)),
-        Effect.catch((e: SpotifyRequestError) =>
-          Effect.sync(() => setError(spotifyErrorMessage(e)))
-        )
+        Effect.map((url) => window.location.assign(url))
       )
     ).finally(() => setIsConnecting(false))
   }, [])

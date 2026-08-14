@@ -21,7 +21,7 @@ const ProfileAvatar = () => {
   const handleSignOut = async () => {
     await signOut()
     resetUI()
-    navigate({ to: '/' })
+    void navigate({ to: '/' })
   }
 
   return (

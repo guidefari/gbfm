@@ -25,7 +25,7 @@ function ShowsListPage() {
 
   useEffect(() => {
     if (data.length > 0 && !selectedSlug) {
-      navigate({
+      void navigate({
         to: '.',
         search: { show: data[0].slug },
         replace: true

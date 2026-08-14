@@ -14,7 +14,7 @@ export interface MediaSessionHandlers {
 
 export interface MediaSessionServiceContract {
   setMetadata: (title: string, artists: string[], artwork?: string) => Effect.Effect<void>
-  clearMetadata: () => Effect.Effect<void>
+  clearMetadata: Effect.Effect<void>
   setPlaybackState: (state: 'playing' | 'paused' | 'none') => Effect.Effect<void>
   setPositionState: (duration: number, position: number) => Effect.Effect<void>
   setActionHandlers: (handlers: MediaSessionHandlers | null) => Effect.Effect<void>
@@ -38,12 +38,11 @@ export const MediaSessionServiceLayer = Layer.sync(MediaSessionService, () => ({
       })
     }),
 
-  clearMetadata: () =>
-    Effect.sync(() => {
-      if (!hasMediaSession()) return
-      navigator.mediaSession.metadata = null
-      navigator.mediaSession.playbackState = 'none'
-    }),
+  clearMetadata: Effect.sync(() => {
+    if (!hasMediaSession()) return
+    navigator.mediaSession.metadata = null
+    navigator.mediaSession.playbackState = 'none'
+  }),
 
   setPlaybackState: (state: 'playing' | 'paused' | 'none') =>
     Effect.sync(() => {
@@ -95,7 +94,7 @@ export const MediaSessionServiceLayer = Layer.sync(MediaSessionService, () => ({
 export const setMetadata = (title: string, artists: string[], artwork?: string) =>
   Effect.andThen(MediaSessionService, (s) => s.setMetadata(title, artists, artwork))
 
-export const clearMetadata = () => Effect.andThen(MediaSessionService, (s) => s.clearMetadata())
+export const clearMetadata = Effect.andThen(MediaSessionService, (s) => s.clearMetadata)
 
 export const setPlaybackState = (state: 'playing' | 'paused' | 'none') =>
   Effect.andThen(MediaSessionService, (s) => s.setPlaybackState(state))
@@ -108,7 +107,7 @@ export const setActionHandlers = (handlers: MediaSessionHandlers | null) =>
 
 export const MediaSessionServiceTest = Layer.succeed(MediaSessionService, {
   setMetadata: (_title: string, _artists: string[], _artwork?: string) => Effect.void,
-  clearMetadata: () => Effect.void,
+  clearMetadata: Effect.void,
   setPlaybackState: (_state: 'playing' | 'paused' | 'none') => Effect.void,
   setPositionState: (_duration: number, _position: number) => Effect.void,
   setActionHandlers: (_handlers: MediaSessionHandlers | null) => Effect.void

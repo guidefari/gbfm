@@ -15,7 +15,7 @@ export function useAuthGuard(contentType: ContentType = 'mix') {
         open(contentType, () => action())
         return
       }
-      action()
+      void action()
     },
     [isAuthenticated, contentType, open]
   )

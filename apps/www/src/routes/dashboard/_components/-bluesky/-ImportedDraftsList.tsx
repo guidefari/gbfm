@@ -145,8 +145,8 @@ export function ImportedDraftsList() {
         body: JSON.stringify({ draft: false, type: 'micro' })
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'bluesky', 'imported'] })
-      queryClient.invalidateQueries({ queryKey: ['admin', 'posts'] })
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'bluesky', 'imported'] })
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'posts'] })
       toast({ title: 'Post published' })
     },
     onError: (err: Error) =>

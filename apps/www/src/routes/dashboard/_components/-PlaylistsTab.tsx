@@ -38,7 +38,7 @@ export function PlaylistsTab() {
     onSuccess: () => {
       setUrl('')
       setImportOpen(false)
-      queryClient.invalidateQueries({ queryKey: ['playlists'] })
+      void queryClient.invalidateQueries({ queryKey: ['playlists'] })
       toast({
         title: 'Import queued',
         description: 'The playlist import is running in the background.'

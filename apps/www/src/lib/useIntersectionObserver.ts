@@ -18,7 +18,7 @@ export function useIntersectionObserver<T extends Element = Element>(
     const hasIOSupport = Boolean(window.IntersectionObserver)
 
     if (!hasIOSupport || !node) {
-      return
+      return undefined
     }
 
     const observerParams = { threshold, root, rootMargin }

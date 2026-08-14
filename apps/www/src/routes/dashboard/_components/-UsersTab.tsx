@@ -264,7 +264,7 @@ export function UsersTab() {
       })
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
       setCreateUserDialog(false)
       setNewUser({
         name: '',
@@ -311,8 +311,8 @@ export function UsersTab() {
       })
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
+      void queryClient.invalidateQueries({
         queryKey: ['admin', 'user-bio', editUser.id]
       })
       setEditUserDialog(false)
@@ -335,7 +335,7 @@ export function UsersTab() {
       })
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
       toast({ title: 'Role updated successfully' })
     },
     onError: (err: Error) => {
@@ -352,7 +352,7 @@ export function UsersTab() {
       return authClient.admin.banUser({ userId, banReason })
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
       setBanDialog({ open: false, userId: '', userName: '' })
       setBanReason('')
       toast({ title: 'User banned successfully' })
@@ -371,7 +371,7 @@ export function UsersTab() {
       return authClient.admin.unbanUser({ userId })
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
       toast({ title: 'User unbanned successfully' })
     },
     onError: (err: Error) => {
@@ -388,7 +388,7 @@ export function UsersTab() {
       return authClient.admin.removeUser({ userId })
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
       setDeleteDialog({ open: false, userId: '', userName: '' })
       toast({ title: 'User deleted successfully' })
     },

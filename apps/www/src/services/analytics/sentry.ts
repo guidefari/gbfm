@@ -35,12 +35,10 @@ const SentryAnalyticsImpl = Layer.sync(Analytics, () => {
     })
   )
 
-  const reset = Effect.fn('Analytics.reset')(() =>
-    Effect.sync(() => {
-      Sentry.setUser(null)
-      Sentry.setContext('user_properties', null)
-    })
-  )
+  const reset = Effect.sync(() => {
+    Sentry.setUser(null)
+    Sentry.setContext('user_properties', null)
+  })
 
   return { track, identify, page, reset }
 })

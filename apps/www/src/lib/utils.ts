@@ -8,7 +8,7 @@ export function cn(...inputs: ClassValue[]) {
 
 export function copyToClipboard(text: string) {
   try {
-    navigator.clipboard.writeText(text)
+    void navigator.clipboard.writeText(text)
   } catch (error) {
     log('warn', 'Failed to copy text', { error })
   }

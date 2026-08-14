@@ -57,7 +57,7 @@ function AccountMenu() {
   const handleSignOut = useCallback(async () => {
     await signOut()
     resetUI()
-    navigate({ to: '/' })
+    void navigate({ to: '/' })
   }, [resetUI, navigate])
 
   if (!user) {

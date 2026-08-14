@@ -43,6 +43,7 @@ import {
   type ImageUploadError,
   MissingAudioError,
   NotSignedInError,
+  TagsUpdateError,
   type RecordSaveError
 } from './mix-upload/-errors'
 import { type MixFormData, saveRecord, uploadImage } from './mix-upload/-program'
@@ -266,7 +267,7 @@ function MixUploadPage() {
     if (!isOnline) return
     if (resumableUpload.state.phase !== 'paused') return
     if (!audioFile) return
-    resumableUpload.resume(audioFile).then((outcome) => {
+    void resumableUpload.resume(audioFile).then((outcome) => {
       if (outcome._tag === 'Error') {
         toast({
           title: 'Audio upload failed',
@@ -308,20 +309,24 @@ function MixUploadPage() {
               method: 'PATCH',
               body: JSON.stringify({ tags })
             }).then(async (res) => {
-              if (!res.ok) throw new Error(`Tags update failed: ${res.status}`)
+              if (!res.ok)
+                throw new TagsUpdateError({ message: `Tags update failed: ${res.status}` })
               return res.json()
             }),
-          catch: (cause) => new Error(cause instanceof Error ? cause.message : String(cause))
+          catch: (cause) =>
+            cause instanceof TagsUpdateError
+              ? cause
+              : new TagsUpdateError({ message: String(cause) })
         }).pipe(Effect.retry({ times: 2, while: () => false }))
       ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['audio', editType] })
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({ queryKey: ['audio', editType] })
+      void queryClient.invalidateQueries({
         queryKey: ['audio', editType, search.edit]
       })
       toast({ title: 'Tags updated' })
     },
-    onError: (err: Error) => {
+    onError: (err: TagsUpdateError) => {
       toast({
         title: 'Failed to update tags',
         description: err.message,
@@ -459,16 +464,16 @@ function MixUploadPage() {
 
             if (formData.showId) {
               const showSlug = allShows.find((s) => s.id === formData.showId)?.slug
-              router.navigate(
+              void router.navigate(
                 showSlug ? { to: '/shows/$showSlug', params: { showSlug } } : { to: '/shows' }
               )
             } else if (isEditMode) {
-              router.navigate({
+              void router.navigate({
                 to: '/mixes/$mixId',
                 params: { mixId: formData.slug || search.edit || '' }
               })
             } else {
-              router.navigate({ to: '/shows' })
+              void router.navigate({ to: '/shows' })
             }
           }, 2000)
           return
@@ -652,7 +657,7 @@ function MixUploadPage() {
   const seekTo = (seconds: number) => {
     if (audioRef.current) {
       audioRef.current.currentTime = seconds
-      audioRef.current.play()
+      void audioRef.current.play()
     }
   }
 

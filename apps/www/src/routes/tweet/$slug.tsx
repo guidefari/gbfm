@@ -48,6 +48,8 @@ const prefetchMdxDependencies = (content: string | null): Array<Promise<void>> =
         return queryClient.prefetchQuery(spotifyTrackProxyQueryOptions(reference.encodedUrl))
       case 'playlist':
         return queryClient.prefetchQuery(spotifyPlaylistProxyQueryOptions(reference.encodedUrl))
+      default:
+        return Promise.resolve()
     }
   })
 

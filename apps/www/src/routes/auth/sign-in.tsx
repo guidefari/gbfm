@@ -51,7 +51,7 @@ function SignInPage() {
           variant: 'default'
         })
         setError('')
-        navigate({ href: safeRedirect(search.redirect) })
+        void navigate({ href: safeRedirect(search.redirect) })
       } else if (result.error) {
         setError(result.error.message || 'Failed to sign in')
       }

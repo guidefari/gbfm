@@ -28,6 +28,7 @@ export function WelcomeModal() {
       }, 500)
       return () => clearTimeout(timer)
     }
+    return undefined
   }, [isAuthenticated, hasSeenWelcome])
 
   const handleClose = () => {
@@ -37,7 +38,7 @@ export function WelcomeModal() {
 
   const handleExplore = () => {
     handleClose()
-    navigate({ to: '/shows' })
+    void navigate({ to: '/shows' })
   }
 
   return (

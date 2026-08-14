@@ -23,6 +23,10 @@ export class RecordSaveError extends Data.TaggedError('RecordSaveError')<{
   readonly status?: number
 }> {}
 
+export class TagsUpdateError extends Data.TaggedError('TagsUpdateError')<{
+  readonly message: string
+}> {}
+
 export class NotSignedInError extends Data.TaggedError('NotSignedInError')<{
   readonly message: string
 }> {}
@@ -37,6 +41,7 @@ export type MixUploadPageError =
   | AudioUploadError
   | ImageUploadError
   | RecordSaveError
+  | TagsUpdateError
   | NotSignedInError
   | MissingAudioError
 

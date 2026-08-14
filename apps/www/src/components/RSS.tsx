@@ -19,7 +19,7 @@ export const RSS = () => {
 
   const handleCopyToClipboard = () => {
     try {
-      navigator.clipboard.writeText(RSSurl)
+      void navigator.clipboard.writeText(RSSurl)
       toggleIsCopiedForThreeSeconds()
     } catch (error) {
       log('error', 'Failed to copy RSS link to clipboard', { error })

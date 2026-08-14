@@ -20,7 +20,7 @@ export function useHorizontalScroll() {
 
   useEffect(() => {
     const el = containerRef.current?.querySelector(VIEWPORT_SELECTOR)
-    if (!el) return
+    if (!el) return undefined
     updateScrollState()
     el.addEventListener('scroll', updateScrollState)
     const observer = new ResizeObserver(updateScrollState)

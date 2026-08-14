@@ -1,4 +1,5 @@
 import { AudioEngine, PlaybackRejected } from '@gbfm/player'
+/* oxlint-disable effecttsgo/strict-effect-provide -- Each test invokes Effect.runPromise, making it an Effect application entry point. */
 import { Effect, Fiber, Layer, Stream } from 'effect'
 import { describe, expect, it } from 'vitest'
 import {
@@ -30,11 +31,10 @@ const makeRecordingMediaSession = () => {
       Effect.sync(() => {
         record.metadata.push({ title, artists, artwork })
       }),
-    clearMetadata: () =>
-      Effect.sync(() => {
-        record.clearedMetadata += 1
-        record.playbackStates.push('none')
-      }),
+    clearMetadata: Effect.sync(() => {
+      record.clearedMetadata += 1
+      record.playbackStates.push('none')
+    }),
     setPlaybackState: (state) =>
       Effect.sync(() => {
         record.playbackStates.push(state)

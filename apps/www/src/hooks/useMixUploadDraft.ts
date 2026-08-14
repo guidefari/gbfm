@@ -70,7 +70,7 @@ export function useMixUploadDraft(): UseMixUploadDraftReturn {
 
   useEffect(() => {
     let cancelled = false
-    runAppEffect(readMixUploadDraft())
+    runAppEffect(readMixUploadDraft)
       .then((value) => {
         if (cancelled) return
         setDraft(value)
@@ -105,7 +105,7 @@ export function useMixUploadDraft(): UseMixUploadDraftReturn {
     if (timerRef.current) clearTimeout(timerRef.current)
     latestRef.current = null
     setDraft(null)
-    await runAppEffect(clearMixUploadDraft()).catch(() => undefined)
+    await runAppEffect(clearMixUploadDraft).catch(() => undefined)
   }, [])
 
   useEffect(() => {

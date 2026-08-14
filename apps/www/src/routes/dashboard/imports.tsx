@@ -93,14 +93,14 @@ function ImportActivity({ account }: { account: BlueskyAccount }) {
       )
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: ['integrations', 'bluesky', account.id, 'sources', ATTENTION_STATUSES]
       })
       toast({ title: 'Dismissed' })
     },
     onError: (error: Error) => {
       toast({ title: 'Failed to dismiss', description: error.message, variant: 'destructive' })
-      captureException(error, { endpoint: 'bluesky.updateBlueskySourceStatus' })
+      Effect.runSync(captureException(error, { endpoint: 'bluesky.updateBlueskySourceStatus' }))
     },
     onSettled: () => setDismissingId(null)
   })

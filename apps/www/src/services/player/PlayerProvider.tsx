@@ -133,7 +133,7 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
         playbackRef.current = playback
         const unsubscribe = playback.subscribeSnapshot(setPlaybackSnapshot)
         yield* Effect.addFinalizer(() => Effect.sync(unsubscribe))
-        yield* Effect.never
+        return yield* Effect.never
       }).pipe(Effect.scoped)
     )
 
@@ -147,7 +147,7 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
 
   const actions = useMemo<PlayerActions>(
     () => ({
-      play: () => runPlayback((playback) => playback.play()),
+      play: () => runPlayback((playback) => playback.play),
       pause: () => runPlayback((playback) => playback.pause),
       togglePlayPause: () => runPlayback((playback) => playback.togglePlayPause),
       seekTo: (time) => runPlayback((playback) => playback.seekTo(time)),

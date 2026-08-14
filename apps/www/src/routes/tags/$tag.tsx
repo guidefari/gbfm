@@ -41,12 +41,12 @@ function TagPostRow({ post }: { post: TagPost }) {
       aria-label={`Open post by ${post.creators?.[0]?.name ?? 'author'}`}
       onClick={(event) => {
         if (isInteractiveTarget(event)) return
-        openPost()
+        void openPost()
       }}
       onKeyDown={(event) => {
         if (event.key !== 'Enter') return
         if (event.target !== event.currentTarget) return
-        openPost()
+        void openPost()
       }}
       className='cursor-pointer space-y-2 rounded-lg border border-border/40 bg-card p-3 transition-colors hover:bg-card/80'>
       <TweetAuthorRow

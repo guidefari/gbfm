@@ -102,7 +102,7 @@ export function ShowsTab() {
         })
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'shows'] })
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'shows'] })
       setCreateDialog(false)
       setFormData(initialFormState)
       toast({ title: 'Show created successfully' })
@@ -133,7 +133,7 @@ export function ShowsTab() {
         })
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'shows'] })
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'shows'] })
       setEditDialog(false)
       setFormData(initialFormState)
       setEditingSlug('')
@@ -151,7 +151,7 @@ export function ShowsTab() {
   const deleteShowMutation = useMutation({
     mutationFn: (slug: string) => fetcher(apiUrl(`/shows/${slug}`), { method: 'DELETE' }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'shows'] })
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'shows'] })
       setDeleteDialog({ open: false, slug: '', title: '' })
       toast({ title: 'Show deleted successfully' })
     },

@@ -2,12 +2,18 @@ import { useAtomSet, useAtomValue } from '@effect/atom-react'
 import type { NavigationResultResponse } from '@gbfm/api/navigation'
 import { useHotkey } from '@tanstack/react-hotkeys'
 import { useRouter } from '@tanstack/react-router'
-import { Effect, Fiber } from 'effect'
+import { Data, Effect, Fiber } from 'effect'
 import * as Atom from 'effect/unstable/reactivity/Atom'
 import { ChevronLeft, ChevronRight, LoaderCircle } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { HoldToRandomButton } from '@/components/HoldToRandomButton'
-import { jump, open, stepBack, stepForward } from '@/lib/navigation-commands'
+import {
+  jump,
+  open,
+  stepBack,
+  stepForward,
+  type NavigateMicroPosts
+} from '@/lib/navigation-commands'
 import { useNavigateMicroPosts } from '@/lib/http'
 import { runNavigationIntent } from '@/lib/navigation-intent'
 import { cn } from '@/lib/utils'
@@ -18,6 +24,10 @@ type Props = {
 
 type Capabilities = NavigationResultResponse['capabilities']
 type Neighbours = NavigationResultResponse['neighbours']
+
+class NavigationRouteFailure extends Data.TaggedError('NavigationRouteFailure')<{
+  readonly cause: unknown
+}> {}
 
 const emptyCapabilities: Capabilities = {
   canStepBack: false,
@@ -167,9 +177,10 @@ export function TweetNav({ slug }: Props) {
           (neighbour) => neighbour !== undefined
         ),
         (neighbour) =>
-          Effect.promise(() =>
-            router.preloadRoute({ to: '/tweet/$slug', params: { slug: neighbour } })
-          ),
+          Effect.tryPromise({
+            try: () => router.preloadRoute({ to: '/tweet/$slug', params: { slug: neighbour } }),
+            catch: (cause) => new NavigationRouteFailure({ cause })
+          }),
         { concurrency: 'unbounded' }
       ).pipe(Effect.ignore),
     [router]
@@ -178,7 +189,7 @@ export function TweetNav({ slug }: Props) {
   useEffect(() => {
     if (pendingRef.current) {
       setIsSyncing(false)
-      return
+      return undefined
     }
 
     setIsSyncing(true)
@@ -204,7 +215,7 @@ export function TweetNav({ slug }: Props) {
     preloadGenerationRef.current = generation
     if (!neighbours.back && !neighbours.forward) {
       setIsPreloadingNeighbours(false)
-      return
+      return undefined
     }
 
     setIsPreloadingNeighbours(true)
@@ -223,7 +234,7 @@ export function TweetNav({ slug }: Props) {
   }, [neighbours, preloadNeighbours])
 
   const navigate = (
-    command: (intentToken: string) => Effect.Effect<NavigationResultResponse, unknown>,
+    command: (intentToken: string) => ReturnType<NavigateMicroPosts>,
     expectedSlug?: string
   ) => {
     if (pendingRef.current) return
@@ -234,9 +245,10 @@ export function TweetNav({ slug }: Props) {
     const navigateTo = (destinationSlug: string) =>
       Effect.sync(() => setIsRoutePending(true)).pipe(
         Effect.andThen(
-          Effect.promise(() =>
-            router.navigate({ to: '/tweet/$slug', params: { slug: destinationSlug } })
-          )
+          Effect.tryPromise({
+            try: () => router.navigate({ to: '/tweet/$slug', params: { slug: destinationSlug } }),
+            catch: (cause) => new NavigationRouteFailure({ cause })
+          })
         ),
         Effect.ensuring(Effect.sync(() => setIsRoutePending(false)))
       )

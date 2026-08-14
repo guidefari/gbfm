@@ -337,7 +337,7 @@ export function EditorialPage() {
       })
 
       setTimeout(() => {
-        router.navigate({
+        void router.navigate({
           to: '/editorial/$slug',
           params: { slug: savedPost.slug }
         })

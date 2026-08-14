@@ -1,10 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { dark, light } from '@gbfm/theme'
-import { themeColorsPlugin } from './theme-colors'
+import { transformThemeColors } from './theme-colors'
 
 describe('themeColorsPlugin', () => {
-  const transform = themeColorsPlugin().transformIndexHtml as (html: string) => string
-
   it('injects both theme colors throughout the index document', () => {
     const html = `<!doctype html>
 <html lang="en">
@@ -20,7 +18,7 @@ describe('themeColorsPlugin', () => {
   </head>
   <body><div id="root"></div></body>
 </html>`
-    const result = transform(html)
+    const result = transformThemeColors(html)
     expect(result).toContain(`content="${dark.backgroundHex}"`)
     expect(result).toContain(`content="${light.backgroundHex}"`)
     expect(result).toContain(`background-color: ${dark.backgroundHex};`)
@@ -30,6 +28,6 @@ describe('themeColorsPlugin', () => {
 
   it('leaves documents without theme placeholders unchanged', () => {
     const html = '<html><body><div id="root"></div></body></html>'
-    expect(transform(html)).toBe(html)
+    expect(transformThemeColors(html)).toBe(html)
   })
 })

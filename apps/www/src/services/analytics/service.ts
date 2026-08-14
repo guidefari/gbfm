@@ -39,7 +39,7 @@ export class Analytics extends Context.Service<
     /**
      * Clear analytics identity/session state on the current client.
      */
-    readonly reset: () => Effect.Effect<void>
+    readonly reset: Effect.Effect<void>
   }
 >()('@gbfm/www/Analytics') {}
 
@@ -64,4 +64,4 @@ export const page = (name?: string, properties?: AnalyticsProperties) =>
 /**
  * Accessor helper for `Analytics.reset`.
  */
-export const reset = () => Analytics.use((analytics) => analytics.reset())
+export const reset = Analytics.use((analytics) => analytics.reset)

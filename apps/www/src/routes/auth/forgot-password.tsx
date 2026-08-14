@@ -50,7 +50,7 @@ function ForgotPasswordPage() {
 
   const onResend = () => {
     if (cooldown.isActive || !sentEmail) return
-    sendReset(sentEmail)
+    void sendReset(sentEmail)
   }
 
   const useDifferentEmail = () => {

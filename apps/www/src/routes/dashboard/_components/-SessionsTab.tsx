@@ -60,7 +60,7 @@ export function SessionsTab() {
       return authClient.admin.revokeUserSession({ sessionToken })
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: ['admin', 'sessions', selectedUser?.id]
       })
       toast({ title: 'Session revoked successfully' })
@@ -79,7 +79,7 @@ export function SessionsTab() {
       return authClient.admin.revokeUserSessions({ userId })
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: ['admin', 'sessions', selectedUser?.id]
       })
       setRevokeAllDialog(false)

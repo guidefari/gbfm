@@ -35,7 +35,7 @@ export function SubscribeButton({
         title: 'Sign in required',
         description: 'Sign in to subscribe to shows'
       })
-      navigate({ to: '/auth/sign-in' })
+      void navigate({ to: '/auth/sign-in' })
       return
     }
 

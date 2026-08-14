@@ -29,9 +29,9 @@ function VerifyEmailPage() {
   )
 
   useEffect(() => {
-    if (!token || searchError) return
+    if (!token || searchError) return undefined
     let cancelled = false
-    ;(async () => {
+    void (async () => {
       const { error } = await authClient.verifyEmail({ query: { token } })
       if (cancelled) return
       if (error) {
@@ -43,7 +43,7 @@ function VerifyEmailPage() {
       const redirectTo = callbackURL || '/'
       setTimeout(() => {
         if (redirectTo.startsWith('/')) {
-          navigate({ href: redirectTo })
+          void navigate({ href: redirectTo })
         } else {
           window.location.href = redirectTo
         }
