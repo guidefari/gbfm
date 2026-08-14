@@ -459,7 +459,7 @@ export class MusicBrainzProvider implements MusicDataProvider {
         const response = yield* Effect.tryPromise({
           try: (signal) =>
             fetch(apiUrl, {
-              headers: { 'User-Agent': 'gbfm/1.0 (https://gbfm.co.za)' },
+              headers: { 'User-Agent': 'gbfm/1.0 (https://goosebumps.fm)' },
               signal: options.signal ? AbortSignal.any([signal, options.signal]) : signal
             }),
           catch: (err) =>
