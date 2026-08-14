@@ -1,25 +1,5 @@
 import { Context, Effect, Layer, Redacted, Schema } from 'effect'
 
-const ResourceScalar = Schema.Union([Schema.String, Schema.Number])
-const ResourceEntry = Schema.Union([
-  ResourceScalar,
-  Schema.Struct({
-    value: Schema.optional(ResourceScalar),
-    stage: Schema.optional(ResourceScalar),
-    site: Schema.optional(ResourceScalar),
-    vps: Schema.optional(ResourceScalar),
-    name: Schema.optional(ResourceScalar)
-  })
-])
-const ResourceCollection = Schema.Record(Schema.String, ResourceEntry)
-type ResourceScalar = typeof ResourceScalar.Type
-type ResourceEntry = typeof ResourceEntry.Type
-
-let Resource: typeof ResourceCollection.Type | null = null
-try {
-  Resource = Schema.decodeUnknownSync(ResourceCollection)(require('sst').Resource)
-} catch {}
-
 const secretNames = [
   'SpotifyClientId',
   'SpotifyClientSecret',
@@ -84,20 +64,12 @@ export type WorkerConfigBindings = Readonly<
     }
 >
 
-function getResource(name: string): ResourceEntry | undefined {
-  try {
-    return Resource?.[name]
-  } catch {
-    return undefined
-  }
-}
-
-function stringValue(value: ResourceScalar | undefined, fallback: string): string {
-  if (value !== undefined && String(value).length > 0) return String(value)
+function stringValue(value: string | undefined, fallback: string): string {
+  if (value !== undefined && value.length > 0) return value
   return fallback
 }
 
-function numberValue(value: ResourceScalar | undefined, fallback: number, name: string): number {
+function numberValue(value: string | undefined, fallback: number, name: string): number {
   const parsedValue = value === undefined ? fallback : Number(value)
 
   if (Number.isNaN(parsedValue)) {
@@ -110,10 +82,8 @@ function numberValue(value: ResourceScalar | undefined, fallback: number, name: 
 function secretValue(
   name: SecretName,
   bindings: WorkerConfigBindings | undefined
-): ResourceScalar | undefined {
-  if (bindings) return bindings[name]
-  const resource = getResource(name)
-  return Schema.is(ResourceScalar)(resource) ? resource : resource?.value
+): string | undefined {
+  return bindings?.[name]
 }
 
 function secretString(
@@ -142,21 +112,6 @@ function r2AccountId(endpoint: string): string | undefined {
   } catch {
     return undefined
   }
-}
-
-function resourceValue(name: string): ResourceScalar | undefined {
-  const resource = getResource(name)
-  return Schema.is(ResourceScalar)(resource) ? resource : resource?.value
-}
-
-function resourceString(
-  name: string,
-  property: 'stage' | 'site' | 'vps' | 'name',
-  fallback: string
-): string {
-  const resource = getResource(name)
-  if (resource === undefined || Schema.is(ResourceScalar)(resource)) return fallback
-  return stringValue(resource[property], fallback)
 }
 
 /** Parsed object storage configuration. R2 requires an account ID; signing checks credentials at use. */
@@ -251,7 +206,7 @@ function requiredInProduction(isProd: boolean, bindings: WorkerConfigBindings | 
 }
 
 export function createConfig(bindings?: WorkerConfigBindings): ConfigService {
-  const appStage = bindings?.APP_STAGE ?? resourceString('App', 'stage', 'dev')
+  const appStage = bindings?.APP_STAGE ?? 'dev'
   const isProd = appStage === 'prod'
 
   const secrets = {
@@ -283,14 +238,12 @@ export function createConfig(bindings?: WorkerConfigBindings): ConfigService {
 
   requiredInProduction(isProd, bindings)
 
-  const frontendUrl = resourceString('Urls', 'site', 'http://127.0.0.1:5173')
-  const vpsUrl = resourceString('Urls', 'vps', 'http://127.0.0.1:3003')
+  const frontendUrl = 'http://127.0.0.1:5173'
+  const vpsUrl = 'http://127.0.0.1:3003'
   const bucketRouterUrl = 'https://cdn.goosebumps.fm'
   const emailSender = stringValue(bindings?.EMAIL_SENDER, 'noreply@mail.goosebumps.fm')
-  const userContentBucketName =
-    bindings?.USER_CONTENT_BUCKET_NAME ?? resourceString('User_Content', 'name', 'user-content-dev')
-  const mixesBucketName =
-    bindings?.MIXES_BUCKET_NAME ?? resourceString('Mixes', 'name', 'mixes-dev')
+  const userContentBucketName = bindings?.USER_CONTENT_BUCKET_NAME ?? 'user-content-dev'
+  const mixesBucketName = bindings?.MIXES_BUCKET_NAME ?? 'mixes-dev'
   const accountId = bindings?.R2AccountId ?? r2AccountId(secrets.StorageEndpoint)
   const storage = Schema.decodeUnknownSync(StorageConfigSchema)({
     // r2 is the deployment target, so an account ID is enough to select it.
@@ -362,12 +315,9 @@ export function createConfig(bindings?: WorkerConfigBindings): ConfigService {
       dsn: secrets.SENTRY_BACKEND_DSN,
       environment: bindings?.SENTRY_ENVIRONMENT ?? (isProd ? 'production' : 'development')
     },
-    adminEmail: stringValue(
-      bindings?.ADMIN_EMAIL ?? resourceValue('AdminEmail'),
-      'guidefari@icloud.com'
-    ),
+    adminEmail: stringValue(bindings?.ADMIN_EMAIL, 'guidefari@icloud.com'),
     resources: {
-      available: bindings !== undefined || Resource !== null
+      available: bindings !== undefined
     }
   }
 }
