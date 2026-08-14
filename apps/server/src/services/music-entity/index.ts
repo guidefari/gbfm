@@ -88,7 +88,11 @@ import {
   reorderPlaylistTracksEffect,
   syncPlaylistLinksEffect
 } from './playlist-tracks.service'
-import { rescrapeOdesliLinksEffect, scrapeAndCreateEntityEffect } from './scrape.service'
+import {
+  MusicEntityResolutionUnavailable,
+  rescrapeOdesliLinksEffect,
+  scrapeAndCreateEntityEffect
+} from './scrape.service'
 import {
   addArtistToTrackEffect,
   type CreateTrackInput,
@@ -304,7 +308,7 @@ export interface MusicEntityService {
       entity: SelectMusicArtist | SelectMusicAlbum | SelectMusicTrack | SelectMusicPlaylist
       links: SelectMusicEntityLink[]
     },
-    DatabaseError | ValidationError
+    DatabaseError | MusicEntityResolutionUnavailable | ValidationError
   >
   readonly rescrapeOdesliLinks: (
     entityType: ScrapeableMusicEntityType,
@@ -427,19 +431,7 @@ export const MusicEntityServiceLayer = Layer.effect(
       deleteLink: (entityType, entityId, linkId) =>
         provideDb(deleteLinkEffect(entityType, entityId, linkId)),
       scrapeAndCreateEntity: (entityType, input) =>
-        provideDb(
-          scrapeAndCreateEntityEffect(scraper, entityType, input).pipe(
-            Effect.catchTag(
-              'MusicEntityResolutionUnavailable',
-              (error) =>
-                new DatabaseError({
-                  message: error.message,
-                  operation: 'select',
-                  table: 'music_entity_resolution_claims'
-                })
-            )
-          )
-        ),
+        provideDb(scrapeAndCreateEntityEffect(scraper, entityType, input)),
       rescrapeOdesliLinks: (entityType, entityId, options) =>
         provideDb(rescrapeOdesliLinksEffect(scraper, entityType, entityId, options))
     } satisfies MusicEntityService

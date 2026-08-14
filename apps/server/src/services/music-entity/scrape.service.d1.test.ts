@@ -209,6 +209,17 @@ describe('scrapeAndCreateEntityEffect', () => {
     expect(error).toMatchObject({ retryAfterMs: 30_000 })
   })
 
+  test('does not treat notspotify.com as a Spotify source', async () => {
+    const exit = await Effect.runPromiseExit(
+      scrapeAndCreateEntityEffect(emptyScraper, 'track', {
+        url: `https://notspotify.com/track/${crypto.randomUUID()}`
+      }).pipe(Effect.provideService(Database, db))
+    )
+    const error = Result.getOrThrow(Exit.findError(exit))
+
+    expect(error).toBeInstanceOf(ValidationError)
+  })
+
   test('reserves one canonical URL claim for concurrent resolutions', async () => {
     const sourceUrl = `https://open.spotify.com/track/${crypto.randomUUID()}?si=tracking`
     const gate = Promise.withResolvers<void>()

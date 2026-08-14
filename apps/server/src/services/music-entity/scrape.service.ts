@@ -1,6 +1,8 @@
 import { LINK_STATUS } from '@gbfm/core/status'
 import { and, eq, isNull, lt } from 'drizzle-orm'
 import { Data, Effect, Schedule } from 'effect'
+import * as HttpServerRespondable from 'effect/unstable/http/HttpServerRespondable'
+import { HttpApiError } from 'effect/unstable/httpapi'
 import { Database } from '@/db/layer'
 import {
   type MusicEntityType,
@@ -42,9 +44,20 @@ type ResolvedMusicEntity =
 
 class MusicEntityResolutionPending extends Data.TaggedError('MusicEntityResolutionPending') {}
 
-export class MusicEntityResolutionUnavailable extends Data.TaggedError(
-  'MusicEntityResolutionUnavailable'
-)<{ readonly message: string; readonly retryAfterMs: number }> {}
+const serviceUnavailable = new HttpApiError.ServiceUnavailable({})
+
+export class MusicEntityResolutionUnavailable extends HttpApiError.Unauthorized {
+  readonly retryAfterMs: number
+
+  constructor(retryAfterMs: number) {
+    super({})
+    this.retryAfterMs = retryAfterMs
+  }
+
+  override [HttpServerRespondable.symbol]() {
+    return serviceUnavailable[HttpServerRespondable.symbol]()
+  }
+}
 
 const CLAIM_LEASE_MS = 30_000
 const CLAIM_WAIT_ATTEMPTS = 20
@@ -200,11 +213,7 @@ const claimResolution = (entityType: ScrapeableMusicEntityType, canonicalUrl: st
     }),
     Effect.catchTag(
       'MusicEntityResolutionPending',
-      () =>
-        new MusicEntityResolutionUnavailable({
-          message: 'Music resolution is still in progress',
-          retryAfterMs: CLAIM_LEASE_MS
-        })
+      () => new MusicEntityResolutionUnavailable(CLAIM_LEASE_MS)
     )
   )
 
@@ -267,10 +276,7 @@ const renewResolutionClaim = (
         })
     })
     if (!rows[0]) {
-      return yield* new MusicEntityResolutionUnavailable({
-        message: 'Music resolution claim was reclaimed',
-        retryAfterMs: CLAIM_LEASE_MS
-      })
+      return yield* new MusicEntityResolutionUnavailable(CLAIM_LEASE_MS)
     }
   })
 
@@ -576,7 +582,7 @@ function canonicalSourceLink(url: string): CanonicalSourceLink {
     const parsed = new URL(url)
     const hostname = parsed.hostname.toLowerCase()
     const segments = parsed.pathname.split('/').filter(Boolean)
-    if (hostname.endsWith('spotify.com') && segments.length >= 2) {
+    if ((hostname === 'spotify.com' || hostname.endsWith('.spotify.com')) && segments.length >= 2) {
       const [type, id] = segments
       if ((type === 'track' || type === 'album' || type === 'playlist') && id) {
         return { platform: 'spotify', url: `https://open.spotify.com/${type}/${id}` }
