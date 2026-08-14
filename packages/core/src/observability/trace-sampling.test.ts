@@ -14,6 +14,7 @@ test('reduces crawler noise, preserves business traces, and otherwise uses the b
     )
   ).toEqual([0.5, 0.5, 0.5])
 
+  expect(traceSampleRate({ name: 'POST /api/music/resolve', url: '/api/music/resolve' })).toBe(1)
   expect(traceSampleRate({ name: 'pageload', url: '/about' })).toBe(0.2)
   expect(traceSampleRate({ name: 'GET /health', url: '/api/music/track/123' })).toBe(0.5)
 })

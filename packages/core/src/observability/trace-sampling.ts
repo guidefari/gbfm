@@ -1,4 +1,5 @@
 const NOISE_PATH_PATTERN = /(?:^|\/)(?:health|robots\.txt|sitemap\.xml)(?:$|[/?#])/i
+const MUSIC_RESOLVE_PATH_PATTERN = /\/api\/music\/resolve(?:\/|$|[?#])/i
 const BUSINESS_PATH_PATTERN = /\/(?:api\/(?:profile|music|audio|shows?|content)|auth)(?:\/|$|[?#])/i
 
 export type TraceSamplingInput = {
@@ -15,6 +16,7 @@ export type TraceSamplingInput = {
 export function traceSampleRate({ name, url }: TraceSamplingInput): number {
   const target = url ?? name
   if (NOISE_PATH_PATTERN.test(target)) return 0.01
+  if (MUSIC_RESOLVE_PATH_PATTERN.test(target)) return 1
   if (BUSINESS_PATH_PATTERN.test(target)) return 0.5
   return 0.2
 }

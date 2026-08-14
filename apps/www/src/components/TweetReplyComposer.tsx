@@ -1,6 +1,6 @@
 import { Button, Input, Textarea, useToast } from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
-import { Loader2, MessageSquareQuote, Music4 } from 'lucide-react'
+import { Loader2, MessageSquareQuote, Music4, TriangleAlert } from 'lucide-react'
 import { useSession } from '@/lib/auth-client'
 import {
   extractTweetSlugFromText,
@@ -108,6 +108,22 @@ export function TweetReplyComposer({ parentSlug, compact = false, onPosted }: Pr
           <Loader2 className='absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 animate-spin text-muted-foreground' />
         )}
       </div>
+      {resolved.error && (
+        <div className='flex items-center justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-xs'>
+          <span className='flex items-center gap-1.5 text-destructive'>
+            <TriangleAlert className='size-3.5 shrink-0' />
+            Could not resolve this music link.
+          </span>
+          <Button
+            type='button'
+            variant='outline'
+            size='sm'
+            disabled={resolved.isRefetching}
+            onClick={() => resolved.refetch()}>
+            {resolved.isRefetching ? 'Retrying…' : 'Try again'}
+          </Button>
+        </div>
+      )}
       {resolved.data?.entity && (
         <div className='flex items-center gap-2 rounded-md border border-border/40 bg-muted/30 px-2 py-1.5 text-xs'>
           {resolved.data.coverImageUrl ? (

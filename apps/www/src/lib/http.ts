@@ -806,7 +806,7 @@ export type ResolvedMusicEntity = {
 }
 
 export function useResolveMusicEntity(url: string) {
-  const { data, error, isLoading } = useQuery<ResolvedMusicEntity>({
+  const { data, error, isLoading, isRefetching, refetch } = useQuery<ResolvedMusicEntity>({
     queryKey: ['music/resolve', url],
     queryFn: async () =>
       fetcher(apiUrl('/music/resolve'), {
@@ -814,13 +814,16 @@ export function useResolveMusicEntity(url: string) {
         body: JSON.stringify({ url })
       }),
     enabled: Boolean(url) && url.length > 10,
+    retry: false,
     staleTime: 15 * 60 * 1000
   })
 
   return {
     data,
     error,
-    isLoading
+    isLoading,
+    isRefetching,
+    refetch
   }
 }
 
