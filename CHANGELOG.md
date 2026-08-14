@@ -1,3 +1,26 @@
+# [2.86.0](https://github.com/guidefari/gbfm/compare/v2.85.0...v2.86.0) (2026-08-14)
+
+
+### Bug Fixes
+
+* add actor to request ([1e35a52](https://github.com/guidefari/gbfm/commit/1e35a52fbd9f8ced15f28024b27b960652a2b3cd))
+* **infra:** restore R2 bucket CORS and port the QR PDF expiry sweep ([dca249e](https://github.com/guidefari/gbfm/commit/dca249e04c3ac6e74653352f4452199e1cc72875))
+* **music:** expose resolution unavailability ([8a8cf01](https://github.com/guidefari/gbfm/commit/8a8cf01d09c14a287d5b5899f21e235d17bcb4bf))
+* **music:** identify goosebumps.fm to MusicBrainz ([00ada0b](https://github.com/guidefari/gbfm/commit/00ada0b6979883cfdfd280484ad5b2eba7b1cbca))
+* **music:** make URL resolution idempotent ([58d730f](https://github.com/guidefari/gbfm/commit/58d730f92d46e8d5564f0b9e05c1c294ea38573c))
+* **music:** map resolution contention ([e6effb0](https://github.com/guidefari/gbfm/commit/e6effb097567c0da8b02002733eeb9ad1169492a))
+* **music:** recover stale resolution claims ([7dac630](https://github.com/guidefari/gbfm/commit/7dac630173a0452b8c1cdfd97bd5af568a337d12))
+* **music:** return bad request for unresolved links ([1ee388c](https://github.com/guidefari/gbfm/commit/1ee388c6e07073d85d3cc32c73d1667086f8485c))
+* **server:** harden music resolution persistence ([936308b](https://github.com/guidefari/gbfm/commit/936308b51bd9335c837dc5e9454fdaef2d831cf6))
+* **server:** harden music URL resolution ([5e78fd5](https://github.com/guidefari/gbfm/commit/5e78fd5116dde05455d308fa5608f337768426c1))
+* **www:** add music resolution retry UX ([7281839](https://github.com/guidefari/gbfm/commit/72818395268372770ff3e208d3e538b5563ae70e))
+
+
+### Features
+
+* **music:** add admin link rescrape ([2e8926a](https://github.com/guidefari/gbfm/commit/2e8926a053fcd56a8be1922c89e59d5f77d545b0))
+* **server:** rescrape Odesli entity links ([d68f150](https://github.com/guidefari/gbfm/commit/d68f1509a76209ad511fee5f402e260519616729))
+
 # [2.85.0](https://github.com/guidefari/gbfm/compare/v2.84.1...v2.85.0) (2026-08-13)
 
 
