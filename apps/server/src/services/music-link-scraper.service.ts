@@ -575,6 +575,10 @@ export interface MusicLinkScraperService {
     input: MusicScrapeInput,
     options?: MusicScrapeOptions
   ) => Effect.Effect<ScrapeResult, never>
+  readonly scrapeOdesli: (
+    input: MusicScrapeInput,
+    options?: MusicScrapeOptions
+  ) => Effect.Effect<ProviderResult, MusicScraperError>
 }
 
 export const MusicLinkScraperService =
@@ -584,9 +588,10 @@ export function makeMusicLinkScraperService(
   providers: MusicDataProvider[],
   spotify: SpotifyService
 ): MusicLinkScraperService {
-  const odesli = new OdesliProvider()
+  const odesli = providers.find((provider) => provider.name === 'odesli') ?? new OdesliProvider()
 
   return {
+    scrapeOdesli: (input, options) => odesli.fetchLinks(input, options),
     scrape: Effect.fn('musicScraper.scrape')(function* (
       input: MusicScrapeInput,
       options: MusicScrapeOptions = {}

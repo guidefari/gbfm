@@ -11,10 +11,12 @@ import {
   type SelectMusicPlaylist,
   type SelectMusicTrack
 } from '@/db/music-entity.schema'
-import { DatabaseError, getErrorMessage, type NotFoundError } from '@/errors'
+import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
 import type {
   MusicLinkScraperService,
-  MusicScrapeInput
+  MusicScrapeInput,
+  MusicScrapeOptions,
+  MusicScraperError
 } from '@/services/music-link-scraper.service'
 import { parseArtistNames } from '@/services/parse-artist-names'
 import { toSlug } from '@/services/to-slug'
@@ -199,6 +201,50 @@ export const scrapeAndCreateEntityEffect = (
   }).pipe(
     Effect.withSpan('musicEntity.scrapeAndCreateEntity', {
       attributes: { entityType }
+    })
+  )
+
+export const rescrapeOdesliLinksEffect = (
+  scraper: MusicLinkScraperService,
+  entityType: ScrapeableMusicEntityType,
+  entityId: string,
+  options?: MusicScrapeOptions
+): Effect.Effect<
+  { links: SelectMusicEntityLink[] },
+  DatabaseError | NotFoundError | MusicScraperError,
+  Database
+> =>
+  Effect.gen(function* () {
+    yield* getEntityById(entityType, entityId)
+    const existingLinks = yield* getLinksForEntityEffect(entityType, entityId)
+    const spotifyLink = existingLinks.find((link) => link.platform === 'spotify')
+
+    if (!spotifyLink) {
+      return yield* new NotFoundError({
+        message: 'Spotify source link not found',
+        resource: 'MusicEntitySpotifyLink',
+        id: entityId
+      })
+    }
+
+    const result = yield* scraper.scrapeOdesli({ url: spotifyLink.url }, options)
+    const links = yield* Effect.forEach(result.links, (link) =>
+      addLinkEffect({
+        entityType,
+        entityId,
+        platform: link.platform,
+        url: link.url,
+        status: LINK_STATUS.VERIFIED,
+        verifiedAt: link.scrapedAt,
+        scrapedAt: link.scrapedAt,
+        metadata: link.metadata
+      })
+    )
+
+    return { links }
+  }).pipe(
+    Effect.withSpan('musicEntity.rescrapeOdesliLinks', {
+      attributes: { entityType, entityId }
     })
   )
 
