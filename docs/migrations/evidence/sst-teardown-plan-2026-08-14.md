@@ -93,6 +93,10 @@ a deliberate choice rather than a side effect.
 
 ## Scripts to run
 
+> **Completed 2026-08-14.** Every stage has been torn down; this section is the
+> record of what was run. See the teardown log for what actually happened,
+> including an outage this plan did not anticipate.
+
 `sst` is not on `PATH`; use the workspace binary.
 
 Each command prints the resource plus every dependency reference it will drop,
@@ -226,6 +230,56 @@ Steps completed against this plan, newest last.
   offline copy, but the bucket itself is not being kept out of state. Only
   `EmailTXTRecordDmarcgoosebumpsfm` remains a required state-remove before
   `sst remove --stage prod` runs.
+
+- **2026-08-14 — Prod torn down, with an outage.** `sst remove --stage prod`
+  ran in stages, failing on each stale Cloudflare record in turn: Pulumi treats
+  a failed delete as fatal rather than skipping, so every 404 needed a
+  `sst state remove` before the run could continue.
+
+  **Incident:** the removal deleted the Cloudflare DNS records backing
+  `www.goosebumps.fm` and the apex, taking the site down. The plan listed
+  `gbfm-wwwRouterDomain` and `gbfm-wwwRouterAlias0Domain` as "safe to leave in
+  state", meaning the entries were stale pointers, but Alchemy still depended on
+  the underlying records that Pulumi believed it owned. Recovered by
+  redeploying Alchemy, which reconciles its declared custom domains:
+  `bunx alchemy deploy --stage prod --profile env-token --yes`. Note Alchemy
+  reads `CLOUDFLARE_ACCOUNT_ID`, while the shell exports
+  `CLOUDFLARE_DEFAULT_ACCOUNT_ID`.
+
+  **Lesson:** "stale in state" is not the same as "safe to delete". Verify each
+  hostname against the live zone before letting Pulumi remove it.
+
+- **2026-08-14 — Remaining stages.** SST registers a passphrase per stage in
+  SSM, which is the authoritative stage list:
+
+  ```bash
+  aws ssm get-parameters-by-path --path /sst/passphrase/gbfm --recursive \
+    --query 'Parameters[].Name' --output text
+  ```
+
+  Seven existed: `prod`, `dev`, `guidefari`, `production`, `local`, `staging`,
+  `_fallback`. `local`, `staging` and `_fallback` held no resources. `dev` (160)
+  and `guidefari` (116) were removed. `production` (35) was an older 2024 stage
+  still holding a CloudFront distribution, ACM cert, Lambda and S3 assets.
+
+  `dev` stalled on its VPC: a `BlueskySyncTask` wedged in `PENDING` held an ENI,
+  which blocked the subnet and internet gateway. Stopping the task released it.
+
+- **2026-08-14 — Orphaned resources cleaned up.** `removal: 'retain'` covers
+  "S3 buckets and DynamoDB tables" only, so it never applied to R2; the
+  non-empty R2 buckets 409'd instead. Resources it spared became unmanaged and
+  invisible to `sst`, so they were deleted directly rather than by editing the
+  config and re-running `sst` against prod:
+
+  - prod VPC `vpc-02f9c09b34d644632` plus its 4 subnets
+  - EventBridge schedule `gbfm-dev-BlueskySyncCronSchedule-bnahrobz`
+    (`rate(1 hour)`, still ENABLED against a deleted cluster) and its IAM role
+  - 3 orphaned CloudWatch log groups
+
+  S3 buckets are deliberately retained. Two staging Workers from September 2024,
+  `gbfm-staging-authworkercfscript` and `gbfm-staging-openapiworkerscript`, are
+  still bound to `auth.staging` and `openapi.staging` hostnames and were left
+  alone.
 
 ## Open items
 
