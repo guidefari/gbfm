@@ -101,6 +101,8 @@ export const reduceQueue = (
 
     case 'clear':
       return initialQueueState
+    default:
+      return state
   }
 }
 

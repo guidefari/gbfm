@@ -1,3 +1,4 @@
+/* oxlint-disable effecttsgo/strict-effect-provide -- Each test invokes Effect.runPromise, making it an Effect application entry point. */
 import { makePlayReporterLayer, PlayReporter, PlayerStorageInMemory } from '@gbfm/player'
 import { Effect, Layer } from 'effect'
 import { describe, expect, it } from 'vitest'

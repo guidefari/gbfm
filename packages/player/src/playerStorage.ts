@@ -1,22 +1,27 @@
 import * as Context from 'effect/Context'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
-import type { PersistedQueueType } from './persistedQueue'
+import { type AudioStorageError, type PersistedQueueType } from './persistedQueue'
 import type { AudioStorageAdapter, VolumeRecordType } from './audioStorage'
 import { createAudioStorage } from './audioStorage'
 
 export type PositionRecord = { readonly position: number; readonly updatedAt: number }
 
 export interface PlayerStorageContract {
-  readonly loadQueue: () => Effect.Effect<PersistedQueueType | null, unknown>
-  readonly saveQueue: (queue: PersistedQueueType) => Effect.Effect<void, unknown>
-  readonly loadVolume: () => Effect.Effect<VolumeRecordType | null, unknown>
-  readonly saveVolume: (volume: VolumeRecordType) => Effect.Effect<void, unknown>
-  readonly loadPosition: (trackId: string) => Effect.Effect<PositionRecord | null, unknown>
-  readonly savePosition: (trackId: string, position: number) => Effect.Effect<void, unknown>
-  readonly clearPosition: (trackId: string) => Effect.Effect<void, unknown>
-  readonly recordPlay: (trackId: string) => Effect.Effect<void, unknown>
-  readonly isWithinDedupWindow: (trackId: string) => Effect.Effect<boolean, unknown>
+  readonly loadQueue: Effect.Effect<PersistedQueueType | null, AudioStorageError>
+  readonly saveQueue: (queue: PersistedQueueType) => Effect.Effect<void, AudioStorageError>
+  readonly loadVolume: Effect.Effect<VolumeRecordType | null, AudioStorageError>
+  readonly saveVolume: (volume: VolumeRecordType) => Effect.Effect<void, AudioStorageError>
+  readonly loadPosition: (
+    trackId: string
+  ) => Effect.Effect<PositionRecord | null, AudioStorageError>
+  readonly savePosition: (
+    trackId: string,
+    position: number
+  ) => Effect.Effect<void, AudioStorageError>
+  readonly clearPosition: (trackId: string) => Effect.Effect<void, AudioStorageError>
+  readonly recordPlay: (trackId: string) => Effect.Effect<void, AudioStorageError>
+  readonly isWithinDedupWindow: (trackId: string) => Effect.Effect<boolean, AudioStorageError>
 }
 
 export class PlayerStorage extends Context.Service<PlayerStorage, PlayerStorageContract>()(
@@ -26,14 +31,21 @@ export class PlayerStorage extends Context.Service<PlayerStorage, PlayerStorageC
 /** Builds a PlayerStorage layer from a platform storage adapter: expo-file-system
  *  on native, localStorage on web. */
 export const layerFromAdapter = (adapter: AudioStorageAdapter, now: () => number = Date.now) =>
-  Layer.sync(PlayerStorage, () => createAudioStorage(adapter, now))
+  Layer.sync(PlayerStorage, () => {
+    const storage = createAudioStorage(adapter, now)
+    return {
+      ...storage,
+      loadQueue: storage.loadQueue(),
+      loadVolume: storage.loadVolume()
+    }
+  })
 
-export const loadQueue = Effect.andThen(PlayerStorage, (storage) => storage.loadQueue())
+export const loadQueue = Effect.andThen(PlayerStorage, (storage) => storage.loadQueue)
 
 export const saveQueue = (queue: PersistedQueueType) =>
   Effect.andThen(PlayerStorage, (storage) => storage.saveQueue(queue))
 
-export const loadVolume = () => Effect.andThen(PlayerStorage, (storage) => storage.loadVolume())
+export const loadVolume = Effect.andThen(PlayerStorage, (storage) => storage.loadVolume)
 
 export const saveVolume = (volume: VolumeRecordType) =>
   Effect.andThen(PlayerStorage, (storage) => storage.saveVolume(volume))
@@ -62,12 +74,12 @@ export const PlayerStorageInMemory = Layer.sync(PlayerStorage, () => {
   let volume: VolumeRecordType | null = null
 
   return {
-    loadQueue: () => Effect.sync(() => queue),
+    loadQueue: Effect.sync(() => queue),
     saveQueue: (next) =>
       Effect.sync(() => {
         queue = next
       }),
-    loadVolume: () => Effect.sync(() => volume),
+    loadVolume: Effect.sync(() => volume),
     saveVolume: (next) =>
       Effect.sync(() => {
         volume = next
@@ -94,9 +106,9 @@ export const PlayerStorageInMemory = Layer.sync(PlayerStorage, () => {
 })
 
 export const PlayerStorageTest = Layer.succeed(PlayerStorage, {
-  loadQueue: () => Effect.succeed(null),
+  loadQueue: Effect.succeed(null),
   saveQueue: () => Effect.void,
-  loadVolume: () => Effect.succeed(null),
+  loadVolume: Effect.succeed(null),
   saveVolume: () => Effect.void,
   loadPosition: () => Effect.succeed(null),
   savePosition: () => Effect.void,

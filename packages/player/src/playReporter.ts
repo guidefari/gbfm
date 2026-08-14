@@ -21,8 +21,8 @@ export const PlayReporterNoop = Layer.succeed(PlayReporter, {
 
 /** Shared deduped delivery + semaphore serialization. Platforms only supply the
  *  API deliver operation; storage and ordering policy stay in @gbfm/player. */
-export const makePlayReporterLayer = (
-  deliver: (trackId: string) => Effect.Effect<void, unknown>
+export const makePlayReporterLayer = <DeliveryError>(
+  deliver: (trackId: string) => Effect.Effect<void, DeliveryError>
 ): Layer.Layer<PlayReporter, never, PlayerStorage> =>
   Layer.effect(
     PlayReporter,

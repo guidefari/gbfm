@@ -1,14 +1,16 @@
 import { Effect } from 'effect'
 import { DEDUP_WINDOW_MS } from './audioStorage'
 
-type PlayDeliveryDependencies = {
-  readonly isWithinDedupWindow: (trackId: string) => Effect.Effect<boolean, unknown, never>
-  readonly deliver: (trackId: string) => Effect.Effect<void, unknown, never>
-  readonly remember: (trackId: string) => Effect.Effect<void, unknown, never>
+type PlayDeliveryDependencies<CheckError, DeliveryError, RememberError> = {
+  readonly isWithinDedupWindow: (trackId: string) => Effect.Effect<boolean, CheckError, never>
+  readonly deliver: (trackId: string) => Effect.Effect<void, DeliveryError, never>
+  readonly remember: (trackId: string) => Effect.Effect<void, RememberError, never>
   readonly now: () => number
 }
 
-export const createPlayDelivery = (dependencies: PlayDeliveryDependencies) => {
+export const createPlayDelivery = <CheckError, DeliveryError, RememberError>(
+  dependencies: PlayDeliveryDependencies<CheckError, DeliveryError, RememberError>
+) => {
   const successfulDeliveries = new Map<string, number>()
 
   return (trackId: string) =>

@@ -15,9 +15,9 @@ export type QueueView = {
   readonly current: QueueTrackType | null
 }
 
-export type QueueAtomStorage = {
-  readonly loadQueue: () => Effect.Effect<State | null, unknown, never>
-  readonly saveQueue: (state: State) => Effect.Effect<void, unknown, never>
+export type QueueAtomStorage<LoadError, SaveError> = {
+  readonly loadQueue: () => Effect.Effect<State | null, LoadError, never>
+  readonly saveQueue: (state: State) => Effect.Effect<void, SaveError, never>
 }
 
 export type QueueAtomHandle = {
@@ -31,11 +31,11 @@ export const selectQueueView = (state: State): QueueView => ({
   current: state.currentIndex >= 0 ? (state.tracks[state.currentIndex] ?? null) : null
 })
 
-export const makeQueueAtom = ({
+export const makeQueueAtom = <LoadError, SaveError>({
   loadQueue,
   saveQueue,
   onError = (message, error) => console.error(message, error)
-}: QueueAtomStorage & {
+}: QueueAtomStorage<LoadError, SaveError> & {
   readonly onError?: (message: string, error: Error) => void
 }): QueueAtomHandle => {
   let queueWriteTail: Promise<void> = Promise.resolve()

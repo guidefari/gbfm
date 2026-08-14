@@ -121,7 +121,7 @@ const currentTrack = (state: typeof initialQueueState) => selectQueueView(state)
 export interface AudioPlaybackController {
   readonly getSnapshot: () => PlaybackSnapshot
   readonly subscribeSnapshot: (listener: SnapshotListener) => () => void
-  readonly play: () => Effect.Effect<void>
+  readonly play: Effect.Effect<void>
   readonly pause: Effect.Effect<void>
   readonly togglePlayPause: Effect.Effect<void>
   readonly seekTo: (seconds: number) => Effect.Effect<void>
@@ -396,16 +396,14 @@ export const makeAudioPlayback = (
     updateTransport({ ...transportState, isInitialized: true })
 
     const loadQueue = Effect.gen(function* () {
-      const persisted = yield* storage
-        .loadQueue()
-        .pipe(
-          Effect.catchCause((cause) =>
-            reportError(
-              'Unable to hydrate audio queue',
-              new Error('Unable to hydrate audio queue', { cause })
-            ).pipe(Effect.as(null))
-          )
+      const persisted = yield* storage.loadQueue.pipe(
+        Effect.catchCause((cause) =>
+          reportError(
+            'Unable to hydrate audio queue',
+            new Error('Unable to hydrate audio queue', { cause })
+          ).pipe(Effect.as(null))
         )
+      )
       if (queueHydration?.token !== queueHydrationToken) return
       // No Effect yield here: merge, clear hydration, and publish are one
       // cooperatively atomic step.
@@ -421,16 +419,14 @@ export const makeAudioPlayback = (
     })
 
     const loadVolume = Effect.gen(function* () {
-      const persisted = yield* storage
-        .loadVolume()
-        .pipe(
-          Effect.catchCause((cause) =>
-            reportError(
-              'Unable to hydrate audio volume',
-              new Error('Unable to hydrate audio volume', { cause })
-            ).pipe(Effect.as(null))
-          )
+      const persisted = yield* storage.loadVolume.pipe(
+        Effect.catchCause((cause) =>
+          reportError(
+            'Unable to hydrate audio volume',
+            new Error('Unable to hydrate audio volume', { cause })
+          ).pipe(Effect.as(null))
         )
+      )
       if (volumeHydration?.token !== volumeHydrationToken) return
       const next = volumeHydration.pending ?? persisted ?? defaultVolume
       volumeHydration = null
@@ -639,7 +635,7 @@ export const makeAudioPlayback = (
     return {
       getSnapshot: () => currentSnapshot,
       subscribeSnapshot,
-      play: () => playCurrent,
+      play: playCurrent,
       pause: pauseCurrent,
       togglePlayPause,
       seekTo: (seconds) => seekCurrent(seconds, 'scrub'),

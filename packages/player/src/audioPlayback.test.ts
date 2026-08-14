@@ -15,7 +15,11 @@ import {
 import { PlayReporter } from './playReporter'
 import { PlayerStorage, type PlayerStorageContract, type PositionRecord } from './playerStorage'
 import type { VolumeRecordType } from './audioStorage'
-import type { QueueTrackType, PersistedQueueType } from './persistedQueue'
+import {
+  type AudioStorageError,
+  type QueueTrackType,
+  type PersistedQueueType
+} from './persistedQueue'
 
 const track = (id: string): QueueTrackType => ({
   id,
@@ -123,10 +127,14 @@ const makeRecordingEngine = (options: { readonly rejectPlay?: boolean } = {}) =>
 
 const makeRecordingStorage = (
   options: {
-    readonly loadQueue?: Effect.Effect<PersistedQueueType | null, unknown, never>
-    readonly loadVolume?: Effect.Effect<VolumeRecordType | null, unknown, never>
-    readonly saveQueue?: (queue: PersistedQueueType) => Effect.Effect<void, unknown, never>
-    readonly saveVolume?: (volume: VolumeRecordType) => Effect.Effect<void, unknown, never>
+    readonly loadQueue?: Effect.Effect<PersistedQueueType | null, AudioStorageError, never>
+    readonly loadVolume?: Effect.Effect<VolumeRecordType | null, AudioStorageError, never>
+    readonly saveQueue?: (
+      queue: PersistedQueueType
+    ) => Effect.Effect<void, AudioStorageError, never>
+    readonly saveVolume?: (
+      volume: VolumeRecordType
+    ) => Effect.Effect<void, AudioStorageError, never>
     readonly positions?: ReadonlyMap<string, PositionRecord>
   } = {}
 ) => {
@@ -139,7 +147,7 @@ const makeRecordingStorage = (
   const positions = options.positions ?? new Map<string, PositionRecord>()
 
   const layer = Layer.succeed(PlayerStorage, {
-    loadQueue: () => loadQueue,
+    loadQueue,
     saveQueue: (queue) =>
       Effect.gen(function* () {
         savedQueues.push(queue)
@@ -147,7 +155,7 @@ const makeRecordingStorage = (
           yield* options.saveQueue(queue)
         }
       }),
-    loadVolume: () => loadVolume,
+    loadVolume,
     saveVolume: (volume) =>
       Effect.gen(function* () {
         savedVolumes.push(volume)

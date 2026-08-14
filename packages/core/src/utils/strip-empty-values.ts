@@ -5,7 +5,8 @@ type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string
 function isEmptyValue(value: JsonValue): boolean {
   if (value === null) return true
   if (Array.isArray(value) && value.length === 0) return true
-  return value === String(value) && value.trim() === ''
+  // oxlint-disable-next-line anti-slop/no-runtime-typeof -- SAFETY: JsonValue's string member has no parser; this discriminant preserves whitespace handling without stringifying object values.
+  return typeof value === 'string' && value.trim() === ''
 }
 
 function stripEmptyValuesSync<T extends Record<string, JsonValue>>(obj: T): Partial<T> {

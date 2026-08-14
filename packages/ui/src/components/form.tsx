@@ -33,7 +33,7 @@ const Form = <
   const handleSubmit: React.FormEventHandler = stopPropagation
     ? (e) => {
         e.stopPropagation()
-        props.handleSubmit(onSubmit, onError)(e)
+        void props.handleSubmit(onSubmit, onError)(e)
       }
     : props.handleSubmit(onSubmit, onError)
 
@@ -141,7 +141,7 @@ const FormControl = React.forwardRef<
     <Slot
       ref={ref}
       id={formItemId}
-      aria-describedby={!error ? `${formDescriptionId}` : `${formDescriptionId} ${formMessageId}`}
+      aria-describedby={!error ? formDescriptionId : `${formDescriptionId} ${formMessageId}`}
       aria-invalid={Boolean(error)}
       className={cn(
         error && 'border-destructive focus-visible:border-2 focus-visible:ring-0',

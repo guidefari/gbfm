@@ -1,3 +1,4 @@
+/* oxlint-disable effecttsgo/strict-effect-provide -- Each test invokes Effect.runPromise, making it an Effect application entry point. */
 import { Effect, Layer, PubSub, Stream } from 'effect'
 import { describe, expect, it } from 'vitest'
 import {
@@ -101,9 +102,9 @@ const makeRecordingStorage = (stored: PositionRecord | null = null) => {
   const cleared: Array<string> = []
 
   const layer = Layer.succeed(PlayerStorage, {
-    loadQueue: () => Effect.succeed(null),
+    loadQueue: Effect.succeed(null),
     saveQueue: () => Effect.void,
-    loadVolume: () => Effect.succeed(null),
+    loadVolume: Effect.succeed(null),
     saveVolume: () => Effect.void,
     loadPosition: () => Effect.succeed(stored),
     savePosition: (id: string, position: number) =>

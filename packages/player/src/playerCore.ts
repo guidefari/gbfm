@@ -183,7 +183,7 @@ export const makePlayerCore = (
     let playOnReady: string | null = null
     let lastPositionPersist: { readonly id: string; readonly at: number } | null = null
 
-    const runDetached = (label: string, effect: Effect.Effect<void, unknown>) =>
+    const runDetached = <Error>(label: string, effect: Effect.Effect<void, Error>) =>
       effect.pipe(
         Effect.catchCause((cause) =>
           Effect.sync(() => onError(label, new Error(label, { cause })))

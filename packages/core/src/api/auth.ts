@@ -15,11 +15,11 @@ function logAuthEvent(
   }
 
   if (level === 'error') {
-    Effect.logError(`[Auth] ${message}`, logData).pipe(Effect.runPromise)
+    void Effect.logError(`[Auth] ${message}`, logData).pipe(Effect.runPromise)
   } else if (level === 'warn') {
-    Effect.logWarning(`[Auth] ${message}`, logData).pipe(Effect.runPromise)
+    void Effect.logWarning(`[Auth] ${message}`, logData).pipe(Effect.runPromise)
   } else {
-    Effect.logInfo(`[Auth] ${message}`, logData).pipe(Effect.runPromise)
+    void Effect.logInfo(`[Auth] ${message}`, logData).pipe(Effect.runPromise)
   }
 }
 
