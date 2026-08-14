@@ -39,6 +39,7 @@ import {
   type CreateLabelInput as LabelServiceCreateInput,
   type CreatePlaylistInput as PlaylistServiceCreateInput,
   type CreateTrackInput as TrackServiceCreateInput,
+  MusicEntityResolutionUnavailable,
   MusicEntityService
 } from '@/services/music-entity'
 import { S3Service } from '@/services/s3.service'
@@ -777,11 +778,13 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         const entityType = inferEntityTypeFromUrl(payload.url)
 
         const result = yield* dieOnDatabaseError(
-          svc
-            .scrapeAndCreateEntity(entityType, { url: payload.url })
-            .pipe(
-              Effect.catchTag('ValidationError', () => Effect.fail(new HttpApiError.BadRequest()))
+          svc.scrapeAndCreateEntity(entityType, { url: payload.url }).pipe(
+            Effect.catchTag('ValidationError', () => Effect.fail(new HttpApiError.BadRequest())),
+            Effect.catchTag(
+              'MusicEntityResolutionUnavailable',
+              () => new HttpApiError.ServiceUnavailable()
             )
+          )
         )
         const entity = result.entity
         const coverImageUrl = 'coverImageUrl' in entity ? entity.coverImageUrl : null
@@ -925,11 +928,13 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         }
         const svc = yield* MusicEntityService
         const result = yield* dieOnDatabaseError(
-          svc
-            .scrapeAndCreateEntity(params.entityType, payload)
-            .pipe(
-              Effect.catchTag('ValidationError', () => Effect.fail(new HttpApiError.BadRequest()))
+          svc.scrapeAndCreateEntity(params.entityType, payload).pipe(
+            Effect.catchTag('ValidationError', () => Effect.fail(new HttpApiError.BadRequest())),
+            Effect.catchTag(
+              'MusicEntityResolutionUnavailable',
+              () => new HttpApiError.ServiceUnavailable()
             )
+          )
         )
         return {
           entity: toJsonEntity(result.entity),

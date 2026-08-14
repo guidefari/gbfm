@@ -93,6 +93,7 @@ import {
   rescrapeOdesliLinksEffect,
   scrapeAndCreateEntityEffect
 } from './scrape.service'
+export { MusicEntityResolutionUnavailable } from './scrape.service'
 import {
   addArtistToTrackEffect,
   type CreateTrackInput,

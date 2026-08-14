@@ -1,8 +1,6 @@
 import { LINK_STATUS } from '@gbfm/core/status'
 import { and, eq, isNull, lt } from 'drizzle-orm'
 import { Data, Effect, Schedule } from 'effect'
-import * as HttpServerRespondable from 'effect/unstable/http/HttpServerRespondable'
-import { HttpApiError } from 'effect/unstable/httpapi'
 import { Database } from '@/db/layer'
 import {
   type MusicEntityType,
@@ -44,20 +42,9 @@ type ResolvedMusicEntity =
 
 class MusicEntityResolutionPending extends Data.TaggedError('MusicEntityResolutionPending') {}
 
-const serviceUnavailable = new HttpApiError.ServiceUnavailable({})
-
-export class MusicEntityResolutionUnavailable extends HttpApiError.Unauthorized {
-  readonly retryAfterMs: number
-
-  constructor(retryAfterMs: number) {
-    super({})
-    this.retryAfterMs = retryAfterMs
-  }
-
-  override [HttpServerRespondable.symbol]() {
-    return serviceUnavailable[HttpServerRespondable.symbol]()
-  }
-}
+export class MusicEntityResolutionUnavailable extends Data.TaggedError(
+  'MusicEntityResolutionUnavailable'
+)<{ readonly retryAfterMs: number }> {}
 
 const CLAIM_LEASE_MS = 30_000
 const CLAIM_WAIT_ATTEMPTS = 20
@@ -213,7 +200,7 @@ const claimResolution = (entityType: ScrapeableMusicEntityType, canonicalUrl: st
     }),
     Effect.catchTag(
       'MusicEntityResolutionPending',
-      () => new MusicEntityResolutionUnavailable(CLAIM_LEASE_MS)
+      () => new MusicEntityResolutionUnavailable({ retryAfterMs: CLAIM_LEASE_MS })
     )
   )
 
@@ -276,7 +263,7 @@ const renewResolutionClaim = (
         })
     })
     if (!rows[0]) {
-      return yield* new MusicEntityResolutionUnavailable(CLAIM_LEASE_MS)
+      return yield* new MusicEntityResolutionUnavailable({ retryAfterMs: CLAIM_LEASE_MS })
     }
   })
 

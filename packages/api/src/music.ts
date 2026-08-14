@@ -725,7 +725,7 @@ export const MusicGroup = HttpApiGroup.make('music')
     HttpApiEndpoint.post('resolveMusicEntity', '/api/music/resolve', {
       payload: ResolveMusicEntityInput,
       success: ResolvedMusicEntityResponse,
-      error: [HttpApiError.BadRequest, HttpApiError.Forbidden]
+      error: [HttpApiError.BadRequest, HttpApiError.Forbidden, HttpApiError.ServiceUnavailable]
     }).middleware(AuthMiddleware)
   )
   // ---------------------------------------------------------------------
@@ -780,7 +780,7 @@ export const MusicGroup = HttpApiGroup.make('music')
       params: { entityType: ScrapeEntityType },
       payload: ScrapeEntityLinksInput,
       success: ScrapeEntityLinksResponse,
-      error: [HttpApiError.BadRequest, HttpApiError.Forbidden]
+      error: [HttpApiError.BadRequest, HttpApiError.Forbidden, HttpApiError.ServiceUnavailable]
     }).middleware(AuthMiddleware)
   )
 // ---------------------------------------------------------------------

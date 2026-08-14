@@ -206,7 +206,7 @@ describe('scrapeAndCreateEntityEffect', () => {
     const error = Result.getOrThrow(Exit.findError(exit))
 
     expect(error).toBeInstanceOf(MusicEntityResolutionUnavailable)
-    expect(error).toMatchObject({ retryAfterMs: 30_000 })
+    expect(error).toMatchObject({ _tag: 'MusicEntityResolutionUnavailable', retryAfterMs: 30_000 })
   })
 
   test('does not treat notspotify.com as a Spotify source', async () => {

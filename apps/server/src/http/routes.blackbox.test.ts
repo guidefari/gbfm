@@ -29,6 +29,8 @@ import { navigationSessions } from '@/db/navigation.schema'
 import {
   musicAlbumsTable,
   musicArtistsTable,
+  musicEntityResolutionClaimsTable,
+  musicEntityTypesTable,
   musicTracksTable,
   musicLabelAlbumsTable,
   musicLabelArtistsTable,
@@ -634,6 +636,10 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
       userId,
       expiresAt: new Date(Date.now() + 60_000)
     })
+    await db
+      .insert(musicEntityTypesTable)
+      .values({ id: 'track', displayName: 'Track' })
+      .onConflictDoNothing()
 
     try {
       const res = await webHandler.handler(
@@ -649,6 +655,58 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
 
       expect(res.status).toBe(400)
     } finally {
+      await db.delete(session).where(eq(session.userId, userId))
+      await db.delete(user).where(eq(user.id, userId))
+    }
+  })
+
+  it('POST /api/music resolve endpoints return 503 while a claim lease is active', async () => {
+    const suffix = crypto.randomUUID()
+    const userId = `resolve-unavailable-admin-${suffix}`
+    const token = `resolve-unavailable-admin-token-${suffix}`
+    const url = `https://open.spotify.com/track/${crypto.randomUUID()}`
+
+    await db.insert(user).values({
+      id: userId,
+      name: 'Admin user',
+      email: `${userId}@example.com`,
+      role: 'admin'
+    })
+    await db.insert(session).values({
+      id: crypto.randomUUID(),
+      token,
+      userId,
+      expiresAt: new Date(Date.now() + 60_000)
+    })
+    await db
+      .insert(musicEntityTypesTable)
+      .values({ id: 'track', displayName: 'Track' })
+      .onConflictDoNothing()
+    await db.insert(musicEntityResolutionClaimsTable).values({
+      entityType: 'track',
+      canonicalUrl: url,
+      ownerToken: crypto.randomUUID(),
+      leaseExpiresAt: new Date(Date.now() + 60_000)
+    })
+
+    try {
+      const request = (path: string) =>
+        new Request(`http://localhost${path}`, {
+          method: 'POST',
+          headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+          body: JSON.stringify({ url })
+        })
+      const [resolve, scrape] = await Promise.all([
+        webHandler.handler(request('/api/music/resolve')),
+        webHandler.handler(request('/api/music/track/scrape'))
+      ])
+
+      expect(resolve.status).toBe(503)
+      expect(scrape.status).toBe(503)
+    } finally {
+      await db
+        .delete(musicEntityResolutionClaimsTable)
+        .where(eq(musicEntityResolutionClaimsTable.canonicalUrl, url))
       await db.delete(session).where(eq(session.userId, userId))
       await db.delete(user).where(eq(user.id, userId))
     }
