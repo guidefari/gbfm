@@ -185,11 +185,12 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
     )
     .handle('getMixQRPdf', ({ params, query }) =>
       Effect.gen(function* () {
+        const actor = yield* getOptionalActor
         const audioSvc = yield* AudioService
         const qrSvc = yield* QRCodeService
         const mix = yield* dieOnDatabaseError(
           audioSvc
-            .getBySlug('mix', params.slug)
+            .getBySlug('mix', params.slug, actor)
             .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
         )
 

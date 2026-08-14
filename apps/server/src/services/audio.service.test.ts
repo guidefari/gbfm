@@ -97,6 +97,44 @@ describe('AudioService.getByTypeForEdit visibility', () => {
   })
 })
 
+describe('AudioService.getBySlug draft visibility', () => {
+  test('returns a draft to its creator', async () => {
+    const service = await getService()
+    const slug = `own-draft-${randomUUID()}`
+
+    await Effect.runPromise(
+      service.create({ ...makeAudio(slug), draft: true }, [actorId], {
+        actorId,
+        idempotencyKey: randomUUID()
+      })
+    )
+
+    const audio = await Effect.runPromise(
+      service.getBySlug('mix', slug, { userId: actorId, userRole: 'user' })
+    )
+
+    expect(audio.slug).toBe(slug)
+  })
+
+  test('returns another creator draft to an admin', async () => {
+    const service = await getService()
+    const slug = `admin-draft-${randomUUID()}`
+
+    await Effect.runPromise(
+      service.create({ ...makeAudio(slug), draft: true }, [otherActorId], {
+        actorId: otherActorId,
+        idempotencyKey: randomUUID()
+      })
+    )
+
+    const audio = await Effect.runPromise(
+      service.getBySlug('mix', slug, { userId: actorId, userRole: 'admin' })
+    )
+
+    expect(audio.slug).toBe(slug)
+  })
+})
+
 describe('AudioService.create idempotency', () => {
   test('normalizes creator order without hiding changed content', async () => {
     const audio = makeAudio('fingerprint')
