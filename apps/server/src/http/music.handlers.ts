@@ -777,7 +777,11 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         const entityType = inferEntityTypeFromUrl(payload.url)
 
         const result = yield* dieOnDatabaseError(
-          svc.scrapeAndCreateEntity(entityType, { url: payload.url })
+          svc
+            .scrapeAndCreateEntity(entityType, { url: payload.url })
+            .pipe(
+              Effect.catchTag('ValidationError', () => Effect.fail(new HttpApiError.BadRequest()))
+            )
         )
         const entity = result.entity
         const coverImageUrl = 'coverImageUrl' in entity ? entity.coverImageUrl : null
@@ -921,7 +925,11 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         }
         const svc = yield* MusicEntityService
         const result = yield* dieOnDatabaseError(
-          svc.scrapeAndCreateEntity(params.entityType, payload)
+          svc
+            .scrapeAndCreateEntity(params.entityType, payload)
+            .pipe(
+              Effect.catchTag('ValidationError', () => Effect.fail(new HttpApiError.BadRequest()))
+            )
         )
         return {
           entity: toJsonEntity(result.entity),

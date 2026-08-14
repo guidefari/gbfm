@@ -725,7 +725,7 @@ export const MusicGroup = HttpApiGroup.make('music')
     HttpApiEndpoint.post('resolveMusicEntity', '/api/music/resolve', {
       payload: ResolveMusicEntityInput,
       success: ResolvedMusicEntityResponse,
-      error: HttpApiError.Forbidden
+      error: [HttpApiError.BadRequest, HttpApiError.Forbidden]
     }).middleware(AuthMiddleware)
   )
   // ---------------------------------------------------------------------

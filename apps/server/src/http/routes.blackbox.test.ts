@@ -617,6 +617,43 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
     expect(res.status).toBe(401)
   })
 
+  it('POST /api/music/resolve returns 400 when resolution finds no usable entity data', async () => {
+    const suffix = crypto.randomUUID()
+    const userId = `resolve-admin-${suffix}`
+    const token = `resolve-admin-token-${suffix}`
+
+    await db.insert(user).values({
+      id: userId,
+      name: 'Admin user',
+      email: `${userId}@example.com`,
+      role: 'admin'
+    })
+    await db.insert(session).values({
+      id: crypto.randomUUID(),
+      token,
+      userId,
+      expiresAt: new Date(Date.now() + 60_000)
+    })
+
+    try {
+      const res = await webHandler.handler(
+        new Request('http://localhost/api/music/resolve', {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${token}`,
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({ url: 'https://open.spotify.com/track/0000000000000000000000' })
+        })
+      )
+
+      expect(res.status).toBe(400)
+    } finally {
+      await db.delete(session).where(eq(session.userId, userId))
+      await db.delete(user).where(eq(user.id, userId))
+    }
+  })
+
   it('POST /api/music/artist/scrape returns 401 without a session cookie', async () => {
     const res = await webHandler.handler(
       new Request('http://localhost/api/music/artist/scrape', {
