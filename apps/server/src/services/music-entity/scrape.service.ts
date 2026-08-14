@@ -113,6 +113,14 @@ export const scrapeAndCreateEntityEffect = (
     const result = yield* scraper.scrape(input)
     const meta = result.entityMeta
 
+    if (!hasUsableScrapeResult(result)) {
+      return yield* new DatabaseError({
+        message: 'Music URL resolution returned no metadata or links',
+        operation: 'insert',
+        table: 'music_entities'
+      })
+    }
+
     const rawArtistName = meta?.artistName ?? input.artistName
     const foundArtists =
       rawArtistName && (entityType === 'album' || entityType === 'track')
@@ -192,4 +200,21 @@ export const scrapeAndCreateEntityEffect = (
     Effect.withSpan('musicEntity.scrapeAndCreateEntity', {
       attributes: { entityType }
     })
+  )
+
+const hasUsableScrapeResult = (result: {
+  readonly links: readonly unknown[]
+  readonly entityMeta?: {
+    readonly title?: string
+    readonly artistName?: string
+    readonly thumbnailUrl?: string
+    readonly isrc?: string
+  }
+}): boolean =>
+  result.links.length > 0 ||
+  Boolean(
+    result.entityMeta?.title ||
+    result.entityMeta?.artistName ||
+    result.entityMeta?.thumbnailUrl ||
+    result.entityMeta?.isrc
   )

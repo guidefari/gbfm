@@ -25,7 +25,7 @@
 import { Context, Data, Effect, Layer, Schedule, Schema } from 'effect'
 import { getErrorMessage } from '@/errors'
 import { extractBandcampArtist, getBandcampMetadataWithSpan } from '@/services/bandcamp.service'
-import { isBandcampUrl } from '@/services/url-utils'
+import { extractSpotifyId, isBandcampUrl } from '@/services/url-utils'
 import { SpotifyService } from '@/services/spotify.service'
 import type { InsertMusicEntityLink, MusicPlatform } from '../db/music-entity.schema'
 
@@ -54,6 +54,10 @@ export interface MusicScrapeInput {
   mbid?: string
   /** International Standard Recording Code when known */
   isrc?: string
+}
+
+export interface MusicScrapeOptions {
+  readonly signal?: AbortSignal
 }
 
 export interface ScrapedLink {
@@ -96,7 +100,10 @@ export interface MusicDataProvider {
    * provider doesn't handle the input (e.g. no URL provided for a URL-only
    * provider). Never throw — signal errors via Effect failure.
    */
-  readonly fetchLinks: (input: MusicScrapeInput) => Effect.Effect<ProviderResult, MusicScraperError>
+  readonly fetchLinks: (
+    input: MusicScrapeInput,
+    options?: MusicScrapeOptions
+  ) => Effect.Effect<ProviderResult, MusicScraperError>
 }
 
 // ---------------------------------------------------------------------------
@@ -173,7 +180,10 @@ const decodeOdesliResponse = Schema.decodeUnknownSync(OdesliResponseSchema)
 export class OdesliProvider implements MusicDataProvider {
   readonly name = 'odesli'
 
-  fetchLinks(input: MusicScrapeInput): Effect.Effect<ProviderResult, MusicScraperError> {
+  fetchLinks(
+    input: MusicScrapeInput,
+    options: MusicScrapeOptions = {}
+  ): Effect.Effect<ProviderResult, MusicScraperError> {
     if (!input.url) return Effect.succeed({ links: [] })
 
     const seedUrl = input.url
@@ -182,7 +192,10 @@ export class OdesliProvider implements MusicDataProvider {
       const apiUrl = `https://api.song.link/v1-alpha.1/links?url=${encoded}&userCountry=US`
 
       const response = yield* Effect.tryPromise({
-        try: () => fetch(apiUrl),
+        try: (signal) =>
+          fetch(apiUrl, {
+            signal: options.signal ? AbortSignal.any([signal, options.signal]) : signal
+          }),
         catch: (err) =>
           new MusicScraperError({
             message: `Odesli fetch failed: ${getErrorMessage(err)}`,
@@ -257,6 +270,16 @@ export class OdesliProvider implements MusicDataProvider {
         schedule: Schedule.exponential('2 seconds').pipe(Schedule.upTo({ times: 5 })),
         while: (err) => err.statusCode === 429
       }),
+      Effect.timeout('15 seconds'),
+      Effect.catchTag('TimeoutError', () =>
+        Effect.fail(
+          new MusicScraperError({
+            message: 'Odesli request timed out after 15 seconds',
+            provider: 'odesli',
+            statusCode: 504
+          })
+        )
+      ),
       Effect.withSpan('musicScraper.odesli', {
         attributes: { 'scraper.seed_url': seedUrl }
       })
@@ -308,7 +331,10 @@ export class FirecrawlProvider implements MusicDataProvider {
 
   constructor(private readonly apiKey: string) {}
 
-  fetchLinks(input: MusicScrapeInput): Effect.Effect<ProviderResult, MusicScraperError> {
+  fetchLinks(
+    input: MusicScrapeInput,
+    options: MusicScrapeOptions = {}
+  ): Effect.Effect<ProviderResult, MusicScraperError> {
     if (!input.url) return Effect.succeed({ links: [] })
 
     const pageUrl = input.url
@@ -316,7 +342,7 @@ export class FirecrawlProvider implements MusicDataProvider {
 
     return Effect.gen(function* () {
       const response = yield* Effect.tryPromise({
-        try: () =>
+        try: (signal) =>
           fetch('https://api.firecrawl.dev/v1/extract', {
             method: 'POST',
             headers: {
@@ -339,7 +365,8 @@ export class FirecrawlProvider implements MusicDataProvider {
                   }
                 }
               }
-            })
+            }),
+            signal: options.signal ? AbortSignal.any([signal, options.signal]) : signal
           }),
         catch: (err) =>
           new MusicScraperError({
@@ -393,7 +420,10 @@ export class FirecrawlProvider implements MusicDataProvider {
 export class MusicBrainzProvider implements MusicDataProvider {
   readonly name = 'musicbrainz'
 
-  fetchLinks(input: MusicScrapeInput): Effect.Effect<ProviderResult, MusicScraperError> {
+  fetchLinks(
+    input: MusicScrapeInput,
+    options: MusicScrapeOptions = {}
+  ): Effect.Effect<ProviderResult, MusicScraperError> {
     if (!input.mbid && !input.isrc && !input.artistName) {
       return Effect.succeed({ links: [] })
     }
@@ -427,9 +457,10 @@ export class MusicBrainzProvider implements MusicDataProvider {
         const apiUrl = `https://musicbrainz.org/ws/2/recording/?query=${encodeURIComponent(query)}&fmt=json&limit=1`
 
         const response = yield* Effect.tryPromise({
-          try: () =>
+          try: (signal) =>
             fetch(apiUrl, {
-              headers: { 'User-Agent': 'gbfm/1.0 (https://gbfm.co.za)' }
+              headers: { 'User-Agent': 'gbfm/1.0 (https://gbfm.co.za)' },
+              signal: options.signal ? AbortSignal.any([signal, options.signal]) : signal
             }),
           catch: (err) =>
             new MusicScraperError({
@@ -540,27 +571,39 @@ export interface MusicLinkScraperService {
    * if two providers return a link for the same platform, the later one wins.
    * Never fails — provider errors are logged and swallowed.
    */
-  readonly scrape: (input: MusicScrapeInput) => Effect.Effect<ScrapeResult, never>
+  readonly scrape: (
+    input: MusicScrapeInput,
+    options?: MusicScrapeOptions
+  ) => Effect.Effect<ScrapeResult, never>
 }
 
 export const MusicLinkScraperService =
   Context.Service<MusicLinkScraperService>('MusicLinkScraperService')
 
-function makeScraperWithProviders(
+export function makeMusicLinkScraperService(
   providers: MusicDataProvider[],
   spotify: SpotifyService
 ): MusicLinkScraperService {
   const odesli = new OdesliProvider()
 
   return {
-    scrape: Effect.fn('musicScraper.scrape')(function* (input: MusicScrapeInput) {
+    scrape: Effect.fn('musicScraper.scrape')(function* (
+      input: MusicScrapeInput,
+      options: MusicScrapeOptions = {}
+    ) {
       const platformMap = new Map<string, ScrapedLink>()
       let entityMeta: EntityMeta | undefined
+      let odesliUnavailable = false
 
       for (const provider of providers) {
-        const result = yield* Effect.catch(provider.fetchLinks(input), (err) =>
+        const result = yield* Effect.catch(provider.fetchLinks(input, options), (err) =>
           Effect.andThen(
-            Effect.logWarning(`[${provider.name}] scrape failed: ${err.message}`),
+            Effect.andThen(
+              Effect.sync(() => {
+                if (provider.name === 'odesli') odesliUnavailable = true
+              }),
+              Effect.logWarning(`[${provider.name}] scrape failed: ${err.message}`)
+            ),
             Effect.succeed({
               links: [],
               entityMeta: undefined
@@ -576,6 +619,27 @@ function makeScraperWithProviders(
         // Use the first successful entityMeta we get
         if (!entityMeta && result.entityMeta) {
           entityMeta = result.entityMeta
+        }
+      }
+
+      if (odesliUnavailable && !platformMap.has('spotify') && isSpotifyTrackUrl(input.url)) {
+        const spotifyTrack = yield* Effect.catch(
+          spotify.getTrack(extractSpotifyId(input.url) ?? ''),
+          () => Effect.succeed(null)
+        )
+
+        if (spotifyTrack) {
+          platformMap.set('spotify', {
+            platform: 'spotify',
+            url: spotifyTrack.trackUrl,
+            scrapedAt: new Date()
+          })
+          entityMeta ??= {
+            title: spotifyTrack.title,
+            artistName: spotifyTrack.artists,
+            thumbnailUrl: spotifyTrack.albumImageUrl,
+            type: 'song'
+          }
         }
       }
 
@@ -595,7 +659,7 @@ function makeScraperWithProviders(
 
         if (spotifyMatch) {
           const odesliResult = yield* Effect.catch(
-            odesli.fetchLinks({ url: spotifyMatch.url }),
+            odesli.fetchLinks({ url: spotifyMatch.url }, options),
             () => Effect.succeed({ links: [], entityMeta: undefined } satisfies ProviderResult)
           )
           for (const link of odesliResult.links) {
@@ -632,7 +696,7 @@ export const MusicLinkScraperServiceLayer = Layer.effect(
       providers.push(new FirecrawlProvider(firecrawlKey))
     }
 
-    return makeScraperWithProviders(providers, spotify)
+    return makeMusicLinkScraperService(providers, spotify)
   })
 )
 
@@ -656,4 +720,20 @@ function mapToPlatform(key: string): MusicPlatform {
   if (lower.includes('twitter') || lower.includes('x.com')) return 'twitter'
   if (lower.includes('musicbrainz')) return 'musicbrainz'
   return 'other'
+}
+
+function isSpotifyTrackUrl(url: string | undefined): url is string {
+  if (!url || !extractSpotifyId(url)) return false
+
+  try {
+    const parsed = new URL(url)
+    return (
+      (parsed.hostname === 'open.spotify.com' ||
+        parsed.hostname === 'spotify.com' ||
+        parsed.hostname === 'www.spotify.com') &&
+      parsed.pathname.startsWith('/track/')
+    )
+  } catch {
+    return false
+  }
 }
