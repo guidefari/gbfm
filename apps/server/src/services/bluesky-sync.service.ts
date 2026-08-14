@@ -98,6 +98,7 @@ export interface BlueskySyncService {
     | IdentityResolutionError
     | CryptoError
   >
+  // oxlint-disable-next-line effecttsgo/lazy-effect -- Existing callers use the zero-argument service method contract.
   readonly syncScheduled: () => Effect.Effect<ScheduledSyncReport, DatabaseError>
 }
 

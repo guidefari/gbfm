@@ -265,6 +265,8 @@ const renewResolutionClaim = (
     if (!rows[0]) {
       return yield* new MusicEntityResolutionUnavailable({ retryAfterMs: CLAIM_LEASE_MS })
     }
+
+    return undefined
   })
 
 const deleteUnresolvedResolutionClaim = (
@@ -339,6 +341,8 @@ const getEntityById = (
       return getTrackByIdEffect(entityId)
     case 'playlist':
       return getPlaylistByIdEffect(entityId)
+    default:
+      return Effect.die(`Unsupported music entity type: ${entityType}`)
   }
 }
 
@@ -435,6 +439,8 @@ export const scrapeAndCreateEntityEffect = (
             coverImageUrl: meta?.thumbnailUrl
           })
         }
+        default:
+          return Effect.die(`Unsupported music entity type: ${entityType}`)
       }
     })()
 

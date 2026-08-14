@@ -8,6 +8,7 @@ import { favoritesTable } from '@/db/favorites.schema'
 import { Database } from '@/db/layer'
 import { showSubscriptionsTable, showsTable } from '@/db/show.schema'
 import { db } from '@/test/d1'
+import { withTestLayer } from '@/test/effect'
 import { FavoriteService, FavoriteServiceLayer } from './favorite.service'
 
 const CONCURRENCY = 20
@@ -22,10 +23,13 @@ const runFavoriteEffect = <A>(
   ) => Effect.Effect<A, DatabaseError | NotFoundError | ConflictError, FavoriteService>
 ) =>
   Effect.runPromiseExit(
-    Effect.gen(function* () {
-      const svc = yield* FavoriteService
-      return yield* fn(svc)
-    }).pipe(Effect.provide(TestFavoriteServiceLayer))
+    withTestLayer(
+      Effect.gen(function* () {
+        const svc = yield* FavoriteService
+        return yield* fn(svc)
+      }),
+      TestFavoriteServiceLayer
+    )
   )
 
 describe('D1 concurrent favorites', () => {

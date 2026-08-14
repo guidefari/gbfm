@@ -1,6 +1,7 @@
 import { Effect, Layer, Redacted } from 'effect'
 import { describe, expect, test } from 'vitest'
 import { ConfigService } from './config.service'
+import { withTestLayer } from '@/test/effect'
 import { CryptoService, CryptoServiceLayer } from './crypto.service'
 
 const layer = CryptoServiceLayer.pipe(
@@ -31,12 +32,15 @@ const layer = CryptoServiceLayer.pipe(
 describe('CryptoService', () => {
   test('round trips encrypted values without exposing plaintext in the envelope', async () => {
     const result = await Effect.runPromise(
-      Effect.gen(function* () {
-        const crypto = yield* CryptoService
-        const envelope = yield* crypto.encrypt(Redacted.make('app-password'))
-        const plaintext = yield* crypto.decrypt(envelope)
-        return { envelope, plaintext: Redacted.value(plaintext) }
-      }).pipe(Effect.provide(layer))
+      withTestLayer(
+        Effect.gen(function* () {
+          const crypto = yield* CryptoService
+          const envelope = yield* crypto.encrypt(Redacted.make('app-password'))
+          const plaintext = yield* crypto.decrypt(envelope)
+          return { envelope, plaintext: Redacted.value(plaintext) }
+        }),
+        layer
+      )
     )
 
     expect(result.envelope.payload).not.toContain('app-password')
@@ -46,11 +50,14 @@ describe('CryptoService', () => {
   test('rejects tampered ciphertext', async () => {
     await expect(
       Effect.runPromise(
-        Effect.gen(function* () {
-          const crypto = yield* CryptoService
-          const envelope = yield* crypto.encrypt(Redacted.make('secret'))
-          yield* crypto.decrypt({ ...envelope, payload: `${envelope.payload}tampered` })
-        }).pipe(Effect.provide(layer))
+        withTestLayer(
+          Effect.gen(function* () {
+            const crypto = yield* CryptoService
+            const envelope = yield* crypto.encrypt(Redacted.make('secret'))
+            yield* crypto.decrypt({ ...envelope, payload: `${envelope.payload}tampered` })
+          }),
+          layer
+        )
       )
     ).rejects.toMatchObject({ _tag: 'CryptoError', operation: 'decrypt' })
   })

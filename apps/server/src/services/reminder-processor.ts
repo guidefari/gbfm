@@ -73,6 +73,8 @@ const deliverReminderEmail = (reminder: typeof musicReminder.$inferSelect) =>
             })
         )
       )
+
+    return undefined
   })
 
 // Process all pending music reminders

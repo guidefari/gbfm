@@ -70,7 +70,7 @@ export function requireCreatorOrAdmin(
 ) {
   return Effect.gen(function* () {
     if (userRole === 'admin') {
-      return
+      return undefined
     }
 
     const isCreator = yield* checkCreatorAuthorship(tableType, resourceId, userId)
@@ -81,6 +81,8 @@ export function requireCreatorOrAdmin(
         userId
       })
     }
+
+    return undefined
   })
 }
 
@@ -94,5 +96,7 @@ export function requireCreator(tableType: CreatorTableType, resourceId: string, 
         userId
       })
     }
+
+    return undefined
   })
 }

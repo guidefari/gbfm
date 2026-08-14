@@ -84,7 +84,7 @@ const addFavoriteEffect = (userId: string, audioId: string) =>
       })
 
       if (audioRecords.length === 0) {
-        return yield* new NotFoundError({
+        yield* new NotFoundError({
           message: 'Audio not found',
           resource: 'audio',
           id: audioId
@@ -129,7 +129,7 @@ const addFavoriteEffect = (userId: string, audioId: string) =>
         favoriteId: favorite.id
       })
 
-      yield* recordFavoriteAdd()
+      yield* recordFavoriteAdd
 
       return favorite
     })
@@ -158,7 +158,7 @@ const removeFavoriteEffect = (userId: string, audioId: string) =>
       })
 
       if (existingRecords.length === 0) {
-        return yield* new NotFoundError({
+        yield* new NotFoundError({
           message: 'Favorite not found',
           resource: 'favorite',
           id: `${userId}-${audioId}`
@@ -179,7 +179,7 @@ const removeFavoriteEffect = (userId: string, audioId: string) =>
           })
       })
 
-      yield* recordFavoriteRemove()
+      yield* recordFavoriteRemove
 
       yield* Effect.logInfo('[Favorites] Favorite removed', {
         userId,
@@ -271,7 +271,7 @@ const addShowFavoriteEffect = (userId: string, showId: string) =>
         })
       }
 
-      yield* recordFavoriteAdd()
+      yield* recordFavoriteAdd
       yield* Effect.logInfo('[Favorites] Show favorite added', {
         favoriteId: favorite.id,
         userId,
@@ -347,11 +347,13 @@ const removeShowFavoriteEffect = (userId: string, showId: string) =>
         showId
       })
 
-      yield* recordFavoriteRemove()
+      yield* recordFavoriteRemove
       yield* Effect.logInfo('[Favorites] Show favorite removed', {
         userId,
         showId
       })
+
+      return undefined
     })
   )
 

@@ -246,13 +246,16 @@ const enqueueDueReminders = Effect.gen(function* () {
 )
 
 const runReminderSweep = (env: ApiEnv) =>
+  // oxlint-disable-next-line effecttsgo/strict-effect-provide -- Scheduled dispatch is an Effect application entry point.
   Effect.provide(enqueueDueReminders, appServicesLive(env)).pipe(
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- Scheduled dispatch is an Effect application entry point.
     Effect.provide(reminderQueueLive(env))
   )
 
 const runSitemapRegeneration = (env: ApiEnv) =>
   regenerateSitemap.pipe(
     Effect.asVoid,
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- Scheduled dispatch is an Effect application entry point.
     Effect.provide(appServicesLive(env)),
     Effect.catch((error) =>
       Effect.logError('[worker.scheduled] sitemap regeneration failed', { error })
@@ -294,6 +297,7 @@ const runMaintenanceSweep = (env: ApiEnv) =>
         Effect.asVoid
       )
     ),
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- Scheduled dispatch is an Effect application entry point.
     Effect.provide(appServicesLive(env))
   )
 
@@ -313,6 +317,7 @@ const processReminderMessage = (env: ApiEnv, job: ReminderJob) =>
     }
 
     yield* sendClaimedReminder(reminder)
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- Queue dispatch is an Effect application entry point.
   }).pipe(Effect.provide(appServicesLive(env)))
 
 export default Sentry.withSentry<ApiEnv, ReminderJob>(sentryOptions, {

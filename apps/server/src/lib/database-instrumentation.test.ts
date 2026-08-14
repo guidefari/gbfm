@@ -4,6 +4,7 @@ import { InMemorySpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-tr
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
 import { Effect, Layer } from 'effect'
 import { describe, expect, test, vi } from 'vitest'
+import { withTestLayer } from '@/test/effect'
 import { instrumentDatabaseClient, type DatabaseSpanOptions } from './database-instrumentation'
 
 type TestQueryInput = string | { readonly text: string; readonly values?: readonly string[] }
@@ -117,10 +118,13 @@ describe('instrumentDatabaseClient', () => {
         return client.query(queryConfig)
       })
       const pool = instrumentDatabaseClient({ query: poolQuery })
-      await Effect.promise(() => pool.query('select "id" from "audio"')).pipe(
-        Effect.withSpan('request'),
-        Effect.provide(tracingLive),
-        Effect.runPromise
+      await Effect.runPromise(
+        withTestLayer(
+          Effect.promise(() => pool.query('select "id" from "audio"')).pipe(
+            Effect.withSpan('request')
+          ),
+          tracingLive
+        )
       )
       await provider.forceFlush()
 

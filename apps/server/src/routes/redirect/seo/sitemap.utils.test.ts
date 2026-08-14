@@ -193,9 +193,7 @@ describe('sitemap.utils', () => {
           .split('\n')
           .filter(
             (line) =>
-              line.includes('/test-') ||
-              line.includes('/testuser') ||
-              line.includes('<loc>') === false
+              line.includes('/test-') || line.includes('/testuser') || !line.includes('<loc>')
           )
           .join('\n')
 

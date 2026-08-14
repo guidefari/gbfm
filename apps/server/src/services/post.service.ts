@@ -128,7 +128,9 @@ export interface PostService {
   readonly getMicroPostById: (
     id: string
   ) => Effect.Effect<SelectMdxCompiledMicroPost, DatabaseError | NotFoundError>
+  // oxlint-disable-next-line effecttsgo/lazy-effect -- Existing callers use the zero-argument service method contract.
   readonly getEditorialTags: () => Effect.Effect<string[], DatabaseError>
+  // oxlint-disable-next-line effecttsgo/lazy-effect -- Existing callers use the zero-argument service method contract.
   readonly getMicroTags: () => Effect.Effect<string[], DatabaseError>
   readonly getAdjacentMicroPosts: (slug: string) => Effect.Effect<
     {
@@ -1423,6 +1425,8 @@ const validateQuotedPost = (quotedPostId: string) =>
         quotedPostType: quoted.type ?? 'unknown'
       })
     }
+
+    return undefined
   })
 
 export const generatePostSlug = (title?: string | null, content?: string | null) => {

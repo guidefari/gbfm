@@ -178,7 +178,7 @@ export const AwsObjectStoreClientLayer = Layer.effect(
           )
           partNumberMarker =
             response.IsTruncated && response.NextPartNumberMarker
-              ? String(response.NextPartNumberMarker)
+              ? response.NextPartNumberMarker
               : undefined
         } while (partNumberMarker)
 

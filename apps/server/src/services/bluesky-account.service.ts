@@ -202,7 +202,7 @@ const disconnectEffect = (userId: string, accountId: string) =>
       catch: () => databaseError('disconnect')
     })
     if (deleted.length === 0) {
-      return yield* new NotFoundError({ message: 'Bluesky account not found' })
+      yield* new NotFoundError({ message: 'Bluesky account not found' })
     }
   })
 

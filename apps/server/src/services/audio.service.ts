@@ -480,7 +480,7 @@ const createEffect = (
     yield* Effect.annotateCurrentSpan('idempotencyReplay', !result.created)
 
     if (result.created) {
-      yield* recordAudioCreate()
+      yield* recordAudioCreate
 
       yield* Effect.logInfo('[Content] Audio created', {
         audioId: result.audio.id,

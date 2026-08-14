@@ -99,7 +99,7 @@ const subscribeEffect = (userId: string, showId: string) =>
       })
     }
 
-    yield* recordShowSubscribe()
+    yield* recordShowSubscribe
 
     yield* Effect.tryPromise(() =>
       db.insert(favoritesTable).values({ userId, showId }).onConflictDoNothing()
@@ -131,13 +131,13 @@ const unsubscribeEffect = (userId: string, showId: string) =>
     })
 
     if (result.length === 0) {
-      return yield* new NotFoundError({
+      yield* new NotFoundError({
         message: 'Subscription not found',
         resource: 'show_subscription'
       })
     }
 
-    yield* recordShowUnsubscribe()
+    yield* recordShowUnsubscribe
   })
 
 const getUserSubscriptionsEffect = (userId: string, options: { limit: number; offset: number }) =>

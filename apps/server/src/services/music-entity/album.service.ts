@@ -74,26 +74,25 @@ export const createAlbumEffect = Effect.fn('musicEntity.createAlbum')(function* 
   return { ...rows, genres: projectedGenres }
 })
 
-export const getAlbumsEffect = () =>
-  Effect.gen(function* () {
-    const db = yield* Database
-    return yield* Effect.tryPromise({
-      try: async () => {
-        const albums = await db
-          .select()
-          .from(musicAlbumsTable)
-          .orderBy(desc(musicAlbumsTable.createdAt), asc(musicAlbumsTable.id))
-        const projected = await projectEntityLabelsForRows(db, 'album', albums)
-        return projected.map(({ tags: _tags, genres, ...album }) => ({ ...album, genres }))
-      },
-      catch: (e) =>
-        new DatabaseError({
-          message: `Failed to list albums: ${getErrorMessage(e)}`,
-          operation: 'select',
-          table: 'music_albums'
-        })
-    })
-  }).pipe(Effect.withSpan('musicEntity.getAlbums'))
+export const getAlbumsEffect = Effect.gen(function* () {
+  const db = yield* Database
+  return yield* Effect.tryPromise({
+    try: async () => {
+      const albums = await db
+        .select()
+        .from(musicAlbumsTable)
+        .orderBy(desc(musicAlbumsTable.createdAt), asc(musicAlbumsTable.id))
+      const projected = await projectEntityLabelsForRows(db, 'album', albums)
+      return projected.map(({ tags: _tags, genres, ...album }) => ({ ...album, genres }))
+    },
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to list albums: ${getErrorMessage(e)}`,
+        operation: 'select',
+        table: 'music_albums'
+      })
+  })
+}).pipe(Effect.withSpan('musicEntity.getAlbums'))
 
 export const getAlbumByIdEffect = (id: string) =>
   Effect.gen(function* () {

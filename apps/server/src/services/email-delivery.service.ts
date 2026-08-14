@@ -82,7 +82,7 @@ const toFailureCategory = (
   failure._tag === 'EmailRejected' ? failure.reason : 'unavailable'
 
 const safeTelemetry = (effect: Effect.Effect<void, never, unknown>): Effect.Effect<void> => {
-  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: Effect's tracing and metric operations have no required runtime services and no failure path.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion, typescript/consistent-type-assertions -- SAFETY: Effect's tracing and metric operations have no required runtime services and no failure path.
   return effect as Effect.Effect<void>
 }
 
@@ -95,11 +95,9 @@ const persist = <A>(
     catch: () => new EmailDeliveryPersistenceError({ operation })
   }).pipe(
     Effect.tapError((error) =>
-      safeTelemetry(
-        Effect.andThen(
-          Effect.annotateCurrentSpan('email.persistence_operation', error.operation),
-          recordEmailFail()
-        )
+      Effect.andThen(
+        Effect.annotateCurrentSpan('email.persistence_operation', error.operation),
+        recordEmailFail
       )
     )
   )
@@ -162,7 +160,7 @@ export const EmailDeliveryLive = Layer.effect(
             yield* persist('mark-failed', () =>
               markEmailDeliveryLogAsFailed(pending.id, failureCategory, failedAt, database)
             )
-            yield* safeTelemetry(recordEmailFail())
+            yield* recordEmailFail
 
             if (failure._tag === 'EmailRejected') {
               return yield* new EmailDeliveryRejected({ category: failure.reason })
@@ -180,7 +178,7 @@ export const EmailDeliveryLive = Layer.effect(
             yield* persist('mark-failed', () =>
               markEmailDeliveryLogAsFailed(pending.id, 'unavailable', failedAt, database)
             )
-            yield* safeTelemetry(recordEmailFail())
+            yield* recordEmailFail
             return yield* new EmailDeliveryUnavailable()
           }
 
@@ -197,7 +195,7 @@ export const EmailDeliveryLive = Layer.effect(
               database
             )
           )
-          yield* safeTelemetry(recordEmailSend())
+          yield* recordEmailSend
 
           return {
             deliveryLogId: pending.id,

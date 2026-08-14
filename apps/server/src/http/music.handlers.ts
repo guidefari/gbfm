@@ -203,6 +203,8 @@ const requireAdmin = Effect.gen(function* () {
   if (user.role !== 'admin') {
     return yield* new HttpApiError.Forbidden()
   }
+
+  return undefined
 })
 
 // scrapeAndCreateEntity returns a raw Drizzle row (Date fields, entity-type
@@ -270,7 +272,7 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
     .handle('listArtists', () =>
       Effect.gen(function* () {
         const svc = yield* MusicEntityService
-        const rows = yield* dieOnDatabaseError(svc.getArtists())
+        const rows = yield* dieOnDatabaseError(svc.getArtists)
         return rows.map(toArtistResponse)
       })
     )
@@ -361,7 +363,7 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
     .handle('listAlbums', () =>
       Effect.gen(function* () {
         const svc = yield* MusicEntityService
-        const rows = yield* dieOnDatabaseError(svc.getAlbums())
+        const rows = yield* dieOnDatabaseError(svc.getAlbums)
         return rows.map(toAlbumResponse)
       })
     )
@@ -424,7 +426,7 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
     .handle('listTracks', () =>
       Effect.gen(function* () {
         const svc = yield* MusicEntityService
-        const rows = yield* dieOnDatabaseError(svc.getTracks())
+        const rows = yield* dieOnDatabaseError(svc.getTracks)
         return rows.map(toTrackResponse)
       })
     )
@@ -479,7 +481,7 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
     .handle('listPlaylists', () =>
       Effect.gen(function* () {
         const svc = yield* MusicEntityService
-        const rows = yield* dieOnDatabaseError(svc.getPlaylists())
+        const rows = yield* dieOnDatabaseError(svc.getPlaylists)
         return rows.map(toPlaylistResponse)
       })
     )

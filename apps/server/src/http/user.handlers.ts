@@ -46,6 +46,8 @@ const requireAdmin = Effect.gen(function* () {
   if (sessionUser.role !== 'admin') {
     return yield* new HttpApiError.Forbidden()
   }
+
+  return undefined
 })
 
 type UserProfile = Effect.Success<ReturnType<UserService['getUserById']>>

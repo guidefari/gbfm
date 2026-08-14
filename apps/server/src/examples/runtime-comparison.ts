@@ -43,6 +43,7 @@ async function _approachWithoutRuntime() {
 
   // Run 10 times (like your cron job running 10 times)
   for (let i = 0; i < 10; i++) {
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- This example intentionally creates the execution boundary for each run.
     await Effect.runPromise(myEffect.pipe(Effect.provide(ExpensiveServiceLayer)))
     // Service is created and destroyed EVERY TIME!
   }

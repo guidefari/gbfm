@@ -353,6 +353,8 @@ const verifyTaskDefinitionRelease = (
         'The stable ECS task definition does not contain the deployed Sentry release'
       )
     }
+
+    return undefined
   })
 
 const verifyHealthProbe = (
@@ -445,6 +447,8 @@ const validateDatabaseSpans = (
       summary: 'Sentry returned an automatic or privacy-unsafe database span'
     })
   }
+
+  return undefined
 }
 
 const databaseSpanFingerprint = (spans: ReadonlyArray<typeof SentrySpan.Type>) =>
@@ -506,7 +510,7 @@ const waitForDatabaseSpans = (
       if (attempt < config.sentry.ingestionAttempts) yield* port.wait(config.sentry.intervalMs)
     }
 
-    return yield* fail(
+    yield* fail(
       'sentry-ingestion',
       `No database spans arrived for the verification trace after ${config.sentry.ingestionAttempts} attempts`
     )
@@ -573,6 +577,8 @@ const verifyNoAutomaticDatabaseSpans = (
         `Sentry returned ${response.data.length} forbidden automatic database span(s)`
       )
     }
+
+    return undefined
   })
 
 /**

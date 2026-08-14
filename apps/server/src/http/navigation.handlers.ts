@@ -16,6 +16,8 @@ const toNavigationCommand = (command: ApiNavigationCommand): NavigationCommand =
       return command
     case 'Open':
       return { ...command, slug: decodeSlug(command.slug) }
+    default:
+      throw new Error('Unsupported navigation command')
   }
 }
 

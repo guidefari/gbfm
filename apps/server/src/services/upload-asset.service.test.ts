@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import { Effect, Layer } from 'effect'
 import { beforeAll, describe, expect, test } from 'vitest'
 import { DatabaseTestLayer, db } from '@/test/database'
+import { withTestLayer } from '@/test/effect'
 import { user } from '@/db/auth.schema'
 import { uploadAssetsTable } from '@/db/upload-asset.schema'
 import {
@@ -23,9 +24,12 @@ beforeAll(async () => {
 
 const getService = () =>
   Effect.runPromise(
-    Effect.gen(function* () {
-      return yield* UploadAssetService
-    }).pipe(Effect.provide(UploadAssetServiceLayer.pipe(Layer.provide(DatabaseTestLayer))))
+    withTestLayer(
+      Effect.gen(function* () {
+        return yield* UploadAssetService
+      }),
+      UploadAssetServiceLayer.pipe(Layer.provide(DatabaseTestLayer))
+    )
   )
 
 const makePendingInput = (key: string) => ({

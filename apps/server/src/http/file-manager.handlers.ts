@@ -10,6 +10,8 @@ const requireAdmin = Effect.gen(function* () {
   if (user.role !== 'admin') {
     return yield* new HttpApiError.Forbidden()
   }
+
+  return undefined
 })
 
 export const FileManagerHandlersLive = HttpApiBuilder.group(Api, 'fileManager', (handlers) =>

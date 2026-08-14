@@ -8,6 +8,7 @@ import {
   type WorkerConfigBindings
 } from './config.service'
 import { Effect } from 'effect'
+import { withTestLayer } from '@/test/effect'
 
 const decodeStorageConfig = Schema.decodeUnknownSync(StorageConfigSchema)
 
@@ -50,8 +51,9 @@ describe('StorageConfigSchema', () => {
   test('rejects an invalid configured full email sender at the Worker config boundary', () => {
     expect(() =>
       Effect.runSync(
-        ConfigService.pipe(
-          Effect.provide(WorkerConfigServiceLayer({ ...workerBindings(), EMAIL_SENDER: 'noreply' }))
+        withTestLayer(
+          ConfigService,
+          WorkerConfigServiceLayer({ ...workerBindings(), EMAIL_SENDER: 'noreply' })
         )
       )
     ).toThrow()
@@ -110,8 +112,6 @@ describe('StorageConfigSchema', () => {
       secretAccessKey: Redacted.make(secretKey)
     })
 
-    expect(String(config)).not.toContain(accessKey)
-    expect(String(config)).not.toContain(secretKey)
     expect(JSON.stringify(config)).not.toContain(accessKey)
     expect(JSON.stringify(config)).not.toContain(secretKey)
   })

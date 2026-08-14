@@ -29,7 +29,7 @@ describe('D1 list ordering ties on createdAt', () => {
       { id: 'artist-b', name: 'B', slug: 'artist-b', createdAt: TIED_CREATED_AT }
     ])
 
-    const artists = await run(getArtistsEffect())
+    const artists = await run(getArtistsEffect)
     const tied = artists.filter((a) => a.id.startsWith('artist-'))
     expect(tied.map((a) => a.id)).toEqual(['artist-a', 'artist-b', 'artist-c'])
   })
@@ -41,7 +41,7 @@ describe('D1 list ordering ties on createdAt', () => {
       { id: 'album-b', title: 'B', slug: 'album-b', createdAt: TIED_CREATED_AT }
     ])
 
-    const albums = await run(getAlbumsEffect())
+    const albums = await run(getAlbumsEffect)
     const tied = albums.filter((a) => a.id.startsWith('album-'))
     expect(tied.map((a) => a.id)).toEqual(['album-a', 'album-b', 'album-c'])
   })
@@ -53,7 +53,7 @@ describe('D1 list ordering ties on createdAt', () => {
       { id: 'track-b', title: 'B', slug: 'track-b', createdAt: TIED_CREATED_AT }
     ])
 
-    const tracks = await run(getTracksEffect())
+    const tracks = await run(getTracksEffect)
     const tied = tracks.filter((t) => t.id.startsWith('track-'))
     expect(tied.map((t) => t.id)).toEqual(['track-a', 'track-b', 'track-c'])
   })
@@ -65,7 +65,7 @@ describe('D1 list ordering ties on createdAt', () => {
       { id: 'playlist-b', title: 'B', slug: 'playlist-b', createdAt: TIED_CREATED_AT }
     ])
 
-    const playlists = await run(getPlaylistsEffect())
+    const playlists = await run(getPlaylistsEffect)
     const tied = playlists.filter((p) => p.id.startsWith('playlist-'))
     expect(tied.map((p) => p.id)).toEqual(['playlist-a', 'playlist-b', 'playlist-c'])
   })

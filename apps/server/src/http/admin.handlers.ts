@@ -520,6 +520,8 @@ const requireAdmin = Effect.gen(function* () {
   if (sessionUser.role !== 'admin') {
     return yield* new HttpApiError.Forbidden()
   }
+
+  return undefined
 })
 
 export const AdminHandlersLive = HttpApiBuilder.group(Api, 'admin', (handlers) =>
@@ -562,6 +564,8 @@ export const AdminHandlersLive = HttpApiBuilder.group(Api, 'admin', (handlers) =
           case 'unavailable':
             return yield* new HttpApiError.ServiceUnavailable()
         }
+
+        return yield* new HttpApiError.InternalServerError()
       })
     )
     .handle('getNewsletterSubscribers', () =>

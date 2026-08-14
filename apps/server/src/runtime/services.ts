@@ -82,7 +82,6 @@ export const AppLayer = ({
   )
   const UploadAssetDepsLive = Layer.mergeAll(configLive, UploadAssetServiceLayer)
   const BaseServicesLayer = Layer.mergeAll(
-    configLive,
     BlueskyClientLayer,
     BlueskyImportServiceLayer,
     LockServiceLayer,
@@ -115,7 +114,7 @@ export const AppLayer = ({
     UploadAssetServiceLayer,
     UserServiceLayer,
     DevToolsLive
-  ).pipe(Layer.provide(databaseLive))
+  ).pipe(Layer.provideMerge(configLive), Layer.provide(databaseLive))
 
   const MusicEntityLive = MusicEntityServiceLayer.pipe(Layer.provide(BaseServicesLayer))
   const BlueskyArchiveLive = BlueskyArchiveServiceLayer.pipe(

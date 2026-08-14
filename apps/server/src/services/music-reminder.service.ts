@@ -201,6 +201,8 @@ const deleteEffect = (id: string, userId: string) =>
       userId,
       reminderId: id
     })
+
+    return undefined
   })
 
 export const MusicReminderServiceLayer = Layer.effect(

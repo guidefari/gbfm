@@ -4,6 +4,7 @@ import { Effect, Layer } from 'effect'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import { user } from '@/db/auth.schema'
 import { DatabaseTestLayer, db } from '@/test/database'
+import { withTestLayer } from '@/test/effect'
 import { navigationSessions } from '@/db/navigation.schema'
 import {
   ANONYMOUS_NAVIGATION_SESSION_RETENTION_MS,
@@ -20,10 +21,13 @@ const sessionIds = [expiredAnonymousSessionId, recentAnonymousSessionId, expired
 
 const retentionLayer = NavigationRetentionServiceLayer.pipe(Layer.provide(DatabaseTestLayer))
 
-const sweepExpiredAnonymousSessions = Effect.gen(function* () {
-  const retention = yield* NavigationRetentionService
-  return yield* retention.sweepExpiredAnonymousSessions(now)
-}).pipe(Effect.provide(retentionLayer))
+const sweepExpiredAnonymousSessions = withTestLayer(
+  Effect.gen(function* () {
+    const retention = yield* NavigationRetentionService
+    return yield* retention.sweepExpiredAnonymousSessions(now)
+  }),
+  retentionLayer
+)
 
 beforeAll(async () => {
   await db.insert(user).values({

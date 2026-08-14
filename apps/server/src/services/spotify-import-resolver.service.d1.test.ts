@@ -11,6 +11,7 @@ import {
 } from '@/db/music-entity.schema'
 import type { SpotifyImportPlaylist, SpotifyImportTrack } from '@/services/spotify.service'
 import { db } from '@/test/d1'
+import { withTestLayer } from '@/test/effect'
 import {
   SpotifyImportResolver,
   SpotifyImportResolverLocalLayer
@@ -24,9 +25,12 @@ const TestSpotifyImportResolverLayer = SpotifyImportResolverLocalLayer.pipe(
 
 const getTestResolver = () =>
   Effect.runPromise(
-    Effect.gen(function* () {
-      return yield* SpotifyImportResolver
-    }).pipe(Effect.provide(TestSpotifyImportResolverLayer))
+    withTestLayer(
+      Effect.gen(function* () {
+        return yield* SpotifyImportResolver
+      }),
+      TestSpotifyImportResolverLayer
+    )
   )
 
 const spotifyTrack = {

@@ -387,6 +387,8 @@ const deleteEffect = (slug: string, userId: string, userRole: string) =>
           table: 'releases'
         })
     })
+
+    return undefined
   })
 
 export const ReleaseServiceLayer = Layer.effect(

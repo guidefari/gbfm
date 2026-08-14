@@ -18,7 +18,7 @@ export const AuthMiddlewareLive = Layer.effect(
 
         const session = yield* Effect.tryPromise({
           try: () => auth.api.getSession({ headers: new Headers(request.headers) }),
-          catch: (cause) => cause
+          catch: (cause) => ({ cause })
         }).pipe(
           Effect.tapError((cause) =>
             Effect.logError('[auth] getSession failed', {

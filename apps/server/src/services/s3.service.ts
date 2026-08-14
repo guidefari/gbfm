@@ -41,6 +41,7 @@ export interface S3Service {
     prefix: string,
     bucketName: string
   ) => Effect.Effect<Array<{ key: string; lastModified: Date; size: number }>, S3Error>
+  // oxlint-disable-next-line effecttsgo/lazy-effect -- Existing callers use the zero-argument service method contract.
   readonly listBuckets: () => Effect.Effect<string[], S3Error>
   readonly createMultipartUpload: (
     key: string,

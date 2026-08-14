@@ -6,6 +6,7 @@ import {
   type CloudflareEmailMessage
 } from '@/services/cloudflare-email.adapter'
 import { EmailTransport, type OutboundEmailMessage } from '@/services/email-transport.service'
+import { withTestLayer } from '@/test/effect'
 
 const outboundMessage: OutboundEmailMessage = {
   from: 'noreply@mail.goosebumps.fm',
@@ -19,10 +20,13 @@ const outboundMessage: OutboundEmailMessage = {
 }
 
 const send = (binding: CloudflareEmailBinding) =>
-  Effect.gen(function* () {
-    const transport = yield* EmailTransport
-    return yield* transport.send(outboundMessage)
-  }).pipe(Effect.provide(CloudflareEmailTransportLayer(binding)))
+  withTestLayer(
+    Effect.gen(function* () {
+      const transport = yield* EmailTransport
+      return yield* transport.send(outboundMessage)
+    }),
+    CloudflareEmailTransportLayer(binding)
+  )
 
 describe('CloudflareEmailTransportLayer', () => {
   test('translates a complete message through the public transport interface', async () => {

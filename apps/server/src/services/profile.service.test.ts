@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { Effect, Layer } from 'effect'
 import { beforeAll, describe, expect, test } from 'vitest'
 import { DatabaseTestLayer, db } from '@/test/database'
+import { withTestLayer } from '@/test/effect'
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { user } from '@/db/auth.schema'
 import { showCreators, showsTable } from '@/db/show.schema'
@@ -13,9 +14,12 @@ const otherId = `profile-other-${randomUUID()}`
 
 const getService = () =>
   Effect.runPromise(
-    Effect.gen(function* () {
-      return yield* ProfileService
-    }).pipe(Effect.provide(ProfileServiceLayer.pipe(Layer.provide(DatabaseTestLayer))))
+    withTestLayer(
+      Effect.gen(function* () {
+        return yield* ProfileService
+      }),
+      ProfileServiceLayer.pipe(Layer.provide(DatabaseTestLayer))
+    )
   )
 
 const insertAudio = async (values: {

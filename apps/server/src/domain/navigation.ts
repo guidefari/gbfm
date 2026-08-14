@@ -146,6 +146,8 @@ export const applyCommand = (
       return appendResolved(session, command, resolved)
     }
   }
+
+  return Result.fail(noSuchMove(command))
 }
 
 export const capabilitiesOf = (

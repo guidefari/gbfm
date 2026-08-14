@@ -8,6 +8,7 @@ import { newsletterSubscribersTable } from '@/db/newsletter.schema'
 import { Database, DatabaseLayer } from '@/db/layer'
 import { createTestWebHandler } from '@/test/http-handler'
 import { createMigratedD1Database } from '@/test/migrate-d1'
+import { withTestLayer } from '@/test/effect'
 import { EmailTransport, type OutboundEmailMessage } from '@/services/email-transport.service'
 
 const makeTrackingEmailTransport = () => {
@@ -43,7 +44,7 @@ const makeTrackingEmailTransport = () => {
 describe('sendMixNotification', () => {
   test('skips explicitly addressed disabled and unsubscribed recipients before transport or logging', async () => {
     const d1 = await createMigratedD1Database()
-    const database = Effect.runSync(Database.pipe(Effect.provide(DatabaseLayer(d1))))
+    const database = Effect.runSync(withTestLayer(Database, DatabaseLayer(d1)))
     const transport = makeTrackingEmailTransport()
     const webHandler = createTestWebHandler(d1, transport.layer)
     const suffix = crypto.randomUUID()
@@ -121,7 +122,7 @@ describe('sendMixNotification', () => {
 
   test('limits delivery concurrency to five while retaining one receipt and log per recipient', async () => {
     const d1 = await createMigratedD1Database()
-    const database = Effect.runSync(Database.pipe(Effect.provide(DatabaseLayer(d1))))
+    const database = Effect.runSync(withTestLayer(Database, DatabaseLayer(d1)))
     const transport = makeTrackingEmailTransport()
     const webHandler = createTestWebHandler(d1, transport.layer)
     const suffix = crypto.randomUUID()

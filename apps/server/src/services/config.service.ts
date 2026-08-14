@@ -325,7 +325,7 @@ export function createConfig(bindings?: WorkerConfigBindings): ConfigService {
 const makeConfigServiceLayer = (bindings?: WorkerConfigBindings) =>
   Layer.effect(
     ConfigService,
-    Effect.sync(() => Schema.decodeUnknownSync(ConfigSchema)(createConfig(bindings)))
+    Schema.decodeUnknownEffect(ConfigSchema)(createConfig(bindings)).pipe(Effect.orDie)
   )
 
 export const ConfigServiceLayer = makeConfigServiceLayer()
@@ -339,6 +339,9 @@ export const WorkerConfigServiceLayerEffect = <E>(
   Layer.effect(
     ConfigService,
     bindings.pipe(
-      Effect.map((resolved) => Schema.decodeUnknownSync(ConfigSchema)(createConfig(resolved)))
+      Effect.flatMap((resolved) =>
+        Schema.decodeUnknownEffect(ConfigSchema)(createConfig(resolved))
+      ),
+      Effect.orDie
     )
   )

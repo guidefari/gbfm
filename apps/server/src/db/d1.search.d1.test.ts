@@ -1,4 +1,4 @@
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 import { describe, expect, test } from 'vitest'
 import { audioTable } from '@/db/audio.schema'
 import { Database } from '@/db/layer'
@@ -7,13 +7,17 @@ import { postsTable } from '@/db/post.schema'
 import { SearchService, SearchServiceLayer } from '@/services/search.service'
 import { showsTable } from '@/db/show.schema'
 import { db, d1 } from '@/test/d1'
+import { withTestLayer } from '@/test/effect'
 
 const search = (query: string) =>
   Effect.runPromise(
-    Effect.gen(function* () {
-      const service = yield* SearchService
-      return yield* service.search(query, 20)
-    }).pipe(Effect.provide(SearchServiceLayer), Effect.provideService(Database, db))
+    withTestLayer(
+      Effect.gen(function* () {
+        const service = yield* SearchService
+        return yield* service.search(query, 20)
+      }),
+      SearchServiceLayer.pipe(Layer.provide(Layer.succeed(Database, db)))
+    )
   )
 
 const slugs = (rows: Array<{ slug: string }>) => rows.map((row) => row.slug).toSorted()

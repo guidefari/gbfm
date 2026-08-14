@@ -25,6 +25,8 @@ function generateToken(length: number): string {
 const requireAdmin = Effect.gen(function* () {
   const { user } = yield* AuthSession
   if (user.role !== 'admin') return yield* new HttpApiError.Forbidden()
+
+  return undefined
 })
 
 export const InviteHandlersLive = HttpApiBuilder.group(Api, 'invite', (handlers) =>

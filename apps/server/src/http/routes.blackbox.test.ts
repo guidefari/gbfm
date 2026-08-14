@@ -1511,11 +1511,11 @@ describe('micro post replies (community permission, Slice 4)', () => {
     if (!parentPost) throw new Error('Failed to seed parent tweet')
     await db.insert(postCreators).values({ postId: parentPost.id, creatorId: plainUserId })
 
-    const authenticatedRequest = (url: string, token: string, init: RequestInit = {}) =>
-      new Request(url, {
-        ...init,
-        headers: { ...init.headers, authorization: `Bearer ${token}` }
-      })
+    const authenticatedRequest = (url: string, token: string, init: RequestInit = {}) => {
+      const request = new Request(url, init)
+      request.headers.set('authorization', `Bearer ${token}`)
+      return request
+    }
 
     let replyId: string | undefined
 

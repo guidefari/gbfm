@@ -18,4 +18,5 @@ export const migrate = (path: string) =>
   })
 
 // @ts-expect-error This Postgres entry point is retained until M4 replaces the Bun runtime.
+// oxlint-disable-next-line effecttsgo/strict-effect-provide -- The migration executable is an Effect application entry point.
 void Effect.runPromise(migrate('./drizzle/').pipe(Effect.provide(DatabaseLayer(pool))))

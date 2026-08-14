@@ -1,6 +1,7 @@
 import { Effect, Layer, Redacted } from 'effect'
 import { describe, expect, test } from 'vitest'
 import { createConfig, ConfigService } from '../config.service'
+import { withTestLayer } from '@/test/effect'
 import { ObjectStoreClient } from './object-store-client'
 import {
   R2ObjectStoreClientLayer,
@@ -79,7 +80,7 @@ const runWithStore = <A>(
   }
   const configLayer = Layer.succeed(ConfigService, { ...config, storage })
   const storeLayer = R2ObjectStoreClientLayer(buckets).pipe(Layer.provide(configLayer))
-  return Effect.runPromise(effect.pipe(Effect.provide(storeLayer)))
+  return Effect.runPromise(withTestLayer(effect, storeLayer))
 }
 
 describe('R2ObjectStoreClientLayer', () => {

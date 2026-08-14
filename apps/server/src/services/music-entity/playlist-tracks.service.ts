@@ -498,10 +498,10 @@ export const addSpotifyTrackToPlaylistEffect = (
     }
 
     const t = yield* spotify.getTrackForImport(id)
+    const track = yield* resolver.resolveTrack(t)
 
     return yield* Effect.tryPromise({
       try: async () => {
-        const track = await Effect.runPromise(resolver.resolveTrack(t))
         await db.batch([
           db
             .insert(musicPlaylistTracksTable)
@@ -579,16 +579,10 @@ export const importSpotifyPlaylistEffect = (
     const storedCoverImageUrl = data.coverImageUrl
       ? yield* copyCoverImageToCdnEffect(s3, cdnUrl, bucketName, 'playlist', id, data.coverImageUrl)
       : null
+    const playlist = yield* resolver.resolvePlaylist(data, storedCoverImageUrl, curatorId)
+    const tracks = yield* Effect.forEach(data.tracks, (track) => resolver.resolveTrack(track))
     const result = yield* Effect.tryPromise({
       try: async () => {
-        const playlist = await Effect.runPromise(
-          resolver.resolvePlaylist(data, storedCoverImageUrl, curatorId)
-        )
-        const tracks: Array<{ trackId: string; created: boolean }> = []
-        for (const track of data.tracks) {
-          tracks.push(await Effect.runPromise(resolver.resolveTrack(track)))
-        }
-
         for (let attempt = 0; attempt < 3; attempt += 1) {
           const playlistRows = await db
             .select()

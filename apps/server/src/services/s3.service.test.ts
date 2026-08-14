@@ -1,6 +1,7 @@
 import { Effect, Layer } from 'effect'
 import { describe, expect, test } from 'vitest'
 import { ObjectStoreClient } from './storage/object-store-client'
+import { withTestLayer } from '@/test/effect'
 import { S3Service, S3ServiceLayer } from './s3.service'
 
 const testStore = () => {
@@ -39,11 +40,14 @@ describe('S3Service', () => {
     const serviceLayer = S3ServiceLayer.pipe(Layer.provide(Layer.succeed(ObjectStoreClient, store)))
 
     const result = await Effect.runPromise(
-      Effect.gen(function* () {
-        const s3 = yield* S3Service
-        yield* s3.uploadFile('path/file.txt', 'hello object store', 'text/plain', 'test-bucket')
-        return yield* s3.listBuckets()
-      }).pipe(Effect.provide(serviceLayer))
+      withTestLayer(
+        Effect.gen(function* () {
+          const s3 = yield* S3Service
+          yield* s3.uploadFile('path/file.txt', 'hello object store', 'text/plain', 'test-bucket')
+          return yield* s3.listBuckets()
+        }),
+        serviceLayer
+      )
     )
 
     expect(store.uploads).toEqual([

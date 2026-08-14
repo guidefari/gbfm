@@ -7,7 +7,7 @@ export interface SitemapXml {
 }
 
 export interface SitemapCacheService {
-  readonly read: () => Effect.Effect<Option.Option<SitemapXml>, never>
+  readonly read: Effect.Effect<Option.Option<SitemapXml>, never>
   readonly write: (xml: SitemapXml) => Effect.Effect<void, SitemapCacheError>
 }
 
@@ -29,15 +29,14 @@ export interface SitemapKv {
 
 export const SitemapCacheLayer = (kv: SitemapKv) =>
   Layer.succeed(SitemapCache, {
-    read: () =>
-      Effect.tryPromise(() => kv.get(SITEMAP_KEY, 'json')).pipe(
-        Effect.map((stored) =>
-          stored
-            ? Option.some({ xml: stored.xml, generatedAt: new Date(stored.generatedAt) })
-            : Option.none()
-        ),
-        Effect.catch(() => Effect.succeed(Option.none<SitemapXml>()))
+    read: Effect.tryPromise(() => kv.get(SITEMAP_KEY, 'json')).pipe(
+      Effect.map((stored) =>
+        stored
+          ? Option.some({ xml: stored.xml, generatedAt: new Date(stored.generatedAt) })
+          : Option.none()
       ),
+      Effect.catch(() => Effect.succeed(Option.none<SitemapXml>()))
+    ),
     write: (sitemap) =>
       Effect.tryPromise({
         try: () =>

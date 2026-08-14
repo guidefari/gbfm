@@ -44,6 +44,7 @@ export async function timeQuery<T>(queryFn: () => Promise<T>, context: string): 
   )
 
   const exit = await Effect.runPromiseExit(
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- This helper owns the Effect runtime for each database query.
     program.pipe(Effect.provide(AppLoggerLive.pipe(Layer.provide(ConfigServiceLayer))))
   )
   if (Exit.isSuccess(exit)) return exit.value

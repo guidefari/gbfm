@@ -58,7 +58,7 @@ const CREATE_SESSION_TABLE = `
 export class NavigationLockDurableObject extends DurableObject<NavigationLockEnv> {
   constructor(ctx: ConstructorParameters<typeof DurableObject>[0], env: NavigationLockEnv) {
     super(ctx, env)
-    ctx.blockConcurrencyWhile(async () => {
+    void ctx.blockConcurrencyWhile(async () => {
       this.ctx.storage.sql.exec(CREATE_IDENTITY_TABLE)
       this.ctx.storage.sql.exec(CREATE_SESSION_TABLE)
     })

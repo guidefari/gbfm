@@ -3,6 +3,7 @@ import { inArray } from 'drizzle-orm'
 import { Effect, Layer } from 'effect'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import { DatabaseTestLayer, db } from '@/test/database'
+import { withTestLayer } from '@/test/effect'
 import { audioTable } from '@/db/audio.schema'
 import { MdxServiceLayer } from '@/lib/mdx'
 import { ConfigServiceLayer } from '@/services/config.service'
@@ -30,15 +31,14 @@ const adminId = `audio-sort-admin-${randomUUID()}`
 
 const getService = () =>
   Effect.runPromise(
-    Effect.gen(function* () {
-      return yield* AudioService
-    }).pipe(
-      Effect.provide(
-        AudioServiceLayer.pipe(
-          Layer.provide(MdxServiceLayer),
-          Layer.provide(Layer.mergeAll(ConfigServiceLayer, UploadAssetServiceLayer)),
-          Layer.provide(DatabaseTestLayer)
-        )
+    withTestLayer(
+      Effect.gen(function* () {
+        return yield* AudioService
+      }),
+      AudioServiceLayer.pipe(
+        Layer.provide(MdxServiceLayer),
+        Layer.provide(Layer.mergeAll(ConfigServiceLayer, UploadAssetServiceLayer)),
+        Layer.provide(DatabaseTestLayer)
       )
     )
   )

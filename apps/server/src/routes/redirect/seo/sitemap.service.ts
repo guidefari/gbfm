@@ -180,7 +180,7 @@ export const regenerateSitemap = Effect.gen(function* () {
 // Get cached sitemap or generate if missing
 export const getCachedSitemap = Effect.gen(function* () {
   const cache = yield* SitemapCache
-  const cached = yield* cache.read()
+  const cached = yield* cache.read
   if (Option.isSome(cached)) {
     return cached.value
   }

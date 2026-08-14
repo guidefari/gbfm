@@ -102,6 +102,7 @@ export interface UserService {
     DatabaseError | NotFoundError
   >
 
+  // oxlint-disable-next-line effecttsgo/lazy-effect -- Existing callers use the zero-argument service method contract.
   readonly listDjs: () => Effect.Effect<
     Array<{
       id: string

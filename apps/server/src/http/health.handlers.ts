@@ -16,7 +16,7 @@ export const checkDatabase = Effect.gen(function* () {
   const db = yield* Database
   return yield* Effect.tryPromise({
     try: () => db.run(sql.raw('SELECT 1')),
-    catch: (cause) => cause
+    catch: () => new ReadinessCheckFailedError({ dbConnected: false })
   }).pipe(
     Effect.tapError((cause) => Effect.logError('[health] readiness check failed', cause)),
     Effect.mapError(() => new ReadinessCheckFailedError({ dbConnected: false })),

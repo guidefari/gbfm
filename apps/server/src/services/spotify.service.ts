@@ -496,7 +496,7 @@ const searchAlbumsWithSpan = (
   )
 
 const enrichTrackFromUrlWithSpan = (spotifyClient: SpotifyApiClient, url: string) =>
-  Effect.fn('spotify.enrichTrackFromUrl')(function* () {
+  Effect.gen(function* () {
     const platform = isSpotifyUrl(url)
       ? 'spotify'
       : isYouTubeUrl(url)
@@ -611,7 +611,7 @@ const enrichTrackFromUrlWithSpan = (spotifyClient: SpotifyApiClient, url: string
     }
 
     return result
-  })()
+  }).pipe(Effect.withSpan('spotify.enrichTrackFromUrl'))
 
 export const SpotifyServiceLayer = Layer.effect(
   SpotifyService,

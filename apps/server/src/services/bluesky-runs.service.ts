@@ -59,6 +59,8 @@ const requireOwnedAccount = (userId: string, accountId: string) =>
     if (rows.length === 0) {
       return yield* new NotFoundError({ message: 'Bluesky account not found' })
     }
+
+    return undefined
   })
 
 const listRunsEffect = ({
@@ -167,6 +169,7 @@ const setSourceStatusEffect = ({
           .where(eq(blueskyPostSources.id, sourceId)),
       catch: () => databaseError('update')
     })
+    return undefined
   })
 
 export const BlueskyRunsServiceLayer = Layer.effect(

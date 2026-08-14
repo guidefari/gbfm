@@ -32,36 +32,35 @@ export const createPlaylistEffect = Effect.fn('musicEntity.createPlaylist')(func
   return yield* requireInserted(rows, 'music_playlists')
 })
 
-export const getPlaylistsEffect = () =>
-  Effect.gen(function* () {
-    const db = yield* Database
-    return yield* Effect.tryPromise({
-      try: async () => {
-        const rows = await db
-          .select({
-            playlist: musicPlaylistsTable,
-            spotifyUrl: musicEntityLinksTable.url
-          })
-          .from(musicPlaylistsTable)
-          .leftJoin(
-            musicEntityLinksTable,
-            and(
-              eq(musicEntityLinksTable.entityType, 'playlist'),
-              eq(musicEntityLinksTable.entityId, musicPlaylistsTable.id),
-              eq(musicEntityLinksTable.platform, 'spotify')
-            )
-          )
-          .orderBy(desc(musicPlaylistsTable.createdAt), asc(musicPlaylistsTable.id))
-        return rows.map((r) => ({ ...r.playlist, spotifyUrl: r.spotifyUrl }))
-      },
-      catch: (e) =>
-        new DatabaseError({
-          message: `Failed to list playlists: ${getErrorMessage(e)}`,
-          operation: 'select',
-          table: 'music_playlists'
+export const getPlaylistsEffect = Effect.gen(function* () {
+  const db = yield* Database
+  return yield* Effect.tryPromise({
+    try: async () => {
+      const rows = await db
+        .select({
+          playlist: musicPlaylistsTable,
+          spotifyUrl: musicEntityLinksTable.url
         })
-    })
-  }).pipe(Effect.withSpan('musicEntity.getPlaylists'))
+        .from(musicPlaylistsTable)
+        .leftJoin(
+          musicEntityLinksTable,
+          and(
+            eq(musicEntityLinksTable.entityType, 'playlist'),
+            eq(musicEntityLinksTable.entityId, musicPlaylistsTable.id),
+            eq(musicEntityLinksTable.platform, 'spotify')
+          )
+        )
+        .orderBy(desc(musicPlaylistsTable.createdAt), asc(musicPlaylistsTable.id))
+      return rows.map((r) => ({ ...r.playlist, spotifyUrl: r.spotifyUrl }))
+    },
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to list playlists: ${getErrorMessage(e)}`,
+        operation: 'select',
+        table: 'music_playlists'
+      })
+  })
+}).pipe(Effect.withSpan('musicEntity.getPlaylists'))
 
 export const getPlaylistByIdEffect = (id: string) =>
   Effect.gen(function* () {

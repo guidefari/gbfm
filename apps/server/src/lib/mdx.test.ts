@@ -1,5 +1,6 @@
 import { Effect } from 'effect'
 import { describe, expect, test, vi } from 'vitest'
+import { withTestLayer } from '@/test/effect'
 import { MdxService, makeMdxServiceTest } from './mdx'
 
 const withService = <A>(
@@ -7,10 +8,13 @@ const withService = <A>(
   run: (svc: MdxService) => Effect.Effect<A, unknown>
 ): Promise<A> =>
   Effect.runPromise(
-    Effect.gen(function* () {
-      const svc = yield* MdxService
-      return yield* run(svc)
-    }).pipe(Effect.provide(makeMdxServiceTest(compileFn)))
+    withTestLayer(
+      Effect.gen(function* () {
+        const svc = yield* MdxService
+        return yield* run(svc)
+      }),
+      makeMdxServiceTest(compileFn)
+    )
   )
 
 describe('MdxService', () => {
@@ -73,7 +77,7 @@ describe('MdxService', () => {
       await withService(fn, (svc) =>
         Effect.gen(function* () {
           yield* svc.compile('# Hello')
-          yield* svc.invalidateAll()
+          yield* svc.invalidateAll
           yield* svc.compile('# Hello')
         })
       )

@@ -119,7 +119,7 @@ export interface MusicEntityService {
   readonly createArtist: (
     data: CreateArtistInput
   ) => Effect.Effect<SelectMusicArtist, DatabaseError>
-  readonly getArtists: () => Effect.Effect<SelectMusicArtist[], DatabaseError>
+  readonly getArtists: Effect.Effect<SelectMusicArtist[], DatabaseError>
   readonly getArtistById: (
     id: string
   ) => Effect.Effect<SelectMusicArtist, DatabaseError | NotFoundError>
@@ -130,7 +130,7 @@ export interface MusicEntityService {
   readonly deleteArtist: (id: string) => Effect.Effect<void, DatabaseError | NotFoundError>
 
   readonly createAlbum: (data: CreateAlbumInput) => Effect.Effect<SelectMusicAlbum, DatabaseError>
-  readonly getAlbums: () => Effect.Effect<SelectMusicAlbum[], DatabaseError>
+  readonly getAlbums: Effect.Effect<SelectMusicAlbum[], DatabaseError>
   readonly getAlbumById: (
     id: string
   ) => Effect.Effect<SelectMusicAlbum, DatabaseError | NotFoundError>
@@ -141,7 +141,7 @@ export interface MusicEntityService {
   readonly deleteAlbum: (id: string) => Effect.Effect<void, DatabaseError | NotFoundError>
 
   readonly createTrack: (data: CreateTrackInput) => Effect.Effect<SelectMusicTrack, DatabaseError>
-  readonly getTracks: () => Effect.Effect<SelectMusicTrack[], DatabaseError>
+  readonly getTracks: Effect.Effect<SelectMusicTrack[], DatabaseError>
   readonly getTrackById: (
     id: string
   ) => Effect.Effect<SelectMusicTrack, DatabaseError | NotFoundError>
@@ -154,7 +154,7 @@ export interface MusicEntityService {
   readonly createPlaylist: (
     data: CreatePlaylistInput
   ) => Effect.Effect<SelectMusicPlaylist, DatabaseError>
-  readonly getPlaylists: () => Effect.Effect<
+  readonly getPlaylists: Effect.Effect<
     (SelectMusicPlaylist & { spotifyUrl: string | null })[],
     DatabaseError
   >
@@ -336,25 +336,25 @@ export const MusicEntityServiceLayer = Layer.effect(
 
     return {
       createArtist: (data) => provideDb(createArtistEffect(data)),
-      getArtists: () => provideDb(getArtistsEffect()),
+      getArtists: provideDb(getArtistsEffect),
       getArtistById: (id) => provideDb(getArtistByIdEffect(id)),
       updateArtist: (id, data) => provideDb(updateArtistEffect(id, data)),
       deleteArtist: (id) => provideDb(deleteArtistEffect(id)),
 
       createAlbum: (data) => provideDb(createAlbumEffect(data)),
-      getAlbums: () => provideDb(getAlbumsEffect()),
+      getAlbums: provideDb(getAlbumsEffect),
       getAlbumById: (id) => provideDb(getAlbumByIdEffect(id)),
       updateAlbum: (id, data) => provideDb(updateAlbumEffect(id, data)),
       deleteAlbum: (id) => provideDb(deleteAlbumEffect(id)),
 
       createTrack: (data) => provideDb(createTrackEffect(data)),
-      getTracks: () => provideDb(getTracksEffect()),
+      getTracks: provideDb(getTracksEffect),
       getTrackById: (id) => provideDb(getTrackByIdEffect(id)),
       updateTrack: (id, data) => provideDb(updateTrackEffect(id, data)),
       deleteTrack: (id) => provideDb(deleteTrackEffect(id)),
 
       createPlaylist: (data) => provideDb(createPlaylistEffect(data)),
-      getPlaylists: () => provideDb(getPlaylistsEffect()),
+      getPlaylists: provideDb(getPlaylistsEffect),
       getPlaylistById: (id) => provideDb(getPlaylistByIdEffect(id)),
       updatePlaylist: (id, data) => provideDb(updatePlaylistEffect(id, data)),
       deletePlaylist: (id) => provideDb(deletePlaylistEffect(id)),

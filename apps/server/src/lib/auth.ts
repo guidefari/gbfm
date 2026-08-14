@@ -172,8 +172,8 @@ export const AuthLive = Layer.effect(
     const clock = yield* Clock.Clock
     return Auth.of(
       makeAuth(database, config, delivery, () =>
-        Effect.runPromise(clock.currentTimeMillis).then((milliseconds) =>
-          new Date(milliseconds).toISOString()
+        Effect.runPromiseWith(Context.make(Clock.Clock, clock))(clock.currentTimeMillis).then(
+          (milliseconds) => new Date(milliseconds).toISOString()
         )
       )
     )

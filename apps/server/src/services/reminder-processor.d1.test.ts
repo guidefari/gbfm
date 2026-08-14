@@ -16,6 +16,7 @@ import {
 } from '@/services/email-transport.service'
 import { claimReminder, findReminderById, sendClaimedReminder } from '@/services/reminder-processor'
 import { createMigratedD1Database } from '@/test/migrate-d1'
+import { withTestLayer } from '@/test/effect'
 
 const workerBindings = (): WorkerConfigBindings => ({
   APP_STAGE: 'test',
@@ -72,7 +73,7 @@ const reminderLayer = (d1: D1Database, messages: Array<OutboundEmailMessage>) =>
 describe('reminder queue delivery', () => {
   test('reclaims a failed delivery on queue retry and persists the accepted receipt', async () => {
     const d1 = await createMigratedD1Database()
-    const database = Effect.runSync(Database.pipe(Effect.provide(DatabaseLayer(d1))))
+    const database = Effect.runSync(withTestLayer(Database, DatabaseLayer(d1)))
     const messages: Array<OutboundEmailMessage> = []
     const layer = reminderLayer(d1, messages)
     const userId = crypto.randomUUID()
@@ -92,16 +93,14 @@ describe('reminder queue delivery', () => {
       reminderDate: new Date(Date.now() - 1_000)
     })
 
-    const firstClaim = await Effect.runPromise(
-      claimReminder(reminderId).pipe(Effect.provide(layer))
-    )
+    const firstClaim = await Effect.runPromise(withTestLayer(claimReminder(reminderId), layer))
     const firstReminder = await Effect.runPromise(
-      findReminderById(reminderId).pipe(Effect.provide(layer))
+      withTestLayer(findReminderById(reminderId), layer)
     )
     if (!firstReminder) throw new Error('Test reminder was not found after its first claim')
 
     await expect(
-      Effect.runPromise(sendClaimedReminder(firstReminder).pipe(Effect.provide(layer)))
+      Effect.runPromise(withTestLayer(sendClaimedReminder(firstReminder), layer))
     ).rejects.toMatchObject({ _tag: 'ReminderProcessingError', stage: 'email' })
 
     const failedReminder = await database
@@ -116,15 +115,13 @@ describe('reminder queue delivery', () => {
       expect.objectContaining({ status: 'FAILED', failureCategory: 'unavailable' })
     ])
 
-    const retryClaim = await Effect.runPromise(
-      claimReminder(reminderId).pipe(Effect.provide(layer))
-    )
+    const retryClaim = await Effect.runPromise(withTestLayer(claimReminder(reminderId), layer))
     const retryReminder = await Effect.runPromise(
-      findReminderById(reminderId).pipe(Effect.provide(layer))
+      withTestLayer(findReminderById(reminderId), layer)
     )
     if (!retryReminder) throw new Error('Test reminder was not found after its retry claim')
 
-    await Effect.runPromise(sendClaimedReminder(retryReminder).pipe(Effect.provide(layer)))
+    await Effect.runPromise(withTestLayer(sendClaimedReminder(retryReminder), layer))
 
     const [sentReminder] = await database
       .select()

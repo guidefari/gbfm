@@ -38,7 +38,7 @@ export class SpotifyImportResolverDurableObject extends DurableObject<SpotifyImp
   constructor(ctx: ConstructorParameters<typeof DurableObject>[0], env: SpotifyImportResolverEnv) {
     super(ctx, env)
     this.db = drizzle(env.DB, { schema })
-    ctx.blockConcurrencyWhile(async () => {
+    void ctx.blockConcurrencyWhile(async () => {
       this.ctx.storage.sql.exec(CREATE_IDENTITY_TABLE)
     })
   }

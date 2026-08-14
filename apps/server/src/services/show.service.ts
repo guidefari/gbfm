@@ -442,6 +442,8 @@ const deleteEffect = (slug: string, userId: string, userRole: string) =>
           table: 'shows'
         })
     })
+
+    return undefined
   })
 
 const getEpisodesEffect = (

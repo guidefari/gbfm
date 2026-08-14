@@ -11,7 +11,7 @@ export class MDXCompileError extends Data.TaggedError('MDXCompileError')<{
 
 export interface MdxService {
   readonly compile: (content: string) => Effect.Effect<string, MDXCompileError>
-  readonly invalidateAll: () => Effect.Effect<void>
+  readonly invalidateAll: Effect.Effect<void>
 }
 
 export const MdxService = Context.Service<MdxService>('MdxService')
@@ -51,7 +51,7 @@ const makeService = (fn: (content: string) => Promise<string>): Effect.Effect<Md
             attributes: { 'mdx.contentLength': content.length }
           })
         ),
-      invalidateAll: () => Cache.invalidateAll(cache)
+      invalidateAll: Cache.invalidateAll(cache)
     })
   })
 

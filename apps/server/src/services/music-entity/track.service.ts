@@ -66,23 +66,22 @@ export const createTrackEffect = Effect.fn('musicEntity.createTrack')(function* 
   return rows
 })
 
-export const getTracksEffect = () =>
-  Effect.gen(function* () {
-    const db = yield* Database
-    return yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select()
-          .from(musicTracksTable)
-          .orderBy(desc(musicTracksTable.createdAt), asc(musicTracksTable.id)),
-      catch: (e) =>
-        new DatabaseError({
-          message: `Failed to list tracks: ${getErrorMessage(e)}`,
-          operation: 'select',
-          table: 'music_tracks'
-        })
-    })
-  }).pipe(Effect.withSpan('musicEntity.getTracks'))
+export const getTracksEffect = Effect.gen(function* () {
+  const db = yield* Database
+  return yield* Effect.tryPromise({
+    try: () =>
+      db
+        .select()
+        .from(musicTracksTable)
+        .orderBy(desc(musicTracksTable.createdAt), asc(musicTracksTable.id)),
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to list tracks: ${getErrorMessage(e)}`,
+        operation: 'select',
+        table: 'music_tracks'
+      })
+  })
+}).pipe(Effect.withSpan('musicEntity.getTracks'))
 
 export const getTrackByIdEffect = (id: string) =>
   Effect.gen(function* () {

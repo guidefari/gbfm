@@ -1,5 +1,6 @@
 import { Cause, Effect, Exit, Layer } from 'effect'
 import { describe, expect, test } from 'vitest'
+import { withTestLayer } from '@/test/effect'
 import {
   ProductionVerificationPort,
   ProductionVerificationError,
@@ -172,6 +173,11 @@ const makeTestLayer = (overrides: TestOverrides = {}) => {
   }
 }
 
+const runVerification = (
+  configuration: ProductionVerificationConfig,
+  layer: ReturnType<typeof makeTestLayer>['layer']
+) => Effect.runPromise(withTestLayer(verifyProductionDeployment(configuration), layer))
+
 describe('verifyProductionDeployment', () => {
   test('waits for ECS and proves functional, correlated, privacy-safe telemetry', async () => {
     const testLayer = makeTestLayer({
@@ -179,9 +185,7 @@ describe('verifyProductionDeployment', () => {
       expectedSpanResponses: [{ data: [] }, { data: [databaseSpan] }, { data: [databaseSpan] }]
     })
 
-    const report = await Effect.runPromise(
-      verifyProductionDeployment(config).pipe(Effect.provide(testLayer.layer))
-    )
+    const report = await runVerification(config, testLayer.layer)
 
     expect(report).toEqual({
       release: config.release,
@@ -222,11 +226,7 @@ describe('verifyProductionDeployment', () => {
       ]
     })
 
-    await expect(
-      Effect.runPromise(
-        verifyProductionDeployment(lateIngestionConfig).pipe(Effect.provide(testLayer.layer))
-      )
-    ).resolves.toMatchObject({
+    await expect(runVerification(lateIngestionConfig, testLayer.layer)).resolves.toMatchObject({
       databaseSpanCount: 1,
       traceId
     })
@@ -237,9 +237,7 @@ describe('verifyProductionDeployment', () => {
       ecsResponses: [ecsService('IN_PROGRESS'), ecsService('IN_PROGRESS')]
     })
 
-    await expect(
-      Effect.runPromise(verifyProductionDeployment(config).pipe(Effect.provide(testLayer.layer)))
-    ).rejects.toMatchObject({
+    await expect(runVerification(config, testLayer.layer)).rejects.toMatchObject({
       phase: 'ecs-rollout',
       summary: expect.stringContaining('did not reach steady state')
     })
@@ -270,9 +268,7 @@ describe('verifyProductionDeployment', () => {
       ]
     })
 
-    await expect(
-      Effect.runPromise(verifyProductionDeployment(config).pipe(Effect.provide(testLayer.layer)))
-    ).resolves.toMatchObject({
+    await expect(runVerification(config, testLayer.layer)).resolves.toMatchObject({
       taskDefinition: 'arn:aws:ecs:us-east-1:123:task-definition/gbfm_vps:202'
     })
   })
@@ -282,9 +278,7 @@ describe('verifyProductionDeployment', () => {
       ecsResponses: [{ services: 'not-an-array', failures: [] }]
     })
 
-    await expect(
-      Effect.runPromise(verifyProductionDeployment(config).pipe(Effect.provide(testLayer.layer)))
-    ).rejects.toMatchObject({
+    await expect(runVerification(config, testLayer.layer)).rejects.toMatchObject({
       phase: 'ecs-rollout',
       summary: 'AWS returned an invalid ECS service response'
     })
@@ -295,9 +289,7 @@ describe('verifyProductionDeployment', () => {
       taskDefinitionResponse: taskDefinition('v-old')
     })
 
-    await expect(
-      Effect.runPromise(verifyProductionDeployment(config).pipe(Effect.provide(testLayer.layer)))
-    ).rejects.toMatchObject({
+    await expect(runVerification(config, testLayer.layer)).rejects.toMatchObject({
       phase: 'ecs-rollout',
       summary: expect.stringContaining('does not contain the deployed Sentry release')
     })
@@ -308,9 +300,7 @@ describe('verifyProductionDeployment', () => {
       expectedSpanResponses: [{ data: [] }, { data: [] }]
     })
 
-    await expect(
-      Effect.runPromise(verifyProductionDeployment(config).pipe(Effect.provide(testLayer.layer)))
-    ).rejects.toMatchObject({
+    await expect(runVerification(config, testLayer.layer)).rejects.toMatchObject({
       phase: 'sentry-ingestion',
       summary: expect.stringContaining('No database spans arrived')
     })
@@ -321,9 +311,7 @@ describe('verifyProductionDeployment', () => {
       expectedSpanResponses: [{ data: [{ id: 'incomplete-span' }] }]
     })
 
-    await expect(
-      Effect.runPromise(verifyProductionDeployment(config).pipe(Effect.provide(testLayer.layer)))
-    ).rejects.toMatchObject({
+    await expect(runVerification(config, testLayer.layer)).rejects.toMatchObject({
       phase: 'sentry-ingestion',
       summary: 'Sentry returned an invalid spans response'
     })
@@ -346,9 +334,7 @@ describe('verifyProductionDeployment', () => {
       ]
     })
 
-    await expect(
-      Effect.runPromise(verifyProductionDeployment(config).pipe(Effect.provide(testLayer.layer)))
-    ).rejects.toMatchObject({
+    await expect(runVerification(config, testLayer.layer)).rejects.toMatchObject({
       phase: 'sentry-privacy',
       summary: expect.stringContaining('automatic or privacy-unsafe')
     })
@@ -369,9 +355,7 @@ describe('verifyProductionDeployment', () => {
       ]
     })
 
-    await expect(
-      Effect.runPromise(verifyProductionDeployment(config).pipe(Effect.provide(testLayer.layer)))
-    ).resolves.toMatchObject({
+    await expect(runVerification(config, testLayer.layer)).resolves.toMatchObject({
       databaseSpanCount: 1,
       traceId
     })
@@ -410,9 +394,7 @@ describe('verifyProductionDeployment', () => {
       expectedSpanResponses: [{ data: [span] }]
     })
 
-    await expect(
-      Effect.runPromise(verifyProductionDeployment(config).pipe(Effect.provide(testLayer.layer)))
-    ).rejects.toMatchObject({
+    await expect(runVerification(config, testLayer.layer)).rejects.toMatchObject({
       phase,
       summary: expect.stringContaining(summary)
     })
@@ -425,9 +407,7 @@ describe('verifyProductionDeployment', () => {
       }
     })
 
-    await expect(
-      Effect.runPromise(verifyProductionDeployment(config).pipe(Effect.provide(testLayer.layer)))
-    ).rejects.toMatchObject({
+    await expect(runVerification(config, testLayer.layer)).rejects.toMatchObject({
       phase: 'sentry-privacy',
       summary: expect.stringContaining('forbidden automatic database span')
     })

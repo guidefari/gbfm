@@ -3,6 +3,7 @@ import { count, eq } from 'drizzle-orm'
 import { Effect, Layer } from 'effect'
 import { beforeAll, describe, expect, test } from 'vitest'
 import { DatabaseTestLayer, db } from '@/test/database'
+import { withTestLayer } from '@/test/effect'
 import { audioTable } from '@/db/audio.schema'
 import { user } from '@/db/auth.schema'
 import { showsTable } from '@/db/show.schema'
@@ -25,15 +26,14 @@ const makeAudio = (slug: string) => ({
 
 const getService = () =>
   Effect.runPromise(
-    Effect.gen(function* () {
-      return yield* AudioService
-    }).pipe(
-      Effect.provide(
-        AudioServiceLayer.pipe(
-          Layer.provide(MdxServiceLayer),
-          Layer.provide(Layer.mergeAll(ConfigServiceLayer, UploadAssetServiceLayer)),
-          Layer.provide(DatabaseTestLayer)
-        )
+    withTestLayer(
+      Effect.gen(function* () {
+        return yield* AudioService
+      }),
+      AudioServiceLayer.pipe(
+        Layer.provide(MdxServiceLayer),
+        Layer.provide(Layer.mergeAll(ConfigServiceLayer, UploadAssetServiceLayer)),
+        Layer.provide(DatabaseTestLayer)
       )
     )
   )
@@ -139,7 +139,7 @@ describe('AudioService.create idempotency', () => {
   test('normalizes creator order without hiding changed content', async () => {
     const audio = makeAudio('fingerprint')
     const fingerprint = (data: typeof audio, creatorIds: readonly string[]) =>
-      Effect.runPromise(createAudioFingerprint(data, creatorIds).pipe(Effect.provide(CryptoLive)))
+      Effect.runPromise(withTestLayer(createAudioFingerprint(data, creatorIds), CryptoLive))
 
     expect(await fingerprint(audio, ['b', 'a'])).toBe(await fingerprint(audio, ['a', 'b']))
     expect(await fingerprint(audio, ['a'])).not.toBe(

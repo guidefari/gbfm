@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { Effect, Layer } from 'effect'
 import { beforeAll, describe, expect, test } from 'vitest'
 import { DatabaseTestLayer, db } from '@/test/database'
+import { withTestLayer } from '@/test/effect'
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { user } from '@/db/auth.schema'
 import { ShowService, ShowServiceLayer } from './show.service'
@@ -11,9 +12,12 @@ const otherHostId = `show-creators-other-${randomUUID()}`
 
 const getService = () =>
   Effect.runPromise(
-    Effect.gen(function* () {
-      return yield* ShowService
-    }).pipe(Effect.provide(ShowServiceLayer.pipe(Layer.provide(DatabaseTestLayer))))
+    withTestLayer(
+      Effect.gen(function* () {
+        return yield* ShowService
+      }),
+      ShowServiceLayer.pipe(Layer.provide(DatabaseTestLayer))
+    )
   )
 
 beforeAll(async () => {

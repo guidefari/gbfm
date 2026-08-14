@@ -52,6 +52,7 @@ function redactValue(value: EffectLogMessage, depth = 0): RedactedLogValue {
     }
     return out
   }
+  // oxlint-disable-next-line typescript/no-base-to-string -- This fallback intentionally preserves arbitrary log payloads when they cannot be decoded as scalars or records.
   return Option.getOrElse(Schema.decodeUnknownOption(LogScalar)(value), () => String(value))
 }
 

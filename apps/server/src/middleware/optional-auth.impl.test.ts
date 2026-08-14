@@ -14,6 +14,7 @@ const handler = HttpEffect.toWebHandler(
     const identity = yield* resolver.resolve
     return HttpServerResponse.jsonUnsafe(identity)
   }).pipe(
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- HttpEffect.toWebHandler is this test's execution boundary.
     Effect.provide(
       IdentityResolverLive.pipe(
         Layer.provide(

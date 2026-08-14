@@ -1,5 +1,5 @@
 import type { D1Database } from '@cloudflare/workers-types'
-import { Effect, Layer } from 'effect'
+import { Clock, Effect, Layer } from 'effect'
 import { describe, expect, test } from 'vitest'
 import { user } from '@/db/auth.schema'
 import { emailDeliveryLogsTable } from '@/db/email.schema'
@@ -8,6 +8,7 @@ import { ConfigService, createConfig, type WorkerConfigBindings } from '@/servic
 import { EmailDeliveryLive } from '@/services/email-delivery.service'
 import { EmailTransport, type OutboundEmailMessage } from '@/services/email-transport.service'
 import { createMigratedD1Database } from '@/test/migrate-d1'
+import { withTestLayer } from '@/test/effect'
 import { Auth, AuthLive } from './auth'
 
 const workerBindings = (): WorkerConfigBindings => ({
@@ -74,18 +75,25 @@ const authLayer = (
 ) => {
   const database = DatabaseLayer(d1)
   const config = Layer.succeed(ConfigService, createConfig(workerBindings()))
+  const clock = Layer.succeed(Clock.Clock, {
+    currentTimeMillis: Effect.sync(Date.now),
+    currentTimeMillisUnsafe: Date.now,
+    currentTimeNanos: Effect.sync(() => BigInt(Date.now()) * 1_000_000n),
+    currentTimeNanosUnsafe: () => BigInt(Date.now()) * 1_000_000n,
+    sleep: () => Effect.void
+  })
   const delivery = EmailDeliveryLive.pipe(
-    Layer.provide(Layer.mergeAll(database, config, transport))
+    Layer.provide(Layer.mergeAll(database, config, transport, clock))
   )
-  return AuthLive.pipe(Layer.provide(Layer.mergeAll(database, config, delivery)))
+  return AuthLive.pipe(Layer.provide(Layer.mergeAll(database, config, delivery, clock)))
 }
 
 describe('AuthLive password-reset delivery', () => {
   test('awaits the Better Auth reset callback until delivery persists its receipt', async () => {
     const d1 = await createMigratedD1Database()
-    const database = Effect.runSync(Database.pipe(Effect.provide(DatabaseLayer(d1))))
+    const database = Effect.runSync(withTestLayer(Database, DatabaseLayer(d1)))
     const transport = makeDeferredTransport()
-    const auth = await Effect.runPromise(Auth.pipe(Effect.provide(authLayer(d1, transport.layer))))
+    const auth = await Effect.runPromise(withTestLayer(Auth, authLayer(d1, transport.layer)))
 
     await database.insert(user).values({
       id: crypto.randomUUID(),
