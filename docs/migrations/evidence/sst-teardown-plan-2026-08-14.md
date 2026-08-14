@@ -196,6 +196,22 @@ The confirmation prompt cannot be answered from a non-interactive shell.
 - Live zone DNS inspected to confirm email sends through Cloudflare, not SES
 - `vps.goosebumps.fm` probed and returning 200; no code references remain
 
+## Teardown log
+
+Steps completed against this plan, newest last.
+
+- **2026-08-14 — CI deploy path removed.** Deleted
+  `.github/workflows/deploy.yml`, the SST `Prod Deployment` workflow. Every one
+  of its steps was already `if: false` from OPS-244, and `release.yml` already
+  triggers `alchemy-deploy.yml` instead, so nothing in CI changes behaviour.
+  Updated the three docs that pointed at it:
+  `docs/monitoring/production-deployment-gate.md`,
+  `docs/migrations/ses-to-cloudflare-email.md` and
+  `docs/troubleshooting/cloudflare-ruleset-error-20217.md`.
+  `apps/server/scripts/verify-production-deployment.ts` is now orphaned; it
+  probes `vps.goosebumps.fm` and inspects the ECS service, so it stops being
+  meaningful once the AWS estate goes. Left in place for now.
+
 ## Open items
 
 - The `:17` maintenance sweep is not yet confirmed end to end. `wrangler tail`

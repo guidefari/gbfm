@@ -204,11 +204,11 @@ These are deployment prerequisites, not a gradual migration.
 
 ### Deployment workflow
 
-`.github/workflows/deploy.yml` currently disables its deploy and verification
-steps with `if: false` during OPS-244. Keep it disabled while OPS-250 or its
-assigned deployment agent is active. M2 and M3 cannot claim deployed-Worker
-proof until that workflow is re-enabled for OPS-250 or an approved replacement
-deployment path runs the same controlled checks.
+`.github/workflows/deploy.yml` was the SST deploy path. Its steps were disabled
+with `if: false` during OPS-244 and the workflow was deleted on 2026-08-14, once
+`.github/workflows/alchemy-deploy.yml` became the production deployment path.
+M2 and M3 take their deployed-Worker proof from the Alchemy workflow's own
+post-deploy checks.
 
 ### Human Alchemy staging gate
 

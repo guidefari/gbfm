@@ -89,8 +89,12 @@ The import gets rolled back, leaving you back at square one. This approach only 
 ## Related Files
 
 - `infra/dns.ts` — Cloudflare ruleset definition
-- `.github/workflows/deploy.yml` — `cf_ruleset_import` workflow input for importing
 - `docs/architecture/cloudflare-redirects.md`
+
+The `cf_ruleset_import` workflow input lived in `.github/workflows/deploy.yml`,
+removed on 2026-08-14 with the rest of the SST deploy path. The redirect
+ruleset is now Alchemy's `VpsRedirects`, so this Pulumi-state failure mode no
+longer applies to production.
 
 ## Related Commits
 
