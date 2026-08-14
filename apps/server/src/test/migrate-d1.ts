@@ -12,7 +12,8 @@ export const d1MigrationFiles = [
   '0000_public_thunderbolt.sql',
   '0001_search_fts.sql',
   '0002_email_provider_receipt.sql',
-  '0003_music_entity_resolution_claim.sql'
+  '0003_music_entity_resolution_claim.sql',
+  '0004_music_entity_resolution_claim_lease.sql'
 ] as const
 
 const splitStatements = (migration: string) =>

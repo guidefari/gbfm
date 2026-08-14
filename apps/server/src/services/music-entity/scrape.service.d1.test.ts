@@ -17,7 +17,11 @@ import type {
 import { MusicScraperError } from '@/services/music-link-scraper.service'
 import { db } from '@/test/d1'
 import { addLinkEffect } from './link.service'
-import { rescrapeOdesliLinksEffect, scrapeAndCreateEntityEffect } from './scrape.service'
+import {
+  MusicEntityResolutionUnavailable,
+  rescrapeOdesliLinksEffect,
+  scrapeAndCreateEntityEffect
+} from './scrape.service'
 
 const emptyScraper: MusicLinkScraperService = {
   scrape: () => Effect.succeed({ links: [] }),
@@ -109,6 +113,100 @@ describe('scrapeAndCreateEntityEffect', () => {
 
     expect(second.entity.id).toBe(first.entity.id)
     expect(second.links).toHaveLength(2)
+  })
+
+  test('recognizes historical normalized Spotify and YouTube links before claiming', async () => {
+    const spotifyId = crypto.randomUUID()
+    const youtubeId = crypto.randomUUID()
+    const spotifyTrackId = crypto.randomUUID()
+    const youtubeTrackId = crypto.randomUUID()
+    await db.insert(musicTracksTable).values([
+      { id: spotifyTrackId, title: 'Spotify Track', slug: spotifyTrackId },
+      { id: youtubeTrackId, title: 'YouTube Track', slug: youtubeTrackId }
+    ])
+    await db.insert(musicEntityLinksTable).values([
+      {
+        entityType: 'track',
+        entityId: spotifyTrackId,
+        platform: 'spotify',
+        url: `https://open.spotify.com/track/${spotifyId}?si=historical`
+      },
+      {
+        entityType: 'track',
+        entityId: youtubeTrackId,
+        platform: 'youtube',
+        url: `https://youtu.be/${youtubeId}?feature=historical`
+      }
+    ])
+
+    const spotify = await Effect.runPromise(
+      scrapeAndCreateEntityEffect(emptyScraper, 'track', {
+        url: `https://open.spotify.com/track/${spotifyId}`
+      }).pipe(Effect.provideService(Database, db))
+    )
+    const youtube = await Effect.runPromise(
+      scrapeAndCreateEntityEffect(emptyScraper, 'track', {
+        url: `https://www.youtube.com/watch?v=${youtubeId}`
+      }).pipe(Effect.provideService(Database, db))
+    )
+
+    expect(spotify.entity.id).toBe(spotifyTrackId)
+    expect(youtube.entity.id).toBe(youtubeTrackId)
+  })
+
+  test('reclaims an expired pending claim', async () => {
+    const sourceUrl = `https://open.spotify.com/track/${crypto.randomUUID()}`
+    await db.insert(musicEntityResolutionClaimsTable).values({
+      entityType: 'track',
+      canonicalUrl: sourceUrl,
+      ownerToken: crypto.randomUUID(),
+      leaseExpiresAt: new Date(Date.now() - 1)
+    })
+    const scraper: MusicLinkScraperService = {
+      scrape: () =>
+        Effect.succeed({
+          links: [],
+          entityMeta: { title: 'Reclaimed Track', artistName: 'Reclaimed Artist', type: 'song' }
+        }),
+      scrapeOdesli: () => Effect.succeed({ links: [] })
+    }
+
+    const result = await Effect.runPromise(
+      scrapeAndCreateEntityEffect(scraper, 'track', { url: sourceUrl }).pipe(
+        Effect.provideService(Database, db)
+      )
+    )
+    const claims = (await db.select().from(musicEntityResolutionClaimsTable)).filter(
+      (claim) => claim.canonicalUrl === sourceUrl
+    )
+
+    expect(claims).toEqual([
+      expect.objectContaining({
+        entityId: result.entity.id,
+        leaseExpiresAt: null,
+        ownerToken: null
+      })
+    ])
+  })
+
+  test('returns a typed retryable error while a pending claim lease is active', async () => {
+    const sourceUrl = `https://open.spotify.com/track/${crypto.randomUUID()}`
+    await db.insert(musicEntityResolutionClaimsTable).values({
+      entityType: 'track',
+      canonicalUrl: sourceUrl,
+      ownerToken: crypto.randomUUID(),
+      leaseExpiresAt: new Date(Date.now() + 60_000)
+    })
+
+    const exit = await Effect.runPromiseExit(
+      scrapeAndCreateEntityEffect(emptyScraper, 'track', { url: sourceUrl }).pipe(
+        Effect.provideService(Database, db)
+      )
+    )
+    const error = Result.getOrThrow(Exit.findError(exit))
+
+    expect(error).toBeInstanceOf(MusicEntityResolutionUnavailable)
+    expect(error).toMatchObject({ retryAfterMs: 30_000 })
   })
 
   test('reserves one canonical URL claim for concurrent resolutions', async () => {

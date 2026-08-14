@@ -427,6 +427,19 @@ const TABLES: ReadonlyArray<TableSpec> = [
     ]
   },
   {
+    source: 'music_entity_resolution_claims',
+    target: 'music_entity_resolution_claims',
+    columns: [
+      col('entity_type', 'entity_type', 'text'),
+      col('canonical_url', 'canonical_url', 'text'),
+      col('entity_id', 'entity_id', 'text'),
+      col('owner_token', 'owner_token', 'text'),
+      col('lease_expires_at', 'lease_expires_at', 'timestamp'),
+      col('created_at', 'created_at', 'timestamp'),
+      col('updated_at', 'updated_at', 'timestamp')
+    ]
+  },
+  {
     source: 'releases',
     target: 'releases',
     columns: [
@@ -901,7 +914,9 @@ const migrationsDir = new URL('../drizzle-d1/', import.meta.url)
 export const d1MigrationFiles = [
   '0000_public_thunderbolt.sql',
   '0001_search_fts.sql',
-  '0002_email_provider_receipt.sql'
+  '0002_email_provider_receipt.sql',
+  '0003_music_entity_resolution_claim.sql',
+  '0004_music_entity_resolution_claim_lease.sql'
 ] as const
 
 const migrationLedgerTable = '__gbfm_local_migration_ledger'

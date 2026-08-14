@@ -12,7 +12,8 @@ import type {
   SelectMusicPlaylistTrack,
   SelectMusicTrack
 } from '@/db/music-entity.schema'
-import type { DatabaseError, NotFoundError, SpotifyError, ValidationError } from '@/errors'
+import { DatabaseError } from '@/errors'
+import type { NotFoundError, SpotifyError, ValidationError } from '@/errors'
 import { ConfigService as ConfigServiceTag } from '@/services/config.service'
 import { Database } from '@/db/layer'
 import {
@@ -426,7 +427,19 @@ export const MusicEntityServiceLayer = Layer.effect(
       deleteLink: (entityType, entityId, linkId) =>
         provideDb(deleteLinkEffect(entityType, entityId, linkId)),
       scrapeAndCreateEntity: (entityType, input) =>
-        provideDb(scrapeAndCreateEntityEffect(scraper, entityType, input)),
+        provideDb(
+          scrapeAndCreateEntityEffect(scraper, entityType, input).pipe(
+            Effect.catchTag(
+              'MusicEntityResolutionUnavailable',
+              (error) =>
+                new DatabaseError({
+                  message: error.message,
+                  operation: 'select',
+                  table: 'music_entity_resolution_claims'
+                })
+            )
+          )
+        ),
       rescrapeOdesliLinks: (entityType, entityId, options) =>
         provideDb(rescrapeOdesliLinksEffect(scraper, entityType, entityId, options))
     } satisfies MusicEntityService

@@ -362,6 +362,8 @@ export const musicEntityResolutionClaimsTable = sqliteTable(
       .references(() => musicEntityTypesTable.id),
     canonicalUrl: text('canonical_url').notNull(),
     entityId: text('entity_id'),
+    ownerToken: text('owner_token'),
+    leaseExpiresAt: integer('lease_expires_at', { mode: 'timestamp_ms' }),
     createdAt: integer('created_at', { mode: 'timestamp_ms' })
       .notNull()
       .$defaultFn(() => new Date()),

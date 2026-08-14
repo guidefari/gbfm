@@ -57,8 +57,16 @@ describe('PG-to-D1 email delivery-log transform', () => {
         expect(ledger.results.map((row) => row.name)).toEqual([
           '0000_public_thunderbolt.sql',
           '0001_search_fts.sql',
-          '0002_email_provider_receipt.sql'
+          '0002_email_provider_receipt.sql',
+          '0003_music_entity_resolution_claim.sql',
+          '0004_music_entity_resolution_claim_lease.sql'
         ])
+        const claims = await d1
+          .prepare(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'music_entity_resolution_claims'"
+          )
+          .all<{ name: string }>()
+        expect(claims.results).toEqual([{ name: 'music_entity_resolution_claims' }])
       } finally {
         await upgradedTarget.dispose()
       }
@@ -98,16 +106,18 @@ describe('PG-to-D1 email delivery-log transform', () => {
         .bind('second-link', 'second-entity')
         .run()
 
-      await applyD1Migrations(d1, ['0003_music_entity_resolution_claim.sql'])
+      await applyMigrations(d1)
 
       const claims = await d1
         .prepare(
-          'SELECT entity_type, canonical_url, entity_id, created_at, updated_at FROM music_entity_resolution_claims'
+          'SELECT entity_type, canonical_url, entity_id, owner_token, lease_expires_at, created_at, updated_at FROM music_entity_resolution_claims'
         )
         .all<{
           entity_type: string
           canonical_url: string
           entity_id: string
+          owner_token: string | null
+          lease_expires_at: number | null
           created_at: number
           updated_at: number
         }>()
@@ -117,6 +127,8 @@ describe('PG-to-D1 email delivery-log transform', () => {
           entity_type: 'track',
           canonical_url: 'https://open.spotify.com/track/existing',
           entity_id: 'first-entity',
+          owner_token: null,
+          lease_expires_at: null,
           created_at: 1,
           updated_at: 1
         }
