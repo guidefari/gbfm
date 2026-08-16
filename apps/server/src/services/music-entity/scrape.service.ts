@@ -17,8 +17,7 @@ import { DatabaseError, getErrorMessage, NotFoundError, ValidationError } from '
 import type {
   MusicLinkScraperService,
   MusicScrapeInput,
-  MusicScrapeOptions,
-  MusicScraperError
+  MusicScrapeOptions
 } from '@/services/music-link-scraper.service'
 import { parseArtistNames } from '@/services/parse-artist-names'
 import { toSlug } from '@/services/to-slug'
@@ -382,7 +381,7 @@ export const scrapeAndCreateEntityEffect = (
       }
     }
 
-    const result = yield* scraper.scrape(input)
+    const result = yield* scraper.scrape({ ...input, entityType })
     const meta = result.entityMeta
 
     if (!hasUsableScrapeResult(result)) {
@@ -509,31 +508,31 @@ export const scrapeAndCreateEntityEffect = (
   )
 }
 
-export const rescrapeOdesliLinksEffect = (
+export const refreshEntityLinksEffect = (
   scraper: MusicLinkScraperService,
   entityType: ScrapeableMusicEntityType,
   entityId: string,
   options?: MusicScrapeOptions
-): Effect.Effect<
-  { links: SelectMusicEntityLink[] },
-  DatabaseError | NotFoundError | MusicScraperError,
-  Database
-> =>
+): Effect.Effect<{ links: SelectMusicEntityLink[] }, DatabaseError | NotFoundError, Database> =>
   Effect.gen(function* () {
     yield* getEntityById(entityType, entityId)
     const existingLinks = yield* getLinksForEntityEffect(entityType, entityId)
-    const spotifyLink = existingLinks.find((link) => link.platform === 'spotify')
+    const sourceLink = selectSourceLink(existingLinks)
 
-    if (!spotifyLink) {
+    if (!sourceLink) {
       return yield* new NotFoundError({
-        message: 'Spotify source link not found',
-        resource: 'MusicEntitySpotifyLink',
+        message: 'Music entity source link not found',
+        resource: 'MusicEntitySourceLink',
         id: entityId
       })
     }
 
-    const result = yield* scraper.scrapeOdesli({ url: spotifyLink.url }, options)
-    const links = yield* Effect.forEach(result.links, (link) =>
+    const result = yield* scraper.scrape({ entityType, url: sourceLink.url }, options)
+    const refreshedLinks =
+      entityType === 'playlist'
+        ? result.links.filter((link) => link.platform === sourceLink.platform)
+        : result.links
+    const links = yield* Effect.forEach(refreshedLinks, (link) =>
       addLinkEffect({
         entityType,
         entityId,
@@ -548,10 +547,21 @@ export const rescrapeOdesliLinksEffect = (
 
     return { links }
   }).pipe(
-    Effect.withSpan('musicEntity.rescrapeOdesliLinks', {
+    Effect.withSpan('musicEntity.refreshEntityLinks', {
       attributes: { entityType, entityId }
     })
   )
+
+function selectSourceLink(
+  links: readonly SelectMusicEntityLink[]
+): SelectMusicEntityLink | undefined {
+  return (
+    links.find((link) => link.metadata?.confidence === 'exact_source') ??
+    links.find((link) => link.platform === 'spotify') ??
+    links.find((link) => link.platform === 'deezer') ??
+    links[0]
+  )
+}
 
 const hasUsableScrapeResult = (result: {
   readonly links: readonly unknown[]

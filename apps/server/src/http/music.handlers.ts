@@ -896,18 +896,9 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         yield* requireAdmin
         const svc = yield* MusicEntityService
         const result = yield* dieOnDatabaseError(
-          svc.rescrapeOdesliLinks(params.entityType, params.entityId).pipe(
-            Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
-            Effect.catchTag('MusicScraperError', (error) =>
-              Effect.andThen(
-                Effect.logWarning('[music] Odesli rescrape failed', {
-                  provider: error.provider,
-                  statusCode: error.statusCode
-                }),
-                new HttpApiError.ServiceUnavailable()
-              )
-            )
-          )
+          svc
+            .refreshEntityLinks(params.entityType, params.entityId)
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
         )
         return { links: result.links.map(toEntityLinkResponse) }
       })

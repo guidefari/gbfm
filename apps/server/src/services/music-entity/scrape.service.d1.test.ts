@@ -6,20 +6,21 @@ import {
   musicEntityResolutionClaimsTable,
   musicEntityTypesTable,
   musicPlatformsTable,
+  musicPlaylistsTable,
   musicTracksTable
 } from '@/db/music-entity.schema'
 import { NotFoundError, ValidationError } from '@/errors'
 import type {
   MusicLinkScraperService,
+  MusicScrapeInput,
   MusicScrapeOptions,
-  ProviderResult
+  ScrapeResult
 } from '@/services/music-link-scraper.service'
-import { MusicScraperError } from '@/services/music-link-scraper.service'
 import { db } from '@/test/d1'
 import { addLinkEffect } from './link.service'
 import {
+  refreshEntityLinksEffect,
   MusicEntityResolutionUnavailable,
-  rescrapeOdesliLinksEffect,
   scrapeAndCreateEntityEffect
 } from './scrape.service'
 
@@ -29,26 +30,59 @@ const emptyScraper: MusicLinkScraperService = {
 }
 
 beforeAll(async () => {
-  await db.insert(musicEntityTypesTable).values({ id: 'track', displayName: 'Track' })
+  await db.insert(musicEntityTypesTable).values([
+    { id: 'track', displayName: 'Track' },
+    { id: 'playlist', displayName: 'Playlist' }
+  ])
   await db.insert(musicPlatformsTable).values([
     { id: 'other', displayName: 'Other' },
     { id: 'spotify', displayName: 'Spotify' },
     { id: 'youtube', displayName: 'YouTube' },
-    { id: 'bandcamp', displayName: 'Bandcamp' }
+    { id: 'bandcamp', displayName: 'Bandcamp' },
+    { id: 'deezer', displayName: 'Deezer' }
   ])
 })
 
-const makeScraper = (
-  scrapeOdesli: (
-    input: { url?: string },
+const makeRefreshScraper = (
+  scrape: (
+    input: MusicScrapeInput,
     options?: MusicScrapeOptions
-  ) => Effect.Effect<ProviderResult, MusicScraperError>
+  ) => Effect.Effect<ScrapeResult, never>
 ): MusicLinkScraperService => ({
-  scrape: () => Effect.succeed({ links: [] }),
-  scrapeOdesli
+  scrape,
+  scrapeOdesli: () => Effect.succeed({ links: [] })
 })
 
 describe('scrapeAndCreateEntityEffect', () => {
+  test('passes the requested entity type into resolution', async () => {
+    let receivedInput: MusicScrapeInput | undefined
+    const id = crypto.randomUUID()
+    const scraper: MusicLinkScraperService = {
+      scrape: (input) => {
+        receivedInput = input
+        return Effect.succeed({
+          links: [
+            {
+              platform: 'other',
+              url: `https://example.com/track/${id}`,
+              scrapedAt: new Date()
+            }
+          ],
+          entityMeta: { title: 'Typed Track', type: 'song' }
+        })
+      },
+      scrapeOdesli: () => Effect.succeed({ links: [] })
+    }
+
+    await Effect.runPromise(
+      scrapeAndCreateEntityEffect(scraper, 'track', {
+        url: `https://example.com/source/${id}`
+      }).pipe(Effect.provideService(Database, db))
+    )
+
+    expect(receivedInput?.entityType).toBe('track')
+  })
+
   test('does not persist an entity when resolution returns no metadata or links', async () => {
     const exit = await Effect.runPromiseExit(
       scrapeAndCreateEntityEffect(emptyScraper, 'track', {}).pipe(
@@ -323,7 +357,7 @@ describe('scrapeAndCreateEntityEffect', () => {
     expect(link.verifiedAt).toEqual(refreshed)
   })
 
-  test('upserts Odesli provider links without changing entity metadata', async () => {
+  test('upserts provider links without changing entity metadata', async () => {
     const id = crypto.randomUUID()
     const spotifyUrl = `https://open.spotify.com/track/${id}`
     await db.insert(musicTracksTable).values({
@@ -341,7 +375,7 @@ describe('scrapeAndCreateEntityEffect', () => {
         url: 'https://youtube.com/watch?v=old'
       }
     ])
-    const scraper = makeScraper(() =>
+    const scraper = makeRefreshScraper(() =>
       Effect.succeed({
         links: [
           {
@@ -365,7 +399,7 @@ describe('scrapeAndCreateEntityEffect', () => {
     )
 
     const result = await Effect.runPromise(
-      rescrapeOdesliLinksEffect(scraper, 'track', id).pipe(Effect.provideService(Database, db))
+      refreshEntityLinksEffect(scraper, 'track', id).pipe(Effect.provideService(Database, db))
     )
     const tracks = await db.select().from(musicTracksTable)
     const links = await db.select().from(musicEntityLinksTable)
@@ -381,21 +415,21 @@ describe('scrapeAndCreateEntityEffect', () => {
     )
   })
 
-  test('fails when the entity has no Spotify source link', async () => {
+  test('fails when the entity has no stored source link', async () => {
     const id = crypto.randomUUID()
     await db.insert(musicTracksTable).values({ id, title: 'Track', slug: id })
     const exit = await Effect.runPromiseExit(
-      rescrapeOdesliLinksEffect(emptyScraper, 'track', id).pipe(Effect.provideService(Database, db))
+      refreshEntityLinksEffect(emptyScraper, 'track', id).pipe(Effect.provideService(Database, db))
     )
 
     const error = Result.getOrThrow(Exit.findError(exit))
     expect(error).toBeInstanceOf(NotFoundError)
-    expect('resource' in error ? error.resource : undefined).toBe('MusicEntitySpotifyLink')
+    expect('resource' in error ? error.resource : undefined).toBe('MusicEntitySourceLink')
   })
 
   test('fails when the entity does not exist', async () => {
     const exit = await Effect.runPromiseExit(
-      rescrapeOdesliLinksEffect(emptyScraper, 'track', crypto.randomUUID()).pipe(
+      refreshEntityLinksEffect(emptyScraper, 'track', crypto.randomUUID()).pipe(
         Effect.provideService(Database, db)
       )
     )
@@ -405,7 +439,7 @@ describe('scrapeAndCreateEntityEffect', () => {
     expect('resource' in error ? error.resource : undefined).toBe('MusicTrack')
   })
 
-  test('preserves Odesli failures and forwards caller cancellation', async () => {
+  test('persists a partial provider result and forwards caller cancellation', async () => {
     const id = crypto.randomUUID()
     const spotifyUrl = `https://open.spotify.com/track/${id}`
     const signal = new AbortController().signal
@@ -417,29 +451,73 @@ describe('scrapeAndCreateEntityEffect', () => {
       platform: 'spotify',
       url: spotifyUrl
     })
-    const scraper = makeScraper((_input, options) =>
-      Effect.andThen(
-        Effect.sync(() => {
-          receivedSignal = options?.signal
-        }),
-        Effect.fail(
-          new MusicScraperError({
-            message: 'Odesli unavailable',
-            provider: 'odesli',
-            statusCode: 504
-          })
-        )
-      )
-    )
-    const exit = await Effect.runPromiseExit(
-      rescrapeOdesliLinksEffect(scraper, 'track', id, { signal }).pipe(
+    const scraper = makeRefreshScraper((_input, options) => {
+      receivedSignal = options?.signal
+      return Effect.succeed({
+        links: [
+          {
+            platform: 'deezer',
+            url: `https://www.deezer.com/track/${id}`,
+            scrapedAt: new Date()
+          }
+        ]
+      })
+    })
+    const result = await Effect.runPromise(
+      refreshEntityLinksEffect(scraper, 'track', id, { signal }).pipe(
         Effect.provideService(Database, db)
       )
     )
 
-    const error = Result.getOrThrow(Exit.findError(exit))
-    expect(error).toBeInstanceOf(MusicScraperError)
-    expect('statusCode' in error ? error.statusCode : undefined).toBe(504)
+    expect(result.links).toEqual([
+      expect.objectContaining({ platform: 'deezer', url: `https://www.deezer.com/track/${id}` })
+    ])
     expect(receivedSignal).toBe(signal)
+  })
+
+  test('refreshes a playlist from its exact source platform only', async () => {
+    const id = crypto.randomUUID()
+    const deezerUrl = `https://www.deezer.com/playlist/${id}`
+    let receivedInput: MusicScrapeInput | undefined
+    await db.insert(musicPlaylistsTable).values({ id, title: 'Playlist', slug: id })
+    await db.insert(musicEntityLinksTable).values([
+      {
+        entityType: 'playlist',
+        entityId: id,
+        platform: 'spotify',
+        url: `https://open.spotify.com/playlist/${id}`
+      },
+      {
+        entityType: 'playlist',
+        entityId: id,
+        platform: 'deezer',
+        url: deezerUrl,
+        metadata: { discoveredBy: 'deezer', confidence: 'exact_source' }
+      }
+    ])
+    const scraper = makeRefreshScraper((input) => {
+      receivedInput = input
+      return Effect.succeed({
+        links: [
+          { platform: 'deezer', url: deezerUrl, scrapedAt: new Date() },
+          {
+            platform: 'youtube',
+            url: `https://youtube.com/playlist?list=${id}`,
+            scrapedAt: new Date()
+          }
+        ]
+      })
+    })
+
+    const result = await Effect.runPromise(
+      refreshEntityLinksEffect(scraper, 'playlist', id).pipe(Effect.provideService(Database, db))
+    )
+    const links = (await db.select().from(musicEntityLinksTable)).filter(
+      (link) => link.entityType === 'playlist' && link.entityId === id
+    )
+
+    expect(receivedInput).toEqual({ entityType: 'playlist', url: deezerUrl })
+    expect(result.links).toEqual([expect.objectContaining({ platform: 'deezer', url: deezerUrl })])
+    expect(links.some((link) => link.platform === 'youtube')).toBe(false)
   })
 })

@@ -66,6 +66,39 @@ export interface EnrichedTrack {
   duration?: number
 }
 
+export type SpotifySourceEntityType = 'track' | 'album' | 'playlist'
+
+export type ResolveSpotifySourceInput = {
+  readonly entityType: SpotifySourceEntityType
+  readonly urlOrId: string
+}
+
+type SpotifySourceCandidateBase = {
+  readonly platform: 'spotify'
+  readonly externalId: string
+  readonly title: string
+  readonly url: string
+  readonly imageUrl?: string
+}
+
+export type SpotifySourceCandidate =
+  | (SpotifySourceCandidateBase & {
+      readonly entityType: 'track'
+      readonly artists: string
+      readonly crossPlatformEnrichment: 'allowed'
+    })
+  | (SpotifySourceCandidateBase & {
+      readonly entityType: 'album'
+      readonly artists: string
+      readonly crossPlatformEnrichment: 'allowed'
+    })
+  | (SpotifySourceCandidateBase & {
+      readonly entityType: 'playlist'
+      readonly description?: string
+      readonly ownerName?: string
+      readonly crossPlatformEnrichment: 'forbidden'
+    })
+
 export interface SpotifyService {
   readonly getTrack: (id: string) => Effect.Effect<Track, SpotifyError>
   readonly getAlbum: (id: string) => Effect.Effect<Album, SpotifyError>
@@ -91,9 +124,99 @@ export interface SpotifyService {
     SpotifyError
   >
   readonly enrichTrackFromUrl: (url: string) => Effect.Effect<EnrichedTrack, SpotifyError>
+  readonly resolveSource: (
+    input: ResolveSpotifySourceInput
+  ) => Effect.Effect<SpotifySourceCandidate, SpotifyError>
 }
 
 export const SpotifyService = Context.Service<SpotifyService>('SpotifyService')
+
+const SPOTIFY_ID_PATTERN = /^[a-zA-Z0-9]{22}$/
+
+const parseSpotifySourceId = ({ entityType, urlOrId }: ResolveSpotifySourceInput) => {
+  const input = urlOrId.trim()
+
+  if (SPOTIFY_ID_PATTERN.test(input)) return input
+
+  let url: URL
+  try {
+    url = new URL(input)
+  } catch {
+    return null
+  }
+
+  if (url.protocol !== 'https:' || url.hostname !== 'open.spotify.com') return null
+
+  const pathSegments = url.pathname.split('/').filter(Boolean)
+  if (pathSegments.length !== 2 || pathSegments[0] !== entityType) return null
+
+  const id = pathSegments[1]
+  return id && SPOTIFY_ID_PATTERN.test(id) ? id : null
+}
+
+type SpotifySourceLookups = Pick<SpotifyService, 'getTrack' | 'getAlbum' | 'getPlaylist'>
+
+export const resolveSpotifySourceEffect = (
+  spotify: SpotifySourceLookups,
+  input: ResolveSpotifySourceInput
+): Effect.Effect<SpotifySourceCandidate, SpotifyError> =>
+  Effect.gen(function* () {
+    const externalId = parseSpotifySourceId(input)
+    if (!externalId) {
+      return yield* new SpotifyError({
+        message: `Invalid Spotify ${input.entityType} URL or ID`,
+        operation: 'resolveSource',
+        statusCode: 400
+      })
+    }
+
+    switch (input.entityType) {
+      case 'track': {
+        const track = yield* spotify.getTrack(externalId)
+        return {
+          platform: 'spotify',
+          entityType: 'track',
+          externalId,
+          title: track.title,
+          artists: track.artists,
+          url: track.trackUrl,
+          imageUrl: track.albumImageUrl,
+          crossPlatformEnrichment: 'allowed'
+        }
+      }
+      case 'album': {
+        const album = yield* spotify.getAlbum(externalId)
+        return {
+          platform: 'spotify',
+          entityType: 'album',
+          externalId,
+          title: album.title,
+          artists: album.artists,
+          url: album.albumUrl,
+          imageUrl: album.albumImageUrl,
+          crossPlatformEnrichment: 'allowed'
+        }
+      }
+      case 'playlist': {
+        const playlist = yield* spotify.getPlaylist(externalId)
+        return {
+          platform: 'spotify',
+          entityType: 'playlist',
+          externalId,
+          title: playlist.title,
+          url: playlist.playlistUrl,
+          imageUrl: playlist.coverImageUrl,
+          description: playlist.description,
+          ownerName: playlist.ownerName,
+          crossPlatformEnrichment: 'forbidden'
+        }
+      }
+      default: {
+        const unexpectedEntityType: never = input.entityType
+        return unexpectedEntityType
+      }
+    }
+  })
 
 const getTrackEffect = (spotifyClient: SpotifyApiClient, id: string) =>
   Effect.gen(function* () {
@@ -621,7 +744,7 @@ export const SpotifyServiceLayer = Layer.effect(
       config.spotify.clientId,
       config.spotify.clientSecret
     )
-    return {
+    const service: SpotifyService = {
       getTrack: (id) => getTrackWithSpan(spotifyClient, id),
       getAlbum: (id) => getAlbumWithSpan(spotifyClient, id),
       getPlaylist: (id) => getPlaylistWithSpan(spotifyClient, id),
@@ -632,7 +755,17 @@ export const SpotifyServiceLayer = Layer.effect(
       searchTrackByIsrc: (isrc) => searchTrackByIsrcWithSpan(spotifyClient, isrc),
       searchAlbumByTitleArtist: (title, artist) =>
         searchAlbumByTitleArtistWithSpan(spotifyClient, title, artist),
-      enrichTrackFromUrl: (url) => enrichTrackFromUrlWithSpan(spotifyClient, url)
+      enrichTrackFromUrl: (url) => enrichTrackFromUrlWithSpan(spotifyClient, url),
+      resolveSource: (input) =>
+        resolveSpotifySourceEffect(service, input).pipe(
+          Effect.withSpan('spotify.resolveSource', {
+            attributes: {
+              'spotify.entity_type': input.entityType,
+              'external.system': 'spotify'
+            }
+          })
+        )
     }
+    return service
   })
 )

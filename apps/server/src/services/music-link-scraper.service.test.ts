@@ -3,8 +3,15 @@ import { describe, expect, test } from 'vitest'
 import {
   type MusicDataProvider,
   MusicScraperError,
-  makeMusicLinkScraperService
+  makeMusicLinkScraperService,
+  type ProviderResult
 } from './music-link-scraper.service'
+import type { DeezerService } from './deezer.service'
+import {
+  MusicBrainzRequestFailed,
+  type MusicBrainzIdentityCandidate,
+  type MusicBrainzIdentityServiceContract
+} from './musicbrainz-identity.service'
 import type { SpotifyService } from './spotify.service'
 
 const unavailableOdesli: MusicDataProvider = {
@@ -33,14 +40,47 @@ const spotify: SpotifyService = {
   getPlaylistForImport: () => Effect.die('unexpected getPlaylistForImport call'),
   getTrackForImport: () => Effect.die('unexpected getTrackForImport call'),
   searchAlbums: () => Effect.die('unexpected searchAlbums call'),
-  searchTrackByIsrc: () => Effect.die('unexpected searchTrackByIsrc call'),
-  searchAlbumByTitleArtist: () => Effect.die('unexpected searchAlbumByTitleArtist call'),
-  enrichTrackFromUrl: () => Effect.die('unexpected enrichTrackFromUrl call')
+  searchTrackByIsrc: () => Effect.succeed(null),
+  searchAlbumByTitleArtist: () => Effect.succeed(null),
+  enrichTrackFromUrl: () => Effect.die('unexpected enrichTrackFromUrl call'),
+  resolveSource: ({ entityType }) =>
+    entityType === 'playlist'
+      ? Effect.succeed({
+          platform: 'spotify',
+          entityType: 'playlist',
+          externalId: '4iV5W9uYEdYUVa79Axb7Rh',
+          title: 'Source Playlist',
+          url: 'https://open.spotify.com/playlist/4iV5W9uYEdYUVa79Axb7Rh',
+          ownerName: 'Owner',
+          crossPlatformEnrichment: 'forbidden'
+        })
+      : Effect.succeed({
+          platform: 'spotify',
+          entityType: 'track',
+          externalId: '4iV5W9uYEdYUVa79Axb7Rh',
+          title: 'Fallback Track',
+          artists: 'Fallback Artist',
+          url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh',
+          imageUrl: 'https://example.com/cover.jpg',
+          crossPlatformEnrichment: 'allowed'
+        })
+}
+
+const deezer: DeezerService = {
+  resolve: () => Effect.die('unexpected Deezer resolve call'),
+  searchTrackByIsrc: () => Effect.succeed(null),
+  searchAlbumByTitleArtist: () => Effect.succeed(null)
+}
+
+const musicbrainz: MusicBrainzIdentityServiceContract = {
+  lookupByMbid: () => Effect.die('unexpected MusicBrainz MBID lookup'),
+  lookupRecordingByIsrc: () => Effect.die('unexpected MusicBrainz ISRC lookup'),
+  searchCandidates: () => Effect.die('unexpected MusicBrainz search')
 }
 
 describe('makeMusicLinkScraperService', () => {
   test('falls back to Spotify track metadata when Odesli is unavailable', async () => {
-    const scraper = makeMusicLinkScraperService([unavailableOdesli], spotify)
+    const scraper = makeMusicLinkScraperService([unavailableOdesli], spotify, deezer, musicbrainz)
 
     const result = await Effect.runPromise(
       scraper.scrape({ url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh' })
@@ -51,7 +91,8 @@ describe('makeMusicLinkScraperService', () => {
         {
           platform: 'spotify',
           url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh',
-          scrapedAt: expect.any(Date)
+          scrapedAt: expect.any(Date),
+          metadata: { discoveredBy: 'spotify', confidence: 'exact_source' }
         }
       ],
       entityMeta: {
@@ -61,5 +102,414 @@ describe('makeMusicLinkScraperService', () => {
         type: 'song'
       }
     })
+  })
+
+  test('keeps successful provider results when another provider fails', async () => {
+    const successfulProvider: MusicDataProvider = {
+      name: 'bandcamp',
+      fetchLinks: () =>
+        Effect.succeed({
+          links: [
+            {
+              platform: 'bandcamp',
+              url: 'https://artist.bandcamp.com/track/example',
+              scrapedAt: new Date('2026-08-16T00:00:00.000Z')
+            }
+          ],
+          entityMeta: {
+            title: 'Example',
+            artistName: 'Artist',
+            type: 'song'
+          }
+        } satisfies ProviderResult)
+    }
+    const scraper = makeMusicLinkScraperService(
+      [unavailableOdesli, successfulProvider],
+      spotify,
+      deezer,
+      musicbrainz
+    )
+
+    const result = await Effect.runPromise(
+      scraper.scrape({ url: 'https://artist.bandcamp.com/track/example' })
+    )
+
+    expect(result).toEqual({
+      links: [
+        {
+          platform: 'bandcamp',
+          url: 'https://artist.bandcamp.com/track/example',
+          scrapedAt: new Date('2026-08-16T00:00:00.000Z')
+        }
+      ],
+      entityMeta: {
+        title: 'Example',
+        artistName: 'Artist',
+        type: 'song'
+      }
+    })
+  })
+
+  test('keeps exact Deezer source metadata when Odesli is unavailable', async () => {
+    const sourceDeezer: DeezerService = {
+      ...deezer,
+      resolve: () =>
+        Effect.succeed({
+          platform: 'deezer',
+          entityType: 'track',
+          externalId: '3135556',
+          url: 'https://www.deezer.com/track/3135556',
+          title: 'Deezer Source',
+          artistNames: ['Source Artist'],
+          thumbnailUrl: 'https://example.com/deezer.jpg',
+          albumTitle: 'Source Album',
+          durationSeconds: 180,
+          identifiers: { deezerId: '3135556', isrc: 'GBUM71029604' },
+          match: 'exact_source'
+        })
+    }
+    const scraper = makeMusicLinkScraperService(
+      [unavailableOdesli],
+      spotify,
+      sourceDeezer,
+      musicbrainz
+    )
+
+    const result = await Effect.runPromise(
+      scraper.scrape({ entityType: 'track', url: 'https://www.deezer.com/track/3135556' })
+    )
+
+    expect(result.entityMeta).toEqual({
+      title: 'Deezer Source',
+      artistName: 'Source Artist',
+      thumbnailUrl: 'https://example.com/deezer.jpg',
+      type: 'song',
+      isrc: 'GBUM71029604'
+    })
+    expect(result.links).toEqual([
+      {
+        platform: 'deezer',
+        url: 'https://www.deezer.com/track/3135556',
+        scrapedAt: expect.any(Date),
+        metadata: { discoveredBy: 'deezer', confidence: 'exact_source' }
+      }
+    ])
+  })
+
+  test('enriches an exact Deezer track through Odesli without replacing source data', async () => {
+    const sourceDeezer: DeezerService = {
+      ...deezer,
+      resolve: () =>
+        Effect.succeed({
+          platform: 'deezer',
+          entityType: 'track',
+          externalId: '3135556',
+          url: 'https://www.deezer.com/track/3135556',
+          title: 'Exact Source Title',
+          artistNames: ['Exact Source Artist'],
+          albumTitle: 'Source Album',
+          durationSeconds: 180,
+          identifiers: { deezerId: '3135556', isrc: 'GBUM71029604' },
+          match: 'exact_source'
+        })
+    }
+    const odesli: MusicDataProvider = {
+      name: 'odesli',
+      fetchLinks: () =>
+        Effect.succeed({
+          links: [
+            {
+              platform: 'spotify',
+              url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh',
+              scrapedAt: new Date('2026-08-16T00:00:00.000Z')
+            },
+            {
+              platform: 'deezer',
+              url: 'https://www.deezer.com/track/wrong',
+              scrapedAt: new Date('2026-08-16T00:00:00.000Z')
+            }
+          ],
+          entityMeta: { title: 'Odesli Title', artistName: 'Odesli Artist', type: 'song' }
+        })
+    }
+    const scraper = makeMusicLinkScraperService([odesli], spotify, sourceDeezer, musicbrainz)
+
+    const result = await Effect.runPromise(
+      scraper.scrape({ entityType: 'track', url: 'https://www.deezer.com/track/3135556' })
+    )
+
+    expect(result.entityMeta?.title).toBe('Exact Source Title')
+    expect(result.links.map(({ platform, url }) => ({ platform, url }))).toEqual([
+      { platform: 'deezer', url: 'https://www.deezer.com/track/3135556' },
+      {
+        platform: 'spotify',
+        url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh'
+      }
+    ])
+  })
+
+  test('only invokes the exact source service for playlists', async () => {
+    const calls: string[] = []
+    const provider = (name: string): MusicDataProvider => ({
+      name,
+      fetchLinks: () => {
+        calls.push(name)
+        return Effect.succeed({
+          links:
+            name === 'spotify'
+              ? [
+                  {
+                    platform: 'spotify',
+                    url: 'https://open.spotify.com/playlist/source',
+                    scrapedAt: new Date('2026-08-16T00:00:00.000Z')
+                  }
+                ]
+              : []
+        })
+      }
+    })
+    const scraper = makeMusicLinkScraperService(
+      [provider('odesli'), provider('musicbrainz'), provider('spotify'), provider('deezer')],
+      spotify,
+      deezer,
+      musicbrainz
+    )
+
+    const result = await Effect.runPromise(
+      scraper.scrape({
+        entityType: 'playlist',
+        url: 'https://open.spotify.com/playlist/4iV5W9uYEdYUVa79Axb7Rh',
+        mbid: '12345678-1234-4234-8234-123456789abc',
+        isrc: 'GBUM71029604'
+      })
+    )
+
+    expect(calls).toEqual([])
+    expect(result.links.map(({ platform, url }) => ({ platform, url }))).toEqual([
+      {
+        platform: 'spotify',
+        url: 'https://open.spotify.com/playlist/4iV5W9uYEdYUVa79Axb7Rh'
+      }
+    ])
+  })
+
+  test('does not invoke any discovery provider for an unknown playlist source', async () => {
+    const calls: string[] = []
+    const provider = (name: string): MusicDataProvider => ({
+      name,
+      fetchLinks: () => {
+        calls.push(name)
+        return Effect.succeed({ links: [] })
+      }
+    })
+    const scraper = makeMusicLinkScraperService(
+      [provider('odesli'), provider('musicbrainz'), provider('spotify'), provider('deezer')],
+      spotify,
+      deezer,
+      musicbrainz
+    )
+
+    const result = await Effect.runPromise(
+      scraper.scrape({ entityType: 'playlist', url: 'https://example.com/playlist/source' })
+    )
+
+    expect(calls).toEqual([])
+    expect(result).toEqual({ links: [], entityMeta: undefined })
+  })
+
+  test('attaches an exact recording MBID with provenance', async () => {
+    const candidate: MusicBrainzIdentityCandidate = {
+      source: 'musicbrainz',
+      entityType: 'track',
+      title: 'Exact Recording',
+      artistNames: ['Exact Artist'],
+      recordingMbid: '12345678-1234-4234-8234-123456789abc',
+      isrcs: ['GBUM71029604'],
+      provenance: {
+        source: 'musicbrainz',
+        confidence: 'exact_mbid',
+        lookupAt: '2026-08-16T00:00:00.000Z',
+        canonicalMbid: '12345678-1234-4234-8234-123456789abc'
+      }
+    }
+    const exactMusicBrainz: MusicBrainzIdentityServiceContract = {
+      ...musicbrainz,
+      lookupByMbid: () => Effect.succeed(candidate)
+    }
+    const scraper = makeMusicLinkScraperService([], spotify, deezer, exactMusicBrainz)
+
+    const result = await Effect.runPromise(
+      scraper.scrape({
+        entityType: 'track',
+        mbid: '12345678-1234-4234-8234-123456789abc'
+      })
+    )
+
+    expect(result).toEqual({
+      links: [
+        {
+          platform: 'musicbrainz',
+          url: 'https://musicbrainz.org/recording/12345678-1234-4234-8234-123456789abc',
+          scrapedAt: new Date('2026-08-16T00:00:00.000Z'),
+          metadata: {
+            discoveredBy: 'musicbrainz',
+            confidence: 'exact_mbid',
+            mbid: '12345678-1234-4234-8234-123456789abc',
+            mbidType: 'recording',
+            lookupAt: '2026-08-16T00:00:00.000Z',
+            canonicalMbid: '12345678-1234-4234-8234-123456789abc',
+            matchedIdentifiers: { isrcs: ['GBUM71029604'] }
+          }
+        }
+      ],
+      entityMeta: {
+        title: 'Exact Recording',
+        artistName: 'Exact Artist',
+        type: 'song',
+        isrc: 'GBUM71029604'
+      }
+    })
+  })
+
+  test('attaches a recording only when MusicBrainz confirms the exact ISRC', async () => {
+    const exactMusicBrainz: MusicBrainzIdentityServiceContract = {
+      ...musicbrainz,
+      lookupRecordingByIsrc: () =>
+        Effect.succeed({
+          source: 'musicbrainz',
+          entityType: 'track',
+          title: 'ISRC Recording',
+          artistNames: ['Artist'],
+          recordingMbid: '12345678-1234-4234-8234-123456789abc',
+          isrcs: ['GBUM71029604'],
+          provenance: {
+            source: 'musicbrainz',
+            confidence: 'exact_isrc',
+            lookupAt: '2026-08-16T00:00:00.000Z',
+            canonicalMbid: '12345678-1234-4234-8234-123456789abc'
+          }
+        })
+    }
+    const scraper = makeMusicLinkScraperService([], spotify, deezer, exactMusicBrainz)
+
+    const result = await Effect.runPromise(
+      scraper.scrape({ entityType: 'track', isrc: 'GB-UM7-10-29604' })
+    )
+
+    expect(result.links[0]).toMatchObject({
+      platform: 'musicbrainz',
+      metadata: {
+        confidence: 'exact_isrc',
+        matchedIdentifiers: { isrcs: ['GBUM71029604'] }
+      }
+    })
+  })
+
+  test('uses a release-group as album identity and retains release evidence', async () => {
+    const album: MusicBrainzIdentityCandidate = {
+      source: 'musicbrainz',
+      entityType: 'album',
+      title: 'Album',
+      artistNames: ['Artist'],
+      releaseGroup: { mbid: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', primaryType: 'Album' },
+      editionRelease: {
+        mbid: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+        country: 'ZA',
+        date: '2026-08-16',
+        barcode: '1234567890'
+      },
+      provenance: {
+        source: 'musicbrainz',
+        confidence: 'exact_mbid',
+        lookupAt: '2026-08-16T00:00:00.000Z',
+        requestedMbid: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+        canonicalMbid: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+      }
+    }
+    const exactMusicBrainz: MusicBrainzIdentityServiceContract = {
+      ...musicbrainz,
+      lookupByMbid: () => Effect.succeed(album)
+    }
+    const scraper = makeMusicLinkScraperService([], spotify, deezer, exactMusicBrainz)
+
+    const result = await Effect.runPromise(
+      scraper.scrape({
+        entityType: 'album',
+        mbid: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+      })
+    )
+
+    expect(result.links[0]).toMatchObject({
+      platform: 'musicbrainz',
+      url: 'https://musicbrainz.org/release-group/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      metadata: {
+        confidence: 'exact_mbid',
+        mbidType: 'release-group',
+        requestedMbid: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+        editionRelease: {
+          mbid: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+          country: 'ZA',
+          date: '2026-08-16',
+          barcode: '1234567890'
+        }
+      }
+    })
+  })
+
+  test('does not auto-link metadata-only MusicBrainz candidates', async () => {
+    const candidates: string[] = []
+    const recordingMusicBrainz: MusicBrainzIdentityServiceContract = {
+      ...musicbrainz,
+      searchCandidates: () => {
+        candidates.push('searched')
+        return Effect.succeed([])
+      }
+    }
+    const scraper = makeMusicLinkScraperService([], spotify, deezer, recordingMusicBrainz)
+
+    const result = await Effect.runPromise(
+      scraper.scrape({ entityType: 'track', artistName: 'Artist', trackTitle: 'Track' })
+    )
+
+    expect(candidates).toEqual([])
+    expect(result.links).toEqual([])
+  })
+
+  test('keeps an exact Spotify entity when MusicBrainz fails', async () => {
+    const unavailableMusicBrainz: MusicBrainzIdentityServiceContract = {
+      ...musicbrainz,
+      lookupRecordingByIsrc: () =>
+        Effect.fail(
+          new MusicBrainzRequestFailed({
+            operation: 'lookupRecordingByIsrc',
+            statusCode: 503,
+            cause: 'MusicBrainz unavailable'
+          })
+        )
+    }
+    const scraper = makeMusicLinkScraperService(
+      [unavailableOdesli],
+      spotify,
+      deezer,
+      unavailableMusicBrainz
+    )
+
+    const result = await Effect.runPromise(
+      scraper.scrape({
+        entityType: 'track',
+        url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh',
+        isrc: 'GBUM71029604'
+      })
+    )
+
+    expect(result.links).toEqual([
+      {
+        platform: 'spotify',
+        url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh',
+        scrapedAt: expect.any(Date),
+        metadata: { discoveredBy: 'spotify', confidence: 'exact_source' }
+      }
+    ])
+    expect(result.entityMeta?.title).toBe('Fallback Track')
   })
 })

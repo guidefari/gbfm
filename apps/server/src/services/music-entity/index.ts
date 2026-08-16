@@ -40,8 +40,7 @@ import {
 import {
   MusicLinkScraperService as MusicLinkScraperServiceTag,
   type MusicScrapeInput,
-  type MusicScrapeOptions,
-  type MusicScraperError
+  type MusicScrapeOptions
 } from '@/services/music-link-scraper.service'
 import { S3Service as S3ServiceTag } from '@/services/s3.service'
 import { SpotifyImportResolver } from '@/services/spotify-import-resolver.service'
@@ -90,7 +89,7 @@ import {
 } from './playlist-tracks.service'
 import {
   MusicEntityResolutionUnavailable,
-  rescrapeOdesliLinksEffect,
+  refreshEntityLinksEffect,
   scrapeAndCreateEntityEffect
 } from './scrape.service'
 export { MusicEntityResolutionUnavailable } from './scrape.service'
@@ -311,14 +310,11 @@ export interface MusicEntityService {
     },
     DatabaseError | MusicEntityResolutionUnavailable | ValidationError
   >
-  readonly rescrapeOdesliLinks: (
+  readonly refreshEntityLinks: (
     entityType: ScrapeableMusicEntityType,
     entityId: string,
     options?: MusicScrapeOptions
-  ) => Effect.Effect<
-    { links: SelectMusicEntityLink[] },
-    DatabaseError | NotFoundError | MusicScraperError
-  >
+  ) => Effect.Effect<{ links: SelectMusicEntityLink[] }, DatabaseError | NotFoundError>
 }
 
 export const MusicEntityService = Context.Service<MusicEntityService>('MusicEntityService')
@@ -433,8 +429,8 @@ export const MusicEntityServiceLayer = Layer.effect(
         provideDb(deleteLinkEffect(entityType, entityId, linkId)),
       scrapeAndCreateEntity: (entityType, input) =>
         provideDb(scrapeAndCreateEntityEffect(scraper, entityType, input)),
-      rescrapeOdesliLinks: (entityType, entityId, options) =>
-        provideDb(rescrapeOdesliLinksEffect(scraper, entityType, entityId, options))
+      refreshEntityLinks: (entityType, entityId, options) =>
+        provideDb(refreshEntityLinksEffect(scraper, entityType, entityId, options))
     } satisfies MusicEntityService
   })
 )
