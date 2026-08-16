@@ -26,7 +26,7 @@ import {
 
 const emptyScraper: MusicLinkScraperService = {
   scrape: () => Effect.succeed({ links: [] }),
-  scrapeOdesli: () => Effect.succeed({ links: [] })
+  discoverCrossPlatformLinks: () => Effect.succeed({ links: [] })
 }
 
 beforeAll(async () => {
@@ -51,7 +51,7 @@ const makeRefreshScraper = (
   ) => Effect.Effect<ScrapeResult, never>
 ): MusicLinkScraperService => ({
   scrape,
-  scrapeOdesli: () => Effect.succeed({ links: [] })
+  discoverCrossPlatformLinks: () => Effect.succeed({ links: [] })
 })
 
 describe('scrapeAndCreateEntityEffect', () => {
@@ -72,7 +72,7 @@ describe('scrapeAndCreateEntityEffect', () => {
           entityMeta: { title: 'Typed Track', type: 'song' }
         })
       },
-      scrapeOdesli: () => Effect.succeed({ links: [] })
+      discoverCrossPlatformLinks: () => Effect.succeed({ links: [] })
     }
 
     await Effect.runPromise(
@@ -101,7 +101,7 @@ describe('scrapeAndCreateEntityEffect', () => {
           ],
           entityMeta: { title: 'Exact Track', type: 'song' }
         }),
-      scrapeOdesli: () => Effect.succeed({ links: [] })
+      discoverCrossPlatformLinks: () => Effect.succeed({ links: [] })
     }
 
     const result = await Effect.runPromise(
@@ -167,7 +167,7 @@ describe('scrapeAndCreateEntityEffect', () => {
           ],
           entityMeta: { title: 'Resolved Track', artistName: 'Resolved Artist', type: 'song' }
         }),
-      scrapeOdesli: () => Effect.succeed({ links: [] })
+      discoverCrossPlatformLinks: () => Effect.succeed({ links: [] })
     }
 
     const first = await Effect.runPromise(
@@ -238,7 +238,7 @@ describe('scrapeAndCreateEntityEffect', () => {
           links: [],
           entityMeta: { title: 'Reclaimed Track', artistName: 'Reclaimed Artist', type: 'song' }
         }),
-      scrapeOdesli: () => Effect.succeed({ links: [] })
+      discoverCrossPlatformLinks: () => Effect.succeed({ links: [] })
     }
 
     const result = await Effect.runPromise(
@@ -316,7 +316,7 @@ describe('scrapeAndCreateEntityEffect', () => {
             }
           }
         }),
-      scrapeOdesli: () => Effect.succeed({ links: [] })
+      discoverCrossPlatformLinks: () => Effect.succeed({ links: [] })
     }
 
     const first = Effect.runPromise(

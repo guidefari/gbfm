@@ -1,4 +1,4 @@
-import { Effect } from 'effect'
+import { Effect, Exit } from 'effect'
 import { describe, expect, test } from 'vitest'
 import {
   makeMusicBrainzIdentityService,
@@ -366,5 +366,53 @@ describe('MusicBrainzIdentityService', () => {
     caller.abort()
 
     expect(receivedSignal?.aborted).toBe(true)
+  })
+
+  test('preserves caller abort as interruption for a MusicBrainz request', async () => {
+    const caller = new AbortController()
+    const service = await makeService(
+      (_input, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener(
+            'abort',
+            () => reject(new DOMException('Aborted', 'AbortError')),
+            { once: true }
+          )
+        })
+    )
+
+    const exitPromise = Effect.runPromiseExit(
+      service.lookupByMbid({
+        mbidType: 'recording',
+        mbid: requestedRecordingMbid,
+        signal: caller.signal
+      })
+    )
+    await Promise.resolve()
+    caller.abort()
+
+    expect(Exit.hasInterrupts(await exitPromise)).toBe(true)
+  })
+
+  test('preserves caller abort as interruption for a Cover Art Archive request', async () => {
+    const caller = new AbortController()
+    const service = await makeService(
+      (_input, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener(
+            'abort',
+            () => reject(new DOMException('Aborted', 'AbortError')),
+            { once: true }
+          )
+        })
+    )
+
+    const exitPromise = Effect.runPromiseExit(
+      service.lookupCoverArt(releaseMbid, { signal: caller.signal })
+    )
+    await Promise.resolve()
+    caller.abort()
+
+    expect(Exit.hasInterrupts(await exitPromise)).toBe(true)
   })
 })

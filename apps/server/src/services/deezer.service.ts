@@ -152,7 +152,12 @@ export class DeezerTimeout extends Schema.TaggedErrorClass<DeezerTimeout>()('Dee
   operation: Schema.String
 }) {}
 
+export class DeezerCancelled extends Schema.TaggedErrorClass<DeezerCancelled>()('DeezerCancelled', {
+  operation: Schema.String
+}) {}
+
 export type DeezerError =
+  | DeezerCancelled
   | DeezerInvalidInput
   | DeezerNotFound
   | DeezerRequestFailed
@@ -212,7 +217,10 @@ const requestJson = (
           headers: { Accept: 'application/json' },
           signal: callerSignal ? AbortSignal.any([signal, callerSignal]) : signal
         }),
-      catch: (cause) => new DeezerRequestFailed({ operation, cause })
+      catch: (cause) =>
+        callerSignal?.aborted
+          ? new DeezerCancelled({ operation })
+          : new DeezerRequestFailed({ operation, cause })
     })
 
     if (!response.ok) {

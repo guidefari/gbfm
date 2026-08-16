@@ -124,6 +124,14 @@ export interface MusicDataProvider {
   ) => Effect.Effect<ProviderResult, MusicScraperError>
 }
 
+export interface CrossPlatformLinkDiscovery {
+  readonly name: string
+  readonly discoverLinks: (
+    input: MusicScrapeInput,
+    options?: MusicScrapeOptions
+  ) => Effect.Effect<ProviderResult, MusicScraperError>
+}
+
 // ---------------------------------------------------------------------------
 // Odesli / song.link provider
 //   Docs: https://odesli.co (no auth required for reasonable usage)
@@ -195,10 +203,10 @@ const OdesliResponseSchema = Schema.Struct({
 
 const decodeOdesliResponse = Schema.decodeUnknownSync(OdesliResponseSchema)
 
-export class OdesliProvider implements MusicDataProvider {
+export class OdesliProvider implements CrossPlatformLinkDiscovery {
   readonly name = 'odesli'
 
-  fetchLinks(
+  discoverLinks(
     input: MusicScrapeInput,
     options: MusicScrapeOptions = {}
   ): Effect.Effect<ProviderResult, MusicScraperError> {
@@ -476,7 +484,7 @@ export interface MusicLinkScraperService {
     input: MusicScrapeInput,
     options?: MusicScrapeOptions
   ) => Effect.Effect<ScrapeResult, MusicScraperError>
-  readonly scrapeOdesli: (
+  readonly discoverCrossPlatformLinks: (
     input: MusicScrapeInput,
     options?: MusicScrapeOptions
   ) => Effect.Effect<ProviderResult, MusicScraperError>
@@ -485,16 +493,20 @@ export interface MusicLinkScraperService {
 export const MusicLinkScraperService =
   Context.Service<MusicLinkScraperService>('MusicLinkScraperService')
 
+const noCrossPlatformDiscovery: CrossPlatformLinkDiscovery = {
+  name: 'none',
+  discoverLinks: () => Effect.succeed({ links: [] })
+}
+
 export function makeMusicLinkScraperService(
   providers: MusicDataProvider[],
   spotify: SpotifyService,
   deezer: DeezerService,
-  musicbrainz: MusicBrainzIdentityServiceContract
+  musicbrainz: MusicBrainzIdentityServiceContract,
+  discovery: CrossPlatformLinkDiscovery = noCrossPlatformDiscovery
 ): MusicLinkScraperService {
-  const odesli = providers.find((provider) => provider.name === 'odesli') ?? new OdesliProvider()
-
   return {
-    scrapeOdesli: (input, options) => odesli.fetchLinks(input, options),
+    discoverCrossPlatformLinks: (input, options) => discovery.discoverLinks(input, options),
     scrape: Effect.fn('musicScraper.scrape')(function* (
       input: MusicScrapeInput,
       options: MusicScrapeOptions = {}
@@ -525,30 +537,56 @@ export function makeMusicLinkScraperService(
         return { links: [...platformMap.values()], entityMeta } satisfies ScrapeResult
       }
 
+      if (input.url && discovery.name !== 'none') {
+        attemptedProviders += 1
+        const result = yield* discovery.discoverLinks(input, options).pipe(
+          Effect.tap((value) => logProviderOutcome(discovery.name, providerResultOutcome(value))),
+          Effect.catch((error) =>
+            isCancellation(error, options.signal)
+              ? Effect.interrupt
+              : Effect.andThen(
+                  Effect.sync(() => {
+                    failedProviders += 1
+                  }),
+                  Effect.andThen(
+                    logProviderOutcome(
+                      discovery.name,
+                      error.statusCode === 429 ? 'rate_limited' : 'failed'
+                    ),
+                    Effect.succeed({ links: [], entityMeta: undefined } satisfies ProviderResult)
+                  )
+                )
+          )
+        )
+        for (const link of result.links) {
+          if (exactSource && link.platform === source?.platform) continue
+          platformMap.set(link.platform, link)
+        }
+        if (!entityMeta && result.entityMeta) entityMeta = result.entityMeta
+      }
+
       for (const provider of providers) {
         if (!isProviderApplicable(provider, input)) continue
         yield* interruptIfAborted(options.signal)
         attemptedProviders += 1
-        const result = yield* Effect.catch(provider.fetchLinks(input, options), (err) =>
-          isCancellation(err, options.signal)
-            ? Effect.interrupt
-            : Effect.andThen(
-                Effect.sync(() => {
-                  failedProviders += 1
-                }),
-                Effect.andThen(
-                  Effect.logWarning('Music provider scrape failed').pipe(
-                    Effect.annotateLogs({
-                      provider: provider.name,
-                      statusCode: err.statusCode ?? 500
-                    })
-                  ),
-                  Effect.succeed({
-                    links: [],
-                    entityMeta: undefined
-                  } satisfies ProviderResult)
+        const result = yield* provider.fetchLinks(input, options).pipe(
+          Effect.tap((value) => logProviderOutcome(provider.name, providerResultOutcome(value))),
+          Effect.catch((err) =>
+            isCancellation(err, options.signal)
+              ? Effect.interrupt
+              : Effect.andThen(
+                  Effect.sync(() => {
+                    failedProviders += 1
+                  }),
+                  Effect.andThen(
+                    logProviderOutcome(
+                      provider.name,
+                      err.statusCode === 429 ? 'rate_limited' : 'failed'
+                    ),
+                    Effect.succeed({ links: [], entityMeta: undefined } satisfies ProviderResult)
+                  )
                 )
-              )
+          )
         )
 
         // Later providers override earlier ones for the same platform
@@ -567,11 +605,15 @@ export function makeMusicLinkScraperService(
       if (musicbrainzApplicable) attemptedProviders += 1
       yield* interruptIfAborted(options.signal)
       const musicbrainzResult = yield* resolveMusicBrainzIdentity(
-        input,
+        { ...input, isrc: input.isrc ?? entityMeta?.isrc },
         musicbrainz,
         options,
         !entityMeta?.thumbnailUrl
       ).pipe(
+        Effect.tap((value) => logProviderOutcome('musicbrainz', value ? 'succeeded' : 'not_found')),
+        Effect.catchTag('MusicBrainzNotFound', () =>
+          Effect.andThen(logProviderOutcome('musicbrainz', 'not_found'), Effect.succeed(null))
+        ),
         Effect.catch((error) =>
           isCancellation(error, options.signal)
             ? Effect.interrupt
@@ -579,12 +621,7 @@ export function makeMusicLinkScraperService(
                 Effect.sync(() => {
                   failedProviders += 1
                 }),
-                Effect.andThen(
-                  Effect.logWarning('Music provider identity resolution failed').pipe(
-                    Effect.annotateLogs({ provider: 'musicbrainz' })
-                  ),
-                  Effect.succeed(null)
-                )
+                Effect.andThen(logProviderOutcome('musicbrainz', 'failed'), Effect.succeed(null))
               )
         )
       )
@@ -627,7 +664,7 @@ export function makeMusicLinkScraperService(
             )
           })
           const odesliResult = yield* Effect.catch(
-            odesli.fetchLinks({ url: spotifyMatch.url }, options),
+            discovery.discoverLinks({ url: spotifyMatch.url }, options),
             (error) =>
               isCancellation(error, options.signal)
                 ? Effect.interrupt
@@ -683,14 +720,15 @@ export const MusicLinkScraperServiceLayer = Layer.effect(
     const deezer = yield* DeezerService
     const musicbrainz = yield* MusicBrainzIdentityService
 
-    const providers: MusicDataProvider[] = [new OdesliProvider(), new BandcampProvider()]
+    const providers: MusicDataProvider[] = [new BandcampProvider()]
+    const discovery = new OdesliProvider()
 
     const firecrawlKey = process.env.FIRECRAWL_API_KEY
     if (firecrawlKey) {
       providers.push(new FirecrawlProvider(firecrawlKey))
     }
 
-    return makeMusicLinkScraperService(providers, spotify, deezer, musicbrainz)
+    return makeMusicLinkScraperService(providers, spotify, deezer, musicbrainz, discovery)
   })
 )
 
@@ -875,8 +913,20 @@ function isMusicBrainzIdentityInput(input: MusicScrapeInput) {
 
 function isProviderApplicable(provider: MusicDataProvider, input: MusicScrapeInput) {
   if (provider.name === 'bandcamp') return Boolean(input.url && isBandcampUrl(input.url))
-  if (provider.name === 'odesli' || provider.name === 'firecrawl') return Boolean(input.url)
+  if (provider.name === 'firecrawl') return Boolean(input.url)
   return true
+}
+
+type ProviderOutcome = 'succeeded' | 'not_found' | 'rate_limited' | 'failed'
+
+function providerResultOutcome(result: ProviderResult): ProviderOutcome {
+  return result.links.length > 0 || result.entityMeta ? 'succeeded' : 'not_found'
+}
+
+function logProviderOutcome(provider: string, outcome: ProviderOutcome) {
+  return Effect.logInfo('Music provider attempt completed').pipe(
+    Effect.annotateLogs({ provider, outcome })
+  )
 }
 
 function musicBrainzMbidType(

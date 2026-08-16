@@ -2,6 +2,7 @@ import { Effect } from 'effect'
 import { describe, expect, test } from 'vitest'
 import { SpotifyError } from '@/errors'
 import {
+  type CrossPlatformLinkDiscovery,
   type MusicDataProvider,
   MusicScraperError,
   makeMusicLinkScraperService,
@@ -16,9 +17,9 @@ import {
 } from './musicbrainz-identity.service'
 import type { SpotifyService } from './spotify.service'
 
-const unavailableOdesli: MusicDataProvider = {
+const unavailableOdesli: CrossPlatformLinkDiscovery = {
   name: 'odesli',
-  fetchLinks: () =>
+  discoverLinks: () =>
     Effect.fail(
       new MusicScraperError({
         message: 'Odesli unavailable',
@@ -76,7 +77,8 @@ const deezer: DeezerService = {
 
 const musicbrainz: MusicBrainzIdentityServiceContract = {
   lookupByMbid: () => Effect.die('unexpected MusicBrainz MBID lookup'),
-  lookupRecordingByIsrc: () => Effect.die('unexpected MusicBrainz ISRC lookup'),
+  lookupRecordingByIsrc: (isrc) =>
+    Effect.fail(new MusicBrainzNotFound({ operation: 'lookupRecordingByIsrc', identifier: isrc })),
   lookupByExternalUrl: ({ url }) =>
     Effect.fail(new MusicBrainzNotFound({ operation: 'lookupByExternalUrl', identifier: url })),
   lookupCoverArt: (releaseMbid) =>
@@ -86,7 +88,7 @@ const musicbrainz: MusicBrainzIdentityServiceContract = {
 
 describe('makeMusicLinkScraperService', () => {
   test('falls back to Spotify track metadata when Odesli is unavailable', async () => {
-    const scraper = makeMusicLinkScraperService([unavailableOdesli], spotify, deezer, musicbrainz)
+    const scraper = makeMusicLinkScraperService([], spotify, deezer, musicbrainz, unavailableOdesli)
 
     const result = await Effect.runPromise(
       scraper.scrape({ url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh' })
@@ -134,10 +136,11 @@ describe('makeMusicLinkScraperService', () => {
         } satisfies ProviderResult)
     }
     const scraper = makeMusicLinkScraperService(
-      [unavailableOdesli, successfulProvider],
+      [successfulProvider],
       spotify,
       deezer,
-      musicbrainz
+      musicbrainz,
+      unavailableOdesli
     )
 
     const result = await Effect.runPromise(
@@ -161,6 +164,7 @@ describe('makeMusicLinkScraperService', () => {
   })
 
   test('keeps exact Deezer source metadata when Odesli is unavailable', async () => {
+    const lookedUpIsrcs: string[] = []
     const sourceDeezer: DeezerService = {
       ...deezer,
       resolve: () =>
@@ -178,11 +182,21 @@ describe('makeMusicLinkScraperService', () => {
           match: 'exact_source'
         })
     }
+    const recordingMusicBrainz: MusicBrainzIdentityServiceContract = {
+      ...musicbrainz,
+      lookupRecordingByIsrc: (isrc) => {
+        lookedUpIsrcs.push(isrc)
+        return Effect.fail(
+          new MusicBrainzNotFound({ operation: 'lookupRecordingByIsrc', identifier: isrc })
+        )
+      }
+    }
     const scraper = makeMusicLinkScraperService(
-      [unavailableOdesli],
+      [],
       spotify,
       sourceDeezer,
-      musicbrainz
+      recordingMusicBrainz,
+      unavailableOdesli
     )
 
     const result = await Effect.runPromise(
@@ -196,6 +210,7 @@ describe('makeMusicLinkScraperService', () => {
       type: 'song',
       isrc: 'GBUM71029604'
     })
+    expect(lookedUpIsrcs).toEqual(['GBUM71029604'])
     expect(result.links).toEqual([
       {
         platform: 'deezer',
@@ -223,9 +238,9 @@ describe('makeMusicLinkScraperService', () => {
           match: 'exact_source'
         })
     }
-    const odesli: MusicDataProvider = {
+    const odesli: CrossPlatformLinkDiscovery = {
       name: 'odesli',
-      fetchLinks: () =>
+      discoverLinks: () =>
         Effect.succeed({
           links: [
             {
@@ -242,7 +257,7 @@ describe('makeMusicLinkScraperService', () => {
           entityMeta: { title: 'Odesli Title', artistName: 'Odesli Artist', type: 'song' }
         })
     }
-    const scraper = makeMusicLinkScraperService([odesli], spotify, sourceDeezer, musicbrainz)
+    const scraper = makeMusicLinkScraperService([], spotify, sourceDeezer, musicbrainz, odesli)
 
     const result = await Effect.runPromise(
       scraper.scrape({ entityType: 'track', url: 'https://www.deezer.com/track/3135556' })
@@ -340,14 +355,14 @@ describe('makeMusicLinkScraperService', () => {
           })
         )
     }
-    const odesli: MusicDataProvider = {
+    const odesli: CrossPlatformLinkDiscovery = {
       name: 'odesli',
-      fetchLinks: () => {
+      discoverLinks: () => {
         calls.push('odesli')
         return Effect.succeed({ links: [] })
       }
     }
-    const scraper = makeMusicLinkScraperService([odesli], mismatchSpotify, deezer, musicbrainz)
+    const scraper = makeMusicLinkScraperService([], mismatchSpotify, deezer, musicbrainz, odesli)
 
     const error = await Effect.runPromise(
       Effect.flip(
@@ -403,10 +418,11 @@ describe('makeMusicLinkScraperService', () => {
         )
     }
     const scraper = makeMusicLinkScraperService(
-      [unavailableOdesli, secondUnavailable],
+      [secondUnavailable],
       spotify,
       deezer,
-      musicbrainz
+      musicbrainz,
+      unavailableOdesli
     )
 
     const error = await Effect.runPromise(
@@ -687,10 +703,11 @@ describe('makeMusicLinkScraperService', () => {
         )
     }
     const scraper = makeMusicLinkScraperService(
-      [unavailableOdesli],
+      [],
       spotify,
       deezer,
-      unavailableMusicBrainz
+      unavailableMusicBrainz,
+      unavailableOdesli
     )
 
     const result = await Effect.runPromise(
