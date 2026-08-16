@@ -169,6 +169,123 @@ describe('MusicBrainzIdentityService', () => {
     expect(results.every((candidate) => candidate.provenance.confidence === 'candidate')).toBe(true)
   })
 
+  test('resolves an exact canonical Spotify URL relationship', async () => {
+    const service = await makeService(() =>
+      Promise.resolve(
+        jsonResponse({
+          resource: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh',
+          relations: [
+            {
+              recording: {
+                id: canonicalRecordingMbid,
+                title: 'URL matched recording',
+                'artist-credit': [{ name: 'Artist' }]
+              }
+            }
+          ]
+        })
+      )
+    )
+
+    const result = await Effect.runPromise(
+      service.lookupByExternalUrl({
+        entityType: 'track',
+        url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh?si=ignored'
+      })
+    )
+
+    expect(result).toMatchObject({
+      entityType: 'track',
+      recordingMbid: canonicalRecordingMbid,
+      provenance: {
+        confidence: 'exact_url',
+        matchedUrl: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh'
+      }
+    })
+  })
+
+  test('does not auto-accept an ambiguous exact URL relationship', async () => {
+    const service = await makeService(() =>
+      Promise.resolve(
+        jsonResponse({
+          resource: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh',
+          relations: [
+            { recording: { id: requestedRecordingMbid, title: 'First' } },
+            { recording: { id: canonicalRecordingMbid, title: 'Second' } }
+          ]
+        })
+      )
+    )
+
+    const error = await Effect.runPromise(
+      Effect.flip(
+        service.lookupByExternalUrl({
+          entityType: 'track',
+          url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh'
+        })
+      )
+    )
+
+    expect(error).toBeInstanceOf(MusicBrainzNotFound)
+  })
+
+  test('returns remote Cover Art Archive provenance without asserting image rights', async () => {
+    const service = await makeService(() =>
+      Promise.resolve(
+        jsonResponse({
+          release: `https://musicbrainz.org/release/${releaseMbid}`,
+          images: [
+            {
+              image: `https://coverartarchive.org/release/${releaseMbid}/1.jpg`,
+              front: true,
+              approved: true,
+              thumbnails: {
+                '500': `https://coverartarchive.org/release/${releaseMbid}/1-500.jpg`
+              }
+            }
+          ]
+        })
+      )
+    )
+
+    const result = await Effect.runPromise(service.lookupCoverArt(releaseMbid))
+
+    expect(result).toMatchObject({
+      imageUrl: `https://coverartarchive.org/release/${releaseMbid}/1-500.jpg`,
+      source: 'cover_art_archive',
+      releaseMbid,
+      archiveUrl: `https://coverartarchive.org/release/${releaseMbid}`,
+      approved: true,
+      rights: 'not_asserted',
+      storage: 'remote_reference'
+    })
+  })
+
+  test('serializes requests across independently constructed service instances', async () => {
+    const starts: number[] = []
+    const fetcher: MusicBrainzFetch = () => {
+      starts.push(performance.now())
+      return Promise.resolve(
+        jsonResponse({ id: requestedRecordingMbid, title: 'Recording', isrcs: [] })
+      )
+    }
+    const options = { requestIntervalMs: 30, maxRetries: 0 }
+    const first = await Effect.runPromise(makeMusicBrainzIdentityService(fetcher, options))
+    const second = await Effect.runPromise(makeMusicBrainzIdentityService(fetcher, options))
+
+    await Promise.all([
+      Effect.runPromise(
+        first.lookupByMbid({ mbidType: 'recording', mbid: requestedRecordingMbid })
+      ),
+      Effect.runPromise(
+        second.lookupByMbid({ mbidType: 'recording', mbid: canonicalRecordingMbid })
+      )
+    ])
+
+    expect(starts).toHaveLength(2)
+    expect((starts[1] ?? 0) - (starts[0] ?? 0)).toBeGreaterThanOrEqual(25)
+  })
+
   test('sends a contactable user agent and retries a transient response', async () => {
     const headers: string[] = []
     let count = 0

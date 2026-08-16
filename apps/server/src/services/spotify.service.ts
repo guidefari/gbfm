@@ -1,5 +1,5 @@
 import { SpotifyApi as SpotifyApiClient } from '@spotify/web-api-ts-sdk'
-import { Context, Effect, Layer } from 'effect'
+import { Context, Data, Effect, Layer } from 'effect'
 import { getErrorMessage, SpotifyError } from '@/errors'
 import {
   calculateBandcampTotalDuration,
@@ -71,7 +71,16 @@ export type SpotifySourceEntityType = 'track' | 'album' | 'playlist'
 export type ResolveSpotifySourceInput = {
   readonly entityType: SpotifySourceEntityType
   readonly urlOrId: string
+  readonly signal?: AbortSignal
 }
+
+export type SpotifyCallOptions = { readonly signal?: AbortSignal }
+
+export class SpotifyRequestCancelled extends Data.TaggedError('SpotifyRequestCancelled')<{
+  readonly operation: string
+}> {}
+
+export type SpotifyServiceError = SpotifyError | SpotifyRequestCancelled
 
 type SpotifySourceCandidateBase = {
   readonly platform: 'spotify'
@@ -85,6 +94,7 @@ export type SpotifySourceCandidate =
   | (SpotifySourceCandidateBase & {
       readonly entityType: 'track'
       readonly artists: string
+      readonly isrc?: string
       readonly crossPlatformEnrichment: 'allowed'
     })
   | (SpotifySourceCandidateBase & {
@@ -100,9 +110,18 @@ export type SpotifySourceCandidate =
     })
 
 export interface SpotifyService {
-  readonly getTrack: (id: string) => Effect.Effect<Track, SpotifyError>
-  readonly getAlbum: (id: string) => Effect.Effect<Album, SpotifyError>
-  readonly getPlaylist: (id: string) => Effect.Effect<Playlist, SpotifyError>
+  readonly getTrack: (
+    id: string,
+    options?: SpotifyCallOptions
+  ) => Effect.Effect<Track, SpotifyError>
+  readonly getAlbum: (
+    id: string,
+    options?: SpotifyCallOptions
+  ) => Effect.Effect<Album, SpotifyError>
+  readonly getPlaylist: (
+    id: string,
+    options?: SpotifyCallOptions
+  ) => Effect.Effect<Playlist, SpotifyError>
   readonly getPlaylistForImport: (id: string) => Effect.Effect<SpotifyImportPlaylist, SpotifyError>
   readonly getTrackForImport: (id: string) => Effect.Effect<SpotifyImportTrack, SpotifyError>
   readonly searchAlbums: (
@@ -111,25 +130,67 @@ export interface SpotifyService {
     offset?: number
   ) => Effect.Effect<SearchAlbumsResponse, SpotifyError>
   readonly searchTrackByIsrc: (
-    isrc: string
+    isrc: string,
+    options?: SpotifyCallOptions
   ) => Effect.Effect<
     { id: string; url: string; title: string; artist: string } | null,
-    SpotifyError
+    SpotifyServiceError
   >
   readonly searchAlbumByTitleArtist: (
     title: string,
-    artist: string
+    artist: string,
+    options?: SpotifyCallOptions
   ) => Effect.Effect<
     { id: string; url: string; title: string; artist: string } | null,
-    SpotifyError
+    SpotifyServiceError
   >
   readonly enrichTrackFromUrl: (url: string) => Effect.Effect<EnrichedTrack, SpotifyError>
   readonly resolveSource: (
     input: ResolveSpotifySourceInput
-  ) => Effect.Effect<SpotifySourceCandidate, SpotifyError>
+  ) => Effect.Effect<SpotifySourceCandidate, SpotifyServiceError>
 }
 
 export const SpotifyService = Context.Service<SpotifyService>('SpotifyService')
+
+const checkSpotifyCancellation = (signal: AbortSignal | undefined, operation: string) =>
+  signal?.aborted ? Effect.fail(new SpotifyRequestCancelled({ operation })) : Effect.void
+
+const checkSpotifyInterruption = (signal: AbortSignal | undefined) =>
+  signal?.aborted ? Effect.interrupt : Effect.void
+
+const spotifyRequestError = (signal: AbortSignal | undefined, operation: string, message: string) =>
+  signal?.aborted
+    ? new SpotifyRequestCancelled({ operation })
+    : new SpotifyError({
+        message,
+        operation,
+        statusCode: 500
+      })
+
+export const normalizeSpotifyIsrc = (isrc: string) =>
+  isrc.toLocaleUpperCase('en').replace(/[^A-Z0-9]/g, '')
+
+export const normalizeSpotifyMetadata = (value: string) =>
+  value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('en')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+
+export const isExactSpotifyIsrcMatch = (requested: string, returned: string | undefined) =>
+  returned !== undefined && normalizeSpotifyIsrc(returned) === normalizeSpotifyIsrc(requested)
+
+export const isExactSpotifyAlbumMatch = (
+  requestedTitle: string,
+  requestedArtist: string,
+  returnedTitle: string,
+  returnedArtists: readonly string[]
+) =>
+  normalizeSpotifyMetadata(returnedTitle) === normalizeSpotifyMetadata(requestedTitle) &&
+  returnedArtists.some(
+    (artist) => normalizeSpotifyMetadata(artist) === normalizeSpotifyMetadata(requestedArtist)
+  )
 
 const SPOTIFY_ID_PATTERN = /^[a-zA-Z0-9]{22}$/
 
@@ -159,7 +220,7 @@ type SpotifySourceLookups = Pick<SpotifyService, 'getTrack' | 'getAlbum' | 'getP
 export const resolveSpotifySourceEffect = (
   spotify: SpotifySourceLookups,
   input: ResolveSpotifySourceInput
-): Effect.Effect<SpotifySourceCandidate, SpotifyError> =>
+): Effect.Effect<SpotifySourceCandidate, SpotifyServiceError> =>
   Effect.gen(function* () {
     const externalId = parseSpotifySourceId(input)
     if (!externalId) {
@@ -169,23 +230,29 @@ export const resolveSpotifySourceEffect = (
         statusCode: 400
       })
     }
+    yield* checkSpotifyCancellation(input.signal, 'resolveSource')
 
     switch (input.entityType) {
       case 'track': {
-        const track = yield* spotify.getTrack(externalId)
+        const track = yield* input.signal === undefined
+          ? spotify.getTrack(externalId)
+          : spotify.getTrack(externalId, { signal: input.signal })
         return {
           platform: 'spotify',
           entityType: 'track',
           externalId,
           title: track.title,
           artists: track.artists,
+          isrc: track.isrc,
           url: track.trackUrl,
           imageUrl: track.albumImageUrl,
           crossPlatformEnrichment: 'allowed'
         }
       }
       case 'album': {
-        const album = yield* spotify.getAlbum(externalId)
+        const album = yield* input.signal === undefined
+          ? spotify.getAlbum(externalId)
+          : spotify.getAlbum(externalId, { signal: input.signal })
         return {
           platform: 'spotify',
           entityType: 'album',
@@ -198,7 +265,9 @@ export const resolveSpotifySourceEffect = (
         }
       }
       case 'playlist': {
-        const playlist = yield* spotify.getPlaylist(externalId)
+        const playlist = yield* input.signal === undefined
+          ? spotify.getPlaylist(externalId)
+          : spotify.getPlaylist(externalId, { signal: input.signal })
         return {
           platform: 'spotify',
           entityType: 'playlist',
@@ -218,7 +287,11 @@ export const resolveSpotifySourceEffect = (
     }
   })
 
-const getTrackEffect = (spotifyClient: SpotifyApiClient, id: string) =>
+const getTrackEffect = (
+  spotifyClient: SpotifyApiClient,
+  id: string,
+  options: SpotifyCallOptions = {}
+) =>
   Effect.gen(function* () {
     const sanitizedId = cleanId(id)
 
@@ -230,6 +303,7 @@ const getTrackEffect = (spotifyClient: SpotifyApiClient, id: string) =>
       })
     }
 
+    yield* checkSpotifyInterruption(options.signal)
     const data = yield* Effect.tryPromise({
       try: () => spotifyClient.tracks.get(sanitizedId),
       catch: (error) =>
@@ -238,7 +312,10 @@ const getTrackEffect = (spotifyClient: SpotifyApiClient, id: string) =>
           operation: 'getTrack',
           statusCode: 500
         })
-    })
+    }).pipe(
+      Effect.catch((error) => (options.signal?.aborted ? Effect.interrupt : Effect.fail(error)))
+    )
+    yield* checkSpotifyInterruption(options.signal)
 
     const track: Track = {
       albumType: data.album?.album_type,
@@ -246,13 +323,18 @@ const getTrackEffect = (spotifyClient: SpotifyApiClient, id: string) =>
       title: data.name,
       artists: data.artists.map((artist) => artist.name).join(', '),
       trackUrl: data.external_urls.spotify,
+      isrc: data.external_ids.isrc,
       previewUrl: data.preview_url ?? undefined
     }
 
     return track
   })
 
-const getAlbumEffect = (spotifyClient: SpotifyApiClient, id: string) =>
+const getAlbumEffect = (
+  spotifyClient: SpotifyApiClient,
+  id: string,
+  options: SpotifyCallOptions = {}
+) =>
   Effect.gen(function* () {
     const sanitizedId = cleanId(id)
 
@@ -264,6 +346,7 @@ const getAlbumEffect = (spotifyClient: SpotifyApiClient, id: string) =>
       })
     }
 
+    yield* checkSpotifyInterruption(options.signal)
     const data = yield* Effect.tryPromise({
       try: () => spotifyClient.albums.get(sanitizedId),
       catch: (error) =>
@@ -272,7 +355,10 @@ const getAlbumEffect = (spotifyClient: SpotifyApiClient, id: string) =>
           operation: 'getAlbum',
           statusCode: 500
         })
-    })
+    }).pipe(
+      Effect.catch((error) => (options.signal?.aborted ? Effect.interrupt : Effect.fail(error)))
+    )
+    yield* checkSpotifyInterruption(options.signal)
 
     const album: Album = {
       albumType: data.album_type,
@@ -291,7 +377,11 @@ const getAlbumEffect = (spotifyClient: SpotifyApiClient, id: string) =>
     return album
   })
 
-const getPlaylistEffect = (spotifyClient: SpotifyApiClient, id: string) =>
+const getPlaylistEffect = (
+  spotifyClient: SpotifyApiClient,
+  id: string,
+  options: SpotifyCallOptions = {}
+) =>
   Effect.gen(function* () {
     const sanitizedId = cleanId(id)
 
@@ -303,6 +393,7 @@ const getPlaylistEffect = (spotifyClient: SpotifyApiClient, id: string) =>
       })
     }
 
+    yield* checkSpotifyInterruption(options.signal)
     const data = yield* Effect.tryPromise({
       try: () => spotifyClient.playlists.getPlaylist(sanitizedId),
       catch: (error) =>
@@ -311,7 +402,10 @@ const getPlaylistEffect = (spotifyClient: SpotifyApiClient, id: string) =>
           operation: 'getPlaylist',
           statusCode: 500
         })
-    })
+    }).pipe(
+      Effect.catch((error) => (options.signal?.aborted ? Effect.interrupt : Effect.fail(error)))
+    )
+    yield* checkSpotifyInterruption(options.signal)
 
     const playlist: Playlist = {
       coverImageUrl: data.images[0]?.url,
@@ -442,7 +536,11 @@ const searchAlbumsEffect = (
     return searchResponse
   })
 
-const searchTrackByIsrcEffect = (spotifyClient: SpotifyApiClient, isrc: string) =>
+const searchTrackByIsrcEffect = (
+  spotifyClient: SpotifyApiClient,
+  isrc: string,
+  options: SpotifyCallOptions = {}
+) =>
   Effect.gen(function* () {
     if (!isrc || isrc.trim() === '') {
       return yield* new SpotifyError({
@@ -452,18 +550,20 @@ const searchTrackByIsrcEffect = (spotifyClient: SpotifyApiClient, isrc: string) 
       })
     }
 
+    yield* checkSpotifyCancellation(options.signal, 'searchTrackByIsrc')
     const data = yield* Effect.tryPromise({
       try: () => spotifyClient.search(`isrc:${isrc}`, ['track'], undefined, 1),
       catch: (error) =>
-        new SpotifyError({
-          message: `Failed to search track by ISRC: ${getErrorMessage(error)}`,
-          operation: 'searchTrackByIsrc',
-          statusCode: 500
-        })
+        spotifyRequestError(
+          options.signal,
+          'searchTrackByIsrc',
+          `Failed to search track by ISRC: ${getErrorMessage(error)}`
+        )
     })
+    yield* checkSpotifyCancellation(options.signal, 'searchTrackByIsrc')
 
     const track = data.tracks?.items[0]
-    if (!track) return null
+    if (!track || !isExactSpotifyIsrcMatch(isrc, track.external_ids.isrc)) return null
 
     return {
       id: track.id,
@@ -476,7 +576,8 @@ const searchTrackByIsrcEffect = (spotifyClient: SpotifyApiClient, isrc: string) 
 const searchAlbumByTitleArtistEffect = (
   spotifyClient: SpotifyApiClient,
   title: string,
-  artist: string
+  artist: string,
+  options: SpotifyCallOptions = {}
 ) =>
   Effect.gen(function* () {
     if (!title || title.trim() === '') {
@@ -489,18 +590,29 @@ const searchAlbumByTitleArtistEffect = (
 
     const query = artist ? `album:${title} artist:${artist}` : `album:${title}`
 
+    yield* checkSpotifyCancellation(options.signal, 'searchAlbumByTitleArtist')
     const data = yield* Effect.tryPromise({
       try: () => spotifyClient.search(query, ['album'], undefined, 1),
       catch: (error) =>
-        new SpotifyError({
-          message: `Failed to search album by title/artist: ${getErrorMessage(error)}`,
-          operation: 'searchAlbumByTitleArtist',
-          statusCode: 500
-        })
+        spotifyRequestError(
+          options.signal,
+          'searchAlbumByTitleArtist',
+          `Failed to search album by title/artist: ${getErrorMessage(error)}`
+        )
     })
+    yield* checkSpotifyCancellation(options.signal, 'searchAlbumByTitleArtist')
 
     const album = data.albums?.items[0]
-    if (!album) return null
+    if (
+      !album ||
+      !isExactSpotifyAlbumMatch(
+        title,
+        artist,
+        album.name,
+        album.artists.map((albumArtist) => albumArtist.name)
+      )
+    )
+      return null
 
     return {
       id: album.id,
@@ -510,8 +622,12 @@ const searchAlbumByTitleArtistEffect = (
     }
   })
 
-const searchTrackByIsrcWithSpan = (spotifyClient: SpotifyApiClient, isrc: string) =>
-  searchTrackByIsrcEffect(spotifyClient, isrc).pipe(
+const searchTrackByIsrcWithSpan = (
+  spotifyClient: SpotifyApiClient,
+  isrc: string,
+  options?: SpotifyCallOptions
+) =>
+  searchTrackByIsrcEffect(spotifyClient, isrc, options).pipe(
     Effect.withSpan('spotify.searchTrackByIsrc', {
       attributes: { 'spotify.isrc': isrc, 'external.system': 'spotify' }
     })
@@ -520,30 +636,43 @@ const searchTrackByIsrcWithSpan = (spotifyClient: SpotifyApiClient, isrc: string
 const searchAlbumByTitleArtistWithSpan = (
   spotifyClient: SpotifyApiClient,
   title: string,
-  artist: string
+  artist: string,
+  options?: SpotifyCallOptions
 ) =>
-  searchAlbumByTitleArtistEffect(spotifyClient, title, artist).pipe(
+  searchAlbumByTitleArtistEffect(spotifyClient, title, artist, options).pipe(
     Effect.withSpan('spotify.searchAlbumByTitleArtist', {
       attributes: { 'spotify.title': title, 'spotify.artist': artist, 'external.system': 'spotify' }
     })
   )
 
-const getTrackWithSpan = (spotifyClient: SpotifyApiClient, id: string) =>
-  getTrackEffect(spotifyClient, id).pipe(
+const getTrackWithSpan = (
+  spotifyClient: SpotifyApiClient,
+  id: string,
+  options?: SpotifyCallOptions
+) =>
+  getTrackEffect(spotifyClient, id, options).pipe(
     Effect.withSpan('spotify.getTrack', {
       attributes: { 'spotify.id': id, 'external.system': 'spotify' }
     })
   )
 
-const getAlbumWithSpan = (spotifyClient: SpotifyApiClient, id: string) =>
-  getAlbumEffect(spotifyClient, id).pipe(
+const getAlbumWithSpan = (
+  spotifyClient: SpotifyApiClient,
+  id: string,
+  options?: SpotifyCallOptions
+) =>
+  getAlbumEffect(spotifyClient, id, options).pipe(
     Effect.withSpan('spotify.getAlbum', {
       attributes: { 'spotify.id': id, 'external.system': 'spotify' }
     })
   )
 
-const getPlaylistWithSpan = (spotifyClient: SpotifyApiClient, id: string) =>
-  getPlaylistEffect(spotifyClient, id).pipe(
+const getPlaylistWithSpan = (
+  spotifyClient: SpotifyApiClient,
+  id: string,
+  options?: SpotifyCallOptions
+) =>
+  getPlaylistEffect(spotifyClient, id, options).pipe(
     Effect.withSpan('spotify.getPlaylist', {
       attributes: { 'spotify.id': id, 'external.system': 'spotify' }
     })
@@ -745,16 +874,16 @@ export const SpotifyServiceLayer = Layer.effect(
       config.spotify.clientSecret
     )
     const service: SpotifyService = {
-      getTrack: (id) => getTrackWithSpan(spotifyClient, id),
-      getAlbum: (id) => getAlbumWithSpan(spotifyClient, id),
-      getPlaylist: (id) => getPlaylistWithSpan(spotifyClient, id),
+      getTrack: (id, options) => getTrackWithSpan(spotifyClient, id, options),
+      getAlbum: (id, options) => getAlbumWithSpan(spotifyClient, id, options),
+      getPlaylist: (id, options) => getPlaylistWithSpan(spotifyClient, id, options),
       getPlaylistForImport: (id) => getPlaylistForImportWithSpan(spotifyClient, id),
       getTrackForImport: (id) => getTrackForImportWithSpan(spotifyClient, id),
       searchAlbums: (query, limit, offset) =>
         searchAlbumsWithSpan(spotifyClient, query, limit, offset),
-      searchTrackByIsrc: (isrc) => searchTrackByIsrcWithSpan(spotifyClient, isrc),
-      searchAlbumByTitleArtist: (title, artist) =>
-        searchAlbumByTitleArtistWithSpan(spotifyClient, title, artist),
+      searchTrackByIsrc: (isrc, options) => searchTrackByIsrcWithSpan(spotifyClient, isrc, options),
+      searchAlbumByTitleArtist: (title, artist, options) =>
+        searchAlbumByTitleArtistWithSpan(spotifyClient, title, artist, options),
       enrichTrackFromUrl: (url) => enrichTrackFromUrlWithSpan(spotifyClient, url),
       resolveSource: (input) =>
         resolveSpotifySourceEffect(service, input).pipe(

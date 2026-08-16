@@ -39,7 +39,8 @@ beforeAll(async () => {
     { id: 'spotify', displayName: 'Spotify' },
     { id: 'youtube', displayName: 'YouTube' },
     { id: 'bandcamp', displayName: 'Bandcamp' },
-    { id: 'deezer', displayName: 'Deezer' }
+    { id: 'deezer', displayName: 'Deezer' },
+    { id: 'musicbrainz', displayName: 'MusicBrainz' }
   ])
 })
 
@@ -81,6 +82,41 @@ describe('scrapeAndCreateEntityEffect', () => {
     )
 
     expect(receivedInput?.entityType).toBe('track')
+  })
+
+  test('preserves exact source provenance when creating an entity', async () => {
+    const id = crypto.randomUUID()
+    const url = `https://open.spotify.com/track/${id}`
+    const scrapedAt = new Date('2025-02-01T00:00:00.000Z')
+    const scraper: MusicLinkScraperService = {
+      scrape: () =>
+        Effect.succeed({
+          links: [
+            {
+              platform: 'spotify',
+              url,
+              scrapedAt,
+              metadata: { discoveredBy: 'spotify', confidence: 'exact_source' }
+            }
+          ],
+          entityMeta: { title: 'Exact Track', type: 'song' }
+        }),
+      scrapeOdesli: () => Effect.succeed({ links: [] })
+    }
+
+    const result = await Effect.runPromise(
+      scrapeAndCreateEntityEffect(scraper, 'track', { url }).pipe(
+        Effect.provideService(Database, db)
+      )
+    )
+
+    expect(result.links).toEqual([
+      expect.objectContaining({
+        platform: 'spotify',
+        scrapedAt,
+        metadata: { discoveredBy: 'spotify', confidence: 'exact_source' }
+      })
+    ])
   })
 
   test('does not persist an entity when resolution returns no metadata or links', async () => {
@@ -518,6 +554,103 @@ describe('scrapeAndCreateEntityEffect', () => {
 
     expect(receivedInput).toEqual({ entityType: 'playlist', url: deezerUrl })
     expect(result.links).toEqual([expect.objectContaining({ platform: 'deezer', url: deezerUrl })])
-    expect(links.some((link) => link.platform === 'youtube')).toBe(false)
+    expect(links).toEqual([expect.objectContaining({ platform: 'deezer', url: deezerUrl })])
+  })
+
+  test('deterministically collapses multiple verified playlist sources', async () => {
+    const id = crypto.randomUUID()
+    await db.insert(musicPlaylistsTable).values({ id, title: 'Ambiguous Playlist', slug: id })
+    await db.insert(musicEntityLinksTable).values([
+      {
+        entityType: 'playlist',
+        entityId: id,
+        platform: 'spotify',
+        url: `https://open.spotify.com/playlist/${id}`,
+        metadata: { discoveredBy: 'spotify', confidence: 'exact_source' }
+      },
+      {
+        entityType: 'playlist',
+        entityId: id,
+        platform: 'deezer',
+        url: `https://www.deezer.com/playlist/${id}`,
+        metadata: { discoveredBy: 'deezer', confidence: 'exact_source' }
+      }
+    ])
+
+    const result = await Effect.runPromise(
+      refreshEntityLinksEffect(emptyScraper, 'playlist', id).pipe(
+        Effect.provideService(Database, db)
+      )
+    )
+    const links = (await db.select().from(musicEntityLinksTable)).filter(
+      (link) => link.entityType === 'playlist' && link.entityId === id
+    )
+
+    expect(result.links).toEqual([expect.objectContaining({ platform: 'deezer' })])
+    expect(links).toEqual([expect.objectContaining({ platform: 'deezer' })])
+  })
+
+  test('refreshes MusicBrainz from the stored MBID and preserves redirect provenance', async () => {
+    const id = crypto.randomUUID()
+    const requestedMbid = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+    const canonicalMbid = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+    let receivedInput: MusicScrapeInput | undefined
+    await db.insert(musicTracksTable).values({ id, title: 'Track', slug: id })
+    await db.insert(musicEntityLinksTable).values([
+      {
+        entityType: 'track',
+        entityId: id,
+        platform: 'spotify',
+        url: `https://open.spotify.com/track/${id}`,
+        metadata: { discoveredBy: 'spotify', confidence: 'exact_source' }
+      },
+      {
+        entityType: 'track',
+        entityId: id,
+        platform: 'musicbrainz',
+        url: `https://musicbrainz.org/recording/${requestedMbid}`,
+        metadata: { mbid: requestedMbid, confidence: 'exact_mbid' }
+      }
+    ])
+    const scraper = makeRefreshScraper((input) => {
+      receivedInput = input
+      return Effect.succeed({
+        links: [
+          {
+            platform: 'musicbrainz',
+            url: `https://musicbrainz.org/recording/${canonicalMbid}`,
+            scrapedAt: new Date(),
+            metadata: {
+              discoveredBy: 'musicbrainz',
+              confidence: 'exact_mbid',
+              mbid: canonicalMbid,
+              canonicalMbid
+            }
+          }
+        ]
+      })
+    })
+
+    await Effect.runPromise(
+      refreshEntityLinksEffect(scraper, 'track', id).pipe(Effect.provideService(Database, db))
+    )
+    const links = await db.select().from(musicEntityLinksTable)
+    const musicBrainz = links.find(
+      (link) =>
+        link.entityType === 'track' && link.entityId === id && link.platform === 'musicbrainz'
+    )
+
+    expect(receivedInput).toEqual({
+      entityType: 'track',
+      url: `https://open.spotify.com/track/${id}`,
+      mbid: requestedMbid
+    })
+    expect(musicBrainz?.metadata).toEqual(
+      expect.objectContaining({
+        mbid: canonicalMbid,
+        canonicalMbid,
+        requestedMbid
+      })
+    )
   })
 })

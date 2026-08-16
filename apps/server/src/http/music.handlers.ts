@@ -782,6 +782,14 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         const result = yield* dieOnDatabaseError(
           svc.scrapeAndCreateEntity(entityType, { url: payload.url }).pipe(
             Effect.catchTag('ValidationError', () => Effect.fail(new HttpApiError.BadRequest())),
+            Effect.catchTag('MusicScraperError', (error) =>
+              Effect.gen(function* () {
+                if (error.statusCode === 400 || error.statusCode === 404) {
+                  return yield* new HttpApiError.BadRequest()
+                }
+                return yield* new HttpApiError.ServiceUnavailable()
+              })
+            ),
             Effect.catchTag(
               'MusicEntityResolutionUnavailable',
               () => new HttpApiError.ServiceUnavailable()
@@ -896,9 +904,10 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         yield* requireAdmin
         const svc = yield* MusicEntityService
         const result = yield* dieOnDatabaseError(
-          svc
-            .refreshEntityLinks(params.entityType, params.entityId)
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+          svc.refreshEntityLinks(params.entityType, params.entityId).pipe(
+            Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
+            Effect.catchTag('MusicScraperError', () => new HttpApiError.ServiceUnavailable())
+          )
         )
         return { links: result.links.map(toEntityLinkResponse) }
       })
@@ -923,6 +932,14 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         const result = yield* dieOnDatabaseError(
           svc.scrapeAndCreateEntity(params.entityType, payload).pipe(
             Effect.catchTag('ValidationError', () => Effect.fail(new HttpApiError.BadRequest())),
+            Effect.catchTag('MusicScraperError', (error) =>
+              Effect.gen(function* () {
+                if (error.statusCode === 400 || error.statusCode === 404) {
+                  return yield* new HttpApiError.BadRequest()
+                }
+                return yield* new HttpApiError.ServiceUnavailable()
+              })
+            ),
             Effect.catchTag(
               'MusicEntityResolutionUnavailable',
               () => new HttpApiError.ServiceUnavailable()

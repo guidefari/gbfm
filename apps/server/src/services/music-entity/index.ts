@@ -40,7 +40,8 @@ import {
 import {
   MusicLinkScraperService as MusicLinkScraperServiceTag,
   type MusicScrapeInput,
-  type MusicScrapeOptions
+  type MusicScrapeOptions,
+  type MusicScraperError
 } from '@/services/music-link-scraper.service'
 import { S3Service as S3ServiceTag } from '@/services/s3.service'
 import { SpotifyImportResolver } from '@/services/spotify-import-resolver.service'
@@ -308,13 +309,16 @@ export interface MusicEntityService {
       entity: SelectMusicArtist | SelectMusicAlbum | SelectMusicTrack | SelectMusicPlaylist
       links: SelectMusicEntityLink[]
     },
-    DatabaseError | MusicEntityResolutionUnavailable | ValidationError
+    DatabaseError | MusicEntityResolutionUnavailable | MusicScraperError | ValidationError
   >
   readonly refreshEntityLinks: (
     entityType: ScrapeableMusicEntityType,
     entityId: string,
     options?: MusicScrapeOptions
-  ) => Effect.Effect<{ links: SelectMusicEntityLink[] }, DatabaseError | NotFoundError>
+  ) => Effect.Effect<
+    { links: SelectMusicEntityLink[] },
+    DatabaseError | MusicScraperError | NotFoundError
+  >
 }
 
 export const MusicEntityService = Context.Service<MusicEntityService>('MusicEntityService')

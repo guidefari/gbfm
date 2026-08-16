@@ -47,6 +47,8 @@ The public MusicBrainz web service is free for non-commercial use. MusicBrainz d
 
 The public API requires a meaningful contactable `User-Agent` and an application must stay at or below one request per second per source IP unless separately agreed. It can return 503 when application, IP, or global limits are hit. MusicBrainz advises against polling for changes. GBFM should use one process-wide rate limiter, bounded retries with jitter for 503, durable positive caching by MBID/ISRC, and negative caching for ambiguous or missing results. Sources: [MusicBrainz API](https://musicbrainz.org/doc/MusicBrainz_API) and [rate limiting](https://musicbrainz.org/doc/MusicBrainz_API/Rate_Limiting).
 
+The current runtime limiter serializes requests across every service instance in one JavaScript process or Cloudflare Worker isolate. It cannot coordinate separate Bun processes, Worker isolates, regions, or other deployments that share an egress IP. Therefore it is the strongest guarantee available without infrastructure changes, but it does not prove the one-request-per-second rule across a horizontally scaled deployment. Before scaling the live API beyond one process or isolate per egress IP, GBFM needs a shared egress coordinator, a separately agreed MetaBrainz limit, or a CC0 dump-backed integration.
+
 At larger scale, MetaBrainz also publishes CC0 canonical release/recording mappings and searchable normalized metadata twice monthly. This could support local candidate generation, but canonical MBIDs can change following merges. It is a later operational option, not necessary for the first provider integration. Source: [Canonical MusicBrainz data](https://musicbrainz.org/doc/Canonical_MusicBrainz_data).
 
 ### Cover Art Archive
@@ -137,7 +139,7 @@ Acceptance criteria:
 - Ambiguous text searches do not create or merge an entity automatically.
 - Albums distinguish release-group identity from edition-specific release evidence.
 - Playlists make no requests to MusicBrainz, Cover Art Archive, Wikidata, ListenBrainz, or AcoustID.
-- MusicBrainz traffic never exceeds one request per second per runtime egress IP and sends the required `User-Agent`.
+- MusicBrainz traffic never exceeds one request per second within one process or Worker isolate and sends the required `User-Agent`; cross-isolate or cross-process egress coordination is a separately tracked infrastructure requirement.
 - Provider outages leave an entity partially enriched rather than invalidating an exact Spotify or Deezer source resolution.
 - Stored metadata records source, identifier type, confidence, and lookup timestamp.
 - Refresh follows MusicBrainz identifier redirects without losing prior provenance.

@@ -5,6 +5,8 @@ import {
   extractSpotifyId,
   extractYouTubeId,
   getIdFromSpotifyUrl,
+  isExactSpotifyAlbumMatch,
+  isExactSpotifyIsrcMatch,
   isAppleMusicUrl,
   isSpotifyUrl,
   isYouTubeUrl,
@@ -20,6 +22,7 @@ const makeSourceLookups = () => ({
       title: 'Track title',
       artists: 'Artist',
       trackUrl: `https://open.spotify.com/track/${spotifyId}`,
+      isrc: 'USRC17607839',
       albumImageUrl: 'https://image.example/track.jpg'
     })
   ),
@@ -59,6 +62,7 @@ describe('resolveSpotifySourceEffect', () => {
       externalId: spotifyId,
       title: 'Track title',
       artists: 'Artist',
+      isrc: 'USRC17607839',
       url: `https://open.spotify.com/track/${spotifyId}`,
       imageUrl: 'https://image.example/track.jpg',
       crossPlatformEnrichment: 'allowed'
@@ -126,6 +130,43 @@ describe('resolveSpotifySourceEffect', () => {
     }
 
     expect(spotify.getTrack).not.toHaveBeenCalled()
+  })
+
+  test('keeps caller cancellation distinct from Spotify failures', async () => {
+    const spotify = makeSourceLookups()
+    const controller = new AbortController()
+    controller.abort()
+
+    const error = await Effect.runPromise(
+      Effect.flip(
+        resolveSpotifySourceEffect(spotify, {
+          entityType: 'track',
+          urlOrId: spotifyId,
+          signal: controller.signal
+        })
+      )
+    )
+
+    expect(error).toMatchObject({ _tag: 'SpotifyRequestCancelled', operation: 'resolveSource' })
+    expect(spotify.getTrack).not.toHaveBeenCalled()
+  })
+})
+
+describe('Spotify exact search matching', () => {
+  test('accepts only the normalized ISRC returned by Spotify', () => {
+    expect(isExactSpotifyIsrcMatch('us-rc1-76-07839', 'USRC17607839')).toBe(true)
+    expect(isExactSpotifyIsrcMatch('USRC17607839', 'GBAYE0601696')).toBe(false)
+    expect(isExactSpotifyIsrcMatch('USRC17607839', undefined)).toBe(false)
+  })
+
+  test('requires an exact normalized album title and artist', () => {
+    expect(isExactSpotifyAlbumMatch('Déjà Vu', 'Beyoncé', 'Deja Vu', ['Beyonce'])).toBe(true)
+    expect(
+      isExactSpotifyAlbumMatch('Discovery', 'Daft Punk', 'Discovery Deluxe', ['Daft Punk'])
+    ).toBe(false)
+    expect(
+      isExactSpotifyAlbumMatch('Discovery', 'Daft Punk', 'Discovery', ['Various Artists'])
+    ).toBe(false)
   })
 })
 

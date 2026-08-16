@@ -1,6 +1,7 @@
 import { Clock, Context, Effect, Layer, Schema, Semaphore } from 'effect'
 
 const MUSICBRAINZ_API_URL = 'https://musicbrainz.org/ws/2'
+const COVER_ART_ARCHIVE_API_URL = 'https://coverartarchive.org'
 const DEFAULT_USER_AGENT = 'gbfm/1.0 (https://github.com/guidefari/gbfm)'
 const MBID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
@@ -69,16 +70,56 @@ const RecordingSearchSchema = Schema.Struct({
   recordings: Schema.optional(Schema.Array(RecordingSchema))
 })
 
+const UrlRelationshipSchema = Schema.Struct({
+  artist: Schema.optional(ArtistSchema),
+  recording: Schema.optional(RecordingSchema),
+  release: Schema.optional(Schema.Struct({ id: Schema.String, title: Schema.String })),
+  'release-group': Schema.optional(ReleaseGroupSchema)
+})
+
+const UrlLookupSchema = Schema.Struct({
+  resource: Schema.String,
+  relations: Schema.optional(Schema.Array(UrlRelationshipSchema))
+})
+
+const CoverArtArchiveSchema = Schema.Struct({
+  release: Schema.String,
+  images: Schema.Array(
+    Schema.Struct({
+      image: Schema.String,
+      front: Schema.Boolean,
+      approved: Schema.Boolean,
+      thumbnails: Schema.Struct({
+        '250': Schema.optional(Schema.String),
+        '500': Schema.optional(Schema.String),
+        '1200': Schema.optional(Schema.String)
+      })
+    })
+  )
+})
+
 export type MusicBrainzEntityType = 'artist' | 'album' | 'track'
 export type MusicBrainzMbidType = 'artist' | 'release-group' | 'release' | 'recording'
-export type MusicBrainzConfidence = 'exact_mbid' | 'exact_isrc' | 'candidate'
+export type MusicBrainzConfidence = 'exact_mbid' | 'exact_isrc' | 'exact_url' | 'candidate'
 
 export type MusicBrainzProvenance = {
   readonly source: 'musicbrainz'
   readonly confidence: MusicBrainzConfidence
   readonly lookupAt: string
   readonly requestedMbid?: string
+  readonly matchedUrl?: string
   readonly canonicalMbid: string
+}
+
+export type CoverArtArchiveReference = {
+  readonly imageUrl: string
+  readonly source: 'cover_art_archive'
+  readonly releaseMbid: string
+  readonly archiveUrl: string
+  readonly lookupAt: string
+  readonly approved: boolean
+  readonly rights: 'not_asserted'
+  readonly storage: 'remote_reference'
 }
 
 type MusicBrainzCandidateBase = {
@@ -124,6 +165,12 @@ export type MusicBrainzIdentityCandidate =
 export type MusicBrainzLookupInput = {
   readonly mbidType: MusicBrainzMbidType
   readonly mbid: string
+  readonly signal?: AbortSignal
+}
+
+export type MusicBrainzExternalUrlLookupInput = {
+  readonly entityType: MusicBrainzEntityType
+  readonly url: string
   readonly signal?: AbortSignal
 }
 
@@ -185,6 +232,13 @@ export interface MusicBrainzIdentityServiceContract {
     isrc: string,
     options?: { readonly signal?: AbortSignal }
   ) => Effect.Effect<MusicBrainzTrackCandidate, MusicBrainzIdentityError>
+  readonly lookupByExternalUrl: (
+    input: MusicBrainzExternalUrlLookupInput
+  ) => Effect.Effect<MusicBrainzIdentityCandidate, MusicBrainzIdentityError>
+  readonly lookupCoverArt: (
+    releaseMbid: string,
+    options?: { readonly signal?: AbortSignal }
+  ) => Effect.Effect<CoverArtArchiveReference, MusicBrainzIdentityError>
   readonly searchCandidates: (
     input: MusicBrainzSearchInput
   ) => Effect.Effect<readonly MusicBrainzIdentityCandidate[], MusicBrainzIdentityError>
@@ -217,13 +271,15 @@ const provenance = (
   canonicalMbid: string,
   confidence: MusicBrainzConfidence,
   lookupAt: string,
-  requestedMbid?: string
+  requestedMbid?: string,
+  matchedUrl?: string
 ): MusicBrainzProvenance => ({
   source: 'musicbrainz',
   confidence,
   lookupAt,
   canonicalMbid,
-  requestedMbid: requestedMbid === canonicalMbid ? undefined : requestedMbid
+  requestedMbid: requestedMbid === canonicalMbid ? undefined : requestedMbid,
+  matchedUrl
 })
 
 const artistCandidate = (
@@ -288,18 +344,56 @@ const canonicalMbidFromResponse = (response: Response, fallback: string) => {
   return candidate && MBID_PATTERN.test(candidate) ? candidate : fallback
 }
 
+const canonicalExternalUrl = (source: string, entityType: MusicBrainzEntityType) => {
+  const parsed = URL.parse(source)
+  if (!parsed) return null
+  const host = parsed.hostname.toLowerCase()
+  const segments = parsed.pathname.split('/').filter(Boolean)
+  if (host === 'open.spotify.com') {
+    const [type, id] = segments
+    if (type !== entityType || !id || segments.length !== 2) return null
+    return `https://open.spotify.com/${type}/${id}`
+  }
+  if (host === 'deezer.com' || host === 'www.deezer.com') {
+    const typeIndex = segments.findIndex((segment) => segment === entityType)
+    const id = typeIndex < 0 ? undefined : segments[typeIndex + 1]
+    if (!id || !/^\d+$/.test(id) || typeIndex + 2 !== segments.length) return null
+    return `https://www.deezer.com/${entityType}/${id}`
+  }
+  return null
+}
+
+const withExactUrlProvenance = (
+  candidate: MusicBrainzIdentityCandidate,
+  matchedUrl: string,
+  lookupAt: string
+): MusicBrainzIdentityCandidate => ({
+  ...candidate,
+  provenance: {
+    ...candidate.provenance,
+    confidence: 'exact_url',
+    lookupAt,
+    matchedUrl
+  }
+})
+
+// Shared by all service instances in this JavaScript process or Worker isolate.
+// Separate processes and isolates still require an external egress coordinator.
+const sharedMusicBrainzSemaphore = Semaphore.makeUnsafe(1)
+let sharedLastMusicBrainzRequestAt = Number.NEGATIVE_INFINITY
+
 export const makeMusicBrainzIdentityService = Effect.fn('MusicBrainzIdentityService.make')(
   function* (fetcher: MusicBrainzFetch = fetch, options: MusicBrainzIdentityOptions = {}) {
-    const semaphore = yield* Semaphore.make(1)
     const mbidCache = new Map<string, CacheEntry<MusicBrainzIdentityCandidate | null>>()
     const isrcCache = new Map<string, CacheEntry<MusicBrainzTrackCandidate | null>>()
+    const externalUrlCache = new Map<string, CacheEntry<MusicBrainzIdentityCandidate | null>>()
+    const coverArtCache = new Map<string, CacheEntry<CoverArtArchiveReference | null>>()
     const searchCache = new Map<string, CacheEntry<readonly MusicBrainzIdentityCandidate[]>>()
     const requestIntervalMs = options.requestIntervalMs ?? 1000
     const positiveCacheTtlMs = options.positiveCacheTtlMs ?? 24 * 60 * 60 * 1000
     const negativeCacheTtlMs = options.negativeCacheTtlMs ?? 5 * 60 * 1000
     const maxRetries = options.maxRetries ?? 2
     const userAgent = options.userAgent ?? DEFAULT_USER_AGENT
-    let lastRequestAt = Number.NEGATIVE_INFINITY
 
     const fetchJson = (
       url: string,
@@ -309,15 +403,15 @@ export const makeMusicBrainzIdentityService = Effect.fn('MusicBrainzIdentityServ
       { readonly payload: unknown; readonly response: Response },
       MusicBrainzIdentityError
     > =>
-      semaphore.withPermit(
+      sharedMusicBrainzSemaphore.withPermit(
         Effect.gen(function* () {
           let attempt = 0
           let response: Response | undefined
           while (!response) {
             const now = yield* Clock.currentTimeMillis
-            const waitMs = Math.max(0, requestIntervalMs - (now - lastRequestAt))
+            const waitMs = Math.max(0, requestIntervalMs - (now - sharedLastMusicBrainzRequestAt))
             if (waitMs > 0) yield* Effect.sleep(`${waitMs} millis`)
-            lastRequestAt = yield* Clock.currentTimeMillis
+            sharedLastMusicBrainzRequestAt = yield* Clock.currentTimeMillis
 
             const current = yield* Effect.tryPromise({
               try: (signal) =>
@@ -530,6 +624,171 @@ export const makeMusicBrainzIdentityService = Effect.fn('MusicBrainzIdentityServ
       }
     )
 
+    const lookupByExternalUrl = Effect.fn('MusicBrainzIdentityService.lookupByExternalUrl')(
+      function* (input: MusicBrainzExternalUrlLookupInput) {
+        const canonicalUrl = canonicalExternalUrl(input.url, input.entityType)
+        if (!canonicalUrl) {
+          return yield* new MusicBrainzInvalidInput({
+            operation: 'lookupByExternalUrl',
+            message: 'A canonical Spotify or Deezer entity URL is required'
+          })
+        }
+        const found = yield* cached(
+          externalUrlCache,
+          `url:${input.entityType}:${canonicalUrl}`,
+          Effect.gen(function* () {
+            const includes =
+              input.entityType === 'artist'
+                ? 'artist-rels'
+                : input.entityType === 'album'
+                  ? 'release-rels+release-group-rels'
+                  : 'recording-rels'
+            const result = yield* fetchJson(
+              `${MUSICBRAINZ_API_URL}/url?fmt=json&resource=${encodeURIComponent(canonicalUrl)}&inc=${includes}`,
+              'lookupByExternalUrl',
+              input.signal
+            ).pipe(
+              Effect.catchTag('MusicBrainzRequestFailed', (error) =>
+                error.statusCode === 404 ? Effect.succeed(null) : Effect.fail(error)
+              )
+            )
+            if (!result) return null
+            const decoded = yield* Schema.decodeUnknownEffect(UrlLookupSchema)(result.payload).pipe(
+              invalidResponse('lookupByExternalUrl')
+            )
+            const lookupAt = new Date(yield* Clock.currentTimeMillis).toISOString()
+            const relations = decoded.relations ?? []
+
+            if (input.entityType === 'artist') {
+              const targets = relations.flatMap((relation) =>
+                relation.artist ? [relation.artist] : []
+              )
+              const target = targets[0]
+              return targets.length === 1 && target
+                ? withExactUrlProvenance(
+                    artistCandidate(target, 'exact_url', lookupAt),
+                    canonicalUrl,
+                    lookupAt
+                  )
+                : null
+            }
+            if (input.entityType === 'track') {
+              const targets = relations.flatMap((relation) =>
+                relation.recording ? [relation.recording] : []
+              )
+              const target = targets[0]
+              return targets.length === 1 && target
+                ? withExactUrlProvenance(
+                    trackCandidate(target, 'exact_url', lookupAt),
+                    canonicalUrl,
+                    lookupAt
+                  )
+                : null
+            }
+
+            const releaseGroups = relations.flatMap((relation) =>
+              relation['release-group'] ? [relation['release-group']] : []
+            )
+            const releases = relations.flatMap((relation) =>
+              relation.release ? [relation.release] : []
+            )
+            const releaseGroup = releaseGroups[0]
+            if (releaseGroups.length === 1 && releaseGroup && releases.length === 0) {
+              return withExactUrlProvenance(
+                albumCandidate(releaseGroup, releaseGroup['artist-credit'], 'exact_url', lookupAt),
+                canonicalUrl,
+                lookupAt
+              )
+            }
+            const release = releases[0]
+            if (releases.length === 1 && release && releaseGroups.length === 0) {
+              const candidate = yield* lookupByMbid({
+                mbidType: 'release',
+                mbid: release.id,
+                signal: input.signal
+              })
+              return withExactUrlProvenance(candidate, canonicalUrl, lookupAt)
+            }
+            return null
+          }),
+          (value) => value === null
+        )
+        if (!found) {
+          return yield* new MusicBrainzNotFound({
+            operation: 'lookupByExternalUrl',
+            identifier: canonicalUrl
+          })
+        }
+        return found
+      }
+    )
+
+    const lookupCoverArt = Effect.fn('MusicBrainzIdentityService.lookupCoverArt')(function* (
+      releaseMbid: string,
+      callOptions: { readonly signal?: AbortSignal } = {}
+    ) {
+      if (!MBID_PATTERN.test(releaseMbid)) {
+        return yield* new MusicBrainzInvalidInput({
+          operation: 'lookupCoverArt',
+          message: 'A valid MusicBrainz release identifier is required'
+        })
+      }
+      const found = yield* cached(
+        coverArtCache,
+        `cover:${releaseMbid.toLowerCase()}`,
+        Effect.gen(function* () {
+          const archiveUrl = `${COVER_ART_ARCHIVE_API_URL}/release/${releaseMbid}`
+          const response = yield* Effect.tryPromise({
+            try: (signal) =>
+              fetcher(archiveUrl, {
+                headers: { Accept: 'application/json', 'User-Agent': userAgent },
+                signal: callOptions.signal ? AbortSignal.any([signal, callOptions.signal]) : signal
+              }),
+            catch: (cause) => new MusicBrainzRequestFailed({ operation: 'lookupCoverArt', cause })
+          })
+          if (response.status === 404) return null
+          if (!response.ok) {
+            return yield* new MusicBrainzRequestFailed({
+              operation: 'lookupCoverArt',
+              statusCode: response.status,
+              cause: `Cover Art Archive returned HTTP ${response.status}`
+            })
+          }
+          const payload = yield* Effect.tryPromise({
+            try: (): Promise<unknown> => response.json(),
+            catch: () =>
+              new MusicBrainzResponseInvalid({
+                operation: 'lookupCoverArt',
+                message: 'Cover Art Archive returned invalid JSON'
+              })
+          })
+          const decoded = yield* Schema.decodeUnknownEffect(CoverArtArchiveSchema)(payload).pipe(
+            invalidResponse('lookupCoverArt')
+          )
+          const image = decoded.images.find((candidate) => candidate.front)
+          if (!image) return null
+          return {
+            imageUrl: image.thumbnails['1200'] ?? image.thumbnails['500'] ?? image.image,
+            source: 'cover_art_archive',
+            releaseMbid,
+            archiveUrl,
+            lookupAt: new Date(yield* Clock.currentTimeMillis).toISOString(),
+            approved: image.approved,
+            rights: 'not_asserted',
+            storage: 'remote_reference'
+          } satisfies CoverArtArchiveReference
+        }),
+        (value) => value === null
+      )
+      if (!found) {
+        return yield* new MusicBrainzNotFound({
+          operation: 'lookupCoverArt',
+          identifier: releaseMbid
+        })
+      }
+      return found
+    })
+
     const searchCandidates = Effect.fn('MusicBrainzIdentityService.searchCandidates')(function* (
       input: MusicBrainzSearchInput
     ) {
@@ -599,6 +858,8 @@ export const makeMusicBrainzIdentityService = Effect.fn('MusicBrainzIdentityServ
     return MusicBrainzIdentityService.of({
       lookupByMbid,
       lookupRecordingByIsrc,
+      lookupByExternalUrl,
+      lookupCoverArt,
       searchCandidates
     })
   }

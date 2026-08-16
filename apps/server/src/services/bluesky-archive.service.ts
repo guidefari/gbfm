@@ -199,7 +199,12 @@ const writeEffect = ({
                   scraped.entityMeta.type === 'album' ? 'album' : entityTypeForUrl(candidateUrl),
                   { url: candidateUrl }
                 )
-                .pipe(Effect.catch(() => Effect.succeed(null)))
+                .pipe(
+                  Effect.catchTags({
+                    DatabaseError: () => Effect.succeed(null),
+                    ValidationError: () => Effect.succeed(null)
+                  })
+                )
             : null
 
         return yield* Effect.tryPromise({
@@ -213,7 +218,12 @@ const writeEffect = ({
             }),
           catch: () => databaseError
         }).pipe(Effect.catchTag('DatabaseError', () => Effect.succeed<WriteResult>('failed')))
-      })
+      }).pipe(
+        Effect.catchTags({
+          MusicEntityResolutionUnavailable: () => Effect.succeed<WriteResult>('failed'),
+          MusicScraperError: () => Effect.succeed<WriteResult>('failed')
+        })
+      )
     ).pipe(
       Effect.map((results) => ({
         created: results.filter((result) => result === 'created').length,
