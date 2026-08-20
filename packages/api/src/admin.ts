@@ -12,7 +12,7 @@ import { AuthMiddleware } from './middleware/auth'
 // scenarios below) don't need to preserve the old Hono handler's
 // { error, scenario } response body -- the built-in HttpApiError classes'
 // empty-body responses are equivalent from www's point of view.
-export class SimulatedRateLimitError extends Schema.TaggedErrorClass<SimulatedRateLimitError>()(
+export class SimulatedRateLimitError extends Schema.TaggedError<SimulatedRateLimitError>()(
   'SimulatedRateLimitError',
   {},
   { httpApiStatus: 429 }

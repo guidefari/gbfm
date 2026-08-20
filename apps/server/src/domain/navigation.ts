@@ -52,18 +52,15 @@ export type CorpusFacts = {
   readonly hasUnread: boolean
 }
 
-export class NoSuchMove extends Schema.TaggedErrorClass<NoSuchMove>()('NoSuchMove', {
+export class NoSuchMove extends Schema.TaggedError<NoSuchMove>()('NoSuchMove', {
   command: Schema.String
 }) {}
 
-export class TrailEntryGone extends Schema.TaggedErrorClass<TrailEntryGone>()('TrailEntryGone', {
+export class TrailEntryGone extends Schema.TaggedError<TrailEntryGone>()('TrailEntryGone', {
   slug: Schema.String
 }) {}
 
-export class CorpusExhausted extends Schema.TaggedErrorClass<CorpusExhausted>()(
-  'CorpusExhausted',
-  {}
-) {}
+export class CorpusExhausted extends Schema.TaggedError<CorpusExhausted>()('CorpusExhausted', {}) {}
 
 const TRAIL_CAPACITY = 500
 

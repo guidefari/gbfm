@@ -189,17 +189,17 @@ export type MusicBrainzSearchInput =
       readonly signal?: AbortSignal
     }
 
-export class MusicBrainzInvalidInput extends Schema.TaggedErrorClass<MusicBrainzInvalidInput>()(
+export class MusicBrainzInvalidInput extends Schema.TaggedError<MusicBrainzInvalidInput>()(
   'MusicBrainzInvalidInput',
   { operation: Schema.String, message: Schema.String }
 ) {}
 
-export class MusicBrainzNotFound extends Schema.TaggedErrorClass<MusicBrainzNotFound>()(
+export class MusicBrainzNotFound extends Schema.TaggedError<MusicBrainzNotFound>()(
   'MusicBrainzNotFound',
   { operation: Schema.String, identifier: Schema.String }
 ) {}
 
-export class MusicBrainzRequestFailed extends Schema.TaggedErrorClass<MusicBrainzRequestFailed>()(
+export class MusicBrainzRequestFailed extends Schema.TaggedError<MusicBrainzRequestFailed>()(
   'MusicBrainzRequestFailed',
   {
     operation: Schema.String,
@@ -208,7 +208,7 @@ export class MusicBrainzRequestFailed extends Schema.TaggedErrorClass<MusicBrain
   }
 ) {}
 
-export class MusicBrainzResponseInvalid extends Schema.TaggedErrorClass<MusicBrainzResponseInvalid>()(
+export class MusicBrainzResponseInvalid extends Schema.TaggedError<MusicBrainzResponseInvalid>()(
   'MusicBrainzResponseInvalid',
   { operation: Schema.String, message: Schema.String }
 ) {}

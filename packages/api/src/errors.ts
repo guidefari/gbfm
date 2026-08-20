@@ -1,6 +1,6 @@
 import { Schema } from 'effect'
 
-export class ReadinessCheckFailedError extends Schema.TaggedErrorClass<ReadinessCheckFailedError>()(
+export class ReadinessCheckFailedError extends Schema.TaggedError<ReadinessCheckFailedError>()(
   'ReadinessCheckFailedError',
   {
     dbConnected: Schema.Literal(false)
@@ -12,7 +12,7 @@ export class ReadinessCheckFailedError extends Schema.TaggedErrorClass<Readiness
 // to the common 4xx/5xx set (BadRequest, Unauthorized, ..., ServiceUnavailable),
 // none of them 413. The old Hono multipart-init route used
 // HttpStatusCodes.REQUEST_TOO_LONG for an oversized fileSize.
-export class FileTooLargeError extends Schema.TaggedErrorClass<FileTooLargeError>()(
+export class FileTooLargeError extends Schema.TaggedError<FileTooLargeError>()(
   'FileTooLargeError',
   {
     message: Schema.String,

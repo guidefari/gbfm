@@ -118,7 +118,7 @@ export type DeezerSearchOptions = {
 
 type DeezerOperation = 'resolve' | 'searchTrackByIsrc' | 'searchAlbumByTitleArtist'
 
-export class DeezerInvalidInput extends Schema.TaggedErrorClass<DeezerInvalidInput>()(
+export class DeezerInvalidInput extends Schema.TaggedError<DeezerInvalidInput>()(
   'DeezerInvalidInput',
   {
     operation: Schema.String,
@@ -126,12 +126,12 @@ export class DeezerInvalidInput extends Schema.TaggedErrorClass<DeezerInvalidInp
   }
 ) {}
 
-export class DeezerNotFound extends Schema.TaggedErrorClass<DeezerNotFound>()('DeezerNotFound', {
+export class DeezerNotFound extends Schema.TaggedError<DeezerNotFound>()('DeezerNotFound', {
   entityType: Schema.String,
   externalId: Schema.String
 }) {}
 
-export class DeezerRequestFailed extends Schema.TaggedErrorClass<DeezerRequestFailed>()(
+export class DeezerRequestFailed extends Schema.TaggedError<DeezerRequestFailed>()(
   'DeezerRequestFailed',
   {
     operation: Schema.String,
@@ -140,7 +140,7 @@ export class DeezerRequestFailed extends Schema.TaggedErrorClass<DeezerRequestFa
   }
 ) {}
 
-export class DeezerResponseInvalid extends Schema.TaggedErrorClass<DeezerResponseInvalid>()(
+export class DeezerResponseInvalid extends Schema.TaggedError<DeezerResponseInvalid>()(
   'DeezerResponseInvalid',
   {
     operation: Schema.String,
@@ -148,11 +148,11 @@ export class DeezerResponseInvalid extends Schema.TaggedErrorClass<DeezerRespons
   }
 ) {}
 
-export class DeezerTimeout extends Schema.TaggedErrorClass<DeezerTimeout>()('DeezerTimeout', {
+export class DeezerTimeout extends Schema.TaggedError<DeezerTimeout>()('DeezerTimeout', {
   operation: Schema.String
 }) {}
 
-export class DeezerCancelled extends Schema.TaggedErrorClass<DeezerCancelled>()('DeezerCancelled', {
+export class DeezerCancelled extends Schema.TaggedError<DeezerCancelled>()('DeezerCancelled', {
   operation: Schema.String
 }) {}
 
