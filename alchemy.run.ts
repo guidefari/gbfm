@@ -25,7 +25,7 @@ export default Alchemy.Stack(
     const apiUrl = isProduction
       ? 'https://api.goosebumps.fm'
       : `https://api.${stack.stage}.goosebumps.fm`
-    const secrets = yield* secretsStore(apiUrl)
+    const secrets = yield* secretsStore(apiUrl, isLocalDev)
     const emailConfig = emailDeploymentConfig({
       stage: stack.stage,
       testRecipient: process.env.EMAIL_TEST_RECIPIENT,
