@@ -80,6 +80,8 @@ const authLayer = (
     currentTimeMillisUnsafe: Date.now,
     currentTimeNanos: Effect.sync(() => BigInt(Date.now()) * 1_000_000n),
     currentTimeNanosUnsafe: () => BigInt(Date.now()) * 1_000_000n,
+    monotonicTimeNanos: Effect.sync(() => BigInt(Date.now()) * 1_000_000n),
+    monotonicTimeNanosUnsafe: () => BigInt(Date.now()) * 1_000_000n,
     sleep: () => Effect.void
   })
   const delivery = EmailDeliveryLive.pipe(
