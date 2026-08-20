@@ -93,7 +93,7 @@ export default Alchemy.Stack(
     const api = yield* Cloudflare.Worker('Api', {
       main: './apps/server/src/worker.ts',
       ...(isProduction ? { domain: 'api.goosebumps.fm' } : { url: true }),
-      compatibility: { date: '2026-08-09', flags: ['nodejs_compat'] },
+      compatibility: { date: '2026-07-04', flags: ['nodejs_compat'] },
       crons: [reminderSweepCron, sitemapRegenerationCron, maintenanceSweepCron],
       env: {
         DB: db,
@@ -127,7 +127,7 @@ export default Alchemy.Stack(
     const cdnRouter = yield* Cloudflare.Worker('CdnRouter', {
       main: './apps/cdn-router/src/index.ts',
       ...(isProduction ? { domain: 'cdn.goosebumps.fm' } : { url: true }),
-      compatibility: { date: '2026-08-09' },
+      compatibility: { date: '2026-07-04' },
       env: {
         USER_CONTENT: userContent,
         MIXES: mixes
@@ -181,7 +181,9 @@ export default Alchemy.Stack(
       cwd: 'apps/www',
       command: 'bun run build',
       outdir: 'dist',
-      ...(isProduction ? { domain: ['www.goosebumps.fm', 'goosebumps.fm'] } : { url: true }),
+      ...(isProduction
+        ? { domain: { name: 'www.goosebumps.fm', aliases: ['goosebumps.fm'] } }
+        : { url: true }),
       assets: { notFoundHandling: 'single-page-application' },
       env: {
         VITE_VPS_BASE_URL: apiUrl,
@@ -199,11 +201,11 @@ export default Alchemy.Stack(
 
     return {
       apiUrl: api.url,
-      apiDomains: api.domains,
+      apiDomains: api.urls,
       cdnRouterUrl: cdnRouter.url,
-      cdnRouterDomains: cdnRouter.domains,
+      cdnRouterDomains: cdnRouter.urls,
       wwwUrl: www.url,
-      wwwDomains: www.domains,
+      wwwDomains: www.urls,
       databaseName: db.databaseName,
       userContentBucketName: userContent.bucketName,
       mixesBucketName: mixes.bucketName
