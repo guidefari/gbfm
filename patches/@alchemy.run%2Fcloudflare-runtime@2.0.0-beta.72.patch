@@ -1,0 +1,50 @@
+diff --git a/src/core/bindings/assets/Assets.ts b/src/core/bindings/assets/Assets.ts
+index c87fb5bc879b00efa3b32ea9d9a2de4e538db121..2d490f99446ecd1e8e59dafc09a432ae20697217 100644
+--- a/src/core/bindings/assets/Assets.ts
++++ b/src/core/bindings/assets/Assets.ts
+@@ -7,6 +7,7 @@ import {
+   constructHeaders,
+   constructRedirects,
+ } from "../../../internal/workers-shared/node/configuration/constructConfiguration.ts";
++import type { Logger } from "../../../internal/workers-shared/shared/configuration/types.ts";
+ import {
+   createAssetsIgnoreFunction,
+   getContentType,
+@@ -357,6 +358,19 @@ export const AssetsLive = Layer.effect(
+   }),
+ );
+ 
++/**
++ * `constructHeaders` / `constructRedirects` log a summary of the rules they
++ * parsed, so they need a logger. Mirrors the mapping wrangler's own miniflare
++ * uses for the same two calls (`log` and `info` both go to info level).
++ */
++const assetParserLogger: Logger = {
++  debug: (message) => console.debug(message),
++  log: (message) => console.info(message),
++  info: (message) => console.info(message),
++  warn: (message) => console.warn(message),
++  error: (error) => console.error(error),
++};
++
+ export const buildAssetConfigs = (
+   worker: Pick<
+     RuntimeWorker,
+@@ -369,7 +383,7 @@ export const buildAssetConfigs = (
+     headers = constructHeaders({
+       headers: parsedHeaders,
+       headersFile: worker.assets.headers,
+-      logger: undefined!,
++      logger: assetParserLogger,
+     }).headers;
+   }
+   let redirects: AssetConfig["redirects"] | undefined;
+@@ -378,7 +392,7 @@ export const buildAssetConfigs = (
+     redirects = constructRedirects({
+       redirects: parsedRedirects,
+       redirectsFile: worker.assets.redirects,
+-      logger: undefined!,
++      logger: assetParserLogger,
+     }).redirects;
+   }
+   let staticRouting: StaticRouting | undefined;
