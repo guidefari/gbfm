@@ -48,6 +48,31 @@ describe('StorageConfigSchema', () => {
     expect(config.encryption.rootKey).toBe('configured')
   })
 
+  test('points a non-prod stage at its own deployed CDN router', () => {
+    const config = createConfig({
+      ...workerBindings(),
+      CDN_ROUTER_URL: 'https://cdn-router-d1-staging.workers.dev'
+    })
+
+    expect(config.urls.bucketRouter).toBe('https://cdn-router-d1-staging.workers.dev')
+  })
+
+  test('keeps the production CDN domain regardless of the bound router url', () => {
+    const config = createConfig({
+      ...workerBindings(),
+      APP_STAGE: 'prod',
+      CDN_ROUTER_URL: 'https://cdn-router-prod.workers.dev'
+    })
+
+    expect(config.urls.bucketRouter).toBe('https://cdn.goosebumps.fm')
+  })
+
+  test('falls back to the production CDN when no router url is bound', () => {
+    const config = createConfig(workerBindings())
+
+    expect(config.urls.bucketRouter).toBe('https://cdn.goosebumps.fm')
+  })
+
   test('rejects an invalid configured full email sender at the Worker config boundary', () => {
     expect(() =>
       Effect.runSync(

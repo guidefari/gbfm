@@ -55,6 +55,7 @@ export type WorkerConfigBindings = Readonly<
   Record<Exclude<SecretName, OptionalSecretName>, string | undefined> &
     Partial<Record<OptionalSecretName, string>> & {
       APP_STAGE: string
+      CDN_ROUTER_URL?: string
       R2AccountId?: string
       USER_CONTENT_BUCKET_NAME: string
       MIXES_BUCKET_NAME: string
@@ -240,7 +241,14 @@ export function createConfig(bindings?: WorkerConfigBindings): ConfigService {
 
   const frontendUrl = 'http://127.0.0.1:5173'
   const vpsUrl = 'http://127.0.0.1:3003'
-  const bucketRouterUrl = 'https://cdn.goosebumps.fm'
+  // Production serves the CDN router on its own domain. Every other stage gets
+  // a generated workers.dev URL instead, so the deployed router is bound as
+  // CDN_ROUTER_URL rather than assumed: pointing a non-prod stage at the
+  // production domain would hand out URLs for objects written to that stage's
+  // own bucket, which the production router does not serve.
+  const bucketRouterUrl = isProd
+    ? 'https://cdn.goosebumps.fm'
+    : stringValue(bindings?.CDN_ROUTER_URL, 'https://cdn.goosebumps.fm')
   const emailSender = stringValue(bindings?.EMAIL_SENDER, 'noreply@mail.goosebumps.fm')
   const userContentBucketName = bindings?.USER_CONTENT_BUCKET_NAME ?? 'user-content-dev'
   const mixesBucketName = bindings?.MIXES_BUCKET_NAME ?? 'mixes-dev'

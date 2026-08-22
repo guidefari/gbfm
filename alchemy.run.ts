@@ -100,6 +100,16 @@ export default Alchemy.Stack(
       return yield* Effect.die(new Error('SENTRY_BACKEND_DSN secret is missing'))
     }
 
+    const cdnRouter = yield* Cloudflare.Worker('CdnRouter', {
+      main: './apps/cdn-router/src/index.ts',
+      ...(isProduction ? { domain: 'cdn.goosebumps.fm' } : { url: true }),
+      compatibility: { date: '2026-07-04' },
+      env: {
+        USER_CONTENT: userContent,
+        MIXES: mixes
+      }
+    })
+
     const api = yield* Cloudflare.Worker('Api', {
       main: './apps/server/src/worker.ts',
       ...(isProduction ? { domain: 'api.goosebumps.fm' } : { url: true }),
@@ -124,6 +134,7 @@ export default Alchemy.Stack(
           }
         ),
         APP_STAGE: stack.stage,
+        CDN_ROUTER_URL: Output.map(cdnRouter.url, (url) => url ?? ''),
         USER_CONTENT_BUCKET_NAME: userContent.bucketName,
         MIXES_BUCKET_NAME: mixes.bucketName,
         SENTRY_ENVIRONMENT: stack.stage,
@@ -131,16 +142,6 @@ export default Alchemy.Stack(
         ...secrets,
         SENTRY_DSN: sentryDsn,
         R2AccountId: userContent.accountId
-      }
-    })
-
-    const cdnRouter = yield* Cloudflare.Worker('CdnRouter', {
-      main: './apps/cdn-router/src/index.ts',
-      ...(isProduction ? { domain: 'cdn.goosebumps.fm' } : { url: true }),
-      compatibility: { date: '2026-07-04' },
-      env: {
-        USER_CONTENT: userContent,
-        MIXES: mixes
       }
     })
 
