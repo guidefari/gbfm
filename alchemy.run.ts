@@ -177,6 +177,14 @@ export default Alchemy.Stack(
       })
     }
 
+    const commonWwwEnv = {
+      VITE_PUBLIC_SENTRY_DSN: process.env.VITE_PUBLIC_SENTRY_DSN ?? '',
+      VITE_PUBLIC_SENTRY_ENVIRONMENT: stack.stage,
+      VITE_PUBLIC_SENTRY_RELEASE: process.env.SENTRY_RELEASE ?? '',
+      VITE_SPOTIFY_CLIENT_ID: process.env.SPOTIFY_CLIENT_ID ?? ''
+    }
+    const wwwEnv = isLocalDev ? commonWwwEnv : { ...commonWwwEnv, VITE_VPS_BASE_URL: apiUrl }
+
     const www = yield* Cloudflare.Website.StaticSite('Www', {
       cwd: 'apps/www',
       command: 'bun run build',
@@ -185,13 +193,18 @@ export default Alchemy.Stack(
         ? { domain: { name: 'www.goosebumps.fm', aliases: ['goosebumps.fm'] } }
         : { url: true }),
       assets: { notFoundHandling: 'single-page-application' },
-      env: {
-        VITE_VPS_BASE_URL: apiUrl,
-        VITE_PUBLIC_SENTRY_DSN: process.env.VITE_PUBLIC_SENTRY_DSN ?? '',
-        VITE_PUBLIC_SENTRY_ENVIRONMENT: stack.stage,
-        VITE_PUBLIC_SENTRY_RELEASE: process.env.SENTRY_RELEASE ?? '',
-        VITE_SPOTIFY_CLIENT_ID: process.env.SPOTIFY_CLIENT_ID ?? ''
-      }
+      dev: isLocalDev
+        ? {
+            command: 'bun run dev -- --port 5173 --strictPort',
+            cwd: 'apps/www',
+            url: 'http://127.0.0.1:5173',
+            env: {
+              VPS_PROXY_TARGET: 'http://127.0.0.1:1338',
+              VITE_SPOTIFY_CLIENT_ID: process.env.SPOTIFY_CLIENT_ID ?? ''
+            }
+          }
+        : undefined,
+      env: wwwEnv
     })
 
     yield* Cloudflare.Queues.Consumer('ReminderConsumer', {
