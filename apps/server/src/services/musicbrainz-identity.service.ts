@@ -4,20 +4,21 @@ const MUSICBRAINZ_API_URL = 'https://musicbrainz.org/ws/2'
 const COVER_ART_ARCHIVE_API_URL = 'https://coverartarchive.org'
 const DEFAULT_USER_AGENT = 'gbfm/1.0 (https://github.com/guidefari/gbfm)'
 const MBID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const MbidSchema = Schema.String.pipe(Schema.check(Schema.isPattern(MBID_PATTERN)))
 
 const ArtistCreditSchema = Schema.Struct({
   name: Schema.String,
-  artist: Schema.optional(Schema.Struct({ id: Schema.String, name: Schema.String }))
+  artist: Schema.optional(Schema.Struct({ id: MbidSchema, name: Schema.String }))
 })
 
 const ReleaseGroupSummarySchema = Schema.Struct({
-  id: Schema.String,
+  id: MbidSchema,
   title: Schema.String,
   'primary-type': Schema.optional(Schema.String)
 })
 
 const ReleaseSummarySchema = Schema.Struct({
-  id: Schema.String,
+  id: MbidSchema,
   title: Schema.String,
   country: Schema.optional(Schema.String),
   date: Schema.optional(Schema.String),
@@ -62,7 +63,9 @@ const IsrcResponseSchema = Schema.Struct({
   recordings: Schema.optional(Schema.Array(RecordingSchema))
 })
 
-const ArtistSearchSchema = Schema.Struct({ artists: Schema.optional(Schema.Array(ArtistSchema)) })
+const ArtistSearchSchema = Schema.Struct({
+  artists: Schema.optional(Schema.Array(ArtistSchema))
+})
 const ReleaseGroupSearchSchema = Schema.Struct({
   'release-groups': Schema.optional(Schema.Array(ReleaseGroupSchema))
 })
@@ -73,7 +76,7 @@ const RecordingSearchSchema = Schema.Struct({
 const UrlRelationshipSchema = Schema.Struct({
   artist: Schema.optional(ArtistSchema),
   recording: Schema.optional(RecordingSchema),
-  release: Schema.optional(Schema.Struct({ id: Schema.String, title: Schema.String })),
+  release: Schema.optional(Schema.Struct({ id: MbidSchema, title: Schema.String })),
   'release-group': Schema.optional(ReleaseGroupSchema)
 })
 
@@ -165,28 +168,24 @@ export type MusicBrainzIdentityCandidate =
 export type MusicBrainzLookupInput = {
   readonly mbidType: MusicBrainzMbidType
   readonly mbid: string
-  readonly signal?: AbortSignal
 }
 
 export type MusicBrainzExternalUrlLookupInput = {
   readonly entityType: MusicBrainzEntityType
   readonly url: string
-  readonly signal?: AbortSignal
 }
 
 export type MusicBrainzSearchInput =
-  | { readonly entityType: 'artist'; readonly name: string; readonly signal?: AbortSignal }
+  | { readonly entityType: 'artist'; readonly name: string }
   | {
       readonly entityType: 'album'
       readonly title: string
       readonly artistName: string
-      readonly signal?: AbortSignal
     }
   | {
       readonly entityType: 'track'
       readonly title: string
       readonly artistName: string
-      readonly signal?: AbortSignal
     }
 
 export class MusicBrainzInvalidInput extends Schema.TaggedError<MusicBrainzInvalidInput>()(
@@ -229,15 +228,13 @@ export interface MusicBrainzIdentityServiceContract {
     input: MusicBrainzLookupInput
   ) => Effect.Effect<MusicBrainzIdentityCandidate, MusicBrainzIdentityError>
   readonly lookupRecordingByIsrc: (
-    isrc: string,
-    options?: { readonly signal?: AbortSignal }
+    isrc: string
   ) => Effect.Effect<MusicBrainzTrackCandidate, MusicBrainzIdentityError>
   readonly lookupByExternalUrl: (
     input: MusicBrainzExternalUrlLookupInput
   ) => Effect.Effect<MusicBrainzIdentityCandidate, MusicBrainzIdentityError>
   readonly lookupCoverArt: (
-    releaseMbid: string,
-    options?: { readonly signal?: AbortSignal }
+    releaseMbid: string
   ) => Effect.Effect<CoverArtArchiveReference, MusicBrainzIdentityError>
   readonly searchCandidates: (
     input: MusicBrainzSearchInput
@@ -310,7 +307,10 @@ const albumCandidate = (
   entityType: 'album',
   title: releaseGroup.title,
   artistNames: artistNames(credits),
-  releaseGroup: { mbid: releaseGroup.id, primaryType: releaseGroup['primary-type'] },
+  releaseGroup: {
+    mbid: releaseGroup.id,
+    primaryType: releaseGroup['primary-type']
+  },
   editionRelease: edition
     ? {
         mbid: edition.id,
@@ -406,23 +406,6 @@ const cachesFor = (fetcher: MusicBrainzFetch): MusicBrainzCaches => {
   return caches
 }
 
-const interruptOnCallerAbort = <A, E, R>(
-  effect: Effect.Effect<A, E, R>,
-  callerSignal?: AbortSignal
-): Effect.Effect<A, E, R> => {
-  if (!callerSignal) return effect
-  const callerInterruption = Effect.callback<never>((resume) => {
-    const interrupt = () => resume(Effect.interrupt)
-    if (callerSignal.aborted) {
-      interrupt()
-      return Effect.void
-    }
-    callerSignal.addEventListener('abort', interrupt, { once: true })
-    return Effect.sync(() => callerSignal.removeEventListener('abort', interrupt))
-  })
-  return Effect.raceFirst(effect, callerInterruption)
-}
-
 export const makeMusicBrainzIdentityService = Effect.fn('MusicBrainzIdentityService.make')(
   function* (fetcher: MusicBrainzFetch = fetch, options: MusicBrainzIdentityOptions = {}) {
     const caches = cachesFor(fetcher)
@@ -439,64 +422,63 @@ export const makeMusicBrainzIdentityService = Effect.fn('MusicBrainzIdentityServ
 
     const fetchJson = (
       url: string,
-      operation: string,
-      callerSignal?: AbortSignal
+      operation: string
     ): Effect.Effect<
       { readonly payload: unknown; readonly response: Response },
       MusicBrainzIdentityError
     > =>
-      interruptOnCallerAbort(
-        sharedMusicBrainzSemaphore.withPermit(
-          Effect.gen(function* () {
-            let attempt = 0
-            let response: Response | undefined
-            while (!response) {
-              const now = yield* Clock.currentTimeMillis
-              const waitMs = Math.max(0, requestIntervalMs - (now - sharedLastMusicBrainzRequestAt))
-              if (waitMs > 0) yield* Effect.sleep(`${waitMs} millis`)
-              sharedLastMusicBrainzRequestAt = yield* Clock.currentTimeMillis
+      sharedMusicBrainzSemaphore.withPermit(
+        Effect.gen(function* () {
+          let attempt = 0
+          let response: Response | undefined
+          while (!response) {
+            const now = yield* Clock.currentTimeMillis
+            const waitMs = Math.max(0, requestIntervalMs - (now - sharedLastMusicBrainzRequestAt))
+            if (waitMs > 0) yield* Effect.sleep(`${waitMs} millis`)
+            sharedLastMusicBrainzRequestAt = yield* Clock.currentTimeMillis
 
-              const current = yield* Effect.tryPromise({
-                try: (signal) =>
-                  fetcher(url, {
-                    headers: { Accept: 'application/json', 'User-Agent': userAgent },
-                    signal: callerSignal ? AbortSignal.any([signal, callerSignal]) : signal
-                  }),
-                catch: (cause) => new MusicBrainzRequestFailed({ operation, cause })
-              })
-              if ((current.status === 429 || current.status === 503) && attempt < maxRetries) {
-                const retryAfter = current.headers.get('Retry-After')
-                const retryAfterSeconds = retryAfter === null ? Number.NaN : Number(retryAfter)
-                const backoffMs = Number.isFinite(retryAfterSeconds)
-                  ? Math.min(5000, Math.max(0, retryAfterSeconds * 1000))
-                  : Math.min(2000, 250 * 2 ** attempt)
-                if (backoffMs > 0) yield* Effect.sleep(`${backoffMs} millis`)
-                attempt += 1
-              } else {
-                response = current
-              }
-            }
-
-            if (!response.ok) {
-              return yield* new MusicBrainzRequestFailed({
-                operation,
-                statusCode: response.status,
-                cause: `MusicBrainz returned HTTP ${response.status}`
-              })
-            }
-
-            const payload = yield* Effect.tryPromise({
-              try: (): Promise<unknown> => response.json(),
-              catch: () =>
-                new MusicBrainzResponseInvalid({
-                  operation,
-                  message: 'MusicBrainz returned invalid JSON'
-                })
+            const current = yield* Effect.tryPromise({
+              try: (signal) =>
+                fetcher(url, {
+                  headers: {
+                    Accept: 'application/json',
+                    'User-Agent': userAgent
+                  },
+                  signal
+                }),
+              catch: (cause) => new MusicBrainzRequestFailed({ operation, cause })
             })
-            return { payload, response }
+            if ((current.status === 429 || current.status === 503) && attempt < maxRetries) {
+              const retryAfter = current.headers.get('Retry-After')
+              const retryAfterSeconds = retryAfter === null ? Number.NaN : Number(retryAfter)
+              const backoffMs = Number.isFinite(retryAfterSeconds)
+                ? Math.min(5000, Math.max(0, retryAfterSeconds * 1000))
+                : Math.min(2000, 250 * 2 ** attempt)
+              if (backoffMs > 0) yield* Effect.sleep(`${backoffMs} millis`)
+              attempt += 1
+            } else {
+              response = current
+            }
+          }
+
+          if (!response.ok) {
+            return yield* new MusicBrainzRequestFailed({
+              operation,
+              statusCode: response.status,
+              cause: `MusicBrainz returned HTTP ${response.status}`
+            })
+          }
+
+          const payload = yield* Effect.tryPromise({
+            try: (): Promise<unknown> => response.json(),
+            catch: () =>
+              new MusicBrainzResponseInvalid({
+                operation,
+                message: 'MusicBrainz returned invalid JSON'
+              })
           })
-        ),
-        callerSignal
+          return { payload, response }
+        })
       )
 
     const cached = <A, E>(
@@ -529,7 +511,6 @@ export const makeMusicBrainzIdentityService = Effect.fn('MusicBrainzIdentityServ
     const lookupByMbid = Effect.fn('MusicBrainzIdentityService.lookupByMbid')(function* (
       input: MusicBrainzLookupInput
     ) {
-      if (input.signal?.aborted) return yield* Effect.interrupt
       if (!MBID_PATTERN.test(input.mbid)) {
         return yield* new MusicBrainzInvalidInput({
           operation: 'lookupByMbid',
@@ -551,8 +532,7 @@ export const makeMusicBrainzIdentityService = Effect.fn('MusicBrainzIdentityServ
                   : ''
           const result = yield* fetchJson(
             `${MUSICBRAINZ_API_URL}/${input.mbidType}/${input.mbid}?fmt=json${includes}`,
-            'lookupByMbid',
-            input.signal
+            'lookupByMbid'
           ).pipe(
             Effect.catchTag('MusicBrainzRequestFailed', (error) =>
               error.statusCode === 404 ? Effect.succeed(null) : Effect.fail(error)
@@ -596,7 +576,10 @@ export const makeMusicBrainzIdentityService = Effect.fn('MusicBrainzIdentityServ
                 'exact_mbid',
                 lookupAt,
                 input.mbid,
-                { ...value, id: canonicalMbidFromResponse(result.response, value.id) }
+                {
+                  ...value,
+                  id: canonicalMbidFromResponse(result.response, value.id)
+                }
               )
             }
             case 'recording': {
@@ -626,8 +609,7 @@ export const makeMusicBrainzIdentityService = Effect.fn('MusicBrainzIdentityServ
     })
 
     const lookupRecordingByIsrc = Effect.fn('MusicBrainzIdentityService.lookupRecordingByIsrc')(
-      function* (isrc: string, callOptions: { readonly signal?: AbortSignal } = {}) {
-        if (callOptions.signal?.aborted) return yield* Effect.interrupt
+      function* (isrc: string) {
         const normalized = normalizeIsrc(isrc)
         if (!normalized) {
           return yield* new MusicBrainzInvalidInput({
@@ -641,8 +623,7 @@ export const makeMusicBrainzIdentityService = Effect.fn('MusicBrainzIdentityServ
           Effect.gen(function* () {
             const result = yield* fetchJson(
               `${MUSICBRAINZ_API_URL}/isrc/${normalized}?fmt=json&inc=artist-credits+isrcs`,
-              'lookupRecordingByIsrc',
-              callOptions.signal
+              'lookupRecordingByIsrc'
             ).pipe(
               Effect.catchTag('MusicBrainzRequestFailed', (error) =>
                 error.statusCode === 404 ? Effect.succeed(null) : Effect.fail(error)
@@ -673,7 +654,6 @@ export const makeMusicBrainzIdentityService = Effect.fn('MusicBrainzIdentityServ
 
     const lookupByExternalUrl = Effect.fn('MusicBrainzIdentityService.lookupByExternalUrl')(
       function* (input: MusicBrainzExternalUrlLookupInput) {
-        if (input.signal?.aborted) return yield* Effect.interrupt
         const canonicalUrl = canonicalExternalUrl(input.url, input.entityType)
         if (!canonicalUrl) {
           return yield* new MusicBrainzInvalidInput({
@@ -693,8 +673,7 @@ export const makeMusicBrainzIdentityService = Effect.fn('MusicBrainzIdentityServ
                   : 'recording-rels'
             const result = yield* fetchJson(
               `${MUSICBRAINZ_API_URL}/url?fmt=json&resource=${encodeURIComponent(canonicalUrl)}&inc=${includes}`,
-              'lookupByExternalUrl',
-              input.signal
+              'lookupByExternalUrl'
             ).pipe(
               Effect.catchTag('MusicBrainzRequestFailed', (error) =>
                 error.statusCode === 404 ? Effect.succeed(null) : Effect.fail(error)
@@ -752,8 +731,7 @@ export const makeMusicBrainzIdentityService = Effect.fn('MusicBrainzIdentityServ
             if (releases.length === 1 && release && releaseGroups.length === 0) {
               const candidate = yield* lookupByMbid({
                 mbidType: 'release',
-                mbid: release.id,
-                signal: input.signal
+                mbid: release.id
               })
               return withExactUrlProvenance(candidate, canonicalUrl, lookupAt)
             }
@@ -772,10 +750,8 @@ export const makeMusicBrainzIdentityService = Effect.fn('MusicBrainzIdentityServ
     )
 
     const lookupCoverArt = Effect.fn('MusicBrainzIdentityService.lookupCoverArt')(function* (
-      releaseMbid: string,
-      callOptions: { readonly signal?: AbortSignal } = {}
+      releaseMbid: string
     ) {
-      if (callOptions.signal?.aborted) return yield* Effect.interrupt
       if (!MBID_PATTERN.test(releaseMbid)) {
         return yield* new MusicBrainzInvalidInput({
           operation: 'lookupCoverArt',
@@ -787,19 +763,21 @@ export const makeMusicBrainzIdentityService = Effect.fn('MusicBrainzIdentityServ
         `cover:${releaseMbid.toLowerCase()}`,
         Effect.gen(function* () {
           const archiveUrl = `${COVER_ART_ARCHIVE_API_URL}/release/${releaseMbid}`
-          const response = yield* interruptOnCallerAbort(
-            Effect.tryPromise({
-              try: (signal) =>
-                fetcher(archiveUrl, {
-                  headers: { Accept: 'application/json', 'User-Agent': userAgent },
-                  signal: callOptions.signal
-                    ? AbortSignal.any([signal, callOptions.signal])
-                    : signal
-                }),
-              catch: (cause) => new MusicBrainzRequestFailed({ operation: 'lookupCoverArt', cause })
-            }),
-            callOptions.signal
-          )
+          const response = yield* Effect.tryPromise({
+            try: (signal) =>
+              fetcher(archiveUrl, {
+                headers: {
+                  Accept: 'application/json',
+                  'User-Agent': userAgent
+                },
+                signal
+              }),
+            catch: (cause) =>
+              new MusicBrainzRequestFailed({
+                operation: 'lookupCoverArt',
+                cause
+              })
+          })
           if (response.status === 404) return null
           if (!response.ok) {
             return yield* new MusicBrainzRequestFailed({
@@ -846,7 +824,6 @@ export const makeMusicBrainzIdentityService = Effect.fn('MusicBrainzIdentityServ
     const searchCandidates = Effect.fn('MusicBrainzIdentityService.searchCandidates')(function* (
       input: MusicBrainzSearchInput
     ) {
-      if (input.signal?.aborted) return yield* Effect.interrupt
       const hasRequiredMetadata =
         input.entityType === 'artist'
           ? input.name.trim().length > 0
@@ -874,8 +851,7 @@ export const makeMusicBrainzIdentityService = Effect.fn('MusicBrainzIdentityServ
         Effect.gen(function* () {
           const { payload } = yield* fetchJson(
             `${MUSICBRAINZ_API_URL}/${endpoint}?fmt=json&limit=10&query=${encodeURIComponent(query)}`,
-            'searchCandidates',
-            input.signal
+            'searchCandidates'
           )
           const lookupAt = new Date(yield* Clock.currentTimeMillis).toISOString()
           switch (input.entityType) {

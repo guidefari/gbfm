@@ -40,7 +40,6 @@ import {
 import {
   MusicLinkScraperService as MusicLinkScraperServiceTag,
   type MusicScrapeInput,
-  type MusicScrapeOptions,
   type MusicScraperError
 } from '@/services/music-link-scraper.service'
 import { S3Service as S3ServiceTag } from '@/services/s3.service'
@@ -313,8 +312,7 @@ export interface MusicEntityService {
   >
   readonly refreshEntityLinks: (
     entityType: ScrapeableMusicEntityType,
-    entityId: string,
-    options?: MusicScrapeOptions
+    entityId: string
   ) => Effect.Effect<
     { links: SelectMusicEntityLink[] },
     DatabaseError | MusicScraperError | NotFoundError
@@ -433,8 +431,8 @@ export const MusicEntityServiceLayer = Layer.effect(
         provideDb(deleteLinkEffect(entityType, entityId, linkId)),
       scrapeAndCreateEntity: (entityType, input) =>
         provideDb(scrapeAndCreateEntityEffect(scraper, entityType, input)),
-      refreshEntityLinks: (entityType, entityId, options) =>
-        provideDb(refreshEntityLinksEffect(scraper, entityType, entityId, options))
+      refreshEntityLinks: (entityType, entityId) =>
+        provideDb(refreshEntityLinksEffect(scraper, entityType, entityId))
     } satisfies MusicEntityService
   })
 )

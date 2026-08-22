@@ -78,11 +78,26 @@ const deezer: DeezerService = {
 const musicbrainz: MusicBrainzIdentityServiceContract = {
   lookupByMbid: () => Effect.die('unexpected MusicBrainz MBID lookup'),
   lookupRecordingByIsrc: (isrc) =>
-    Effect.fail(new MusicBrainzNotFound({ operation: 'lookupRecordingByIsrc', identifier: isrc })),
+    Effect.fail(
+      new MusicBrainzNotFound({
+        operation: 'lookupRecordingByIsrc',
+        identifier: isrc
+      })
+    ),
   lookupByExternalUrl: ({ url }) =>
-    Effect.fail(new MusicBrainzNotFound({ operation: 'lookupByExternalUrl', identifier: url })),
+    Effect.fail(
+      new MusicBrainzNotFound({
+        operation: 'lookupByExternalUrl',
+        identifier: url
+      })
+    ),
   lookupCoverArt: (releaseMbid) =>
-    Effect.fail(new MusicBrainzNotFound({ operation: 'lookupCoverArt', identifier: releaseMbid })),
+    Effect.fail(
+      new MusicBrainzNotFound({
+        operation: 'lookupCoverArt',
+        identifier: releaseMbid
+      })
+    ),
   searchCandidates: () => Effect.die('unexpected MusicBrainz search')
 }
 
@@ -91,7 +106,9 @@ describe('makeMusicLinkScraperService', () => {
     const scraper = makeMusicLinkScraperService([], spotify, deezer, musicbrainz, unavailableOdesli)
 
     const result = await Effect.runPromise(
-      scraper.scrape({ url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh' })
+      scraper.scrape({
+        url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh'
+      })
     )
 
     expect(result).toEqual({
@@ -187,7 +204,10 @@ describe('makeMusicLinkScraperService', () => {
       lookupRecordingByIsrc: (isrc) => {
         lookedUpIsrcs.push(isrc)
         return Effect.fail(
-          new MusicBrainzNotFound({ operation: 'lookupRecordingByIsrc', identifier: isrc })
+          new MusicBrainzNotFound({
+            operation: 'lookupRecordingByIsrc',
+            identifier: isrc
+          })
         )
       }
     }
@@ -200,7 +220,10 @@ describe('makeMusicLinkScraperService', () => {
     )
 
     const result = await Effect.runPromise(
-      scraper.scrape({ entityType: 'track', url: 'https://www.deezer.com/track/3135556' })
+      scraper.scrape({
+        entityType: 'track',
+        url: 'https://www.deezer.com/track/3135556'
+      })
     )
 
     expect(result.entityMeta).toEqual({
@@ -216,7 +239,11 @@ describe('makeMusicLinkScraperService', () => {
         platform: 'deezer',
         url: 'https://www.deezer.com/track/3135556',
         scrapedAt: expect.any(Date),
-        metadata: { discoveredBy: 'deezer', confidence: 'exact_source', externalId: '3135556' }
+        metadata: {
+          discoveredBy: 'deezer',
+          confidence: 'exact_source',
+          externalId: '3135556'
+        }
       }
     ])
   })
@@ -254,13 +281,20 @@ describe('makeMusicLinkScraperService', () => {
               scrapedAt: new Date('2026-08-16T00:00:00.000Z')
             }
           ],
-          entityMeta: { title: 'Odesli Title', artistName: 'Odesli Artist', type: 'song' }
+          entityMeta: {
+            title: 'Odesli Title',
+            artistName: 'Odesli Artist',
+            type: 'song'
+          }
         })
     }
     const scraper = makeMusicLinkScraperService([], spotify, sourceDeezer, musicbrainz, odesli)
 
     const result = await Effect.runPromise(
-      scraper.scrape({ entityType: 'track', url: 'https://www.deezer.com/track/3135556' })
+      scraper.scrape({
+        entityType: 'track',
+        url: 'https://www.deezer.com/track/3135556'
+      })
     )
 
     expect(result.entityMeta?.title).toBe('Exact Source Title')
@@ -335,7 +369,10 @@ describe('makeMusicLinkScraperService', () => {
     )
 
     const result = await Effect.runPromise(
-      scraper.scrape({ entityType: 'playlist', url: 'https://example.com/playlist/source' })
+      scraper.scrape({
+        entityType: 'playlist',
+        url: 'https://example.com/playlist/source'
+      })
     )
 
     expect(calls).toEqual([])
@@ -375,34 +412,6 @@ describe('makeMusicLinkScraperService', () => {
 
     expect(error).toMatchObject({ provider: 'spotify', statusCode: 400 })
     expect(calls).toEqual([])
-  })
-
-  test('interrupts an aborted scrape before invoking later providers', async () => {
-    const controller = new AbortController()
-    const calls: string[] = []
-    const first: MusicDataProvider = {
-      name: 'first',
-      fetchLinks: () => {
-        calls.push('first')
-        controller.abort()
-        return Effect.fail(
-          new MusicScraperError({ message: 'aborted', provider: 'first', statusCode: 499 })
-        )
-      }
-    }
-    const second: MusicDataProvider = {
-      name: 'second',
-      fetchLinks: () => {
-        calls.push('second')
-        return Effect.succeed({ links: [] })
-      }
-    }
-    const scraper = makeMusicLinkScraperService([first, second], spotify, deezer, musicbrainz)
-
-    const exit = await Effect.runPromiseExit(scraper.scrape({}, { signal: controller.signal }))
-
-    expect(exit._tag).toBe('Failure')
-    expect(calls).toEqual(['first'])
   })
 
   test('fails with a typed unavailable error when every applicable provider fails', async () => {
@@ -532,7 +541,10 @@ describe('makeMusicLinkScraperService', () => {
       entityType: 'album',
       title: 'Album',
       artistNames: ['Artist'],
-      releaseGroup: { mbid: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', primaryType: 'Album' },
+      releaseGroup: {
+        mbid: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        primaryType: 'Album'
+      },
       editionRelease: {
         mbid: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
         country: 'ZA',
@@ -589,7 +601,11 @@ describe('makeMusicLinkScraperService', () => {
     const scraper = makeMusicLinkScraperService([], spotify, deezer, recordingMusicBrainz)
 
     const result = await Effect.runPromise(
-      scraper.scrape({ entityType: 'track', artistName: 'Artist', trackTitle: 'Track' })
+      scraper.scrape({
+        entityType: 'track',
+        artistName: 'Artist',
+        trackTitle: 'Track'
+      })
     )
 
     expect(candidates).toEqual([])

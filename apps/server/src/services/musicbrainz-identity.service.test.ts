@@ -1,4 +1,4 @@
-import { Effect, Exit } from 'effect'
+import { Effect } from 'effect'
 import { describe, expect, test } from 'vitest'
 import {
   makeMusicBrainzIdentityService,
@@ -74,7 +74,11 @@ describe('MusicBrainzIdentityService', () => {
       Promise.resolve(
         jsonResponse({
           recordings: [
-            { id: canonicalRecordingMbid, title: 'Other recording', isrcs: ['US-WRONG-1'] }
+            {
+              id: canonicalRecordingMbid,
+              title: 'Other recording',
+              isrcs: ['US-WRONG-1']
+            }
           ]
         })
       )
@@ -127,7 +131,11 @@ describe('MusicBrainzIdentityService', () => {
     const service = await makeService(() =>
       Promise.resolve(
         jsonResponse(
-          { id: canonicalRecordingMbid, title: 'Canonical recording', isrcs: [] },
+          {
+            id: canonicalRecordingMbid,
+            title: 'Canonical recording',
+            isrcs: []
+          },
           200,
           `https://musicbrainz.org/ws/2/recording/${canonicalRecordingMbid}?fmt=json`
         )
@@ -135,7 +143,10 @@ describe('MusicBrainzIdentityService', () => {
     )
 
     const result = await Effect.runPromise(
-      service.lookupByMbid({ mbidType: 'recording', mbid: requestedRecordingMbid })
+      service.lookupByMbid({
+        mbidType: 'recording',
+        mbid: requestedRecordingMbid
+      })
     )
 
     expect(result).toMatchObject({
@@ -154,15 +165,27 @@ describe('MusicBrainzIdentityService', () => {
       Promise.resolve(
         jsonResponse({
           recordings: [
-            { id: requestedRecordingMbid, title: 'Song', 'artist-credit': [{ name: 'Artist' }] },
-            { id: canonicalRecordingMbid, title: 'Song', 'artist-credit': [{ name: 'Artist' }] }
+            {
+              id: requestedRecordingMbid,
+              title: 'Song',
+              'artist-credit': [{ name: 'Artist' }]
+            },
+            {
+              id: canonicalRecordingMbid,
+              title: 'Song',
+              'artist-credit': [{ name: 'Artist' }]
+            }
           ]
         })
       )
     )
 
     const results = await Effect.runPromise(
-      service.searchCandidates({ entityType: 'track', title: 'Song', artistName: 'Artist' })
+      service.searchCandidates({
+        entityType: 'track',
+        title: 'Song',
+        artistName: 'Artist'
+      })
     )
 
     expect(results).toHaveLength(2)
@@ -266,7 +289,11 @@ describe('MusicBrainzIdentityService', () => {
     const fetcher: MusicBrainzFetch = () => {
       starts.push(performance.now())
       return Promise.resolve(
-        jsonResponse({ id: requestedRecordingMbid, title: 'Recording', isrcs: [] })
+        jsonResponse({
+          id: requestedRecordingMbid,
+          title: 'Recording',
+          isrcs: []
+        })
       )
     }
     const options = { requestIntervalMs: 30, maxRetries: 0 }
@@ -275,10 +302,16 @@ describe('MusicBrainzIdentityService', () => {
 
     await Promise.all([
       Effect.runPromise(
-        first.lookupByMbid({ mbidType: 'recording', mbid: requestedRecordingMbid })
+        first.lookupByMbid({
+          mbidType: 'recording',
+          mbid: requestedRecordingMbid
+        })
       ),
       Effect.runPromise(
-        second.lookupByMbid({ mbidType: 'recording', mbid: canonicalRecordingMbid })
+        second.lookupByMbid({
+          mbidType: 'recording',
+          mbid: canonicalRecordingMbid
+        })
       )
     ])
 
@@ -293,23 +326,34 @@ describe('MusicBrainzIdentityService', () => {
       makeMusicBrainzIdentityService(
         (_input, init) => {
           headers.push(
-            new Request('https://example.com', { headers: init?.headers }).headers.get(
-              'User-Agent'
-            ) ?? ''
+            new Request('https://example.com', {
+              headers: init?.headers
+            }).headers.get('User-Agent') ?? ''
           )
           count += 1
           return Promise.resolve(
             count === 1
               ? jsonResponse({}, 503)
-              : jsonResponse({ id: requestedRecordingMbid, title: 'Song', isrcs: [] })
+              : jsonResponse({
+                  id: requestedRecordingMbid,
+                  title: 'Song',
+                  isrcs: []
+                })
           )
         },
-        { requestIntervalMs: 0, maxRetries: 1, userAgent: 'gbfm-test/1 (dev@example.com)' }
+        {
+          requestIntervalMs: 0,
+          maxRetries: 1,
+          userAgent: 'gbfm-test/1 (dev@example.com)'
+        }
       )
     )
 
     await Effect.runPromise(
-      service.lookupByMbid({ mbidType: 'recording', mbid: requestedRecordingMbid })
+      service.lookupByMbid({
+        mbidType: 'recording',
+        mbid: requestedRecordingMbid
+      })
     )
 
     expect(headers).toEqual(['gbfm-test/1 (dev@example.com)', 'gbfm-test/1 (dev@example.com)'])
@@ -322,10 +366,16 @@ describe('MusicBrainzIdentityService', () => {
       return Promise.resolve(jsonResponse({ id: requestedRecordingMbid, title: 'Song', isrcs: [] }))
     })
     await Effect.runPromise(
-      foundService.lookupByMbid({ mbidType: 'recording', mbid: requestedRecordingMbid })
+      foundService.lookupByMbid({
+        mbidType: 'recording',
+        mbid: requestedRecordingMbid
+      })
     )
     await Effect.runPromise(
-      foundService.lookupByMbid({ mbidType: 'recording', mbid: requestedRecordingMbid })
+      foundService.lookupByMbid({
+        mbidType: 'recording',
+        mbid: requestedRecordingMbid
+      })
     )
 
     let missingRequests = 0
@@ -346,73 +396,5 @@ describe('MusicBrainzIdentityService', () => {
 
     expect(foundRequests).toBe(1)
     expect(missingRequests).toBe(1)
-  })
-
-  test('propagates caller cancellation to the request signal', async () => {
-    const caller = new AbortController()
-    let receivedSignal: AbortSignal | undefined
-    const service = await makeService((_input, init) => {
-      receivedSignal = init?.signal ?? undefined
-      return Promise.resolve(jsonResponse({ id: requestedRecordingMbid, title: 'Song', isrcs: [] }))
-    })
-
-    await Effect.runPromise(
-      service.lookupByMbid({
-        mbidType: 'recording',
-        mbid: requestedRecordingMbid,
-        signal: caller.signal
-      })
-    )
-    caller.abort()
-
-    expect(receivedSignal?.aborted).toBe(true)
-  })
-
-  test('preserves caller abort as interruption for a MusicBrainz request', async () => {
-    const caller = new AbortController()
-    const service = await makeService(
-      (_input, init) =>
-        new Promise((_resolve, reject) => {
-          init?.signal?.addEventListener(
-            'abort',
-            () => reject(new DOMException('Aborted', 'AbortError')),
-            { once: true }
-          )
-        })
-    )
-
-    const exitPromise = Effect.runPromiseExit(
-      service.lookupByMbid({
-        mbidType: 'recording',
-        mbid: requestedRecordingMbid,
-        signal: caller.signal
-      })
-    )
-    await Promise.resolve()
-    caller.abort()
-
-    expect(Exit.hasInterrupts(await exitPromise)).toBe(true)
-  })
-
-  test('preserves caller abort as interruption for a Cover Art Archive request', async () => {
-    const caller = new AbortController()
-    const service = await makeService(
-      (_input, init) =>
-        new Promise((_resolve, reject) => {
-          init?.signal?.addEventListener(
-            'abort',
-            () => reject(new DOMException('Aborted', 'AbortError')),
-            { once: true }
-          )
-        })
-    )
-
-    const exitPromise = Effect.runPromiseExit(
-      service.lookupCoverArt(releaseMbid, { signal: caller.signal })
-    )
-    await Promise.resolve()
-    caller.abort()
-
-    expect(Exit.hasInterrupts(await exitPromise)).toBe(true)
   })
 })

@@ -109,11 +109,6 @@ export type DeezerSourceCandidate =
 export type DeezerResolveInput = {
   readonly entityType: DeezerEntityType
   readonly source: string
-  readonly signal?: AbortSignal
-}
-
-export type DeezerSearchOptions = {
-  readonly signal?: AbortSignal
 }
 
 type DeezerOperation = 'resolve' | 'searchTrackByIsrc' | 'searchAlbumByTitleArtist'
@@ -152,12 +147,7 @@ export class DeezerTimeout extends Schema.TaggedError<DeezerTimeout>()('DeezerTi
   operation: Schema.String
 }) {}
 
-export class DeezerCancelled extends Schema.TaggedError<DeezerCancelled>()('DeezerCancelled', {
-  operation: Schema.String
-}) {}
-
 export type DeezerError =
-  | DeezerCancelled
   | DeezerInvalidInput
   | DeezerNotFound
   | DeezerRequestFailed
@@ -169,13 +159,11 @@ export type DeezerFetch = (input: string | URL | Request, init?: RequestInit) =>
 export interface DeezerService {
   readonly resolve: (input: DeezerResolveInput) => Effect.Effect<DeezerSourceCandidate, DeezerError>
   readonly searchTrackByIsrc: (
-    isrc: string,
-    options?: DeezerSearchOptions
+    isrc: string
   ) => Effect.Effect<DeezerTrackCandidate | null, DeezerError>
   readonly searchAlbumByTitleArtist: (
     title: string,
-    artist: string,
-    options?: DeezerSearchOptions
+    artist: string
   ) => Effect.Effect<DeezerAlbumCandidate | null, DeezerError>
 }
 
@@ -204,23 +192,15 @@ const normalizeForMatch = (value: string) =>
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
 
-const requestJson = (
-  fetcher: DeezerFetch,
-  url: string,
-  operation: DeezerOperation,
-  callerSignal?: AbortSignal
-) =>
+const requestJson = (fetcher: DeezerFetch, url: string, operation: DeezerOperation) =>
   Effect.gen(function* () {
     const response = yield* Effect.tryPromise({
       try: (signal) =>
         fetcher(url, {
           headers: { Accept: 'application/json' },
-          signal: callerSignal ? AbortSignal.any([signal, callerSignal]) : signal
+          signal
         }),
-      catch: (cause) =>
-        callerSignal?.aborted
-          ? new DeezerCancelled({ operation })
-          : new DeezerRequestFailed({ operation, cause })
+      catch: (cause) => new DeezerRequestFailed({ operation, cause })
     })
 
     if (!response.ok) {
@@ -233,7 +213,11 @@ const requestJson = (
 
     return yield* Effect.tryPromise({
       try: (): Promise<unknown> => response.json(),
-      catch: () => new DeezerResponseInvalid({ operation, message: 'Deezer returned invalid JSON' })
+      catch: () =>
+        new DeezerResponseInvalid({
+          operation,
+          message: 'Deezer returned invalid JSON'
+        })
     })
   }).pipe(
     Effect.timeout(DEEZER_REQUEST_TIMEOUT),
@@ -314,8 +298,7 @@ export const makeDeezerService = (fetcher: DeezerFetch = fetch): DeezerService =
     const payload = yield* requestJson(
       fetcher,
       `${DEEZER_API_URL}/${input.entityType}/${externalId}`,
-      'resolve',
-      input.signal
+      'resolve'
     ).pipe(
       Effect.mapError((error) =>
         error._tag === 'DeezerRequestFailed' && error.statusCode === 404
@@ -342,10 +325,7 @@ export const makeDeezerService = (fetcher: DeezerFetch = fetch): DeezerService =
     return yield* Effect.die('Unsupported Deezer entity type')
   })
 
-  const searchTrackByIsrc = Effect.fn('deezer.searchTrackByIsrc')(function* (
-    isrc: string,
-    options: DeezerSearchOptions = {}
-  ) {
+  const searchTrackByIsrc = Effect.fn('deezer.searchTrackByIsrc')(function* (isrc: string) {
     const normalizedIsrc = isrc.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
     if (!normalizedIsrc) {
       return yield* new DeezerInvalidInput({
@@ -357,8 +337,7 @@ export const makeDeezerService = (fetcher: DeezerFetch = fetch): DeezerService =
     const payload = yield* requestJson(
       fetcher,
       `${DEEZER_API_URL}/search/track?q=${encodeURIComponent(`isrc:"${normalizedIsrc}"`)}`,
-      'searchTrackByIsrc',
-      options.signal
+      'searchTrackByIsrc'
     )
     const result = yield* decodeTrackSearch(payload).pipe(invalidResponse('searchTrackByIsrc'))
     const exact = result.data.find(
@@ -369,8 +348,7 @@ export const makeDeezerService = (fetcher: DeezerFetch = fetch): DeezerService =
 
   const searchAlbumByTitleArtist = Effect.fn('deezer.searchAlbumByTitleArtist')(function* (
     title: string,
-    artist: string,
-    options: DeezerSearchOptions = {}
+    artist: string
   ) {
     const normalizedTitle = normalizeForMatch(title)
     const normalizedArtist = normalizeForMatch(artist)
@@ -385,8 +363,7 @@ export const makeDeezerService = (fetcher: DeezerFetch = fetch): DeezerService =
     const payload = yield* requestJson(
       fetcher,
       `${DEEZER_API_URL}/search/album?q=${encodeURIComponent(query)}`,
-      'searchAlbumByTitleArtist',
-      options.signal
+      'searchAlbumByTitleArtist'
     )
     const result = yield* decodeAlbumSearch(payload).pipe(
       invalidResponse('searchAlbumByTitleArtist')

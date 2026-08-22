@@ -1,7 +1,6 @@
 import { Effect } from 'effect'
 import { describe, expect, test } from 'vitest'
 import {
-  DeezerCancelled,
   DeezerInvalidInput,
   DeezerNotFound,
   makeDeezerService,
@@ -40,7 +39,10 @@ describe('DeezerService', () => {
     )
 
     const result = await Effect.runPromise(
-      service.resolve({ entityType: 'track', source: 'https://www.deezer.com/us/track/3135556' })
+      service.resolve({
+        entityType: 'track',
+        source: 'https://www.deezer.com/us/track/3135556'
+      })
     )
 
     expect(result).toEqual({
@@ -190,7 +192,10 @@ describe('DeezerService', () => {
       service.searchAlbumByTitleArtist('Discovery', 'Daft Punk')
     )
 
-    expect(result).toMatchObject({ externalId: '302127', match: 'exact_metadata' })
+    expect(result).toMatchObject({
+      externalId: '302127',
+      match: 'exact_metadata'
+    })
   })
 
   test('fails invalid sources before making a request', async () => {
@@ -203,7 +208,10 @@ describe('DeezerService', () => {
 
     const error = await Effect.runPromise(
       Effect.flip(
-        service.resolve({ entityType: 'playlist', source: 'https://open.spotify.com/playlist/12' })
+        service.resolve({
+          entityType: 'playlist',
+          source: 'https://open.spotify.com/playlist/12'
+        })
       )
     )
 
@@ -219,63 +227,5 @@ describe('DeezerService', () => {
     )
 
     expect(error).toBeInstanceOf(DeezerNotFound)
-  })
-
-  test('propagates the caller abort signal to fetch', async () => {
-    const controller = new AbortController()
-    const receivedSignals: AbortSignal[] = []
-    const fetcher: DeezerFetch = (_input, init) => {
-      if (init?.signal) receivedSignals.push(init.signal)
-      return Promise.resolve(
-        jsonResponse(
-          JSON.stringify({
-            id: 1,
-            title: 'Album',
-            link: 'https://www.deezer.com/album/1',
-            artist: { id: 2, name: 'Artist' }
-          })
-        )
-      )
-    }
-    const service = makeDeezerService(fetcher)
-
-    await Effect.runPromise(
-      service.resolve({ entityType: 'album', source: '1', signal: controller.signal })
-    )
-
-    controller.abort()
-    expect(receivedSignals[0]?.aborted).toBe(true)
-  })
-
-  test.each([
-    {
-      name: 'resolve',
-      run: (service: ReturnType<typeof makeDeezerService>, signal: AbortSignal) =>
-        service.resolve({ entityType: 'album', source: '1', signal })
-    },
-    {
-      name: 'ISRC search',
-      run: (service: ReturnType<typeof makeDeezerService>, signal: AbortSignal) =>
-        service.searchTrackByIsrc('GBDUW0000059', { signal })
-    },
-    {
-      name: 'album search',
-      run: (service: ReturnType<typeof makeDeezerService>, signal: AbortSignal) =>
-        service.searchAlbumByTitleArtist('Discovery', 'Daft Punk', { signal })
-    }
-  ])('classifies caller cancellation during $name', async ({ run }) => {
-    const controller = new AbortController()
-    const fetcher: DeezerFetch = (_input, init) =>
-      new Promise((_resolve, reject) => {
-        init?.signal?.addEventListener('abort', () =>
-          reject(new DOMException('Aborted', 'AbortError'))
-        )
-      })
-    const service = makeDeezerService(fetcher)
-    const pending = Effect.runPromise(Effect.flip(run(service, controller.signal)))
-
-    controller.abort()
-
-    await expect(pending).resolves.toBeInstanceOf(DeezerCancelled)
   })
 })

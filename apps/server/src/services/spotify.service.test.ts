@@ -1,4 +1,4 @@
-import { Effect } from 'effect'
+import { Cause, Effect, Exit } from 'effect'
 import { describe, expect, test, vi } from 'vitest'
 import {
   cleanId,
@@ -132,23 +132,22 @@ describe('resolveSpotifySourceEffect', () => {
     expect(spotify.getTrack).not.toHaveBeenCalled()
   })
 
-  test('keeps caller cancellation distinct from Spotify failures', async () => {
-    const spotify = makeSourceLookups()
+  test('interrupts an in-flight source lookup when the caller aborts', async () => {
+    const spotify: Pick<SpotifyService, 'getTrack' | 'getAlbum' | 'getPlaylist'> = {
+      getTrack: () => Effect.never,
+      getAlbum: () => Effect.die('unexpected album lookup'),
+      getPlaylist: () => Effect.die('unexpected playlist lookup')
+    }
     const controller = new AbortController()
+
+    const exitPromise = Effect.runPromiseExit(
+      resolveSpotifySourceEffect(spotify, { entityType: 'track', urlOrId: spotifyId }),
+      { signal: controller.signal }
+    )
     controller.abort()
 
-    const error = await Effect.runPromise(
-      Effect.flip(
-        resolveSpotifySourceEffect(spotify, {
-          entityType: 'track',
-          urlOrId: spotifyId,
-          signal: controller.signal
-        })
-      )
-    )
-
-    expect(error).toMatchObject({ _tag: 'SpotifyRequestCancelled', operation: 'resolveSource' })
-    expect(spotify.getTrack).not.toHaveBeenCalled()
+    const exit = await exitPromise
+    expect(Exit.isFailure(exit) && Cause.hasInterruptsOnly(exit.cause)).toBe(true)
   })
 })
 

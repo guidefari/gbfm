@@ -231,6 +231,11 @@ const inferEntityTypeFromUrl = (url: string): 'album' | 'track' | 'playlist' => 
     if (url.includes('/playlist/')) return 'playlist'
     return 'track'
   }
+  if (/^https:\/\/(?:www\.)?deezer\.com\//.test(url)) {
+    if (/\/album\/\d+/.test(url)) return 'album'
+    if (/\/playlist\/\d+/.test(url)) return 'playlist'
+    return 'track'
+  }
   if (isBandcampUrl(url)) return 'album'
   if (isAppleMusicUrl(url)) return 'track'
   if (isYouTubeUrl(url)) return 'track'
@@ -799,7 +804,10 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         const entity = result.entity
         const coverImageUrl = 'coverImageUrl' in entity ? entity.coverImageUrl : null
 
-        if (coverImageUrl) {
+        const hasRemoteReferenceArtwork = result.links.some(
+          (link) => link.platform === 'musicbrainz' && link.metadata?.coverArt
+        )
+        if (coverImageUrl && !hasRemoteReferenceArtwork) {
           const publicCoverImageUrl = yield* copyCoverImageEffect(
             entityType,
             entity.id,
