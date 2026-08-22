@@ -115,9 +115,12 @@ export const copyMusicCoverImageEffect = (
     const key = `music/${entityType}/${entityId}/cover`
     const uploadedKey = yield* s3.uploadFile(key, bytes, contentType, bucketName)
     return `${cdnUrl}/user-content/${uploadedKey}`
-  }).pipe(
-    Effect.catchTags({
-      FetchError: () => Effect.succeed(null),
-      S3Error: () => Effect.succeed(null)
-    })
-  )
+  }).pipe(Effect.catchTag('FetchError', () => Effect.succeed(null)))
+
+// Bulk import paths copy many covers, so one unwritable object should not
+// abort the run. The interactive resolve handler deliberately does not use
+// this: there a failed upload means the URL it is about to store points at an
+// object that was never written.
+export const copyMusicCoverImageBestEffort = (
+  ...args: Parameters<typeof copyMusicCoverImageEffect>
+) => copyMusicCoverImageEffect(...args).pipe(Effect.catchTag('S3Error', () => Effect.succeed(null)))

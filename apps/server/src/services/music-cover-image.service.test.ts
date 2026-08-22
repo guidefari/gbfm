@@ -1,6 +1,11 @@
-import { Effect } from 'effect'
+import { Effect, Exit } from 'effect'
 import { describe, expect, test, vi } from 'vitest'
-import { copyMusicCoverImageEffect, isApprovedMusicArtworkUrl } from './music-cover-image.service'
+import {
+  copyMusicCoverImageBestEffort,
+  copyMusicCoverImageEffect,
+  isApprovedMusicArtworkUrl
+} from './music-cover-image.service'
+import { S3Error } from '@/errors'
 import type { S3Service } from './s3.service'
 
 const makeS3 = () => ({
@@ -17,6 +22,60 @@ describe('music cover image archive', () => {
     expect(isApprovedMusicArtworkUrl('https://coverartarchive.org.example.com/cover.jpg')).toBe(
       false
     )
+  })
+
+  test('surfaces an upload failure instead of returning a url for an unwritten object', async () => {
+    const s3 = {
+      uploadFile: vi.fn<Pick<S3Service, 'uploadFile'>['uploadFile']>(() =>
+        Effect.fail(new S3Error({ message: 'bucket unavailable', operation: 'uploadFile' }))
+      )
+    }
+    const fetcher = vi.fn(() =>
+      Promise.resolve(
+        new Response(new Uint8Array([1, 2, 3]), { headers: { 'content-type': 'image/jpeg' } })
+      )
+    )
+
+    const exit = await Effect.runPromiseExit(
+      copyMusicCoverImageEffect(
+        s3,
+        'https://cdn.gbfm.test',
+        'user-content',
+        'album',
+        'album-id',
+        'https://coverartarchive.org/release/id/front.jpg',
+        fetcher
+      )
+    )
+
+    expect(Exit.isFailure(exit)).toBe(true)
+  })
+
+  test('tolerates an upload failure on bulk import paths', async () => {
+    const s3 = {
+      uploadFile: vi.fn<Pick<S3Service, 'uploadFile'>['uploadFile']>(() =>
+        Effect.fail(new S3Error({ message: 'bucket unavailable', operation: 'uploadFile' }))
+      )
+    }
+    const fetcher = vi.fn(() =>
+      Promise.resolve(
+        new Response(new Uint8Array([1, 2, 3]), { headers: { 'content-type': 'image/jpeg' } })
+      )
+    )
+
+    const result = await Effect.runPromise(
+      copyMusicCoverImageBestEffort(
+        s3,
+        'https://cdn.gbfm.test',
+        'user-content',
+        'playlist',
+        'playlist-id',
+        'https://coverartarchive.org/release/id/front.jpg',
+        fetcher
+      )
+    )
+
+    expect(result).toBeNull()
   })
 
   test('copies approved image responses into GBFM storage', async () => {

@@ -10,7 +10,7 @@ import {
   type SelectMusicEntityLink
 } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage, SpotifyError } from '@/errors'
-import { copyMusicCoverImageEffect } from '@/services/music-cover-image.service'
+import { copyMusicCoverImageBestEffort } from '@/services/music-cover-image.service'
 import type { MusicLinkScraperService } from '@/services/music-link-scraper.service'
 import type { S3Service } from '@/services/s3.service'
 import {
@@ -273,7 +273,7 @@ const enrichTrackLinksEffect = (
     )
 
     if (scraped.entityMeta?.thumbnailUrl) {
-      const publicCoverImageUrl = yield* copyMusicCoverImageEffect(
+      const publicCoverImageUrl = yield* copyMusicCoverImageBestEffort(
         s3,
         cdnUrl,
         bucketName,
@@ -415,7 +415,7 @@ const refreshPlaylistCoverImageEffect = (
     const data = yield* spotify.getPlaylistForImport(spotifyPlaylistId)
     if (!data.coverImageUrl) return { updated: false as const }
 
-    const publicCoverImageUrl = yield* copyMusicCoverImageEffect(
+    const publicCoverImageUrl = yield* copyMusicCoverImageBestEffort(
       s3,
       cdnUrl,
       bucketName,
@@ -550,7 +550,14 @@ export const importSpotifyPlaylistEffect = (
 
     const data: SpotifyImportPlaylist = yield* spotify.getPlaylistForImport(id)
     const storedCoverImageUrl = data.coverImageUrl
-      ? yield* copyMusicCoverImageEffect(s3, cdnUrl, bucketName, 'playlist', id, data.coverImageUrl)
+      ? yield* copyMusicCoverImageBestEffort(
+          s3,
+          cdnUrl,
+          bucketName,
+          'playlist',
+          id,
+          data.coverImageUrl
+        )
       : null
     const playlist = yield* resolver.resolvePlaylist(data, storedCoverImageUrl, curatorId)
     const tracks = yield* Effect.forEach(data.tracks, (track) => resolver.resolveTrack(track))
