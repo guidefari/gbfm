@@ -1,5 +1,6 @@
 import * as Alchemy from 'alchemy'
 import { adopt } from 'alchemy/AdoptPolicy'
+import * as Output from 'alchemy/Output'
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as Effect from 'effect/Effect'
 import { secretsStore } from './alchemy/secrets'
@@ -22,6 +23,11 @@ export default Alchemy.Stack(
     const stack = yield* Alchemy.Stack
     const isProduction = stack.stage === 'prod'
     const isLocalDev = yield* Alchemy.ALCHEMY_DEV
+    const productionD1DatabaseName = isLocalDev
+      ? (yield* Alchemy.stackRef<{ readonly databaseName: string }>('gbfm', {
+          stage: 'prod'
+        })).pipe(Output.map(({ databaseName }) => databaseName))
+      : undefined
     const apiUrl = isProduction
       ? 'https://api.goosebumps.fm'
       : `https://api.${stack.stage}.goosebumps.fm`
@@ -58,9 +64,13 @@ export default Alchemy.Stack(
           })
     })
 
+    // Local requests exercise the production D1 data, resolved from the
+    // persisted production stack output. Migrations remain deploy-only so
+    // starting the dev server can never change production schema.
     const db = yield* Cloudflare.D1.Database('Database', {
-      migrationsDir: './apps/server/drizzle-d1'
-    })
+      ...(productionD1DatabaseName ? { name: productionD1DatabaseName } : undefined),
+      ...(isLocalDev ? undefined : { migrationsDir: './apps/server/drizzle-d1' })
+    }).pipe(adopt(isLocalDev), Alchemy.remote(isLocalDev))
 
     // The browser PUTs image and audio bytes straight to the bucket with a
     // presigned URL, so the bucket itself has to allow the cross-origin PUT.
