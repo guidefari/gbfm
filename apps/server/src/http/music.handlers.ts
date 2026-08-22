@@ -31,7 +31,7 @@ import type {
   SelectMusicPlaylist,
   SelectMusicTrack
 } from '@/db/music-entity.schema'
-import { getErrorMessage } from '@/errors'
+import { getErrorMessage, type MusicProviderError } from '@/errors'
 import {
   dieOnDatabaseError as makeDieOnDatabaseError,
   dieOnS3Error as makeDieOnS3Error
@@ -189,18 +189,24 @@ const toLabelUpdateFields = (input: UpdateLabelInput): Partial<LabelServiceCreat
 const dieOnDatabaseError = makeDieOnDatabaseError('music')
 const dieOnS3Error = makeDieOnS3Error('music')
 
-// SpotifyError is an infra failure (network/API), not client-fixable by
-// resubmitting differently, except where the handler already validates the
-// URL shape itself (importSpotifyPlaylist) -- same convention as
-// dieOnDatabaseError/dieOnS3Error in handler-utils.ts.
-const dieOnSpotifyError = <A, E, R>(
-  effect: Effect.Effect<A, E | { readonly _tag: 'SpotifyError' }, R>
-) =>
+// A music provider failure is an infra failure (network/API), not
+// client-fixable by resubmitting differently, except where the handler
+// already validates the URL shape itself (importSpotifyPlaylist) -- same
+// convention as dieOnDatabaseError/dieOnS3Error in handler-utils.ts.
+const MUSIC_PROVIDER_ERROR_TAGS = [
+  'MusicProviderInvalidInput',
+  'MusicProviderNotFound',
+  'MusicProviderMisconfigured',
+  'MusicProviderRequestFailed',
+  'MusicProviderResponseInvalid'
+] as const
+
+const dieOnMusicProviderError = <A, E, R>(effect: Effect.Effect<A, E | MusicProviderError, R>) =>
   effect.pipe(
-    Effect.tapErrorTag('SpotifyError', (cause) =>
-      Effect.logError('[music] spotify operation failed', cause)
+    Effect.tapErrorTag(MUSIC_PROVIDER_ERROR_TAGS, (cause) =>
+      Effect.logError('[music] music provider operation failed', cause)
     ),
-    Effect.catchTag('SpotifyError', (cause) => Effect.die(cause))
+    Effect.catchTag(MUSIC_PROVIDER_ERROR_TAGS, (cause) => Effect.die(cause))
   )
 
 const requireAdmin = Effect.gen(function* () {
@@ -700,19 +706,12 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
       Effect.gen(function* () {
         yield* requireAdmin
         const svc = yield* MusicEntityService
-        // 400 here means the service itself couldn't parse a track ID out of
-        // the URL -- a client-fixable validation error, not an infra
-        // failure, so it's mapped to BadRequest before dieOnSpotifyError
-        // would otherwise die on it.
+        // MusicProviderInvalidInput means the service itself couldn't parse a
+        // track ID out of the URL -- a client-fixable validation error, not
+        // an infra failure, so it's mapped to BadRequest instead of dying.
         const result = yield* svc.addSpotifyTrackToPlaylist(params.id, payload.url).pipe(
-          Effect.tapErrorTag('SpotifyError', (cause) =>
-            cause.statusCode === 400
-              ? Effect.void
-              : Effect.logError('[music] spotify operation failed', cause)
-          ),
-          Effect.catchTag('SpotifyError', (cause) =>
-            cause.statusCode === 400 ? new HttpApiError.BadRequest() : Effect.die(cause)
-          ),
+          Effect.catchTag('MusicProviderInvalidInput', () => new HttpApiError.BadRequest()),
+          dieOnMusicProviderError,
           dieOnDatabaseError
         )
         return result
@@ -747,7 +746,7 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
       Effect.gen(function* () {
         yield* requireAdmin
         const svc = yield* MusicEntityService
-        return yield* dieOnDatabaseError(dieOnSpotifyError(svc.syncPlaylistLinks(params.id)))
+        return yield* dieOnDatabaseError(dieOnMusicProviderError(svc.syncPlaylistLinks(params.id)))
       })
     )
     // -----------------------------------------------------------------

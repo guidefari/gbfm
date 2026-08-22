@@ -1,6 +1,6 @@
 import { Effect } from 'effect'
 import { describe, expect, test } from 'vitest'
-import { SpotifyError } from '@/errors'
+import { MusicProviderInvalidInput, MusicProviderNotFound } from '@/errors'
 import {
   type CrossPlatformLinkDiscovery,
   type MusicDataProvider,
@@ -385,10 +385,9 @@ describe('makeMusicLinkScraperService', () => {
       ...spotify,
       resolveSource: () =>
         Effect.fail(
-          new SpotifyError({
+          new MusicProviderInvalidInput({
             message: 'Mismatched Spotify source type',
-            operation: 'resolveSource',
-            statusCode: 400
+            operation: 'resolveSource'
           })
         )
     }
@@ -412,6 +411,32 @@ describe('makeMusicLinkScraperService', () => {
 
     expect(error).toMatchObject({ provider: 'spotify', statusCode: 400 })
     expect(calls).toEqual([])
+  })
+
+  test('reports a missing provider entity as not found rather than unavailable', async () => {
+    const missingSpotify: SpotifyService = {
+      ...spotify,
+      resolveSource: () =>
+        Effect.fail(
+          new MusicProviderNotFound({
+            operation: 'getTrack',
+            entityType: 'track',
+            externalId: '4iV5W9uYEdYUVa79Axb7Rh'
+          })
+        )
+    }
+    const scraper = makeMusicLinkScraperService([], missingSpotify, deezer, musicbrainz)
+
+    const error = await Effect.runPromise(
+      Effect.flip(
+        scraper.scrape({
+          entityType: 'track',
+          url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh'
+        })
+      )
+    )
+
+    expect(error).toMatchObject({ provider: 'spotify', statusCode: 404 })
   })
 
   test('fails with a typed unavailable error when every applicable provider fails', async () => {

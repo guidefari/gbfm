@@ -127,11 +127,46 @@ export class S3Error extends Data.TaggedError('S3Error')<{
   readonly key?: string
 }> {}
 
-export class SpotifyError extends Data.TaggedError('SpotifyError')<{
+// Shared by every music provider integration (Spotify, Bandcamp, ...) so a
+// caller can tell a client-fixable input problem from an upstream outage
+// without inspecting an HTTP status. Mirrors the Deezer* errors in
+// deezer.service.ts, which already model their failures this way.
+export class MusicProviderInvalidInput extends Data.TaggedError('MusicProviderInvalidInput')<{
+  readonly message: string
+  readonly operation: string
+}> {}
+
+export class MusicProviderNotFound extends Data.TaggedError('MusicProviderNotFound')<{
+  readonly operation: string
+  readonly entityType: string
+  readonly externalId: string
+}> {}
+
+export class MusicProviderMisconfigured extends Data.TaggedError('MusicProviderMisconfigured')<{
+  readonly message: string
+  readonly operation: string
+}> {}
+
+export class MusicProviderRequestFailed extends Data.TaggedError('MusicProviderRequestFailed')<{
   readonly message: string
   readonly operation: string
   readonly statusCode?: number
 }> {}
+
+// The provider answered, but not in a shape we can read: a parse failure or a
+// response that no longer matches the schema. Distinct from RequestFailed
+// because it means the integration is broken rather than merely unavailable.
+export class MusicProviderResponseInvalid extends Data.TaggedError('MusicProviderResponseInvalid')<{
+  readonly message: string
+  readonly operation: string
+}> {}
+
+export type MusicProviderError =
+  | MusicProviderInvalidInput
+  | MusicProviderNotFound
+  | MusicProviderMisconfigured
+  | MusicProviderRequestFailed
+  | MusicProviderResponseInvalid
 
 // Service-specific tagged errors
 export class AudioServiceError extends Data.TaggedError('AudioServiceError')<{

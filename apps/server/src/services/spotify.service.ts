@@ -8,7 +8,13 @@ import {
 } from '@spotify-effect/core'
 import type { PlaylistItem, Track as SpotifyTrack } from '@spotify-effect/core'
 import { Context, Effect, Layer } from 'effect'
-import { SpotifyError } from '@/errors'
+import {
+  MusicProviderInvalidInput,
+  MusicProviderMisconfigured,
+  MusicProviderNotFound,
+  MusicProviderRequestFailed,
+  MusicProviderResponseInvalid
+} from '@/errors'
 import {
   calculateBandcampTotalDuration,
   extractBandcampArtist,
@@ -81,7 +87,12 @@ export type ResolveSpotifySourceInput = {
   readonly urlOrId: string
 }
 
-export type SpotifyServiceError = SpotifyError
+export type SpotifyServiceError =
+  | MusicProviderInvalidInput
+  | MusicProviderNotFound
+  | MusicProviderMisconfigured
+  | MusicProviderRequestFailed
+  | MusicProviderResponseInvalid
 
 type SpotifySourceCandidateBase = {
   readonly platform: 'spotify'
@@ -111,16 +122,18 @@ export type SpotifySourceCandidate =
     })
 
 export interface SpotifyService {
-  readonly getTrack: (id: string) => Effect.Effect<Track, SpotifyError>
-  readonly getAlbum: (id: string) => Effect.Effect<Album, SpotifyError>
-  readonly getPlaylist: (id: string) => Effect.Effect<Playlist, SpotifyError>
-  readonly getPlaylistForImport: (id: string) => Effect.Effect<SpotifyImportPlaylist, SpotifyError>
-  readonly getTrackForImport: (id: string) => Effect.Effect<SpotifyImportTrack, SpotifyError>
+  readonly getTrack: (id: string) => Effect.Effect<Track, SpotifyServiceError>
+  readonly getAlbum: (id: string) => Effect.Effect<Album, SpotifyServiceError>
+  readonly getPlaylist: (id: string) => Effect.Effect<Playlist, SpotifyServiceError>
+  readonly getPlaylistForImport: (
+    id: string
+  ) => Effect.Effect<SpotifyImportPlaylist, SpotifyServiceError>
+  readonly getTrackForImport: (id: string) => Effect.Effect<SpotifyImportTrack, SpotifyServiceError>
   readonly searchAlbums: (
     query: string,
     limit?: number,
     offset?: number
-  ) => Effect.Effect<SearchAlbumsResponse, SpotifyError>
+  ) => Effect.Effect<SearchAlbumsResponse, SpotifyServiceError>
   readonly searchTrackByIsrc: (
     isrc: string
   ) => Effect.Effect<
@@ -134,7 +147,7 @@ export interface SpotifyService {
     { id: string; url: string; title: string; artist: string } | null,
     SpotifyServiceError
   >
-  readonly enrichTrackFromUrl: (url: string) => Effect.Effect<EnrichedTrack, SpotifyError>
+  readonly enrichTrackFromUrl: (url: string) => Effect.Effect<EnrichedTrack, SpotifyServiceError>
   readonly resolveSource: (
     input: ResolveSpotifySourceInput
   ) => Effect.Effect<SpotifySourceCandidate, SpotifyServiceError>
@@ -155,12 +168,41 @@ const describeSpotifyRequestError = (error: SpotifyRequestError) => {
   }
 }
 
-const toSpotifyError = (operation: string, prefix: string) => (error: SpotifyRequestError) =>
-  new SpotifyError({
-    message: `${prefix}: ${describeSpotifyRequestError(error)}`,
-    operation,
-    statusCode: 500
-  })
+type SpotifyEntityRef = {
+  readonly entityType: string
+  readonly externalId: string
+}
+
+const toProviderError =
+  (operation: string, prefix: string, entity?: SpotifyEntityRef) =>
+  (
+    error: SpotifyRequestError
+  ):
+    | MusicProviderNotFound
+    | MusicProviderMisconfigured
+    | MusicProviderRequestFailed
+    | MusicProviderResponseInvalid => {
+    const message = `${prefix}: ${describeSpotifyRequestError(error)}`
+
+    switch (error._tag) {
+      case 'SpotifyConfigurationError':
+        return new MusicProviderMisconfigured({ message, operation })
+      case 'SpotifyParseError':
+        return new MusicProviderResponseInvalid({ message, operation })
+      case 'SpotifyRateLimitError':
+        return new MusicProviderRequestFailed({ message, operation, statusCode: 429 })
+      case 'SpotifyHttpError':
+        return error.status === 404 && entity
+          ? new MusicProviderNotFound({
+              operation,
+              entityType: entity.entityType,
+              externalId: entity.externalId
+            })
+          : new MusicProviderRequestFailed({ message, operation, statusCode: error.status })
+      default:
+        return new MusicProviderRequestFailed({ message, operation })
+    }
+  }
 
 export const normalizeSpotifyIsrc = (isrc: string) =>
   isrc.toLocaleUpperCase('en').replace(/[^A-Z0-9]/g, '')
@@ -219,10 +261,9 @@ export const resolveSpotifySourceEffect = (
   Effect.gen(function* () {
     const externalId = parseSpotifySourceId(input)
     if (!externalId) {
-      return yield* new SpotifyError({
+      return yield* new MusicProviderInvalidInput({
         message: `Invalid Spotify ${input.entityType} URL or ID`,
-        operation: 'resolveSource',
-        statusCode: 400
+        operation: 'resolveSource'
       })
     }
 
@@ -303,17 +344,21 @@ const getTrackEffect = (id: string) =>
     const sanitizedId = cleanId(id)
 
     if (!id || !sanitizedId) {
-      return yield* new SpotifyError({
+      return yield* new MusicProviderInvalidInput({
         message: 'Invalid track ID provided',
-        operation: 'getTrack',
-        statusCode: 400
+        operation: 'getTrack'
       })
     }
 
     const tracks = yield* Tracks
-    const data = yield* tracks
-      .getTrack(sanitizedId)
-      .pipe(Effect.mapError(toSpotifyError('getTrack', 'Failed to fetch track')))
+    const data = yield* tracks.getTrack(sanitizedId).pipe(
+      Effect.mapError(
+        toProviderError('getTrack', 'Failed to fetch track', {
+          entityType: 'track',
+          externalId: sanitizedId
+        })
+      )
+    )
 
     const track: Track = {
       albumType: data.album?.album_type,
@@ -333,17 +378,21 @@ const getAlbumEffect = (id: string) =>
     const sanitizedId = cleanId(id)
 
     if (!id || !sanitizedId) {
-      return yield* new SpotifyError({
+      return yield* new MusicProviderInvalidInput({
         message: 'Invalid album ID provided',
-        operation: 'getAlbum',
-        statusCode: 400
+        operation: 'getAlbum'
       })
     }
 
     const albums = yield* Albums
-    const data = yield* albums
-      .getAlbum(sanitizedId)
-      .pipe(Effect.mapError(toSpotifyError('getAlbum', 'Failed to fetch album')))
+    const data = yield* albums.getAlbum(sanitizedId).pipe(
+      Effect.mapError(
+        toProviderError('getAlbum', 'Failed to fetch album', {
+          entityType: 'album',
+          externalId: sanitizedId
+        })
+      )
+    )
 
     const album: Album = {
       albumType: data.album_type,
@@ -367,17 +416,21 @@ const getPlaylistEffect = (id: string) =>
     const sanitizedId = cleanId(id)
 
     if (!id || !sanitizedId) {
-      return yield* new SpotifyError({
+      return yield* new MusicProviderInvalidInput({
         message: 'Invalid playlist ID provided',
-        operation: 'getPlaylist',
-        statusCode: 400
+        operation: 'getPlaylist'
       })
     }
 
     const playlists = yield* Playlists
-    const data = yield* playlists
-      .getPlaylist(sanitizedId)
-      .pipe(Effect.mapError(toSpotifyError('getPlaylist', 'Failed to fetch playlist')))
+    const data = yield* playlists.getPlaylist(sanitizedId).pipe(
+      Effect.mapError(
+        toProviderError('getPlaylist', 'Failed to fetch playlist', {
+          entityType: 'playlist',
+          externalId: sanitizedId
+        })
+      )
+    )
 
     const playlist: Playlist = {
       coverImageUrl: data.images[0]?.url,
@@ -404,10 +457,9 @@ const getPlaylistForImportEffect = (id: string) =>
     const sanitizedId = cleanId(id)
 
     if (!id || !sanitizedId) {
-      return yield* new SpotifyError({
+      return yield* new MusicProviderInvalidInput({
         message: 'Invalid playlist ID provided',
-        operation: 'getPlaylistForImport',
-        statusCode: 400
+        operation: 'getPlaylistForImport'
       })
     }
 
@@ -418,9 +470,14 @@ const getPlaylistForImportEffect = (id: string) =>
     }
 
     const playlists = yield* Playlists
-    const data = yield* playlists
-      .getPlaylist(sanitizedId)
-      .pipe(Effect.mapError(toSpotifyError('getPlaylistForImport', 'Failed to fetch playlist')))
+    const data = yield* playlists.getPlaylist(sanitizedId).pipe(
+      Effect.mapError(
+        toProviderError('getPlaylistForImport', 'Failed to fetch playlist', {
+          entityType: 'playlist',
+          externalId: sanitizedId
+        })
+      )
+    )
 
     const tracks: SpotifyImportTrack[] = playlistTracks(data.tracks.items).map(toImportTrack)
 
@@ -445,10 +502,9 @@ const getPlaylistForImportEffect = (id: string) =>
 const searchAlbumsEffect = (query: string, limit = 10, offset = 0) =>
   Effect.gen(function* () {
     if (!query || query.trim() === '') {
-      return yield* new SpotifyError({
+      return yield* new MusicProviderInvalidInput({
         message: 'Search query is required',
-        operation: 'searchAlbums',
-        statusCode: 400
+        operation: 'searchAlbums'
       })
     }
 
@@ -457,7 +513,7 @@ const searchAlbumsEffect = (query: string, limit = 10, offset = 0) =>
     const search = yield* Search
     const data = yield* search
       .search(query, ['album'], { limit: SPOTIFY_SEARCH_API_LIMIT, offset })
-      .pipe(Effect.mapError(toSpotifyError('searchAlbums', 'Failed to search albums')))
+      .pipe(Effect.mapError(toProviderError('searchAlbums', 'Failed to search albums')))
 
     const searchResponse: SearchAlbumsResponse = {
       albums: (data.albums?.items ?? []).slice(0, validatedLimit).map((album) => ({
@@ -481,17 +537,16 @@ const searchAlbumsEffect = (query: string, limit = 10, offset = 0) =>
 const searchTrackByIsrcEffect = (isrc: string) =>
   Effect.gen(function* () {
     if (!isrc || isrc.trim() === '') {
-      return yield* new SpotifyError({
+      return yield* new MusicProviderInvalidInput({
         message: 'ISRC is required',
-        operation: 'searchTrackByIsrc',
-        statusCode: 400
+        operation: 'searchTrackByIsrc'
       })
     }
 
     const search = yield* Search
     const data = yield* search
       .search(`isrc:${isrc}`, ['track'], { limit: 1 })
-      .pipe(Effect.mapError(toSpotifyError('searchTrackByIsrc', 'Failed to search track by ISRC')))
+      .pipe(Effect.mapError(toProviderError('searchTrackByIsrc', 'Failed to search track by ISRC')))
 
     const track = data.tracks?.items[0]
     if (!track || !isExactSpotifyIsrcMatch(isrc, track.external_ids.isrc)) return null
@@ -507,10 +562,9 @@ const searchTrackByIsrcEffect = (isrc: string) =>
 const searchAlbumByTitleArtistEffect = (title: string, artist: string) =>
   Effect.gen(function* () {
     if (!title || title.trim() === '') {
-      return yield* new SpotifyError({
+      return yield* new MusicProviderInvalidInput({
         message: 'Album title is required',
-        operation: 'searchAlbumByTitleArtist',
-        statusCode: 400
+        operation: 'searchAlbumByTitleArtist'
       })
     }
 
@@ -521,7 +575,7 @@ const searchAlbumByTitleArtistEffect = (title: string, artist: string) =>
       .search(query, ['album'], { limit: 1 })
       .pipe(
         Effect.mapError(
-          toSpotifyError('searchAlbumByTitleArtist', 'Failed to search album by title/artist')
+          toProviderError('searchAlbumByTitleArtist', 'Failed to search album by title/artist')
         )
       )
 
@@ -584,17 +638,21 @@ const getTrackForImportEffect = (id: string) =>
   Effect.gen(function* () {
     const sanitizedId = cleanId(id)
     if (!id || !sanitizedId) {
-      return yield* new SpotifyError({
+      return yield* new MusicProviderInvalidInput({
         message: 'Invalid track ID provided',
-        operation: 'getTrackForImport',
-        statusCode: 400
+        operation: 'getTrackForImport'
       })
     }
 
     const tracks = yield* Tracks
-    const data = yield* tracks
-      .getTrack(sanitizedId)
-      .pipe(Effect.mapError(toSpotifyError('getTrackForImport', 'Failed to fetch track')))
+    const data = yield* tracks.getTrack(sanitizedId).pipe(
+      Effect.mapError(
+        toProviderError('getTrackForImport', 'Failed to fetch track', {
+          entityType: 'track',
+          externalId: sanitizedId
+        })
+      )
+    )
 
     return toImportTrack(data)
   })
@@ -644,10 +702,9 @@ const enrichTrackFromUrlWithSpan = (url: string) =>
     if (isSpotifyUrl(url)) {
       const id = extractSpotifyId(url)
       if (!id) {
-        return yield* new SpotifyError({
+        return yield* new MusicProviderInvalidInput({
           message: 'Invalid Spotify URL',
-          operation: 'enrichTrackFromUrl',
-          statusCode: 400
+          operation: 'enrichTrackFromUrl'
         })
       }
 
@@ -656,11 +713,14 @@ const enrichTrackFromUrlWithSpan = (url: string) =>
 
       if (url.includes('/album/')) {
         const albums = yield* Albums
-        const data = yield* albums
-          .getAlbum(id)
-          .pipe(
-            Effect.mapError(toSpotifyError('enrichTrackFromUrl', 'Failed to fetch Spotify album'))
+        const data = yield* albums.getAlbum(id).pipe(
+          Effect.mapError(
+            toProviderError('enrichTrackFromUrl', 'Failed to fetch Spotify album', {
+              entityType: 'album',
+              externalId: id
+            })
           )
+        )
 
         result = {
           title: data.name,
@@ -673,11 +733,14 @@ const enrichTrackFromUrlWithSpan = (url: string) =>
         }
       } else {
         const tracks = yield* Tracks
-        const data = yield* tracks
-          .getTrack(id)
-          .pipe(
-            Effect.mapError(toSpotifyError('enrichTrackFromUrl', 'Failed to fetch Spotify track'))
+        const data = yield* tracks.getTrack(id).pipe(
+          Effect.mapError(
+            toProviderError('enrichTrackFromUrl', 'Failed to fetch Spotify track', {
+              entityType: 'track',
+              externalId: id
+            })
           )
+        )
 
         result = {
           title: data.name,
@@ -692,10 +755,9 @@ const enrichTrackFromUrlWithSpan = (url: string) =>
     } else if (isYouTubeUrl(url)) {
       const videoId = extractYouTubeId(url)
       if (!videoId) {
-        return yield* new SpotifyError({
+        return yield* new MusicProviderInvalidInput({
           message: 'Invalid YouTube URL',
-          operation: 'enrichTrackFromUrl',
-          statusCode: 400
+          operation: 'enrichTrackFromUrl'
         })
       }
 

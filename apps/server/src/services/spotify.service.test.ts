@@ -112,7 +112,7 @@ describe('resolveSpotifySourceEffect', () => {
       )
     )
 
-    expect(error).toMatchObject({ operation: 'resolveSource', statusCode: 400 })
+    expect(error).toMatchObject({ _tag: 'MusicProviderInvalidInput', operation: 'resolveSource' })
     expect(spotify.getTrack).not.toHaveBeenCalled()
     expect(spotify.getAlbum).not.toHaveBeenCalled()
     expect(spotify.getPlaylist).not.toHaveBeenCalled()
@@ -126,7 +126,7 @@ describe('resolveSpotifySourceEffect', () => {
       const error = await Effect.runPromise(
         Effect.flip(resolveSpotifySourceEffect(spotify, { entityType: 'track', urlOrId }))
       )
-      expect(error).toMatchObject({ operation: 'resolveSource', statusCode: 400 })
+      expect(error).toMatchObject({ _tag: 'MusicProviderInvalidInput', operation: 'resolveSource' })
     }
 
     expect(spotify.getTrack).not.toHaveBeenCalled()

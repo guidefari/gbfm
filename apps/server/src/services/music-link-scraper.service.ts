@@ -427,7 +427,7 @@ export class BandcampProvider implements MusicDataProvider {
     const url = input.url
     return Effect.gen(function* () {
       const metadata = yield* getBandcampMetadataWithSpan(url).pipe(
-        Effect.catchTag('SpotifyError', (err) =>
+        Effect.catchTag(['MusicProviderRequestFailed', 'MusicProviderResponseInvalid'], (err) =>
           Effect.fail(
             new MusicScraperError({
               message: `Bandcamp scrape failed: ${err.message}`,
@@ -834,15 +834,13 @@ function sourceResolutionError(
   error: SpotifyServiceError | DeezerError
 ) {
   const statusCode =
-    error._tag === 'SpotifyError'
+    error._tag === 'DeezerRequestFailed' || error._tag === 'MusicProviderRequestFailed'
       ? (error.statusCode ?? 503)
-      : error._tag === 'DeezerRequestFailed'
-        ? (error.statusCode ?? 503)
-        : error._tag === 'DeezerInvalidInput'
-          ? 400
-          : error._tag === 'DeezerNotFound'
-            ? 404
-            : 503
+      : error._tag === 'DeezerInvalidInput' || error._tag === 'MusicProviderInvalidInput'
+        ? 400
+        : error._tag === 'DeezerNotFound' || error._tag === 'MusicProviderNotFound'
+          ? 404
+          : 503
   return new MusicScraperError({
     message: `Exact ${provider} source could not be resolved`,
     provider,

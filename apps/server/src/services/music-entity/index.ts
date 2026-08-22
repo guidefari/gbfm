@@ -13,7 +13,7 @@ import type {
   SelectMusicTrack
 } from '@/db/music-entity.schema'
 import { DatabaseError } from '@/errors'
-import type { NotFoundError, SpotifyError, ValidationError } from '@/errors'
+import type { NotFoundError, ValidationError } from '@/errors'
 import { ConfigService as ConfigServiceTag } from '@/services/config.service'
 import { Database } from '@/db/layer'
 import {
@@ -44,7 +44,10 @@ import {
 } from '@/services/music-link-scraper.service'
 import { S3Service as S3ServiceTag } from '@/services/s3.service'
 import { SpotifyImportResolver } from '@/services/spotify-import-resolver.service'
-import { SpotifyService as SpotifyServiceTag } from '@/services/spotify.service'
+import {
+  SpotifyService as SpotifyServiceTag,
+  type SpotifyServiceError
+} from '@/services/spotify.service'
 
 import {
   addArtistToAlbumEffect,
@@ -241,7 +244,7 @@ export interface MusicEntityService {
     spotifyUrl: string
   ) => Effect.Effect<
     { trackId: string; position: number; created: boolean },
-    DatabaseError | SpotifyError
+    DatabaseError | SpotifyServiceError
   >
   readonly importSpotifyPlaylist: (
     url: string,
@@ -253,11 +256,14 @@ export interface MusicEntityService {
       createdTrackCount: number
       reusedTrackCount: number
     },
-    DatabaseError | SpotifyError
+    DatabaseError | SpotifyServiceError
   >
   readonly syncPlaylistLinks: (
     playlistId: string
-  ) => Effect.Effect<{ playlistId: string; queuedTrackCount: number }, DatabaseError | SpotifyError>
+  ) => Effect.Effect<
+    { playlistId: string; queuedTrackCount: number },
+    DatabaseError | SpotifyServiceError
+  >
 
   readonly addArtistToAlbum: (
     albumId: string,

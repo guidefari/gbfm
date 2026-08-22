@@ -9,7 +9,7 @@ import {
   musicTracksTable,
   type SelectMusicEntityLink
 } from '@/db/music-entity.schema'
-import { DatabaseError, getErrorMessage, SpotifyError } from '@/errors'
+import { DatabaseError, getErrorMessage, MusicProviderInvalidInput } from '@/errors'
 import { copyMusicCoverImageBestEffort } from '@/services/music-cover-image.service'
 import type { MusicLinkScraperService } from '@/services/music-link-scraper.service'
 import type { S3Service } from '@/services/s3.service'
@@ -463,10 +463,9 @@ export const addSpotifyTrackToPlaylistEffect = (
     const db = yield* Database
     const id = getIdFromSpotifyUrl(spotifyUrl)
     if (!id) {
-      return yield* new SpotifyError({
+      return yield* new MusicProviderInvalidInput({
         message: 'Could not extract Spotify track ID from URL',
-        operation: 'addSpotifyTrackToPlaylist',
-        statusCode: 400
+        operation: 'addSpotifyTrackToPlaylist'
       })
     }
 
@@ -541,10 +540,9 @@ export const importSpotifyPlaylistEffect = (
     const db = yield* Database
     const id = getIdFromSpotifyUrl(url)
     if (!id) {
-      return yield* new SpotifyError({
+      return yield* new MusicProviderInvalidInput({
         message: 'Could not extract Spotify playlist ID from URL',
-        operation: 'importSpotifyPlaylist',
-        statusCode: 400
+        operation: 'importSpotifyPlaylist'
       })
     }
 

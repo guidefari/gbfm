@@ -1,5 +1,5 @@
 import { Effect, Schema } from 'effect'
-import { getErrorMessage, SpotifyError } from '@/errors'
+import { getErrorMessage, MusicProviderRequestFailed, MusicProviderResponseInvalid } from '@/errors'
 
 export interface BandcampAlbum {
   '@type': 'MusicAlbum' | 'MusicRecording'
@@ -105,10 +105,9 @@ const parseBandcampHtml = (html: string) =>
     if (titleMatch?.[1]) {
       metadata.name = titleMatch[1].trim()
     } else {
-      return yield* new SpotifyError({
+      return yield* new MusicProviderResponseInvalid({
         message: 'Could not extract title from Bandcamp page',
-        operation: 'parseBandcampHtml',
-        statusCode: 500
+        operation: 'parseBandcampHtml'
       })
     }
 
@@ -159,17 +158,16 @@ export const getBandcampMetadata = (url: string) =>
           }
         }),
       catch: (error) =>
-        new SpotifyError({
+        new MusicProviderRequestFailed({
           message: `Failed to fetch Bandcamp page: ${getErrorMessage(error)}`,
-          operation: 'getBandcampMetadata',
-          statusCode: 500
+          operation: 'getBandcampMetadata'
         })
     })
 
     yield* Effect.annotateCurrentSpan('http.status_code', response.status)
 
     if (!response.ok) {
-      return yield* new SpotifyError({
+      return yield* new MusicProviderRequestFailed({
         message: `Bandcamp page returned ${response.status}`,
         operation: 'getBandcampMetadata',
         statusCode: response.status
@@ -179,10 +177,9 @@ export const getBandcampMetadata = (url: string) =>
     const html = yield* Effect.tryPromise({
       try: () => response.text(),
       catch: (error) =>
-        new SpotifyError({
+        new MusicProviderRequestFailed({
           message: `Failed to read Bandcamp page content: ${getErrorMessage(error)}`,
-          operation: 'getBandcampMetadata',
-          statusCode: 500
+          operation: 'getBandcampMetadata'
         })
     })
 
