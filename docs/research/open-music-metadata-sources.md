@@ -55,7 +55,7 @@ At larger scale, MetaBrainz also publishes CC0 canonical release/recording mappi
 
 The Cover Art Archive is operated by the Internet Archive and curated by the MusicBrainz community. Its API indexes images by release MBID and identifies front/back images and approved status. Its API documentation currently says there are no fixed rate-limit rules, but the endpoint documents 503 as a possible response. Sources: [Cover Art Archive](https://musicbrainz.org/doc/Cover_Art_Archive) and [Cover Art Archive API](https://musicbrainz.org/doc/Cover_Art_Archive/API).
 
-The images themselves are not granted a blanket Creative Commons license. MusicBrainz says cover art carries legal and copyright issues and that images are available for archival purposes, at the user's risk. Therefore GBFM should treat Cover Art Archive URLs as a fallback display source, not copy images into its own storage by default, retain the release MBID and Archive source URL, provide attribution, and support removal/replacement. Approved status is a curation signal, not a copyright license. Sources: [Cover Art Archive policy](https://musicbrainz.org/doc/Cover_Art_Archive) and [MusicBrainz cover-art guidance](https://musicbrainz.org/doc/Cover_Art).
+The images themselves are not granted a blanket Creative Commons license. MusicBrainz says cover art carries legal and copyright issues and that images are available for archival purposes, at the user's risk. GBFM archives approved provider artwork in its own object storage as a cache and durable product asset while retaining the release MBID and Archive source URL for provenance. Ingestion is restricted to known HTTPS provider hosts, image media types, and a 10 MiB limit. GBFM must provide attribution and support removal or replacement. Approved status is a curation signal, not a copyright license. Sources: [Cover Art Archive policy](https://musicbrainz.org/doc/Cover_Art_Archive) and [MusicBrainz cover-art guidance](https://musicbrainz.org/doc/Cover_Art).
 
 ### Wikidata
 
@@ -129,7 +129,7 @@ Scope:
 - Persist MusicBrainz links and provenance in existing entity-link metadata.
 - Enforce the playlist invariant: no MusicBrainz, Odesli fan-out, or cross-platform matching for playlists.
 - Add a runtime-wide one-request-per-second limiter, contactable `User-Agent`, retry/backoff, and positive/negative caching.
-- Add optional Cover Art Archive fallback only when a release MBID is known, without copying artwork by default.
+- Add optional Cover Art Archive fallback only when a release MBID is known, then archive approved artwork in GBFM object storage while retaining source provenance.
 - Add source attribution in the product.
 - Document that commercial deployment requires a MetaBrainz service agreement or a separately designed CC0-dump ingestion path.
 

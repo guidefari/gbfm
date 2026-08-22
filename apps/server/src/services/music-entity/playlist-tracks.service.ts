@@ -10,6 +10,7 @@ import {
   type SelectMusicEntityLink
 } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage, SpotifyError } from '@/errors'
+import { copyMusicCoverImageEffect } from '@/services/music-cover-image.service'
 import type { MusicLinkScraperService } from '@/services/music-link-scraper.service'
 import type { S3Service } from '@/services/s3.service'
 import {
@@ -19,7 +20,7 @@ import {
 } from '@/services/spotify.service'
 import { addLinkEffect, getLinksForEntityEffect } from './link.service'
 import { type SpotifyImportResolverContract } from '@/services/spotify-import-resolver.service'
-import { FetchError, type ImportedTrackTarget, requireInserted } from './shared'
+import { type ImportedTrackTarget, requireInserted } from './shared'
 import { updateTrackEffect } from './track.service'
 
 export const getPlaylistTracksEffect = (playlistId: string) =>
@@ -221,34 +222,6 @@ export const reorderPlaylistTracksEffect = (playlistId: string, trackIds: string
     })
   )
 
-const copyCoverImageToCdnEffect = (
-  s3: S3Service,
-  cdnUrl: string,
-  bucketName: string,
-  entityType: string,
-  entityId: string,
-  coverImageUrl: string
-) =>
-  Effect.gen(function* () {
-    const response = yield* Effect.tryPromise({
-      try: () => fetch(coverImageUrl),
-      catch: (cause) => new FetchError({ message: `Failed to fetch ${coverImageUrl}`, cause })
-    })
-
-    if (!response.ok) return null
-
-    const contentType = response.headers.get('content-type') || 'image/jpeg'
-    const arrayBuffer = yield* Effect.tryPromise({
-      try: () => response.arrayBuffer(),
-      catch: (cause) => new FetchError({ message: `Failed to read ${coverImageUrl}`, cause })
-    })
-    const buffer = Buffer.from(arrayBuffer)
-    const key = `music/${entityType}/${entityId}/cover`
-    const uploadedKey = yield* s3.uploadFile(key, buffer, contentType, bucketName)
-
-    return `${cdnUrl}/user-content/${uploadedKey}`
-  }).pipe(Effect.catch(() => Effect.succeed(null)))
-
 const enrichTrackLinksEffect = (
   scraper: MusicLinkScraperService,
   s3: S3Service,
@@ -300,7 +273,7 @@ const enrichTrackLinksEffect = (
     )
 
     if (scraped.entityMeta?.thumbnailUrl) {
-      const publicCoverImageUrl = yield* copyCoverImageToCdnEffect(
+      const publicCoverImageUrl = yield* copyMusicCoverImageEffect(
         s3,
         cdnUrl,
         bucketName,
@@ -442,7 +415,7 @@ const refreshPlaylistCoverImageEffect = (
     const data = yield* spotify.getPlaylistForImport(spotifyPlaylistId)
     if (!data.coverImageUrl) return { updated: false as const }
 
-    const publicCoverImageUrl = yield* copyCoverImageToCdnEffect(
+    const publicCoverImageUrl = yield* copyMusicCoverImageEffect(
       s3,
       cdnUrl,
       bucketName,
@@ -577,7 +550,7 @@ export const importSpotifyPlaylistEffect = (
 
     const data: SpotifyImportPlaylist = yield* spotify.getPlaylistForImport(id)
     const storedCoverImageUrl = data.coverImageUrl
-      ? yield* copyCoverImageToCdnEffect(s3, cdnUrl, bucketName, 'playlist', id, data.coverImageUrl)
+      ? yield* copyMusicCoverImageEffect(s3, cdnUrl, bucketName, 'playlist', id, data.coverImageUrl)
       : null
     const playlist = yield* resolver.resolvePlaylist(data, storedCoverImageUrl, curatorId)
     const tracks = yield* Effect.forEach(data.tracks, (track) => resolver.resolveTrack(track))

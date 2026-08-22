@@ -31,9 +31,13 @@ import type {
   SelectMusicPlaylist,
   SelectMusicTrack
 } from '@/db/music-entity.schema'
-import { FetchError, getErrorMessage } from '@/errors'
-import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
+import { getErrorMessage } from '@/errors'
+import {
+  dieOnDatabaseError as makeDieOnDatabaseError,
+  dieOnS3Error as makeDieOnS3Error
+} from '@/http/handler-utils'
 import { ConfigService } from '@/services/config.service'
+import { copyMusicCoverImageEffect } from '@/services/music-cover-image.service'
 import {
   type CreateAlbumInput as AlbumServiceCreateInput,
   type CreateLabelInput as LabelServiceCreateInput,
@@ -183,6 +187,7 @@ const toLabelUpdateFields = (input: UpdateLabelInput): Partial<LabelServiceCreat
 })
 
 const dieOnDatabaseError = makeDieOnDatabaseError('music')
+const dieOnS3Error = makeDieOnS3Error('music')
 
 // SpotifyError is an infra failure (network/API), not client-fixable by
 // resubmitting differently, except where the handler already validates the
@@ -241,36 +246,6 @@ const inferEntityTypeFromUrl = (url: string): 'album' | 'track' | 'playlist' => 
   if (isYouTubeUrl(url)) return 'track'
   return 'track'
 }
-
-// Best-effort: a failed cover-image copy shouldn't fail the whole resolve --
-// the handler falls back to the original (often third-party, possibly
-// short-lived) coverImageUrl in that case. Mirrors the old Hono handler.
-const copyCoverImageEffect = (
-  entityType: 'album' | 'track' | 'playlist',
-  entityId: string,
-  coverImageUrl: string
-) =>
-  Effect.gen(function* () {
-    const config = yield* ConfigService
-    const s3 = yield* S3Service
-
-    const response = yield* Effect.tryPromise({
-      try: () => fetch(coverImageUrl),
-      catch: (cause) => new FetchError({ message: `Failed to fetch ${coverImageUrl}`, cause })
-    })
-
-    if (!response.ok) return null
-
-    const contentType = response.headers.get('content-type') || 'image/jpeg'
-    const arrayBuffer = yield* Effect.tryPromise({
-      try: () => response.arrayBuffer(),
-      catch: (cause) => new FetchError({ message: `Failed to read ${coverImageUrl}`, cause })
-    })
-    const buffer = Buffer.from(arrayBuffer)
-    const key = `music/${entityType}/${entityId}/cover`
-    const uploadedKey = yield* s3.uploadFile(key, buffer, contentType, config.buckets.userContent)
-    return `${config.urls.bucketRouter}/user-content/${uploadedKey}`
-  }).pipe(Effect.catch(() => Effect.succeed(null)))
 
 export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =>
   handlers
@@ -804,14 +779,18 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         const entity = result.entity
         const coverImageUrl = 'coverImageUrl' in entity ? entity.coverImageUrl : null
 
-        const hasRemoteReferenceArtwork = result.links.some(
-          (link) => link.platform === 'musicbrainz' && link.metadata?.coverArt
-        )
-        if (coverImageUrl && !hasRemoteReferenceArtwork) {
-          const publicCoverImageUrl = yield* copyCoverImageEffect(
-            entityType,
-            entity.id,
-            coverImageUrl
+        if (coverImageUrl) {
+          const config = yield* ConfigService
+          const s3 = yield* S3Service
+          const publicCoverImageUrl = yield* dieOnS3Error(
+            copyMusicCoverImageEffect(
+              s3,
+              config.urls.bucketRouter,
+              config.buckets.userContent,
+              entityType,
+              entity.id,
+              coverImageUrl
+            )
           )
 
           if (publicCoverImageUrl && publicCoverImageUrl !== coverImageUrl) {
