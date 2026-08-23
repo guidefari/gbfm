@@ -1,7 +1,6 @@
 import { LINK_STATUS } from '@gbfm/core/status'
 import { and, eq, isNull, lt } from 'drizzle-orm'
-import { Data, Effect, Schedule } from 'effect'
-import { z } from 'zod'
+import { Data, Effect, Option, Schedule, Schema } from 'effect'
 import { Database } from '@/db/layer'
 import {
   type MusicEntityType,
@@ -604,13 +603,12 @@ function selectSourceLink(
   return exactSources.length === 1 ? exactSources[0] : undefined
 }
 
-const MetadataStringSchema = z.string()
+const decodeMetadataString = Schema.decodeUnknownOption(Schema.String)
 
 function metadataString(
   value: NonNullable<SelectMusicEntityLink['metadata']>[string]
 ): string | undefined {
-  const parsed = MetadataStringSchema.safeParse(value)
-  return parsed.success ? parsed.data : undefined
+  return Option.getOrUndefined(decodeMetadataString(value))
 }
 
 function musicBrainzMbid(link: SelectMusicEntityLink | undefined): string | undefined {

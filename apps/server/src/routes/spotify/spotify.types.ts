@@ -1,67 +1,60 @@
-import { z } from 'zod'
+import { Schema } from 'effect'
 
-export const TrackSchema = z.object({
-  albumType: z.string().optional(),
-  albumImageUrl: z.string().optional(),
-  title: z.string(),
-  artists: z.string(),
-  trackUrl: z.string(),
-  isrc: z.string().optional(),
-  previewUrl: z.string().optional()
+const TrackSummarySchema = Schema.Struct({
+  title: Schema.String,
+  artists: Schema.String,
+  previewUrl: Schema.optional(Schema.String),
+  trackUrl: Schema.String
 })
 
-export const AlbumSchema = z.object({
-  albumType: z.string(),
-  albumImageUrl: z.string().optional(),
-  title: z.string(),
-  artists: z.string(),
-  tracks: z.array(
-    z.object({
-      title: z.string(),
-      artists: z.string(),
-      previewUrl: z.string().optional(),
-      trackUrl: z.string()
-    })
-  ),
-  albumUrl: z.string()
+export const TrackSchema = Schema.Struct({
+  albumType: Schema.optional(Schema.String),
+  albumImageUrl: Schema.optional(Schema.String),
+  title: Schema.String,
+  artists: Schema.String,
+  trackUrl: Schema.String,
+  isrc: Schema.optional(Schema.String),
+  previewUrl: Schema.optional(Schema.String)
 })
 
-export const PlaylistSchema = z.object({
-  coverImageUrl: z.string().optional(),
-  title: z.string(),
-  description: z.string().optional(),
-  tracks: z.array(
-    z.object({
-      title: z.string(),
-      artists: z.string(),
-      previewUrl: z.string().optional(),
-      trackUrl: z.string()
-    })
-  ),
-  ownerName: z.string().optional(),
-  playlistUrl: z.string()
+export const AlbumSchema = Schema.Struct({
+  albumType: Schema.String,
+  albumImageUrl: Schema.optional(Schema.String),
+  title: Schema.String,
+  artists: Schema.String,
+  tracks: Schema.Array(TrackSummarySchema),
+  albumUrl: Schema.String
 })
 
-export const AlbumSearchResultSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  artists: z.string(),
-  albumType: z.string(),
-  releaseDate: z.string(),
-  albumImageUrl: z.string().optional(),
-  albumUrl: z.string(),
-  totalTracks: z.number()
+export const PlaylistSchema = Schema.Struct({
+  coverImageUrl: Schema.optional(Schema.String),
+  title: Schema.String,
+  description: Schema.optional(Schema.String),
+  tracks: Schema.Array(TrackSummarySchema),
+  ownerName: Schema.optional(Schema.String),
+  playlistUrl: Schema.String
 })
 
-export const SearchAlbumsResponseSchema = z.object({
-  albums: z.array(AlbumSearchResultSchema),
-  total: z.number(),
-  limit: z.number(),
-  offset: z.number()
+export const AlbumSearchResultSchema = Schema.Struct({
+  id: Schema.String,
+  title: Schema.String,
+  artists: Schema.String,
+  albumType: Schema.String,
+  releaseDate: Schema.String,
+  albumImageUrl: Schema.optional(Schema.String),
+  albumUrl: Schema.String,
+  totalTracks: Schema.Number
 })
 
-export type Track = z.infer<typeof TrackSchema>
-export type Album = z.infer<typeof AlbumSchema>
-export type Playlist = z.infer<typeof PlaylistSchema>
-export type AlbumSearchResult = z.infer<typeof AlbumSearchResultSchema>
-export type SearchAlbumsResponse = z.infer<typeof SearchAlbumsResponseSchema>
+export const SearchAlbumsResponseSchema = Schema.Struct({
+  albums: Schema.Array(AlbumSearchResultSchema),
+  total: Schema.Number,
+  limit: Schema.Number,
+  offset: Schema.Number
+})
+
+export type Track = typeof TrackSchema.Type
+export type Album = typeof AlbumSchema.Type
+export type Playlist = typeof PlaylistSchema.Type
+export type AlbumSearchResult = typeof AlbumSearchResultSchema.Type
+export type SearchAlbumsResponse = typeof SearchAlbumsResponseSchema.Type

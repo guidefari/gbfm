@@ -1,4 +1,3 @@
-import { z } from 'zod'
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
 import { index, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
 import { audioTable } from './audio.schema'
@@ -48,46 +47,3 @@ export const favoritesRelations = relations(favoritesTable, ({ one }) => ({
     references: [showsTable.id]
   })
 }))
-
-export const selectFavoriteSchema = z.object({
-  id: z.string().uuid(),
-  userId: z.string(),
-  audioId: z.string().uuid().nullable(),
-  showId: z.string().uuid().nullable(),
-  createdAt: z.date()
-})
-
-export const insertFavoriteSchema = z
-  .object({
-    audioId: z.string().uuid().optional(),
-    showId: z.string().uuid().optional()
-  })
-  .refine((data) => data.audioId || data.showId, {
-    message: 'Either audioId or showId must be provided'
-  })
-
-export const favoriteWithAudioSchema = z.object({
-  id: z.string().uuid(),
-  userId: z.string(),
-  audioId: z.string().uuid().nullable(),
-  showId: z.string().uuid().nullable(),
-  createdAt: z.string(),
-  audio: z
-    .object({
-      id: z.string().uuid(),
-      title: z.string(),
-      slug: z.string(),
-      thumbnailUrl: z.string().nullable(),
-      type: z.enum(['mix', 'track', 'misc']),
-      url: z.string()
-    })
-    .nullable(),
-  show: z
-    .object({
-      id: z.string().uuid(),
-      title: z.string(),
-      slug: z.string(),
-      thumbnailUrl: z.string().nullable()
-    })
-    .nullable()
-})

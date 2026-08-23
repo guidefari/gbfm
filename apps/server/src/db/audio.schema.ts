@@ -1,4 +1,3 @@
-import { z } from 'zod'
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
 import { index, integer, sqliteTable, primaryKey, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 import { user } from './auth.schema'
@@ -52,70 +51,6 @@ export type SelectAudio = BaseSelectAudio & {
 export type SelectMdxCompiledAudio = SelectAudio & {
   compiledContent: string
 }
-
-export const selectAudioSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  description: z.string().nullable(),
-  thumbnailUrl: z.string().nullable(),
-  slug: z.string(),
-  content: z.string(),
-  draft: z.boolean(),
-  tags: z.array(z.string()).nullable(),
-  type: z.enum(['mix', 'track', 'misc']),
-  url: z.string(),
-  showId: z.string().nullable(),
-  episodeNumber: z.number().nullable(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-  playCount: z.number().int(),
-  creators: z
-    .array(
-      z.object({
-        id: z.string(),
-        name: z.string(),
-        username: z.string().nullable()
-      })
-    )
-    .optional()
-})
-
-export const selectMdxCompiledAudioSchema = selectAudioSchema.extend({
-  compiledContent: z.string(),
-  creators: z
-    .array(
-      z.object({
-        id: z.string(),
-        name: z.string(),
-        username: z.string().nullable()
-      })
-    )
-    .optional()
-})
-
-export const insertAudioSchema = z.object({
-  title: z.string().min(1),
-  description: z.string().optional(),
-  thumbnailUrl: z.string().optional(),
-  slug: z.string().min(1),
-  content: z.string(),
-  draft: z.boolean().optional(),
-  tags: z.array(z.string()).optional(),
-  type: z.enum(['mix', 'track', 'misc']),
-  url: z.string().url(),
-  showId: z.string().uuid().optional(),
-  episodeNumber: z.number().int().positive().optional()
-})
-
-export const updateAudioSchema = insertAudioSchema
-  .extend({
-    creatorIds: z.array(z.string()).min(1).optional()
-  })
-  .partial()
-
-export const createAudioSchema = insertAudioSchema.extend({
-  creatorIds: z.array(z.string()).min(1).optional()
-})
 
 export const audioCreators = sqliteTable(
   'audio_creators',

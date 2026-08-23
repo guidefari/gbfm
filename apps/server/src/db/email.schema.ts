@@ -1,7 +1,6 @@
-import { EMAIL_DELIVERY_STATUS_VALUES, EMAIL_DELIVERY_STATUSES } from '@gbfm/core/status'
+import { EMAIL_DELIVERY_STATUSES } from '@gbfm/core/status'
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { z } from 'zod'
 import { user } from './auth.schema'
 
 export const EMAIL_NOTIFICATION_TYPES = {
@@ -42,22 +41,6 @@ export type EmailDeliveryMetadata =
       readonly releaseDate: string
     }
   | { readonly kind: 'music-reminder'; readonly reminderId: string }
-
-const emailDeliveryStatusEnum = z.enum(EMAIL_DELIVERY_STATUS_VALUES)
-const emailDeliveryProviderEnum = z.enum(EMAIL_DELIVERY_PROVIDERS)
-const emailDeliveryFailureCategoryEnum = z.enum(EMAIL_DELIVERY_FAILURE_CATEGORIES)
-const emailDeliveryMetadataSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('invite'), invitedBy: z.string() }),
-  z.object({
-    kind: z.literal('mix-notification'),
-    mixId: z.string(),
-    mixSlug: z.string(),
-    mixTitle: z.string(),
-    artistName: z.string(),
-    releaseDate: z.string()
-  }),
-  z.object({ kind: z.literal('music-reminder'), reminderId: z.string() })
-])
 
 /** Delivery attempts and provider acceptance receipts. */
 export const emailDeliveryLogsTable = sqliteTable(
@@ -123,75 +106,6 @@ export type SelectEmailDeliveryLog = InferSelectModel<typeof emailDeliveryLogsTa
 export type InsertEmailDeliveryLog = InferInsertModel<typeof emailDeliveryLogsTable>
 export type SelectAuthorEmailPreferences = InferSelectModel<typeof userEmailPreferencesTable>
 export type InsertAuthorEmailPreferences = InferInsertModel<typeof userEmailPreferencesTable>
-
-export const selectEmailDeliveryLogSchema = z.object({
-  id: z.string(),
-  userId: z.string().nullable(),
-  recipientEmail: z.string(),
-  recipientName: z.string().nullable(),
-  emailType: z.enum(['TRANSACTIONAL', 'MIX_RELEASE', 'PROMOTIONAL', 'SYSTEM']),
-  templateName: z.string(),
-  subject: z.string(),
-  status: emailDeliveryStatusEnum,
-  provider: emailDeliveryProviderEnum.nullable(),
-  providerMessageId: z.string().nullable(),
-  metadata: emailDeliveryMetadataSchema.nullable(),
-  failureCategory: emailDeliveryFailureCategoryEnum.nullable(),
-  errorMessage: z.string().nullable(),
-  sentAt: z.date().nullable(),
-  deliveredAt: z.date().nullable(),
-  bouncedAt: z.date().nullable(),
-  complainedAt: z.date().nullable(),
-  createdAt: z.date(),
-  updatedAt: z.date()
-})
-
-export const insertEmailDeliveryLogSchema = z.object({
-  userId: z.string().optional(),
-  recipientEmail: z.string().email(),
-  recipientName: z.string().optional(),
-  emailType: z.enum(['TRANSACTIONAL', 'MIX_RELEASE', 'PROMOTIONAL', 'SYSTEM']),
-  templateName: z.string(),
-  subject: z.string(),
-  status: emailDeliveryStatusEnum.optional(),
-  provider: emailDeliveryProviderEnum.optional(),
-  providerMessageId: z.string().optional(),
-  metadata: emailDeliveryMetadataSchema.optional(),
-  failureCategory: emailDeliveryFailureCategoryEnum.optional(),
-  errorMessage: z.string().optional(),
-  sentAt: z.date().optional(),
-  deliveredAt: z.date().optional(),
-  bouncedAt: z.date().optional(),
-  complainedAt: z.date().optional()
-})
-
-export const selectAuthorEmailPreferencesSchema = z.object({
-  id: z.string(),
-  userId: z.string(),
-  mixReleaseEnabled: z.boolean(),
-  promotionalEnabled: z.boolean(),
-  systemEnabled: z.boolean(),
-  globalUnsubscribe: z.boolean(),
-  unsubscribeToken: z.string().nullable(),
-  createdAt: z.date(),
-  updatedAt: z.date()
-})
-
-export const insertAuthorEmailPreferencesSchema = z.object({
-  userId: z.string(),
-  mixReleaseEnabled: z.boolean().optional(),
-  promotionalEnabled: z.boolean().optional(),
-  systemEnabled: z.boolean().optional(),
-  globalUnsubscribe: z.boolean().optional(),
-  unsubscribeToken: z.string().optional()
-})
-
-export const updateAuthorEmailPreferencesSchema = z.object({
-  mixReleaseEnabled: z.boolean().optional(),
-  promotionalEnabled: z.boolean().optional(),
-  systemEnabled: z.boolean().optional(),
-  globalUnsubscribe: z.boolean().optional()
-})
 
 export const emailDeliveryLogsRelations = relations(emailDeliveryLogsTable, ({ one }) => ({
   user: one(user, {

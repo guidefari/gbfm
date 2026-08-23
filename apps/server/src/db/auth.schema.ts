@@ -1,4 +1,3 @@
-import { z } from 'zod'
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 import { audioCreators } from './audio.schema'
@@ -39,18 +38,6 @@ export const SOCIAL_LINK_PLATFORMS = [
 ] as const
 
 export type SocialLinkPlatform = (typeof SOCIAL_LINK_PLATFORMS)[number]
-
-export const socialLinkPlatformSchema = z.enum(SOCIAL_LINK_PLATFORMS)
-
-export const userSocialLinkSchema = z.object({
-  platform: socialLinkPlatformSchema,
-  url: z.string().url(),
-  position: z.number().int().nonnegative()
-})
-
-export type UserSocialLink = z.infer<typeof userSocialLinkSchema>
-
-export const userSocialLinksSchema = z.array(userSocialLinkSchema)
 
 export const userSocialLinks = sqliteTable(
   'user_social_links',
@@ -159,31 +146,6 @@ export const userRelations = relations(user, ({ many, one }) => ({
 
 export type SelectUser = InferSelectModel<typeof user>
 export type InsertUser = InferInsertModel<typeof user>
-
-export const selectUserSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  username: z.string().nullable(),
-  email: z.string(),
-  emailVerified: z.boolean(),
-  image: z.string().nullable(),
-  bio: z.string().nullable(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-  role: z.string(),
-  banned: z.boolean(),
-  banReason: z.string().nullable(),
-  banExpires: z.date().nullable()
-})
-
-export const insertUserSchema = z.object({
-  name: z.string(),
-  username: z.string().optional(),
-  email: z.string().email(),
-  image: z.string().optional(),
-  bio: z.string().max(500).optional(),
-  role: z.string().optional()
-})
 
 export const userSocialLinksRelations = relations(userSocialLinks, ({ one }) => ({
   user: one(user, {

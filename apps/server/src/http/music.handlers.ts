@@ -18,9 +18,8 @@ import type {
   UpdatePlaylistInput,
   UpdateTrackInput
 } from '@gbfm/api/music'
-import { Effect } from 'effect'
+import { Effect, Schema } from 'effect'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
-import { musicEntityMetadataSchema } from '@/db/music-entity.schema'
 import type {
   SelectMusicAlbum,
   SelectMusicArtist,
@@ -54,6 +53,8 @@ import {
   isYouTubeUrl
 } from '@/services/spotify.service'
 import { getIdFromSpotifyUrl } from '@/services/url-utils'
+
+const decodeMusicEntityMetadata = Schema.decodeUnknownSync(Schema.JsonObject)
 
 const toArtistResponse = (row: SelectMusicArtist): ArtistResponse => ({
   ...row,
@@ -865,9 +866,7 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
               params.linkId,
               payload.status,
               userId,
-              payload.metadata === undefined
-                ? undefined
-                : musicEntityMetadataSchema.parse(payload.metadata)
+              payload.metadata == null ? undefined : decodeMusicEntityMetadata(payload.metadata)
             )
             .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
         )
