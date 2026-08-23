@@ -175,13 +175,7 @@ type SpotifyEntityRef = {
 
 const toProviderError =
   (operation: string, prefix: string, entity?: SpotifyEntityRef) =>
-  (
-    error: SpotifyRequestError
-  ):
-    | MusicProviderNotFound
-    | MusicProviderMisconfigured
-    | MusicProviderRequestFailed
-    | MusicProviderResponseInvalid => {
+  (error: SpotifyRequestError) => {
     const message = `${prefix}: ${describeSpotifyRequestError(error)}`
 
     switch (error._tag) {
