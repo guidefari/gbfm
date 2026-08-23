@@ -1,5 +1,6 @@
 import * as Alchemy from 'alchemy'
 import { adopt } from 'alchemy/AdoptPolicy'
+import * as Output from 'alchemy/Output'
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as Effect from 'effect/Effect'
 import { secretsStore } from './alchemy/secrets'
@@ -22,10 +23,15 @@ export default Alchemy.Stack(
     const stack = yield* Alchemy.Stack
     const isProduction = stack.stage === 'prod'
     const isLocalDev = yield* Alchemy.ALCHEMY_DEV
+    const productionD1DatabaseName = isLocalDev
+      ? (yield* Alchemy.stackRef<{ readonly databaseName: string }>('gbfm', {
+          stage: 'prod'
+        })).pipe(Output.map(({ databaseName }) => databaseName))
+      : undefined
     const apiUrl = isProduction
       ? 'https://api.goosebumps.fm'
       : `https://api.${stack.stage}.goosebumps.fm`
-    const secrets = yield* secretsStore(apiUrl)
+    const secrets = yield* secretsStore(apiUrl, isLocalDev)
     const emailConfig = emailDeploymentConfig({
       stage: stack.stage,
       testRecipient: process.env.EMAIL_TEST_RECIPIENT,
@@ -58,9 +64,13 @@ export default Alchemy.Stack(
           })
     })
 
+    // Local requests exercise the production D1 data, resolved from the
+    // persisted production stack output. Migrations remain deploy-only so
+    // starting the dev server can never change production schema.
     const db = yield* Cloudflare.D1.Database('Database', {
-      migrationsDir: './apps/server/drizzle-d1'
-    })
+      ...(productionD1DatabaseName ? { name: productionD1DatabaseName } : undefined),
+      ...(isLocalDev ? undefined : { migrationsDir: './apps/server/drizzle-d1' })
+    }).pipe(adopt(isLocalDev), Alchemy.remote(isLocalDev))
 
     // The browser PUTs image and audio bytes straight to the bucket with a
     // presigned URL, so the bucket itself has to allow the cross-origin PUT.
@@ -90,10 +100,20 @@ export default Alchemy.Stack(
       return yield* Effect.die(new Error('SENTRY_BACKEND_DSN secret is missing'))
     }
 
+    const cdnRouter = yield* Cloudflare.Worker('CdnRouter', {
+      main: './apps/cdn-router/src/index.ts',
+      ...(isProduction ? { domain: 'cdn.goosebumps.fm' } : { url: true }),
+      compatibility: { date: '2026-07-04' },
+      env: {
+        USER_CONTENT: userContent,
+        MIXES: mixes
+      }
+    })
+
     const api = yield* Cloudflare.Worker('Api', {
       main: './apps/server/src/worker.ts',
       ...(isProduction ? { domain: 'api.goosebumps.fm' } : { url: true }),
-      compatibility: { date: '2026-08-09', flags: ['nodejs_compat'] },
+      compatibility: { date: '2026-07-04', flags: ['nodejs_compat'] },
       crons: [reminderSweepCron, sitemapRegenerationCron, maintenanceSweepCron],
       env: {
         DB: db,
@@ -114,6 +134,7 @@ export default Alchemy.Stack(
           }
         ),
         APP_STAGE: stack.stage,
+        CDN_ROUTER_URL: Output.map(cdnRouter.url, (url) => url ?? ''),
         USER_CONTENT_BUCKET_NAME: userContent.bucketName,
         MIXES_BUCKET_NAME: mixes.bucketName,
         SENTRY_ENVIRONMENT: stack.stage,
@@ -121,16 +142,6 @@ export default Alchemy.Stack(
         ...secrets,
         SENTRY_DSN: sentryDsn,
         R2AccountId: userContent.accountId
-      }
-    })
-
-    const cdnRouter = yield* Cloudflare.Worker('CdnRouter', {
-      main: './apps/cdn-router/src/index.ts',
-      ...(isProduction ? { domain: 'cdn.goosebumps.fm' } : { url: true }),
-      compatibility: { date: '2026-08-09' },
-      env: {
-        USER_CONTENT: userContent,
-        MIXES: mixes
       }
     })
 
@@ -177,18 +188,33 @@ export default Alchemy.Stack(
       })
     }
 
+    const spotifyClientId = process.env.SPOTIFY_CLIENT_ID ?? ''
+
     const www = yield* Cloudflare.Website.StaticSite('Www', {
       cwd: 'apps/www',
       command: 'bun run build',
       outdir: 'dist',
-      ...(isProduction ? { domain: ['www.goosebumps.fm', 'goosebumps.fm'] } : { url: true }),
+      ...(isProduction
+        ? { domain: { name: 'www.goosebumps.fm', aliases: ['goosebumps.fm'] } }
+        : { url: true }),
       assets: { notFoundHandling: 'single-page-application' },
+      dev: isLocalDev
+        ? {
+            command: 'bun run dev -- --port 5173 --strictPort',
+            cwd: 'apps/www',
+            url: 'http://127.0.0.1:5173',
+            env: {
+              VPS_PROXY_TARGET: 'http://127.0.0.1:1338',
+              VITE_SPOTIFY_CLIENT_ID: spotifyClientId
+            }
+          }
+        : undefined,
       env: {
-        VITE_VPS_BASE_URL: apiUrl,
+        VITE_VPS_BASE_URL: isLocalDev ? '' : apiUrl,
         VITE_PUBLIC_SENTRY_DSN: process.env.VITE_PUBLIC_SENTRY_DSN ?? '',
         VITE_PUBLIC_SENTRY_ENVIRONMENT: stack.stage,
         VITE_PUBLIC_SENTRY_RELEASE: process.env.SENTRY_RELEASE ?? '',
-        VITE_SPOTIFY_CLIENT_ID: process.env.SPOTIFY_CLIENT_ID ?? ''
+        VITE_SPOTIFY_CLIENT_ID: spotifyClientId
       }
     })
 
@@ -199,11 +225,11 @@ export default Alchemy.Stack(
 
     return {
       apiUrl: api.url,
-      apiDomains: api.domains,
+      apiDomains: api.urls,
       cdnRouterUrl: cdnRouter.url,
-      cdnRouterDomains: cdnRouter.domains,
+      cdnRouterDomains: cdnRouter.urls,
       wwwUrl: www.url,
-      wwwDomains: www.domains,
+      wwwDomains: www.urls,
       databaseName: db.databaseName,
       userContentBucketName: userContent.bucketName,
       mixesBucketName: mixes.bucketName

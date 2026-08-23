@@ -51,15 +51,27 @@ const missingSources = () =>
  *
  * Cloudflare allows one store per account, so names are stage-scoped to keep
  * prod and staging from overwriting each other.
+ *
+ * `alchemy dev` runs Workers under local Miniflare, which rejects
+ * `secrets_store_secret` bindings outright (unsupported in local mode).
+ * Local dev therefore skips the Secrets Store entirely and binds each value
+ * as `secret_text` instead — a plain `Redacted<string>`, sourced from the
+ * same `.env`-backed `process.env` Bun already loads. The Worker-side reader
+ * (`resolveSecretBindings`) already falls back to treating a non-store
+ * binding as the resolved string, so no runtime code needed to change.
  */
-export const secretsStore = (apiUrl: string) =>
+export const secretsStore = (apiUrl: string, isLocalDev: boolean) =>
   Effect.gen(function* () {
     const stack = yield* Alchemy.Stack
 
-    const missing = missingSources()
-    if (missing.length > 0) return yield* Effect.die(new IncompleteSecretsError(missing))
-
-    const store = yield* Cloudflare.SecretsStore.Store('Secrets')
+    // The blank-write guard only protects the real Secrets Store from
+    // getting overwritten with empty strings; dev never touches Cloudflare,
+    // so an incomplete `.env` is fine there and every unset value just
+    // resolves to `''`.
+    if (!isLocalDev) {
+      const missing = missingSources()
+      if (missing.length > 0) return yield* Effect.die(new IncompleteSecretsError(missing))
+    }
 
     // Derived from the stack rather than the environment. Better Auth builds
     // emailed links from this, so a stale inherited value sends real users to
@@ -70,6 +82,14 @@ export const secretsStore = (apiUrl: string) =>
       ),
       BETTER_AUTH_URL: apiUrl
     } satisfies Record<string, string>
+
+    if (isLocalDev) {
+      return Object.fromEntries(
+        Object.entries(sources).map(([name, value]) => [name, Redacted.make(value)])
+      )
+    }
+
+    const store = yield* Cloudflare.SecretsStore.Store('Secrets')
 
     const entries = yield* Effect.forEach(
       Object.entries(sources),

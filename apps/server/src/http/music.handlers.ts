@@ -31,9 +31,13 @@ import type {
   SelectMusicPlaylist,
   SelectMusicTrack
 } from '@/db/music-entity.schema'
-import { FetchError, getErrorMessage } from '@/errors'
-import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
+import { getErrorMessage, type MusicProviderError } from '@/errors'
+import {
+  dieOnDatabaseError as makeDieOnDatabaseError,
+  dieOnS3Error as makeDieOnS3Error
+} from '@/http/handler-utils'
 import { ConfigService } from '@/services/config.service'
+import { copyMusicCoverImageEffect } from '@/services/music-cover-image.service'
 import {
   type CreateAlbumInput as AlbumServiceCreateInput,
   type CreateLabelInput as LabelServiceCreateInput,
@@ -183,19 +187,26 @@ const toLabelUpdateFields = (input: UpdateLabelInput): Partial<LabelServiceCreat
 })
 
 const dieOnDatabaseError = makeDieOnDatabaseError('music')
+const dieOnS3Error = makeDieOnS3Error('music')
 
-// SpotifyError is an infra failure (network/API), not client-fixable by
-// resubmitting differently, except where the handler already validates the
-// URL shape itself (importSpotifyPlaylist) -- same convention as
-// dieOnDatabaseError/dieOnS3Error in handler-utils.ts.
-const dieOnSpotifyError = <A, E, R>(
-  effect: Effect.Effect<A, E | { readonly _tag: 'SpotifyError' }, R>
-) =>
+// A music provider failure is an infra failure (network/API), not
+// client-fixable by resubmitting differently, except where the handler
+// already validates the URL shape itself (importSpotifyPlaylist) -- same
+// convention as dieOnDatabaseError/dieOnS3Error in handler-utils.ts.
+const MUSIC_PROVIDER_ERROR_TAGS = [
+  'MusicProviderInvalidInput',
+  'MusicProviderNotFound',
+  'MusicProviderMisconfigured',
+  'MusicProviderRequestFailed',
+  'MusicProviderResponseInvalid'
+] as const
+
+const dieOnMusicProviderError = <A, E, R>(effect: Effect.Effect<A, E | MusicProviderError, R>) =>
   effect.pipe(
-    Effect.tapErrorTag('SpotifyError', (cause) =>
-      Effect.logError('[music] spotify operation failed', cause)
+    Effect.tapErrorTag(MUSIC_PROVIDER_ERROR_TAGS, (cause) =>
+      Effect.logError('[music] music provider operation failed', cause)
     ),
-    Effect.catchTag('SpotifyError', (cause) => Effect.die(cause))
+    Effect.catchTag(MUSIC_PROVIDER_ERROR_TAGS, (cause) => Effect.die(cause))
   )
 
 const requireAdmin = Effect.gen(function* () {
@@ -231,41 +242,16 @@ const inferEntityTypeFromUrl = (url: string): 'album' | 'track' | 'playlist' => 
     if (url.includes('/playlist/')) return 'playlist'
     return 'track'
   }
+  if (/^https:\/\/(?:www\.)?deezer\.com\//.test(url)) {
+    if (/\/album\/\d+/.test(url)) return 'album'
+    if (/\/playlist\/\d+/.test(url)) return 'playlist'
+    return 'track'
+  }
   if (isBandcampUrl(url)) return 'album'
   if (isAppleMusicUrl(url)) return 'track'
   if (isYouTubeUrl(url)) return 'track'
   return 'track'
 }
-
-// Best-effort: a failed cover-image copy shouldn't fail the whole resolve --
-// the handler falls back to the original (often third-party, possibly
-// short-lived) coverImageUrl in that case. Mirrors the old Hono handler.
-const copyCoverImageEffect = (
-  entityType: 'album' | 'track' | 'playlist',
-  entityId: string,
-  coverImageUrl: string
-) =>
-  Effect.gen(function* () {
-    const config = yield* ConfigService
-    const s3 = yield* S3Service
-
-    const response = yield* Effect.tryPromise({
-      try: () => fetch(coverImageUrl),
-      catch: (cause) => new FetchError({ message: `Failed to fetch ${coverImageUrl}`, cause })
-    })
-
-    if (!response.ok) return null
-
-    const contentType = response.headers.get('content-type') || 'image/jpeg'
-    const arrayBuffer = yield* Effect.tryPromise({
-      try: () => response.arrayBuffer(),
-      catch: (cause) => new FetchError({ message: `Failed to read ${coverImageUrl}`, cause })
-    })
-    const buffer = Buffer.from(arrayBuffer)
-    const key = `music/${entityType}/${entityId}/cover`
-    const uploadedKey = yield* s3.uploadFile(key, buffer, contentType, config.buckets.userContent)
-    return `${config.urls.bucketRouter}/user-content/${uploadedKey}`
-  }).pipe(Effect.catch(() => Effect.succeed(null)))
 
 export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =>
   handlers
@@ -720,19 +706,12 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
       Effect.gen(function* () {
         yield* requireAdmin
         const svc = yield* MusicEntityService
-        // 400 here means the service itself couldn't parse a track ID out of
-        // the URL -- a client-fixable validation error, not an infra
-        // failure, so it's mapped to BadRequest before dieOnSpotifyError
-        // would otherwise die on it.
+        // MusicProviderInvalidInput means the service itself couldn't parse a
+        // track ID out of the URL -- a client-fixable validation error, not
+        // an infra failure, so it's mapped to BadRequest instead of dying.
         const result = yield* svc.addSpotifyTrackToPlaylist(params.id, payload.url).pipe(
-          Effect.tapErrorTag('SpotifyError', (cause) =>
-            cause.statusCode === 400
-              ? Effect.void
-              : Effect.logError('[music] spotify operation failed', cause)
-          ),
-          Effect.catchTag('SpotifyError', (cause) =>
-            cause.statusCode === 400 ? new HttpApiError.BadRequest() : Effect.die(cause)
-          ),
+          Effect.catchTag('MusicProviderInvalidInput', () => new HttpApiError.BadRequest()),
+          dieOnMusicProviderError,
           dieOnDatabaseError
         )
         return result
@@ -767,7 +746,7 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
       Effect.gen(function* () {
         yield* requireAdmin
         const svc = yield* MusicEntityService
-        return yield* dieOnDatabaseError(dieOnSpotifyError(svc.syncPlaylistLinks(params.id)))
+        return yield* dieOnDatabaseError(dieOnMusicProviderError(svc.syncPlaylistLinks(params.id)))
       })
     )
     // -----------------------------------------------------------------
@@ -782,6 +761,14 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         const result = yield* dieOnDatabaseError(
           svc.scrapeAndCreateEntity(entityType, { url: payload.url }).pipe(
             Effect.catchTag('ValidationError', () => Effect.fail(new HttpApiError.BadRequest())),
+            Effect.catchTag('MusicScraperError', (error) =>
+              Effect.gen(function* () {
+                if (error.statusCode === 400 || error.statusCode === 404) {
+                  return yield* new HttpApiError.BadRequest()
+                }
+                return yield* new HttpApiError.ServiceUnavailable()
+              })
+            ),
             Effect.catchTag(
               'MusicEntityResolutionUnavailable',
               () => new HttpApiError.ServiceUnavailable()
@@ -792,10 +779,17 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         const coverImageUrl = 'coverImageUrl' in entity ? entity.coverImageUrl : null
 
         if (coverImageUrl) {
-          const publicCoverImageUrl = yield* copyCoverImageEffect(
-            entityType,
-            entity.id,
-            coverImageUrl
+          const config = yield* ConfigService
+          const s3 = yield* S3Service
+          const publicCoverImageUrl = yield* dieOnS3Error(
+            copyMusicCoverImageEffect(
+              s3,
+              config.urls.bucketRouter,
+              config.buckets.userContent,
+              entityType,
+              entity.id,
+              coverImageUrl
+            )
           )
 
           if (publicCoverImageUrl && publicCoverImageUrl !== coverImageUrl) {
@@ -896,17 +890,9 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         yield* requireAdmin
         const svc = yield* MusicEntityService
         const result = yield* dieOnDatabaseError(
-          svc.rescrapeOdesliLinks(params.entityType, params.entityId).pipe(
+          svc.refreshEntityLinks(params.entityType, params.entityId).pipe(
             Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
-            Effect.catchTag('MusicScraperError', (error) =>
-              Effect.andThen(
-                Effect.logWarning('[music] Odesli rescrape failed', {
-                  provider: error.provider,
-                  statusCode: error.statusCode
-                }),
-                new HttpApiError.ServiceUnavailable()
-              )
-            )
+            Effect.catchTag('MusicScraperError', () => new HttpApiError.ServiceUnavailable())
           )
         )
         return { links: result.links.map(toEntityLinkResponse) }
@@ -932,6 +918,14 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         const result = yield* dieOnDatabaseError(
           svc.scrapeAndCreateEntity(params.entityType, payload).pipe(
             Effect.catchTag('ValidationError', () => Effect.fail(new HttpApiError.BadRequest())),
+            Effect.catchTag('MusicScraperError', (error) =>
+              Effect.gen(function* () {
+                if (error.statusCode === 400 || error.statusCode === 404) {
+                  return yield* new HttpApiError.BadRequest()
+                }
+                return yield* new HttpApiError.ServiceUnavailable()
+              })
+            ),
             Effect.catchTag(
               'MusicEntityResolutionUnavailable',
               () => new HttpApiError.ServiceUnavailable()

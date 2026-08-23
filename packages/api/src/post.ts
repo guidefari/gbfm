@@ -10,7 +10,7 @@ const Uuid = Schema.String.pipe(Schema.check(Schema.isPattern(UuidPattern)))
 // (PostService.create/.update's ValidationError, mapped by the old
 // effect-hono.ts mapErrors), so it's declared here the same way admin.ts
 // declares a custom 429.
-export class ValidationHttpError extends Schema.TaggedErrorClass<ValidationHttpError>()(
+export class ValidationHttpError extends Schema.TaggedError<ValidationHttpError>()(
   'ValidationHttpError',
   {},
   { httpApiStatus: 422 }

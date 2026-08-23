@@ -13,7 +13,7 @@ import type {
   SelectMusicTrack
 } from '@/db/music-entity.schema'
 import { DatabaseError } from '@/errors'
-import type { NotFoundError, SpotifyError, ValidationError } from '@/errors'
+import type { NotFoundError, ValidationError } from '@/errors'
 import { ConfigService as ConfigServiceTag } from '@/services/config.service'
 import { Database } from '@/db/layer'
 import {
@@ -40,12 +40,14 @@ import {
 import {
   MusicLinkScraperService as MusicLinkScraperServiceTag,
   type MusicScrapeInput,
-  type MusicScrapeOptions,
   type MusicScraperError
 } from '@/services/music-link-scraper.service'
 import { S3Service as S3ServiceTag } from '@/services/s3.service'
 import { SpotifyImportResolver } from '@/services/spotify-import-resolver.service'
-import { SpotifyService as SpotifyServiceTag } from '@/services/spotify.service'
+import {
+  SpotifyService as SpotifyServiceTag,
+  type SpotifyServiceError
+} from '@/services/spotify.service'
 
 import {
   addArtistToAlbumEffect,
@@ -90,7 +92,7 @@ import {
 } from './playlist-tracks.service'
 import {
   MusicEntityResolutionUnavailable,
-  rescrapeOdesliLinksEffect,
+  refreshEntityLinksEffect,
   scrapeAndCreateEntityEffect
 } from './scrape.service'
 export { MusicEntityResolutionUnavailable } from './scrape.service'
@@ -242,7 +244,7 @@ export interface MusicEntityService {
     spotifyUrl: string
   ) => Effect.Effect<
     { trackId: string; position: number; created: boolean },
-    DatabaseError | SpotifyError
+    DatabaseError | SpotifyServiceError
   >
   readonly importSpotifyPlaylist: (
     url: string,
@@ -254,11 +256,14 @@ export interface MusicEntityService {
       createdTrackCount: number
       reusedTrackCount: number
     },
-    DatabaseError | SpotifyError
+    DatabaseError | SpotifyServiceError
   >
   readonly syncPlaylistLinks: (
     playlistId: string
-  ) => Effect.Effect<{ playlistId: string; queuedTrackCount: number }, DatabaseError | SpotifyError>
+  ) => Effect.Effect<
+    { playlistId: string; queuedTrackCount: number },
+    DatabaseError | SpotifyServiceError
+  >
 
   readonly addArtistToAlbum: (
     albumId: string,
@@ -309,15 +314,14 @@ export interface MusicEntityService {
       entity: SelectMusicArtist | SelectMusicAlbum | SelectMusicTrack | SelectMusicPlaylist
       links: SelectMusicEntityLink[]
     },
-    DatabaseError | MusicEntityResolutionUnavailable | ValidationError
+    DatabaseError | MusicEntityResolutionUnavailable | MusicScraperError | ValidationError
   >
-  readonly rescrapeOdesliLinks: (
+  readonly refreshEntityLinks: (
     entityType: ScrapeableMusicEntityType,
-    entityId: string,
-    options?: MusicScrapeOptions
+    entityId: string
   ) => Effect.Effect<
     { links: SelectMusicEntityLink[] },
-    DatabaseError | NotFoundError | MusicScraperError
+    DatabaseError | MusicScraperError | NotFoundError
   >
 }
 
@@ -433,8 +437,8 @@ export const MusicEntityServiceLayer = Layer.effect(
         provideDb(deleteLinkEffect(entityType, entityId, linkId)),
       scrapeAndCreateEntity: (entityType, input) =>
         provideDb(scrapeAndCreateEntityEffect(scraper, entityType, input)),
-      rescrapeOdesliLinks: (entityType, entityId, options) =>
-        provideDb(rescrapeOdesliLinksEffect(scraper, entityType, entityId, options))
+      refreshEntityLinks: (entityType, entityId) =>
+        provideDb(refreshEntityLinksEffect(scraper, entityType, entityId))
     } satisfies MusicEntityService
   })
 )

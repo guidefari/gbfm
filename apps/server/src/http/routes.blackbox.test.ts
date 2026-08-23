@@ -619,7 +619,7 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
     expect(res.status).toBe(401)
   })
 
-  it('POST /api/music/resolve returns 400 when resolution finds no usable entity data', async () => {
+  it('POST /api/music/resolve returns 503 when exact source resolution is unavailable', async () => {
     const suffix = crypto.randomUUID()
     const userId = `resolve-admin-${suffix}`
     const token = `resolve-admin-token-${suffix}`
@@ -653,7 +653,7 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
         })
       )
 
-      expect(res.status).toBe(400)
+      expect(res.status).toBe(503)
     } finally {
       await db.delete(session).where(eq(session.userId, userId))
       await db.delete(user).where(eq(user.id, userId))

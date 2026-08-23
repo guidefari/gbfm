@@ -1,6 +1,7 @@
 import { LINK_STATUS } from '@gbfm/core/status'
 import { and, eq, isNull, lt } from 'drizzle-orm'
 import { Data, Effect, Schedule } from 'effect'
+import { z } from 'zod'
 import { Database } from '@/db/layer'
 import {
   type MusicEntityType,
@@ -17,9 +18,9 @@ import { DatabaseError, getErrorMessage, NotFoundError, ValidationError } from '
 import type {
   MusicLinkScraperService,
   MusicScrapeInput,
-  MusicScrapeOptions,
   MusicScraperError
 } from '@/services/music-link-scraper.service'
+import { canonicalizeMusicSourceLink } from '@/services/music-source-url'
 import { parseArtistNames } from '@/services/parse-artist-names'
 import { toSlug } from '@/services/to-slug'
 import { createAlbumEffect, getAlbumByIdEffect } from './album.service'
@@ -33,7 +34,6 @@ import { createPlaylistEffect, getPlaylistByIdEffect } from './playlist.service'
 import { createTrackEffect, getTrackByIdEffect } from './track.service'
 
 type ScrapeableMusicEntityType = Exclude<MusicEntityType, 'label'>
-type CanonicalSourceLink = { readonly platform: MusicPlatform; readonly url: string }
 type ResolvedMusicEntity =
   | SelectMusicArtist
   | SelectMusicAlbum
@@ -85,8 +85,8 @@ const findExistingEntityByUrl = (url: string, entityType: ScrapeableMusicEntityT
     })
     if (exact.length > 0) return exact
 
-    const source = canonicalSourceLink(url)
-    if (source.platform !== 'spotify' && source.platform !== 'youtube') return exact
+    const source = canonicalizeMusicSourceLink(url)
+    if (!['spotify', 'youtube', 'deezer'].includes(source.platform)) return exact
 
     return yield* Effect.tryPromise({
       try: async () => {
@@ -94,7 +94,9 @@ const findExistingEntityByUrl = (url: string, entityType: ScrapeableMusicEntityT
           .select()
           .from(musicEntityLinksTable)
           .where(eq(musicEntityLinksTable.entityType, entityType))
-        return links.filter((link) => canonicalSourceLink(link.url).url === source.url).slice(0, 1)
+        return links
+          .filter((link) => canonicalizeMusicSourceLink(link.url).url === source.url)
+          .slice(0, 1)
       },
       catch: (e) =>
         new DatabaseError({
@@ -216,7 +218,12 @@ const completeResolutionClaim = (
       try: () =>
         db
           .update(musicEntityResolutionClaimsTable)
-          .set({ entityId, ownerToken: null, leaseExpiresAt: null, updatedAt: new Date() })
+          .set({
+            entityId,
+            ownerToken: null,
+            leaseExpiresAt: null,
+            updatedAt: new Date()
+          })
           .where(
             and(
               eq(musicEntityResolutionClaimsTable.entityType, entityType),
@@ -245,7 +252,10 @@ const renewResolutionClaim = (
       try: () =>
         db
           .update(musicEntityResolutionClaimsTable)
-          .set({ leaseExpiresAt: new Date(Date.now() + CLAIM_LEASE_MS), updatedAt: new Date() })
+          .set({
+            leaseExpiresAt: new Date(Date.now() + CLAIM_LEASE_MS),
+            updatedAt: new Date()
+          })
           .where(
             and(
               eq(musicEntityResolutionClaimsTable.entityType, entityType),
@@ -254,7 +264,9 @@ const renewResolutionClaim = (
               eq(musicEntityResolutionClaimsTable.ownerToken, ownerToken)
             )
           )
-          .returning({ ownerToken: musicEntityResolutionClaimsTable.ownerToken }),
+          .returning({
+            ownerToken: musicEntityResolutionClaimsTable.ownerToken
+          }),
       catch: (e) =>
         new DatabaseError({
           message: `Failed to renew music resolution claim: ${getErrorMessage(e)}`,
@@ -263,7 +275,9 @@ const renewResolutionClaim = (
         })
     })
     if (!rows[0]) {
-      return yield* new MusicEntityResolutionUnavailable({ retryAfterMs: CLAIM_LEASE_MS })
+      return yield* new MusicEntityResolutionUnavailable({
+        retryAfterMs: CLAIM_LEASE_MS
+      })
     }
 
     return undefined
@@ -354,7 +368,7 @@ export const scrapeAndCreateEntityEffect = (
   let resolutionOwnerToken: string | undefined
 
   return Effect.gen(function* () {
-    const source = input.url ? canonicalSourceLink(input.url) : undefined
+    const source = input.url ? canonicalizeMusicSourceLink(input.url) : undefined
 
     if (source) {
       const existingLinks = yield* findExistingEntityByUrl(source.url, entityType)
@@ -382,7 +396,7 @@ export const scrapeAndCreateEntityEffect = (
       }
     }
 
-    const result = yield* scraper.scrape(input)
+    const result = yield* scraper.scrape({ ...input, entityType })
     const meta = result.entityMeta
 
     if (!hasUsableScrapeResult(result)) {
@@ -447,12 +461,16 @@ export const scrapeAndCreateEntityEffect = (
     const entityId = entity.id
     const inserted: SelectMusicEntityLink[] = []
     if (source) {
+      const resolvedSource = result.links.find((link) => link.platform === source.platform)
       const sourceLink = yield* addLinkEffect({
         entityType,
         entityId,
         platform: source.platform,
-        url: source.url,
-        status: LINK_STATUS.VERIFIED
+        url: resolvedSource?.url ?? source.url,
+        status: LINK_STATUS.VERIFIED,
+        verifiedAt: resolvedSource?.scrapedAt,
+        scrapedAt: resolvedSource?.scrapedAt,
+        metadata: resolvedSource?.metadata
       })
       inserted.push(sourceLink)
     }
@@ -498,7 +516,7 @@ export const scrapeAndCreateEntityEffect = (
       resolutionOwnerToken && input.url
         ? deleteUnresolvedResolutionClaim(
             entityType,
-            canonicalSourceLink(input.url).url,
+            canonicalizeMusicSourceLink(input.url).url,
             resolutionOwnerToken
           )
         : Effect.void
@@ -509,31 +527,54 @@ export const scrapeAndCreateEntityEffect = (
   )
 }
 
-export const rescrapeOdesliLinksEffect = (
+export const refreshEntityLinksEffect = (
   scraper: MusicLinkScraperService,
   entityType: ScrapeableMusicEntityType,
-  entityId: string,
-  options?: MusicScrapeOptions
+  entityId: string
 ): Effect.Effect<
   { links: SelectMusicEntityLink[] },
-  DatabaseError | NotFoundError | MusicScraperError,
+  DatabaseError | MusicScraperError | NotFoundError,
   Database
 > =>
   Effect.gen(function* () {
     yield* getEntityById(entityType, entityId)
     const existingLinks = yield* getLinksForEntityEffect(entityType, entityId)
-    const spotifyLink = existingLinks.find((link) => link.platform === 'spotify')
+    const sourceLink = selectSourceLink(existingLinks)
 
-    if (!spotifyLink) {
+    if (!sourceLink) {
       return yield* new NotFoundError({
-        message: 'Spotify source link not found',
-        resource: 'MusicEntitySpotifyLink',
+        message: 'Music entity source link not found',
+        resource: 'MusicEntitySourceLink',
         id: entityId
       })
     }
 
-    const result = yield* scraper.scrapeOdesli({ url: spotifyLink.url }, options)
-    const links = yield* Effect.forEach(result.links, (link) =>
+    const musicBrainzLink = existingLinks.find((link) => link.platform === 'musicbrainz')
+    const mbid = musicBrainzMbid(musicBrainzLink)
+    const result = yield* scraper.scrape({
+      entityType,
+      url: sourceLink.url,
+      mbid
+    })
+    const refreshedLinks =
+      entityType === 'playlist'
+        ? result.links.filter((link) => link.platform === sourceLink.platform)
+        : result.links
+    if (entityType === 'playlist') {
+      const refreshedSource = refreshedLinks[0]
+      const link = yield* replacePlaylistLinks(
+        entityId,
+        sourceLink,
+        refreshedSource
+          ? {
+              ...refreshedSource,
+              metadata: mergeLinkMetadata(sourceLink, refreshedSource)
+            }
+          : undefined
+      )
+      return { links: [link] }
+    }
+    const links = yield* Effect.forEach(refreshedLinks, (link) =>
       addLinkEffect({
         entityType,
         entityId,
@@ -542,16 +583,119 @@ export const rescrapeOdesliLinksEffect = (
         status: LINK_STATUS.VERIFIED,
         verifiedAt: link.scrapedAt,
         scrapedAt: link.scrapedAt,
-        metadata: link.metadata
+        metadata:
+          link.platform === 'musicbrainz' ? mergeLinkMetadata(musicBrainzLink, link) : link.metadata
       })
     )
 
     return { links }
   }).pipe(
-    Effect.withSpan('musicEntity.rescrapeOdesliLinks', {
+    Effect.withSpan('musicEntity.refreshEntityLinks', {
       attributes: { entityType, entityId }
     })
   )
+
+function selectSourceLink(
+  links: readonly SelectMusicEntityLink[]
+): SelectMusicEntityLink | undefined {
+  const exactSources = links.filter(
+    (link) => link.status === LINK_STATUS.VERIFIED && link.metadata?.confidence === 'exact_source'
+  )
+  return exactSources.length === 1 ? exactSources[0] : undefined
+}
+
+const MetadataStringSchema = z.string()
+
+function metadataString(
+  value: NonNullable<SelectMusicEntityLink['metadata']>[string]
+): string | undefined {
+  const parsed = MetadataStringSchema.safeParse(value)
+  return parsed.success ? parsed.data : undefined
+}
+
+function musicBrainzMbid(link: SelectMusicEntityLink | undefined): string | undefined {
+  const canonicalMbid = metadataString(link?.metadata?.canonicalMbid)
+  if (canonicalMbid) return canonicalMbid
+  const mbid = metadataString(link?.metadata?.mbid)
+  if (mbid) return mbid
+  const requestedMbid = metadataString(link?.metadata?.requestedMbid)
+  if (requestedMbid) return requestedMbid
+  return link?.url.split('/').filter(Boolean).at(-1)
+}
+
+function mergeLinkMetadata(
+  existing: SelectMusicEntityLink | undefined,
+  refreshed: { readonly metadata?: SelectMusicEntityLink['metadata'] }
+): SelectMusicEntityLink['metadata'] {
+  const metadata = { ...existing?.metadata, ...refreshed.metadata }
+  const previousMbid = musicBrainzMbid(existing)
+  const canonicalMbid = metadataString(metadata.canonicalMbid)
+  const requestedMbid = metadataString(metadata.requestedMbid)
+  if (previousMbid && canonicalMbid && previousMbid !== canonicalMbid && !requestedMbid) {
+    metadata.requestedMbid = previousMbid
+  }
+  return metadata
+}
+
+const replacePlaylistLinks = (
+  entityId: string,
+  sourceLink: SelectMusicEntityLink,
+  refreshed:
+    | {
+        readonly platform: MusicPlatform
+        readonly url: string
+        readonly scrapedAt: Date
+        readonly metadata?: SelectMusicEntityLink['metadata']
+      }
+    | undefined
+) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    const scrapedAt = refreshed?.scrapedAt ?? sourceLink.scrapedAt
+    const rows = yield* Effect.tryPromise({
+      try: async () => {
+        const [, inserted] = await db.batch([
+          db
+            .delete(musicEntityLinksTable)
+            .where(
+              and(
+                eq(musicEntityLinksTable.entityType, 'playlist'),
+                eq(musicEntityLinksTable.entityId, entityId)
+              )
+            ),
+          db
+            .insert(musicEntityLinksTable)
+            .values({
+              entityType: 'playlist',
+              entityId,
+              platform: sourceLink.platform,
+              url: refreshed?.url ?? sourceLink.url,
+              status: LINK_STATUS.VERIFIED,
+              verifiedAt: scrapedAt,
+              scrapedAt,
+              metadata: refreshed?.metadata ?? sourceLink.metadata
+            })
+            .returning()
+        ])
+        return inserted
+      },
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to replace playlist links: ${getErrorMessage(e)}`,
+          operation: 'update',
+          table: 'music_entity_links'
+        })
+    })
+    const link = rows[0]
+    if (!link) {
+      return yield* new DatabaseError({
+        message: 'Failed to insert playlist source link',
+        operation: 'insert',
+        table: 'music_entity_links'
+      })
+    }
+    return link
+  })
 
 const hasUsableScrapeResult = (result: {
   readonly links: readonly unknown[]
@@ -569,40 +713,3 @@ const hasUsableScrapeResult = (result: {
     result.entityMeta?.thumbnailUrl ||
     result.entityMeta?.isrc
   )
-
-function canonicalSourceLink(url: string): CanonicalSourceLink {
-  try {
-    const parsed = new URL(url)
-    const hostname = parsed.hostname.toLowerCase()
-    const segments = parsed.pathname.split('/').filter(Boolean)
-    if ((hostname === 'spotify.com' || hostname.endsWith('.spotify.com')) && segments.length >= 2) {
-      const [type, id] = segments
-      if ((type === 'track' || type === 'album' || type === 'playlist') && id) {
-        return { platform: 'spotify', url: `https://open.spotify.com/${type}/${id}` }
-      }
-    }
-    if (hostname === 'youtube.com' || hostname === 'www.youtube.com' || hostname === 'youtu.be') {
-      const id =
-        hostname === 'youtu.be'
-          ? segments[0]
-          : (parsed.searchParams.get('v') ?? (segments[0] === 'embed' ? segments[1] : undefined))
-      if (id) return { platform: 'youtube', url: `https://www.youtube.com/watch?v=${id}` }
-    }
-
-    parsed.hash = ''
-    return { platform: platformForHostname(hostname), url: parsed.toString() }
-  } catch {
-    return { platform: 'other', url }
-  }
-}
-
-function platformForHostname(hostname: string): MusicPlatform {
-  if (hostname.endsWith('bandcamp.com')) return 'bandcamp'
-  if (hostname.endsWith('soundcloud.com')) return 'soundcloud'
-  if (hostname.endsWith('music.apple.com')) return 'apple_music'
-  if (hostname.endsWith('youtube.com') || hostname === 'youtu.be') return 'youtube'
-  if (hostname.endsWith('tidal.com')) return 'tidal'
-  if (hostname.endsWith('deezer.com')) return 'deezer'
-  if (hostname.endsWith('amazon.com')) return 'amazon_music'
-  return 'other'
-}

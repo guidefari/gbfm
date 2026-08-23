@@ -18,11 +18,13 @@ import { BlueskyRunsServiceLayer } from '@/services/bluesky-runs.service'
 import { BlueskySyncServiceLayer } from '@/services/bluesky-sync.service'
 import { LockServiceLayer } from '@/services/lock.service'
 import { CryptoServiceLayer } from '@/services/crypto.service'
+import { DeezerServiceLayer } from '@/services/deezer.service'
 import { EmailDeliveryLive } from '@/services/email-delivery.service'
 import type { EmailTransportService } from '@/services/email-transport.service'
 import { FavoriteServiceLayer } from '@/services/favorite.service'
 import { AppLoggerLive } from '@/services/logger.service'
 import { MusicEntityServiceLayer } from '@/services/music-entity'
+import { MusicBrainzIdentityLive } from '@/services/musicbrainz-identity.service'
 import { MusicLinkScraperServiceLayer } from '@/services/music-link-scraper.service'
 import { MusicReminderServiceLayer } from '@/services/music-reminder.service'
 import { NavigationRetentionServiceLayer } from '@/services/navigation-retention.service'
@@ -89,6 +91,8 @@ export const AppLayer = ({
     EmailDeliveryWithDependencies,
     FavoriteServiceLayer,
     SpotifyServiceLayer.pipe(Layer.provide(configLive)),
+    DeezerServiceLayer,
+    MusicBrainzIdentityLive,
     MusicReminderServiceLayer,
     NavigationRetentionServiceLayer,
     spotifyImportResolverLive,
@@ -99,7 +103,11 @@ export const AppLayer = ({
       Layer.provide(navigationLockLive)
     ),
     ReminderSignalServiceLayer,
-    MusicLinkScraperServiceLayer.pipe(Layer.provide(SpotifyServiceLayer)),
+    MusicLinkScraperServiceLayer.pipe(
+      Layer.provide(
+        Layer.mergeAll(SpotifyServiceLayer, DeezerServiceLayer, MusicBrainzIdentityLive)
+      )
+    ),
     AudioServiceLayer.pipe(Layer.provide(MdxServiceLayer), Layer.provide(UploadAssetDepsLive)),
     PostServiceLayer.pipe(Layer.provide(MdxServiceLayer), Layer.provide(UploadAssetDepsLive)),
     ProfileServiceLayer,

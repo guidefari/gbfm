@@ -70,6 +70,8 @@ const fixedClock = Layer.succeed(Clock.Clock, {
   currentTimeMillisUnsafe: () => acceptedAt.getTime(),
   currentTimeNanos: Effect.succeed(BigInt(acceptedAt.getTime()) * 1_000_000n),
   currentTimeNanosUnsafe: () => BigInt(acceptedAt.getTime()) * 1_000_000n,
+  monotonicTimeNanos: Effect.succeed(BigInt(acceptedAt.getTime()) * 1_000_000n),
+  monotonicTimeNanosUnsafe: () => BigInt(acceptedAt.getTime()) * 1_000_000n,
   sleep: () => Effect.void
 })
 
