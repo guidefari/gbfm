@@ -1,5 +1,4 @@
-import { Data, Effect } from 'effect'
-import { z } from 'zod'
+import { Data, Effect, Result, Schema } from 'effect'
 
 type AuthLogValue = string | number | boolean | null | undefined
 
@@ -33,52 +32,72 @@ class NetworkError extends Data.TaggedError('NetworkError')<{
   status: number
 }> {}
 
-export const userSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  username: z.string().nullable(),
-  email: z.email(),
-  avatarUrl: z.string().nullable()
+const EmailPattern =
+  /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9-]*\.)+[A-Za-z]{2,}$/
+const Email = Schema.String.pipe(Schema.check(Schema.isPattern(EmailPattern)))
+
+export const userSchema = Schema.Struct({
+  id: Schema.String,
+  name: Schema.String,
+  username: Schema.NullOr(Schema.String),
+  email: Email,
+  avatarUrl: Schema.NullOr(Schema.String)
 })
 
-export type User = z.infer<typeof userSchema>
+export type User = typeof userSchema.Type
 
-export const fullUserSchema = userSchema.extend({
-  verified: z.boolean(),
-  createdAt: z.string(),
-  updatedAt: z.string()
+export const fullUserSchema = userSchema.pipe(
+  Schema.fieldsAssign({
+    verified: Schema.Boolean,
+    createdAt: Schema.String,
+    updatedAt: Schema.String
+  })
+)
+
+export type FullUser = typeof fullUserSchema.Type
+
+export const loginRequestSchema = Schema.Struct({
+  email: Email,
+  password: Schema.NonEmptyString
 })
 
-export type FullUser = z.infer<typeof fullUserSchema>
+export type LoginRequest = typeof loginRequestSchema.Type
 
-export const loginRequestSchema = z.object({
-  email: z.email(),
-  password: z.string().min(1)
-})
-
-export type LoginRequest = z.infer<typeof loginRequestSchema>
-
-export const loginResponseSchema = z.object({
+export const loginResponseSchema = Schema.Struct({
   user: fullUserSchema,
-  accessToken: z.string(),
-  refreshToken: z.string()
+  accessToken: Schema.String,
+  refreshToken: Schema.String
 })
 
-export type LoginResponse = z.infer<typeof loginResponseSchema>
+export type LoginResponse = typeof loginResponseSchema.Type
 
-export const refreshTokenRequestSchema = z.object({
-  refreshToken: z.string()
+export const refreshTokenRequestSchema = Schema.Struct({
+  refreshToken: Schema.String
 })
 
-export type RefreshTokenRequest = z.infer<typeof refreshTokenRequestSchema>
+export type RefreshTokenRequest = typeof refreshTokenRequestSchema.Type
 
-export const refreshTokenResponseSchema = z.object({
-  accessToken: z.string()
+export const refreshTokenResponseSchema = Schema.Struct({
+  accessToken: Schema.String
 })
 
-export type RefreshTokenResponse = z.infer<typeof refreshTokenResponseSchema>
+export type RefreshTokenResponse = typeof refreshTokenResponseSchema.Type
 
-const serializedDateSchema = z.union([z.string(), z.date().transform((date) => date.toISOString())])
+const serializedDateSchema = Schema.Union([Schema.String, Schema.flip(Schema.DateFromString)])
+const errorResponseSchema = Schema.Struct({ message: Schema.String })
+const betterAuthLoginResponseSchema = Schema.Struct({
+  user: Schema.Struct({
+    id: Schema.String,
+    name: Schema.String,
+    email: Schema.String,
+    emailVerified: Schema.Boolean,
+    image: Schema.optional(Schema.NullOr(Schema.String)),
+    createdAt: serializedDateSchema,
+    updatedAt: serializedDateSchema
+  }),
+  token: Schema.String
+})
+const profileResponseSchema = Schema.Struct({ user: Schema.Unknown })
 
 export async function login(baseUrl: string, credentials: LoginRequest): Promise<LoginResponse> {
   logAuthEvent('info', 'Login attempt', {
@@ -130,16 +149,18 @@ export async function login(baseUrl: string, credentials: LoginRequest): Promise
         }
       })
 
-      const errorMessage = z.object({ message: z.string() }).safeParse(errorData)
+      const errorMessage = Schema.decodeUnknownResult(errorResponseSchema)(errorData)
       logAuthEvent('warn', 'Login error response', {
         status: response.status,
-        message: errorMessage.success ? errorMessage.data.message : 'Unrecognized error response'
+        message: Result.isSuccess(errorMessage)
+          ? errorMessage.success.message
+          : 'Unrecognized error response'
       })
 
       return yield* Effect.fail(
         new AuthError({
-          message: errorMessage.success
-            ? errorMessage.data.message
+          message: Result.isSuccess(errorMessage)
+            ? errorMessage.success.message
             : `Login failed: ${response.statusText}`
         })
       )
@@ -161,35 +182,21 @@ export async function login(baseUrl: string, credentials: LoginRequest): Promise
 
     logAuthEvent('info', 'Login data parsed successfully')
 
-    // Map Better Auth response to legacy format
-    const validatedData = z
-      .object({
-        user: z.object({
-          id: z.string(),
-          name: z.string(),
-          email: z.string(),
-          emailVerified: z.boolean(),
-          image: z.string().nullable().optional(),
-          createdAt: serializedDateSchema,
-          updatedAt: serializedDateSchema
-        }),
-        token: z.string()
-      })
-      .safeParse(data)
+    const validatedData = Schema.decodeUnknownResult(betterAuthLoginResponseSchema)(data)
 
-    if (!validatedData.success) {
+    if (Result.isFailure(validatedData)) {
       logAuthEvent('error', 'Login response validation failed', {
-        validationError: validatedData.error.message
+        validationError: validatedData.failure.message
       })
       return yield* Effect.fail(
         new AuthError({
           message: 'Invalid login response format from Better Auth',
-          cause: validatedData.error
+          cause: validatedData.failure
         })
       )
     }
 
-    const { user: baUser, token } = validatedData.data
+    const { user: baUser, token } = validatedData.success
 
     const mappedResponse: LoginResponse = {
       user: {
@@ -281,23 +288,23 @@ export async function refreshAccessToken(
 
     logAuthEvent('info', 'Token refresh data parsed successfully')
 
-    const parseResult = refreshTokenResponseSchema.safeParse(data)
+    const parseResult = Schema.decodeUnknownResult(refreshTokenResponseSchema)(data)
 
-    if (!parseResult.success) {
+    if (Result.isFailure(parseResult)) {
       logAuthEvent('error', 'Refresh token response validation failed', {
-        validationError: parseResult.error.message
+        validationError: parseResult.failure.message
       })
       return yield* Effect.fail(
         new AuthError({
           message: 'Invalid token refresh response format',
-          cause: parseResult.error
+          cause: parseResult.failure
         })
       )
     }
 
     logAuthEvent('info', 'Token refresh successful')
 
-    return parseResult.data
+    return parseResult.success
   }).pipe(Effect.runPromise)
 }
 
@@ -362,39 +369,39 @@ export async function getProfile(baseUrl: string, accessToken: string): Promise<
 
     logAuthEvent('info', 'Profile data parsed successfully')
 
-    const profileData = z.object({ user: z.unknown() }).safeParse(data)
+    const profileData = Schema.decodeUnknownResult(profileResponseSchema)(data)
 
-    if (!profileData.success) {
+    if (Result.isFailure(profileData)) {
       logAuthEvent('error', 'Get profile response structure invalid', {
-        validationError: profileData.error.message
+        validationError: profileData.failure.message
       })
       return yield* Effect.fail(
         new AuthError({
           message: 'Invalid profile response structure',
-          cause: profileData.error
+          cause: profileData.failure
         })
       )
     }
 
-    const userParseResult = userSchema.safeParse(profileData.data.user)
+    const userParseResult = Schema.decodeUnknownResult(userSchema)(profileData.success.user)
 
-    if (!userParseResult.success) {
+    if (Result.isFailure(userParseResult)) {
       logAuthEvent('error', 'Get profile user data invalid', {
-        validationError: userParseResult.error.message
+        validationError: userParseResult.failure.message
       })
       return yield* Effect.fail(
         new AuthError({
           message: 'Invalid user data format',
-          cause: userParseResult.error
+          cause: userParseResult.failure
         })
       )
     }
 
     logAuthEvent('info', 'Profile fetch successful', {
-      userId: userParseResult.data.id,
-      username: userParseResult.data.username
+      userId: userParseResult.success.id,
+      username: userParseResult.success.username
     })
 
-    return userParseResult.data
+    return userParseResult.success
   }).pipe(Effect.runPromise)
 }
