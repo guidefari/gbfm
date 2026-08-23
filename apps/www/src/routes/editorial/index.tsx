@@ -1,19 +1,19 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { Schema } from 'effect'
 import { X } from 'lucide-react'
-import { z } from 'zod'
 import { EditorialListItem } from '@/components/EditorialListItem'
 import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
 import { QueryError } from '@/components/QueryError'
 import { useEditorialPosts } from '@/lib/http'
 import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
 
-const searchSchema = z.object({
-  tag: z.string().optional()
+const searchSchema = Schema.Struct({
+  tag: Schema.optional(Schema.String)
 })
 
 export const Route = createFileRoute('/editorial/')({
   component: EditorialListPage,
-  validateSearch: searchSchema,
+  validateSearch: Schema.toStandardSchemaV1(searchSchema),
   head: () => ({
     meta: generateSEOMeta(STATIC_PAGE_SEO.editorial)
   })

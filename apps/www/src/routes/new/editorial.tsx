@@ -1,12 +1,12 @@
 'use client'
 
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { z } from 'zod'
+import { Schema } from 'effect'
 import { signInRedirect } from '@/lib/route-guards'
 import { EditorialPage } from './-EditorialPage'
 
-const searchSchema = z.object({
-  edit: z.string().optional()
+const searchSchema = Schema.Struct({
+  edit: Schema.optional(Schema.String)
 })
 
 export const Route = createFileRoute('/new/editorial')({
@@ -18,6 +18,6 @@ export const Route = createFileRoute('/new/editorial')({
       throw redirect({ to: '/' })
     }
   },
-  validateSearch: searchSchema,
+  validateSearch: Schema.toStandardSchemaV1(searchSchema),
   component: EditorialPage
 })

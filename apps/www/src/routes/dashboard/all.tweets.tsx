@@ -1,16 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { z } from 'zod'
+import { Schema } from 'effect'
 import { ContentManager } from '@/components/content/ContentManager'
 import { ContentPageShell } from '@/components/content/ContentPageShell'
 import { defaultContentView } from '@/components/content/types'
+import { dashboardOffsetSearchSchema } from '@/lib/dashboard-search-schema'
 import { AdminAccessGuard } from './_components/-AdminAccessGuard'
 
-const searchSchema = z.object({
-  offset: z.coerce.number().int().min(0).catch(0)
-})
-
 export const Route = createFileRoute('/dashboard/all/tweets')({
-  validateSearch: searchSchema,
+  validateSearch: Schema.toStandardSchemaV1(dashboardOffsetSearchSchema),
   component: AdminTweetsPage
 })
 

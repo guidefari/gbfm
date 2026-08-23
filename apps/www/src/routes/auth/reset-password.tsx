@@ -2,21 +2,21 @@ import { getFormString } from '@gbfm/core/utils'
 import { GenericAuthForm, isPasswordValid, PasswordChecklist } from '@gbfm/ui'
 import { useMutation } from '@tanstack/react-query'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { Schema } from 'effect'
 import { useState } from 'react'
-import { z } from 'zod'
 import { AuthPageLayout, AuthStatusNotice } from '@/components/Auth/AuthPageLayout'
 import { useSession } from '@/lib/auth-client'
 import { apiUrl } from '@/lib/http'
 import { readResponseErrorMessage } from '@/lib/response'
 
-export const searchSchema = z.object({
-  token: z.string().optional(),
-  error: z.string().optional()
+export const searchSchema = Schema.Struct({
+  token: Schema.optional(Schema.String),
+  error: Schema.optional(Schema.String)
 })
 
 export const Route = createFileRoute('/auth/reset-password')({
   component: ResetPasswordPage,
-  validateSearch: searchSchema
+  validateSearch: Schema.toStandardSchemaV1(searchSchema)
 })
 
 async function confirmInvite(token: string, password: string) {

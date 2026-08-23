@@ -26,9 +26,10 @@ import { createLazyFileRoute, useRouter } from '@tanstack/react-router'
 import * as Cause from 'effect/Cause'
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
+import * as Option from 'effect/Option'
+import * as Schema from 'effect/Schema'
 import { AlertTriangle, FileText, List, Loader2, Music, Upload } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { z } from 'zod'
 import { S3AudioFilePicker, S3MediaFilePicker } from '@/components/mix-uploader/S3AudioFilePicker'
 import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
 import { useMixUploadDraft } from '@/hooks/useMixUploadDraft'
@@ -68,15 +69,17 @@ export const Route = createLazyFileRoute('/mix-upload')({
   component: MixUploadPage
 })
 
-const mixUploadSearchSchema = z.object({
-  edit: z.string().optional(),
-  title: z.string().optional(),
-  description: z.string().optional(),
-  content: z.string().optional(),
-  thumbnailUrl: z.string().optional(),
-  tags: z.array(z.string()).optional(),
-  type: z.literal('mix').optional()
+const mixUploadSearchSchema = Schema.Struct({
+  edit: Schema.optional(Schema.String),
+  title: Schema.optional(Schema.String),
+  description: Schema.optional(Schema.String),
+  content: Schema.optional(Schema.String),
+  thumbnailUrl: Schema.optional(Schema.String),
+  tags: Schema.optional(Schema.mutable(Schema.Array(Schema.String))),
+  type: Schema.optional(Schema.Literal('mix'))
 })
+
+const emptyMixUploadSearch: typeof mixUploadSearchSchema.Type = {}
 
 const describeUploadError = (error: ResumableUploadError): string => {
   if (error._tag === 'NetworkError') {
@@ -146,8 +149,8 @@ const hasDraftContent = (d: MixUploadDraft): boolean =>
 function MixUploadPage() {
   const { data: session } = useSession()
   const user = session?.user
-  const parsedSearch = mixUploadSearchSchema.safeParse(Route.useSearch())
-  const search = parsedSearch.success ? parsedSearch.data : {}
+  const parsedSearch = Schema.decodeUnknownOption(mixUploadSearchSchema)(Route.useSearch())
+  const search = Option.getOrElse(parsedSearch, () => emptyMixUploadSearch)
   const isEditMode = Boolean(search.edit)
   const editType = search.type || 'mix'
 

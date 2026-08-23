@@ -1,20 +1,20 @@
 import { getFormString } from '@gbfm/core/utils'
 import { GenericAuthForm, toast } from '@gbfm/ui'
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
+import { Schema } from 'effect'
 import { useState } from 'react'
-import { z } from 'zod'
 import { AuthPageLayout, AuthStatusNotice } from '@/components/Auth/AuthPageLayout'
 import { signIn } from '@/lib/auth-client'
 
-const searchSchema = z.object({
-  redirect: z.string().optional()
+const searchSchema = Schema.Struct({
+  redirect: Schema.optional(Schema.String)
 })
 
 const safeRedirect = (target: string | undefined) =>
   target && target.startsWith('/') && !target.startsWith('//') ? target : '/'
 
 export const Route = createFileRoute('/auth/sign-in')({
-  validateSearch: searchSchema,
+  validateSearch: Schema.toStandardSchemaV1(searchSchema),
   beforeLoad: ({ context, search }) => {
     if (context.auth.isAuthenticated) {
       // href, not to: the target is a runtime string that may carry its own search params, and

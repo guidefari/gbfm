@@ -1,17 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { z } from 'zod'
+import { Schema } from 'effect'
 import { ContentManager } from '@/components/content/ContentManager'
 import { ContentPageShell } from '@/components/content/ContentPageShell'
+import { dashboardMixesSearchSchema } from '@/lib/dashboard-search-schema'
 import { AdminAccessGuard } from './_components/-AdminAccessGuard'
 
-const searchSchema = z.object({
-  offset: z.coerce.number().int().min(0).catch(0),
-  sort: z.enum(['plays', 'created']).catch('created'),
-  order: z.enum(['asc', 'desc']).catch('desc')
-})
-
 export const Route = createFileRoute('/dashboard/all/mixes')({
-  validateSearch: searchSchema,
+  validateSearch: Schema.toStandardSchemaV1(dashboardMixesSearchSchema),
   component: AdminMixesPage
 })
 

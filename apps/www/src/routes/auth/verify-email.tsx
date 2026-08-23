@@ -1,19 +1,19 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { Schema } from 'effect'
 import { Loader2, MailCheck } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { z } from 'zod'
 import { AuthPageLayout, AuthStatusNotice } from '@/components/Auth/AuthPageLayout'
 import { authClient } from '@/lib/auth-client'
 
-const searchSchema = z.object({
-  token: z.string().optional(),
-  error: z.string().optional(),
-  callbackURL: z.string().optional()
+const searchSchema = Schema.Struct({
+  token: Schema.optional(Schema.String),
+  error: Schema.optional(Schema.String),
+  callbackURL: Schema.optional(Schema.String)
 })
 
 export const Route = createFileRoute('/auth/verify-email')({
   component: VerifyEmailPage,
-  validateSearch: searchSchema
+  validateSearch: Schema.toStandardSchemaV1(searchSchema)
 })
 
 type Status = 'verifying' | 'success' | 'error'

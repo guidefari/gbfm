@@ -1,17 +1,17 @@
 import { Button, Input } from '@gbfm/ui'
 import { createFileRoute } from '@tanstack/react-router'
+import { Schema } from 'effect'
 import { CheckCircle, Loader2, Mail, XCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { z } from 'zod'
 import { useNewsletterUnsubscribe, useRequestNewsletterUnsubscribe } from '@/lib/http'
 
-const searchSchema = z.object({
-  token: z.string().optional()
+const searchSchema = Schema.Struct({
+  token: Schema.optional(Schema.String)
 })
 
 export const Route = createFileRoute('/unsubscribe')({
   component: Unsubscribe,
-  validateSearch: searchSchema
+  validateSearch: Schema.toStandardSchemaV1(searchSchema)
 })
 
 function Unsubscribe() {

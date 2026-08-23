@@ -12,9 +12,9 @@ import { Button } from '@gbfm/ui'
 import { compile } from '@mdx-js/mdx'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useSearch } from '@tanstack/react-router'
+import { Option, Schema } from 'effect'
 import { useForm } from 'react-hook-form'
 import { log } from '@/services/logger'
-import { z } from 'zod/v4'
 import { apiUrl, fetcher } from '@/lib/http'
 
 type ContentType = {
@@ -32,19 +32,27 @@ function isEditorContentType(value: string): value is 'micro' | 'post' | 'mix' {
   return value === 'micro' || value === 'post' || value === 'mix'
 }
 
-const contentSchema = z.object({
-  content: z.string().min(1, 'Content is required'),
-  dateCreated: z.number(),
-  dateUpdated: z.number(),
-  type: z.enum(['micro', 'post', 'mix'])
+const contentSchema = Schema.Struct({
+  content: Schema.NonEmptyString,
+  dateCreated: Schema.Number,
+  dateUpdated: Schema.Number,
+  type: Schema.Literals(['micro', 'post', 'mix'])
 })
 
-type FormData = z.infer<typeof contentSchema>
+type FormData = typeof contentSchema.Type
 
-const searchSchema = z.object({
-  id: z.string().optional(),
-  email: z.email().optional(),
-  token: z.string().optional()
+const Email = Schema.String.pipe(
+  Schema.check(
+    Schema.isPattern(
+      /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9-]*\.)+[A-Za-z]{2,}$/
+    )
+  )
+)
+
+const searchSchema = Schema.Struct({
+  id: Schema.optional(Schema.String),
+  email: Schema.optional(Email),
+  token: Schema.optional(Schema.String)
 })
 
 export function Editor() {
@@ -52,8 +60,8 @@ export function Editor() {
   const searchParams = useSearch({
     strict: false
   })
-  const parsed = searchSchema.safeParse(searchParams)
-  const { id } = parsed.success ? parsed.data : { id: undefined }
+  const parsed = Schema.decodeUnknownOption(searchSchema)(searchParams)
+  const { id } = Option.isSome(parsed) ? parsed.value : { id: undefined }
   const [selectedTab, setSelectedTab] = useState<'write' | 'preview'>('write')
   const [type, setType] = useState<'micro' | 'post' | 'mix'>('post')
 
@@ -79,7 +87,6 @@ export function Editor() {
   }
 
   const form = useForm<FormData>({
-    // resolver: zodResolver(contentSchema), // Temporarily disabled due to zod version compatibility
     defaultValues: {
       content: '',
       dateCreated: Date.now(),
