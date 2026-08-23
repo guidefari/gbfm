@@ -39,8 +39,7 @@
     "alchemy": "2.0.0-beta.72",
     "effect": "4.0.0-rc.111",
     "gray-matter": "4.0.3",
-    "vitest": "4.1.8",
-    "zod": "4.4.3"
+    "vitest": "4.1.8"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260810.1",
