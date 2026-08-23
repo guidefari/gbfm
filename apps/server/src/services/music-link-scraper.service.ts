@@ -17,7 +17,7 @@
  *
  * Adding a new provider:
  *   1. Implement MusicDataProvider
- *   2. Add it to the providers array in MusicLinkScraperServiceLayer
+ *   2. Add it to the providers array in MusicScraperProvidersLayer
  */
 
 import { Context, Data, Effect, Layer, Schedule, Schema } from 'effect'
@@ -473,228 +473,239 @@ export interface MusicLinkScraperService {
 export const MusicLinkScraperService =
   Context.Service<MusicLinkScraperService>('MusicLinkScraperService')
 
-const noCrossPlatformDiscovery: CrossPlatformLinkDiscovery = {
+export interface MusicScraperProviders {
+  readonly providers: readonly MusicDataProvider[]
+  readonly discovery: CrossPlatformLinkDiscovery
+}
+
+export const MusicScraperProviders = Context.Service<MusicScraperProviders>('MusicScraperProviders')
+
+export const noCrossPlatformDiscovery: CrossPlatformLinkDiscovery = {
   name: 'none',
   discoverLinks: () => Effect.succeed({ links: [] })
 }
 
-export function makeMusicLinkScraperService(
-  providers: MusicDataProvider[],
-  spotify: SpotifyService,
-  deezer: DeezerService,
-  musicbrainz: MusicBrainzIdentityServiceContract,
-  discovery: CrossPlatformLinkDiscovery = noCrossPlatformDiscovery
-): MusicLinkScraperService {
-  return {
-    discoverCrossPlatformLinks: (input) => discovery.discoverLinks(input),
-    scrape: Effect.fn('musicScraper.scrape')(function* (input: MusicScrapeInput) {
-      const platformMap = new Map<string, ScrapedLink>()
-      let entityMeta: EntityMeta | undefined
-      let attemptedProviders = 0
-      let failedProviders = 0
-      const playlist = isPlaylistInput(input)
-      const source = sourceDetails(input)
-      const exactSource = source
-        ? yield* resolveExactSource(source, input.url ?? '', spotify, deezer).pipe(
-            Effect.catch((error) => Effect.fail(sourceResolutionError(source.platform, error)))
-          )
-        : null
+export const discoverCrossPlatformLinksEffect = (
+  input: MusicScrapeInput
+): Effect.Effect<ProviderResult, MusicScraperError, MusicScraperProviders> =>
+  Effect.flatMap(MusicScraperProviders, ({ discovery }) => discovery.discoverLinks(input))
 
-      if (exactSource) {
-        for (const link of exactSource.links) platformMap.set(link.platform, link)
-        entityMeta = exactSource.entityMeta
-      }
+export const scrapeEffect = Effect.fn('musicScraper.scrape')(function* (input: MusicScrapeInput) {
+  const { providers, discovery } = yield* MusicScraperProviders
+  const spotify = yield* SpotifyService
+  const platformMap = new Map<string, ScrapedLink>()
+  let entityMeta: EntityMeta | undefined
+  let attemptedProviders = 0
+  let failedProviders = 0
+  const playlist = isPlaylistInput(input)
+  const source = sourceDetails(input)
+  const exactSource = source
+    ? yield* resolveExactSource(source, input.url ?? '').pipe(
+        Effect.catch((error) => Effect.fail(sourceResolutionError(source.platform, error)))
+      )
+    : null
 
-      if (playlist) {
-        return {
-          links: [...platformMap.values()],
-          entityMeta
-        } satisfies ScrapeResult
-      }
+  if (exactSource) {
+    for (const link of exactSource.links) platformMap.set(link.platform, link)
+    entityMeta = exactSource.entityMeta
+  }
 
-      if (input.url && discovery.name !== 'none') {
-        attemptedProviders += 1
-        const result = yield* discovery.discoverLinks(input).pipe(
-          Effect.tap((value) => logProviderOutcome(discovery.name, providerResultOutcome(value))),
-          Effect.catch((error) =>
-            Effect.andThen(
-              Effect.sync(() => {
-                failedProviders += 1
-              }),
-              Effect.andThen(
-                logProviderOutcome(
-                  discovery.name,
-                  error.statusCode === 429 ? 'rate_limited' : 'failed'
-                ),
-                Effect.succeed({
-                  links: [],
-                  entityMeta: undefined
-                } satisfies ProviderResult)
-              )
-            )
-          )
-        )
-        for (const link of result.links) {
-          if (exactSource && link.platform === source?.platform) continue
-          platformMap.set(link.platform, link)
-        }
-        if (!entityMeta && result.entityMeta) entityMeta = result.entityMeta
-      }
+  if (playlist) {
+    return {
+      links: [...platformMap.values()],
+      entityMeta
+    } satisfies ScrapeResult
+  }
 
-      for (const provider of providers) {
-        if (!isProviderApplicable(provider, input)) continue
-        attemptedProviders += 1
-        const result = yield* provider.fetchLinks(input).pipe(
-          Effect.tap((value) => logProviderOutcome(provider.name, providerResultOutcome(value))),
-          Effect.catch((err) =>
-            Effect.andThen(
-              Effect.sync(() => {
-                failedProviders += 1
-              }),
-              Effect.andThen(
-                logProviderOutcome(
-                  provider.name,
-                  err.statusCode === 429 ? 'rate_limited' : 'failed'
-                ),
-                Effect.succeed({
-                  links: [],
-                  entityMeta: undefined
-                } satisfies ProviderResult)
-              )
-            )
-          )
-        )
-
-        // Later providers override earlier ones for the same platform
-        for (const link of result.links) {
-          if (exactSource && link.platform === source?.platform) continue
-          platformMap.set(link.platform, link)
-        }
-
-        // Use the first successful entityMeta we get
-        if (!entityMeta && result.entityMeta) {
-          entityMeta = result.entityMeta
-        }
-      }
-
-      const musicbrainzApplicable = isMusicBrainzIdentityInput(input)
-      if (musicbrainzApplicable) attemptedProviders += 1
-      const musicbrainzResult = yield* resolveMusicBrainzIdentity(
-        { ...input, isrc: input.isrc ?? entityMeta?.isrc },
-        musicbrainz,
-        !entityMeta?.thumbnailUrl
-      ).pipe(
-        Effect.tap((value) => logProviderOutcome('musicbrainz', value ? 'succeeded' : 'not_found')),
-        Effect.catchTag('MusicBrainzNotFound', () =>
-          Effect.andThen(logProviderOutcome('musicbrainz', 'not_found'), Effect.succeed(null))
-        ),
-        Effect.catch(() =>
+  if (input.url && discovery.name !== 'none') {
+    attemptedProviders += 1
+    const result = yield* discovery.discoverLinks(input).pipe(
+      Effect.tap((value) => logProviderOutcome(discovery.name, providerResultOutcome(value))),
+      Effect.catch((error) =>
+        Effect.andThen(
+          Effect.sync(() => {
+            failedProviders += 1
+          }),
           Effect.andThen(
-            Effect.sync(() => {
-              failedProviders += 1
-            }),
-            Effect.andThen(logProviderOutcome('musicbrainz', 'failed'), Effect.succeed(null))
+            logProviderOutcome(
+              discovery.name,
+              error.statusCode === 429 ? 'rate_limited' : 'failed'
+            ),
+            Effect.succeed({
+              links: [],
+              entityMeta: undefined
+            } satisfies ProviderResult)
           )
         )
       )
-      if (musicbrainzResult) {
-        for (const link of musicbrainzResult.links) platformMap.set(link.platform, link)
-        if (!entityMeta) {
-          entityMeta = musicbrainzResult.entityMeta
-        } else if (!entityMeta.thumbnailUrl && musicbrainzResult.entityMeta?.thumbnailUrl) {
-          entityMeta = {
-            ...entityMeta,
-            thumbnailUrl: musicbrainzResult.entityMeta.thumbnailUrl
-          }
-        }
-      }
+    )
+    for (const link of result.links) {
+      if (exactSource && link.platform === source?.platform) continue
+      platformMap.set(link.platform, link)
+    }
+    if (!entityMeta && result.entityMeta) entityMeta = result.entityMeta
+  }
 
-      if (!platformMap.has('spotify') && entityMeta) {
-        const spotifyMatch = yield* Effect.catch(
-          entityMeta.type === 'album'
-            ? spotify.searchAlbumByTitleArtist(entityMeta.title ?? '', entityMeta.artistName ?? '')
-            : entityMeta.isrc
-              ? spotify.searchTrackByIsrc(entityMeta.isrc)
-              : Effect.succeed(null),
-          () => Effect.succeed(null)
-        )
-
-        if (spotifyMatch) {
-          platformMap.set('spotify', {
-            platform: 'spotify',
-            url: spotifyMatch.url,
-            scrapedAt: new Date(),
-            metadata: providerMetadata(
-              'spotify',
-              entityMeta.type === 'album' ? 'exact_metadata' : 'exact_isrc'
-            )
-          })
-          const odesliResult = yield* Effect.catch(
-            discovery.discoverLinks({ url: spotifyMatch.url }),
-            () =>
-              Effect.succeed({
-                links: [],
-                entityMeta: undefined
-              } satisfies ProviderResult)
+  for (const provider of providers) {
+    if (!isProviderApplicable(provider, input)) continue
+    attemptedProviders += 1
+    const result = yield* provider.fetchLinks(input).pipe(
+      Effect.tap((value) => logProviderOutcome(provider.name, providerResultOutcome(value))),
+      Effect.catch((err) =>
+        Effect.andThen(
+          Effect.sync(() => {
+            failedProviders += 1
+          }),
+          Effect.andThen(
+            logProviderOutcome(provider.name, err.statusCode === 429 ? 'rate_limited' : 'failed'),
+            Effect.succeed({
+              links: [],
+              entityMeta: undefined
+            } satisfies ProviderResult)
           )
-          for (const link of odesliResult.links) {
-            if (exactSource && link.platform === source?.platform) continue
-            platformMap.set(link.platform, link)
-          }
-        }
-      }
-
-      if (!platformMap.has('deezer') && entityMeta) {
-        const deezerMatch = yield* Effect.catch(findDeezerMatch(deezer, entityMeta), () =>
-          Effect.succeed(null)
         )
+      )
+    )
 
-        if (deezerMatch) {
-          platformMap.set('deezer', {
-            platform: 'deezer',
-            url: deezerMatch.url,
-            scrapedAt: new Date(),
-            metadata: providerMetadata('deezer', deezerMatch.match)
-          })
-        }
+    // Later providers override earlier ones for the same platform
+    for (const link of result.links) {
+      if (exactSource && link.platform === source?.platform) continue
+      platformMap.set(link.platform, link)
+    }
+
+    // Use the first successful entityMeta we get
+    if (!entityMeta && result.entityMeta) {
+      entityMeta = result.entityMeta
+    }
+  }
+
+  const musicbrainzApplicable = isMusicBrainzIdentityInput(input)
+  if (musicbrainzApplicable) attemptedProviders += 1
+  const musicbrainzResult = yield* resolveMusicBrainzIdentity(
+    { ...input, isrc: input.isrc ?? entityMeta?.isrc },
+    !entityMeta?.thumbnailUrl
+  ).pipe(
+    Effect.tap((value) => logProviderOutcome('musicbrainz', value ? 'succeeded' : 'not_found')),
+    Effect.catchTag('MusicBrainzNotFound', () =>
+      Effect.andThen(logProviderOutcome('musicbrainz', 'not_found'), Effect.succeed(null))
+    ),
+    Effect.catch(() =>
+      Effect.andThen(
+        Effect.sync(() => {
+          failedProviders += 1
+        }),
+        Effect.andThen(logProviderOutcome('musicbrainz', 'failed'), Effect.succeed(null))
+      )
+    )
+  )
+  if (musicbrainzResult) {
+    for (const link of musicbrainzResult.links) platformMap.set(link.platform, link)
+    if (!entityMeta) {
+      entityMeta = musicbrainzResult.entityMeta
+    } else if (!entityMeta.thumbnailUrl && musicbrainzResult.entityMeta?.thumbnailUrl) {
+      entityMeta = {
+        ...entityMeta,
+        thumbnailUrl: musicbrainzResult.entityMeta.thumbnailUrl
       }
+    }
+  }
 
-      if (!exactSource && attemptedProviders > 0 && failedProviders === attemptedProviders) {
-        return yield* new MusicScraperError({
-          message: 'All applicable music providers are unavailable',
-          provider: 'all',
-          statusCode: 503
-        })
+  if (!platformMap.has('spotify') && entityMeta) {
+    const spotifyMatch = yield* Effect.catch(
+      entityMeta.type === 'album'
+        ? spotify.searchAlbumByTitleArtist(entityMeta.title ?? '', entityMeta.artistName ?? '')
+        : entityMeta.isrc
+          ? spotify.searchTrackByIsrc(entityMeta.isrc)
+          : Effect.succeed(null),
+      () => Effect.succeed(null)
+    )
+
+    if (spotifyMatch) {
+      platformMap.set('spotify', {
+        platform: 'spotify',
+        url: spotifyMatch.url,
+        scrapedAt: new Date(),
+        metadata: providerMetadata(
+          'spotify',
+          entityMeta.type === 'album' ? 'exact_metadata' : 'exact_isrc'
+        )
+      })
+      const odesliResult = yield* Effect.catch(
+        discovery.discoverLinks({ url: spotifyMatch.url }),
+        () =>
+          Effect.succeed({
+            links: [],
+            entityMeta: undefined
+          } satisfies ProviderResult)
+      )
+      for (const link of odesliResult.links) {
+        if (exactSource && link.platform === source?.platform) continue
+        platformMap.set(link.platform, link)
       }
+    }
+  }
 
-      return {
-        links: [...platformMap.values()],
-        entityMeta
-      } satisfies ScrapeResult
+  if (!platformMap.has('deezer') && entityMeta) {
+    const deezerMatch = yield* Effect.catch(findDeezerMatch(entityMeta), () => Effect.succeed(null))
+
+    if (deezerMatch) {
+      platformMap.set('deezer', {
+        platform: 'deezer',
+        url: deezerMatch.url,
+        scrapedAt: new Date(),
+        metadata: providerMetadata('deezer', deezerMatch.match)
+      })
+    }
+  }
+
+  if (!exactSource && attemptedProviders > 0 && failedProviders === attemptedProviders) {
+    return yield* new MusicScraperError({
+      message: 'All applicable music providers are unavailable',
+      provider: 'all',
+      statusCode: 503
     })
   }
-}
+
+  return {
+    links: [...platformMap.values()],
+    entityMeta
+  } satisfies ScrapeResult
+})
 
 // ---------------------------------------------------------------------------
 // Live layer configuring active providers
 // ---------------------------------------------------------------------------
 
+export function makeMusicScraperProviders(): MusicScraperProviders {
+  const providers: MusicDataProvider[] = [new BandcampProvider()]
+
+  const firecrawlKey = process.env.FIRECRAWL_API_KEY
+  if (firecrawlKey) {
+    providers.push(new FirecrawlProvider(firecrawlKey))
+  }
+
+  return { providers, discovery: new OdesliProvider() }
+}
+
 export const MusicLinkScraperServiceLayer = Layer.effect(
   MusicLinkScraperService,
   Effect.gen(function* () {
-    const spotify = yield* SpotifyService
-    const deezer = yield* DeezerService
-    const musicbrainz = yield* MusicBrainzIdentityService
+    const context = yield* Effect.context<
+      SpotifyService | DeezerService | MusicBrainzIdentityService
+    >()
+    const providerSet = makeMusicScraperProviders()
 
-    const providers: MusicDataProvider[] = [new BandcampProvider()]
-    const discovery = new OdesliProvider()
-
-    const firecrawlKey = process.env.FIRECRAWL_API_KEY
-    if (firecrawlKey) {
-      providers.push(new FirecrawlProvider(firecrawlKey))
+    return {
+      scrape: (input) =>
+        scrapeEffect(input).pipe(
+          Effect.provideService(MusicScraperProviders, providerSet),
+          Effect.provideContext(context)
+        ),
+      discoverCrossPlatformLinks: (input) =>
+        discoverCrossPlatformLinksEffect(input).pipe(
+          Effect.provideService(MusicScraperProviders, providerSet)
+        )
     }
-
-    return makeMusicLinkScraperService(providers, spotify, deezer, musicbrainz, discovery)
   })
 )
 
@@ -802,12 +813,15 @@ function deezerResult(candidate: DeezerSourceCandidate): ProviderResult {
 
 function resolveExactSource(
   source: DirectSource,
-  url: string,
-  spotify: SpotifyService,
-  deezer: DeezerService
-): Effect.Effect<ProviderResult, SpotifyServiceError | DeezerError> {
+  url: string
+): Effect.Effect<
+  ProviderResult,
+  SpotifyServiceError | DeezerError,
+  SpotifyService | DeezerService
+> {
   return Effect.gen(function* () {
     if (source.platform === 'spotify') {
+      const spotify = yield* SpotifyService
       return spotifyResult(
         yield* spotify.resolveSource({
           entityType: source.entityType,
@@ -815,18 +829,23 @@ function resolveExactSource(
         })
       )
     }
+    const deezer = yield* DeezerService
     return deezerResult(yield* deezer.resolve({ entityType: source.entityType, source: url }))
   })
 }
 
 function findDeezerMatch(
-  deezer: DeezerService,
   entityMeta: EntityMeta
-): Effect.Effect<DeezerTrackCandidate | DeezerAlbumCandidate | null, DeezerError> {
-  if (entityMeta.type === 'album') {
-    return deezer.searchAlbumByTitleArtist(entityMeta.title ?? '', entityMeta.artistName ?? '')
-  }
-  return entityMeta.isrc ? deezer.searchTrackByIsrc(entityMeta.isrc) : Effect.succeed(null)
+): Effect.Effect<DeezerTrackCandidate | DeezerAlbumCandidate | null, DeezerError, DeezerService> {
+  return Effect.flatMap(
+    DeezerService,
+    (deezer): Effect.Effect<DeezerTrackCandidate | DeezerAlbumCandidate | null, DeezerError> => {
+      if (entityMeta.type === 'album') {
+        return deezer.searchAlbumByTitleArtist(entityMeta.title ?? '', entityMeta.artistName ?? '')
+      }
+      return entityMeta.isrc ? deezer.searchTrackByIsrc(entityMeta.isrc) : Effect.succeed(null)
+    }
+  )
 }
 
 function sourceResolutionError(
@@ -963,56 +982,57 @@ function enrichMusicBrainzResult(
 
 function resolveMusicBrainzIdentity(
   input: MusicScrapeInput,
-  musicbrainz: MusicBrainzIdentityServiceContract,
   allowCoverArt: boolean
-): Effect.Effect<ProviderResult | null, MusicBrainzIdentityError> {
+): Effect.Effect<ProviderResult | null, MusicBrainzIdentityError, MusicBrainzIdentityService> {
   if (isPlaylistInput(input)) return Effect.succeed(null)
 
-  if (input.mbid) {
-    const mbid = input.mbid
-    const mbidType = musicBrainzMbidType(input.entityType)
-    if (!mbidType) return Effect.succeed(null)
-    if (input.entityType === 'album') {
-      return musicbrainz.lookupByMbid({ mbidType: 'release', mbid }).pipe(
-        Effect.catchTag('MusicBrainzNotFound', () =>
-          musicbrainz.lookupByMbid({ mbidType: 'release-group', mbid })
-        ),
-        Effect.flatMap((candidate) =>
-          enrichMusicBrainzResult(candidate, musicbrainz, allowCoverArt)
+  return Effect.flatMap(MusicBrainzIdentityService, (musicbrainz) => {
+    if (input.mbid) {
+      const mbid = input.mbid
+      const mbidType = musicBrainzMbidType(input.entityType)
+      if (!mbidType) return Effect.succeed(null)
+      if (input.entityType === 'album') {
+        return musicbrainz.lookupByMbid({ mbidType: 'release', mbid }).pipe(
+          Effect.catchTag('MusicBrainzNotFound', () =>
+            musicbrainz.lookupByMbid({ mbidType: 'release-group', mbid })
+          ),
+          Effect.flatMap((candidate) =>
+            enrichMusicBrainzResult(candidate, musicbrainz, allowCoverArt)
+          )
         )
-      )
+      }
+      return musicbrainz
+        .lookupByMbid({ mbidType, mbid })
+        .pipe(
+          Effect.flatMap((candidate) =>
+            enrichMusicBrainzResult(candidate, musicbrainz, allowCoverArt)
+          )
+        )
     }
-    return musicbrainz
-      .lookupByMbid({ mbidType, mbid })
-      .pipe(
-        Effect.flatMap((candidate) =>
-          enrichMusicBrainzResult(candidate, musicbrainz, allowCoverArt)
-        )
-      )
-  }
 
-  if (input.entityType === 'track' && input.isrc) {
-    return musicbrainz
-      .lookupRecordingByIsrc(input.isrc)
-      .pipe(
-        Effect.flatMap((candidate) =>
-          enrichMusicBrainzResult(candidate, musicbrainz, allowCoverArt)
+    if (input.entityType === 'track' && input.isrc) {
+      return musicbrainz
+        .lookupRecordingByIsrc(input.isrc)
+        .pipe(
+          Effect.flatMap((candidate) =>
+            enrichMusicBrainzResult(candidate, musicbrainz, allowCoverArt)
+          )
         )
-      )
-  }
+    }
 
-  const inferredEntityType = input.entityType ?? sourceDetails(input)?.entityType
-  if (input.url && inferredEntityType && inferredEntityType !== 'playlist') {
-    return musicbrainz
-      .lookupByExternalUrl({ entityType: inferredEntityType, url: input.url })
-      .pipe(
-        Effect.flatMap((candidate) =>
-          enrichMusicBrainzResult(candidate, musicbrainz, allowCoverArt)
+    const inferredEntityType = input.entityType ?? sourceDetails(input)?.entityType
+    if (input.url && inferredEntityType && inferredEntityType !== 'playlist') {
+      return musicbrainz
+        .lookupByExternalUrl({ entityType: inferredEntityType, url: input.url })
+        .pipe(
+          Effect.flatMap((candidate) =>
+            enrichMusicBrainzResult(candidate, musicbrainz, allowCoverArt)
+          )
         )
-      )
-  }
+    }
 
-  return Effect.succeed(null)
+    return Effect.succeed(null)
+  })
 }
 
 function urlHostname(url: string): string {

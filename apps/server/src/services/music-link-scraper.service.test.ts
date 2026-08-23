@@ -4,18 +4,56 @@ import { MusicProviderInvalidInput, MusicProviderNotFound } from '@/errors'
 import {
   type CrossPlatformLinkDiscovery,
   type MusicDataProvider,
+  type MusicScrapeInput,
   MusicScraperError,
-  makeMusicLinkScraperService,
-  type ProviderResult
+  MusicScraperProviders,
+  noCrossPlatformDiscovery,
+  type ProviderResult,
+  type ScrapeResult,
+  scrapeEffect
 } from './music-link-scraper.service'
-import type { DeezerService } from './deezer.service'
+import { DeezerService } from './deezer.service'
 import {
+  MusicBrainzIdentityService,
   MusicBrainzNotFound,
   MusicBrainzRequestFailed,
   type MusicBrainzIdentityCandidate,
   type MusicBrainzIdentityServiceContract
 } from './musicbrainz-identity.service'
-import type { SpotifyService } from './spotify.service'
+import { SpotifyService } from './spotify.service'
+
+type ScrapeRequirements =
+  | MusicScraperProviders
+  | SpotifyService
+  | DeezerService
+  | MusicBrainzIdentityService
+
+interface ScrapeDeps {
+  readonly providers?: readonly MusicDataProvider[]
+  readonly discovery?: CrossPlatformLinkDiscovery
+  readonly spotify?: SpotifyService
+  readonly deezer?: DeezerService
+  readonly musicbrainz?: MusicBrainzIdentityServiceContract
+}
+
+const provideDeps =
+  (deps: ScrapeDeps) =>
+  (effect: Effect.Effect<ScrapeResult, MusicScraperError, ScrapeRequirements>) =>
+    effect.pipe(
+      Effect.provideService(MusicScraperProviders, {
+        providers: deps.providers ?? [],
+        discovery: deps.discovery ?? noCrossPlatformDiscovery
+      }),
+      Effect.provideService(SpotifyService, deps.spotify ?? spotify),
+      Effect.provideService(DeezerService, deps.deezer ?? deezer),
+      Effect.provideService(MusicBrainzIdentityService, deps.musicbrainz ?? musicbrainz)
+    )
+
+const runScrape = (deps: ScrapeDeps, input: MusicScrapeInput): Promise<ScrapeResult> =>
+  Effect.runPromise(provideDeps(deps)(scrapeEffect(input)))
+
+const runScrapeError = (deps: ScrapeDeps, input: MusicScrapeInput): Promise<MusicScraperError> =>
+  Effect.runPromise(Effect.flip(provideDeps(deps)(scrapeEffect(input))))
 
 const unavailableOdesli: CrossPlatformLinkDiscovery = {
   name: 'odesli',
@@ -101,14 +139,11 @@ const musicbrainz: MusicBrainzIdentityServiceContract = {
   searchCandidates: () => Effect.die('unexpected MusicBrainz search')
 }
 
-describe('makeMusicLinkScraperService', () => {
+describe('scrapeEffect', () => {
   test('falls back to Spotify track metadata when Odesli is unavailable', async () => {
-    const scraper = makeMusicLinkScraperService([], spotify, deezer, musicbrainz, unavailableOdesli)
-
-    const result = await Effect.runPromise(
-      scraper.scrape({
-        url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh'
-      })
+    const result = await runScrape(
+      { discovery: unavailableOdesli },
+      { url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh' }
     )
 
     expect(result).toEqual({
@@ -152,16 +187,9 @@ describe('makeMusicLinkScraperService', () => {
           }
         } satisfies ProviderResult)
     }
-    const scraper = makeMusicLinkScraperService(
-      [successfulProvider],
-      spotify,
-      deezer,
-      musicbrainz,
-      unavailableOdesli
-    )
-
-    const result = await Effect.runPromise(
-      scraper.scrape({ url: 'https://artist.bandcamp.com/track/example' })
+    const result = await runScrape(
+      { providers: [successfulProvider], discovery: unavailableOdesli },
+      { url: 'https://artist.bandcamp.com/track/example' }
     )
 
     expect(result).toEqual({
@@ -211,19 +239,16 @@ describe('makeMusicLinkScraperService', () => {
         )
       }
     }
-    const scraper = makeMusicLinkScraperService(
-      [],
-      spotify,
-      sourceDeezer,
-      recordingMusicBrainz,
-      unavailableOdesli
-    )
-
-    const result = await Effect.runPromise(
-      scraper.scrape({
+    const result = await runScrape(
+      {
+        deezer: sourceDeezer,
+        musicbrainz: recordingMusicBrainz,
+        discovery: unavailableOdesli
+      },
+      {
         entityType: 'track',
         url: 'https://www.deezer.com/track/3135556'
-      })
+      }
     )
 
     expect(result.entityMeta).toEqual({
@@ -288,13 +313,12 @@ describe('makeMusicLinkScraperService', () => {
           }
         })
     }
-    const scraper = makeMusicLinkScraperService([], spotify, sourceDeezer, musicbrainz, odesli)
-
-    const result = await Effect.runPromise(
-      scraper.scrape({
+    const result = await runScrape(
+      { deezer: sourceDeezer, discovery: odesli },
+      {
         entityType: 'track',
         url: 'https://www.deezer.com/track/3135556'
-      })
+      }
     )
 
     expect(result.entityMeta?.title).toBe('Exact Source Title')
@@ -327,20 +351,21 @@ describe('makeMusicLinkScraperService', () => {
         })
       }
     })
-    const scraper = makeMusicLinkScraperService(
-      [provider('odesli'), provider('musicbrainz'), provider('spotify'), provider('deezer')],
-      spotify,
-      deezer,
-      musicbrainz
-    )
-
-    const result = await Effect.runPromise(
-      scraper.scrape({
+    const result = await runScrape(
+      {
+        providers: [
+          provider('odesli'),
+          provider('musicbrainz'),
+          provider('spotify'),
+          provider('deezer')
+        ]
+      },
+      {
         entityType: 'playlist',
         url: 'https://open.spotify.com/playlist/4iV5W9uYEdYUVa79Axb7Rh',
         mbid: '12345678-1234-4234-8234-123456789abc',
         isrc: 'GBUM71029604'
-      })
+      }
     )
 
     expect(calls).toEqual([])
@@ -361,18 +386,19 @@ describe('makeMusicLinkScraperService', () => {
         return Effect.succeed({ links: [] })
       }
     })
-    const scraper = makeMusicLinkScraperService(
-      [provider('odesli'), provider('musicbrainz'), provider('spotify'), provider('deezer')],
-      spotify,
-      deezer,
-      musicbrainz
-    )
-
-    const result = await Effect.runPromise(
-      scraper.scrape({
+    const result = await runScrape(
+      {
+        providers: [
+          provider('odesli'),
+          provider('musicbrainz'),
+          provider('spotify'),
+          provider('deezer')
+        ]
+      },
+      {
         entityType: 'playlist',
         url: 'https://example.com/playlist/source'
-      })
+      }
     )
 
     expect(calls).toEqual([])
@@ -398,15 +424,12 @@ describe('makeMusicLinkScraperService', () => {
         return Effect.succeed({ links: [] })
       }
     }
-    const scraper = makeMusicLinkScraperService([], mismatchSpotify, deezer, musicbrainz, odesli)
-
-    const error = await Effect.runPromise(
-      Effect.flip(
-        scraper.scrape({
-          entityType: 'album',
-          url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh'
-        })
-      )
+    const error = await runScrapeError(
+      { spotify: mismatchSpotify, discovery: odesli },
+      {
+        entityType: 'album',
+        url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh'
+      }
     )
 
     expect(error).toMatchObject({ provider: 'spotify', statusCode: 400 })
@@ -425,15 +448,12 @@ describe('makeMusicLinkScraperService', () => {
           })
         )
     }
-    const scraper = makeMusicLinkScraperService([], missingSpotify, deezer, musicbrainz)
-
-    const error = await Effect.runPromise(
-      Effect.flip(
-        scraper.scrape({
-          entityType: 'track',
-          url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh'
-        })
-      )
+    const error = await runScrapeError(
+      { spotify: missingSpotify },
+      {
+        entityType: 'track',
+        url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh'
+      }
     )
 
     expect(error).toMatchObject({ provider: 'spotify', statusCode: 404 })
@@ -451,16 +471,9 @@ describe('makeMusicLinkScraperService', () => {
           })
         )
     }
-    const scraper = makeMusicLinkScraperService(
-      [secondUnavailable],
-      spotify,
-      deezer,
-      musicbrainz,
-      unavailableOdesli
-    )
-
-    const error = await Effect.runPromise(
-      Effect.flip(scraper.scrape({ url: 'https://example.com' }))
+    const error = await runScrapeError(
+      { providers: [secondUnavailable], discovery: unavailableOdesli },
+      { url: 'https://example.com' }
     )
 
     expect(error).toEqual(
@@ -491,13 +504,12 @@ describe('makeMusicLinkScraperService', () => {
       ...musicbrainz,
       lookupByMbid: () => Effect.succeed(candidate)
     }
-    const scraper = makeMusicLinkScraperService([], spotify, deezer, exactMusicBrainz)
-
-    const result = await Effect.runPromise(
-      scraper.scrape({
+    const result = await runScrape(
+      { musicbrainz: exactMusicBrainz },
+      {
         entityType: 'track',
         mbid: '12345678-1234-4234-8234-123456789abc'
-      })
+      }
     )
 
     expect(result).toEqual({
@@ -545,10 +557,9 @@ describe('makeMusicLinkScraperService', () => {
           }
         })
     }
-    const scraper = makeMusicLinkScraperService([], spotify, deezer, exactMusicBrainz)
-
-    const result = await Effect.runPromise(
-      scraper.scrape({ entityType: 'track', isrc: 'GB-UM7-10-29604' })
+    const result = await runScrape(
+      { musicbrainz: exactMusicBrainz },
+      { entityType: 'track', isrc: 'GB-UM7-10-29604' }
     )
 
     expect(result.links[0]).toMatchObject({
@@ -588,13 +599,12 @@ describe('makeMusicLinkScraperService', () => {
       ...musicbrainz,
       lookupByMbid: () => Effect.succeed(album)
     }
-    const scraper = makeMusicLinkScraperService([], spotify, deezer, exactMusicBrainz)
-
-    const result = await Effect.runPromise(
-      scraper.scrape({
+    const result = await runScrape(
+      { musicbrainz: exactMusicBrainz },
+      {
         entityType: 'album',
         mbid: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
-      })
+      }
     )
 
     expect(result.links[0]).toMatchObject({
@@ -623,14 +633,13 @@ describe('makeMusicLinkScraperService', () => {
         return Effect.succeed([])
       }
     }
-    const scraper = makeMusicLinkScraperService([], spotify, deezer, recordingMusicBrainz)
-
-    const result = await Effect.runPromise(
-      scraper.scrape({
+    const result = await runScrape(
+      { musicbrainz: recordingMusicBrainz },
+      {
         entityType: 'track',
         artistName: 'Artist',
         trackTitle: 'Track'
-      })
+      }
     )
 
     expect(candidates).toEqual([])
@@ -664,13 +673,12 @@ describe('makeMusicLinkScraperService', () => {
         return Effect.succeed([])
       }
     }
-    const scraper = makeMusicLinkScraperService([], spotify, deezer, exactMusicBrainz)
-
-    const result = await Effect.runPromise(
-      scraper.scrape({
+    const result = await runScrape(
+      { musicbrainz: exactMusicBrainz },
+      {
         entityType: 'track',
         url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh'
-      })
+      }
     )
 
     expect(calls).toEqual(['url:https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh'])
@@ -712,13 +720,12 @@ describe('makeMusicLinkScraperService', () => {
           storage: 'remote_reference'
         })
     }
-    const scraper = makeMusicLinkScraperService([], spotify, deezer, exactMusicBrainz)
-
-    const result = await Effect.runPromise(
-      scraper.scrape({
+    const result = await runScrape(
+      { musicbrainz: exactMusicBrainz },
+      {
         entityType: 'album',
         mbid: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
-      })
+      }
     )
 
     expect(result.entityMeta?.thumbnailUrl).toBe(
@@ -743,20 +750,13 @@ describe('makeMusicLinkScraperService', () => {
           })
         )
     }
-    const scraper = makeMusicLinkScraperService(
-      [],
-      spotify,
-      deezer,
-      unavailableMusicBrainz,
-      unavailableOdesli
-    )
-
-    const result = await Effect.runPromise(
-      scraper.scrape({
+    const result = await runScrape(
+      { musicbrainz: unavailableMusicBrainz, discovery: unavailableOdesli },
+      {
         entityType: 'track',
         url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh',
         isrc: 'GBUM71029604'
-      })
+      }
     )
 
     expect(result.links).toEqual([
