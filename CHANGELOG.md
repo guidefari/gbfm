@@ -1,3 +1,26 @@
+# [2.87.0](https://github.com/guidefari/gbfm/compare/v2.86.1...v2.87.0) (2026-08-23)
+
+
+### Bug Fixes
+
+* **config:** point non-prod stages at their own CDN router ([946066e](https://github.com/guidefari/gbfm/commit/946066e8d0934602647381a2dfeb126e6a04b768))
+* **deps:** patch cloudflare-runtime's undefined asset-config logger ([7390d32](https://github.com/guidefari/gbfm/commit/7390d323df31580805fbfaf48d71b15dd1f2dab8))
+* **dev:** bind local API to production D1 ([fa3c9f4](https://github.com/guidefari/gbfm/commit/fa3c9f4ca524e53df95de74155ee989da2f7bb3c))
+* **dev:** run www on Vite port ([392519d](https://github.com/guidefari/gbfm/commit/392519d83270771a344f24a599d937f2238231b4))
+* **effect:** add monotonic members to Clock test doubles ([c02a8ff](https://github.com/guidefari/gbfm/commit/c02a8ff2973b636e18c998762209923bafacf29f))
+* **effect:** rename Schema.TaggedErrorClass to Schema.TaggedError ([d886ff5](https://github.com/guidefari/gbfm/commit/d886ff52b32fda44ffab4afcc75682e0bc10f411))
+* **infra:** adapt to alchemy beta.72 Worker API and pin a supported compat date ([fb9a68f](https://github.com/guidefari/gbfm/commit/fb9a68f169f3011e321b0121e3cbc7d64373630b))
+* **music:** enforce resolver identity invariants ([67f12b3](https://github.com/guidefari/gbfm/commit/67f12b3e568f2e469749308bd8e76f194091274c))
+* **music:** preserve provider outcome semantics ([bdf924e](https://github.com/guidefari/gbfm/commit/bdf924e89893a0bf9c6d88ae336176c1b6e544f2))
+* **music:** stop hiding cover upload failures on resolve ([ef43f4d](https://github.com/guidefari/gbfm/commit/ef43f4dffb828854f630a6e004e01d697f638fbb))
+
+
+### Features
+
+* **infra:** bind dev secrets as secret_text instead of the Secrets Store ([1042170](https://github.com/guidefari/gbfm/commit/10421708a0e7eb8096b696b03d25e29f7f896b02))
+* **music:** archive provider artwork ([017f662](https://github.com/guidefari/gbfm/commit/017f66246c4d8aae38584839dba3fcd7ea5ef968))
+* **music:** resolve entities across trusted sources ([2d5948b](https://github.com/guidefari/gbfm/commit/2d5948bf2fd0a8cb070b4aaa5bdf0d678cdf0824))
+
 ## [2.86.1](https://github.com/guidefari/gbfm/compare/v2.86.0...v2.86.1) (2026-08-14)
 
 
