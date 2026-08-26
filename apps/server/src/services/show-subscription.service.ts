@@ -131,13 +131,14 @@ const unsubscribeEffect = (userId: string, showId: string) =>
     })
 
     if (result.length === 0) {
-      yield* new NotFoundError({
+      return yield* new NotFoundError({
         message: 'Subscription not found',
         resource: 'show_subscription'
       })
     }
 
     yield* recordShowUnsubscribe
+    return undefined
   })
 
 const getUserSubscriptionsEffect = (userId: string, options: { limit: number; offset: number }) =>

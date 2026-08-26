@@ -66,9 +66,9 @@ const makeBucket = () => {
   return { bucket, puts, deleted, cursors }
 }
 
-const runWithStore = <A>(
+const runWithStore = <A, E>(
   buckets: R2ObjectStoreBuckets,
-  effect: Effect.Effect<A, unknown, ObjectStoreClient>
+  effect: Effect.Effect<A, E, ObjectStoreClient>
 ) => {
   const storage = {
     provider: 'r2' as const,

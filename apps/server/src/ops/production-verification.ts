@@ -505,12 +505,12 @@ const waitForDatabaseSpans = (
     for (let attempt = 1; attempt <= config.sentry.ingestionAttempts; attempt += 1) {
       const spans = yield* queryDatabaseSpans(config, 'sentry-ingestion')
 
-      if (spans.length > 0) return
+      if (spans.length > 0) return undefined
 
       if (attempt < config.sentry.ingestionAttempts) yield* port.wait(config.sentry.intervalMs)
     }
 
-    yield* fail(
+    return yield* fail(
       'sentry-ingestion',
       `No database spans arrived for the verification trace after ${config.sentry.ingestionAttempts} attempts`
     )

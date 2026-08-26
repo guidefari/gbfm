@@ -84,7 +84,7 @@ const addFavoriteEffect = (userId: string, audioId: string) =>
       })
 
       if (audioRecords.length === 0) {
-        yield* new NotFoundError({
+        return yield* new NotFoundError({
           message: 'Audio not found',
           resource: 'audio',
           id: audioId
@@ -158,7 +158,7 @@ const removeFavoriteEffect = (userId: string, audioId: string) =>
       })
 
       if (existingRecords.length === 0) {
-        yield* new NotFoundError({
+        return yield* new NotFoundError({
           message: 'Favorite not found',
           resource: 'favorite',
           id: `${userId}-${audioId}`
@@ -185,6 +185,7 @@ const removeFavoriteEffect = (userId: string, audioId: string) =>
         userId,
         audioId
       })
+      return undefined
     })
   )
 

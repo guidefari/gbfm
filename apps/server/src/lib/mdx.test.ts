@@ -3,9 +3,9 @@ import { describe, expect, test, vi } from 'vitest'
 import { withTestLayer } from '@/test/effect'
 import { MdxService, makeMdxServiceTest } from './mdx'
 
-const withService = <A>(
+const withService = <A, E>(
   compileFn: (content: string) => Promise<string>,
-  run: (svc: MdxService) => Effect.Effect<A, unknown>
+  run: (svc: MdxService) => Effect.Effect<A, E>
 ): Promise<A> =>
   Effect.runPromise(
     withTestLayer(

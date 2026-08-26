@@ -81,11 +81,6 @@ const toFailureCategory = (
 ): EmailDeliveryFailureCategory =>
   failure._tag === 'EmailRejected' ? failure.reason : 'unavailable'
 
-const safeTelemetry = (effect: Effect.Effect<void, never, unknown>): Effect.Effect<void> => {
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion, typescript/consistent-type-assertions -- SAFETY: Effect's tracing and metric operations have no required runtime services and no failure path.
-  return effect as Effect.Effect<void>
-}
-
 const persist = <A>(
   operation: EmailDeliveryPersistenceError['operation'],
   effect: () => Promise<A>
@@ -145,16 +140,12 @@ export const EmailDeliveryLive = Layer.effect(
           if (Result.isFailure(transportResult)) {
             const failure = transportResult.failure
             const failureCategory = toFailureCategory(failure)
-            yield* safeTelemetry(
-              Effect.annotateCurrentSpan(
-                'email.outcome',
-                failure._tag === 'EmailRejected' ? 'rejected' : 'unavailable'
-              )
+            yield* Effect.annotateCurrentSpan(
+              'email.outcome',
+              failure._tag === 'EmailRejected' ? 'rejected' : 'unavailable'
             )
             if (failure.providerCode) {
-              yield* safeTelemetry(
-                Effect.annotateCurrentSpan('email.provider_code', failure.providerCode)
-              )
+              yield* Effect.annotateCurrentSpan('email.provider_code', failure.providerCode)
             }
             const failedAt = new Date(yield* clock.currentTimeMillis)
             yield* persist('mark-failed', () =>
@@ -170,10 +161,8 @@ export const EmailDeliveryLive = Layer.effect(
 
           const receipt = transportResult.success
           if (receipt.messageId.trim().length === 0) {
-            yield* safeTelemetry(Effect.annotateCurrentSpan('email.outcome', 'unavailable'))
-            yield* safeTelemetry(
-              Effect.annotateCurrentSpan('email.provider_code', 'invalid-receipt')
-            )
+            yield* Effect.annotateCurrentSpan('email.outcome', 'unavailable')
+            yield* Effect.annotateCurrentSpan('email.provider_code', 'invalid-receipt')
             const failedAt = new Date(yield* clock.currentTimeMillis)
             yield* persist('mark-failed', () =>
               markEmailDeliveryLogAsFailed(pending.id, 'unavailable', failedAt, database)
@@ -182,7 +171,7 @@ export const EmailDeliveryLive = Layer.effect(
             return yield* new EmailDeliveryUnavailable()
           }
 
-          yield* safeTelemetry(Effect.annotateCurrentSpan('email.outcome', 'accepted'))
+          yield* Effect.annotateCurrentSpan('email.outcome', 'accepted')
           const acceptedAt = new Date(yield* clock.currentTimeMillis)
           yield* persist('mark-sent', () =>
             markEmailDeliveryLogAsSent(

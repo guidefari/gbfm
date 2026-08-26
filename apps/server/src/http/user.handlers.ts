@@ -94,15 +94,15 @@ export const UserHandlersLive = HttpApiBuilder.group(Api, 'user', (handlers) =>
         }
 
         const svc = yield* UserService
-        const [profile, socialLinks] = yield* dieOnDatabaseError(
-          Effect.all([
-            svc
-              .updateUserProfile(user.id, updateData)
-              .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
-            svc
-              .getUserSocialLinks(user.id)
-              .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
-          ])
+        const profile = yield* dieOnDatabaseError(
+          svc
+            .updateUserProfile(user.id, updateData)
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+        )
+        const socialLinks = yield* dieOnDatabaseError(
+          svc
+            .getUserSocialLinks(user.id)
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
         )
 
         return toProfileResponse(profile, socialLinks)
@@ -112,15 +112,15 @@ export const UserHandlersLive = HttpApiBuilder.group(Api, 'user', (handlers) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
         const svc = yield* UserService
-        const [profile, socialLinks] = yield* dieOnDatabaseError(
-          Effect.all([
-            svc
-              .getUserById(user.id)
-              .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
-            svc
-              .getUserSocialLinks(user.id)
-              .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
-          ])
+        const profile = yield* dieOnDatabaseError(
+          svc
+            .getUserById(user.id)
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+        )
+        const socialLinks = yield* dieOnDatabaseError(
+          svc
+            .getUserSocialLinks(user.id)
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
         )
 
         return toProfileResponse(profile, socialLinks)
