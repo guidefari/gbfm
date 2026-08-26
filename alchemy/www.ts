@@ -1,5 +1,6 @@
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as Effect from 'effect/Effect'
+import { workerObservability } from './observability'
 import type { StageConfig } from './stage'
 
 export const website = (config: StageConfig) =>
@@ -14,6 +15,7 @@ export const website = (config: StageConfig) =>
         ? { domain: { name: 'www.goosebumps.fm', aliases: ['goosebumps.fm'] } }
         : { url: true }),
       assets: { notFoundHandling: 'single-page-application' },
+      observability: workerObservability(config.isProduction),
       dev: config.isLocalDev
         ? {
             command: 'bun run dev -- --port 5173 --strictPort',

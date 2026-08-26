@@ -11,6 +11,7 @@ import {
 } from '../apps/server/src/scheduled'
 import type { CdnRouter } from './cdn'
 import type { EmailResources } from './email'
+import { workerObservability } from './observability'
 import type { SecretBindings } from './secrets'
 import { hostname, type StageConfig } from './stage'
 import type { Storage } from './storage'
@@ -36,6 +37,7 @@ export const apiWorker = ({ config, store, secrets, email, emailConfig, cdn }: A
       ...hostname(config, 'api.goosebumps.fm'),
       compatibility: { date: '2026-07-04', flags: ['nodejs_compat'] },
       crons: [reminderSweepCron, sitemapRegenerationCron, maintenanceSweepCron],
+      observability: workerObservability(config.isProduction),
       env: {
         DB: store.db,
         USER_CONTENT: store.userContent,

@@ -44,7 +44,9 @@ const optionalSecretNames = [
   'DatabaseUser',
   'DatabasePassword',
   'DatabasePort',
-  'DatabaseName'
+  'DatabaseName',
+  'OTEL_EXPORTER_OTLP_ENDPOINT',
+  'OTEL_EXPORTER_OTLP_HEADERS'
 ] as const satisfies readonly SecretName[]
 
 type OptionalSecretName = (typeof optionalSecretNames)[number]

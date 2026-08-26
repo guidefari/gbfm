@@ -321,13 +321,18 @@ const processReminderMessage = (env: ApiEnv, job: ReminderJob) =>
   }).pipe(Effect.provide(appServicesLive(env)))
 
 export default Sentry.withSentry<ApiEnv, ReminderJob>(sentryOptions, {
-  async fetch(request: Request, env: ApiEnv, _ctx: ExecutionContext): Promise<Response> {
-    const webHandler = createWebHandler({ appServicesLive: appServicesLive(env) })
-    try {
-      return await webHandler.handler(request)
-    } finally {
-      await webHandler.dispose()
-    }
+  async fetch(request: Request, env: ApiEnv, ctx: ExecutionContext): Promise<Response> {
+    return ctx.tracing.enterSpan('gbfm.api.request', async (span) => {
+      span.setAttribute('http.request.method', request.method)
+      span.setAttribute('url.path', new URL(request.url).pathname)
+
+      const webHandler = createWebHandler({ appServicesLive: appServicesLive(env) })
+      try {
+        return await webHandler.handler(request)
+      } finally {
+        await webHandler.dispose()
+      }
+    })
   },
 
   scheduled(controller: ScheduledController, env: ApiEnv): Promise<void> {
