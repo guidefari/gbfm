@@ -8,14 +8,14 @@ export function workerObservability(isProduction: boolean): WorkerObservability 
     enabled: true,
     logs: {
       enabled: true,
-      headSamplingRate: isProduction ? 0.2 : 1,
+      headSamplingRate: 1,
       invocationLogs: true,
       persist: !isProduction,
       destinations: isProduction ? [LOGS_DESTINATION] : undefined
     },
     traces: {
       enabled: true,
-      headSamplingRate: isProduction ? 0.2 : 1,
+      headSamplingRate: 1,
       persist: !isProduction,
       destinations: isProduction ? [TRACES_DESTINATION] : undefined
     }
