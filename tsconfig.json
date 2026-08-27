@@ -1,24 +1,7 @@
 {
-  "$schema": "./node_modules/@effect/tsgo/schema.json",
-  "extends": "@tsconfig/bun/tsconfig.json",
+  "extends": "./apps/server/tsconfig.json",
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "preserve",
-    "moduleResolution": "bundler",
-    "moduleDetection": "force",
-    "isolatedModules": true,
-    "skipLibCheck": true,
-    "verbatimModuleSyntax": true,
-    "rewriteRelativeImportExtensions": true,
-    "strict": true,
-    "exactOptionalPropertyTypes": true,
-    "noUnusedLocals": true,
-    "noImplicitOverride": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "incremental": true,
-    "composite": true,
-    "plugins": [{ "name": "@effect/language-service", "diagnostics": false }]
+    "noEmit": true
   },
-  "files": []
+  "include": ["alchemy.run.ts", "alchemy/**/*.ts"]
 }
