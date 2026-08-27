@@ -9,10 +9,6 @@
     "titleBar.activeBackground": "#78b1fbcc",
     "titleBar.inactiveBackground": "#7abcd780"
   },
-  "typescript.tsdk": "./node_modules/typescript/lib",
-  "typescript.enablePromptUseWorkspaceTsdk": true,
-  "js/ts.tsdk.additionalLocations": ["./node_modules/typescript/bin"],
-  "js/ts.tsdk.promptToUseWorkspaceVersion": true,
-  "js/ts.tsdk.path": "./node_modules/typescript/bin",
+  "js/ts.tsdk.path": "./node_modules/typescript",
   "js/ts.experimental.useTsgo": true
 }
