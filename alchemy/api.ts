@@ -23,9 +23,18 @@ export interface ApiWorkerInput {
   readonly email: EmailResources
   readonly emailConfig: EmailDeploymentConfig
   readonly cdn: CdnRouter
+  readonly adminEmail: string
 }
 
-export const apiWorker = ({ config, store, secrets, email, emailConfig, cdn }: ApiWorkerInput) =>
+export const apiWorker = ({
+  config,
+  store,
+  secrets,
+  email,
+  emailConfig,
+  cdn,
+  adminEmail
+}: ApiWorkerInput) =>
   Effect.gen(function* () {
     const sentryDsn = secrets.SENTRY_BACKEND_DSN
     if (sentryDsn === undefined) {
@@ -61,7 +70,7 @@ export const apiWorker = ({ config, store, secrets, email, emailConfig, cdn }: A
         USER_CONTENT_BUCKET_NAME: store.userContent.bucketName,
         MIXES_BUCKET_NAME: store.mixes.bucketName,
         SENTRY_ENVIRONMENT: config.stage,
-        ADMIN_EMAIL: process.env.ADMIN_EMAIL ?? '',
+        ADMIN_EMAIL: adminEmail,
         ...secrets,
         SENTRY_DSN: sentryDsn,
         R2AccountId: store.userContent.accountId

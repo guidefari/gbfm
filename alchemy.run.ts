@@ -3,6 +3,7 @@ import * as Cloudflare from 'alchemy/Cloudflare'
 import * as Effect from 'effect/Effect'
 import { apiWorker } from './alchemy/api'
 import { cdnRouter } from './alchemy/cdn'
+import { deploymentConfig } from './alchemy/config'
 import { dnsRedirects } from './alchemy/dns'
 import { emailResources } from './alchemy/email'
 import { secretsStore } from './alchemy/secrets'
@@ -19,21 +20,30 @@ export default Alchemy.Stack(
   },
   Effect.gen(function* () {
     const config = yield* stageConfig
-    const secrets = yield* secretsStore(config.apiUrl, config.isLocalDev)
+    const deployment = yield* deploymentConfig(config.isLocalDev)
+    const secrets = yield* secretsStore(config.apiUrl, config.isLocalDev, deployment.secrets)
     const emailConfig = emailDeploymentConfig({
       stage: config.stage,
-      testRecipient: process.env.EMAIL_TEST_RECIPIENT,
+      testRecipient: deployment.emailTestRecipient,
       localDev: config.isLocalDev
     })
 
     const email = yield* emailResources(config, emailConfig)
     const store = yield* storage(config)
     const cdn = yield* cdnRouter(config, store)
-    const api = yield* apiWorker({ config, store, secrets, email, emailConfig, cdn })
+    const api = yield* apiWorker({
+      config,
+      store,
+      secrets,
+      email,
+      emailConfig,
+      cdn,
+      adminEmail: deployment.adminEmail
+    })
 
     yield* dnsRedirects(config)
 
-    const www = yield* website(config)
+    const www = yield* website(config, deployment.website)
 
     return {
       apiUrl: api.url,
