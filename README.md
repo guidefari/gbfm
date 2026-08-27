@@ -1,3 +1,8 @@
+## Local development
+
+Run `bun dev`, then open `https://gbfm.localhost`. Portless creates and trusts its local HTTPS
+certificate on first use.
+
 ## Current architecture
 
 Dev & infra via [SST](https://sst.dev)
