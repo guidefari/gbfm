@@ -33,6 +33,52 @@ export const NavigationHandlersLive = HttpApiBuilder.group(Api, 'navigation', (h
           .pipe(Effect.catchTag('DatabaseError', () => new HttpApiError.InternalServerError()))
       })
     )
+    .handle('peekMicroPostNavigation', ({ payload }) => {
+      const command = toNavigationCommand(payload.command)
+      return Effect.gen(function* () {
+        const { resolve: resolveIdentity } = yield* IdentityResolver
+        const navigation = yield* NavigationSessionService
+        const identity = yield* resolveIdentity
+        return yield* navigation.peek(identity, command, decodeSlug(payload.from)).pipe(
+          Effect.catchTag('NoSuchMove', () => new HttpApiError.Conflict()),
+          Effect.catchTag('CorpusExhausted', () =>
+            Effect.fail<HttpApiError.NotFound | HttpApiError.Conflict>(
+              command._tag === 'Open' ? new HttpApiError.NotFound() : new HttpApiError.Conflict()
+            )
+          ),
+          Effect.catchTag('DatabaseError', () => new HttpApiError.InternalServerError())
+        )
+      }).pipe(
+        Effect.withSpan('navigation.peek.request', {
+          attributes:
+            command._tag === 'Step'
+              ? { command: command._tag, direction: command.direction }
+              : { command: command._tag }
+        })
+      )
+    })
+    .handle('recordMicroPostVisit', ({ payload }) => {
+      const command = toNavigationCommand(payload.command)
+      return Effect.gen(function* () {
+        const { resolve: resolveIdentity } = yield* IdentityResolver
+        const navigation = yield* NavigationSessionService
+        const identity = yield* resolveIdentity
+        return yield* navigation
+          .record(identity, command, decodeSlug(payload.from), payload.intentToken)
+          .pipe(
+            Effect.catchTag('NoSuchMove', () => Effect.succeed({ recorded: false })),
+            Effect.catchTag('CorpusExhausted', () => Effect.succeed({ recorded: false })),
+            Effect.catchTag('DatabaseError', () => new HttpApiError.InternalServerError())
+          )
+      }).pipe(
+        Effect.withSpan('navigation.visit.request', {
+          attributes:
+            command._tag === 'Step'
+              ? { command: command._tag, direction: command.direction }
+              : { command: command._tag }
+        })
+      )
+    })
     .handle('navigateMicroPosts', ({ payload }) => {
       const command = toNavigationCommand(payload.command)
       return Effect.gen(function* () {

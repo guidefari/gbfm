@@ -1,9 +1,15 @@
+import type { D1Database, D1PreparedStatement } from '@cloudflare/workers-types'
 import { randomUUID } from 'node:crypto'
 import { eq, inArray, sql } from 'drizzle-orm'
 import { Effect, Layer, ManagedRuntime, Schema } from 'effect'
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest'
-import { DatabaseTestLayer, db } from '@/test/database'
-import { navigationSeenPosts, navigationSessions } from '@/db/navigation.schema'
+import { DatabaseLayer } from '@/db/layer'
+import { DatabaseTestLayer, d1, db } from '@/test/database'
+import {
+  navigationSeenPosts,
+  navigationSessions,
+  navigationTrailEntries
+} from '@/db/navigation.schema'
 import { postsTable } from '@/db/post.schema'
 import { CorpusExhausted, Slug } from '@/domain/navigation'
 import { MdxServiceLayer } from '@/lib/mdx'
@@ -33,6 +39,77 @@ const navigationLayer = NavigationSessionServiceLayer.pipe(
   Layer.provide(NavigationLockLocalLayer)
 )
 const navigationRuntime = ManagedRuntime.make(navigationLayer)
+
+let roundTrips = 0
+
+const countedMethods = ['all', 'run', 'first', 'raw'] as const
+
+const countStatement = (statement: D1PreparedStatement): D1PreparedStatement =>
+  new Proxy(statement, {
+    get: (target, key: string | symbol) => {
+      if (key === 'bind') {
+        return (...values: readonly unknown[]) => countStatement(target.bind(...values))
+      }
+      const isCounted = countedMethods.some((method) => method === key)
+      if (isCounted) {
+        return async (...args: readonly unknown[]) => {
+          roundTrips += 1
+          return Reflect.apply(Reflect.get(target, key), target, args)
+        }
+      }
+      return Reflect.get(target, key, target)
+    }
+  })
+
+const countingD1: D1Database = new Proxy(d1, {
+  get: (target, key: string | symbol) => {
+    if (key === 'prepare') {
+      return (query: string) => countStatement(target.prepare(query))
+    }
+    if (key === 'batch') {
+      return async (statements: readonly D1PreparedStatement[]) => {
+        roundTrips += 1
+        return target.batch([...statements])
+      }
+    }
+    return Reflect.get(target, key, target)
+  }
+})
+
+const countingRuntime = ManagedRuntime.make(
+  NavigationSessionServiceLayer.pipe(
+    Layer.provide(postLayer),
+    Layer.provide(DatabaseLayer(countingD1)),
+    Layer.provide(NavigationLockLocalLayer)
+  )
+)
+
+const peek = (
+  identity: { readonly _tag: 'Anonymous'; readonly deviceToken: string },
+  command:
+    | { readonly _tag: 'Step'; readonly direction: 'Back' | 'Forward' }
+    | { readonly _tag: 'Jump' }
+    | { readonly _tag: 'Open'; readonly slug: Slug },
+  from: Slug
+) =>
+  Effect.gen(function* () {
+    const navigation = yield* NavigationSessionService
+    return yield* navigation.peek(identity, command, from)
+  })
+
+const record = (
+  identity: { readonly _tag: 'Anonymous'; readonly deviceToken: string },
+  command:
+    | { readonly _tag: 'Step'; readonly direction: 'Back' | 'Forward' }
+    | { readonly _tag: 'Jump' }
+    | { readonly _tag: 'Open'; readonly slug: Slug },
+  from: Slug,
+  intentToken: IntentToken
+) =>
+  Effect.gen(function* () {
+    const navigation = yield* NavigationSessionService
+    return yield* navigation.record(identity, command, from, intentToken)
+  })
 
 const read = (identity: { readonly _tag: 'Anonymous'; readonly deviceToken: string }) =>
   Effect.gen(function* () {
@@ -97,7 +174,10 @@ beforeAll(async () => {
   await db.run(sql`SELECT 1`)
 })
 
-afterAll(() => navigationRuntime.dispose())
+afterAll(async () => {
+  await navigationRuntime.dispose()
+  await countingRuntime.dispose()
+})
 
 afterEach(async () => {
   if (readerTokens.length > 0) {
@@ -280,5 +360,160 @@ describe('NavigationSessionService', () => {
     expect(result.destination.slug).toBe(first.slug)
     expect(before.cursor).toBe(1)
     expect(after.cursor).toBe(0)
+  })
+  test('peeks the current slug without writing to the trail', async () => {
+    const first = await createPost('peek-first', new Date('2026-07-01T00:00:00.000Z'))
+    const second = await createPost('peek-second', new Date('2026-06-30T00:00:00.000Z'))
+    const reader = identity()
+
+    await open(reader, first)
+    const before = await sessionFor(reader.deviceToken)
+    const trailBefore = await db
+      .select()
+      .from(navigationTrailEntries)
+      .where(eq(navigationTrailEntries.sessionId, before.id))
+
+    const peeked = await navigationRuntime.runPromise(
+      peek(reader, { _tag: 'Open', slug: first.slug }, first.slug)
+    )
+
+    const after = await sessionFor(reader.deviceToken)
+    const trailAfter = await db
+      .select()
+      .from(navigationTrailEntries)
+      .where(eq(navigationTrailEntries.sessionId, before.id))
+
+    expect(peeked.destination.slug).toBe(first.slug)
+    expect(peeked.neighbours.forward).toBe(second.slug)
+    expect(after.cursor).toBe(before.cursor)
+    expect(after.updatedAt.getTime()).toBe(before.updatedAt.getTime())
+    expect(trailAfter.length).toBe(trailBefore.length)
+  })
+
+  test('peek matches resolve for a replayed Step(Back)', async () => {
+    const first = await createPost('peek-back-first', new Date('2026-07-05T00:00:00.000Z'))
+    const last = await createPost('peek-back-last', new Date('2026-07-06T00:00:00.000Z'))
+    const reader = identity()
+
+    await open(reader, first)
+    await open(reader, last)
+
+    const peeked = await navigationRuntime.runPromise(
+      peek(reader, { _tag: 'Step', direction: 'Back' }, last.slug)
+    )
+    const resolved = await navigationRuntime.runPromise(
+      resolve(reader, { _tag: 'Step', direction: 'Back' }, last.slug, randomUUID())
+    )
+
+    expect(peeked.destination.slug).toBe(first.slug)
+    expect(peeked.destination.slug).toBe(resolved.destination.slug)
+    expect(peeked.trailPosition).toEqual(resolved.trailPosition)
+    expect(peeked.capabilities).toEqual(resolved.capabilities)
+    expect(peeked.neighbours).toEqual(resolved.neighbours)
+  })
+
+  test('peek reports the next unread destination for Step(Forward) without recording it', async () => {
+    const first = await createPost('peek-fwd-first', new Date('2026-07-10T00:00:00.000Z'))
+    const next = await createPost('peek-fwd-next', new Date('2026-07-09T00:00:00.000Z'))
+    const reader = identity()
+
+    await open(reader, first)
+    const before = await sessionFor(reader.deviceToken)
+
+    const peeked = await navigationRuntime.runPromise(
+      peek(reader, { _tag: 'Step', direction: 'Forward' }, first.slug)
+    )
+    const seen = await db
+      .select({ slug: navigationSeenPosts.slug })
+      .from(navigationSeenPosts)
+      .where(eq(navigationSeenPosts.sessionId, before.id))
+
+    expect(peeked.destination.slug).toBe(next.slug)
+    expect(seen).toEqual([{ slug: first.slug }])
+  })
+
+  test('record persists the visit that a peek only previewed', async () => {
+    const first = await createPost('record-first', new Date('2026-07-14T00:00:00.000Z'))
+    const next = await createPost('record-next', new Date('2026-07-13T00:00:00.000Z'))
+    const reader = identity()
+
+    await open(reader, first)
+    const peeked = await navigationRuntime.runPromise(
+      peek(reader, { _tag: 'Step', direction: 'Forward' }, first.slug)
+    )
+    const outcome = await navigationRuntime.runPromise(
+      record(reader, { _tag: 'Step', direction: 'Forward' }, first.slug, randomUUID())
+    )
+
+    const session = await sessionFor(reader.deviceToken)
+    const seen = await db
+      .select({ slug: navigationSeenPosts.slug })
+      .from(navigationSeenPosts)
+      .where(eq(navigationSeenPosts.sessionId, session.id))
+
+    expect(peeked.destination.slug).toBe(next.slug)
+    expect(outcome).toEqual({ recorded: true })
+    expect(session.cursor).toBe(1)
+    expect(seen.map((row) => row.slug).toSorted()).toEqual([first.slug, next.slug].toSorted())
+  })
+
+  test('returns several forward slugs in the neighbourhood', async () => {
+    const first = await createPost('depth-first', new Date('2026-08-01T00:00:00.000Z'))
+    const second = await createPost('depth-second', new Date('2026-07-31T00:00:00.000Z'))
+    const third = await createPost('depth-third', new Date('2026-07-30T00:00:00.000Z'))
+    const reader = identity()
+
+    const result = await open(reader, first)
+
+    expect(result.neighbours.forward).toBe(second.slug)
+    expect(result.neighbourhood.forward).toEqual([second.slug, third.slug])
+    expect(result.neighbourhood.back).toEqual([])
+  })
+
+  test('returns several back slugs in the neighbourhood after walking a trail', async () => {
+    const first = await createPost('depth-back-first', new Date('2026-08-10T00:00:00.000Z'))
+    const second = await createPost('depth-back-second', new Date('2026-08-11T00:00:00.000Z'))
+    const third = await createPost('depth-back-third', new Date('2026-08-12T00:00:00.000Z'))
+    const reader = identity()
+
+    await open(reader, first)
+    await open(reader, second)
+    const result = await open(reader, third)
+
+    expect(result.neighbours.back).toBe(second.slug)
+    expect(result.neighbourhood.back).toEqual([second.slug, first.slug])
+  })
+
+  test('does not offer a seen post as unread after the anti-join filter', async () => {
+    const first = await createPost('antijoin-first', new Date('2026-09-01T00:00:00.000Z'))
+    const second = await createPost('antijoin-second', new Date('2026-08-31T00:00:00.000Z'))
+    const other = identity()
+    const reader = identity()
+
+    await open(other, first)
+    await open(other, second)
+    await open(reader, first)
+
+    const result = await navigationRuntime.runPromise(
+      resolve(reader, { _tag: 'Step', direction: 'Forward' }, first.slug, randomUUID())
+    )
+
+    expect(result.destination.slug).toBe(second.slug)
+    expect(result.capabilities.hasUnread).toBe(false)
+  })
+  test('peeks a replayed Open in a single database round trip', async () => {
+    const first = await createPost('roundtrip-first', new Date('2026-10-01T00:00:00.000Z'))
+    await createPost('roundtrip-second', new Date('2026-09-30T00:00:00.000Z'))
+    const reader = identity()
+
+    await open(reader, first)
+
+    roundTrips = 0
+    const result = await countingRuntime.runPromise(
+      peek(reader, { _tag: 'Open', slug: first.slug }, first.slug)
+    )
+
+    expect(result.destination.slug).toBe(first.slug)
+    expect(roundTrips).toBe(1)
   })
 })

@@ -34,9 +34,25 @@ export const NavigationResultResponse = Schema.Struct({
   destination: Schema.Struct({ slug: Slug, postId: Schema.String }),
   capabilities: NavigationCapabilitiesResponse,
   trailPosition: Schema.Struct({ index: Schema.Number, length: Schema.Number }),
-  neighbours: Schema.Struct({ back: Schema.optional(Slug), forward: Schema.optional(Slug) })
+  neighbours: Schema.Struct({ back: Schema.optional(Slug), forward: Schema.optional(Slug) }),
+  neighbourhood: Schema.optional(
+    Schema.Struct({ back: Schema.Array(Slug), forward: Schema.Array(Slug) })
+  )
 })
 export type NavigationResultResponse = typeof NavigationResultResponse.Type
+
+export const NavigationPeekInput = Schema.Struct({
+  command: NavigationCommand,
+  from: Slug
+})
+export type NavigationPeekInput = typeof NavigationPeekInput.Type
+
+export const NavigationVisitInput = Schema.Struct({
+  command: NavigationCommand,
+  from: Slug,
+  intentToken: IntentToken
+})
+export type NavigationVisitInput = typeof NavigationVisitInput.Type
 
 export const NavigationSessionResponse = Schema.Struct({
   slug: Schema.NullOr(Slug),
@@ -49,6 +65,20 @@ export const NavigationGroup = HttpApiGroup.make('navigation')
     HttpApiEndpoint.post('navigateMicroPosts', '/api/content/posts/micro/navigate', {
       payload: NavigateInput,
       success: NavigationResultResponse,
+      error: [HttpApiError.NotFound, HttpApiError.Conflict, HttpApiError.InternalServerError]
+    })
+  )
+  .add(
+    HttpApiEndpoint.post('peekMicroPostNavigation', '/api/content/posts/micro/navigate/peek', {
+      payload: NavigationPeekInput,
+      success: NavigationResultResponse,
+      error: [HttpApiError.NotFound, HttpApiError.Conflict, HttpApiError.InternalServerError]
+    })
+  )
+  .add(
+    HttpApiEndpoint.post('recordMicroPostVisit', '/api/content/posts/micro/navigate/visit', {
+      payload: NavigationVisitInput,
+      success: Schema.Struct({ recorded: Schema.Boolean }),
       error: [HttpApiError.NotFound, HttpApiError.Conflict, HttpApiError.InternalServerError]
     })
   )

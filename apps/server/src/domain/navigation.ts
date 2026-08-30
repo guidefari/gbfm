@@ -38,7 +38,13 @@ export type NavigationResult = {
   readonly capabilities: NavigationCapabilities
   readonly trailPosition: { readonly index: number; readonly length: number }
   readonly neighbours: { readonly back?: Slug; readonly forward?: Slug }
+  readonly neighbourhood: {
+    readonly back: readonly Slug[]
+    readonly forward: readonly Slug[]
+  }
 }
+
+export const NEIGHBOURHOOD_DEPTH = 3
 
 export type ResolvedDestination = {
   readonly slug: Slug
