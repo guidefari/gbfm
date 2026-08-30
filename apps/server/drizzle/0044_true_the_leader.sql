@@ -1,2 +1,0 @@
-CREATE INDEX "music_label_albums_album_id_idx" ON "music_label_albums" USING btree ("album_id");--> statement-breakpoint
-CREATE INDEX "music_label_artists_artist_id_idx" ON "music_label_artists" USING btree ("artist_id");
