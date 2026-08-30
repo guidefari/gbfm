@@ -63,6 +63,8 @@ export function TweetSearchDialog({ open, onOpenChange }: Props) {
                   content={result.content}
                   musicEntityType={result.musicEntityType}
                   musicEntityId={result.musicEntityId}
+                  depth={result.depth}
+                  parentPostId={result.parentPostId}
                   onClick={() => onOpenChange(false)}
                 />
               ))
