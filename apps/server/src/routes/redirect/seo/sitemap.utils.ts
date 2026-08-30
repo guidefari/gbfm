@@ -43,10 +43,10 @@ export const buildUrlEntry = (
   </url>`
 }
 
-export const buildSitemapXml = (data: SitemapData, siteUrl: string, vpsUrl?: string): string => {
+export const buildSitemapXml = (data: SitemapData, siteUrl: string, shareUrl?: string): string => {
   const now = new Date()
   const urls: string[] = []
-  const dynamicBase = vpsUrl ? `${vpsUrl}/s` : null
+  const dynamicBase = shareUrl ? `${shareUrl}/s` : null
 
   // Homepage
   urls.push(buildUrlEntry(siteUrl, now, 'daily', '1.0'))

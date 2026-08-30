@@ -7,7 +7,7 @@ import { CryptoService, CryptoServiceLayer } from './crypto.service'
 const layer = CryptoServiceLayer.pipe(
   Layer.provide(
     Layer.succeed(ConfigService, {
-      urls: { frontend: '', vps: '', bucketRouter: '' },
+      urls: { frontend: '', share: '', bucketRouter: '' },
       auth: {
         emailSender: '',
         accessTokenSecret: '',

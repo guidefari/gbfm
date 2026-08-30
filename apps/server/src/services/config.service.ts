@@ -44,6 +44,8 @@ export type WorkerConfigBindings = Readonly<
     Partial<Record<OptionalSecretName, string>> & {
       APP_STAGE: string
       CDN_ROUTER_URL?: string
+      FRONTEND_URL?: string
+      SHARE_URL?: string
       R2AccountId?: string
       USER_CONTENT_BUCKET_NAME: string
       MIXES_BUCKET_NAME: string
@@ -109,7 +111,7 @@ export const StorageConfigSchema = Schema.Struct({
 const ConfigSchema = Schema.Struct({
   urls: Schema.Struct({
     frontend: Schema.String,
-    vps: Schema.String,
+    share: Schema.String,
     bucketRouter: Schema.String
   }),
   auth: Schema.Struct({
@@ -197,8 +199,12 @@ export function createConfig(bindings?: WorkerConfigBindings): ConfigService {
 
   requiredInProduction(isProd, bindings)
 
-  const frontendUrl = 'http://127.0.0.1:5173'
-  const vpsUrl = 'http://127.0.0.1:3003'
+  const frontendUrl = isProd
+    ? 'https://goosebumps.fm'
+    : stringValue(bindings?.FRONTEND_URL, 'http://127.0.0.1:5173')
+  const shareUrl = isProd
+    ? 'https://api.goosebumps.fm'
+    : stringValue(bindings?.SHARE_URL, 'http://127.0.0.1:3003')
   // Production serves the CDN router on its own domain. Every other stage gets
   // a generated workers.dev URL instead, so the deployed router is bound as
   // CDN_ROUTER_URL rather than assumed: pointing a non-prod stage at the
@@ -238,7 +244,7 @@ export function createConfig(bindings?: WorkerConfigBindings): ConfigService {
   return {
     urls: {
       frontend: frontendUrl,
-      vps: vpsUrl,
+      share: shareUrl,
       bucketRouter: bucketRouterUrl
     },
     auth: {

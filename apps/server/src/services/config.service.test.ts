@@ -43,6 +43,31 @@ describe('StorageConfigSchema', () => {
     expect(config.encryption.rootKey).toBe('configured')
   })
 
+  test('serves production public urls rather than localhost', () => {
+    const config = createConfig({ ...workerBindings(), APP_STAGE: 'prod' })
+
+    expect(config.urls.frontend).toBe('https://goosebumps.fm')
+    expect(config.urls.share).toBe('https://api.goosebumps.fm')
+  })
+
+  test('falls back to localhost urls off production', () => {
+    const config = createConfig(workerBindings())
+
+    expect(config.urls.frontend).toBe('http://127.0.0.1:5173')
+    expect(config.urls.share).toBe('http://127.0.0.1:3003')
+  })
+
+  test('lets a non-prod stage override its public urls', () => {
+    const config = createConfig({
+      ...workerBindings(),
+      FRONTEND_URL: 'https://d1-staging.goosebumps.fm',
+      SHARE_URL: 'https://api.d1-staging.goosebumps.fm'
+    })
+
+    expect(config.urls.frontend).toBe('https://d1-staging.goosebumps.fm')
+    expect(config.urls.share).toBe('https://api.d1-staging.goosebumps.fm')
+  })
+
   test('points a non-prod stage at its own deployed CDN router', () => {
     const config = createConfig({
       ...workerBindings(),

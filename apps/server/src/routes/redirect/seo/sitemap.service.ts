@@ -164,8 +164,8 @@ export const regenerateSitemap = Effect.gen(function* () {
   const data = yield* fetchSitemapData
   const config = yield* ConfigService
   const siteUrl = config.urls.frontend.replace(/\/$/, '')
-  const vpsUrl = config.urls.vps.replace(/\/$/, '')
-  const xml = buildSitemapXml(data, siteUrl, vpsUrl)
+  const shareUrl = config.urls.share.replace(/\/$/, '')
+  const xml = buildSitemapXml(data, siteUrl, shareUrl)
 
   const sitemap = { xml, generatedAt: new Date() }
   yield* cache.write(sitemap)
