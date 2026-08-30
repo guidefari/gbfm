@@ -1,4 +1,5 @@
 - run `bun precommit` to validate your changes. this gives you typecheck, oxlint, and oxfmt
+- work in the `prod` branch unless otherwise specified
 
 ## Agent skills
 
