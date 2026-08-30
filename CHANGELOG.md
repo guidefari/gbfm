@@ -1,3 +1,16 @@
+# [2.88.0](https://github.com/guidefari/gbfm/compare/v2.87.0...v2.88.0) (2026-08-27)
+
+
+### Bug Fixes
+
+* **effect:** remove broad error channels ([ae3561a](https://github.com/guidefari/gbfm/commit/ae3561a074890bd27666329632a92bafab1c4576))
+
+
+### Features
+
+* **dev:** serve web app through Portless ([ecc0dcb](https://github.com/guidefari/gbfm/commit/ecc0dcbe9bd88cd73f7e0a369bcab1cc96aa6076))
+* **observability:** export Worker telemetry ([1942762](https://github.com/guidefari/gbfm/commit/1942762672f66e5eda2095279ac3e936ccfcb2fb))
+
 # [2.87.0](https://github.com/guidefari/gbfm/compare/v2.86.1...v2.87.0) (2026-08-23)
 
 
