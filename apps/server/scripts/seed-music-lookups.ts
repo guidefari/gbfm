@@ -1,13 +1,13 @@
 import { Effect } from 'effect'
-import { pool } from '../src/db'
 import { Database, DatabaseLayer } from '../src/db/layer'
 import { seedMusicLookups } from '../src/db/seed-music-lookups'
+import { createRemoteD1, remoteD1OptionsFromEnv } from './remote-d1'
 
 Effect.runPromise(
   Effect.gen(function* () {
     const db = yield* Database
     return yield* Effect.promise(() => seedMusicLookups(db))
-  }).pipe(Effect.provide(DatabaseLayer(pool)))
+  }).pipe(Effect.provide(DatabaseLayer(createRemoteD1(remoteD1OptionsFromEnv()))))
 )
   .then(({ entityTypeCount, platformCount }) => {
     console.log(`Seeded ${entityTypeCount} music entity types`)

@@ -2,16 +2,15 @@
 /**
  * D1Database implementation backed by the Cloudflare D1 REST API.
  *
- * migrate-pg-to-d1.ts targets a local Miniflare D1, which cannot reach a
- * deployed database. This adapter satisfies the same D1Database interface
- * against /d1/database/:id/query, so the migration can import into real
- * staging or production D1 without changing its logic.
+ * Miniflare's D1 cannot reach a deployed database. This adapter satisfies the
+ * D1Database interface against /d1/database/:id/query, so a plain script can
+ * talk to real staging or production D1. seed-music-lookups.ts uses it.
  *
  * IMPORTANT: batch() is NOT atomic here. D1's REST API rejects bound
  * parameters alongside multi-statement SQL (error 7400), so each statement
  * becomes its own request and a partial failure leaves earlier statements
- * applied. The migration tolerates this because every insert it issues is
- * `INSERT OR REPLACE` and re-running converges. Do not reuse this adapter
+ * applied. Callers tolerate this by issuing only idempotent writes
+ * (`INSERT OR REPLACE`), so re-running converges. Do not reuse this adapter
  * anywhere that depends on batch() rolling back.
  */
 
@@ -135,7 +134,7 @@ class RemoteStatement implements D1PreparedStatement {
  * How many parameterized statements are sent concurrently. D1 rejects bound
  * parameters alongside multi-statement SQL (error 7400), so each statement is
  * its own request and the batch's atomicity is lost -- acceptable here because
- * the migration's inserts are `INSERT OR REPLACE` and therefore idempotent.
+ * callers only issue idempotent `INSERT OR REPLACE` writes.
  */
 const REQUEST_CONCURRENCY = 8
 
