@@ -27,7 +27,7 @@ function parseOtelHeaders(headers: string | undefined) {
 }
 
 const SERVICE_NAME = 'goosebumps-fm-api'
-const LOCAL_TEMPO_TRACES_URL = 'http://127.0.0.1:14318/v1/traces'
+const LOCAL_TRACES_URL = 'http://127.0.0.1:4318/v1/traces'
 
 const tracesUrl = (endpoint: string) => {
   const normalized = endpoint.replace(/\/$/, '')
@@ -42,7 +42,7 @@ export const OtlpLive = Effect.gen(function* () {
   const isLocal = ['dev', 'local'].includes(config.app.stage)
   const exporterTargets = [
     ...(otlpEndpoint ? [{ url: tracesUrl(otlpEndpoint), headers: otelHeaders }] : []),
-    ...(isLocal ? [{ url: LOCAL_TEMPO_TRACES_URL }] : [])
+    ...(isLocal ? [{ url: LOCAL_TRACES_URL }] : [])
   ].filter(
     (target, index, targets) =>
       targets.findIndex((candidate) => candidate.url === target.url) === index
