@@ -442,9 +442,47 @@ export const navigateMicroPostsEffect = (
     )
   )
 
+export const peekMicroPostNavigationEffect = (
+  payload: Parameters<
+    Awaited<ReturnType<typeof getApiClient>>['navigation']['peekMicroPostNavigation']
+  >[0]['payload']
+) =>
+  Effect.promise(() => getApiClient()).pipe(
+    Effect.flatMap((client) => client.navigation.peekMicroPostNavigation({ payload })),
+    Effect.retry({
+      times: 1,
+      while: (error) => error instanceof HttpApiError.InternalServerError
+    }),
+    Effect.tapError((error) =>
+      Effect.sync(() => captureException(error, { endpoint: 'navigation.peekMicroPostNavigation' }))
+    )
+  )
+
+export const recordMicroPostVisitEffect = (
+  payload: Parameters<
+    Awaited<ReturnType<typeof getApiClient>>['navigation']['recordMicroPostVisit']
+  >[0]['payload']
+) =>
+  Effect.promise(() => getApiClient()).pipe(
+    Effect.flatMap((client) => client.navigation.recordMicroPostVisit({ payload })),
+    Effect.retry({
+      times: 1,
+      while: (error) => error instanceof HttpApiError.InternalServerError
+    }),
+    Effect.tapError((error) =>
+      Effect.sync(() => captureException(error, { endpoint: 'navigation.recordMicroPostVisit' }))
+    )
+  )
+
 export function useNavigateMicroPosts() {
   const navigate = useCallback(navigateMicroPostsEffect, [])
-  return { navigateMicroPostsEffect: navigate }
+  const peek = useCallback(peekMicroPostNavigationEffect, [])
+  const visit = useCallback(recordMicroPostVisitEffect, [])
+  return {
+    navigateMicroPostsEffect: navigate,
+    peekMicroPostNavigationEffect: peek,
+    recordMicroPostVisitEffect: visit
+  }
 }
 
 export function useEditorialPostBySlug(slug: string) {
