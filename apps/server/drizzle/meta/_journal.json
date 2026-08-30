@@ -379,6 +379,13 @@
       "when": 1786691947733,
       "tag": "0053_music_entity_resolution_claim_lease",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1786700000000,
+      "tag": "0054_navigation_lookup_indexes",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
+import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 import { user } from './auth.schema'
 import { postsTable } from './post.schema'
 
@@ -38,7 +38,10 @@ export const navigationSeenPosts = sqliteTable(
       .references(() => navigationSessions.id, { onDelete: 'cascade' }),
     slug: text('slug').notNull()
   },
-  (table) => [uniqueIndex('navigation_seen_session_slug_uq').on(table.sessionId, table.slug)]
+  (table) => [
+    uniqueIndex('navigation_seen_session_slug_uq').on(table.sessionId, table.slug),
+    index('navigation_seen_slug_session_idx').on(table.slug, table.sessionId)
+  ]
 )
 
 export const navigationTrailEntries = sqliteTable(
@@ -61,6 +64,8 @@ export const navigationTrailEntries = sqliteTable(
       .notNull()
   },
   (table) => [
-    uniqueIndex('navigation_trail_session_position_uq').on(table.sessionId, table.position)
+    uniqueIndex('navigation_trail_session_position_uq').on(table.sessionId, table.position),
+    index('navigation_trail_session_slug_idx').on(table.sessionId, table.slug),
+    index('navigation_trail_session_post_idx').on(table.sessionId, table.postId)
   ]
 )
