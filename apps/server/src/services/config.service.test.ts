@@ -19,11 +19,6 @@ const workerBindings = (): WorkerConfigBindings => ({
   SENTRY_ENVIRONMENT: 'd1-staging',
   SpotifyClientId: 'configured',
   SpotifyClientSecret: 'configured',
-  DatabaseHost: 'configured',
-  DatabaseUser: 'configured',
-  DatabasePassword: 'configured',
-  DatabasePort: '5432',
-  DatabaseName: 'configured',
   SENTRY_BACKEND_DSN: 'configured',
   VITE_PUBLIC_SENTRY_DSN: 'configured',
   OTEL_EXPORTER_OTLP_ENDPOINT: 'configured',
@@ -90,16 +85,14 @@ describe('StorageConfigSchema', () => {
     ).toThrow('Missing required production secrets: BETTER_AUTH_SECRET')
   })
 
-  // A D1 Worker binds no Postgres credentials: it reaches the database through
-  // its `DB` binding. Requiring them here takes the Worker down at boot.
-  test('boots in production without the Postgres credentials', () => {
-    const { DatabaseHost, DatabaseUser, DatabasePassword, DatabasePort, DatabaseName, ...d1 } =
-      workerBindings()
-
-    const config = createConfig({ ...d1, APP_STAGE: 'prod', R2AccountId: 'account' })
+  test('boots in production with only the Worker bindings', () => {
+    const config = createConfig({
+      ...workerBindings(),
+      APP_STAGE: 'prod',
+      R2AccountId: 'account'
+    })
 
     expect(config.app.stage).toBe('prod')
-    expect(config.database.port).toBe(5432)
   })
 
   test('accepts AWS with ambient credentials', () => {

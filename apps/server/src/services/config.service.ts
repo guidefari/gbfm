@@ -3,11 +3,6 @@ import { Context, Effect, Layer, Redacted, Schema } from 'effect'
 const secretNames = [
   'SpotifyClientId',
   'SpotifyClientSecret',
-  'DatabaseHost',
-  'DatabaseUser',
-  'DatabasePassword',
-  'DatabasePort',
-  'DatabaseName',
   'SENTRY_BACKEND_DSN',
   'VITE_PUBLIC_SENTRY_DSN',
   'OTEL_EXPORTER_OTLP_ENDPOINT',
@@ -36,15 +31,6 @@ const optionalSecretNames = [
   'StorageAccessKeyId',
   'StorageSecretAccessKey',
   'StorageSigningEndpoint',
-  // Only the Bun/Postgres entrypoint opens a pool from these (`db/index.ts`).
-  // The Worker reaches D1 through its `DB` binding and never imports that
-  // module, so a D1 deployment has nothing to put here and the defaults below
-  // keep the pool config well-formed for the Bun path.
-  'DatabaseHost',
-  'DatabaseUser',
-  'DatabasePassword',
-  'DatabasePort',
-  'DatabaseName',
   'OTEL_EXPORTER_OTLP_ENDPOINT',
   'OTEL_EXPORTER_OTLP_HEADERS'
 ] as const satisfies readonly SecretName[]
@@ -72,16 +58,6 @@ function stringValue(value: string | undefined, fallback: string): string {
   return fallback
 }
 
-function numberValue(value: string | undefined, fallback: number, name: string): number {
-  const parsedValue = value === undefined ? fallback : Number(value)
-
-  if (Number.isNaN(parsedValue)) {
-    throw new Error(`Invalid number value for ${name}: ${String(value)}`)
-  }
-
-  return parsedValue
-}
-
 function secretValue(
   name: SecretName,
   bindings: WorkerConfigBindings | undefined
@@ -95,14 +71,6 @@ function secretString(
   bindings: WorkerConfigBindings | undefined
 ): string {
   return stringValue(secretValue(name, bindings), fallback)
-}
-
-function secretNumber(
-  name: 'DatabasePort',
-  fallback: number,
-  bindings: WorkerConfigBindings | undefined
-): number {
-  return numberValue(secretValue(name, bindings), fallback, name)
 }
 
 function r2AccountId(endpoint: string): string | undefined {
@@ -139,13 +107,6 @@ export const StorageConfigSchema = Schema.Struct({
 )
 
 const ConfigSchema = Schema.Struct({
-  database: Schema.Struct({
-    host: Schema.String,
-    port: Schema.Number,
-    user: Schema.String,
-    password: Schema.String,
-    name: Schema.String
-  }),
   urls: Schema.Struct({
     frontend: Schema.String,
     vps: Schema.String,
@@ -215,11 +176,6 @@ export function createConfig(bindings?: WorkerConfigBindings): ConfigService {
   const secrets = {
     SpotifyClientId: secretString('SpotifyClientId', '', bindings),
     SpotifyClientSecret: secretString('SpotifyClientSecret', '', bindings),
-    DatabaseHost: secretString('DatabaseHost', 'localhost', bindings),
-    DatabaseUser: secretString('DatabaseUser', 'postgres', bindings),
-    DatabasePassword: secretString('DatabasePassword', 'postgres', bindings),
-    DatabasePort: secretString('DatabasePort', '5432', bindings),
-    DatabaseName: secretString('DatabaseName', 'postgres', bindings),
     SENTRY_BACKEND_DSN: secretString('SENTRY_BACKEND_DSN', '', bindings),
     VITE_PUBLIC_SENTRY_DSN: secretString('VITE_PUBLIC_SENTRY_DSN', '', bindings),
     OTEL_EXPORTER_OTLP_ENDPOINT: secretString('OTEL_EXPORTER_OTLP_ENDPOINT', '', bindings),
@@ -280,13 +236,6 @@ export function createConfig(bindings?: WorkerConfigBindings): ConfigService {
     (['dev', 'local'].includes(appStage) ? 'http://localhost:4318' : '')
 
   return {
-    database: {
-      host: secrets.DatabaseHost,
-      port: secretNumber('DatabasePort', 5432, bindings),
-      user: secrets.DatabaseUser,
-      password: secrets.DatabasePassword,
-      name: secrets.DatabaseName
-    },
     urls: {
       frontend: frontendUrl,
       vps: vpsUrl,

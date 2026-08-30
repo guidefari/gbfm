@@ -12,18 +12,18 @@ class FakeStoreSecret {
 describe('resolveSecretBindings', () => {
   it('reads a value from a Secrets Store handle', async () => {
     const resolved = await Effect.runPromise(
-      resolveSecretBindings({ DatabasePassword: new FakeStoreSecret('from-store') })
+      resolveSecretBindings({ BETTER_AUTH_SECRET: new FakeStoreSecret('from-store') })
     )
 
-    expect(resolved.DatabasePassword).toBe('from-store')
+    expect(resolved.BETTER_AUTH_SECRET).toBe('from-store')
   })
 
   it('passes through a plain string binding unchanged', async () => {
     const resolved = await Effect.runPromise(
-      resolveSecretBindings({ DatabasePassword: 'from-env' })
+      resolveSecretBindings({ BETTER_AUTH_SECRET: 'from-env' })
     )
 
-    expect(resolved.DatabasePassword).toBe('from-env')
+    expect(resolved.BETTER_AUTH_SECRET).toBe('from-env')
   })
 
   it('fails when a store read rejects rather than yielding a blank secret', async () => {
@@ -32,9 +32,9 @@ describe('resolveSecretBindings', () => {
     }
 
     const error = await Effect.runPromise(
-      Effect.flip(resolveSecretBindings({ DatabasePassword: failing }))
+      Effect.flip(resolveSecretBindings({ BETTER_AUTH_SECRET: failing }))
     )
 
-    expect(error.configKey).toBe('DatabasePassword')
+    expect(error.configKey).toBe('BETTER_AUTH_SECRET')
   })
 })
