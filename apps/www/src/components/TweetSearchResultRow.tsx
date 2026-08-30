@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { Music4 } from 'lucide-react'
+import { MessageCircle, Music4 } from 'lucide-react'
 import { TweetSearchReplyContext } from '@/components/TweetSearchReplyContext'
 import { apiUrl, fetcher } from '@/lib/http'
 import { replyPresentationOf } from '@/lib/tweet-reply-presentation'
@@ -30,6 +30,7 @@ type Props = {
   musicEntityId: string | null
   depth?: number | null
   parentPostId?: string | null
+  replyCount?: number
   onClick: () => void
 }
 
@@ -41,6 +42,7 @@ export function TweetSearchResultRow({
   musicEntityId,
   depth,
   parentPostId,
+  replyCount,
   onClick
 }: Props) {
   const supportedType = isMusicEntityType(musicEntityType) ? musicEntityType : null
@@ -74,6 +76,14 @@ export function TweetSearchResultRow({
           <span className='truncate'>
             {data.title}
             {data.artistNames?.length ? ` · ${data.artistNames.join(', ')}` : ''}
+          </span>
+        </div>
+      )}
+      {Boolean(replyCount) && (
+        <div className='mt-0.5 flex items-center gap-1 text-xs text-muted-foreground'>
+          <MessageCircle className='h-3 w-3 shrink-0 opacity-60' />
+          <span>
+            {replyCount} {replyCount === 1 ? 'reply' : 'replies'}
           </span>
         </div>
       )}

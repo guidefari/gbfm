@@ -65,6 +65,7 @@ export function TweetSearchDialog({ open, onOpenChange }: Props) {
                   musicEntityId={result.musicEntityId}
                   depth={result.depth}
                   parentPostId={result.parentPostId}
+                  replyCount={result.replyCount}
                   onClick={() => onOpenChange(false)}
                 />
               ))
