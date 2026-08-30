@@ -1,8 +1,14 @@
 import { LINK_STATUS } from '@gbfm/core/status'
 import { useQuery } from '@tanstack/react-query'
 import { apiUrl, fetcher } from '@/lib/http'
+import {
+  entityLabelByType,
+  entityPathByType,
+  isMusicEntityType,
+  type MusicEntityType
+} from './entity-labels'
 
-export type MusicEntityType = 'album' | 'track' | 'playlist'
+export { entityLabelByType, isMusicEntityType, type MusicEntityType }
 
 export type MusicEntityPreview = {
   id: string
@@ -18,22 +24,6 @@ type EntityLink = {
   platform: string
   url: string
   status: string
-}
-
-const entityPathByType = {
-  album: 'albums',
-  track: 'tracks',
-  playlist: 'playlists'
-} satisfies Record<MusicEntityType, string>
-
-export const entityLabelByType = {
-  album: 'album',
-  track: 'track',
-  playlist: 'playlist'
-} satisfies Record<MusicEntityType, string>
-
-export function isMusicEntityType(value: string): value is MusicEntityType {
-  return value === 'album' || value === 'track' || value === 'playlist'
 }
 
 export function useMusicEntity(entityType: string | null, entityId: string | null) {

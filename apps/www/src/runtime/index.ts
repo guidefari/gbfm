@@ -3,6 +3,7 @@ import { Data, Effect, Layer, Scope } from 'effect'
 import { env } from '@/env'
 import { getSpotifyRedirectUri } from '@/lib/spotify-pkce'
 import { type Analytics, SentryAnalyticsLayer, NoopAnalyticsLayer } from '@/services/analytics'
+import { ImageExport, ImageExportLive } from '@/services/image-export'
 import { type MediaSessionService, MediaSessionServiceLayer } from '@/services/media-session'
 import { PlayerStorage, type PersistedQueueType } from '@gbfm/player'
 import { PlayerStorageLive } from '@/services/player/storage'
@@ -32,6 +33,7 @@ const spotifyLayer = Layer.suspend(() =>
 
 const playerStorageLayer = PlayerStorageLive
 const mediaSessionLayer = MediaSessionServiceLayer
+const imageExportLayer = ImageExportLive
 const resumableUploadStorageLayer = ResumableUploadStorageLive
 const mixUploadDraftStorageLayer = MixUploadDraftStorageLive
 const loggerLayer = enableSentry ? LoggerLive : NoopLogger
@@ -42,6 +44,7 @@ const mainLayer = Layer.mergeAll(
   spotifyLayer,
   playerStorageLayer,
   mediaSessionLayer,
+  imageExportLayer,
   resumableUploadStorageLayer,
   mixUploadDraftStorageLayer,
   loggerLayer,
@@ -53,6 +56,7 @@ type AppServices =
   | SpotifyBrowser
   | PlayerStorage
   | MediaSessionService
+  | ImageExport
   | ResumableUploadStorage
   | MixUploadDraftStorage
   | Logger

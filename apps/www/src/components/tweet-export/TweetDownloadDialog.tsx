@@ -6,21 +6,18 @@ import {
   DialogHeader,
   DialogTitle
 } from '@gbfm/ui'
-import { toPng } from 'html-to-image'
 import { Loader2 } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { usePublicProfile } from '@/lib/http'
-import { SITE_URL } from '@/lib/seo'
-import { entityLabelByType, useMusicEntity } from './use-music-entity'
-import { PosterFrame, SleeveFrame, type TweetExportData } from './frames'
+import { runAppEffect } from '@/runtime'
+import { exportTweetImageEffect } from './export-tweet-image'
+import { PosterFrame, SleeveFrame } from './frames'
+import { buildTweetExportData, type TweetDownloadPost } from './tweet-export-data'
+import { useMusicEntity } from './use-music-entity'
+import { useCanShareFiles } from './use-can-share-files'
+import { usePrerenderedTweetImage } from './use-prerendered-image'
 
 const EXPORT_WIDTH = 540
-
-const isWebKit = () => {
-  if (!('navigator' in globalThis)) return false
-  return /AppleWebKit/.test(navigator.userAgent) && !/Chrome\//.test(navigator.userAgent)
-}
 
 const formats = [
   { key: 'poster', name: 'poster', Frame: PosterFrame },
@@ -29,13 +26,7 @@ const formats = [
 
 type FormatKey = (typeof formats)[number]['key']
 
-export type TweetDownloadPost = {
-  title: string | null
-  createdAt: Date | string | null
-  musicEntityType: string | null
-  musicEntityId: string | null
-  creators?: ReadonlyArray<{ name: string; username: string | null }>
-}
+export type { TweetDownloadPost }
 
 type Props = {
   post: TweetDownloadPost
@@ -46,7 +37,7 @@ type Props = {
 
 export function TweetDownloadDialog({ post, slug, open, onOpenChange }: Props) {
   const [format, setFormat] = useState<FormatKey>('poster')
-  const [downloading, setDownloading] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const exportRef = useRef<HTMLDivElement>(null)
 
@@ -56,64 +47,61 @@ export function TweetDownloadDialog({ post, slug, open, onOpenChange }: Props) {
     post.musicEntityType ?? null,
     post.musicEntityId ?? null
   )
+  const canShareFiles = useCanShareFiles()
 
-  const data: TweetExportData = {
-    commentary: post.title ?? '',
-    authorName: primaryCreator?.name ?? null,
-    username: primaryCreator?.username ?? null,
-    avatarUrl: profile?.image || DEFAULT_IMAGE_URL,
-    dateLabel: post.createdAt
-      ? new Date(post.createdAt).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric'
-        })
-      : null,
-    entityLabel: entityType ? entityLabelByType[entityType] : null,
-    entityTitle: entity?.title ?? null,
-    entityArtists: entity?.artistNames?.length ? entity.artistNames.join(', ') : null,
-    coverImageUrl: entity?.coverImageUrl ?? null,
-    url: `${SITE_URL}/tweet/${slug}`
-  }
+  const data = buildTweetExportData({
+    post,
+    slug,
+    avatarUrl: profile?.image,
+    entityType,
+    entity
+  })
 
   const ActiveFrame = formats.find((f) => f.key === format)?.Frame ?? PosterFrame
 
-  const download = async () => {
-    if (!exportRef.current) return
-    setDownloading(true)
+  const renderKey = JSON.stringify([open, format, data])
+
+  const prerendered = usePrerenderedTweetImage({
+    enabled: open && !isPending,
+    renderKey,
+    nodeRef: exportRef,
+    frameWidth: EXPORT_WIDTH,
+    slug,
+    format
+  })
+
+  const exportImage = async () => {
+    const node = exportRef.current
+    if (!node) return
+
+    setExporting(true)
     setError(null)
     try {
-      const options = {
-        pixelRatio: 1080 / EXPORT_WIDTH,
-        cacheBust: true
-      }
-      // WebKit rasterizes the first toPng before embedded images finish
-      // decoding, dropping the artwork; warm-up renders work around it
-      if (isWebKit()) {
-        await toPng(exportRef.current, options)
-        await toPng(exportRef.current, options)
-      }
-      const dataUrl = await toPng(exportRef.current, options)
-      const link = document.createElement('a')
-      link.href = dataUrl
-      link.download = `${slug}-${format}.png`
-      link.click()
+      await runAppEffect(
+        exportTweetImageEffect({
+          node,
+          frameWidth: EXPORT_WIDTH,
+          slug,
+          format,
+          blob: prerendered.consume()
+        })
+      )
     } catch {
       setError('image generation failed, try again')
     } finally {
-      setDownloading(false)
+      setExporting(false)
     }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='max-h-[90vh] overflow-y-auto sm:max-w-md'>
-        <DialogHeader>
+      <DialogContent className='flex max-h-[90dvh] w-[calc(100vw-2rem)] max-w-md flex-col gap-0 overflow-hidden p-0'>
+        <DialogHeader className='shrink-0 space-y-1.5 p-4 pb-3 pr-12'>
           <DialogTitle className='font-black'>download for socials</DialogTitle>
           <DialogDescription>save this tweet as an image you can post anywhere</DialogDescription>
         </DialogHeader>
 
-        <div className='flex gap-2'>
+        <div className='flex shrink-0 gap-2 px-4 pb-3'>
           {formats.map((f) => (
             <button
               key={f.key}
@@ -129,25 +117,33 @@ export function TweetDownloadDialog({ post, slug, open, onOpenChange }: Props) {
           ))}
         </div>
 
-        <div className='mx-auto w-full max-w-sm'>
-          <ActiveFrame data={data} />
+        <div className='min-h-0 flex-1 overflow-y-auto overscroll-contain px-4'>
+          <div className='mx-auto w-full max-w-sm'>
+            <ActiveFrame data={data} />
+          </div>
         </div>
 
-        {error && <p className='text-base text-destructive'>{error}</p>}
+        <div className='shrink-0 space-y-2 border-t border-border/40 p-4'>
+          {error && <p className='text-base text-destructive'>{error}</p>}
 
-        <Button onClick={download} disabled={downloading || isPending} className='w-full'>
-          {downloading ? (
-            <>
-              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-              generating…
-            </>
-          ) : (
-            `download ${format} png`
-          )}
-        </Button>
+          <Button onClick={exportImage} disabled={exporting || isPending} className='w-full'>
+            {exporting ? (
+              <>
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                generating…
+              </>
+            ) : canShareFiles ? (
+              `share ${format} png`
+            ) : (
+              `download ${format} png`
+            )}
+          </Button>
+        </div>
 
         {open && (
-          <div aria-hidden className='pointer-events-none fixed -left-[9999px] top-0'>
+          <div
+            aria-hidden
+            className='pointer-events-none fixed left-0 top-0 h-0 w-0 overflow-hidden'>
             <div ref={exportRef} style={{ width: EXPORT_WIDTH }}>
               <ActiveFrame data={data} />
             </div>

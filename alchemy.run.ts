@@ -43,7 +43,11 @@ export default Alchemy.Stack(
 
     yield* dnsRedirects(config)
 
-    const www = yield* website(config, deployment.website)
+    const www = yield* website({
+      config,
+      websiteConfig: deployment.website,
+      apiUrl: api.url
+    })
 
     return {
       apiUrl: api.url,
