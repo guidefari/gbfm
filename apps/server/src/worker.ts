@@ -322,7 +322,7 @@ const processReminderMessage = (env: ApiEnv, job: ReminderJob) =>
 
 export default Sentry.withSentry<ApiEnv, ReminderJob>(sentryOptions, {
   async fetch(request: Request, env: ApiEnv, ctx: ExecutionContext): Promise<Response> {
-    return ctx.tracing.enterSpan('gbfm.api.request', async (span) => {
+    return ctx.tracing.enterSpan('gbfm.api.request', async (span): Promise<Response> => {
       span.setAttribute('http.request.method', request.method)
       span.setAttribute('url.path', new URL(request.url).pathname)
 
