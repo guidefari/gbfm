@@ -16,8 +16,9 @@ exists (select "showId" from "show_creators"
         where "show_creators"."showId" = "shows"."id")
 ```
 
-Once the table is aliased, `"shows"` is out of scope and Postgres rejects the
-statement with `invalid reference to FROM-clause entry for table "shows"`.
+Once the table is aliased, `"shows"` is out of scope and the database rejects
+the statement as an invalid reference to a FROM-clause entry. (The incident
+below predates the D1 cutover, so the original error text was Postgres's.)
 
 This shipped to production in July 2026 and broke every public profile view for
 a user with mixes. `tsc` cannot catch it: the builder calls are legal
@@ -45,7 +46,7 @@ list throws, and the bug looks intermittent.
 
 ## Generated SQL is a runtime artifact
 
-Treat it like compiled output: test it by executing against real Postgres.
+Treat it like compiled output: test it by executing against a real database.
 `src/db/relational-queries.smoke.test.ts` runs every `db.query.*` shape in the
 codebase, including both branches of each visibility predicate. Add a case there
 when you introduce a new relational query shape.
