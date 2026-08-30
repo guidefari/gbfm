@@ -13,7 +13,6 @@
     "test:watch": "vitest --config vitest.d1.config.ts",
     "typecheck": "tsgo --noEmit",
     "db:studio": "drizzle-kit studio",
-    "db:yeet": "drizzle-kit push",
     "db:migrate": "drizzle-kit migrate && bun run scripts/seed-music-lookups.ts",
     "db:gen": "drizzle-kit generate",
     "db:migrate:prod": "bun --env-file=../../.env run src/migrate.ts",

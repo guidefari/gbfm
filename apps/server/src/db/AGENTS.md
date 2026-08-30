@@ -38,10 +38,10 @@ its own `meta/_journal.json` with its own independent index.
 
 ## Rules that are not negotiable
 
-- Use `drizzle migrate`, never `drizzle push`. The `db:yeet` script in
-  `apps/server/package.json` is `drizzle-kit push`. Do not run it. The
-  production ledger was baselined after a period of push-built history, so push
-  can silently diverge from the recorded state.
+- Use `drizzle migrate`, never `drizzle push`. The production ledger was
+  baselined after a period of push-built history, so push can silently diverge
+  from the recorded state. There is deliberately no push script here; do not add
+  one back.
 - Never run migrations against production. Verify against a throwaway database.
   The test harness already gives you one: `src/test/migrate-d1.ts` spins up a
   Miniflare D1 and replays the forward migrations.
