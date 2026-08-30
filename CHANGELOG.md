@@ -1,3 +1,10 @@
+## [2.88.1](https://github.com/guidefari/gbfm/compare/v2.88.0...v2.88.1) (2026-08-30)
+
+
+### Bug Fixes
+
+* tweet share card ([476209b](https://github.com/guidefari/gbfm/commit/476209b57cd2f8e1f589609334519dcbc7644650))
+
 # [2.88.0](https://github.com/guidefari/gbfm/compare/v2.87.0...v2.88.0) (2026-08-27)
 
 
