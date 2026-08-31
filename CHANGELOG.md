@@ -1,3 +1,28 @@
+# [2.89.0](https://github.com/guidefari/gbfm/compare/v2.88.1...v2.89.0) (2026-08-31)
+
+
+### Bug Fixes
+
+* **db:** make the 0054 postgres migration valid postgres ([bcd42b0](https://github.com/guidefari/gbfm/commit/bcd42b00e72a389ba2e3847ae5aeae825c117942))
+* **server:** annotate the request span callback return type ([f7230f8](https://github.com/guidefari/gbfm/commit/f7230f8ebf00d4cc6500c98e352c4df2335be475))
+* **server:** populate replyCount on micro post listings ([35fc367](https://github.com/guidefari/gbfm/commit/35fc36706dffeb4185be1b98eea027cf09aaa14f))
+* **server:** stop publishing a localhost sitemap ([503d02f](https://github.com/guidefari/gbfm/commit/503d02fb424fa6cd9ba005c752969fd90f7d6e96))
+* **server:** use bare crypto global so typecheck passes on clean installs ([056d0f3](https://github.com/guidefari/gbfm/commit/056d0f3df4bd120ac4224146a05a5fb3936a03ca))
+* **www:** show reply context in tweet search results ([6f1848d](https://github.com/guidefari/gbfm/commit/6f1848d24c1eb6671deb10fd155864f30fc52d63))
+* **www:** stop tweet nav blocking on background work ([918eb03](https://github.com/guidefari/gbfm/commit/918eb031ba911beb893ceb38be169a61c1dc7ac8))
+
+
+### Features
+
+* **www:** add navigation head model and local tweet trail ([db683b1](https://github.com/guidefari/gbfm/commit/db683b198db9c362e3bf7aacb8e4180b7fe3524e))
+* **www:** show reply counts in tweet search results ([8dc181a](https://github.com/guidefari/gbfm/commit/8dc181a4673601558e4c1e18ea7fc52cfc4dfe23))
+
+
+### Performance Improvements
+
+* **db:** index navigation lookups for the anti-join ([bb5cd14](https://github.com/guidefari/gbfm/commit/bb5cd14ea76b3eb0e29fa2019f515824279a9b01))
+* **server:** cut navigation round trips from six to one ([2315d59](https://github.com/guidefari/gbfm/commit/2315d591efe3e4e1d1c9003523be87f478a14801))
+
 ## [2.88.1](https://github.com/guidefari/gbfm/compare/v2.88.0...v2.88.1) (2026-08-30)
 
 
