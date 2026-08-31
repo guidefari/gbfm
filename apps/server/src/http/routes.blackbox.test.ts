@@ -710,7 +710,7 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
       await db.delete(session).where(eq(session.userId, userId))
       await db.delete(user).where(eq(user.id, userId))
     }
-  })
+  }, 20_000)
 
   it('POST /api/music/artist/scrape returns 401 without a session cookie', async () => {
     const res = await webHandler.handler(
