@@ -10,12 +10,10 @@ import { Crypto, Effect, Layer } from 'effect'
 export const CryptoLive = Layer.succeed(
   Crypto.Crypto,
   Crypto.make({
-    randomBytes: (size) => globalThis.crypto.getRandomValues(new Uint8Array(size)),
+    randomBytes: (size) => crypto.getRandomValues(new Uint8Array(size)),
     digest: (algorithm, data) =>
       Effect.orDie(
-        Effect.promise(
-          async () => new Uint8Array(await globalThis.crypto.subtle.digest(algorithm, data))
-        )
+        Effect.promise(async () => new Uint8Array(await crypto.subtle.digest(algorithm, data)))
       )
   })
 )
