@@ -55,36 +55,26 @@ export function EditorialWritingCanvas({
         </div>
       </div>
 
-      <section className='pt-7' aria-labelledby='editorial-content-heading'>
-        <div className='mb-4 flex flex-wrap items-end justify-between gap-4'>
-          <div>
-            <h2
-              id='editorial-content-heading'
-              className='text-sm font-medium tracking-wide text-muted-foreground'>
-              Story
-            </h2>
-            <span className='text-xs text-muted-foreground'>
-              Markdown with music and media embeds
-            </span>
-          </div>
-          <div className='flex flex-wrap items-center gap-2' aria-label='Insert content'>
-            <MusicEntityPicker onInsert={insertBlock} />
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              onClick={() => setExternalMediaOpen(true)}
-              className='h-9 gap-2 px-3.5 text-sm'>
-              <RadioTower className='size-4' />
-              Embed media
-            </Button>
-          </div>
-        </div>
+      <section className='pt-7' aria-label='Editorial content'>
         <SimpleMarkdownEditor
           ref={editorRef}
           value={formData.content}
           onChange={(value) => onInputChange('content', value)}
           placeholder='Start writing…'
+          toolbarActions={
+            <>
+              <MusicEntityPicker onInsert={insertBlock} />
+              <Button
+                type='button'
+                variant='ghost'
+                size='sm'
+                onClick={() => setExternalMediaOpen(true)}
+                className='h-9 gap-1.5 px-2 text-xs'>
+                <RadioTower className='size-4' />
+                Media
+              </Button>
+            </>
+          }
         />
         <ExternalMediaPickerDialog
           open={externalMediaOpen}

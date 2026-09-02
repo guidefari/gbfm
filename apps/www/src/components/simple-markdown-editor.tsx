@@ -47,6 +47,7 @@ interface SimpleMarkdownEditorProps {
   value: string
   onChange: (value: string) => void
   placeholder?: string
+  toolbarActions?: ReactNode
 }
 
 export interface SimpleMarkdownEditorHandle {
@@ -203,7 +204,7 @@ async function createPreview(content: string): Promise<PreviewState> {
 export const SimpleMarkdownEditor = forwardRef<
   SimpleMarkdownEditorHandle,
   SimpleMarkdownEditorProps
->(function SimpleMarkdownEditor({ value, onChange, placeholder }, ref) {
+>(function SimpleMarkdownEditor({ value, onChange, placeholder, toolbarActions }, ref) {
   const editorHost = useRef<HTMLDivElement | null>(null)
   const editorView = useRef<EditorView | null>(null)
   const onChangeRef = useRef(onChange)
@@ -212,8 +213,6 @@ export const SimpleMarkdownEditor = forwardRef<
   const initialEditorConfig = useRef({ value, placeholder })
   const [mode, setMode] = useState<EditorMode>('edit')
   const [preview, setPreview] = useState<PreviewState>({ status: 'empty' })
-  const wordCount = value.trim() ? value.trim().split(/\s+/).length : 0
-
   onChangeRef.current = onChange
 
   useEffect(() => {
@@ -356,6 +355,9 @@ export const SimpleMarkdownEditor = forwardRef<
               onClick={() => withEditor((view) => toggleLinePrefix(view, '1. ', /^\d+\.\s/))}
             />
           </div>
+          {toolbarActions ? (
+            <div className='editorial-editor-toolbar-actions'>{toolbarActions}</div>
+          ) : null}
         </div>
         <div className='editorial-editor-modes' aria-label='Editor view'>
           {editorModes.map((item) => (
@@ -382,14 +384,6 @@ export const SimpleMarkdownEditor = forwardRef<
           </div>
         ) : null}
       </div>
-
-      <footer className='editorial-editor-footer'>
-        <span>{wordCount.toLocaleString()} words</span>
-        <span>{value.length.toLocaleString()} characters</span>
-        <span className='hidden sm:inline'>
-          Markdown and embeds save automatically with your draft
-        </span>
-      </footer>
     </section>
   )
 })

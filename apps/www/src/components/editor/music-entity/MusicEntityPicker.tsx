@@ -58,9 +58,9 @@ export function MusicEntityPicker({ onInsert }: MusicEntityPickerProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button type='button' variant='outline' size='sm' className='h-9 gap-2 px-3.5 text-sm'>
+        <Button type='button' variant='ghost' size='sm' className='h-9 gap-1.5 px-2 text-xs'>
           <Music4 className='size-4' />
-          Embed music
+          Music
         </Button>
       </DialogTrigger>
       <DialogContent className='max-h-[85vh] w-[calc(100vw-2rem)] max-w-2xl overflow-hidden p-0'>
