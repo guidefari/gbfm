@@ -1,50 +1,48 @@
 'use client'
 
-import {
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  Checkbox,
-  Input,
-  Label,
-  TagsInput,
-  Textarea,
-  toast
-} from '@gbfm/ui'
+import { toast } from '@gbfm/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useRouter, useSearch } from '@tanstack/react-router'
-import { ArrowLeft, ImageIcon, Loader2, Save, Upload, X } from 'lucide-react'
-import { useEffect, useId, useState } from 'react'
-import { PostPageHeader } from '@/components/PostPageHeader'
-import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
+import { ArrowLeft, Loader2 } from 'lucide-react'
+import {
+  type ChangeEvent,
+  type MouseEvent,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState
+} from 'react'
 import { useSession } from '@/lib/auth-client'
 import { apiUrl, fetcher } from '@/lib/http'
 import { uploadImageDirectToS3 } from '@/lib/upload/image-upload'
-import { UserSearch } from '../dashboard/_components/-UserSearch'
+import { EditorialMetadataSidebar } from './-EditorialMetadataSidebar'
+import type {
+  EditorialCreator,
+  EditorialFormData,
+  EditorialTextField,
+  EditorialPost,
+  EditorialSaveState
+} from './-editorial-types'
+import { EditorialWorkspaceHeader } from './-EditorialWorkspaceHeader'
+import { EditorialWritingCanvas } from './-EditorialWritingCanvas'
 
-interface PostItem {
-  id: string
-  title: string | null
-  description: string | null
-  slug: string
-  content: string | null
-  thumbnailUrl: string | null
-  tags: string[] | null
-  draft: boolean
-  type: 'post' | 'micro' | null
-  creators?: Array<{ id: string; name: string }>
+interface EditorialSaveRequest {
+  formData: EditorialFormData
+  artworkFile: File | null
+  creatorIds: string[]
 }
 
-interface PostFormData {
-  title: string
-  description: string
-  slug: string
-  content: string
-  thumbnailUrl: string
-  tags: string[]
-  draft: boolean
+function createEmptyFormData(): EditorialFormData {
+  return {
+    title: '',
+    description: '',
+    slug: '',
+    content: '',
+    thumbnailUrl: '',
+    tags: [],
+    draft: false
+  }
 }
 
 function generateSlug(title: string) {
@@ -54,7 +52,7 @@ function generateSlug(title: string) {
     .replace(/(^-|-$)/g, '')
 }
 
-function toPostFormData(post: PostItem): PostFormData {
+function toPostFormData(post: EditorialPost): EditorialFormData {
   return {
     title: post.title || '',
     description: post.description || '',
@@ -66,175 +64,18 @@ function toPostFormData(post: PostItem): PostFormData {
   }
 }
 
-function EditorialDetailsCard({
-  formData,
-  onInputChange
-}: {
-  formData: PostFormData
-  onInputChange: (field: keyof PostFormData, value: string | boolean) => void
-}) {
-  return (
-    <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
-      <CardHeader>
-        <CardTitle className='text-gb-pastel-green-1'>Details</CardTitle>
-      </CardHeader>
-      <CardContent className='space-y-4'>
-        <div className='grid gap-4 md:grid-cols-2'>
-          <div className='space-y-2'>
-            <Label className='text-gb-pastel-green-1'>Title</Label>
-            <Input
-              value={formData.title}
-              onChange={(e) => onInputChange('title', e.target.value)}
-              placeholder='Post title'
-            />
-          </div>
-          <div className='space-y-2'>
-            <Label className='text-gb-pastel-green-1'>Slug</Label>
-            <Input
-              value={formData.slug}
-              onChange={(e) => onInputChange('slug', e.target.value)}
-              placeholder='url-friendly-slug'
-            />
-          </div>
-        </div>
-        <div className='space-y-2'>
-          <Label className='text-gb-pastel-green-1'>Description</Label>
-          <Textarea
-            value={formData.description}
-            onChange={(e) => onInputChange('description', e.target.value)}
-            placeholder='Short description'
-          />
-        </div>
-        <div className='flex items-center justify-between rounded-sm border p-3'>
-          <div>
-            <p className='font-medium'>Draft</p>
-            <p className='text-xs text-muted-foreground'>Keep unpublished while editing.</p>
-          </div>
-          <Checkbox
-            checked={formData.draft}
-            onCheckedChange={(checked) => onInputChange('draft', checked === true)}
-          />
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-function EditorialContentCard({
-  content,
-  onChange
-}: {
-  content: string
-  onChange: (value: string) => void
-}) {
-  return (
-    <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
-      <CardHeader>
-        <CardTitle className='text-gb-pastel-green-1'>Content</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <SimpleMarkdownEditor
-          value={content}
-          onChange={onChange}
-          placeholder='Write your post content in markdown...'
-        />
-      </CardContent>
-    </Card>
-  )
-}
-
-function ArtworkCard({
-  artworkFile,
-  artworkPreview,
-  artworkUploadId,
-  thumbnailUrl,
-  onArtworkFileChange,
-  onRemoveArtworkFile,
-  onThumbnailUrlChange
-}: {
+function createEditorSnapshot(
+  formData: EditorialFormData,
+  creatorIds: string[],
   artworkFile: File | null
-  artworkPreview: string | null
-  artworkUploadId: string
-  thumbnailUrl: string
-  onArtworkFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-  onRemoveArtworkFile: () => void
-  onThumbnailUrlChange: (value: string) => void
-}) {
-  return (
-    <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
-      <CardHeader>
-        <CardTitle className='text-gb-pastel-green-1'>Artwork</CardTitle>
-      </CardHeader>
-      <CardContent className='space-y-4'>
-        {!artworkFile && !thumbnailUrl ? (
-          <label
-            htmlFor={artworkUploadId}
-            className='flex flex-col gap-3 justify-center items-center p-8 text-center rounded-sm border-2 border-dashed cursor-pointer transition-colors border-gb-pastel-green-2/40 hover:border-gb-highlight'>
-            <ImageIcon className='size-8 text-gb-pastel-green-1' />
-            <div>
-              <p className='font-medium text-gb-pastel-green-1'>Upload artwork</p>
-              <p className='text-xs text-gb-default-text'>PNG, JPG, WEBP up to 10MB</p>
-            </div>
-            <Upload className='size-4' />
-          </label>
-        ) : (
-          <div className='relative p-3 rounded-sm border'>
-            <img
-              src={artworkPreview || thumbnailUrl}
-              alt='Post artwork'
-              className='object-cover w-full h-40 rounded-sm'
-            />
-            <Button
-              type='button'
-              size='icon'
-              variant='destructive'
-              className='absolute top-5 right-5 size-7'
-              onClick={onRemoveArtworkFile}>
-              <X className='size-4' />
-            </Button>
-          </div>
-        )}
-        <Input
-          id={artworkUploadId}
-          type='file'
-          accept='image/*'
-          onChange={onArtworkFileChange}
-          className='hidden'
-        />
-        <div className='space-y-2'>
-          <Label className='text-gb-pastel-green-1'>Or image URL</Label>
-          <Input
-            value={thumbnailUrl}
-            onChange={(e) => onThumbnailUrlChange(e.target.value)}
-            placeholder='https://...'
-          />
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-function CreatorCard({
-  selectedCreators,
-  onSelectionChange
-}: {
-  selectedCreators: Array<{ id: string; name: string }>
-  onSelectionChange: (users: Array<{ id: string; name: string }>) => void
-}) {
-  return (
-    <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
-      <CardHeader>
-        <CardTitle className='text-gb-pastel-green-1'>Creator</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <UserSearch
-          label='Post Creator'
-          selectedUsers={selectedCreators}
-          onSelectionChange={onSelectionChange}
-        />
-      </CardContent>
-    </Card>
-  )
+) {
+  return JSON.stringify({
+    formData,
+    creatorIds,
+    artwork: artworkFile
+      ? { name: artworkFile.name, size: artworkFile.size, lastModified: artworkFile.lastModified }
+      : null
+  })
 }
 
 export function EditorialPage() {
@@ -245,82 +86,120 @@ export function EditorialPage() {
   const { data: session } = useSession()
   const user = session?.user
   const artworkUploadId = useId()
+  const initializedNewCreator = useRef(false)
 
-  const [formData, setFormData] = useState<PostFormData>({
-    title: '',
-    description: '',
-    slug: '',
-    content: '',
-    thumbnailUrl: '',
-    tags: [],
-    draft: false
-  })
+  const [formData, setFormData] = useState<EditorialFormData>(createEmptyFormData)
   const [artworkFile, setArtworkFile] = useState<File | null>(null)
   const [artworkPreview, setArtworkPreview] = useState<string | null>(null)
-  const [uploadStep, setUploadStep] = useState<'idle' | 'uploading-image' | 'saving' | 'success'>(
-    'idle'
-  )
-  const [selectedCreators, setSelectedCreators] = useState<Array<{ id: string; name: string }>>([])
+  const [uploadStep, setUploadStep] = useState<'idle' | 'uploading-image' | 'saving'>('idle')
+  const [selectedCreators, setSelectedCreators] = useState<EditorialCreator[]>([])
+  const [slugIsManual, setSlugIsManual] = useState(isEditMode)
+  const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null)
 
   const { data: existingPost, isPending: loadingPost } = useQuery({
     queryKey: ['post', search.edit],
-    queryFn: () => fetcher<PostItem>(apiUrl(`/content/posts/${search.edit}/edit`)),
+    queryFn: () => fetcher<EditorialPost>(apiUrl(`/content/posts/${search.edit}/edit`)),
     enabled: isEditMode && Boolean(search.edit)
   })
 
   useEffect(() => {
     if (!existingPost) return
-    setFormData(toPostFormData(existingPost))
-    setSelectedCreators(existingPost.creators || [])
+    const nextFormData = toPostFormData(existingPost)
+    const nextCreators = existingPost.creators || []
+    setFormData(nextFormData)
+    setSelectedCreators(nextCreators)
+    setSlugIsManual(true)
+    setSavedSnapshot(
+      createEditorSnapshot(
+        nextFormData,
+        nextCreators.map((creator) => creator.id),
+        null
+      )
+    )
   }, [existingPost])
 
   useEffect(() => {
-    if (isEditMode || !user) return
-    setSelectedCreators([{ id: user.id, name: user.name || 'You' }])
+    if (isEditMode || !user || initializedNewCreator.current) return
+    const defaultCreator = { id: user.id, name: user.name || 'You' }
+    const initialFormData = createEmptyFormData()
+    setSelectedCreators([defaultCreator])
+    setSavedSnapshot(createEditorSnapshot(initialFormData, [defaultCreator.id], null))
+    initializedNewCreator.current = true
   }, [isEditMode, user])
 
+  useEffect(() => {
+    return () => {
+      if (artworkPreview) URL.revokeObjectURL(artworkPreview)
+    }
+  }, [artworkPreview])
+
+  const currentSnapshot = useMemo(
+    () =>
+      createEditorSnapshot(
+        formData,
+        selectedCreators.map((creator) => creator.id),
+        artworkFile
+      ),
+    [artworkFile, formData, selectedCreators]
+  )
+  const hasUnsavedChanges = savedSnapshot !== null && currentSnapshot !== savedSnapshot
   const canSave = Boolean(formData.title.trim() && formData.content.trim())
 
+  useEffect(() => {
+    const warnBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+
+    if (hasUnsavedChanges) {
+      window.addEventListener('beforeunload', warnBeforeUnload)
+    }
+
+    return () => window.removeEventListener('beforeunload', warnBeforeUnload)
+  }, [hasUnsavedChanges])
+
   const saveMutation = useMutation({
-    mutationFn: async (data: PostFormData) => {
+    mutationFn: async ({
+      formData: submittedFormData,
+      artworkFile: submittedArtworkFile,
+      creatorIds
+    }: EditorialSaveRequest) => {
       if (!user) {
         throw new Error('Please sign in to edit content')
       }
 
-      setUploadStep('uploading-image')
-
-      let imageUrl = data.thumbnailUrl
-      if (artworkFile) {
-        const imageResult = await uploadImageDirectToS3(artworkFile)
+      let imageUrl = submittedFormData.thumbnailUrl
+      if (submittedArtworkFile) {
+        setUploadStep('uploading-image')
+        const imageResult = await uploadImageDirectToS3(submittedArtworkFile)
         imageUrl = imageResult.url
       }
 
       setUploadStep('saving')
 
-      const generatedSlug = data.slug || generateSlug(data.title)
+      const generatedSlug = submittedFormData.slug || generateSlug(submittedFormData.title)
       const payload = {
-        title: data.title.trim() || null,
-        description: data.description,
+        title: submittedFormData.title.trim() || null,
+        description: submittedFormData.description,
         slug: generatedSlug || `post-${Date.now().toString(36)}`,
-        content: data.content.trim() ? data.content : null,
+        content: submittedFormData.content.trim() ? submittedFormData.content : null,
         thumbnailUrl: imageUrl || null,
-        tags: data.tags,
-        draft: data.draft,
-        type: 'post' as const,
-        creatorIds:
-          selectedCreators.length > 0 ? selectedCreators.map((creator) => creator.id) : [user.id]
+        tags: submittedFormData.tags,
+        draft: submittedFormData.draft,
+        type: 'post',
+        creatorIds: creatorIds.length > 0 ? creatorIds : [user.id]
       }
 
       const endpoint = isEditMode
         ? apiUrl(`/content/posts/${search.edit}`)
         : apiUrl('/content/post')
 
-      return fetcher<PostItem>(endpoint, {
+      return fetcher<EditorialPost>(endpoint, {
         method: isEditMode ? 'PATCH' : 'POST',
         body: JSON.stringify(payload)
       })
     },
-    onSuccess: async (savedPost) => {
+    onSuccess: async (savedPost, savedRequest) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['post', search.edit] }),
         queryClient.invalidateQueries({
@@ -330,9 +209,16 @@ export function EditorialPage() {
         queryClient.invalidateQueries({ queryKey: ['admin', 'posts', 'post'] })
       ])
 
-      setUploadStep('success')
+      setSavedSnapshot(
+        createEditorSnapshot(
+          savedRequest.formData,
+          savedRequest.creatorIds,
+          savedRequest.artworkFile
+        )
+      )
+      setUploadStep('idle')
       toast({
-        title: isEditMode ? 'Post updated' : 'Post created',
+        title: savedRequest.formData.draft ? 'Draft saved' : 'Post published',
         description: `${savedPost.title || savedPost.slug} saved successfully.`
       })
 
@@ -353,48 +239,86 @@ export function EditorialPage() {
     }
   })
 
-  const handleArtworkFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+  const saveState: EditorialSaveState = saveMutation.isPending
+    ? uploadStep === 'uploading-image'
+      ? 'uploading'
+      : 'saving'
+    : saveMutation.isError
+      ? 'error'
+      : hasUnsavedChanges
+        ? 'unsaved'
+        : 'saved'
+
+  function handleArtworkFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
     if (!file) return
     setArtworkFile(file)
     setArtworkPreview(URL.createObjectURL(file))
   }
 
-  const removeArtworkFile = () => {
+  function removeArtwork() {
     setArtworkFile(null)
-    if (artworkPreview) {
-      URL.revokeObjectURL(artworkPreview)
-      setArtworkPreview(null)
-    }
-    setFormData((prev) => ({ ...prev, thumbnailUrl: '' }))
+    setArtworkPreview(null)
+    setFormData((previous) => ({ ...previous, thumbnailUrl: '' }))
   }
 
-  const handleInputChange = (field: keyof PostFormData, value: string | boolean) => {
-    setFormData((prev) => {
-      const updated = { ...prev, [field]: value }
-      if (field === 'title' && !prev.slug) {
-        updated.slug = generateSlug(updated.title)
+  function handleTextInputChange(field: EditorialTextField, value: string) {
+    if (field === 'slug') setSlugIsManual(true)
+
+    setFormData((previous) => {
+      const updated = { ...previous, [field]: value }
+      if (field === 'title' && !slugIsManual) {
+        updated.slug = generateSlug(value)
       }
       return updated
     })
   }
 
-  const handleDiscard = () => {
-    if (existingPost) {
-      setFormData(toPostFormData(existingPost))
-      return
-    }
+  function handleDraftChange(draft: boolean) {
+    setFormData((previous) => ({ ...previous, draft }))
+  }
 
-    setFormData({
-      title: '',
-      description: '',
-      slug: '',
-      content: '',
-      thumbnailUrl: '',
-      tags: [],
-      draft: false
+  function handleCreatorChange(creators: EditorialCreator[]) {
+    const mostRecentCreator = creators.at(-1)
+    setSelectedCreators(mostRecentCreator ? [mostRecentCreator] : [])
+  }
+
+  function handleSave(draft: boolean) {
+    const nextFormData = { ...formData, draft }
+    setFormData(nextFormData)
+    saveMutation.mutate({
+      formData: nextFormData,
+      artworkFile,
+      creatorIds: selectedCreators.map((creator) => creator.id)
     })
-    removeArtworkFile()
+  }
+
+  function handleDiscard() {
+    if (hasUnsavedChanges && !window.confirm('Discard your unsaved editorial changes?')) return
+
+    const nextFormData = existingPost ? toPostFormData(existingPost) : createEmptyFormData()
+    const nextCreators = existingPost?.creators || selectedCreators
+    setFormData(nextFormData)
+    setSelectedCreators(nextCreators)
+    setSlugIsManual(Boolean(existingPost))
+    setArtworkFile(null)
+    setArtworkPreview(null)
+    setSavedSnapshot(
+      createEditorSnapshot(
+        nextFormData,
+        nextCreators.map((creator) => creator.id),
+        null
+      )
+    )
+  }
+
+  function confirmNavigation(event: MouseEvent<HTMLAnchorElement>) {
+    if (
+      hasUnsavedChanges &&
+      !window.confirm('Leave this page and discard unsaved editorial changes?')
+    ) {
+      event.preventDefault()
+    }
   }
 
   if (isEditMode && loadingPost) {
@@ -406,98 +330,74 @@ export function EditorialPage() {
     )
   }
 
+  const navigation =
+    isEditMode && existingPost ? (
+      <div className='flex items-center gap-3 text-xs text-muted-foreground'>
+        <Link
+          to='/editorial/$slug'
+          params={{ slug: existingPost.slug }}
+          onClick={confirmNavigation}
+          className='inline-flex items-center gap-1 hover:text-foreground'>
+          <ArrowLeft className='size-3.5' />
+          Back to post
+        </Link>
+        <Link
+          to='/new/tweet'
+          search={{ edit: undefined }}
+          onClick={confirmNavigation}
+          className='hover:text-foreground'>
+          Tweet capture
+        </Link>
+      </div>
+    ) : (
+      <Link
+        to='/new/tweet'
+        search={{ edit: undefined }}
+        onClick={confirmNavigation}
+        className='text-xs text-muted-foreground hover:text-foreground'>
+        Switch to tweet capture
+      </Link>
+    )
+
   return (
-    <div className='px-4 py-8 mx-auto max-w-6xl sm:px-6 lg:px-8'>
-      <PostPageHeader
-        title={isEditMode ? 'Edit Editorial' : 'Create Editorial'}
-        description='Write and publish long-form editorial posts.'
-        isEditMode={isEditMode}
-        backLink={
-          isEditMode && existingPost ? (
-            <Link
-              to='/editorial/$slug'
-              params={{ slug: existingPost.slug }}
-              className='inline-flex items-center gap-2 mb-3 text-base text-muted-foreground hover:text-foreground'>
-              <ArrowLeft className='w-4 h-4' />
-              Back to post
-            </Link>
-          ) : undefined
-        }
-        switchLink={
-          <Link
-            to='/new/tweet'
-            className='mt-2 inline-flex items-center gap-1 text-base text-muted-foreground hover:text-foreground underline underline-offset-4'>
-            Switch to tweet capture
-          </Link>
-        }
-        actions={
-          <>
-            <Button variant='outline' onClick={handleDiscard} disabled={saveMutation.isPending}>
-              Discard
-            </Button>
-            <Button
-              onClick={() => saveMutation.mutate(formData)}
-              disabled={saveMutation.isPending || !canSave}>
-              {saveMutation.isPending ? (
-                <>
-                  <Loader2 className='mr-2 size-4 animate-spin' />
-                  {uploadStep === 'uploading-image' ? 'Uploading…' : 'Saving…'}
-                </>
-              ) : (
-                <>
-                  <Save className='mr-2 size-4' />
-                  {isEditMode ? 'Update' : 'Publish'}
-                </>
-              )}
-            </Button>
-          </>
-        }
+    <div className='min-h-screen px-4 sm:px-6 lg:px-8'>
+      <EditorialWorkspaceHeader
+        title={isEditMode ? 'Edit editorial' : 'New editorial'}
+        navigation={navigation}
+        saveState={saveState}
+        isSaving={saveMutation.isPending}
+        canSave={canSave}
+        onDiscard={handleDiscard}
+        onSaveDraft={() => handleSave(true)}
+        onPublish={() => handleSave(false)}
       />
 
-      <div className='grid gap-8 xl:grid-cols-[1fr_320px]'>
-        <div className='space-y-6'>
-          <EditorialDetailsCard formData={formData} onInputChange={handleInputChange} />
-          <EditorialContentCard
-            content={formData.content}
-            onChange={(value) => handleInputChange('content', value)}
-          />
-        </div>
-
-        <div className='space-y-6'>
-          <ArtworkCard
-            artworkFile={artworkFile}
-            artworkPreview={artworkPreview}
-            artworkUploadId={artworkUploadId}
-            thumbnailUrl={formData.thumbnailUrl}
-            onArtworkFileChange={handleArtworkFileChange}
-            onRemoveArtworkFile={removeArtworkFile}
-            onThumbnailUrlChange={(value) => handleInputChange('thumbnailUrl', value)}
-          />
-
-          <TagsInput
-            tags={formData.tags}
-            onAddTag={(tag) =>
-              setFormData((prev) => ({
-                ...prev,
-                tags: Array.from(new Set([...prev.tags, tag]))
-              }))
-            }
-            onRemoveTag={(tag) =>
-              setFormData((prev) => ({
-                ...prev,
-                tags: prev.tags.filter((existing) => existing !== tag)
-              }))
-            }
-            contentTypeLabel='Editorial'
-          />
-
-          <CreatorCard
-            selectedCreators={selectedCreators}
-            onSelectionChange={(users) =>
-              setSelectedCreators(users.length > 1 ? [users[users.length - 1]] : users)
-            }
-          />
-        </div>
+      <div className='mx-auto grid max-w-7xl gap-0 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-10'>
+        <EditorialWritingCanvas formData={formData} onInputChange={handleTextInputChange} />
+        <EditorialMetadataSidebar
+          formData={formData}
+          artworkFile={artworkFile}
+          artworkPreview={artworkPreview}
+          artworkUploadId={artworkUploadId}
+          selectedCreators={selectedCreators}
+          onDraftChange={handleDraftChange}
+          onArtworkFileChange={handleArtworkFileChange}
+          onRemoveArtwork={removeArtwork}
+          onThumbnailUrlChange={(value) => handleTextInputChange('thumbnailUrl', value)}
+          onAddTag={(tag) =>
+            setFormData((previous) => ({
+              ...previous,
+              tags: Array.from(new Set([...previous.tags, tag]))
+            }))
+          }
+          onRemoveTag={(tag) =>
+            setFormData((previous) => ({
+              ...previous,
+              tags: previous.tags.filter((existing) => existing !== tag)
+            }))
+          }
+          onCreatorChange={handleCreatorChange}
+        />
       </div>
     </div>
   )
