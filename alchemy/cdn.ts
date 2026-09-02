@@ -13,7 +13,8 @@ export const cdnRouter = (config: StageConfig, store: Storage) =>
       observability: workerObservability(config.isProduction),
       env: {
         USER_CONTENT: store.userContent,
-        MIXES: store.mixes
+        MIXES: store.mixes,
+        IMAGES: Cloudflare.Images.Images('IMAGES')
       }
     })
   })
