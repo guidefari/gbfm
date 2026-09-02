@@ -1,3 +1,5 @@
+import { Effect, Schema } from 'effect'
+
 export const externalMediaProviders = {
   spotify: 'spotify',
   soundcloud: 'soundcloud',
@@ -25,6 +27,11 @@ export type ExternalMediaParseResult =
   | { readonly ok: true; readonly media: ExternalMediaReference }
   | { readonly ok: false; readonly message: string }
 
+export type ExternalMediaParseError = {
+  readonly _tag: 'ExternalMediaParseError'
+  readonly message: string
+}
+
 const spotifyTypes = new Set(['album', 'episode', 'playlist', 'show', 'track'])
 const spotifyIdPattern = /^[A-Za-z0-9]{22}$/
 const youtubeIdPattern = /^[A-Za-z0-9_-]{11}$/
@@ -39,16 +46,40 @@ const messages = {
   youtube: 'Paste a YouTube video link.'
 } as const
 
+export const parseExternalMediaUrlEffect = (
+  value: string
+): Effect.Effect<ExternalMediaReference, ExternalMediaParseError> =>
+  Effect.gen(function* () {
+    const url = yield* Schema.decodeUnknownEffect(Schema.URLFromString)(value.trim()).pipe(
+      Effect.mapError(() => parseError(messages.invalid))
+    )
+
+    if (
+      (url.protocol !== 'http:' && url.protocol !== 'https:') ||
+      url.username ||
+      url.password ||
+      url.port
+    ) {
+      return yield* Effect.fail(parseError(messages.invalid))
+    }
+
+    if (isSpotifyHost(url.hostname)) return yield* parseResult(parseSpotifyUrl(url))
+    if (isSoundCloudHost(url.hostname)) return yield* parseResult(parseSoundCloudUrl(url))
+    if (isBandcampHost(url.hostname)) return yield* parseResult(parseBandcampUrl(url))
+    if (isYouTubeHost(url.hostname)) return yield* parseResult(parseYouTubeUrl(url))
+
+    return yield* Effect.fail(parseError(messages.unsupported))
+  })
+
 export function parseExternalMediaUrl(value: string): ExternalMediaParseResult {
-  const url = parseHttpUrl(value)
-  if (url === null) return failure(messages.invalid)
-
-  if (isSpotifyHost(url.hostname)) return parseSpotifyUrl(url)
-  if (isSoundCloudHost(url.hostname)) return parseSoundCloudUrl(url)
-  if (isBandcampHost(url.hostname)) return parseBandcampUrl(url)
-  if (isYouTubeHost(url.hostname)) return parseYouTubeUrl(url)
-
-  return failure(messages.unsupported)
+  return Effect.runSync(
+    parseExternalMediaUrlEffect(value).pipe(
+      Effect.match({
+        onFailure: (error) => failure(error.message),
+        onSuccess: (media) => ({ ok: true, media })
+      })
+    )
+  )
 }
 
 export function externalMediaMarkdown(media: ExternalMediaReference): string {
@@ -86,17 +117,6 @@ export function parseBandcampOembedJson(value: string): ExternalMediaParseResult
   if (source === null) return failure(messages.bandcamp)
 
   return parseExternalMediaUrl(source.replaceAll('\\/', '/'))
-}
-
-function parseHttpUrl(value: string): URL | null {
-  try {
-    const url = new URL(value.trim())
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null
-    if (url.username || url.password || url.port) return null
-    return url
-  } catch {
-    return null
-  }
 }
 
 function parseSpotifyUrl(url: URL): ExternalMediaParseResult {
@@ -289,4 +309,14 @@ function success(provider: ExternalMediaProvider, url: string): ExternalMediaPar
 
 function failure(message: string): ExternalMediaParseResult {
   return { ok: false, message }
+}
+
+function parseError(message: string): ExternalMediaParseError {
+  return { _tag: 'ExternalMediaParseError', message }
+}
+
+function parseResult(
+  result: ExternalMediaParseResult
+): Effect.Effect<ExternalMediaReference, ExternalMediaParseError> {
+  return result.ok ? Effect.succeed(result.media) : Effect.fail(parseError(result.message))
 }

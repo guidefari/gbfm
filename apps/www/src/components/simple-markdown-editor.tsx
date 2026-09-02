@@ -32,6 +32,7 @@ import {
   type ComponentProps,
   type ReactNode
 } from 'react'
+import { spotifyEditorEmbeds } from '@/components/editorial/spotify-editor-embeds'
 import { log } from '@/services/logger'
 import { MDXRendrr } from './MDXRendrr'
 import {
@@ -48,6 +49,7 @@ interface SimpleMarkdownEditorProps {
   onChange: (value: string) => void
   placeholder?: string
   toolbarActions?: ReactNode
+  richSpotifyEmbeds?: boolean
 }
 
 export interface SimpleMarkdownEditorHandle {
@@ -82,9 +84,11 @@ const editorTheme = EditorView.theme(
     },
     '.cm-content': {
       caretColor: 'var(--pastel-green-2)',
-      fontFamily: 'var(--font-jetbrains)',
-      minHeight: '22rem',
-      padding: '1.25rem 1rem'
+      fontFamily: 'inherit',
+      fontSize: '1.0625rem',
+      lineHeight: '1.8',
+      minHeight: '32rem',
+      padding: '2rem clamp(1rem, 4vw, 3rem) 5rem'
     },
     '.cm-cursor, .cm-dropCursor': { borderLeftColor: 'var(--pastel-green-2)' },
     '.cm-gutters': {
@@ -111,7 +115,8 @@ function createExtensions(
   onChange: { current: (value: string) => void },
   syncing: { current: boolean },
   placeholderCompartment: Compartment,
-  placeholder: string | undefined
+  placeholder: string | undefined,
+  richSpotifyEmbeds: boolean
 ) {
   return [
     markdown(),
@@ -120,6 +125,7 @@ function createExtensions(
     highlightActiveLine(),
     EditorView.lineWrapping,
     editorTheme,
+    ...(richSpotifyEmbeds ? [spotifyEditorEmbeds] : []),
     placeholderCompartment.of(editorPlaceholder(placeholder ?? '')),
     keymap.of([
       { key: 'Mod-b', run: (view) => (toggleInlineMarkdown(view, '**', '**', 'bold text'), true) },
@@ -204,13 +210,16 @@ async function createPreview(content: string): Promise<PreviewState> {
 export const SimpleMarkdownEditor = forwardRef<
   SimpleMarkdownEditorHandle,
   SimpleMarkdownEditorProps
->(function SimpleMarkdownEditor({ value, onChange, placeholder, toolbarActions }, ref) {
+>(function SimpleMarkdownEditor(
+  { value, onChange, placeholder, toolbarActions, richSpotifyEmbeds = false },
+  ref
+) {
   const editorHost = useRef<HTMLDivElement | null>(null)
   const editorView = useRef<EditorView | null>(null)
   const onChangeRef = useRef(onChange)
   const syncing = useRef(false)
   const placeholderCompartment = useRef(new Compartment())
-  const initialEditorConfig = useRef({ value, placeholder })
+  const initialEditorConfig = useRef({ value, placeholder, richSpotifyEmbeds })
   const [mode, setMode] = useState<EditorMode>('edit')
   const [preview, setPreview] = useState<PreviewState>({ status: 'empty' })
   onChangeRef.current = onChange
@@ -226,7 +235,8 @@ export const SimpleMarkdownEditor = forwardRef<
           onChangeRef,
           syncing,
           placeholderCompartment.current,
-          initialEditorConfig.current.placeholder
+          initialEditorConfig.current.placeholder,
+          initialEditorConfig.current.richSpotifyEmbeds
         )
       }),
       parent: host

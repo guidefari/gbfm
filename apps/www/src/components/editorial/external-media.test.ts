@@ -1,9 +1,11 @@
+import { Effect } from 'effect'
 import { describe, expect, test } from 'vitest'
 import {
   externalMediaEmbed,
   externalMediaMarkdown,
   parseBandcampOembedJson,
-  parseExternalMediaUrl
+  parseExternalMediaUrl,
+  parseExternalMediaUrlEffect
 } from './external-media'
 
 describe('parseExternalMediaUrl', () => {
@@ -40,6 +42,19 @@ describe('parseExternalMediaUrl', () => {
     ]
   ])('normalizes $s', (_name, url, expected) => {
     expect(parseExternalMediaUrl(url)).toEqual({ ok: true, media: expected })
+  })
+
+  test('reports invalid runtime input through the Effect error channel', () => {
+    const result = Effect.runSync(
+      parseExternalMediaUrlEffect('javascript:alert(1)').pipe(
+        Effect.match({
+          onFailure: (error) => error,
+          onSuccess: () => null
+        })
+      )
+    )
+
+    expect(result?._tag).toBe('ExternalMediaParseError')
   })
 
   test.each([

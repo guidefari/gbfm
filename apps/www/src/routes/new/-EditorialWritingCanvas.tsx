@@ -61,6 +61,7 @@ export function EditorialWritingCanvas({
           value={formData.content}
           onChange={(value) => onInputChange('content', value)}
           placeholder='Start writing…'
+          richSpotifyEmbeds
           toolbarActions={
             <>
               <MusicEntityPicker onInsert={insertBlock} />
