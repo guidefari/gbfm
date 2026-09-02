@@ -12,6 +12,7 @@ interface TagsInputProps {
   onAddTag: (tag: string) => void
   onRemoveTag: (tag: string) => void
   contentTypeLabel: string
+  showSelectedTags?: boolean
 }
 
 export function TagsInput({
@@ -20,7 +21,8 @@ export function TagsInput({
   label = 'Tags',
   onAddTag,
   onRemoveTag,
-  contentTypeLabel
+  contentTypeLabel,
+  showSelectedTags = true
 }: TagsInputProps) {
   const [newTag, setNewTag] = useState('')
   const [showAllSuggestions, setShowAllSuggestions] = useState(false)
@@ -106,7 +108,7 @@ export function TagsInput({
         </Button>
       </div>
 
-      {tags.length > 0 ? (
+      {showSelectedTags && tags.length > 0 ? (
         <div className='flex flex-wrap gap-1.5'>
           {tags.map((tag) => (
             <Badge key={tag} variant='outline' className='gap-1 font-normal'>
@@ -121,11 +123,11 @@ export function TagsInput({
             </Badge>
           ))}
         </div>
-      ) : (
+      ) : showSelectedTags ? (
         <p className='text-xs text-muted-foreground'>
           Choose a shared tag or create one for this {contentTypeLabel}
         </p>
-      )}
+      ) : null}
     </div>
   )
 }

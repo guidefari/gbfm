@@ -20,9 +20,15 @@ interface UserSearchProps {
   selectedUsers: SelectedUser[]
   onSelectionChange: (users: SelectedUser[]) => void
   label?: string
+  showSelectedUsers?: boolean
 }
 
-export function UserSearch({ selectedUsers, onSelectionChange, label = 'Hosts' }: UserSearchProps) {
+export function UserSearch({
+  selectedUsers,
+  onSelectionChange,
+  label = 'Hosts',
+  showSelectedUsers = true
+}: UserSearchProps) {
   const inputId = useId()
   const [searchQuery, setSearchQuery] = useState('')
   const [showResults, setShowResults] = useState(false)
@@ -56,7 +62,7 @@ export function UserSearch({ selectedUsers, onSelectionChange, label = 'Hosts' }
         {label}
       </label>
 
-      {selectedUsers.length > 0 && (
+      {showSelectedUsers && selectedUsers.length > 0 && (
         <div className='flex flex-wrap gap-2 mb-2'>
           {selectedUsers.map((user) => (
             <Badge key={user.id} variant='secondary' className='gap-1'>

@@ -16,7 +16,7 @@ import {
 import { useSession } from '@/lib/auth-client'
 import { apiUrl, fetcher } from '@/lib/http'
 import { uploadImageDirectToS3 } from '@/lib/upload/image-upload'
-import { EditorialMetadataSidebar } from './-EditorialMetadataSidebar'
+import { EditorialMetadataPanel } from './-EditorialMetadataSidebar'
 import type {
   EditorialCreator,
   EditorialFormData,
@@ -86,6 +86,7 @@ export function EditorialPage() {
   const { data: session } = useSession()
   const user = session?.user
   const artworkUploadId = useId()
+  const workspaceRef = useRef<HTMLDialogElement>(null)
   const initializedNewCreator = useRef(false)
 
   const [formData, setFormData] = useState<EditorialFormData>(createEmptyFormData)
@@ -132,6 +133,14 @@ export function EditorialPage() {
       if (artworkPreview) URL.revokeObjectURL(artworkPreview)
     }
   }, [artworkPreview])
+
+  useEffect(() => {
+    const workspace = workspaceRef.current
+    if (!workspace || workspace.open) return () => {}
+
+    workspace.showModal()
+    return () => workspace.close()
+  }, [])
 
   const currentSnapshot = useMemo(
     () =>
@@ -375,8 +384,38 @@ export function EditorialPage() {
       </Link>
     )
 
+  const metadata = (
+    <EditorialMetadataPanel
+      formData={formData}
+      artworkFile={artworkFile}
+      artworkPreview={artworkPreview}
+      artworkUploadId={artworkUploadId}
+      selectedCreators={selectedCreators}
+      onArtworkFileChange={handleArtworkFileChange}
+      onRemoveArtwork={removeArtwork}
+      onThumbnailUrlChange={(value) => handleTextInputChange('thumbnailUrl', value)}
+      onSlugChange={(value) => handleTextInputChange('slug', value)}
+      onAddTag={(tag) =>
+        setFormData((previous) => ({
+          ...previous,
+          tags: Array.from(new Set([...previous.tags, tag]))
+        }))
+      }
+      onRemoveTag={(tag) =>
+        setFormData((previous) => ({
+          ...previous,
+          tags: previous.tags.filter((existing) => existing !== tag)
+        }))
+      }
+      onCreatorChange={handleCreatorChange}
+    />
+  )
+
   return (
-    <div className='min-h-screen bg-background px-4 sm:px-6 lg:px-8'>
+    <dialog
+      ref={workspaceRef}
+      onCancel={(event) => event.preventDefault()}
+      className='m-0 h-dvh max-h-none w-screen max-w-none overflow-y-auto border-0 bg-background p-0 px-4 text-foreground backdrop:bg-background sm:px-6 lg:px-8'>
       <EditorialWorkspaceHeader
         title={isEditMode ? 'Edit editorial' : 'New editorial'}
         navigation={navigation}
@@ -388,33 +427,13 @@ export function EditorialPage() {
         onPublish={() => handleSave(false)}
       />
 
-      <div className='mx-auto grid max-w-6xl gap-8 lg:grid-cols-[minmax(0,1fr)_300px]'>
-        <EditorialWritingCanvas formData={formData} onInputChange={handleTextInputChange} />
-        <EditorialMetadataSidebar
+      <div className='mx-auto max-w-4xl'>
+        <EditorialWritingCanvas
           formData={formData}
-          artworkFile={artworkFile}
-          artworkPreview={artworkPreview}
-          artworkUploadId={artworkUploadId}
-          selectedCreators={selectedCreators}
-          onArtworkFileChange={handleArtworkFileChange}
-          onRemoveArtwork={removeArtwork}
-          onThumbnailUrlChange={(value) => handleTextInputChange('thumbnailUrl', value)}
-          onSlugChange={(value) => handleTextInputChange('slug', value)}
-          onAddTag={(tag) =>
-            setFormData((previous) => ({
-              ...previous,
-              tags: Array.from(new Set([...previous.tags, tag]))
-            }))
-          }
-          onRemoveTag={(tag) =>
-            setFormData((previous) => ({
-              ...previous,
-              tags: previous.tags.filter((existing) => existing !== tag)
-            }))
-          }
-          onCreatorChange={handleCreatorChange}
+          metadata={metadata}
+          onInputChange={handleTextInputChange}
         />
       </div>
-    </div>
+    </dialog>
   )
 }

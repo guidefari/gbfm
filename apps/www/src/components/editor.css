@@ -1,25 +1,21 @@
 .editorial-editor {
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
-  border-radius: var(--radius);
-  background: color-mix(in srgb, var(--card) 86%, var(--background));
-  box-shadow: 0 14px 36px rgb(0 0 0 / 10%);
-}
-
-.editorial-editor:focus-within {
-  border-color: color-mix(in srgb, var(--ring) 72%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 14%, transparent);
+  overflow: visible;
+  background: transparent;
 }
 
 .editorial-editor-topbar {
+  position: sticky;
+  top: 4rem;
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
   min-height: 3.5rem;
   padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
-  background: color-mix(in srgb, var(--card) 94%, var(--background));
+  border-block: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  background: color-mix(in srgb, var(--background) 94%, transparent);
+  backdrop-filter: blur(14px);
 }
 
 .editorial-editor-modes,
@@ -160,7 +156,7 @@
 }
 
 .editorial-editor-source {
-  background: color-mix(in srgb, var(--background) 36%, transparent);
+  background: transparent;
 }
 
 .editorial-editor-preview {
@@ -203,6 +199,7 @@
 
 @media (max-width: 767px) {
   .editorial-editor-topbar {
+    top: 6.75rem;
     align-items: stretch;
     flex-direction: column-reverse;
   }

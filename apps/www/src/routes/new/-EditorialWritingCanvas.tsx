@@ -1,6 +1,6 @@
 import { Button, Input, Label, Textarea } from '@gbfm/ui'
 import { RadioTower } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { MusicEntityPicker } from '@/components/editor/music-entity/MusicEntityPicker'
 import {
   SimpleMarkdownEditor,
@@ -11,9 +11,11 @@ import type { EditorialFormData, EditorialTextField } from './-editorial-types'
 
 export function EditorialWritingCanvas({
   formData,
+  metadata,
   onInputChange
 }: {
   formData: EditorialFormData
+  metadata: ReactNode
   onInputChange: (field: EditorialTextField, value: string) => void
 }) {
   const editorRef = useRef<SimpleMarkdownEditorHandle>(null)
@@ -25,7 +27,7 @@ export function EditorialWritingCanvas({
 
   return (
     <main className='min-w-0 py-8'>
-      <div className='border-b border-border/70 pb-7'>
+      <div className='pb-7'>
         <Label htmlFor='editorial-title' className='sr-only'>
           Title
         </Label>
@@ -53,9 +55,10 @@ export function EditorialWritingCanvas({
             className='h-auto min-h-12 resize-none !border-0 bg-transparent px-0 py-1 text-base leading-relaxed text-muted-foreground !shadow-none placeholder:text-muted-foreground/55 focus-visible:!ring-0'
           />
         </div>
+        {metadata}
       </div>
 
-      <section className='pt-7' aria-label='Editorial content'>
+      <section aria-label='Editorial content'>
         <SimpleMarkdownEditor
           ref={editorRef}
           value={formData.content}

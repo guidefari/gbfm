@@ -96,9 +96,7 @@ const editorTheme = EditorView.theme(
       borderRight: '1px solid color-mix(in srgb, var(--pastel-green-2) 16%, transparent)',
       color: 'color-mix(in srgb, var(--foreground) 38%, transparent)'
     },
-    '.cm-activeLine, .cm-activeLineGutter': {
-      backgroundColor: 'color-mix(in srgb, var(--pastel-green-2) 7%, transparent)'
-    },
+    '.cm-activeLine, .cm-activeLineGutter': { backgroundColor: 'transparent' },
     '.cm-selectionBackground, &.cm-focused .cm-selectionBackground, ::selection': {
       backgroundColor: 'color-mix(in srgb, var(--pastel-green-2) 32%, transparent)'
     },
