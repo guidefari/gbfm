@@ -4,6 +4,7 @@ import Album from '@/components/Album'
 import Playlist from '@/components/Playlist'
 import Track from '@/components/Track'
 import Tracklist from '@/components/Tracklist'
+import { ExternalMedia } from '@/components/editorial/ExternalMedia'
 
 export const CustomMDXComponents = {
   Album,
@@ -11,7 +12,8 @@ export const CustomMDXComponents = {
   Playlist,
   HorizontalScrollCards,
   Tracklist,
-  YoutubeEmbed
+  YoutubeEmbed,
+  ExternalMedia
 }
 export function useMDXComponents(components: MDXComponents): MDXComponents {
   return {
