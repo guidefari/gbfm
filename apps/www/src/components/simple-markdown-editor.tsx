@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useRef,
@@ -32,7 +33,13 @@ import {
   type ComponentProps,
   type ReactNode
 } from 'react'
-import { spotifyEditorEmbeds } from '@/components/editorial/spotify-editor-embeds'
+import { createPortal } from 'react-dom'
+import { MusicEntity } from '@/components/editor/music-entity/MusicEntity'
+import {
+  createMusicEntityEditorEmbeds,
+  type MusicEntityWidget
+} from '@/components/editorial/music-entity-editor-embeds'
+import type { MusicEntityResolution } from '@/components/editorial/editorial-music-resolution'
 import { log } from '@/services/logger'
 import { MDXRendrr } from './MDXRendrr'
 import {
@@ -49,7 +56,11 @@ interface SimpleMarkdownEditorProps {
   onChange: (value: string) => void
   placeholder?: string
   toolbarActions?: ReactNode
-  richSpotifyEmbeds?: boolean
+  resolveMusicEntities?: (
+    urls: ReadonlyArray<string>
+  ) => Promise<ReadonlyArray<MusicEntityResolution>>
+  onPendingMusicChange?: (count: number) => void
+  onMusicResolutionFailure?: (count: number) => void
 }
 
 export interface SimpleMarkdownEditorHandle {
@@ -114,7 +125,7 @@ function createExtensions(
   syncing: { current: boolean },
   placeholderCompartment: Compartment,
   placeholder: string | undefined,
-  richSpotifyEmbeds: boolean
+  musicEntityExtensions: ReadonlyArray<ReturnType<typeof createMusicEntityEditorEmbeds>>
 ) {
   return [
     markdown(),
@@ -123,7 +134,7 @@ function createExtensions(
     highlightActiveLine(),
     EditorView.lineWrapping,
     editorTheme,
-    ...(richSpotifyEmbeds ? [spotifyEditorEmbeds] : []),
+    ...musicEntityExtensions,
     placeholderCompartment.of(editorPlaceholder(placeholder ?? '')),
     keymap.of([
       { key: 'Mod-b', run: (view) => (toggleInlineMarkdown(view, '**', '**', 'bold text'), true) },
@@ -190,6 +201,8 @@ function PreviewPanel({ preview }: { preview: PreviewState }) {
   return <MDXRendrr mdxString={preview.content} />
 }
 
+function ignorePendingMusic(): void {}
+
 async function createPreview(content: string): Promise<PreviewState> {
   if (!content.trim()) return { status: 'empty' }
 
@@ -209,7 +222,15 @@ export const SimpleMarkdownEditor = forwardRef<
   SimpleMarkdownEditorHandle,
   SimpleMarkdownEditorProps
 >(function SimpleMarkdownEditor(
-  { value, onChange, placeholder, toolbarActions, richSpotifyEmbeds = false },
+  {
+    value,
+    onChange,
+    placeholder,
+    toolbarActions,
+    resolveMusicEntities,
+    onPendingMusicChange = ignorePendingMusic,
+    onMusicResolutionFailure = ignorePendingMusic
+  },
   ref
 ) {
   const editorHost = useRef<HTMLDivElement | null>(null)
@@ -217,24 +238,58 @@ export const SimpleMarkdownEditor = forwardRef<
   const onChangeRef = useRef(onChange)
   const syncing = useRef(false)
   const placeholderCompartment = useRef(new Compartment())
-  const initialEditorConfig = useRef({ value, placeholder, richSpotifyEmbeds })
+  const acceptingWidgets = useRef(true)
+  const initialEditorConfig = useRef({
+    value,
+    placeholder,
+    resolveMusicEntities,
+    onPendingMusicChange,
+    onMusicResolutionFailure
+  })
   const [mode, setMode] = useState<EditorMode>('edit')
   const [preview, setPreview] = useState<PreviewState>({ status: 'empty' })
+  const [musicEntityWidgets, setMusicEntityWidgets] = useState<ReadonlyArray<MusicEntityWidget>>([])
   onChangeRef.current = onChange
+
+  const mountMusicEntity = useCallback((widget: MusicEntityWidget) => {
+    if (!acceptingWidgets.current) return
+    setMusicEntityWidgets((widgets) => [
+      ...widgets.filter((current) => current.host !== widget.host),
+      widget
+    ])
+  }, [])
+
+  const unmountMusicEntity = useCallback((host: HTMLElement) => {
+    if (!acceptingWidgets.current) return
+    setMusicEntityWidgets((widgets) => widgets.filter((widget) => widget.host !== host))
+  }, [])
 
   useEffect(() => {
     const host = editorHost.current
     if (!host) return () => {}
 
+    acceptingWidgets.current = true
+    const config = initialEditorConfig.current
+    const musicEntityExtensions = config.resolveMusicEntities
+      ? [
+          createMusicEntityEditorEmbeds({
+            resolve: config.resolveMusicEntities,
+            mount: mountMusicEntity,
+            unmount: unmountMusicEntity,
+            onPendingChange: config.onPendingMusicChange,
+            onResolutionFailure: config.onMusicResolutionFailure
+          })
+        ]
+      : []
     const view = new EditorView({
       state: EditorState.create({
-        doc: initialEditorConfig.current.value,
+        doc: config.value,
         extensions: createExtensions(
           onChangeRef,
           syncing,
           placeholderCompartment.current,
-          initialEditorConfig.current.placeholder,
-          initialEditorConfig.current.richSpotifyEmbeds
+          config.placeholder,
+          musicEntityExtensions
         )
       }),
       parent: host
@@ -242,10 +297,12 @@ export const SimpleMarkdownEditor = forwardRef<
     editorView.current = view
 
     return () => {
+      acceptingWidgets.current = false
+      config.onPendingMusicChange(0)
       view.destroy()
       if (editorView.current === view) editorView.current = null
     }
-  }, [])
+  }, [mountMusicEntity, unmountMusicEntity])
 
   useEffect(() => {
     const view = editorView.current
@@ -392,6 +449,13 @@ export const SimpleMarkdownEditor = forwardRef<
           </div>
         ) : null}
       </div>
+      {musicEntityWidgets.map((widget) =>
+        createPortal(
+          <MusicEntity type={widget.reference.type} id={widget.reference.id} />,
+          widget.host,
+          widget.key
+        )
+      )}
     </section>
   )
 })

@@ -94,6 +94,7 @@ export function EditorialPage() {
   const [artworkPreview, setArtworkPreview] = useState<string | null>(null)
   const [uploadStep, setUploadStep] = useState<'idle' | 'uploading-image' | 'saving'>('idle')
   const [selectedCreators, setSelectedCreators] = useState<EditorialCreator[]>([])
+  const [pendingMusicCount, setPendingMusicCount] = useState(0)
   const [slugIsManual, setSlugIsManual] = useState(isEditMode)
   const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null)
 
@@ -152,7 +153,9 @@ export function EditorialPage() {
     [artworkFile, formData, selectedCreators]
   )
   const hasUnsavedChanges = savedSnapshot !== null && currentSnapshot !== savedSnapshot
-  const canSave = Boolean(formData.title.trim() && formData.content.trim())
+  const canSave = Boolean(
+    formData.title.trim() && formData.content.trim() && pendingMusicCount === 0
+  )
 
   useEffect(() => {
     const warnBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -432,6 +435,7 @@ export function EditorialPage() {
           formData={formData}
           metadata={metadata}
           onInputChange={handleTextInputChange}
+          onPendingMusicChange={setPendingMusicCount}
         />
       </div>
     </dialog>

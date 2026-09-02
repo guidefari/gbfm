@@ -12,6 +12,7 @@ import { useState, type FormEvent } from 'react'
 import {
   bandcampOembedUrl,
   externalMediaMarkdown,
+  externalMediaProviders,
   parseBandcampOembedJson,
   parseExternalMediaUrl,
   type ExternalMediaParseResult,
@@ -47,6 +48,11 @@ export function ExternalMediaPickerDialog({
       return
     }
 
+    if (parsed.media.provider === externalMediaProviders.spotify) {
+      setError('Paste Spotify links directly into the story to add them to the GBFM catalog.')
+      return
+    }
+
     setError(null)
     setIsResolving(true)
     const resolved = await resolveBandcampMedia(parsed.media)
@@ -67,7 +73,7 @@ export function ExternalMediaPickerDialog({
         <DialogHeader>
           <DialogTitle>Embed external media</DialogTitle>
           <DialogDescription className='text-sm leading-relaxed'>
-            Paste a Spotify, SoundCloud, Bandcamp, or YouTube link. GBFM creates the player for you.
+            Paste a SoundCloud, Bandcamp, or YouTube link. GBFM creates the player for you.
           </DialogDescription>
         </DialogHeader>
         <form className='space-y-4' onSubmit={handleSubmit}>

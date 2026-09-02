@@ -805,6 +805,29 @@ export function useEnrichTrackFromUrl(url: string) {
   }
 }
 
+const ResolvedMusicEntityReferenceSchema = Schema.Struct({
+  entityType: Schema.Literals(['album', 'track', 'playlist']),
+  entity: Schema.Struct({ id: Schema.NonEmptyString })
+})
+
+export const resolveMusicEntityReferenceEffect = (url: string) =>
+  Effect.gen(function* () {
+    const client = yield* Effect.promise(getApiClient)
+    const response = yield* client.music
+      .resolveMusicEntity({ payload: { url } })
+      .pipe(
+        Effect.tapError((error) =>
+          captureException(error, { endpoint: 'music.resolveMusicEntity' })
+        )
+      )
+    const resolved = yield* Schema.decodeUnknownEffect(ResolvedMusicEntityReferenceSchema)(response)
+
+    return {
+      type: resolved.entityType,
+      id: resolved.entity.id
+    }
+  })
+
 export type ResolvedMusicEntity = {
   entityType: 'album' | 'track' | 'playlist'
   entity: {

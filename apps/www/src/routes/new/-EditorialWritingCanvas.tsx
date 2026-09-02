@@ -1,22 +1,27 @@
-import { Button, Input, Label, Textarea } from '@gbfm/ui'
+import { Button, Input, Label, Textarea, toast } from '@gbfm/ui'
+import { Effect } from 'effect'
 import { RadioTower } from 'lucide-react'
-import { useRef, useState, type ReactNode } from 'react'
+import { useCallback, useRef, useState, type ReactNode } from 'react'
 import { MusicEntityPicker } from '@/components/editor/music-entity/MusicEntityPicker'
 import {
   SimpleMarkdownEditor,
   type SimpleMarkdownEditorHandle
 } from '@/components/simple-markdown-editor'
 import { ExternalMediaPickerDialog } from '@/components/editorial/ExternalMediaPickerDialog'
+import { resolveMusicEntityBatchEffect } from '@/components/editorial/editorial-music-resolution'
+import { resolveMusicEntityReferenceEffect } from '@/lib/http'
 import type { EditorialFormData, EditorialTextField } from './-editorial-types'
 
 export function EditorialWritingCanvas({
   formData,
   metadata,
-  onInputChange
+  onInputChange,
+  onPendingMusicChange
 }: {
   formData: EditorialFormData
   metadata: ReactNode
   onInputChange: (field: EditorialTextField, value: string) => void
+  onPendingMusicChange: (count: number) => void
 }) {
   const editorRef = useRef<SimpleMarkdownEditorHandle>(null)
   const [externalMediaOpen, setExternalMediaOpen] = useState(false)
@@ -24,6 +29,20 @@ export function EditorialWritingCanvas({
   const insertBlock = (markdown: string) => {
     editorRef.current?.insertAtCursor(`\n\n${markdown.trim()}\n\n`)
   }
+
+  const resolveMusicEntities = useCallback(
+    (urls: ReadonlyArray<string>) =>
+      Effect.runPromise(resolveMusicEntityBatchEffect(urls, resolveMusicEntityReferenceEffect)),
+    []
+  )
+
+  const reportResolutionFailure = useCallback((count: number) => {
+    toast({
+      title: count === 1 ? 'Could not add one music link' : `Could not add ${count} music links`,
+      description: 'The original Spotify links were kept in your story.',
+      variant: 'destructive'
+    })
+  }, [])
 
   return (
     <main className='min-w-0 py-8'>
@@ -64,7 +83,9 @@ export function EditorialWritingCanvas({
           value={formData.content}
           onChange={(value) => onInputChange('content', value)}
           placeholder='Start writing…'
-          richSpotifyEmbeds
+          resolveMusicEntities={resolveMusicEntities}
+          onPendingMusicChange={onPendingMusicChange}
+          onMusicResolutionFailure={reportResolutionFailure}
           toolbarActions={
             <>
               <MusicEntityPicker onInsert={insertBlock} />

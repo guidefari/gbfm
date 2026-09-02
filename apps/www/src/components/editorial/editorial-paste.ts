@@ -1,21 +1,26 @@
 import { Effect, Option } from 'effect'
 import {
-  externalMediaMarkdown,
   externalMediaProviders,
   parseExternalMediaUrlEffect,
   type ExternalMediaParseError,
   type ExternalMediaReference
 } from './external-media'
 
-const spotifyEmbedPattern =
-  /^<ExternalMedia provider="spotify" url="(https:\/\/open\.spotify\.com\/[^"\s]+)" \/>$/
+export type PastedEditorialContent = {
+  readonly content: string
+  readonly spotifyUrls: ReadonlyArray<string>
+}
+
+const pendingMusicEntityPattern =
+  /^<MusicEntityPending url="(https:\/\/open\.spotify\.com\/[^"\s]+)" \/>$/
 const fencedCodePattern = /^\s*(?:`{3,}|~{3,})/
 
 export const transformPastedEditorialContentEffect = (
   content: string
-): Effect.Effect<string, ExternalMediaParseError> =>
+): Effect.Effect<PastedEditorialContent, ExternalMediaParseError> =>
   Effect.gen(function* () {
     const transformed: string[] = []
+    const spotifyUrls = new Set<string>()
     let insideFencedCode = false
 
     for (const line of content.split('\n')) {
@@ -30,24 +35,27 @@ export const transformPastedEditorialContentEffect = (
         continue
       }
 
-      const trimmed = line.trim()
-      const parsed = yield* Effect.option(parseExternalMediaUrlEffect(trimmed))
+      const parsed = yield* Effect.option(parseExternalMediaUrlEffect(line.trim()))
       if (Option.isSome(parsed) && parsed.value.provider === externalMediaProviders.spotify) {
-        transformed.push(externalMediaMarkdown(parsed.value))
+        spotifyUrls.add(parsed.value.url)
+        transformed.push(serializePendingMusicEntity(parsed.value.url))
         continue
       }
 
       transformed.push(line)
     }
 
-    return transformed.join('\n')
+    return {
+      content: transformed.join('\n'),
+      spotifyUrls: Array.from(spotifyUrls)
+    }
   })
 
-export const parseSpotifyEmbedMarkdownEffect = (
+export const parsePendingMusicEntityEffect = (
   markdown: string
 ): Effect.Effect<ExternalMediaReference, ExternalMediaParseError> =>
   Effect.gen(function* () {
-    const match = spotifyEmbedPattern.exec(markdown.trim())
+    const match = pendingMusicEntityPattern.exec(markdown.trim())
     const url = match?.[1]
     if (url === undefined) return yield* Effect.fail(invalidEmbed())
 
@@ -59,9 +67,13 @@ export const parseSpotifyEmbedMarkdownEffect = (
     return media
   })
 
+export function serializePendingMusicEntity(url: string): string {
+  return `<MusicEntityPending url="${url}" />`
+}
+
 function invalidEmbed(): ExternalMediaParseError {
   return {
     _tag: 'ExternalMediaParseError',
-    message: 'This Spotify embed is invalid.'
+    message: 'This pending music entity embed is invalid.'
   }
 }
