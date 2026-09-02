@@ -6,8 +6,8 @@ import type { EditorialCreator, EditorialFormData } from './-editorial-types'
 
 function MetadataSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className='border-b border-gb-pastel-green-2/15 pb-7 last:border-b-0'>
-      <h2 className='mb-3 text-xs font-semibold tracking-[0.16em] text-gb-pastel-green-1 uppercase'>
+    <section className='border-b border-border/70 pb-6 last:border-b-0 last:pb-0'>
+      <h2 className='mb-4 text-xs font-semibold tracking-[0.14em] text-foreground uppercase'>
         {title}
       </h2>
       {children}
@@ -25,6 +25,7 @@ export function EditorialMetadataSidebar({
   onArtworkFileChange,
   onRemoveArtwork,
   onThumbnailUrlChange,
+  onSlugChange,
   onAddTag,
   onRemoveTag,
   onCreatorChange
@@ -38,6 +39,7 @@ export function EditorialMetadataSidebar({
   onArtworkFileChange: (event: ChangeEvent<HTMLInputElement>) => void
   onRemoveArtwork: () => void
   onThumbnailUrlChange: (value: string) => void
+  onSlugChange: (value: string) => void
   onAddTag: (tag: string) => void
   onRemoveTag: (tag: string) => void
   onCreatorChange: (creators: EditorialCreator[]) => void
@@ -46,10 +48,10 @@ export function EditorialMetadataSidebar({
 
   return (
     <aside
-      className='space-y-7 border-t border-gb-pastel-green-2/15 py-8 lg:sticky lg:top-[66px] lg:self-start lg:border-t-0 lg:border-l lg:py-10 lg:pl-7'
+      className='space-y-6 rounded-sm border border-border/70 bg-card/35 p-5 [&_input]:bg-background/35 [&_label]:text-sm lg:sticky lg:top-[76px] lg:mt-8 lg:self-start'
       aria-label='Editorial metadata'>
       <MetadataSection title='Publishing status'>
-        <div className='flex items-start gap-3'>
+        <div className='flex items-start gap-3.5'>
           <Checkbox
             id='editorial-draft'
             checked={formData.draft}
@@ -88,9 +90,9 @@ export function EditorialMetadataSidebar({
           ) : (
             <label
               htmlFor={artworkUploadId}
-              className='flex cursor-pointer flex-col items-center justify-center gap-2 rounded-sm border border-dashed border-gb-pastel-green-2/40 px-4 py-7 text-center transition-colors hover:border-gb-highlight'>
-              <ImageIcon className='size-6 text-gb-pastel-green-1' />
-              <span className='text-sm font-medium text-gb-pastel-green-1'>Upload artwork</span>
+              className='flex min-h-36 cursor-pointer flex-col items-center justify-center gap-2.5 rounded-sm border border-dashed border-border bg-background/25 px-4 py-6 text-center transition-colors hover:border-highlight hover:bg-background/40 focus-within:ring-2 focus-within:ring-ring'>
+              <ImageIcon className='size-6 text-foreground' />
+              <span className='text-sm font-medium text-foreground'>Upload artwork</span>
               <span className='text-xs text-muted-foreground'>PNG, JPG, or WEBP, up to 10MB</span>
               <Upload className='size-4 text-muted-foreground' />
             </label>
@@ -118,6 +120,21 @@ export function EditorialMetadataSidebar({
           {artworkFile ? (
             <p className='text-xs text-muted-foreground'>{artworkFile.name} selected</p>
           ) : null}
+        </div>
+      </MetadataSection>
+
+      <MetadataSection title='URL'>
+        <div className='space-y-1.5'>
+          <Label htmlFor='editorial-slug'>Slug</Label>
+          <Input
+            id='editorial-slug'
+            value={formData.slug}
+            onChange={(event) => onSlugChange(event.target.value)}
+            placeholder='generated-from-title'
+          />
+          <p className='text-xs leading-relaxed text-muted-foreground'>
+            Leave blank to generate this from the title.
+          </p>
         </div>
       </MetadataSection>
 

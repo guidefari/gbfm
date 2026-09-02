@@ -209,11 +209,19 @@ export function EditorialPage() {
         queryClient.invalidateQueries({ queryKey: ['admin', 'posts', 'post'] })
       ])
 
+      const persistedFormData = toPostFormData(savedPost)
+      const persistedCreators = savedPost.creators?.length ? savedPost.creators : selectedCreators
+
+      setFormData(persistedFormData)
+      setSelectedCreators(persistedCreators)
+      setSlugIsManual(true)
+      setArtworkFile(null)
+      setArtworkPreview(null)
       setSavedSnapshot(
         createEditorSnapshot(
-          savedRequest.formData,
-          savedRequest.creatorIds,
-          savedRequest.artworkFile
+          persistedFormData,
+          persistedCreators.map((creator) => creator.id),
+          null
         )
       )
       setUploadStep('idle')
@@ -221,6 +229,17 @@ export function EditorialPage() {
         title: savedRequest.formData.draft ? 'Draft saved' : 'Post published',
         description: `${savedPost.title || savedPost.slug} saved successfully.`
       })
+
+      if (savedRequest.formData.draft) {
+        if (!isEditMode) {
+          void router.navigate({
+            to: '/new/editorial',
+            search: { edit: savedPost.id },
+            replace: true
+          })
+        }
+        return
+      }
 
       setTimeout(() => {
         void router.navigate({
@@ -360,7 +379,7 @@ export function EditorialPage() {
     )
 
   return (
-    <div className='min-h-screen px-4 sm:px-6 lg:px-8'>
+    <div className='min-h-screen bg-background px-4 sm:px-6 lg:px-8'>
       <EditorialWorkspaceHeader
         title={isEditMode ? 'Edit editorial' : 'New editorial'}
         navigation={navigation}
@@ -372,7 +391,7 @@ export function EditorialPage() {
         onPublish={() => handleSave(false)}
       />
 
-      <div className='mx-auto grid max-w-7xl gap-0 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-10'>
+      <div className='mx-auto grid max-w-6xl gap-8 lg:grid-cols-[minmax(0,1fr)_300px]'>
         <EditorialWritingCanvas formData={formData} onInputChange={handleTextInputChange} />
         <EditorialMetadataSidebar
           formData={formData}
@@ -384,6 +403,7 @@ export function EditorialPage() {
           onArtworkFileChange={handleArtworkFileChange}
           onRemoveArtwork={removeArtwork}
           onThumbnailUrlChange={(value) => handleTextInputChange('thumbnailUrl', value)}
+          onSlugChange={(value) => handleTextInputChange('slug', value)}
           onAddTag={(tag) =>
             setFormData((previous) => ({
               ...previous,

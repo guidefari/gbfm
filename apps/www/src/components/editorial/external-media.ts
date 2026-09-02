@@ -5,17 +5,14 @@ export const externalMediaProviders = {
   youtube: 'youtube'
 } as const
 
-/** A supported external media provider. */
 export type ExternalMediaProvider =
   (typeof externalMediaProviders)[keyof typeof externalMediaProviders]
 
-/** A normalized external media reference that is safe to serialize into MDX. */
 export type ExternalMediaReference = {
   readonly provider: ExternalMediaProvider
   readonly url: string
 }
 
-/** A provider-specific iframe configuration derived from a normalized reference. */
 export type ExternalMediaEmbed = {
   readonly provider: ExternalMediaProvider
   readonly src: string
@@ -24,7 +21,6 @@ export type ExternalMediaEmbed = {
   readonly allow: string
 }
 
-/** A successful or failed external media URL parse. */
 export type ExternalMediaParseResult =
   | { readonly ok: true; readonly media: ExternalMediaReference }
   | { readonly ok: false; readonly message: string }
@@ -43,7 +39,6 @@ const messages = {
   youtube: 'Paste a YouTube video link.'
 } as const
 
-/** Parses a pasted provider URL into its stable, provider-specific representation. */
 export function parseExternalMediaUrl(value: string): ExternalMediaParseResult {
   const url = parseHttpUrl(value)
   if (url === null) return failure(messages.invalid)
@@ -56,15 +51,10 @@ export function parseExternalMediaUrl(value: string): ExternalMediaParseResult {
   return failure(messages.unsupported)
 }
 
-/** Serializes a normalized reference as a self-contained, stable MDX component. */
 export function externalMediaMarkdown(media: ExternalMediaReference): string {
   return `<ExternalMedia provider="${media.provider}" url="${media.url}" />`
 }
 
-/**
- * Derives the only iframe configuration permitted for a normalized reference.
- * Bandcamp page URLs require oEmbed resolution before they can produce an iframe.
- */
 export function externalMediaEmbed(media: ExternalMediaReference): ExternalMediaEmbed | null {
   const parsed = parseExternalMediaUrl(media.url)
   if (!parsed.ok || parsed.media.provider !== media.provider) return null
@@ -83,7 +73,6 @@ export function externalMediaEmbed(media: ExternalMediaReference): ExternalMedia
   return null
 }
 
-/** Returns the oEmbed endpoint used to resolve a canonical Bandcamp page. */
 export function bandcampOembedUrl(media: ExternalMediaReference): string | null {
   const parsed = parseExternalMediaUrl(media.url)
   if (!parsed.ok || parsed.media.provider !== externalMediaProviders.bandcamp) return null
@@ -92,7 +81,6 @@ export function bandcampOembedUrl(media: ExternalMediaReference): string | null 
   return `https://bandcamp.com/oembed?format=json&url=${encodeURIComponent(parsed.media.url)}`
 }
 
-/** Extracts and validates a Bandcamp player URL from serialized oEmbed JSON. */
 export function parseBandcampOembedJson(value: string): ExternalMediaParseResult {
   const source = extractBandcampEmbedUrl(value)
   if (source === null) return failure(messages.bandcamp)

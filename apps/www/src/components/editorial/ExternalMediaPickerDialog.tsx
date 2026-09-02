@@ -18,14 +18,12 @@ import {
   type ExternalMediaReference
 } from './external-media'
 
-/** Props for a dialog that inserts an external media MDX component into editorial content. */
 export type ExternalMediaPickerDialogProps = {
   readonly open: boolean
   readonly onOpenChange: (open: boolean) => void
   readonly onInsert: (markdown: string) => void
 }
 
-/** Lets editorial authors paste a supported media URL without writing iframe HTML. */
 export function ExternalMediaPickerDialog({
   open,
   onOpenChange,
@@ -65,10 +63,10 @@ export function ExternalMediaPickerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='sm:max-w-md'>
+      <DialogContent className='w-[calc(100vw-2rem)] max-w-md overflow-hidden'>
         <DialogHeader>
           <DialogTitle>Embed external media</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className='text-sm leading-relaxed'>
             Paste a Spotify, SoundCloud, Bandcamp, or YouTube link. GBFM creates the player for you.
           </DialogDescription>
         </DialogHeader>
@@ -95,10 +93,10 @@ export function ExternalMediaPickerDialog({
             )}
           </div>
           <DialogFooter>
-            <Button type='button' variant='outline' onClick={close}>
+            <Button type='button' variant='outline' onClick={close} className='h-9 px-4 text-sm'>
               Cancel
             </Button>
-            <Button type='submit' disabled={isResolving}>
+            <Button type='submit' disabled={isResolving} className='h-9 px-4 text-sm'>
               {isResolving ? 'Preparing player...' : 'Insert media'}
             </Button>
           </DialogFooter>

@@ -18,7 +18,6 @@ type ResolvedExternalMediaProps = {
   media: ExternalMediaReference
 }
 
-/** Renders a safe provider-owned iframe from a normalized editorial media reference. */
 export function ExternalMedia({ provider, url }: ExternalMediaProps) {
   const parsed = parseExternalMediaUrl(url)
   if (!parsed.ok || parsed.media.provider !== provider) return null

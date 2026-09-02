@@ -76,20 +76,20 @@ const editorTheme = EditorView.theme(
   {
     '&': {
       backgroundColor: 'transparent',
-      color: 'var(--default-text)',
+      color: 'var(--foreground)',
       fontSize: '0.9375rem'
     },
     '.cm-content': {
       caretColor: 'var(--pastel-green-2)',
       fontFamily: 'var(--font-jetbrains)',
-      minHeight: '26rem',
+      minHeight: '22rem',
       padding: '1.25rem 1rem'
     },
     '.cm-cursor, .cm-dropCursor': { borderLeftColor: 'var(--pastel-green-2)' },
     '.cm-gutters': {
       backgroundColor: 'transparent',
       borderRight: '1px solid color-mix(in srgb, var(--pastel-green-2) 16%, transparent)',
-      color: 'color-mix(in srgb, var(--default-text) 38%, transparent)'
+      color: 'color-mix(in srgb, var(--foreground) 38%, transparent)'
     },
     '.cm-activeLine, .cm-activeLineGutter': {
       backgroundColor: 'color-mix(in srgb, var(--pastel-green-2) 7%, transparent)'
@@ -97,9 +97,9 @@ const editorTheme = EditorView.theme(
     '.cm-selectionBackground, &.cm-focused .cm-selectionBackground, ::selection': {
       backgroundColor: 'color-mix(in srgb, var(--pastel-green-2) 32%, transparent)'
     },
-    '.cm-placeholder': { color: 'color-mix(in srgb, var(--default-text) 42%, transparent)' },
+    '.cm-placeholder': { color: 'color-mix(in srgb, var(--foreground) 42%, transparent)' },
     '.cm-tooltip': {
-      backgroundColor: 'var(--darker-bg)',
+      backgroundColor: 'var(--card)',
       border: '1px solid color-mix(in srgb, var(--pastel-green-2) 20%, transparent)'
     }
   },
@@ -176,7 +176,7 @@ function PreviewPanel({ preview }: { preview: PreviewState }) {
   if (preview.status === 'error') {
     return (
       <div className='editorial-editor-error-state' role='alert'>
-        <p className='font-medium'>We could not render this MDX.</p>
+        <p className='font-medium'>We could not render this preview.</p>
         <p className='mt-1 text-sm'>{preview.message}</p>
       </div>
     )
@@ -195,7 +195,7 @@ async function createPreview(content: string): Promise<PreviewState> {
     log('error', 'MDX compilation error', { error })
     return {
       status: 'error',
-      message: error instanceof Error ? error.message : 'Check your MDX syntax and try again.'
+      message: 'Check your Markdown or embeds and try again.'
     }
   }
 }
@@ -262,12 +262,15 @@ export const SimpleMarkdownEditor = forwardRef<
     let cancelled = false
     setPreview(value.trim() ? { status: 'loading' } : { status: 'empty' })
 
-    void createPreview(value).then((result) => {
-      if (!cancelled) setPreview(result)
-    })
+    const timeout = window.setTimeout(() => {
+      void createPreview(value).then((result) => {
+        if (!cancelled) setPreview(result)
+      })
+    }, 250)
 
     return () => {
       cancelled = true
+      window.clearTimeout(timeout)
     }
   }, [mode, value])
 
@@ -293,11 +296,66 @@ export const SimpleMarkdownEditor = forwardRef<
   const showPreview = mode !== 'edit'
 
   return (
-    <section className='editorial-editor' aria-label='MDX editor'>
-      <div className='editorial-editor-header'>
-        <div>
-          <p className='editorial-editor-kicker'>Editorial workspace</p>
-          <p className='editorial-editor-title'>MDX source</p>
+    <section className='editorial-editor' aria-label='Markdown editor'>
+      <div className='editorial-editor-topbar'>
+        <div className='editorial-editor-toolbar' aria-label='Formatting controls'>
+          <div className='editorial-editor-toolbar-group'>
+            <ToolbarButton
+              label='Heading'
+              icon={<Heading2 className='size-4' />}
+              onClick={() => withEditor((view) => toggleLinePrefix(view, '## '))}
+            />
+            <ToolbarButton
+              label='Bold, Command B'
+              icon={<Bold className='size-4' />}
+              onClick={() =>
+                withEditor((view) => toggleInlineMarkdown(view, '**', '**', 'bold text'))
+              }
+            />
+            <ToolbarButton
+              label='Italic, Command I'
+              icon={<Italic className='size-4' />}
+              onClick={() =>
+                withEditor((view) => toggleInlineMarkdown(view, '_', '_', 'italic text'))
+              }
+            />
+            <ToolbarButton
+              label='Strikethrough'
+              icon={<Strikethrough className='size-4' />}
+              onClick={() =>
+                withEditor((view) => toggleInlineMarkdown(view, '~~', '~~', 'struck text'))
+              }
+            />
+          </div>
+          <div className='editorial-editor-toolbar-group'>
+            <ToolbarButton
+              label='Link, Command K'
+              icon={<Link2 className='size-4' />}
+              onClick={() => withEditor(insertMarkdownLink)}
+            />
+            <ToolbarButton
+              label='Inline code'
+              icon={<Code2 className='size-4' />}
+              onClick={() => withEditor((view) => toggleInlineMarkdown(view, '`', '`', 'code'))}
+            />
+            <ToolbarButton
+              label='Quote'
+              icon={<Quote className='size-4' />}
+              onClick={() => withEditor((view) => toggleLinePrefix(view, '> '))}
+            />
+          </div>
+          <div className='editorial-editor-toolbar-group'>
+            <ToolbarButton
+              label='Bulleted list'
+              icon={<List className='size-4' />}
+              onClick={() => withEditor((view) => toggleLinePrefix(view, '- '))}
+            />
+            <ToolbarButton
+              label='Numbered list'
+              icon={<ListOrdered className='size-4' />}
+              onClick={() => withEditor((view) => toggleLinePrefix(view, '1. ', /^\d+\.\s/))}
+            />
+          </div>
         </div>
         <div className='editorial-editor-modes' aria-label='Editor view'>
           {editorModes.map((item) => (
@@ -313,74 +371,13 @@ export const SimpleMarkdownEditor = forwardRef<
         </div>
       </div>
 
-      <div className='editorial-editor-toolbar' aria-label='Formatting controls'>
-        <div className='editorial-editor-toolbar-group'>
-          <ToolbarButton
-            label='Heading'
-            icon={<Heading2 className='size-4' />}
-            onClick={() => withEditor((view) => toggleLinePrefix(view, '## '))}
-          />
-          <ToolbarButton
-            label='Bold, Command B'
-            icon={<Bold className='size-4' />}
-            onClick={() =>
-              withEditor((view) => toggleInlineMarkdown(view, '**', '**', 'bold text'))
-            }
-          />
-          <ToolbarButton
-            label='Italic, Command I'
-            icon={<Italic className='size-4' />}
-            onClick={() =>
-              withEditor((view) => toggleInlineMarkdown(view, '_', '_', 'italic text'))
-            }
-          />
-          <ToolbarButton
-            label='Strikethrough'
-            icon={<Strikethrough className='size-4' />}
-            onClick={() =>
-              withEditor((view) => toggleInlineMarkdown(view, '~~', '~~', 'struck text'))
-            }
-          />
-        </div>
-        <div className='editorial-editor-toolbar-group'>
-          <ToolbarButton
-            label='Link, Command K'
-            icon={<Link2 className='size-4' />}
-            onClick={() => withEditor(insertMarkdownLink)}
-          />
-          <ToolbarButton
-            label='Inline code'
-            icon={<Code2 className='size-4' />}
-            onClick={() => withEditor((view) => toggleInlineMarkdown(view, '`', '`', 'code'))}
-          />
-          <ToolbarButton
-            label='Quote'
-            icon={<Quote className='size-4' />}
-            onClick={() => withEditor((view) => toggleLinePrefix(view, '> '))}
-          />
-        </div>
-        <div className='editorial-editor-toolbar-group'>
-          <ToolbarButton
-            label='Bulleted list'
-            icon={<List className='size-4' />}
-            onClick={() => withEditor((view) => toggleLinePrefix(view, '- '))}
-          />
-          <ToolbarButton
-            label='Numbered list'
-            icon={<ListOrdered className='size-4' />}
-            onClick={() => withEditor((view) => toggleLinePrefix(view, '1. ', /^\d+\.\s/))}
-          />
-        </div>
-      </div>
-
       <div className={isSplit ? 'grid overflow-hidden md:grid-cols-2' : 'overflow-hidden'}>
-        {showEditor ? (
-          <div className='editorial-editor-pane editorial-editor-source'>
-            <div ref={editorHost} className='editorial-editor-codemirror' />
-          </div>
-        ) : null}
+        <div
+          className={`editorial-editor-pane editorial-editor-source ${showEditor ? '' : 'hidden'}`}>
+          <div ref={editorHost} className='editorial-editor-codemirror' />
+        </div>
         {showPreview ? (
-          <div className='editorial-editor-pane editorial-editor-preview prose max-w-none'>
+          <div className='editorial-editor-pane editorial-editor-preview prose prose-invert max-w-none'>
             <PreviewPanel preview={preview} />
           </div>
         ) : null}
@@ -389,7 +386,9 @@ export const SimpleMarkdownEditor = forwardRef<
       <footer className='editorial-editor-footer'>
         <span>{wordCount.toLocaleString()} words</span>
         <span>{value.length.toLocaleString()} characters</span>
-        <span className='hidden sm:inline'>MDX is saved exactly as written</span>
+        <span className='hidden sm:inline'>
+          Markdown and embeds save automatically with your draft
+        </span>
       </footer>
     </section>
   )

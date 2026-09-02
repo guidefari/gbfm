@@ -58,19 +58,19 @@ export function MusicEntityPicker({ onInsert }: MusicEntityPickerProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button type='button' variant='outline' size='sm'>
+        <Button type='button' variant='outline' size='sm' className='h-9 gap-2 px-3.5 text-sm'>
           <Music4 className='size-4' />
-          Insert music
+          Embed music
         </Button>
       </DialogTrigger>
-      <DialogContent className='max-w-2xl'>
-        <DialogHeader>
-          <DialogTitle>Insert music entity</DialogTitle>
-          <DialogDescription>
-            Search the GBFM catalog, then add a stable music entity reference to the editor.
+      <DialogContent className='max-h-[85vh] w-[calc(100vw-2rem)] max-w-2xl overflow-hidden p-0'>
+        <DialogHeader className='min-w-0 border-b border-border/70 px-6 py-5 pr-12'>
+          <DialogTitle>Embed music</DialogTitle>
+          <DialogDescription className='max-w-xl text-sm leading-relaxed'>
+            Search the GBFM catalog and add an album, track, or playlist to your story.
           </DialogDescription>
         </DialogHeader>
-        <div className='space-y-4'>
+        <div className='min-w-0 space-y-5 overflow-hidden px-6 pb-6'>
           <div className='space-y-2'>
             <Label htmlFor={searchId}>Search music catalog</Label>
             <div className='relative'>
@@ -86,14 +86,15 @@ export function MusicEntityPicker({ onInsert }: MusicEntityPickerProps) {
             </div>
           </div>
           <fieldset>
-            <legend className='mb-2 text-sm font-medium'>Entity type</legend>
-            <div className='flex flex-wrap gap-2'>
+            <legend className='mb-2 text-sm font-medium'>Show</legend>
+            <div className='grid grid-cols-2 gap-2 sm:flex sm:flex-wrap'>
               <Button
                 type='button'
                 size='sm'
                 variant={type === null ? 'default' : 'outline'}
                 aria-pressed={type === null}
-                onClick={() => setType(null)}>
+                onClick={() => setType(null)}
+                className='h-9 w-full px-3.5 text-sm sm:w-auto'>
                 All
               </Button>
               {musicEntityTypes.map((entityType) => (
@@ -103,7 +104,8 @@ export function MusicEntityPicker({ onInsert }: MusicEntityPickerProps) {
                   size='sm'
                   variant={type === entityType ? 'default' : 'outline'}
                   aria-pressed={type === entityType}
-                  onClick={() => setType(entityType)}>
+                  onClick={() => setType(entityType)}
+                  className='h-9 w-full px-3.5 text-sm capitalize sm:w-auto'>
                   {entityType}
                 </Button>
               ))}
@@ -193,7 +195,9 @@ function MusicEntityResults({
 }) {
   if (isPending) {
     return (
-      <div role='status' className='flex min-h-48 items-center justify-center gap-2 text-muted-foreground'>
+      <div
+        role='status'
+        className='flex min-h-48 items-center justify-center gap-2 text-muted-foreground'>
         <Loader2 className='size-4 animate-spin' />
         Loading music catalog
       </div>
@@ -213,13 +217,13 @@ function MusicEntityResults({
   }
 
   return (
-    <ul className='max-h-96 divide-y overflow-y-auto rounded-md border'>
+    <ul className='m-0 max-h-[min(24rem,45vh)] min-w-0 divide-y overflow-y-auto rounded-md border border-border/70 bg-card/40'>
       {entities.map((entity) => (
-        <li key={`${entity.type}-${entity.id}`}>
+        <li key={`${entity.type}-${entity.id}`} className='m-0'>
           <button
             type='button'
             onClick={() => onInsert(entity)}
-            className='flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
+            className='flex min-w-0 w-full items-center gap-3 px-3.5 py-3 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring'>
             <div className='flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-muted'>
               {entity.coverImageUrl ? (
                 <Artwork
@@ -240,7 +244,7 @@ function MusicEntityResults({
                 {entity.artists ?? entity.type}
               </p>
             </div>
-            <span className='shrink-0 text-xs font-medium uppercase tracking-wide text-muted-foreground'>
+            <span className='hidden shrink-0 text-xs font-medium tracking-wide text-muted-foreground uppercase sm:inline'>
               {entity.type}
             </span>
           </button>

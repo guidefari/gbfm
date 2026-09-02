@@ -37,18 +37,18 @@ export function EditorialWorkspaceHeader({
   onPublish: () => void
 }) {
   return (
-    <header className='sticky top-0 z-20 -mx-4 border-b border-gb-pastel-green-2/15 bg-gb-darker-bg/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8'>
-      <div className='mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3'>
-        <div className='min-w-0'>
+    <header className='sticky top-0 z-20 -mx-4 border-b border-border/70 bg-background/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8'>
+      <div className='mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4'>
+        <div className='min-w-0 space-y-1'>
           {navigation}
-          <h1 className='truncate text-lg font-semibold text-gb-pastel-green-1'>{title}</h1>
+          <h1 className='truncate text-lg font-semibold text-foreground'>{title}</h1>
         </div>
 
-        <div className='ml-auto flex flex-wrap items-center justify-end gap-2'>
+        <div className='ml-auto flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto'>
           <span
             role='status'
             aria-live='polite'
-            className={`text-xs font-medium ${saveStateClassName(saveState)}`}>
+            className={`basis-full text-right text-xs font-medium sm:mr-1 sm:basis-auto ${saveStateClassName(saveState)}`}>
             {isSaving ? <Loader2 className='mr-1 inline size-3 animate-spin' /> : null}
             {saveStateCopy[saveState]}
           </span>
@@ -58,6 +58,7 @@ export function EditorialWorkspaceHeader({
             size='sm'
             onClick={onDiscard}
             disabled={isSaving}
+            className='h-9 px-2.5 text-sm sm:px-3.5'
             aria-label='Discard unsaved changes'>
             Discard
           </Button>
@@ -67,7 +68,7 @@ export function EditorialWorkspaceHeader({
             size='sm'
             onClick={onSaveDraft}
             disabled={!canSave || isSaving}
-            className='gap-1.5'>
+            className='h-9 gap-1.5 px-2.5 text-sm sm:gap-2 sm:px-4'>
             <Save className='size-3.5' />
             Save draft
           </Button>
@@ -76,7 +77,7 @@ export function EditorialWorkspaceHeader({
             size='sm'
             onClick={onPublish}
             disabled={!canSave || isSaving}
-            className='gap-1.5'>
+            className='h-9 gap-1.5 px-2.5 text-sm sm:gap-2 sm:px-4'>
             <Send className='size-3.5' />
             Publish
           </Button>

@@ -40,7 +40,12 @@ export function TagsInput({ tags, onAddTag, onRemoveTag, contentTypeLabel }: Tag
             }
           }}
         />
-        <Button type='button' onClick={handleAddTag} variant='outline'>
+        <Button
+          type='button'
+          onClick={handleAddTag}
+          variant='outline'
+          size='sm'
+          className='h-9 px-4 text-sm'>
           Add
         </Button>
       </div>
