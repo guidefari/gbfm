@@ -48,9 +48,9 @@ export function EditorialWritingCanvas({
             id='editorial-description'
             value={formData.description}
             onChange={(event) => onInputChange('description', event.target.value)}
-            placeholder='A short introduction.'
+            placeholder='Add a short description…'
             style={{ boxShadow: 'none' }}
-            className='min-h-16 resize-y !border-0 bg-transparent px-0 text-base leading-relaxed text-muted-foreground !shadow-none placeholder:text-muted-foreground/55 focus-visible:!ring-0'
+            className='h-auto min-h-12 resize-none !border-0 bg-transparent px-0 py-1 text-base leading-relaxed text-muted-foreground !shadow-none placeholder:text-muted-foreground/55 focus-visible:!ring-0'
           />
         </div>
       </div>
