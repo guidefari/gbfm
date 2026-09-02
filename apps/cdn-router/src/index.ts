@@ -1,4 +1,7 @@
 import { matchRoute } from './route'
+import { parseImageOptions, toContentType } from './image-options'
+
+const imageCacheControl = 'public, max-age=31536000, immutable'
 
 const corsHeaders = {
   'access-control-allow-origin': '*',
@@ -24,8 +27,36 @@ const methodNotAllowed = () =>
 const writeObjectHeaders = (object: R2Object, headers: Headers) => {
   object.writeHttpMetadata(headers)
   headers.set('etag', object.httpEtag)
+  if (object.httpMetadata?.contentType?.startsWith('image/') && !headers.has('cache-control')) {
+    headers.set('cache-control', imageCacheControl)
+  }
   for (const [name, value] of Object.entries(object.customMetadata ?? {})) {
     headers.set(`x-amz-meta-${name}`, value)
+  }
+}
+
+const transformImage = async (
+  object: R2ObjectBody,
+  images: ImagesBinding,
+  options: NonNullable<ReturnType<typeof parseImageOptions>>
+) => {
+  const [input, fallback] = object.body.tee()
+
+  try {
+    const transformed = await images
+      .input(input)
+      .transform({ width: options.width, fit: 'scale-down' })
+      .output({ format: toContentType(options.format), quality: options.quality })
+    const response = transformed.response()
+    await fallback.cancel()
+    const headers = new Headers(response.headers)
+    headers.set('cache-control', imageCacheControl)
+    headers.set('etag', `${object.httpEtag}-${options.width}-${options.quality}-${options.format}`)
+    return new Response(response.body, { status: response.status, headers })
+  } catch {
+    const headers = new Headers()
+    writeObjectHeaders(object, headers)
+    return new Response(fallback, { headers })
   }
 }
 
@@ -44,7 +75,12 @@ const resolveRange = (range: R2Range, objectSize: number) => {
 const failedPreconditionStatus = (headers: Headers) =>
   headers.has('if-none-match') || headers.has('if-modified-since') ? 304 : 412
 
-const fetchObject = async (request: Request, bucket: R2Bucket, key: string) => {
+const fetchObject = async (
+  request: Request,
+  bucket: R2Bucket,
+  key: string,
+  images: ImagesBinding
+) => {
   const object = await bucket.get(key, {
     onlyIf: request.headers,
     range: request.headers
@@ -61,6 +97,15 @@ const fetchObject = async (request: Request, bucket: R2Bucket, key: string) => {
         headers
       })
     )
+  }
+
+  const imageOptions = parseImageOptions(new URL(request.url))
+  if (
+    request.method === 'GET' &&
+    imageOptions !== null &&
+    object.httpMetadata?.contentType?.startsWith('image/')
+  ) {
+    return withCors(await transformImage(object, images, imageOptions))
   }
 
   let status = 200
@@ -89,6 +134,6 @@ export default {
     const route = matchRoute(new URL(request.url).pathname, env)
     if (route === null) return withCors(notFound())
     if (request.method !== 'GET' && request.method !== 'HEAD') return withCors(methodNotAllowed())
-    return fetchObject(request, route.bucket, route.key)
+    return fetchObject(request, route.bucket, route.key, env.IMAGES)
   }
 } satisfies ExportedHandler<Env>
