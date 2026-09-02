@@ -1,3 +1,15 @@
+# [2.90.0](https://github.com/guidefari/gbfm/compare/v2.89.1...v2.90.0) (2026-09-02)
+
+
+### Features
+
+* **cdn:** serve responsive image variants ([665fef1](https://github.com/guidefari/gbfm/commit/665fef12be24751b385062a9928aba4141577de5))
+
+
+### Performance Improvements
+
+* **www:** request responsive artwork ([25bdd99](https://github.com/guidefari/gbfm/commit/25bdd99d9b0f4e4a5250c3c5a52a70a47d6d9b5c))
+
 ## [2.89.1](https://github.com/guidefari/gbfm/compare/v2.89.0...v2.89.1) (2026-09-02)
 
 
