@@ -14,7 +14,7 @@ To run the stack locally, from the repo root:
 bun run dev
 ```
 
-That starts `alchemy dev`, which serves the Worker and its bindings.
+That opens the Turborepo terminal UI and runs `alchemy dev`, which owns the Worker, its bindings, and the Vite website process. Use `bun run dev:full` to include the optional mobile, UI playground, email preview, and local observability tasks.
 
 Tests:
 

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "ui": "tui",
+  "tasks": {
+    "//#dev:alchemy": {
+      "cache": false,
+      "persistent": true,
+      "interactive": false
+    },
+    "//#dev:mobile": {
+      "cache": false,
+      "persistent": true,
+      "interactive": true
+    },
+    "//#dev:ui": {
+      "cache": false,
+      "persistent": true,
+      "interactive": false
+    },
+    "//#dev:email": {
+      "cache": false,
+      "persistent": true,
+      "interactive": false
+    },
+    "//#dev:otel": {
+      "cache": false
+    }
+  }
+}
