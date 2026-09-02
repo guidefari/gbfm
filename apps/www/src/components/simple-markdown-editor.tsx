@@ -1,14 +1,47 @@
-import { Button } from '@gbfm/ui'
-import { Music, Video } from 'lucide-react'
-import { useState } from 'react'
-import { MDXRendrr } from './MDXRendrr'
-import { ReactMde } from './react-mde'
-import 'react-mde/lib/styles/css/react-mde-toolbar.css'
-import 'react-mde/lib/styles/css/react-mde.css'
-import 'react-mde/lib/styles/css/react-mde-editor.css'
-import './editor.css'
+import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
+import { markdown } from '@codemirror/lang-markdown'
+import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language'
+import { Compartment, EditorState } from '@codemirror/state'
+import {
+  EditorView,
+  highlightActiveLine,
+  keymap,
+  placeholder as editorPlaceholder
+} from '@codemirror/view'
 import { compile } from '@mdx-js/mdx'
+import {
+  Bold,
+  Code2,
+  Eye,
+  Heading2,
+  Italic,
+  Link2,
+  List,
+  ListOrdered,
+  Quote,
+  Rows3,
+  SquarePen,
+  Strikethrough
+} from 'lucide-react'
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type ComponentProps,
+  type ReactNode
+} from 'react'
 import { log } from '@/services/logger'
+import { MDXRendrr } from './MDXRendrr'
+import {
+  insertMarkdown,
+  insertMarkdownLink,
+  toggleInlineMarkdown,
+  toggleLinePrefix,
+  type MarkdownInsertionOptions
+} from './markdown-editor-commands'
+import './editor.css'
 
 interface SimpleMarkdownEditorProps {
   value: string
@@ -16,136 +49,348 @@ interface SimpleMarkdownEditorProps {
   placeholder?: string
 }
 
-export function SimpleMarkdownEditor({ value, onChange, placeholder }: SimpleMarkdownEditorProps) {
-  const [selectedTab, setSelectedTab] = useState<'write' | 'preview'>('write')
+export interface SimpleMarkdownEditorHandle {
+  focus: () => void
+  insertAtCursor: (content: string, options?: MarkdownInsertionOptions) => void
+}
 
-  const save = async function* () {
-    // Simple placeholder for image uploads
-    const wait = (time: number) =>
-      new Promise<void>((resolve) => {
-        setTimeout(resolve, time)
-      })
+type EditorMode = 'edit' | 'preview' | 'split'
 
-    await wait(1000)
-    yield 'https://picsum.photos/300'
-    await wait(1000)
-    return true
-  }
+type PreviewState =
+  | { readonly status: 'empty' }
+  | { readonly status: 'loading' }
+  | { readonly status: 'ready'; readonly content: string }
+  | { readonly status: 'error'; readonly message: string }
 
-  const insertEmbed = (type: string) => {
-    let embedCode = ''
-    switch (type) {
-      case 'bandcamp':
-        embedCode = `\n<iframe style={{ border: 0, width: "350px", height: "470px" }} src="https://bandcamp.com/EmbeddedPlayer/album=ALBUM_ID/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/" seamless></iframe>\n\n`
-        break
-      case 'spotify':
-        embedCode = `\n<iframe src="https://open.spotify.com/embed/track/TRACK_ID" width="100%" height="352" frameBorder="0" allowFullScreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>\n\n`
-        break
-      case 'youtube':
-        embedCode = `\n<iframe width="560" height="315" src="https://www.youtube.com/embed/VIDEO_ID" title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen></iframe>\n\n`
-        break
-      case 'soundcloud':
-        embedCode = `\n<iframe width="100%" height="166" scrolling="no" frameBorder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/TRACK_ID&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true"></iframe>\n\n`
-        break
+const editorModes: ReadonlyArray<{
+  readonly value: EditorMode
+  readonly label: string
+  readonly icon: ReactNode
+}> = [
+  { value: 'edit', label: 'Edit', icon: <SquarePen className='size-3.5' /> },
+  { value: 'preview', label: 'Preview', icon: <Eye className='size-3.5' /> },
+  { value: 'split', label: 'Split', icon: <Rows3 className='size-3.5' /> }
+]
+
+const editorTheme = EditorView.theme(
+  {
+    '&': {
+      backgroundColor: 'transparent',
+      color: 'var(--default-text)',
+      fontSize: '0.9375rem'
+    },
+    '.cm-content': {
+      caretColor: 'var(--pastel-green-2)',
+      fontFamily: 'var(--font-jetbrains)',
+      minHeight: '26rem',
+      padding: '1.25rem 1rem'
+    },
+    '.cm-cursor, .cm-dropCursor': { borderLeftColor: 'var(--pastel-green-2)' },
+    '.cm-gutters': {
+      backgroundColor: 'transparent',
+      borderRight: '1px solid color-mix(in srgb, var(--pastel-green-2) 16%, transparent)',
+      color: 'color-mix(in srgb, var(--default-text) 38%, transparent)'
+    },
+    '.cm-activeLine, .cm-activeLineGutter': {
+      backgroundColor: 'color-mix(in srgb, var(--pastel-green-2) 7%, transparent)'
+    },
+    '.cm-selectionBackground, &.cm-focused .cm-selectionBackground, ::selection': {
+      backgroundColor: 'color-mix(in srgb, var(--pastel-green-2) 32%, transparent)'
+    },
+    '.cm-placeholder': { color: 'color-mix(in srgb, var(--default-text) 42%, transparent)' },
+    '.cm-tooltip': {
+      backgroundColor: 'var(--darker-bg)',
+      border: '1px solid color-mix(in srgb, var(--pastel-green-2) 20%, transparent)'
     }
-    onChange(value + embedCode)
-  }
+  },
+  { dark: true }
+)
 
+function createExtensions(
+  onChange: { current: (value: string) => void },
+  syncing: { current: boolean },
+  placeholderCompartment: Compartment,
+  placeholder: string | undefined
+) {
+  return [
+    markdown(),
+    history(),
+    syntaxHighlighting(defaultHighlightStyle),
+    highlightActiveLine(),
+    EditorView.lineWrapping,
+    editorTheme,
+    placeholderCompartment.of(editorPlaceholder(placeholder ?? '')),
+    keymap.of([
+      { key: 'Mod-b', run: (view) => (toggleInlineMarkdown(view, '**', '**', 'bold text'), true) },
+      { key: 'Mod-i', run: (view) => (toggleInlineMarkdown(view, '_', '_', 'italic text'), true) },
+      { key: 'Mod-k', run: (view) => (insertMarkdownLink(view), true) },
+      ...defaultKeymap,
+      ...historyKeymap
+    ]),
+    EditorView.updateListener.of((update) => {
+      if (update.docChanged && !syncing.current) {
+        onChange.current(update.state.doc.toString())
+      }
+    })
+  ]
+}
+
+function EditorControl({ children, className, ...props }: ComponentProps<'button'>) {
   return (
-    <div className='space-y-4'>
-      {/* Embed Buttons */}
-      <div className='flex flex-wrap gap-2 p-3 rounded-sm border bg-gb-bg border-gb-pastel-green-2/20'>
-        <div className='flex gap-1 items-center'>
-          <Button
-            type='button'
-            variant='ghost'
-            size='sm'
-            onClick={() => insertEmbed('spotify')}
-            className='text-gb-default-text hover:text-gb-highlight hover:bg-gb-pastel-green-2/20'>
-            <Music className='w-4 h-4' />
-            <span className='ml-1 text-xs'>Spotify</span>
-          </Button>
-          <Button
-            type='button'
-            variant='ghost'
-            size='sm'
-            onClick={() => insertEmbed('soundcloud')}
-            className='text-gb-default-text hover:text-gb-highlight hover:bg-gb-pastel-green-2/20'>
-            <Music className='w-4 h-4' />
-            <span className='ml-1 text-xs'>SoundCloud</span>
-          </Button>
-          <Button
-            type='button'
-            variant='ghost'
-            size='sm'
-            onClick={() => insertEmbed('bandcamp')}
-            className='text-gb-default-text hover:text-gb-highlight hover:bg-gb-pastel-green-2/20'>
-            <Music className='w-4 h-4' />
-            <span className='ml-1 text-xs'>Bandcamp</span>
-          </Button>
-          <Button
-            type='button'
-            variant='ghost'
-            size='sm'
-            onClick={() => insertEmbed('youtube')}
-            className='text-gb-default-text hover:text-gb-highlight hover:bg-gb-pastel-green-2/20'>
-            <Video className='w-4 h-4' />
-            <span className='ml-1 text-xs'>YouTube</span>
-          </Button>
-        </div>
-      </div>
-
-      <ReactMde
-        value={value}
-        onChange={onChange}
-        selectedTab={selectedTab}
-        onTabChange={setSelectedTab}
-        generateMarkdownPreview={async (markdown) => {
-          if (!markdown.trim()) {
-            return Promise.resolve(
-              <div className='p-6 italic text-center text-gb-default-text/50'>
-                Nothing to preview yet. Start writing in the Edit tab.
-              </div>
-            )
-          }
-          const compiled = await compileMdx(markdown)
-          return Promise.resolve(<MDXRendrr mdxString={compiled} />)
-        }}
-        childProps={{
-          writeButton: {
-            tabIndex: -1
-          },
-          previewButton: {},
-          textArea: {
-            placeholder: placeholder
-          }
-        }}
-        paste={{
-          saveImage: save
-        }}
-        classes={{
-          textArea: 'focus:outline-none bg-transparent label:rounded-sm min-h-[80dvh] h-full',
-          toolbar: 'bg-transparent border-none',
-          reactMde: 'focus:outline-none border-none'
-        }}
-        toolbarCommands={[
-          ['header', 'bold', 'italic', 'strikethrough'],
-          ['link', 'quote', 'code', 'image'],
-          ['unordered-list', 'ordered-list', 'checked-list']
-        ]}
-      />
-    </div>
+    <button type='button' className={`editorial-editor-control ${className ?? ''}`} {...props}>
+      {children}
+    </button>
   )
 }
 
-async function compileMdx(markdown: string) {
+function ToolbarButton({
+  label,
+  icon,
+  onClick
+}: {
+  label: string
+  icon: ReactNode
+  onClick: () => void
+}) {
+  return (
+    <EditorControl aria-label={label} title={label} onClick={onClick}>
+      {icon}
+    </EditorControl>
+  )
+}
+
+function PreviewPanel({ preview }: { preview: PreviewState }) {
+  if (preview.status === 'empty') {
+    return (
+      <div className='editorial-editor-empty-state'>
+        <Eye className='size-5' aria-hidden='true' />
+        <p>Your rendered editorial will appear here.</p>
+      </div>
+    )
+  }
+
+  if (preview.status === 'loading') {
+    return <div className='editorial-editor-empty-state'>Rendering preview…</div>
+  }
+
+  if (preview.status === 'error') {
+    return (
+      <div className='editorial-editor-error-state' role='alert'>
+        <p className='font-medium'>We could not render this MDX.</p>
+        <p className='mt-1 text-sm'>{preview.message}</p>
+      </div>
+    )
+  }
+
+  return <MDXRendrr mdxString={preview.content} />
+}
+
+async function createPreview(content: string): Promise<PreviewState> {
+  if (!content.trim()) return { status: 'empty' }
+
   try {
-    const compiled = await compile(markdown, {
-      outputFormat: 'function-body'
-    })
-    return compiled.toString()
+    const compiled = await compile(content, { outputFormat: 'function-body' })
+    return { status: 'ready', content: compiled.toString() }
   } catch (error) {
     log('error', 'MDX compilation error', { error })
-    return markdown // Return original markdown if compilation fails
+    return {
+      status: 'error',
+      message: error instanceof Error ? error.message : 'Check your MDX syntax and try again.'
+    }
   }
 }
+
+export const SimpleMarkdownEditor = forwardRef<
+  SimpleMarkdownEditorHandle,
+  SimpleMarkdownEditorProps
+>(function SimpleMarkdownEditor({ value, onChange, placeholder }, ref) {
+  const editorHost = useRef<HTMLDivElement | null>(null)
+  const editorView = useRef<EditorView | null>(null)
+  const onChangeRef = useRef(onChange)
+  const syncing = useRef(false)
+  const placeholderCompartment = useRef(new Compartment())
+  const initialEditorConfig = useRef({ value, placeholder })
+  const [mode, setMode] = useState<EditorMode>('edit')
+  const [preview, setPreview] = useState<PreviewState>({ status: 'empty' })
+  const wordCount = value.trim() ? value.trim().split(/\s+/).length : 0
+
+  onChangeRef.current = onChange
+
+  useEffect(() => {
+    const host = editorHost.current
+    if (!host) return () => {}
+
+    const view = new EditorView({
+      state: EditorState.create({
+        doc: initialEditorConfig.current.value,
+        extensions: createExtensions(
+          onChangeRef,
+          syncing,
+          placeholderCompartment.current,
+          initialEditorConfig.current.placeholder
+        )
+      }),
+      parent: host
+    })
+    editorView.current = view
+
+    return () => {
+      view.destroy()
+      if (editorView.current === view) editorView.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    const view = editorView.current
+    if (!view) return
+    view.dispatch({
+      effects: placeholderCompartment.current.reconfigure(editorPlaceholder(placeholder ?? ''))
+    })
+  }, [placeholder])
+
+  useEffect(() => {
+    const view = editorView.current
+    if (!view || view.state.doc.toString() === value) return
+
+    syncing.current = true
+    view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: value } })
+    syncing.current = false
+  }, [value])
+
+  useEffect(() => {
+    if (mode === 'edit') return () => {}
+    let cancelled = false
+    setPreview(value.trim() ? { status: 'loading' } : { status: 'empty' })
+
+    void createPreview(value).then((result) => {
+      if (!cancelled) setPreview(result)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [mode, value])
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      focus: () => editorView.current?.focus(),
+      insertAtCursor: (content, options) => {
+        const view = editorView.current
+        if (view) insertMarkdown(view, content, options)
+      }
+    }),
+    []
+  )
+
+  const withEditor = (command: (view: EditorView) => void) => {
+    const view = editorView.current
+    if (view) command(view)
+  }
+
+  const isSplit = mode === 'split'
+  const showEditor = mode !== 'preview'
+  const showPreview = mode !== 'edit'
+
+  return (
+    <section className='editorial-editor' aria-label='MDX editor'>
+      <div className='editorial-editor-header'>
+        <div>
+          <p className='editorial-editor-kicker'>Editorial workspace</p>
+          <p className='editorial-editor-title'>MDX source</p>
+        </div>
+        <div className='editorial-editor-modes' aria-label='Editor view'>
+          {editorModes.map((item) => (
+            <EditorControl
+              key={item.value}
+              className={mode === item.value ? 'editorial-editor-mode-active' : ''}
+              aria-pressed={mode === item.value}
+              onClick={() => setMode(item.value)}>
+              {item.icon}
+              <span>{item.label}</span>
+            </EditorControl>
+          ))}
+        </div>
+      </div>
+
+      <div className='editorial-editor-toolbar' aria-label='Formatting controls'>
+        <div className='editorial-editor-toolbar-group'>
+          <ToolbarButton
+            label='Heading'
+            icon={<Heading2 className='size-4' />}
+            onClick={() => withEditor((view) => toggleLinePrefix(view, '## '))}
+          />
+          <ToolbarButton
+            label='Bold, Command B'
+            icon={<Bold className='size-4' />}
+            onClick={() =>
+              withEditor((view) => toggleInlineMarkdown(view, '**', '**', 'bold text'))
+            }
+          />
+          <ToolbarButton
+            label='Italic, Command I'
+            icon={<Italic className='size-4' />}
+            onClick={() =>
+              withEditor((view) => toggleInlineMarkdown(view, '_', '_', 'italic text'))
+            }
+          />
+          <ToolbarButton
+            label='Strikethrough'
+            icon={<Strikethrough className='size-4' />}
+            onClick={() =>
+              withEditor((view) => toggleInlineMarkdown(view, '~~', '~~', 'struck text'))
+            }
+          />
+        </div>
+        <div className='editorial-editor-toolbar-group'>
+          <ToolbarButton
+            label='Link, Command K'
+            icon={<Link2 className='size-4' />}
+            onClick={() => withEditor(insertMarkdownLink)}
+          />
+          <ToolbarButton
+            label='Inline code'
+            icon={<Code2 className='size-4' />}
+            onClick={() => withEditor((view) => toggleInlineMarkdown(view, '`', '`', 'code'))}
+          />
+          <ToolbarButton
+            label='Quote'
+            icon={<Quote className='size-4' />}
+            onClick={() => withEditor((view) => toggleLinePrefix(view, '> '))}
+          />
+        </div>
+        <div className='editorial-editor-toolbar-group'>
+          <ToolbarButton
+            label='Bulleted list'
+            icon={<List className='size-4' />}
+            onClick={() => withEditor((view) => toggleLinePrefix(view, '- '))}
+          />
+          <ToolbarButton
+            label='Numbered list'
+            icon={<ListOrdered className='size-4' />}
+            onClick={() => withEditor((view) => toggleLinePrefix(view, '1. ', /^\d+\.\s/))}
+          />
+        </div>
+      </div>
+
+      <div className={isSplit ? 'grid overflow-hidden md:grid-cols-2' : 'overflow-hidden'}>
+        {showEditor ? (
+          <div className='editorial-editor-pane editorial-editor-source'>
+            <div ref={editorHost} className='editorial-editor-codemirror' />
+          </div>
+        ) : null}
+        {showPreview ? (
+          <div className='editorial-editor-pane editorial-editor-preview prose max-w-none'>
+            <PreviewPanel preview={preview} />
+          </div>
+        ) : null}
+      </div>
+
+      <footer className='editorial-editor-footer'>
+        <span>{wordCount.toLocaleString()} words</span>
+        <span>{value.length.toLocaleString()} characters</span>
+        <span className='hidden sm:inline'>MDX is saved exactly as written</span>
+      </footer>
+    </section>
+  )
+})

@@ -1,15 +1,7 @@
 import { useEffect, useState } from 'react'
-// import { getDefaultToolbarCommands } from "react-mde";
-import { MDXRendrr } from './MDXRendrr'
-import { ReactMde } from './react-mde'
-// import "react-mde/lib/styles/css/react-mde-all.css";
-import 'react-mde/lib/styles/css/react-mde-toolbar.css'
-import 'react-mde/lib/styles/css/react-mde.css'
-import 'react-mde/lib/styles/css/react-mde-editor.css'
-import './editor.css'
+import { SimpleMarkdownEditor } from './simple-markdown-editor'
 
 import { Button } from '@gbfm/ui'
-import { compile } from '@mdx-js/mdx'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useSearch } from '@tanstack/react-router'
 import { Option, Schema } from 'effect'
@@ -62,29 +54,7 @@ export function Editor() {
   })
   const parsed = Schema.decodeUnknownOption(searchSchema)(searchParams)
   const { id } = Option.isSome(parsed) ? parsed.value : { id: undefined }
-  const [selectedTab, setSelectedTab] = useState<'write' | 'preview'>('write')
   const [type, setType] = useState<'micro' | 'post' | 'mix'>('post')
-
-  const save = async function* (_data: ArrayBuffer) {
-    // Promise that waits for "time" milliseconds
-    const wait = (time: number) =>
-      new Promise<void>((resolve) => {
-        setTimeout(resolve, time)
-      })
-
-    // Upload "data" to your server
-    // Use XMLHttpRequest.send to send a FormData object containing
-    // "data"
-    // Check this question: https://stackoverflow.com/questions/18055422/how-to-receive-php-image-data-over-copy-n-paste-javascript-with-xmlhttprequest
-
-    await wait(2000)
-    // yields the URL that should be inserted in the markdown
-    yield 'https://picsum.photos/300'
-    await wait(2000)
-
-    // returns true meaning that the save was successful
-    return true
-  }
 
   const form = useForm<FormData>({
     defaultValues: {
@@ -116,13 +86,13 @@ export function Editor() {
     }
   })
 
-  // Update form with existing content when available
   useEffect(() => {
     log('debug', 'existingContent', { existingContent })
     if (existingContent) {
       setValue(existingContent.content)
+      form.setValue('content', existingContent.content)
     }
-  }, [existingContent])
+  }, [existingContent, form])
 
   const onSubmit = form.handleSubmit((data) => {
     mutate(data)
@@ -147,44 +117,16 @@ export function Editor() {
             </option>
           ))}
         </select>
-        <ReactMde
+        <SimpleMarkdownEditor
           key={id}
           value={value}
-          onChange={setValue}
-          selectedTab={selectedTab}
-          onTabChange={setSelectedTab}
-          generateMarkdownPreview={async (markdown) => {
-            const compiled = await compileMdx(markdown)
-            return Promise.resolve(<MDXRendrr mdxString={compiled} />)
+          onChange={(content) => {
+            setValue(content)
+            form.setValue('content', content)
           }}
-          childProps={{
-            writeButton: {
-              tabIndex: -1
-              // className: "focus:outline-none focus:underline",
-            },
-            previewButton: {
-              // className: "focus:outline-none focus:underline",
-            }
-          }}
-          paste={{
-            saveImage: save
-          }}
-          classes={{
-            textArea: 'focus:outline-none bg-transparent label:rounded-sm ',
-            toolbar: 'bg-transparent border-none',
-            reactMde: 'focus:outline-none border-none'
-          }}
-          toolbarCommands={[['link', 'image']]}
+          placeholder='Write your content in MDX...'
         />
       </section>
     </form>
   )
-}
-
-async function compileMdx(markdown: string) {
-  // const gray = matter(markdown);
-  const compiled = await compile(markdown, {
-    outputFormat: 'function-body'
-  })
-  return compiled.toString()
 }
