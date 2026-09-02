@@ -2,6 +2,7 @@ import type {
   D1Database,
   DurableObjectNamespace,
   ExecutionContext,
+  Fetcher,
   KVNamespace,
   MessageBatch,
   Queue,
@@ -50,6 +51,7 @@ import {
   RecordingEmailTransportLayer,
   UnconfiguredEmailTransportLayer
 } from '@/services/email-transport.service'
+import { QRCodeServiceLayer } from '@/services/qrcode.service'
 import { R2ObjectStoreClientLayer } from '@/services/storage/r2-object-store-client'
 import {
   WorkerConfigServiceLayerEffect,
@@ -70,6 +72,7 @@ export type ApiEnv = WorkerConfigBindings & {
   readonly MIXES: R2Bucket
   readonly SITEMAP: KVNamespace
   readonly REMINDERS: Queue<ReminderJob>
+  readonly QR_PDF: Fetcher
   readonly EMAIL?: SendEmail
   readonly EMAIL_TRANSPORT_MODE?: 'cloudflare' | 'recording'
   readonly NAVIGATION_LOCK: DurableObjectNamespace<NavigationLockDurableObject>
@@ -191,6 +194,7 @@ const appServicesLive = (env: ApiEnv) => {
     tracing: WorkerTracingLive,
     config: configLive,
     objectStore: objectStoreLive,
+    qrCode: QRCodeServiceLayer({ fetch: (request) => env.QR_PDF.fetch(request) }),
     emailTransport:
       env.EMAIL !== undefined
         ? CloudflareEmailTransportLayer(env.EMAIL)

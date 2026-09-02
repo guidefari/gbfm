@@ -3,7 +3,7 @@ import { ConfigService } from '@/services/config.service'
 import { S3Service } from '@/services/s3.service'
 
 const QR_PDFS_PREFIX = 'qr-pdfs/'
-const MAX_AGE_MS = 30 * 60 * 1000
+const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
 
 export const cleanupExpiredQrPdfs = Effect.gen(function* () {
   yield* Effect.logInfo('Running QR cache cleanup...')

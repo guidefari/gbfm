@@ -124,10 +124,6 @@ const SubscriptionResponse = Schema.Struct({
   createdAt: Schema.String
 })
 
-const QRPdfQuery = {
-  force: Schema.optional(Schema.Literal('true'))
-}
-
 export const QRPdfResponse = Schema.Struct({
   url: Schema.String,
   cached: Schema.Boolean
@@ -207,7 +203,6 @@ export const ShowsGroup = HttpApiGroup.make('shows')
   .add(
     HttpApiEndpoint.get('getShowQRPdf', '/api/shows/:slug/qr-pdf', {
       params: { slug: Schema.String },
-      query: QRPdfQuery,
       success: QRPdfResponse,
       error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
     })

@@ -1856,7 +1856,7 @@ export function useMixQRPdf(slug: string, enabled = false) {
       const client = await getApiClient()
       return Effect.runPromise(
         client.audio
-          .getMixQRPdf({ params: { slug }, query: {} })
+          .getMixQRPdf({ params: { slug } })
           .pipe(
             Effect.tapError((error) => captureException(error, { endpoint: 'audio.getMixQRPdf' }))
           )
@@ -1874,7 +1874,7 @@ export function useShowQRPdf(slug: string, enabled = false) {
       const client = await getApiClient()
       return Effect.runPromise(
         client.shows
-          .getShowQRPdf({ params: { slug }, query: {} })
+          .getShowQRPdf({ params: { slug } })
           .pipe(
             Effect.tapError((error) => captureException(error, { endpoint: 'shows.getShowQRPdf' }))
           )

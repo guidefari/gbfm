@@ -195,7 +195,7 @@ export const ShowsHandlersLive = HttpApiBuilder.group(Api, 'shows', (handlers) =
         )
       })
     )
-    .handle('getShowQRPdf', ({ params, query }) =>
+    .handle('getShowQRPdf', ({ params }) =>
       Effect.gen(function* () {
         const showSvc = yield* ShowService
         const qrSvc = yield* QRCodeService
@@ -206,15 +206,12 @@ export const ShowsHandlersLive = HttpApiBuilder.group(Api, 'shows', (handlers) =
         )
 
         return yield* dieOnDatabaseError(
-          qrSvc.generateShowQRPdf(
-            {
-              slug: show.slug,
-              title: show.title,
-              thumbnailUrl: show.thumbnailUrl,
-              hosts: show.hosts
-            },
-            query.force === 'true'
-          )
+          qrSvc.generateShowQRPdf({
+            slug: show.slug,
+            title: show.title,
+            thumbnailUrl: show.thumbnailUrl,
+            hosts: show.hosts
+          })
         )
       })
     )
