@@ -12,6 +12,7 @@ import {
 import type { CdnRouter } from './cdn'
 import type { EmailResources } from './email'
 import { workerObservability } from './observability'
+import type { QrPdfWorker } from './qr-pdf'
 import type { SecretBindings } from './secrets'
 import { hostname, type StageConfig } from './stage'
 import type { Storage } from './storage'
@@ -23,6 +24,7 @@ export interface ApiWorkerInput {
   readonly email: EmailResources
   readonly emailConfig: EmailDeploymentConfig
   readonly cdn: CdnRouter
+  readonly qrPdf: QrPdfWorker
   readonly adminEmail: string
 }
 
@@ -33,6 +35,7 @@ export const apiWorker = ({
   email,
   emailConfig,
   cdn,
+  qrPdf,
   adminEmail
 }: ApiWorkerInput) =>
   Effect.gen(function* () {
@@ -53,6 +56,7 @@ export const apiWorker = ({
         MIXES: store.mixes,
         SITEMAP: store.sitemap,
         REMINDERS: store.reminders,
+        QR_PDF: qrPdf,
         ...(email === undefined ? undefined : { EMAIL: email }),
         EMAIL_SENDER: emailConfig.emailSender,
         EMAIL_TRANSPORT_MODE: emailConfig.transport,

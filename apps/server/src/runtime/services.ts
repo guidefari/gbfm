@@ -33,7 +33,7 @@ import { type SpotifyImportResolver } from '@/services/spotify-import-resolver.s
 import { NavigationSessionServiceLayer } from '@/services/navigation.service'
 import { PostServiceLayer } from '@/services/post.service'
 import { ProfileServiceLayer } from '@/services/profile.service'
-import { QRCodeServiceLayer } from '@/services/qrcode.service'
+import { type QRCodeService, QRCodeServiceUnavailableLayer } from '@/services/qrcode.service'
 import { ReleaseServiceLayer } from '@/services/release.service'
 import { ReminderSignalServiceLayer } from '@/services/reminder-signal.service'
 import { ResolveServiceLayer } from '@/services/resolve.service'
@@ -66,6 +66,7 @@ export interface AppLayerOptions {
   readonly emailTransport: Layer.Layer<EmailTransportService>
   readonly config?: Layer.Layer<ConfigService>
   readonly objectStore?: Layer.Layer<ObjectStoreClient>
+  readonly qrCode?: Layer.Layer<QRCodeService>
 }
 
 export const AppLayer = ({
@@ -77,7 +78,8 @@ export const AppLayer = ({
   tracing: tracingLive,
   emailTransport: emailTransportLive,
   config: configLive = ConfigServiceLayer,
-  objectStore: objectStoreLive = UnavailableObjectStoreClientLayer
+  objectStore: objectStoreLive = UnavailableObjectStoreClientLayer,
+  qrCode: qrCodeLive = QRCodeServiceUnavailableLayer
 }: AppLayerOptions) => {
   const EmailDeliveryWithDependencies = EmailDeliveryLive.pipe(
     Layer.provide(Layer.mergeAll(databaseLive, configLive, emailTransportLive))
@@ -134,7 +136,7 @@ export const AppLayer = ({
 
   const ServicesLayer = Layer.mergeAll(
     BaseServicesLayer,
-    QRCodeServiceLayer.pipe(Layer.provide(BaseServicesLayer)),
+    qrCodeLive,
     MusicEntityLive,
     BlueskyAccountServiceLayer.pipe(Layer.provide(BaseServicesLayer)),
     BlueskyArchiveLive,

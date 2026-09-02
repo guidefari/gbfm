@@ -6,6 +6,7 @@ import { cdnRouter } from './alchemy/cdn'
 import { deploymentConfig } from './alchemy/config'
 import { dnsRedirects } from './alchemy/dns'
 import { emailResources } from './alchemy/email'
+import { qrPdfWorker } from './alchemy/qr-pdf'
 import { secretsStore } from './alchemy/secrets'
 import { stageConfig } from './alchemy/stage'
 import { storage } from './alchemy/storage'
@@ -31,6 +32,7 @@ export default Alchemy.Stack(
     const email = yield* emailResources(config, emailConfig)
     const store = yield* storage(config)
     const cdn = yield* cdnRouter(config, store)
+    const qrPdf = yield* qrPdfWorker(config, store, cdn)
     const api = yield* apiWorker({
       config,
       store,
@@ -38,6 +40,7 @@ export default Alchemy.Stack(
       email,
       emailConfig,
       cdn,
+      qrPdf,
       adminEmail: deployment.adminEmail
     })
 

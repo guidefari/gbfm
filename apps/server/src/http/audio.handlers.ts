@@ -183,7 +183,7 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
         )
       })
     )
-    .handle('getMixQRPdf', ({ params, query }) =>
+    .handle('getMixQRPdf', ({ params }) =>
       Effect.gen(function* () {
         const actor = yield* getOptionalActor
         const audioSvc = yield* AudioService
@@ -195,15 +195,12 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
         )
 
         return yield* dieOnDatabaseError(
-          qrSvc.generateMixQRPdf(
-            {
-              slug: mix.slug,
-              title: mix.title,
-              thumbnailUrl: mix.thumbnailUrl,
-              creators: mix.creators
-            },
-            query.force === 'true'
-          )
+          qrSvc.generateMixQRPdf({
+            slug: mix.slug,
+            title: mix.title,
+            thumbnailUrl: mix.thumbnailUrl,
+            creators: mix.creators
+          })
         )
       })
     )

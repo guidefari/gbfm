@@ -127,10 +127,6 @@ export const GetMixQRPdfResponse = Schema.Struct({
   cached: Schema.Boolean
 })
 
-const GetMixQRPdfQuery = {
-  force: Schema.optional(Schema.Literal('true'))
-}
-
 const AudioTypeParam = { type: AudioType }
 const AudioTypeSlugParams = { type: AudioType, slug: Schema.String }
 
@@ -204,7 +200,6 @@ export const AudioGroup = HttpApiGroup.make('audio')
   .add(
     HttpApiEndpoint.get('getMixQRPdf', '/api/content/audio/mix/:slug/qr-pdf', {
       params: { slug: Schema.String },
-      query: GetMixQRPdfQuery,
       success: GetMixQRPdfResponse,
       error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
     })
