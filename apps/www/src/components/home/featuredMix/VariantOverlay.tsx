@@ -12,6 +12,11 @@ export function VariantOverlay({
   onPlay,
   onBrowse
 }: FeaturedMixVariantProps) {
+  const handleArtworkError = (event: React.SyntheticEvent<HTMLImageElement>) => {
+    event.currentTarget.onerror = null
+    event.currentTarget.src = DEFAULT_IMAGE_URL
+  }
+
   return (
     <div className='flex flex-col w-full gap-3'>
       <div className='relative w-full overflow-hidden border-2 aspect-square border-foreground'>
@@ -19,6 +24,9 @@ export function VariantOverlay({
           <img
             src={featuredMix.thumbnailUrl || DEFAULT_IMAGE_URL}
             alt={featuredMix.title}
+            loading='eager'
+            fetchPriority='high'
+            onError={handleArtworkError}
             className='absolute inset-0 object-cover w-full h-full'
           />
         ) : (
