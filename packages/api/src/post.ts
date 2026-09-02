@@ -130,6 +130,8 @@ export const GetPostsByTagResponse = Schema.Struct({
   pagination: PaginationMeta
 })
 
+export const GetPostTagsResponse = Schema.Array(Schema.String)
+
 export const GetEditorialTagsResponse = Schema.Array(Schema.String)
 
 export const GetMicroTagsResponse = Schema.Array(Schema.String)
@@ -235,6 +237,12 @@ export const PostGroup = HttpApiGroup.make('post')
       success: GetPostsResponse,
       error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError]
     }).middleware(AuthMiddleware)
+  )
+  .add(
+    HttpApiEndpoint.get('getPostTags', '/api/content/posts/tags', {
+      success: GetPostTagsResponse,
+      error: HttpApiError.InternalServerError
+    })
   )
   .add(
     HttpApiEndpoint.get('getEditorialTags', '/api/content/posts/editorials/tags', {

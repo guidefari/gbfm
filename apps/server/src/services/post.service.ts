@@ -129,6 +129,8 @@ export interface PostService {
     id: string
   ) => Effect.Effect<SelectMdxCompiledMicroPost, DatabaseError | NotFoundError>
   // oxlint-disable-next-line effecttsgo/lazy-effect -- Existing callers use the zero-argument service method contract.
+  readonly getPostTags: () => Effect.Effect<string[], DatabaseError>
+  // oxlint-disable-next-line effecttsgo/lazy-effect -- Existing callers use the zero-argument service method contract.
   readonly getEditorialTags: () => Effect.Effect<string[], DatabaseError>
   // oxlint-disable-next-line effecttsgo/lazy-effect -- Existing callers use the zero-argument service method contract.
   readonly getMicroTags: () => Effect.Effect<string[], DatabaseError>
@@ -626,6 +628,40 @@ const getAllEffect = (
       attributes: { 'post.type': options.type ?? 'all' }
     })
   )
+
+const getPostTagsEffect = () =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    const rows = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .selectDistinct({ tag: labelsTable.name })
+          .from(postsTable)
+          .innerJoin(
+            entityLabelsTable,
+            and(
+              eq(entityLabelsTable.entityType, 'post'),
+              eq(entityLabelsTable.entityId, postsTable.id)
+            )
+          )
+          .innerJoin(
+            labelsTable,
+            and(eq(labelsTable.id, entityLabelsTable.labelId), eq(labelsTable.kind, 'tag'))
+          )
+          .where(eq(postsTable.draft, false)),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch post tags: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'posts'
+        })
+    })
+
+    return rows
+      .map((row) => row.tag)
+      .filter((tag) => tag.length > 0)
+      .toSorted()
+  })
 
 const getEditorialTagsEffect = () =>
   Effect.gen(function* () {
@@ -2189,6 +2225,7 @@ export const PostServiceLayer = Layer.effect(
       getMicroPostBySlug: (slug) => provideDb(getMicroPostBySlugEffect(slug, mdx)),
       getMicroPostReferenceBySlug: (slug) => provideDb(getMicroPostReferenceBySlugEffect(slug)),
       getMicroPostById: (id) => provideDb(getMicroPostByIdEffect(id, mdx)),
+      getPostTags: () => provideDb(getPostTagsEffect()),
       getEditorialTags: () => provideDb(getEditorialTagsEffect()),
       getMicroTags: () => provideDb(getMicroTagsEffect()),
       getAdjacentMicroPosts: (slug) => provideDb(getAdjacentMicroPostsEffect(slug)),

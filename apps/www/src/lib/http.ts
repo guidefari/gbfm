@@ -174,27 +174,6 @@ export function useAudioTags(type: AudioContentType) {
   return { data: data ?? [], error, isPending }
 }
 
-export function useEditorialTags() {
-  const { data, error, isPending, refetch } = useQuery<string[], Error>({
-    queryKey: ['editorial-tags'],
-    queryFn: async () => {
-      const client = await getApiClient()
-      const tags = await Effect.runPromise(
-        client.post
-          .getEditorialTags({})
-          .pipe(
-            Effect.tapError((error) =>
-              captureException(error, { endpoint: 'post.getEditorialTags' })
-            )
-          )
-      )
-      return [...tags]
-    },
-    staleTime: 1000 * 60 * 60
-  })
-  return { data: data ?? [], error, isPending, refetch }
-}
-
 export function useAudioBySlug(type: AudioContentType, slug: string) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledAudio, Error>({
     queryKey: audioSlugQueryKey(type, slug),
@@ -341,16 +320,16 @@ export function useMicroPosts(limit = DEFAULT_PAGE_SIZE, tag?: string) {
   }
 }
 
-export function useMicroTags() {
+export function usePostTags() {
   const { data, error, isPending, refetch } = useQuery<string[], Error>({
-    queryKey: ['posts', 'micro', 'tags'],
+    queryKey: ['posts', 'tags'],
     queryFn: async () => {
       const client = await getApiClient()
       const tags = await Effect.runPromise(
         client.post
-          .getMicroTags()
+          .getPostTags({})
           .pipe(
-            Effect.tapError((error) => captureException(error, { endpoint: 'post.getMicroTags' }))
+            Effect.tapError((error) => captureException(error, { endpoint: 'post.getPostTags' }))
           )
       )
       return [...tags]
@@ -358,21 +337,6 @@ export function useMicroTags() {
     staleTime: 1000 * 60 * 60
   })
   return { data: data ?? [], error, isPending, refetch }
-}
-
-export function usePostTags() {
-  const microTags = useMicroTags()
-  const editorialTags = useEditorialTags()
-  const data = Array.from(new Set([...microTags.data, ...editorialTags.data])).sort((a, b) =>
-    a.localeCompare(b)
-  )
-
-  return {
-    data,
-    error: microTags.error ?? editorialTags.error,
-    isPending: microTags.isPending || editorialTags.isPending,
-    refetch: () => Promise.all([microTags.refetch(), editorialTags.refetch()])
-  }
 }
 
 export function useMicroPostSearch(q: string, limit = DEFAULT_PAGE_SIZE) {

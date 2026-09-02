@@ -23,13 +23,16 @@ export function TagsInput({
   contentTypeLabel
 }: TagsInputProps) {
   const [newTag, setNewTag] = useState('')
+  const [showAllSuggestions, setShowAllSuggestions] = useState(false)
   const inputId = useId()
   const searchTerm = newTag.trim().toLocaleLowerCase()
   const selectedTagNames = new Set(tags.map((tag) => tag.toLocaleLowerCase()))
-  const suggestions = availableTags
+  const matchingSuggestions = availableTags
     .filter((tag) => !selectedTagNames.has(tag.toLocaleLowerCase()))
     .filter((tag) => !searchTerm || tag.toLocaleLowerCase().includes(searchTerm))
-    .slice(0, 8)
+  const suggestions =
+    searchTerm || showAllSuggestions ? matchingSuggestions : matchingSuggestions.slice(0, 8)
+  const hiddenSuggestionCount = matchingSuggestions.length - suggestions.length
 
   const addTag = (tag: string) => {
     const existingTag = availableTags.find(
@@ -53,18 +56,30 @@ export function TagsInput({
     <div className='space-y-2'>
       <Label htmlFor={inputId}>{label}</Label>
       {suggestions.length > 0 ? (
-        <div className='flex flex-wrap gap-1.5' aria-label='Existing tags'>
-          {suggestions.map((tag) => (
+        <div className='space-y-1.5'>
+          <div className='flex flex-wrap gap-1.5' aria-label='Existing tags'>
+            {suggestions.map((tag) => (
+              <Button
+                key={tag}
+                type='button'
+                variant='outline'
+                size='sm'
+                onClick={() => addTag(tag)}
+                className='h-8 px-2.5 text-xs'>
+                {tag}
+              </Button>
+            ))}
+          </div>
+          {!searchTerm && matchingSuggestions.length > 8 ? (
             <Button
-              key={tag}
               type='button'
-              variant='outline'
+              variant='link'
               size='sm'
-              onClick={() => addTag(tag)}
-              className='h-8 px-2.5 text-xs'>
-              {tag}
+              onClick={() => setShowAllSuggestions((visible) => !visible)}
+              className='h-auto px-0 py-1 text-xs'>
+              {showAllSuggestions ? 'Show fewer' : `Show ${hiddenSuggestionCount} more`}
             </Button>
-          ))}
+          ) : null}
         </div>
       ) : null}
       <div className='flex gap-2'>

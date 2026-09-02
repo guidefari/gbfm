@@ -593,6 +593,7 @@ export function TweetCapturePage() {
           queryKey: ['post', 'micro', savedPost.slug]
         }),
         queryClient.invalidateQueries({ queryKey: ['posts', 'micro'] }),
+        queryClient.invalidateQueries({ queryKey: ['posts', 'tags'] }),
         queryClient.invalidateQueries({ queryKey: ['admin', 'posts', 'micro'] })
       ])
 

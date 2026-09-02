@@ -206,8 +206,7 @@ export function EditorialPage() {
           queryKey: ['post', 'editorial', savedPost.slug]
         }),
         queryClient.invalidateQueries({ queryKey: ['posts', 'editorials'] }),
-        queryClient.invalidateQueries({ queryKey: ['editorial-tags'] }),
-        queryClient.invalidateQueries({ queryKey: ['posts', 'micro', 'tags'] }),
+        queryClient.invalidateQueries({ queryKey: ['posts', 'tags'] }),
         queryClient.invalidateQueries({ queryKey: ['admin', 'posts', 'post'] })
       ])
 

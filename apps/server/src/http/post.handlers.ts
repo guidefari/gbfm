@@ -5,6 +5,7 @@ import {
   GetEditorialPostsResponse,
   GetEditorialTagsResponse,
   GetMicroTagsResponse,
+  GetPostTagsResponse,
   ValidationHttpError
 } from '@gbfm/api/post'
 import { Effect, Schema } from 'effect'
@@ -86,6 +87,18 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
           )
         )
         return { data: result.data.map(toDateStrings), pagination: result.pagination }
+      })
+    )
+    .handle('getPostTags', () =>
+      Effect.gen(function* () {
+        const svc = yield* PostService
+        const tags = yield* dieOnDatabaseError(svc.getPostTags())
+        const body = yield* Schema.encodeEffect(GetPostTagsResponse)(tags).pipe(Effect.orDie)
+        return HttpServerResponse.setHeader(
+          yield* HttpServerResponse.json(body).pipe(Effect.orDie),
+          'Cache-Control',
+          'public, max-age=3600, stale-while-revalidate=86400'
+        )
       })
     )
     .handle('getEditorialTags', () =>

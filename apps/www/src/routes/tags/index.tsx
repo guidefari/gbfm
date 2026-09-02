@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { QueryError } from '@/components/QueryError'
-import { useMicroTags } from '@/lib/http'
+import { usePostTags } from '@/lib/http'
 import { generateSEOMeta } from '@/lib/seo'
 
 export const Route = createFileRoute('/tags/')({
@@ -15,7 +15,7 @@ export const Route = createFileRoute('/tags/')({
 })
 
 function TagsIndexPage() {
-  const { data: tags, error, isPending, refetch } = useMicroTags()
+  const { data: tags, error, isPending, refetch } = usePostTags()
 
   return (
     <div className='mx-auto max-w-2xl px-4 py-8'>
