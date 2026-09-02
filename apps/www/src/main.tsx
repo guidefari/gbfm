@@ -118,6 +118,7 @@ if (env.sentryDsn && (!env.isDev || env.sentryEnableLocal)) {
 function App() {
   const { data: session, isPending } = useSession()
   const user = session?.user ?? null
+  const waitForSession = isPending && window.location.pathname !== '/'
   const routerContext = React.useMemo(
     () => ({ auth: { user, isAuthenticated: Boolean(user) } }),
     [user]
@@ -135,7 +136,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme='dark' storageKey='vite-ui-theme'>
         <PlayerProvider>
-          {isPending ? (
+          {waitForSession ? (
             <div className='flex min-h-dvh items-center justify-center'>
               <Loader2 className='h-6 w-6 animate-spin text-muted-foreground' />
             </div>
