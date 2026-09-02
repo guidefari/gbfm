@@ -36,7 +36,7 @@ import {
   useAdminRescrapeEntityLinks,
   useDeleteAdminEntityLink,
   useMicroPostBySlug,
-  useMicroTags,
+  usePostTags,
   useResolveMusicEntity,
   useUpdateAdminEntityLinkStatus
 } from '@/lib/http'
@@ -381,7 +381,7 @@ export function TweetCapturePage() {
   const [commentary, setCommentary] = useState('')
   const [tags, setTags] = useState<string[]>([])
   const [newTag, setNewTag] = useState('')
-  const { data: availableTags } = useMicroTags()
+  const { data: availableTags } = usePostTags()
 
   const { data: existingPost, isPending: loadingPost } = useQuery({
     queryKey: ['post', search.edit],

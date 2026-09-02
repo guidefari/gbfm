@@ -206,6 +206,8 @@ export function EditorialPage() {
           queryKey: ['post', 'editorial', savedPost.slug]
         }),
         queryClient.invalidateQueries({ queryKey: ['posts', 'editorials'] }),
+        queryClient.invalidateQueries({ queryKey: ['editorial-tags'] }),
+        queryClient.invalidateQueries({ queryKey: ['posts', 'micro', 'tags'] }),
         queryClient.invalidateQueries({ queryKey: ['admin', 'posts', 'post'] })
       ])
 
@@ -291,10 +293,6 @@ export function EditorialPage() {
       }
       return updated
     })
-  }
-
-  function handleDraftChange(draft: boolean) {
-    setFormData((previous) => ({ ...previous, draft }))
   }
 
   function handleCreatorChange(creators: EditorialCreator[]) {
@@ -399,7 +397,6 @@ export function EditorialPage() {
           artworkPreview={artworkPreview}
           artworkUploadId={artworkUploadId}
           selectedCreators={selectedCreators}
-          onDraftChange={handleDraftChange}
           onArtworkFileChange={handleArtworkFileChange}
           onRemoveArtwork={removeArtwork}
           onThumbnailUrlChange={(value) => handleTextInputChange('thumbnailUrl', value)}

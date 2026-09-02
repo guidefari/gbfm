@@ -1,6 +1,7 @@
-import { Button, Checkbox, Input, Label, TagsInput } from '@gbfm/ui'
+import { Button, Input, Label, TagsInput } from '@gbfm/ui'
 import { ImageIcon, Upload, X } from 'lucide-react'
 import type { ChangeEvent, ReactNode } from 'react'
+import { usePostTags } from '@/lib/http'
 import { UserSearch } from '../dashboard/_components/-UserSearch'
 import type { EditorialCreator, EditorialFormData } from './-editorial-types'
 
@@ -21,7 +22,6 @@ export function EditorialMetadataSidebar({
   artworkPreview,
   artworkUploadId,
   selectedCreators,
-  onDraftChange,
   onArtworkFileChange,
   onRemoveArtwork,
   onThumbnailUrlChange,
@@ -35,7 +35,6 @@ export function EditorialMetadataSidebar({
   artworkPreview: string | null
   artworkUploadId: string
   selectedCreators: EditorialCreator[]
-  onDraftChange: (draft: boolean) => void
   onArtworkFileChange: (event: ChangeEvent<HTMLInputElement>) => void
   onRemoveArtwork: () => void
   onThumbnailUrlChange: (value: string) => void
@@ -45,29 +44,12 @@ export function EditorialMetadataSidebar({
   onCreatorChange: (creators: EditorialCreator[]) => void
 }) {
   const artworkUrl = artworkPreview || formData.thumbnailUrl
+  const { data: availableTags } = usePostTags()
 
   return (
     <aside
       className='space-y-6 rounded-sm border border-border/70 bg-card/35 p-5 [&_input]:bg-background/35 [&_label]:text-sm lg:sticky lg:top-[76px] lg:mt-8 lg:self-start'
       aria-label='Editorial metadata'>
-      <MetadataSection title='Publishing status'>
-        <div className='flex items-start gap-3.5'>
-          <Checkbox
-            id='editorial-draft'
-            checked={formData.draft}
-            onCheckedChange={(checked) => onDraftChange(checked === true)}
-          />
-          <div className='space-y-1'>
-            <Label htmlFor='editorial-draft' className='cursor-pointer font-medium'>
-              Keep as draft
-            </Label>
-            <p className='text-xs leading-relaxed text-muted-foreground'>
-              Drafts stay off public publishing surfaces. Use Publish when the piece is ready.
-            </p>
-          </div>
-        </div>
-      </MetadataSection>
-
       <MetadataSection title='Artwork'>
         <div className='space-y-3'>
           {artworkUrl ? (
@@ -149,6 +131,8 @@ export function EditorialMetadataSidebar({
       <MetadataSection title='Tags'>
         <TagsInput
           tags={formData.tags}
+          availableTags={availableTags}
+          label='Choose tags'
           onAddTag={onAddTag}
           onRemoveTag={onRemoveTag}
           contentTypeLabel='Editorial'

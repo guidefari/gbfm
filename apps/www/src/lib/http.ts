@@ -175,7 +175,7 @@ export function useAudioTags(type: AudioContentType) {
 }
 
 export function useEditorialTags() {
-  const { data, error, isPending } = useQuery<string[], Error>({
+  const { data, error, isPending, refetch } = useQuery<string[], Error>({
     queryKey: ['editorial-tags'],
     queryFn: async () => {
       const client = await getApiClient()
@@ -192,7 +192,7 @@ export function useEditorialTags() {
     },
     staleTime: 1000 * 60 * 60
   })
-  return { data: data ?? [], error, isPending }
+  return { data: data ?? [], error, isPending, refetch }
 }
 
 export function useAudioBySlug(type: AudioContentType, slug: string) {
@@ -358,6 +358,21 @@ export function useMicroTags() {
     staleTime: 1000 * 60 * 60
   })
   return { data: data ?? [], error, isPending, refetch }
+}
+
+export function usePostTags() {
+  const microTags = useMicroTags()
+  const editorialTags = useEditorialTags()
+  const data = Array.from(new Set([...microTags.data, ...editorialTags.data])).sort((a, b) =>
+    a.localeCompare(b)
+  )
+
+  return {
+    data,
+    error: microTags.error ?? editorialTags.error,
+    isPending: microTags.isPending || editorialTags.isPending,
+    refetch: () => Promise.all([microTags.refetch(), editorialTags.refetch()])
+  }
 }
 
 export function useMicroPostSearch(q: string, limit = DEFAULT_PAGE_SIZE) {
