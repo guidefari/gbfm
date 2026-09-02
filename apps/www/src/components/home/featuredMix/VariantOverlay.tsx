@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { Disc3, Pause, Play, Radio } from 'lucide-react'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
+import { toImageSrcSet, toImageUrl } from '@/lib/image'
 import type { FeaturedMixVariantProps } from './types'
 
 export function VariantOverlay({
@@ -12,8 +13,12 @@ export function VariantOverlay({
   onPlay,
   onBrowse
 }: FeaturedMixVariantProps) {
+  const artworkUrl = featuredMix?.thumbnailUrl || DEFAULT_IMAGE_URL
+  const artworkSrcSet = toImageSrcSet(artworkUrl, [320, 480, 640, 768, 1024, 1280])
+
   const handleArtworkError = (event: React.SyntheticEvent<HTMLImageElement>) => {
     event.currentTarget.onerror = null
+    event.currentTarget.srcset = ''
     event.currentTarget.src = DEFAULT_IMAGE_URL
   }
 
@@ -22,7 +27,9 @@ export function VariantOverlay({
       <div className='relative w-full overflow-hidden border-2 aspect-square border-foreground'>
         {featuredMix ? (
           <img
-            src={featuredMix.thumbnailUrl || DEFAULT_IMAGE_URL}
+            src={toImageUrl(artworkUrl, { width: 768 })}
+            srcSet={artworkSrcSet}
+            sizes='(max-width: 640px) calc(100vw - 3rem), 384px'
             alt={featuredMix.title}
             loading='eager'
             fetchPriority='high'
