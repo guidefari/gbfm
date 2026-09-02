@@ -1,3 +1,11 @@
+## [2.89.1](https://github.com/guidefari/gbfm/compare/v2.89.0...v2.89.1) (2026-09-02)
+
+
+### Bug Fixes
+
+* **www:** recover failed featured artwork ([52b3f42](https://github.com/guidefari/gbfm/commit/52b3f42c2fcb3d2fcdd20d8d22b45df09041fd7e))
+* **www:** stabilize the public first load ([68d336d](https://github.com/guidefari/gbfm/commit/68d336d691cad29157d790ef67a793b4a6cf72a8))
+
 # [2.89.0](https://github.com/guidefari/gbfm/compare/v2.88.1...v2.89.0) (2026-08-31)
 
 
