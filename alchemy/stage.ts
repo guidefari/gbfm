@@ -1,6 +1,12 @@
 import * as Alchemy from 'alchemy'
 import * as Effect from 'effect/Effect'
 
+export const localDevPorts = {
+  api: 3003,
+  cdn: 3004,
+  qrPdf: 3005
+} as const
+
 export interface StageConfig {
   readonly stage: string
   readonly isProduction: boolean

@@ -14,7 +14,7 @@ import type { EmailResources } from './email'
 import { workerObservability } from './observability'
 import type { QrPdfWorker } from './qr-pdf'
 import type { SecretBindings } from './secrets'
-import { hostname, type StageConfig } from './stage'
+import { hostname, localDevPorts, type StageConfig } from './stage'
 import type { Storage } from './storage'
 
 export interface ApiWorkerInput {
@@ -47,6 +47,7 @@ export const apiWorker = ({
     const api = yield* Cloudflare.Worker('Api', {
       main: './apps/server/src/worker.ts',
       ...hostname(config, 'api.goosebumps.fm'),
+      ...(config.isLocalDev ? { dev: { port: localDevPorts.api, strictPort: true } } : undefined),
       compatibility: { date: '2026-07-04', flags: ['nodejs_compat'] },
       crons: [reminderSweepCron, sitemapRegenerationCron, maintenanceSweepCron],
       observability: workerObservability(config.isProduction),
