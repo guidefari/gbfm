@@ -9,6 +9,7 @@ import {
   type CanonicalMusicEntityType,
   type ParsedMusicSource
 } from './music-source'
+import { withSafeTypedSpan } from './telemetry'
 
 const BACKFILL_OPERATION = 'canonical_music_identity_v2'
 const DEFAULT_BATCH_SIZE = 25
@@ -18,6 +19,11 @@ const MAX_CANDIDATES_PER_SOURCE_KEY = 100
 
 type Phase = 'scan_links' | 'scan_claims' | 'apply' | 'complete'
 type Origin = 'link' | 'legacy_claim'
+
+const CONFLICT_CATEGORIES: ReadonlySet<IdentityMaintenanceIssue['category']> = new Set([
+  'collision',
+  'duplicate_ownership_candidate'
+])
 
 type LinkRow = {
   readonly id: string
@@ -108,6 +114,7 @@ export type IdentityBackfillSummary = {
   readonly proposed: number
   readonly attempted: number
   readonly detected: number
+  readonly conflicted: number
   readonly identitiesCreated: number
   readonly aliasesCreated: number
   readonly aliasesTouched: number
@@ -849,14 +856,26 @@ const readSummary = (database: D1Database, generationId: string, batchSize: numb
         .first<{ readonly count: number }>()
       return row?.count ?? 0
     })
-    const findingCount = yield* attempt('readFindingCount', async () => {
-      const row = await database
-        .prepare(
-          'SELECT COUNT(*) AS count FROM music_identity_maintenance_findings WHERE generation_id = ?'
+    const findingCounts = yield* attempt('readFindingCounts', async () => {
+      const rows = (
+        await database
+          .prepare(
+            `SELECT category, COUNT(*) AS count FROM music_identity_maintenance_findings
+             WHERE generation_id = ? GROUP BY category`
+          )
+          .bind(generationId)
+          .all<{
+            readonly category: IdentityMaintenanceIssue['category']
+            readonly count: number
+          }>()
+      ).results
+      return {
+        detected: rows.reduce((total, row) => total + row.count, 0),
+        conflicted: rows.reduce(
+          (total, row) => total + (CONFLICT_CATEGORIES.has(row.category) ? row.count : 0),
+          0
         )
-        .bind(generationId)
-        .first<{ readonly count: number }>()
-      return row?.count ?? 0
+      }
     })
     const findingPage = yield* readFindingIssues(database, generationId, '', batchSize)
     const count = (kind: string) => actionCounts.find((row) => row.kind === kind)?.count ?? 0
@@ -877,7 +896,8 @@ const readSummary = (database: D1Database, generationId: string, batchSize: numb
       candidates: run.candidateCount,
       proposed,
       attempted: run.attemptedCount,
-      detected: findingCount,
+      detected: findingCounts.detected,
+      conflicted: findingCounts.conflicted,
       identitiesCreated: count('identity_created'),
       aliasesCreated: count('alias_created'),
       aliasesTouched: count('alias_touched'),
@@ -955,6 +975,7 @@ const preview = (
       proposed: sources.size,
       attempted: 0,
       detected: issues.length,
+      conflicted: issues.filter((issue) => CONFLICT_CATEGORIES.has(issue.category)).length,
       identitiesCreated: 0,
       aliasesCreated: 0,
       aliasesTouched: 0,
@@ -999,7 +1020,20 @@ export const runIdentityBackfillBatch = (
     else if (run.phase === 'scan_claims') yield* scanClaims(database, run, batchSize, now)
     else if (run.phase === 'apply') yield* applyPage(database, run, batchSize, now)
     return yield* readSummary(database, run.generationId, batchSize)
-  }).pipe(Effect.withSpan('musicIdentity.backfillBatch'))
+  }).pipe(
+    Effect.tap((summary) =>
+      Effect.annotateCurrentSpan({
+        outcome: summary.complete ? 'complete' : summary.phase,
+        scannedCount: summary.scanned,
+        resolvedCount: summary.identitiesCreated,
+        conflictedCount: summary.conflicted,
+        invalidCount: summary.invalid,
+        orphanCount: summary.orphaned,
+        aliasCount: summary.aliasesCreated + summary.aliasesTouched
+      })
+    ),
+    withSafeTypedSpan('musicIdentity.backfillBatch')
+  )
 
 const readFindingIssues = (
   database: D1Database,
@@ -1276,4 +1310,13 @@ export const auditMusicIdentities = (
       detected: issues.length,
       issues
     }
-  }).pipe(Effect.withSpan('musicIdentity.audit'))
+  }).pipe(
+    Effect.tap((summary) =>
+      Effect.annotateCurrentSpan({
+        outcome: summary.complete ? 'complete' : summary.phase,
+        scannedCount: summary.scanned,
+        detectedCount: summary.detected
+      })
+    ),
+    withSafeTypedSpan('musicIdentity.audit')
+  )

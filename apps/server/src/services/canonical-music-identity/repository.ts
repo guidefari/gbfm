@@ -49,9 +49,9 @@ export type EntityRecord = {
 }
 
 export type ClaimResult =
-  | { readonly _tag: 'owned' }
+  | { readonly _tag: 'owned'; readonly result: 'miss' | 'reclaimed'; readonly claimAgeMs?: number }
   | { readonly _tag: 'resolved'; readonly reference: EntityReference }
-  | { readonly _tag: 'busy'; readonly retryAfterMs: number }
+  | { readonly _tag: 'busy'; readonly retryAfterMs: number; readonly claimAgeMs: number }
 
 const storageError = (operation: string, cause: unknown) =>
   new MusicIdentityStorageError({
@@ -144,7 +144,7 @@ export class CanonicalMusicIdentityRepository {
           })
           .onConflictDoNothing()
           .returning({ sourceKey: musicSourceIdentitiesTable.sourceKey })
-        if (inserted.length > 0) return { _tag: 'owned' } as const
+        if (inserted.length > 0) return { _tag: 'owned', result: 'miss' } as const
 
         const reclaimed = await this.db
           .update(musicSourceIdentitiesTable)
@@ -157,7 +157,14 @@ export class CanonicalMusicIdentityRepository {
             )
           )
           .returning()
-        if (reclaimed.length > 0) return { _tag: 'owned' } as const
+        const reclaimedIdentity = reclaimed[0]
+        if (reclaimedIdentity) {
+          return {
+            _tag: 'owned',
+            result: 'reclaimed',
+            claimAgeMs: Math.max(0, now.getTime() - reclaimedIdentity.createdAt.getTime())
+          } as const
+        }
 
         const rows = await this.db
           .select()
@@ -165,14 +172,20 @@ export class CanonicalMusicIdentityRepository {
           .where(eq(musicSourceIdentitiesTable.sourceKey, source.sourceKey))
           .limit(1)
         const identity = rows[0]
-        if (!identity) return { _tag: 'busy', retryAfterMs: leaseMs } as const
+        if (!identity) {
+          return { _tag: 'busy', retryAfterMs: leaseMs, claimAgeMs: 0 } as const
+        }
         const reference = resolvedReference(identity)
         if (reference) return { _tag: 'resolved', reference } as const
         const retryAfterMs = Math.max(
           1,
           (identity.leaseExpiresAt?.getTime() ?? now.getTime() + leaseMs) - now.getTime()
         )
-        return { _tag: 'busy', retryAfterMs } as const
+        return {
+          _tag: 'busy',
+          retryAfterMs,
+          claimAgeMs: Math.max(0, now.getTime() - identity.createdAt.getTime())
+        } as const
       },
       catch: (cause) => storageError('claim', cause)
     })

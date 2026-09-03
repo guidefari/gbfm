@@ -17,6 +17,8 @@ import {
   MusicIdentityConflict,
   type MusicIdentityError,
   MusicIdentityInvalidSnapshot,
+  type MusicIdentityProviderRejected,
+  type MusicIdentityProviderUnavailable,
   MusicIdentitySourceLinkNotFound,
   MusicIdentityStorageError,
   MusicSourceInvalid
@@ -25,6 +27,7 @@ import { loadEntity, refreshedEntityRecord } from './entity-record'
 import { parseMusicSource, type ParsedMusicSource } from './music-source'
 import { CanonicalMusicIdentityRepository, type EntityReference } from './repository'
 import { parseDiscoveredSources, uniqueLinks } from './source-result'
+import { annotateEntity, annotateSource, withSafeTypedSpan } from './telemetry'
 
 type ReadReference = (
   source: ParsedMusicSource
@@ -46,7 +49,9 @@ export const makeEntityOperations = (
   repository: CanonicalMusicIdentityRepository,
   readReference: ReadReference,
   claimWithWait: ClaimWithWait,
-  providerError: (error: MusicScraperError) => MusicIdentityError,
+  providerError: (
+    error: MusicScraperError
+  ) => MusicIdentityProviderRejected | MusicIdentityProviderUnavailable,
   claimLeaseMs: number
 ) => {
   const provideDb = Effect.provideService(Database, db)
@@ -54,8 +59,10 @@ export const makeEntityOperations = (
   const attachLink = (input: AttachMusicSourceLink) =>
     Effect.gen(function* () {
       const reference = { entityType: input.entityType, entityId: input.entityId }
+      yield* annotateEntity(reference)
       yield* loadEntity(reference).pipe(provideDb)
       const source = yield* parseMusicSource(input.url, input.entityType)
+      yield* annotateSource(source)
       if (source.platform !== input.platform) {
         return yield* new MusicSourceInvalid({
           reason: 'platform_mismatch',
@@ -137,7 +144,21 @@ export const makeEntityOperations = (
             scrapedAt,
             now: new Date()
           })
-          .pipe(Effect.tapError(() => repository.release([source.sourceKey], ownerToken)))
+          .pipe(
+            Effect.tapError(() => repository.release([source.sourceKey], ownerToken)),
+            Effect.tap((didCommit) =>
+              Effect.gen(function* () {
+                yield* annotateSource(source)
+                yield* annotateEntity(reference)
+                yield* Effect.annotateCurrentSpan({
+                  outcome: didCommit ? 'success' : 'lost_claim',
+                  linkCount: 1,
+                  aliasCount: 1
+                })
+              })
+            ),
+            withSafeTypedSpan('musicIdentity.commit')
+          )
         if (!committed) {
           yield* repository.release([source.sourceKey], ownerToken)
           yield* loadEntity(reference).pipe(provideDb)
@@ -164,11 +185,29 @@ export const makeEntityOperations = (
         return yield* storageError('attachLink', 'Attached link was not persisted')
       }
       return link
-    }).pipe(Effect.withSpan('musicIdentity.attachLink'))
+    }).pipe(
+      Effect.tap(() =>
+        Effect.annotateCurrentSpan({
+          origin: input.origin,
+          outcome: 'success',
+          linkCount: 1,
+          aliasCount: 1
+        })
+      ),
+      withSafeTypedSpan('musicIdentity.attachLink', {
+        attributes: {
+          origin: input.origin,
+          entityType: input.entityType,
+          entityId: input.entityId
+        }
+      })
+    )
 
   const refresh = (input: RefreshMusicEntity, explicitRefresh: boolean) =>
     Effect.gen(function* () {
       const reference = { entityType: input.entityType, entityId: input.entityId }
+      yield* annotateEntity(reference)
+      yield* Effect.annotateCurrentSpan('explicitRefresh', explicitRefresh)
       const current = yield* loadEntity(reference).pipe(provideDb)
       const links = yield* repository.linksFor(reference)
       if (
@@ -177,6 +216,7 @@ export const makeEntityOperations = (
           (link) => link.status === 'verified' && link.metadata?.confidence !== 'exact_source'
         )
       ) {
+        yield* Effect.annotateCurrentSpan({ outcome: 'skipped', linkCount: links.length })
         return {
           entityType: input.entityType,
           entity: current,
@@ -194,6 +234,7 @@ export const makeEntityOperations = (
         })
       }
       const source = yield* parseMusicSource(sourceLink.url, input.entityType)
+      yield* annotateSource(source)
       const title = 'name' in current ? current.name : current.title
       const artistName =
         'artistNames' in current ? (current.artistNames ?? []).join(', ') : undefined
@@ -208,9 +249,20 @@ export const makeEntityOperations = (
             })
       ).pipe(
         Effect.mapError(providerError),
-        Effect.withSpan('musicIdentity.scrape', {
-          attributes: { platform: source.platform, explicitRefresh }
-        })
+        Effect.tapError((error) =>
+          Effect.annotateCurrentSpan({ provider: error.provider, outcome: 'failure' })
+        ),
+        Effect.tap(() =>
+          Effect.gen(function* () {
+            yield* annotateSource(source)
+            yield* Effect.annotateCurrentSpan({
+              provider: source.platform,
+              explicitRefresh,
+              outcome: 'success'
+            })
+          })
+        ),
+        withSafeTypedSpan('musicIdentity.scrape')
       )
       if (
         result.links.length === 0 &&
@@ -305,7 +357,19 @@ export const makeEntityOperations = (
               ownerToken
             )
           ),
-          Effect.withSpan('musicIdentity.commit')
+          Effect.tap((didCommit) =>
+            Effect.gen(function* () {
+              yield* annotateSource(source)
+              yield* annotateEntity(reference)
+              yield* Effect.annotateCurrentSpan({
+                outcome: didCommit ? 'success' : 'lost_claim',
+                linkCount: refreshedLinks.length,
+                aliasCount: sources.length,
+                explicitRefresh
+              })
+            })
+          ),
+          withSafeTypedSpan('musicIdentity.commit')
         )
       if (!committed) {
         yield* repository.release(
@@ -317,6 +381,11 @@ export const makeEntityOperations = (
       }
       const entity = yield* loadEntity(reference).pipe(provideDb)
       const storedLinks = yield* repository.linksFor(reference)
+      yield* Effect.annotateCurrentSpan({
+        outcome: 'success',
+        linkCount: storedLinks.length,
+        aliasCount: sources.length
+      })
       return {
         entityType: input.entityType,
         entity,
@@ -324,11 +393,12 @@ export const makeEntityOperations = (
         artworkUrl: result.entityMeta?.thumbnailUrl
       } satisfies RefreshedMusicEntity
     }).pipe(
-      Effect.withSpan('musicIdentity.refreshEntity', {
+      withSafeTypedSpan('musicIdentity.refreshEntity', {
         attributes: {
           entityType: input.entityType,
           entityId: input.entityId,
-          actorId: input.actorId
+          explicitRefresh,
+          origin: input.origin
         }
       })
     )
@@ -363,7 +433,7 @@ export const makeEntityOperations = (
         return yield* storageError('releaseLink', 'Rejected link was not persisted')
       }
       return released
-    }).pipe(Effect.withSpan('musicIdentity.releaseLink'))
+    }).pipe(withSafeTypedSpan('musicIdentity.releaseLink'))
 
   const enrichEntity = (input: RefreshMusicEntity) => refresh(input, false)
   const refreshEntity = (input: RefreshMusicEntity) => refresh(input, true)

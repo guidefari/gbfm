@@ -41,7 +41,12 @@ export function EditorialWritingCanvas({
     (urls: ReadonlyArray<string>) =>
       Effect.runPromise(
         resolveMusicEntityBatchEffect(urls, (url) =>
-          resolveMusicEntityReferenceWithCacheEffect(queryClient, url, authorizationScope)
+          resolveMusicEntityReferenceWithCacheEffect(
+            queryClient,
+            url,
+            authorizationScope,
+            'editorial'
+          )
         )
       ),
     [authorizationScope, queryClient]

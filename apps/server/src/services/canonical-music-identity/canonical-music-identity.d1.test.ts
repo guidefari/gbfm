@@ -1,3 +1,7 @@
+import { OtelTracer, Resource } from '@effect/opentelemetry'
+import { trace } from '@opentelemetry/api'
+import { InMemorySpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
+import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
 import { and, eq } from 'drizzle-orm'
 import { Effect, Exit, Layer, Result } from 'effect'
 import { beforeAll, describe, expect, test } from 'vitest'
@@ -37,7 +41,8 @@ import {
   CanonicalMusicIdentityLeaseTiming,
   type CanonicalMusicIdentityLeaseTimingConfig,
   type CanonicalMusicIdentityService,
-  type ProviderMusicSnapshot
+  type ProviderMusicSnapshot,
+  type RefreshMusicEntity
 } from './index'
 
 const externalId = () => crypto.randomUUID().replaceAll('-', '')
@@ -695,10 +700,11 @@ describe('CanonicalMusicIdentity', () => {
           snapshot: snapshot(sourceUrl),
           origin: 'spotify_import'
         })
-        const input = {
-          entityType: 'track' as const,
+        const input: RefreshMusicEntity = {
+          entityType: 'track',
           entityId: imported.entity.id,
-          actorId: 'playlist_enrichment'
+          actorId: 'playlist_enrichment',
+          origin: 'playlist_enrichment'
         }
         yield* service.enrichEntity(input).pipe(Effect.catch(() => Effect.void))
         yield* service.enrichEntity(input)
@@ -730,7 +736,8 @@ describe('CanonicalMusicIdentity', () => {
         return yield* service.refreshEntity({
           entityType: 'track',
           entityId: imported.entity.id,
-          actorId: 'admin'
+          actorId: 'admin',
+          origin: 'manual'
         })
       })
     )
@@ -793,7 +800,8 @@ describe('CanonicalMusicIdentity', () => {
         return yield* service.refreshEntity({
           entityType: 'track',
           entityId: imported.entity.id,
-          actorId: crypto.randomUUID()
+          actorId: crypto.randomUUID(),
+          origin: 'manual'
         })
       })
     )
@@ -868,7 +876,8 @@ describe('CanonicalMusicIdentity', () => {
           service.refreshEntity({
             entityType: 'track',
             entityId: result.entity.id,
-            actorId: 'legacy-refresh'
+            actorId: 'legacy-refresh',
+            origin: 'manual'
           })
         )
         return resolved
@@ -928,6 +937,68 @@ describe('CanonicalMusicIdentity', () => {
 
     expect(recorder.calls).toHaveLength(2)
     expect(spotifyResult.entity.id).toBe(deezerResult.entity.id)
+  })
+
+  test('does not duplicate the retry-zero claim after a discovered source is busy', async () => {
+    const exporter = new InMemorySpanExporter()
+    const provider = new NodeTracerProvider({
+      spanProcessors: [new SimpleSpanProcessor(exporter)]
+    })
+    provider.register()
+    const tracingLive = OtelTracer.layerGlobal.pipe(
+      Layer.provide(Resource.layer({ serviceName: 'music-identity-claim-test' }))
+    )
+    const spotifyUrl = `https://open.spotify.com/track/${externalId()}`
+    const deezerUrl = `https://www.deezer.com/track/${String(Date.now() + 65)}`
+    const deezerSource = await Effect.runPromise(parseMusicSource(deezerUrl, 'track'))
+    await db.insert(musicSourceIdentitiesTable).values({
+      sourceKey: deezerSource.sourceKey,
+      platform: deezerSource.platform,
+      sourceEntityType: deezerSource.sourceEntityType,
+      externalId: deezerSource.externalId,
+      canonicalUrl: deezerSource.canonicalUrl,
+      state: 'resolving',
+      ownerToken: crypto.randomUUID(),
+      leaseExpiresAt: new Date(Date.now() + 60_000)
+    })
+    const recorder = recordingScraper(() =>
+      Effect.succeed({
+        links: [
+          { platform: 'spotify', url: spotifyUrl, scrapedAt: new Date() },
+          { platform: 'deezer', url: deezerUrl, scrapedAt: new Date() }
+        ],
+        entityMeta: { title: 'Busy Discovery', artistName: 'Artist', type: 'song' }
+      })
+    )
+
+    try {
+      const exit = await Effect.runPromiseExit(
+        withTestLayer(
+          serviceEffect(
+            recorder.service,
+            (service) =>
+              service.resolveSource({
+                url: spotifyUrl,
+                expectedType: 'track',
+                origin: 'editorial'
+              }),
+            { leaseMs: 30_000, waitAttempts: 0, waitMs: 1 }
+          ),
+          tracingLive
+        )
+      )
+      await provider.forceFlush()
+
+      expect(Result.getOrThrow(Exit.findError(exit))).toMatchObject({ _tag: 'MusicIdentityBusy' })
+      const claims = exporter
+        .getFinishedSpans()
+        .filter((span) => span.name === 'musicIdentity.claim')
+      expect(claims).toHaveLength(2)
+      expect(claims.map((span) => span.attributes.retryCount)).toEqual([0, 0])
+    } finally {
+      await provider.shutdown()
+      trace.disable()
+    }
   })
 
   test('fences every write when a secondary source claim is lost', async () => {
@@ -1155,7 +1226,8 @@ describe('CanonicalMusicIdentity', () => {
         return yield* service.refreshEntity({
           entityType: 'playlist',
           entityId: imported.entity.id,
-          actorId: crypto.randomUUID()
+          actorId: crypto.randomUUID(),
+          origin: 'manual'
         })
       })
     )
@@ -1331,7 +1403,8 @@ describe('CanonicalMusicIdentity', () => {
       service.refreshEntity({
         entityType: 'track',
         entityId: imported.entity.id,
-        actorId: crypto.randomUUID()
+        actorId: crypto.randomUUID(),
+        origin: 'manual'
       })
     )
     await started.promise
@@ -1441,12 +1514,14 @@ describe('CanonicalMusicIdentity', () => {
         const first = yield* service.refreshEntity({
           entityType: 'track',
           entityId: imported.entity.id,
-          actorId: crypto.randomUUID()
+          actorId: crypto.randomUUID(),
+          origin: 'manual'
         })
         const second = yield* service.refreshEntity({
           entityType: 'track',
           entityId: imported.entity.id,
-          actorId: crypto.randomUUID()
+          actorId: crypto.randomUUID(),
+          origin: 'manual'
         })
         return { imported, first, second }
       })

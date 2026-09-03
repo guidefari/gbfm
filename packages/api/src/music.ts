@@ -379,7 +379,8 @@ export const UpdateEntityLinkStatusInput = Schema.Struct({
 })
 
 export const ResolveMusicEntityInput = Schema.Struct({
-  url: UrlString
+  url: UrlString,
+  origin: Schema.optional(Schema.Literals(['editorial', 'tweet', 'reply']))
 })
 
 export const ResolvedMusicEntityResponse = Schema.Struct({

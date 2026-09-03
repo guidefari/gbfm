@@ -347,6 +347,43 @@ describe('identity maintenance', () => {
     expect(summary.identitiesCreated).toBe(1)
   })
 
+  test('counts only conflict categories in mixed backfill findings', async () => {
+    await insertEntity('album', 'mixed-candidate')
+    await insertEntity('album', 'mixed-invalid-owner')
+    await insertEntity('album', 'mixed-incumbent')
+    await insertLink({
+      id: 'mixed-collision',
+      entityType: 'album',
+      entityId: 'mixed-candidate',
+      url: 'https://open.spotify.com/album/MixedCollision'
+    })
+    await insertLink({
+      id: 'mixed-invalid',
+      entityType: 'album',
+      entityId: 'mixed-invalid-owner',
+      url: 'https://open.spotify.com/track/WrongType',
+      createdAt: 2000
+    })
+    await database
+      .prepare(
+        `INSERT INTO music_source_identities (
+           source_key, platform, source_entity_type, external_id, canonical_url, state,
+           entity_type, entity_id, resolved_at, created_at, updated_at
+         ) VALUES ('manual:mixed', 'spotify', 'album', 'MixedCollision',
+           'https://open.spotify.com/album/MixedCollision', 'resolved',
+           'album', 'mixed-incumbent', 1, 1, 1)`
+      )
+      .run()
+
+    const summary = await applyToCompletion()
+
+    expect(summary).toMatchObject({ detected: 2, conflicted: 1, invalid: 1 })
+    expect(summary.issues.map((issue) => issue.category).sort()).toEqual([
+      'collision',
+      'mismatched_entity_type'
+    ])
+  })
+
   test('imports compatible completed claims but lets links win', async () => {
     await insertEntity('album', 'claim-owner')
     await insertEntity('album', 'link-owner')

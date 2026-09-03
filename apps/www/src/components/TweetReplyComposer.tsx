@@ -20,7 +20,7 @@ export function TweetReplyComposer({ parentSlug, compact = false, onPosted }: Pr
   const { open, setDraft, setMusicUrl, reset } = useTweetReplyComposerActions(parentSlug)
   const { toast } = useToast()
   const createReply = useCreateMicroPostReply(parentSlug)
-  const resolved = useResolveMusicEntity(musicUrl.trim())
+  const resolved = useResolveMusicEntity(musicUrl.trim(), 'reply')
   const quotedSlug = extractTweetSlugFromText(draft)
   const resolvedQuote = useMicroPostBySlug(quotedSlug)
 

@@ -33,10 +33,10 @@ const createQueryClient = () =>
 describe('music entity resolution cache', () => {
   test('reuses one cached result across authoring surfaces and equivalent URLs', async () => {
     const queryClient = createQueryClient()
-    const requestedUrls: string[] = []
-    const resolve: ResolveMusicEntityEffect = (url) =>
+    const requests: Array<{ url: string; origin: string }> = []
+    const resolve: ResolveMusicEntityEffect = (url, origin) =>
       Effect.sync(() => {
-        requestedUrls.push(url)
+        requests.push({ url, origin })
         return resolvedEntity
       })
     const sharedUrl = 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh'
@@ -46,22 +46,24 @@ describe('music entity resolution cache', () => {
       queryClient,
       sharedVariant,
       'admin-1:admin',
+      'editorial',
       resolve
     )
     const tweet = await resolveMusicEntityWithCache(
       queryClient,
       sharedUrl,
       'admin-1:admin',
+      'tweet',
       resolve
     )
     const reply = await queryClient.fetchQuery(
-      musicEntityResolutionQueryOptions(sharedUrl, 'admin-1:admin', resolve)
+      musicEntityResolutionQueryOptions(sharedUrl, 'admin-1:admin', 'reply', resolve)
     )
 
     expect(editorial).toEqual(resolvedEntity)
     expect(tweet).toEqual(resolvedEntity)
     expect(reply).toEqual(resolvedEntity)
-    expect(requestedUrls).toEqual([sharedVariant])
+    expect(requests).toEqual([{ url: sharedVariant, origin: 'editorial' }])
   })
 
   test('deduplicates in-flight resolution across authoring surfaces', async () => {
@@ -71,24 +73,34 @@ describe('music entity resolution cache', () => {
     const response = new Promise<ResolvedMusicEntity>((resolve) => {
       complete = () => resolve(resolvedEntity)
     })
-    const resolve: ResolveMusicEntityEffect = () => {
+    const requestedOrigins: string[] = []
+    const resolve: ResolveMusicEntityEffect = (_url, origin) => {
       requestCount += 1
+      requestedOrigins.push(origin)
       return Effect.promise(() => response)
     }
     const url = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
 
-    const editorial = resolveMusicEntityWithCache(queryClient, url, 'admin-1:admin', resolve)
+    const editorial = resolveMusicEntityWithCache(
+      queryClient,
+      url,
+      'admin-1:admin',
+      'editorial',
+      resolve
+    )
     const tweet = resolveMusicEntityWithCache(
       queryClient,
       'https://youtu.be/dQw4w9WgXcQ',
       'admin-1:admin',
+      'tweet',
       resolve
     )
     const reply = queryClient.fetchQuery(
-      musicEntityResolutionQueryOptions(url, 'admin-1:admin', resolve)
+      musicEntityResolutionQueryOptions(url, 'admin-1:admin', 'reply', resolve)
     )
 
     expect(requestCount).toBe(1)
+    expect(requestedOrigins).toEqual(['editorial'])
     complete?.()
     await expect(Promise.all([editorial, tweet, reply])).resolves.toEqual([
       resolvedEntity,
@@ -109,10 +121,10 @@ describe('music entity resolution cache', () => {
     const url = 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh'
 
     await expect(
-      resolveMusicEntityWithCache(queryClient, url, 'admin-1:admin', resolve)
+      resolveMusicEntityWithCache(queryClient, url, 'admin-1:admin', 'tweet', resolve)
     ).rejects.toThrow()
     await expect(
-      resolveMusicEntityWithCache(queryClient, url, 'admin-1:admin', resolve)
+      resolveMusicEntityWithCache(queryClient, url, 'admin-1:admin', 'tweet', resolve)
     ).resolves.toEqual(resolvedEntity)
     expect(requestCount).toBe(2)
   })
@@ -148,8 +160,8 @@ describe('music entity resolution cache', () => {
       })
     const url = 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh'
 
-    await resolveMusicEntityWithCache(queryClient, url, 'admin-1:admin', resolve)
-    await resolveMusicEntityWithCache(queryClient, url, 'user-2:user', resolve)
+    await resolveMusicEntityWithCache(queryClient, url, 'admin-1:admin', 'tweet', resolve)
+    await resolveMusicEntityWithCache(queryClient, url, 'user-2:user', 'reply', resolve)
 
     expect(requestCount).toBe(2)
   })

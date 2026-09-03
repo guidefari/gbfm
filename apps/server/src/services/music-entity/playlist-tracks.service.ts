@@ -250,7 +250,8 @@ const enrichTrackLinksEffect = (
     const refreshed = yield* identity.enrichEntity({
       entityType: 'track',
       entityId: track.trackId,
-      actorId: 'playlist_enrichment'
+      actorId: 'playlist_enrichment',
+      origin: 'playlist_enrichment'
     })
     if (refreshed.artworkUrl) {
       const publicCoverImageUrl = yield* copyMusicCoverImageBestEffort(
@@ -612,7 +613,8 @@ export const syncPlaylistLinksEffect = (
     const refreshedPlaylist = yield* identity.refreshEntity({
       entityType: 'playlist',
       entityId: playlistId,
-      actorId: 'playlist_sync'
+      actorId: 'playlist_sync',
+      origin: 'playlist_enrichment'
     })
     if (refreshedPlaylist.artworkUrl) {
       const publicCoverImageUrl = yield* copyMusicCoverImageBestEffort(

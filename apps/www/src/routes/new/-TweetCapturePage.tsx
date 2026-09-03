@@ -400,7 +400,7 @@ export function TweetCapturePage() {
     enabled: Boolean(existingPost?.musicEntityType && existingPost.musicEntityId)
   })
 
-  const resolved = useResolveMusicEntity(musicUrl.trim())
+  const resolved = useResolveMusicEntity(musicUrl.trim(), 'tweet')
   const quotedSlug = extractTweetSlugFromText(commentary)
   const resolvedQuote = useMicroPostBySlug(quotedSlug)
 

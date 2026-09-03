@@ -8,6 +8,7 @@ import {
   CreateTrackInput,
   EntityType,
   MusicPlatform,
+  ResolveMusicEntityInput,
   ScrapeEntityType,
   UpdateAlbumInput,
   UpdateEntityLinkStatusInput,
@@ -94,6 +95,21 @@ describe('music API contract', () => {
     expect(Schema.decodeUnknownSync(EntityType)('label')).toBe('label')
     expect(Schema.decodeUnknownSync(MusicPlatform)('discogs')).toBe('discogs')
     expect(Exit.isFailure(Schema.decodeUnknownExit(ScrapeEntityType)('label'))).toBe(true)
+  })
+
+  it('accepts authoring origins while preserving origin-less clients', () => {
+    const url = 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh'
+
+    expect(Schema.decodeUnknownSync(ResolveMusicEntityInput)({ url })).toEqual({ url })
+    for (const origin of ['editorial', 'tweet', 'reply'] as const) {
+      expect(Schema.decodeUnknownSync(ResolveMusicEntityInput)({ url, origin })).toEqual({
+        url,
+        origin
+      })
+    }
+    expect(
+      Exit.isFailure(Schema.decodeUnknownExit(ResolveMusicEntityInput)({ url, origin: 'manual' }))
+    ).toBe(true)
   })
 
   // Adversarial review on the entity-links PR: AddEntityLinkInput.url must

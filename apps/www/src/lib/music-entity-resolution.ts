@@ -64,8 +64,11 @@ export class MusicEntityResolutionFailed extends Schema.TaggedError<MusicEntityR
   { message: Schema.String }
 ) {}
 
+export type AuthoringMusicResolutionOrigin = 'editorial' | 'tweet' | 'reply'
+
 export type ResolveMusicEntityEffect = (
-  url: string
+  url: string,
+  origin: AuthoringMusicResolutionOrigin
 ) => Effect.Effect<ResolvedMusicEntity, MusicEntityResolutionFailed>
 
 type MusicResolutionResponse = typeof MusicResolutionResponseSchema.Type
@@ -164,11 +167,11 @@ export const canonicalMusicResolutionUrl = (source: string): string => {
   }
 }
 
-export const resolveMusicEntityEffect: ResolveMusicEntityEffect = (url) =>
+export const resolveMusicEntityEffect: ResolveMusicEntityEffect = (url, origin) =>
   Effect.gen(function* () {
     const { getApiClient } = yield* Effect.promise(() => import('./api-client'))
     const client = yield* Effect.promise(getApiClient)
-    const response = yield* client.music.resolveMusicEntity({ payload: { url } }).pipe(
+    const response = yield* client.music.resolveMusicEntity({ payload: { url, origin } }).pipe(
       Effect.retry({
         times: 1,
         while: (error) => error instanceof HttpApiError.InternalServerError
@@ -186,6 +189,7 @@ export const resolveMusicEntityEffect: ResolveMusicEntityEffect = (url) =>
 export const musicEntityResolutionQueryOptions = (
   url: string,
   authorizationScope: string,
+  origin: AuthoringMusicResolutionOrigin,
   resolve: ResolveMusicEntityEffect = resolveMusicEntityEffect
 ) =>
   queryOptions({
@@ -194,7 +198,7 @@ export const musicEntityResolutionQueryOptions = (
       authorizationScope,
       canonicalMusicResolutionUrl(url)
     ] as const,
-    queryFn: () => Effect.runPromise(resolve(url)),
+    queryFn: () => Effect.runPromise(resolve(url, origin)),
     retry: false,
     staleTime: 15 * 60 * 1000,
     gcTime: 30 * 60 * 1000
@@ -204,17 +208,21 @@ export const resolveMusicEntityWithCache = (
   queryClient: QueryClient,
   url: string,
   authorizationScope: string,
+  origin: AuthoringMusicResolutionOrigin,
   resolve: ResolveMusicEntityEffect = resolveMusicEntityEffect
 ): Promise<ResolvedMusicEntity> =>
-  queryClient.fetchQuery(musicEntityResolutionQueryOptions(url, authorizationScope, resolve))
+  queryClient.fetchQuery(
+    musicEntityResolutionQueryOptions(url, authorizationScope, origin, resolve)
+  )
 
 export const resolveMusicEntityReferenceWithCacheEffect = (
   queryClient: QueryClient,
   url: string,
-  authorizationScope: string
+  authorizationScope: string,
+  origin: AuthoringMusicResolutionOrigin
 ) =>
   Effect.tryPromise({
-    try: () => resolveMusicEntityWithCache(queryClient, url, authorizationScope),
+    try: () => resolveMusicEntityWithCache(queryClient, url, authorizationScope, origin),
     catch: () => new MusicEntityResolutionFailed({ message: 'Could not resolve music link' })
   }).pipe(
     Effect.flatMap((resolved) =>
@@ -228,13 +236,13 @@ export const resolveMusicEntityReferenceWithCacheEffect = (
     )
   )
 
-export function useResolveMusicEntity(url: string) {
+export function useResolveMusicEntity(url: string, origin: AuthoringMusicResolutionOrigin) {
   const { data: session, isPending } = useSession()
   const authorizationScope = session?.user
     ? `${session.user.id}:${session.user.role ?? 'user'}`
     : 'anonymous'
   const query = useQuery({
-    ...musicEntityResolutionQueryOptions(url, authorizationScope),
+    ...musicEntityResolutionQueryOptions(url, authorizationScope, origin),
     enabled: !isPending && Boolean(url) && url.length > 10
   })
 

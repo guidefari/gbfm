@@ -53,6 +53,7 @@ export type RefreshMusicEntity = {
   readonly entityType: CanonicalMusicEntityType
   readonly entityId: string
   readonly actorId: string
+  readonly origin: 'manual' | 'playlist_enrichment'
 }
 
 export type ResolvedMusicEntity = {

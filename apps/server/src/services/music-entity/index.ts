@@ -554,12 +554,17 @@ export const MusicEntityServiceLayer = Layer.effect(
       scrapeAndCreateEntity: (entityType, input) =>
         input.url
           ? identity
-              .resolveSource({ url: input.url, expectedType: entityType, origin: 'editorial' })
+              .resolveSource({ url: input.url, expectedType: entityType, origin: 'manual' })
               .pipe(Effect.map(({ entity, links }) => ({ entity, links: [...links] })))
           : provideDb(scrapeAndCreateEntityEffect(scraper, entityType, input)),
       refreshEntityLinks: (entityType, entityId, actorId) =>
         identity
-          .refreshEntity({ entityType, entityId, actorId: actorId ?? 'admin' })
+          .refreshEntity({
+            entityType,
+            entityId,
+            actorId: actorId ?? 'admin',
+            origin: 'manual'
+          })
           .pipe(Effect.map(({ links }) => ({ links: [...links] })))
     } satisfies MusicEntityService
   })

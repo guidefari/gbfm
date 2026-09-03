@@ -52,6 +52,7 @@ Preview counts are page-local:
 - `proposed`: distinct source keys on the page
 - `attempted`: always zero
 - `detected`: issues in the page
+- `conflicted`: findings in the `collision` or `duplicate_ownership_candidate` categories
 - `identitiesCreated`, `aliasesCreated`, `aliasesTouched`: always zero
 
 ## Applied staging run
@@ -76,6 +77,7 @@ Repeat until `phase` is `complete`. Scan and audit pages use `--batch-size`; app
 - `proposed`: distinct staged source keys, not writes
 - `attempted`: source keys whose live apply decision committed
 - `detected`: unique durable findings
+- `conflicted`: durable findings in the `collision` or `duplicate_ownership_candidate` categories
 - `identitiesCreated`: identity rows actually created by this generation
 - `aliasesCreated`: alias rows actually created by this generation
 - `aliasesTouched`: existing same-owner aliases whose `last_seen_at` actually advanced

@@ -37,10 +37,11 @@ import {
   dieOnS3Error as makeDieOnS3Error
 } from '@/http/handler-utils'
 import {
-  CanonicalMusicIdentity,
-  type MusicIdentityError
-} from '@/services/canonical-music-identity'
-import type { MusicIdentityBusy } from '@/services/canonical-music-identity/errors'
+  mapMusicIdentityErrors,
+  mapSpotifyTrackImportErrors,
+  PROVIDER_UNAVAILABLE_RETRY_AFTER_SECONDS
+} from '@/http/music-identity-http'
+import { CanonicalMusicIdentity } from '@/services/canonical-music-identity'
 import { ConfigService } from '@/services/config.service'
 import { copyMusicCoverImageEffect } from '@/services/music-cover-image.service'
 import {
@@ -208,29 +209,6 @@ const dieOnMusicProviderError = <A, E, R>(effect: Effect.Effect<A, E | MusicProv
       Effect.logError('[music] music provider operation failed', cause)
     ),
     Effect.catchTag(MUSIC_PROVIDER_ERROR_TAGS, (cause) => Effect.die(cause))
-  )
-
-const mapMusicIdentityErrors = <A, E, R>(effect: Effect.Effect<A, E | MusicIdentityError, R>) =>
-  effect.pipe(
-    Effect.catchTag('MusicSourceInvalid', () => new HttpApiError.BadRequest()),
-    Effect.catchTag('MusicIdentityInvalidSnapshot', () => new HttpApiError.BadRequest()),
-    Effect.catchTag('MusicIdentityProviderRejected', () => new HttpApiError.BadRequest()),
-    Effect.catchTag('MusicIdentityAliasCollision', () => new HttpApiError.Conflict()),
-    Effect.catchTag('MusicIdentityConflict', () => new HttpApiError.Conflict()),
-    Effect.catchTag(
-      'MusicIdentityBusy',
-      (error: MusicIdentityBusy) =>
-        new MusicServiceUnavailableResponse({
-          retryAfterSeconds: Math.max(1, Math.ceil(error.retryAfterMs / 1000))
-        })
-    ),
-    Effect.catchTag(
-      'MusicIdentityProviderUnavailable',
-      () => new MusicServiceUnavailableResponse({})
-    ),
-    Effect.catchTag('MusicIdentityEntityNotFound', () => new HttpApiError.NotFound()),
-    Effect.catchTag('MusicIdentitySourceLinkNotFound', () => new HttpApiError.NotFound()),
-    Effect.catchTag('MusicIdentityStorageError', (cause) => Effect.die(cause))
   )
 
 const requireAdmin = Effect.gen(function* () {
@@ -713,16 +691,9 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
       Effect.gen(function* () {
         yield* requireAdmin
         const svc = yield* MusicEntityService
-        // MusicProviderInvalidInput means the service itself couldn't parse a
-        // track ID out of the URL -- a client-fixable validation error, not
-        // an infra failure, so it's mapped to BadRequest instead of dying.
-        const result = yield* mapMusicIdentityErrors(
-          svc.addSpotifyTrackToPlaylist(params.id, payload.url)
-        ).pipe(
-          Effect.catchTag('MusicProviderInvalidInput', () => new HttpApiError.BadRequest()),
-          dieOnMusicProviderError,
-          dieOnDatabaseError
-        )
+        const result = yield* mapSpotifyTrackImportErrors(
+          mapMusicIdentityErrors(svc.addSpotifyTrackToPlaylist(params.id, payload.url))
+        ).pipe(dieOnDatabaseError)
         return result
       })
     )
@@ -769,7 +740,7 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         const svc = yield* MusicEntityService
         const identity = yield* CanonicalMusicIdentity
         const result = yield* mapMusicIdentityErrors(
-          identity.resolveSource({ url: payload.url, origin: 'editorial' })
+          identity.resolveSource({ url: payload.url, origin: payload.origin ?? 'editorial' })
         )
         const { entityType, entity } = result
         const coverImageUrl =
@@ -900,7 +871,13 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
             svc.refreshEntityLinks(params.entityType, params.entityId, user.id)
           ).pipe(
             Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
-            Effect.catchTag('MusicScraperError', () => new MusicServiceUnavailableResponse({}))
+            Effect.catchTag(
+              'MusicScraperError',
+              () =>
+                new MusicServiceUnavailableResponse({
+                  retryAfterSeconds: PROVIDER_UNAVAILABLE_RETRY_AFTER_SECONDS
+                })
+            )
           )
         )
         return { links: result.links.map(toEntityLinkResponse) }
@@ -931,12 +908,17 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
                 if (error.statusCode === 400 || error.statusCode === 404) {
                   return yield* new HttpApiError.BadRequest()
                 }
-                return yield* new MusicServiceUnavailableResponse({})
+                return yield* new MusicServiceUnavailableResponse({
+                  retryAfterSeconds: PROVIDER_UNAVAILABLE_RETRY_AFTER_SECONDS
+                })
               })
             ),
             Effect.catchTag(
               'MusicEntityResolutionUnavailable',
-              () => new MusicServiceUnavailableResponse({})
+              (error) =>
+                new MusicServiceUnavailableResponse({
+                  retryAfterSeconds: Math.max(1, Math.ceil(error.retryAfterMs / 1000))
+                })
             )
           )
         )
