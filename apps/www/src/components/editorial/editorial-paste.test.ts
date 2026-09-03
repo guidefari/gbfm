@@ -34,11 +34,27 @@ Second album
     expect(transform(`${url}\n\n${url}`).spotifyUrls).toEqual([url])
   })
 
-  test('preserves Spotify links used inside prose', () => {
+  test('preserves an inline Spotify link and adds its entity after the paragraph', () => {
     const input =
-      'Listen to [Inner River](https://open.spotify.com/album/1BIXNamH3zTLBSb3my28k6?si=shared) again.'
+      "let's close off with a non-algo ting, a cannon record for me - the self titled [Inner River](https://open.spotify.com/album/1BIXNamH3zTLBSb3my28k6?si=shared) album"
 
-    expect(transform(input)).toEqual({ content: input, spotifyUrls: [] })
+    expect(transform(input)).toEqual({
+      content: `${input}\n\n<MusicEntityPending url="https://open.spotify.com/album/1BIXNamH3zTLBSb3my28k6" fallback="remove" />`,
+      spotifyUrls: ['https://open.spotify.com/album/1BIXNamH3zTLBSb3my28k6']
+    })
+  })
+
+  test('places inline Spotify entities between their paragraph and the following paragraph', () => {
+    const input = `Listen to [Inner River](https://open.spotify.com/album/1BIXNamH3zTLBSb3my28k6?si=shared) again.
+
+The next thought stays below the entity.`
+
+    expect(transform(input).content)
+      .toBe(`Listen to [Inner River](https://open.spotify.com/album/1BIXNamH3zTLBSb3my28k6?si=shared) again.
+
+<MusicEntityPending url="https://open.spotify.com/album/1BIXNamH3zTLBSb3my28k6" fallback="remove" />
+
+The next thought stays below the entity.`)
   })
 
   test('does not transform URLs inside fenced code', () => {
@@ -60,7 +76,8 @@ describe('parsePendingMusicEntityEffect', () => {
 
     expect(parsed).toEqual({
       provider: 'spotify',
-      url: 'https://open.spotify.com/album/6AwBhTb30oRIH35Og6SdKG'
+      url: 'https://open.spotify.com/album/6AwBhTb30oRIH35Og6SdKG',
+      fallback: 'restore-url'
     })
   })
 

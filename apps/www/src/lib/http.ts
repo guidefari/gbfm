@@ -813,13 +813,13 @@ const ResolvedMusicEntityReferenceSchema = Schema.Struct({
 export const resolveMusicEntityReferenceEffect = (url: string) =>
   Effect.gen(function* () {
     const client = yield* Effect.promise(getApiClient)
-    const response = yield* client.music
-      .resolveMusicEntity({ payload: { url } })
-      .pipe(
-        Effect.tapError((error) =>
-          captureException(error, { endpoint: 'music.resolveMusicEntity' })
-        )
-      )
+    const response = yield* client.music.resolveMusicEntity({ payload: { url } }).pipe(
+      Effect.retry({
+        times: 1,
+        while: (error) => error instanceof HttpApiError.InternalServerError
+      }),
+      Effect.tapError((error) => captureException(error, { endpoint: 'music.resolveMusicEntity' }))
+    )
     const resolved = yield* Schema.decodeUnknownEffect(ResolvedMusicEntityReferenceSchema)(response)
 
     return {

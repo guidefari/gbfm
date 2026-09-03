@@ -139,7 +139,12 @@ function settlePendingEntities(
     changes.push({
       from: line.from,
       to: line.to,
-      insert: result.status === 'resolved' ? serializeMusicEntity(result.reference) : result.url
+      insert:
+        result.status === 'resolved'
+          ? serializeMusicEntity(result.reference)
+          : pending.value.fallback === 'restore-url'
+            ? result.url
+            : ''
     })
   }
 

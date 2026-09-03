@@ -11,9 +11,14 @@ export type PastedEditorialContent = {
   readonly spotifyUrls: ReadonlyArray<string>
 }
 
+export type PendingMusicEntity = ExternalMediaReference & {
+  readonly fallback: 'restore-url' | 'remove'
+}
+
 const pendingMusicEntityPattern =
-  /^<MusicEntityPending url="(https:\/\/open\.spotify\.com\/[^"\s]+)" \/>$/
+  /^<MusicEntityPending url="(https:\/\/open\.spotify\.com\/[^"\s]+)"(?: fallback="(remove)")? \/>$/
 const fencedCodePattern = /^\s*(?:`{3,}|~{3,})/
+const markdownLinkPattern = /\]\(([^)\s]+)(?:\s+[^)]*)?\)/g
 
 export const transformPastedEditorialContentEffect = (
   content: string
@@ -21,9 +26,28 @@ export const transformPastedEditorialContentEffect = (
   Effect.gen(function* () {
     const transformed: string[] = []
     const spotifyUrls = new Set<string>()
+    const paragraphSpotifyUrls = new Set<string>()
     let insideFencedCode = false
 
+    const appendParagraphEntities = (trailingBlank: boolean) => {
+      if (paragraphSpotifyUrls.size === 0) return
+
+      transformed.push('')
+      const urls = Array.from(paragraphSpotifyUrls)
+      for (const [index, url] of urls.entries()) {
+        transformed.push(serializePendingMusicEntity(url, 'remove'))
+        if (index < urls.length - 1 || trailingBlank) transformed.push('')
+      }
+      paragraphSpotifyUrls.clear()
+    }
+
     for (const line of content.split('\n')) {
+      if (line.trim() === '') {
+        if (paragraphSpotifyUrls.size > 0) appendParagraphEntities(true)
+        else transformed.push(line)
+        continue
+      }
+
       if (fencedCodePattern.test(line)) {
         insideFencedCode = !insideFencedCode
         transformed.push(line)
@@ -42,8 +66,24 @@ export const transformPastedEditorialContentEffect = (
         continue
       }
 
+      for (const match of line.matchAll(markdownLinkPattern)) {
+        const destination = match[1]
+        if (destination === undefined) continue
+
+        const linkedMedia = yield* Effect.option(parseExternalMediaUrlEffect(destination))
+        if (
+          Option.isSome(linkedMedia) &&
+          linkedMedia.value.provider === externalMediaProviders.spotify
+        ) {
+          spotifyUrls.add(linkedMedia.value.url)
+          paragraphSpotifyUrls.add(linkedMedia.value.url)
+        }
+      }
+
       transformed.push(line)
     }
+
+    appendParagraphEntities(false)
 
     return {
       content: transformed.join('\n'),
@@ -53,7 +93,7 @@ export const transformPastedEditorialContentEffect = (
 
 export const parsePendingMusicEntityEffect = (
   markdown: string
-): Effect.Effect<ExternalMediaReference, ExternalMediaParseError> =>
+): Effect.Effect<PendingMusicEntity, ExternalMediaParseError> =>
   Effect.gen(function* () {
     const match = pendingMusicEntityPattern.exec(markdown.trim())
     const url = match?.[1]
@@ -64,11 +104,18 @@ export const parsePendingMusicEntityEffect = (
       return yield* Effect.fail(invalidEmbed())
     }
 
-    return media
+    return {
+      ...media,
+      fallback: match?.[2] === 'remove' ? 'remove' : 'restore-url'
+    }
   })
 
-export function serializePendingMusicEntity(url: string): string {
-  return `<MusicEntityPending url="${url}" />`
+export function serializePendingMusicEntity(
+  url: string,
+  fallback: PendingMusicEntity['fallback'] = 'restore-url'
+): string {
+  const fallbackAttribute = fallback === 'remove' ? ' fallback="remove"' : ''
+  return `<MusicEntityPending url="${url}"${fallbackAttribute} />`
 }
 
 function invalidEmbed(): ExternalMediaParseError {
