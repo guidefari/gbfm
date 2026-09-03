@@ -1,4 +1,4 @@
-import type { LinkStatus } from '@gbfm/core/status'
+import { LINK_STATUS, type LinkStatus } from '@gbfm/core/status'
 import { Context, Effect, Layer } from 'effect'
 import type {
   InsertMusicEntityLink,
@@ -12,8 +12,8 @@ import type {
   SelectMusicPlaylistTrack,
   SelectMusicTrack
 } from '@/db/music-entity.schema'
-import { DatabaseError } from '@/errors'
-import type { NotFoundError, ValidationError } from '@/errors'
+import { DatabaseError, NotFoundError } from '@/errors'
+import type { ValidationError } from '@/errors'
 import { ConfigService as ConfigServiceTag } from '@/services/config.service'
 import { Database } from '@/db/layer'
 import {
@@ -43,7 +43,10 @@ import {
   type MusicScraperError
 } from '@/services/music-link-scraper.service'
 import { S3Service as S3ServiceTag } from '@/services/s3.service'
-import { SpotifyImportResolver } from '@/services/spotify-import-resolver.service'
+import {
+  CanonicalMusicIdentity,
+  type MusicIdentityError
+} from '@/services/canonical-music-identity'
 import {
   SpotifyService as SpotifyServiceTag,
   type SpotifyServiceError
@@ -244,7 +247,7 @@ export interface MusicEntityService {
     spotifyUrl: string
   ) => Effect.Effect<
     { trackId: string; position: number; created: boolean },
-    DatabaseError | SpotifyServiceError
+    DatabaseError | SpotifyServiceError | MusicIdentityError
   >
   readonly importSpotifyPlaylist: (
     url: string,
@@ -256,13 +259,13 @@ export interface MusicEntityService {
       createdTrackCount: number
       reusedTrackCount: number
     },
-    DatabaseError | SpotifyServiceError
+    DatabaseError | SpotifyServiceError | MusicIdentityError
   >
   readonly syncPlaylistLinks: (
     playlistId: string
   ) => Effect.Effect<
     { playlistId: string; queuedTrackCount: number },
-    DatabaseError | SpotifyServiceError
+    DatabaseError | SpotifyServiceError | MusicIdentityError
   >
 
   readonly addArtistToAlbum: (
@@ -291,7 +294,7 @@ export interface MusicEntityService {
   ) => Effect.Effect<SelectMusicEntityLink[], DatabaseError>
   readonly addLink: (
     data: InsertMusicEntityLink
-  ) => Effect.Effect<SelectMusicEntityLink, DatabaseError>
+  ) => Effect.Effect<SelectMusicEntityLink, DatabaseError | NotFoundError | MusicIdentityError>
   readonly updateLinkStatus: (
     entityType: MusicEntityType,
     entityId: string,
@@ -299,12 +302,12 @@ export interface MusicEntityService {
     status: LinkStatus,
     verifiedBy?: string,
     metadata?: InsertMusicEntityLink['metadata']
-  ) => Effect.Effect<SelectMusicEntityLink, DatabaseError | NotFoundError>
+  ) => Effect.Effect<SelectMusicEntityLink, DatabaseError | NotFoundError | MusicIdentityError>
   readonly deleteLink: (
     entityType: MusicEntityType,
     entityId: string,
     linkId: string
-  ) => Effect.Effect<void, DatabaseError | NotFoundError>
+  ) => Effect.Effect<void, DatabaseError | NotFoundError | MusicIdentityError>
 
   readonly scrapeAndCreateEntity: (
     entityType: ScrapeableMusicEntityType,
@@ -314,14 +317,19 @@ export interface MusicEntityService {
       entity: SelectMusicArtist | SelectMusicAlbum | SelectMusicTrack | SelectMusicPlaylist
       links: SelectMusicEntityLink[]
     },
-    DatabaseError | MusicEntityResolutionUnavailable | MusicScraperError | ValidationError
+    | DatabaseError
+    | MusicEntityResolutionUnavailable
+    | MusicScraperError
+    | ValidationError
+    | MusicIdentityError
   >
   readonly refreshEntityLinks: (
     entityType: ScrapeableMusicEntityType,
-    entityId: string
+    entityId: string,
+    actorId?: string
   ) => Effect.Effect<
     { links: SelectMusicEntityLink[] },
-    DatabaseError | MusicScraperError | NotFoundError
+    DatabaseError | MusicScraperError | NotFoundError | MusicIdentityError
   >
 }
 
@@ -332,11 +340,103 @@ export const MusicEntityServiceLayer = Layer.effect(
   Effect.gen(function* () {
     const scraper = yield* MusicLinkScraperServiceTag
     const spotify = yield* SpotifyServiceTag
-    const resolver = yield* SpotifyImportResolver
+    const identity = yield* CanonicalMusicIdentity
     const s3 = yield* S3ServiceTag
     const config = yield* ConfigServiceTag
     const db = yield* Database
     const provideDb = Effect.provideService(Database, db)
+    const releaseIdentityLink = (
+      entityType: ScrapeableMusicEntityType,
+      entityId: string,
+      linkId: string,
+      action: 'reject' | 'delete',
+      verifiedBy?: string,
+      metadata?: InsertMusicEntityLink['metadata']
+    ) =>
+      identity.releaseLink({ entityType, entityId, linkId, action, verifiedBy, metadata }).pipe(
+        Effect.catchTags({
+          MusicIdentityEntityNotFound: () =>
+            Effect.fail(new NotFoundError({ message: 'Music entity not found', id: entityId })),
+          MusicIdentitySourceLinkNotFound: () =>
+            Effect.fail(new NotFoundError({ message: 'Music entity link not found', id: linkId }))
+        })
+      )
+
+    const verifyIdentityLink = (
+      entityType: ScrapeableMusicEntityType,
+      entityId: string,
+      linkId: string,
+      verifiedBy?: string,
+      metadata?: InsertMusicEntityLink['metadata']
+    ) =>
+      provideDb(getLinksForEntityEffect(entityType, entityId)).pipe(
+        Effect.flatMap((links) => {
+          const link = links.find((candidate) => candidate.id === linkId)
+          return link
+            ? Effect.succeed(link)
+            : Effect.fail(new NotFoundError({ message: 'Music entity link not found', id: linkId }))
+        }),
+        Effect.flatMap((link) =>
+          identity.attachLink({
+            entityType,
+            entityId,
+            platform: link.platform,
+            url: link.url,
+            origin: 'manual'
+          })
+        ),
+        Effect.andThen(
+          provideDb(
+            updateLinkStatusEffect(
+              entityType,
+              entityId,
+              linkId,
+              LINK_STATUS.VERIFIED,
+              verifiedBy,
+              metadata
+            )
+          )
+        )
+      )
+
+    const attachIdentityLink = (
+      data: InsertMusicEntityLink,
+      entityType: ScrapeableMusicEntityType
+    ) =>
+      Effect.gen(function* () {
+        const link = yield* identity.attachLink({
+          entityType,
+          entityId: data.entityId,
+          platform: data.platform,
+          url: data.url,
+          origin: 'manual'
+        })
+        if (data.status === LINK_STATUS.REJECTED) {
+          const released = yield* releaseIdentityLink(
+            entityType,
+            data.entityId,
+            link.id,
+            'reject',
+            undefined,
+            data.metadata
+          )
+          if (!released) return yield* Effect.die('Rejected link was not returned')
+          return released
+        }
+        if (data.status !== undefined || data.metadata !== undefined) {
+          return yield* provideDb(
+            updateLinkStatusEffect(
+              entityType,
+              data.entityId,
+              link.id,
+              LINK_STATUS.VERIFIED,
+              undefined,
+              data.metadata
+            )
+          )
+        }
+        return link
+      })
 
     return {
       createArtist: (data) => provideDb(createArtistEffect(data)),
@@ -394,13 +494,12 @@ export const MusicEntityServiceLayer = Layer.effect(
       reorderPlaylistTracks: (playlistId, trackIds) =>
         provideDb(reorderPlaylistTracksEffect(playlistId, trackIds)),
       addSpotifyTrackToPlaylist: (playlistId, spotifyUrl) =>
-        provideDb(addSpotifyTrackToPlaylistEffect(spotify, resolver)(playlistId, spotifyUrl)),
+        provideDb(addSpotifyTrackToPlaylistEffect(spotify, identity)(playlistId, spotifyUrl)),
       importSpotifyPlaylist: (url, curatorId) =>
         provideDb(
           importSpotifyPlaylistEffect(
             spotify,
-            resolver,
-            scraper,
+            identity,
             s3,
             config.urls.bucketRouter,
             config.buckets.userContent
@@ -409,8 +508,7 @@ export const MusicEntityServiceLayer = Layer.effect(
       syncPlaylistLinks: (playlistId) =>
         provideDb(
           syncPlaylistLinksEffect(
-            spotify,
-            scraper,
+            identity,
             s3,
             config.urls.bucketRouter,
             config.buckets.userContent
@@ -428,17 +526,41 @@ export const MusicEntityServiceLayer = Layer.effect(
 
       getLinksForEntity: (entityType, entityId, statusFilter) =>
         provideDb(getLinksForEntityEffect(entityType, entityId, statusFilter)),
-      addLink: (data) => provideDb(addLinkEffect(data)),
+      addLink: (data) =>
+        data.entityType === 'artist' ||
+        data.entityType === 'album' ||
+        data.entityType === 'track' ||
+        data.entityType === 'playlist'
+          ? attachIdentityLink(data, data.entityType)
+          : provideDb(addLinkEffect(data)),
       updateLinkStatus: (entityType, entityId, linkId, status, verifiedBy, metadata) =>
-        provideDb(
-          updateLinkStatusEffect(entityType, entityId, linkId, status, verifiedBy, metadata)
-        ),
+        entityType !== 'label' && status === LINK_STATUS.REJECTED
+          ? releaseIdentityLink(entityType, entityId, linkId, 'reject', verifiedBy, metadata).pipe(
+              Effect.flatMap((link) =>
+                link
+                  ? Effect.succeed(link)
+                  : Effect.die('Canonical identity rejected link without returning it')
+              )
+            )
+          : entityType !== 'label' && status === LINK_STATUS.VERIFIED
+            ? verifyIdentityLink(entityType, entityId, linkId, verifiedBy, metadata)
+            : provideDb(
+                updateLinkStatusEffect(entityType, entityId, linkId, status, verifiedBy, metadata)
+              ),
       deleteLink: (entityType, entityId, linkId) =>
-        provideDb(deleteLinkEffect(entityType, entityId, linkId)),
+        entityType === 'label'
+          ? provideDb(deleteLinkEffect(entityType, entityId, linkId))
+          : releaseIdentityLink(entityType, entityId, linkId, 'delete').pipe(Effect.asVoid),
       scrapeAndCreateEntity: (entityType, input) =>
-        provideDb(scrapeAndCreateEntityEffect(scraper, entityType, input)),
-      refreshEntityLinks: (entityType, entityId) =>
-        provideDb(refreshEntityLinksEffect(scraper, entityType, entityId))
+        input.url
+          ? identity
+              .resolveSource({ url: input.url, expectedType: entityType, origin: 'editorial' })
+              .pipe(Effect.map(({ entity, links }) => ({ entity, links: [...links] })))
+          : provideDb(scrapeAndCreateEntityEffect(scraper, entityType, input)),
+      refreshEntityLinks: (entityType, entityId, actorId) =>
+        identity
+          .refreshEntity({ entityType, entityId, actorId: actorId ?? 'admin' })
+          .pipe(Effect.map(({ links }) => ({ links: [...links] })))
     } satisfies MusicEntityService
   })
 )

@@ -6,6 +6,8 @@ import {
   LabelListResponse,
   LabelResponse,
   PlaylistListResponse,
+  ResolvedMusicEntityResponse,
+  ScrapeEntityLinksResponse,
   TrackListResponse
 } from '@gbfm/api/music'
 import {
@@ -29,8 +31,12 @@ import { navigationSessions } from '@/db/navigation.schema'
 import {
   musicAlbumsTable,
   musicArtistsTable,
+  musicEntityLinksTable,
   musicEntityResolutionClaimsTable,
   musicEntityTypesTable,
+  musicPlatformsTable,
+  musicSourceAliasesTable,
+  musicSourceIdentitiesTable,
   musicTracksTable,
   musicLabelAlbumsTable,
   musicLabelArtistsTable,
@@ -636,10 +642,16 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
       userId,
       expiresAt: new Date(Date.now() + 60_000)
     })
-    await db
-      .insert(musicEntityTypesTable)
-      .values({ id: 'track', displayName: 'Track' })
-      .onConflictDoNothing()
+    await db.batch([
+      db
+        .insert(musicEntityTypesTable)
+        .values({ id: 'track', displayName: 'Track' })
+        .onConflictDoNothing(),
+      db
+        .insert(musicPlatformsTable)
+        .values({ id: 'spotify', displayName: 'Spotify' })
+        .onConflictDoNothing()
+    ])
 
     try {
       const res = await webHandler.handler(
@@ -660,11 +672,104 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
     }
   })
 
+  it('POST music resolve callers reuse an inferred artist identity without provider access', async () => {
+    const suffix = crypto.randomUUID()
+    const userId = `resolve-hit-admin-${suffix}`
+    const token = `resolve-hit-token-${suffix}`
+    const artistId = crypto.randomUUID()
+    const spotifyArtistId = '4iV5W9uYEdYUVa79Axb7Rh'
+    const url = `https://open.spotify.com/artist/${spotifyArtistId}`
+    const sourceKey = `spotify:artist:${spotifyArtistId}`
+
+    await db.batch([
+      db.insert(user).values({
+        id: userId,
+        name: 'Admin user',
+        email: `${userId}@example.com`,
+        role: 'admin'
+      }),
+      db.insert(session).values({
+        id: crypto.randomUUID(),
+        token,
+        userId,
+        expiresAt: new Date(Date.now() + 60_000)
+      }),
+      db
+        .insert(musicEntityTypesTable)
+        .values({ id: 'artist', displayName: 'Artist' })
+        .onConflictDoNothing(),
+      db
+        .insert(musicPlatformsTable)
+        .values({ id: 'spotify', displayName: 'Spotify' })
+        .onConflictDoNothing(),
+      db
+        .insert(musicArtistsTable)
+        .values({ id: artistId, name: 'Known artist', slug: `known-${suffix}` }),
+      db.insert(musicEntityLinksTable).values({
+        entityType: 'artist',
+        entityId: artistId,
+        platform: 'spotify',
+        url,
+        status: 'verified',
+        metadata: { confidence: 'exact_source' }
+      }),
+      db.insert(musicSourceIdentitiesTable).values({
+        sourceKey,
+        platform: 'spotify',
+        sourceEntityType: 'artist',
+        externalId: spotifyArtistId,
+        canonicalUrl: url,
+        state: 'resolved',
+        entityType: 'artist',
+        entityId: artistId,
+        resolvedAt: new Date()
+      }),
+      db.insert(musicSourceAliasesTable).values({
+        normalizedUrl: url,
+        sourceKey,
+        firstSeenAt: new Date(),
+        lastSeenAt: new Date()
+      })
+    ])
+
+    try {
+      const request = (path: string) =>
+        webHandler.handler(
+          new Request(`http://localhost${path}`, {
+            method: 'POST',
+            headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+            body: JSON.stringify({ url })
+          })
+        )
+      const [resolve, scrape] = await Promise.all([
+        request('/api/music/resolve'),
+        request('/api/music/artist/scrape')
+      ])
+
+      expect(resolve.status).toBe(200)
+      expect(scrape.status).toBe(200)
+      const resolveBody = await decodeResponseBody(ResolvedMusicEntityResponse, resolve)
+      const scrapeBody = await decodeResponseBody(ScrapeEntityLinksResponse, scrape)
+      expect(resolveBody.entityType).toBe('artist')
+      expect(resolveBody.entity.id).toBe(artistId)
+      expect(scrapeBody.entity.id).toBe(artistId)
+    } finally {
+      await db
+        .delete(musicSourceIdentitiesTable)
+        .where(eq(musicSourceIdentitiesTable.sourceKey, sourceKey))
+      await db.delete(musicEntityLinksTable).where(eq(musicEntityLinksTable.entityId, artistId))
+      await db.delete(musicArtistsTable).where(eq(musicArtistsTable.id, artistId))
+      await db.delete(session).where(eq(session.userId, userId))
+      await db.delete(user).where(eq(user.id, userId))
+    }
+  })
+
   it('POST /api/music resolve endpoints return 503 while a claim lease is active', async () => {
     const suffix = crypto.randomUUID()
     const userId = `resolve-unavailable-admin-${suffix}`
     const token = `resolve-unavailable-admin-token-${suffix}`
-    const url = `https://open.spotify.com/track/${crypto.randomUUID()}`
+    const spotifyTrackId = '1234567890123456789012'
+    const url = `https://open.spotify.com/track/${spotifyTrackId}`
 
     await db.insert(user).values({
       id: userId,
@@ -678,13 +783,23 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
       userId,
       expiresAt: new Date(Date.now() + 60_000)
     })
-    await db
-      .insert(musicEntityTypesTable)
-      .values({ id: 'track', displayName: 'Track' })
-      .onConflictDoNothing()
-    await db.insert(musicEntityResolutionClaimsTable).values({
-      entityType: 'track',
+    await db.batch([
+      db
+        .insert(musicEntityTypesTable)
+        .values({ id: 'track', displayName: 'Track' })
+        .onConflictDoNothing(),
+      db
+        .insert(musicPlatformsTable)
+        .values({ id: 'spotify', displayName: 'Spotify' })
+        .onConflictDoNothing()
+    ])
+    await db.insert(musicSourceIdentitiesTable).values({
+      sourceKey: `spotify:track:${spotifyTrackId}`,
+      platform: 'spotify',
+      sourceEntityType: 'track',
+      externalId: spotifyTrackId,
       canonicalUrl: url,
+      state: 'resolving',
       ownerToken: crypto.randomUUID(),
       leaseExpiresAt: new Date(Date.now() + 60_000)
     })
@@ -702,11 +817,15 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
       ])
 
       expect(resolve.status).toBe(503)
+      expect(Number(resolve.headers.get('retry-after'))).toBeGreaterThan(0)
+      expect(Number(resolve.headers.get('retry-after'))).toBeLessThanOrEqual(60)
       expect(scrape.status).toBe(503)
+      expect(Number(scrape.headers.get('retry-after'))).toBeGreaterThan(0)
+      expect(Number(scrape.headers.get('retry-after'))).toBeLessThanOrEqual(60)
     } finally {
       await db
-        .delete(musicEntityResolutionClaimsTable)
-        .where(eq(musicEntityResolutionClaimsTable.canonicalUrl, url))
+        .delete(musicSourceIdentitiesTable)
+        .where(eq(musicSourceIdentitiesTable.canonicalUrl, url))
       await db.delete(session).where(eq(session.userId, userId))
       await db.delete(user).where(eq(user.id, userId))
     }

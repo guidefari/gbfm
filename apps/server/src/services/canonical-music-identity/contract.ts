@@ -25,11 +25,28 @@ export type ImportProviderMusicEntity = {
   readonly origin: 'spotify_import' | 'playlist_enrichment'
 }
 
+export type ImportProviderMusicEntityLazy<E, R> = {
+  readonly entityType: CanonicalMusicEntityType
+  readonly sourceUrl: string
+  readonly origin: 'spotify_import' | 'playlist_enrichment'
+  readonly loadSnapshot: Effect.Effect<ProviderMusicSnapshot, E, R>
+}
+
 export type AttachMusicSourceLink = {
   readonly entityType: CanonicalMusicEntityType
   readonly entityId: string
+  readonly platform: string
   readonly url: string
   readonly origin: 'manual'
+}
+
+export type ReleaseMusicSourceLink = {
+  readonly entityType: CanonicalMusicEntityType
+  readonly entityId: string
+  readonly linkId: string
+  readonly action: 'reject' | 'delete'
+  readonly verifiedBy?: string
+  readonly metadata?: SelectMusicEntityLink['metadata']
 }
 
 export type RefreshMusicEntity = {
@@ -39,14 +56,17 @@ export type RefreshMusicEntity = {
 }
 
 export type ResolvedMusicEntity = {
+  readonly entityType: CanonicalMusicEntityType
   readonly entity: ResolvedEntity
   readonly links: readonly SelectMusicEntityLink[]
   readonly created: boolean
 }
 
 export type RefreshedMusicEntity = {
+  readonly entityType: CanonicalMusicEntityType
   readonly entity: ResolvedEntity
   readonly links: readonly SelectMusicEntityLink[]
+  readonly artworkUrl?: string
 }
 
 export interface CanonicalMusicIdentityService {
@@ -56,9 +76,18 @@ export interface CanonicalMusicIdentityService {
   readonly importProviderEntity: (
     input: ImportProviderMusicEntity
   ) => Effect.Effect<ResolvedMusicEntity, MusicIdentityError>
+  readonly importProviderEntityLazy: <E, R>(
+    input: ImportProviderMusicEntityLazy<E, R>
+  ) => Effect.Effect<ResolvedMusicEntity, MusicIdentityError | E, R>
   readonly attachLink: (
     input: AttachMusicSourceLink
   ) => Effect.Effect<SelectMusicEntityLink, MusicIdentityError>
+  readonly releaseLink: (
+    input: ReleaseMusicSourceLink
+  ) => Effect.Effect<SelectMusicEntityLink | undefined, MusicIdentityError>
+  readonly enrichEntity: (
+    input: RefreshMusicEntity
+  ) => Effect.Effect<RefreshedMusicEntity, MusicIdentityError>
   readonly refreshEntity: (
     input: RefreshMusicEntity
   ) => Effect.Effect<RefreshedMusicEntity, MusicIdentityError>

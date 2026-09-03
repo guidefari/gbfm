@@ -16,7 +16,6 @@ import type { CanonicalMusicEntityType, ParsedMusicSource } from './music-source
 import {
   aliasStatement,
   completionStatement,
-  deleteLinksStatement,
   entityExistenceGuard,
   entityInsertStatements,
   existingEntityLinkStatement,
@@ -292,6 +291,80 @@ export class CanonicalMusicIdentityRepository {
       catch: (cause) => storageError('linksFor', cause)
     })
 
+  readonly linkById = (reference: EntityReference, linkId: string) =>
+    Effect.tryPromise({
+      try: async () => {
+        const rows = await this.db
+          .select()
+          .from(musicEntityLinksTable)
+          .where(
+            and(
+              eq(musicEntityLinksTable.entityType, reference.entityType),
+              eq(musicEntityLinksTable.entityId, reference.entityId),
+              eq(musicEntityLinksTable.id, linkId)
+            )
+          )
+          .limit(1)
+        return rows[0]
+      },
+      catch: (cause) => storageError('linkById', cause)
+    })
+
+  readonly releaseLink = (input: {
+    readonly reference: EntityReference
+    readonly linkId: string
+    readonly source?: ParsedMusicSource
+    readonly action: 'reject' | 'delete'
+    readonly verifiedBy?: string
+    readonly metadata?: ScrapedLink['metadata']
+    readonly now: Date
+  }) =>
+    Effect.tryPromise({
+      try: async () => {
+        const statements: D1PreparedStatement[] = []
+        if (input.source) {
+          statements.push(
+            this.db.$client
+              .prepare(`DELETE FROM music_source_identities
+                WHERE source_key = ? AND state = 'resolved' AND entity_type = ? AND entity_id = ?`)
+              .bind(input.source.sourceKey, input.reference.entityType, input.reference.entityId)
+          )
+        }
+        if (input.action === 'delete') {
+          statements.push(
+            this.db.$client
+              .prepare(`DELETE FROM music_entity_links
+                WHERE id = ? AND entity_type = ? AND entityId = ?`)
+              .bind(input.linkId, input.reference.entityType, input.reference.entityId)
+          )
+        } else {
+          statements.push(
+            this.db.$client
+              .prepare(`UPDATE music_entity_links
+                SET status = 'rejected', verifiedBy = ?, metadata = ?, updatedAt = ?
+                WHERE id = ? AND entity_type = ? AND entityId = ?`)
+              .bind(
+                input.verifiedBy ?? null,
+                input.metadata ? JSON.stringify(input.metadata) : null,
+                input.now.getTime(),
+                input.linkId,
+                input.reference.entityType,
+                input.reference.entityId
+              )
+          )
+        }
+        await this.db.$client.batch(statements)
+        if (input.action === 'delete') return undefined
+        const rows = await this.db
+          .select()
+          .from(musicEntityLinksTable)
+          .where(eq(musicEntityLinksTable.id, input.linkId))
+          .limit(1)
+        return rows[0]
+      },
+      catch: (cause) => storageError('releaseLink', cause)
+    })
+
   readonly upsertLink = (reference: EntityReference, link: ScrapedLink, now: Date) =>
     Effect.tryPromise({
       try: async () => {
@@ -478,7 +551,6 @@ export class CanonicalMusicIdentityRepository {
                   ...guard.values
                 )
             )
-            statements.push(deleteLinksStatement(this.db, reference, fence))
             break
         }
         for (const link of links) {

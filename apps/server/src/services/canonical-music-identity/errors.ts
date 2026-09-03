@@ -9,6 +9,7 @@ export const MUSIC_SOURCE_ERROR_REASONS = [
   'unsafe_destination',
   'invalid_provider_source',
   'type_mismatch',
+  'platform_mismatch',
   'digest_failed'
 ] as const
 

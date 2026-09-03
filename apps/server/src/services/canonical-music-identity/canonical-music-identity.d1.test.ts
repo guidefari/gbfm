@@ -22,6 +22,10 @@ import {
   type MusicScrapeInput,
   type ScrapeResult
 } from '@/services/music-link-scraper.service'
+import { deleteAlbumEffect } from '@/services/music-entity/album.service'
+import { deleteArtistEffect } from '@/services/music-entity/artist.service'
+import { deletePlaylistEffect } from '@/services/music-entity/playlist.service'
+import { deleteTrackEffect } from '@/services/music-entity/track.service'
 import { db } from '@/test/d1'
 import { withTestLayer } from '@/test/effect'
 import type { MusicIdentityError } from './errors'
@@ -472,6 +476,7 @@ describe('CanonicalMusicIdentity', () => {
         return yield* service.attachLink({
           entityType: 'track',
           entityId: candidateId,
+          platform: 'spotify',
           url: sourceUrl,
           origin: 'manual'
         })
@@ -507,6 +512,262 @@ describe('CanonicalMusicIdentity', () => {
     expect(result.created).toBe(true)
     expect(result.entity.id).toBeTruthy()
     expect(recorder.calls).toHaveLength(0)
+  })
+
+  test('lazy provider imports return canonical hits before loading and load misses once', async () => {
+    const sourceUrl = `https://open.spotify.com/track/${externalId()}`
+    const recorder = recordingScraper(() => Effect.die('scraper must not be called'))
+    let loads = 0
+
+    const result = await serviceWith(recorder.service, (service) =>
+      Effect.gen(function* () {
+        const first = yield* service.importProviderEntityLazy({
+          entityType: 'track',
+          sourceUrl,
+          origin: 'spotify_import',
+          loadSnapshot: Effect.sync(() => {
+            loads += 1
+            return snapshot(sourceUrl, 'Lazy track')
+          })
+        })
+        const second = yield* service.importProviderEntityLazy({
+          entityType: 'track',
+          sourceUrl,
+          origin: 'spotify_import',
+          loadSnapshot: Effect.sync(() => {
+            loads += 1
+            return snapshot(sourceUrl, 'Should not load')
+          })
+        })
+        return { first, second }
+      })
+    )
+
+    expect(loads).toBe(1)
+    expect(result.second.entity.id).toBe(result.first.entity.id)
+  })
+
+  test('validates a manual link platform against the parsed source platform', async () => {
+    const sourceUrl = `https://open.spotify.com/track/${externalId()}`
+    const entityId = crypto.randomUUID()
+    await db
+      .insert(musicTracksTable)
+      .values({ id: entityId, title: 'Manual target', slug: entityId })
+    const recorder = recordingScraper(() => Effect.die('provider must not be called'))
+
+    const exit = await serviceExitWith(recorder.service, (service) =>
+      service.attachLink({
+        entityType: 'track',
+        entityId,
+        platform: 'deezer',
+        url: sourceUrl,
+        origin: 'manual'
+      })
+    )
+
+    expect(Result.getOrThrow(Exit.findError(exit))).toMatchObject({
+      _tag: 'MusicSourceInvalid',
+      reason: 'platform_mismatch'
+    })
+    expect(
+      await db
+        .select()
+        .from(musicEntityLinksTable)
+        .where(eq(musicEntityLinksTable.entityId, entityId))
+    ).toHaveLength(0)
+  })
+
+  test('rejecting or deleting exact-source links releases canonical identities and aliases', async () => {
+    const rejectedUrl = `https://open.spotify.com/track/${externalId()}`
+    const deletedUrl = `https://open.spotify.com/track/${externalId()}`
+    const recorder = recordingScraper(() => Effect.die('provider must not be called'))
+
+    const result = await serviceWith(recorder.service, (service) =>
+      Effect.gen(function* () {
+        const rejected = yield* service.importProviderEntity({
+          snapshot: snapshot(rejectedUrl, 'Rejected source'),
+          origin: 'spotify_import'
+        })
+        const deleted = yield* service.importProviderEntity({
+          snapshot: snapshot(deletedUrl, 'Deleted source'),
+          origin: 'spotify_import'
+        })
+        const rejectedLink = rejected.links.find((link) => link.platform === 'spotify')
+        const deletedLink = deleted.links.find((link) => link.platform === 'spotify')
+        if (!rejectedLink || !deletedLink) return yield* Effect.die('Expected source links')
+        const updated = yield* service.releaseLink({
+          entityType: 'track',
+          entityId: rejected.entity.id,
+          linkId: rejectedLink.id,
+          action: 'reject'
+        })
+        yield* service.releaseLink({
+          entityType: 'track',
+          entityId: deleted.entity.id,
+          linkId: deletedLink.id,
+          action: 'delete'
+        })
+        return { rejected, deleted, updated }
+      })
+    )
+
+    const sourceKeys = [
+      (await Effect.runPromise(parseMusicSource(rejectedUrl, 'track'))).sourceKey,
+      (await Effect.runPromise(parseMusicSource(deletedUrl, 'track'))).sourceKey
+    ]
+    const identities = await db.select().from(musicSourceIdentitiesTable)
+    const aliases = await db.select().from(musicSourceAliasesTable)
+    expect(result.updated?.status).toBe('rejected')
+    expect(identities.some((identity) => sourceKeys.includes(identity.sourceKey))).toBe(false)
+    expect(aliases.some((alias) => sourceKeys.includes(alias.sourceKey))).toBe(false)
+    expect(
+      await db
+        .select()
+        .from(musicEntityLinksTable)
+        .where(eq(musicEntityLinksTable.entityId, result.deleted.entity.id))
+    ).toHaveLength(0)
+  })
+
+  test('reattaching a rejected source restores its canonical identity', async () => {
+    const sourceUrl = `https://open.spotify.com/track/${externalId()}`
+    const recorder = recordingScraper(() => Effect.die('provider must not be called'))
+
+    const result = await serviceWith(recorder.service, (service) =>
+      Effect.gen(function* () {
+        const imported = yield* service.importProviderEntity({
+          snapshot: snapshot(sourceUrl, 'Reverified source'),
+          origin: 'spotify_import'
+        })
+        const link = imported.links.find((candidate) => candidate.platform === 'spotify')
+        if (!link) return yield* Effect.die('Expected source link')
+        yield* service.releaseLink({
+          entityType: 'track',
+          entityId: imported.entity.id,
+          linkId: link.id,
+          action: 'reject'
+        })
+        const reattached = yield* service.attachLink({
+          entityType: 'track',
+          entityId: imported.entity.id,
+          platform: 'spotify',
+          url: sourceUrl,
+          origin: 'manual'
+        })
+        return { imported, reattached }
+      })
+    )
+
+    const source = await Effect.runPromise(parseMusicSource(sourceUrl, 'track'))
+    const identities = await db
+      .select()
+      .from(musicSourceIdentitiesTable)
+      .where(eq(musicSourceIdentitiesTable.sourceKey, source.sourceKey))
+    expect(result.reattached.status).toBe('verified')
+    expect(identities).toHaveLength(1)
+    expect(identities[0]?.entityId).toBe(result.imported.entity.id)
+  })
+
+  test('automatic enrichment retries missing links and skips completed enrichment', async () => {
+    const sourceUrl = `https://open.spotify.com/track/${externalId()}`
+    const deezerUrl = `https://www.deezer.com/track/${Date.now() + 500}`
+    let calls = 0
+    const scraper: MusicLinkScraperService = {
+      scrape: () => Effect.die('Automatic enrichment must not refresh provider metadata'),
+      discoverCrossPlatformLinks: () => {
+        calls += 1
+        return calls === 1
+          ? Effect.fail(
+              new MusicScraperError({
+                message: 'temporary outage',
+                provider: 'odesli',
+                statusCode: 503
+              })
+            )
+          : Effect.succeed({
+              links: [{ platform: 'deezer', url: deezerUrl, scrapedAt: new Date() }]
+            })
+      }
+    }
+
+    const result = await serviceWith(scraper, (service) =>
+      Effect.gen(function* () {
+        const imported = yield* service.importProviderEntity({
+          snapshot: snapshot(sourceUrl),
+          origin: 'spotify_import'
+        })
+        const input = {
+          entityType: 'track' as const,
+          entityId: imported.entity.id,
+          actorId: 'playlist_enrichment'
+        }
+        yield* service.enrichEntity(input).pipe(Effect.catch(() => Effect.void))
+        yield* service.enrichEntity(input)
+        return yield* service.enrichEntity(input)
+      })
+    )
+
+    expect(calls).toBe(2)
+    expect(result.links.some((link) => link.platform === 'deezer')).toBe(true)
+  })
+
+  test('refresh keeps stored artwork until a fetched replacement can be promoted', async () => {
+    const sourceUrl = `https://open.spotify.com/track/${externalId()}`
+    const storedArtwork = 'https://cdn.example.com/user-content/music/track/cover'
+    const providerArtwork = 'https://i.scdn.co/image/replacement'
+    const recorder = recordingScraper(() =>
+      Effect.succeed({
+        links: [],
+        entityMeta: { title: 'Refreshed', type: 'song', thumbnailUrl: providerArtwork }
+      })
+    )
+
+    const result = await serviceWith(recorder.service, (service) =>
+      Effect.gen(function* () {
+        const imported = yield* service.importProviderEntity({
+          snapshot: { ...snapshot(sourceUrl), imageUrl: storedArtwork },
+          origin: 'spotify_import'
+        })
+        return yield* service.refreshEntity({
+          entityType: 'track',
+          entityId: imported.entity.id,
+          actorId: 'admin'
+        })
+      })
+    )
+
+    expect('coverImageUrl' in result.entity && result.entity.coverImageUrl).toBe(storedArtwork)
+    expect(result.artworkUrl).toBe(providerArtwork)
+  })
+
+  test('infers artist and playlist types when the caller does not specify one', async () => {
+    const cases = [
+      {
+        entityType: 'artist' as const,
+        sourceUrl: `https://open.spotify.com/artist/${externalId()}`,
+        title: 'Inferred Artist'
+      },
+      {
+        entityType: 'playlist' as const,
+        sourceUrl: `https://open.spotify.com/playlist/${externalId()}`,
+        title: 'Inferred Playlist'
+      }
+    ]
+    const recorder = recordingScraper((input) => {
+      const current = cases.find((candidate) => candidate.sourceUrl === input.url)
+      if (!current) return Effect.die('Unexpected source')
+      return Effect.succeed({
+        links: [],
+        entityMeta: { title: current.title, type: current.entityType }
+      })
+    })
+
+    const results = await serviceWith(recorder.service, (service) =>
+      Effect.forEach(cases, (candidate) =>
+        service.resolveSource({ url: candidate.sourceUrl, origin: 'bluesky' })
+      )
+    )
+
+    expect(results.map((result) => result.entityType)).toEqual(['artist', 'playlist'])
   })
 
   test('keeps existing data intact when refresh provider resolution fails', async () => {
@@ -586,19 +847,35 @@ describe('CanonicalMusicIdentity', () => {
         url: variant.stored
       })
     }
-    const recorder = recordingScraper(() => Effect.die('provider must not be called'))
-
-    const results = await serviceWith(recorder.service, (service) =>
-      Effect.forEach(variants, (variant) =>
-        service.resolveSource({
-          url: variant.requested,
-          expectedType: 'track',
-          origin: 'editorial'
-        })
-      )
+    const recorder = recordingScraper(() =>
+      Effect.succeed({
+        links: [],
+        entityMeta: { title: 'Refreshed legacy track', type: 'song' }
+      })
     )
 
-    expect(recorder.calls).toHaveLength(0)
+    const results = await serviceWith(recorder.service, (service) =>
+      Effect.gen(function* () {
+        const resolved = yield* Effect.forEach(variants, (variant) =>
+          service.resolveSource({
+            url: variant.requested,
+            expectedType: 'track',
+            origin: 'editorial'
+          })
+        )
+        expect(recorder.calls).toHaveLength(0)
+        yield* Effect.forEach(resolved, (result) =>
+          service.refreshEntity({
+            entityType: 'track',
+            entityId: result.entity.id,
+            actorId: 'legacy-refresh'
+          })
+        )
+        return resolved
+      })
+    )
+
+    expect(recorder.calls).toHaveLength(3)
     expect(results).toHaveLength(3)
     for (const variant of variants) {
       const parsed = await Effect.runPromise(parseMusicSource(variant.requested, 'track'))
@@ -843,7 +1120,7 @@ describe('CanonicalMusicIdentity', () => {
     expect(source?.metadata).toMatchObject({ confidence: 'exact_source' })
   })
 
-  test('playlist refresh replaces stale links with the exact source only', async () => {
+  test('playlist refresh preserves manually curated non-source links', async () => {
     const sourceUrl = `https://open.spotify.com/playlist/${externalId()}`
     const recorder = recordingScraper(() =>
       Effect.succeed({
@@ -862,16 +1139,19 @@ describe('CanonicalMusicIdentity', () => {
     const result = await serviceWith(recorder.service, (service) =>
       Effect.gen(function* () {
         const imported = yield* service.importProviderEntity({
-          snapshot: {
-            entityType: 'playlist',
-            sourceUrl,
-            title: 'Playlist',
-            links: [
-              { platform: 'youtube', url: `https://www.youtube.com/playlist?list=${externalId()}` }
-            ]
-          },
+          snapshot: { entityType: 'playlist', sourceUrl, title: 'Playlist' },
           origin: 'spotify_import'
         })
+        yield* Effect.tryPromise(() =>
+          db.insert(musicEntityLinksTable).values({
+            entityType: 'playlist',
+            entityId: imported.entity.id,
+            platform: 'other',
+            url: 'https://example.com/curated-playlist',
+            status: 'verified',
+            metadata: { discoveredBy: 'manual' }
+          })
+        ).pipe(Effect.orDie)
         return yield* service.refreshEntity({
           entityType: 'playlist',
           entityId: imported.entity.id,
@@ -880,8 +1160,12 @@ describe('CanonicalMusicIdentity', () => {
       })
     )
 
-    expect(result.links).toHaveLength(1)
-    expect(result.links[0]).toMatchObject({ platform: 'spotify', url: sourceUrl })
+    expect(result.links).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ platform: 'spotify', url: sourceUrl }),
+        expect.objectContaining({ platform: 'other', url: 'https://example.com/curated-playlist' })
+      ])
+    )
   })
 
   test('returns a typed collision for an alias mapped to another parsed source key', async () => {
@@ -980,7 +1264,13 @@ describe('CanonicalMusicIdentity', () => {
     })
     const recorder = recordingScraper(() => Effect.die('provider must not be called'))
     const attaching = serviceExitWith(recorder.service, (service) =>
-      service.attachLink({ entityType: 'track', entityId, url: sourceUrl, origin: 'manual' })
+      service.attachLink({
+        entityType: 'track',
+        entityId,
+        platform: 'spotify',
+        url: sourceUrl,
+        origin: 'manual'
+      })
     )
     await new Promise((resolve) => setTimeout(resolve, 50))
     await db.batch([
@@ -1062,6 +1352,69 @@ describe('CanonicalMusicIdentity', () => {
       _tag: 'MusicIdentityEntityNotFound'
     })
     expect(newLinks).toHaveLength(0)
+  })
+
+  test('entity deletion removes canonical identities and aliases for every music entity type', async () => {
+    const sources = {
+      artist: `https://open.spotify.com/artist/${externalId()}`,
+      album: `https://open.spotify.com/album/${externalId()}`,
+      track: `https://open.spotify.com/track/${externalId()}`,
+      playlist: `https://open.spotify.com/playlist/${externalId()}`
+    }
+    const recorder = recordingScraper(() => Effect.succeed({ links: [] }))
+    const imported = await serviceWith(recorder.service, (service) =>
+      Effect.all({
+        artist: service.importProviderEntity({
+          snapshot: { entityType: 'artist', sourceUrl: sources.artist, title: 'Delete Artist' },
+          origin: 'spotify_import'
+        }),
+        album: service.importProviderEntity({
+          snapshot: { entityType: 'album', sourceUrl: sources.album, title: 'Delete Album' },
+          origin: 'spotify_import'
+        }),
+        track: service.importProviderEntity({
+          snapshot: { entityType: 'track', sourceUrl: sources.track, title: 'Delete Track' },
+          origin: 'spotify_import'
+        }),
+        playlist: service.importProviderEntity({
+          snapshot: {
+            entityType: 'playlist',
+            sourceUrl: sources.playlist,
+            title: 'Delete Playlist'
+          },
+          origin: 'spotify_import'
+        })
+      })
+    )
+    const provideDb = Effect.provideService(Database, db)
+
+    await Effect.runPromise(
+      Effect.all([
+        deleteArtistEffect(imported.artist.entity.id),
+        deleteAlbumEffect(imported.album.entity.id),
+        deleteTrackEffect(imported.track.entity.id),
+        deletePlaylistEffect(imported.playlist.entity.id)
+      ]).pipe(provideDb)
+    )
+
+    const deletedEntityIds = new Set(Object.values(imported).map((result) => result.entity.id))
+    const deletedSourceKeys = new Set(
+      Object.entries(sources).map(
+        ([entityType, sourceUrl]) =>
+          `spotify:${entityType}:${sourceUrl.slice(sourceUrl.lastIndexOf('/') + 1)}`
+      )
+    )
+    const identities = await db.select().from(musicSourceIdentitiesTable)
+    const aliases = await db.select().from(musicSourceAliasesTable)
+
+    expect(
+      identities.some(
+        (identity) =>
+          deletedSourceKeys.has(identity.sourceKey) ||
+          (identity.entityId !== null && deletedEntityIds.has(identity.entityId))
+      )
+    ).toBe(false)
+    expect(aliases.some((alias) => deletedSourceKeys.has(alias.sourceKey))).toBe(false)
   })
 
   test('explicit refresh always calls the provider and preserves the entity ID', async () => {

@@ -7,6 +7,7 @@ import {
   type musicArtistsTable,
   musicEntityLinksTable,
   type musicPlaylistsTable,
+  musicSourceIdentitiesTable,
   type musicTracksTable
 } from '@/db/music-entity.schema'
 import { entityLabelsTable } from '@/db/tags.schema'
@@ -22,6 +23,7 @@ export type ImportedTrackTarget = {
   trackUrl: string
   title: string
   artistNames: string[]
+  created?: boolean
 }
 
 export function requireOne<T>(
@@ -61,6 +63,20 @@ export const deleteLinksForEntity = (
       and(
         eq(musicEntityLinksTable.entityType, entityType),
         eq(musicEntityLinksTable.entityId, entityId)
+      )
+    )
+
+export const deleteIdentitiesForEntity = (
+  db: DatabaseClient,
+  entityType: Exclude<MusicEntityType, 'label'>,
+  entityId: string
+) =>
+  db
+    .delete(musicSourceIdentitiesTable)
+    .where(
+      and(
+        eq(musicSourceIdentitiesTable.entityType, entityType),
+        eq(musicSourceIdentitiesTable.entityId, entityId)
       )
     )
 

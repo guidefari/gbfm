@@ -6,14 +6,20 @@ import type {
   MusicScraperError,
   ScrapedLink
 } from '@/services/music-link-scraper.service'
-import type { AttachMusicSourceLink, RefreshMusicEntity, RefreshedMusicEntity } from './contract'
+import type {
+  AttachMusicSourceLink,
+  RefreshMusicEntity,
+  RefreshedMusicEntity,
+  ReleaseMusicSourceLink
+} from './contract'
 import {
   MusicIdentityBusy,
   MusicIdentityConflict,
   type MusicIdentityError,
   MusicIdentityInvalidSnapshot,
   MusicIdentitySourceLinkNotFound,
-  MusicIdentityStorageError
+  MusicIdentityStorageError,
+  MusicSourceInvalid
 } from './errors'
 import { loadEntity, refreshedEntityRecord } from './entity-record'
 import { parseMusicSource, type ParsedMusicSource } from './music-source'
@@ -50,6 +56,12 @@ export const makeEntityOperations = (
       const reference = { entityType: input.entityType, entityId: input.entityId }
       yield* loadEntity(reference).pipe(provideDb)
       const source = yield* parseMusicSource(input.url, input.entityType)
+      if (source.platform !== input.platform) {
+        return yield* new MusicSourceInvalid({
+          reason: 'platform_mismatch',
+          message: 'Music source platform does not match the requested platform'
+        })
+      }
       const existing = yield* readReference(source)
       if (existing && referenceKey(existing) !== referenceKey(reference)) {
         yield* repository.recordConflict(
@@ -154,11 +166,23 @@ export const makeEntityOperations = (
       return link
     }).pipe(Effect.withSpan('musicIdentity.attachLink'))
 
-  const refreshEntity = (input: RefreshMusicEntity) =>
+  const refresh = (input: RefreshMusicEntity, explicitRefresh: boolean) =>
     Effect.gen(function* () {
       const reference = { entityType: input.entityType, entityId: input.entityId }
       const current = yield* loadEntity(reference).pipe(provideDb)
       const links = yield* repository.linksFor(reference)
+      if (
+        !explicitRefresh &&
+        links.some(
+          (link) => link.status === 'verified' && link.metadata?.confidence !== 'exact_source'
+        )
+      ) {
+        return {
+          entityType: input.entityType,
+          entity: current,
+          links
+        } satisfies RefreshedMusicEntity
+      }
       const exactSources = links.filter(
         (link) => link.metadata?.confidence === 'exact_source' && link.status === 'verified'
       )
@@ -170,14 +194,24 @@ export const makeEntityOperations = (
         })
       }
       const source = yield* parseMusicSource(sourceLink.url, input.entityType)
-      const result = yield* scraper
-        .scrape({ entityType: input.entityType, url: source.canonicalUrl })
-        .pipe(
-          Effect.mapError(providerError),
-          Effect.withSpan('musicIdentity.scrape', {
-            attributes: { platform: source.platform, explicitRefresh: true }
-          })
-        )
+      const title = 'name' in current ? current.name : current.title
+      const artistName =
+        'artistNames' in current ? (current.artistNames ?? []).join(', ') : undefined
+      const result = yield* (
+        explicitRefresh
+          ? scraper.scrape({ entityType: input.entityType, url: source.canonicalUrl })
+          : scraper.discoverCrossPlatformLinks({
+              entityType: input.entityType,
+              url: source.canonicalUrl,
+              trackTitle: title,
+              artistName
+            })
+      ).pipe(
+        Effect.mapError(providerError),
+        Effect.withSpan('musicIdentity.scrape', {
+          attributes: { platform: source.platform, explicitRefresh }
+        })
+      )
       if (
         result.links.length === 0 &&
         !result.entityMeta?.title &&
@@ -283,7 +317,12 @@ export const makeEntityOperations = (
       }
       const entity = yield* loadEntity(reference).pipe(provideDb)
       const storedLinks = yield* repository.linksFor(reference)
-      return { entity, links: storedLinks } satisfies RefreshedMusicEntity
+      return {
+        entityType: input.entityType,
+        entity,
+        links: storedLinks,
+        artworkUrl: result.entityMeta?.thumbnailUrl
+      } satisfies RefreshedMusicEntity
     }).pipe(
       Effect.withSpan('musicIdentity.refreshEntity', {
         attributes: {
@@ -294,5 +333,40 @@ export const makeEntityOperations = (
       })
     )
 
-  return { attachLink, refreshEntity }
+  const releaseLink = (input: ReleaseMusicSourceLink) =>
+    Effect.gen(function* () {
+      const reference = { entityType: input.entityType, entityId: input.entityId }
+      yield* loadEntity(reference).pipe(provideDb)
+      const link = yield* repository.linkById(reference, input.linkId)
+      if (!link) {
+        return yield* new MusicIdentitySourceLinkNotFound({
+          entityType: input.entityType,
+          entityId: input.entityId
+        })
+      }
+      const source =
+        link.metadata?.confidence === 'exact_source'
+          ? yield* parseMusicSource(link.url, input.entityType).pipe(
+              Effect.catchTag('MusicSourceInvalid', () => Effect.succeed(undefined))
+            )
+          : undefined
+      const released = yield* repository.releaseLink({
+        reference,
+        linkId: input.linkId,
+        source,
+        action: input.action,
+        verifiedBy: input.verifiedBy,
+        metadata: input.metadata ?? link.metadata ?? undefined,
+        now: new Date()
+      })
+      if (input.action === 'reject' && !released) {
+        return yield* storageError('releaseLink', 'Rejected link was not persisted')
+      }
+      return released
+    }).pipe(Effect.withSpan('musicIdentity.releaseLink'))
+
+  const enrichEntity = (input: RefreshMusicEntity) => refresh(input, false)
+  const refreshEntity = (input: RefreshMusicEntity) => refresh(input, true)
+
+  return { attachLink, releaseLink, enrichEntity, refreshEntity }
 }

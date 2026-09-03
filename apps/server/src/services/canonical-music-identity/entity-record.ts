@@ -86,14 +86,11 @@ const titleFor = (
   )
 }
 
-const imageFor = (result: ScrapeResult, fallback?: ResolvedEntity) => {
-  const fallbackImage = fallback
-    ? 'imageUrl' in fallback
-      ? (fallback.imageUrl ?? undefined)
-      : (fallback.coverImageUrl ?? undefined)
-    : undefined
-  return result.entityMeta?.thumbnailUrl ?? fallbackImage
-}
+export const storedImageFor = (entity: ResolvedEntity) =>
+  'imageUrl' in entity ? (entity.imageUrl ?? undefined) : (entity.coverImageUrl ?? undefined)
+
+const imageFor = (result: ScrapeResult, fallback?: ResolvedEntity) =>
+  result.entityMeta?.thumbnailUrl ?? (fallback ? storedImageFor(fallback) : undefined)
 
 const artistNamesFor = (result: ScrapeResult, fallback?: ResolvedEntity) => {
   if (result.entityMeta?.artistName) return parseArtistNames(result.entityMeta.artistName)
@@ -170,7 +167,7 @@ export const refreshedEntityRecord = (
   title: titleFor(entityType, result, fallback),
   artistNames: artistNamesFor(result, fallback),
   artists: [],
-  imageUrl: imageFor(result, fallback),
+  imageUrl: storedImageFor(fallback),
   description:
     fallback && 'description' in fallback ? (fallback.description ?? undefined) : undefined
 })

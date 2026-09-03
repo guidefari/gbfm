@@ -23,6 +23,7 @@ import { EmailDeliveryLive } from '@/services/email-delivery.service'
 import type { EmailTransportService } from '@/services/email-transport.service'
 import { FavoriteServiceLayer } from '@/services/favorite.service'
 import { AppLoggerLive } from '@/services/logger.service'
+import { CanonicalMusicIdentityLayer } from '@/services/canonical-music-identity'
 import { MusicEntityServiceLayer } from '@/services/music-entity'
 import { MusicBrainzIdentityLive } from '@/services/musicbrainz-identity.service'
 import { MusicLinkScraperServiceLayer } from '@/services/music-link-scraper.service'
@@ -126,9 +127,14 @@ export const AppLayer = ({
     DevToolsLive
   ).pipe(Layer.provideMerge(configLive), Layer.provide(databaseLive))
 
-  const MusicEntityLive = MusicEntityServiceLayer.pipe(Layer.provide(BaseServicesLayer))
+  const CanonicalMusicIdentityLive = CanonicalMusicIdentityLayer.pipe(
+    Layer.provide(BaseServicesLayer)
+  )
+  const MusicEntityLive = MusicEntityServiceLayer.pipe(
+    Layer.provide(Layer.mergeAll(BaseServicesLayer, CanonicalMusicIdentityLive))
+  )
   const BlueskyArchiveLive = BlueskyArchiveServiceLayer.pipe(
-    Layer.provide(Layer.mergeAll(BaseServicesLayer, MusicEntityLive))
+    Layer.provide(Layer.mergeAll(BaseServicesLayer, CanonicalMusicIdentityLive, MusicEntityLive))
   )
   const BlueskySyncLive = BlueskySyncServiceLayer.pipe(
     Layer.provide(Layer.mergeAll(BaseServicesLayer, MusicEntityLive, BlueskyArchiveLive))
@@ -137,6 +143,7 @@ export const AppLayer = ({
   const ServicesLayer = Layer.mergeAll(
     BaseServicesLayer,
     qrCodeLive,
+    CanonicalMusicIdentityLive,
     MusicEntityLive,
     BlueskyAccountServiceLayer.pipe(Layer.provide(BaseServicesLayer)),
     BlueskyArchiveLive,

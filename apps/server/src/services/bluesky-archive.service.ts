@@ -6,8 +6,7 @@ import { blueskyPostSources } from '@/db/external-account.schema'
 import { postCreators, postsTable, type InsertPost } from '@/db/post.schema'
 import { DatabaseError } from '@/errors'
 import type { ImportedRecord } from './bluesky-importer.service'
-import { MusicLinkScraperService } from './music-link-scraper.service'
-import { MusicEntityService } from './music-entity'
+import { CanonicalMusicIdentity, type CanonicalMusicEntityType } from './canonical-music-identity'
 import { generatePostSlug } from './post.service'
 
 export type ArchiveImportSummary = {
@@ -34,16 +33,13 @@ const databaseError = new DatabaseError({
 
 type WriteResult = 'created' | 'alreadyImported' | 'conflicted' | 'failed'
 
-const entityTypeForUrl = (url: string): 'album' | 'track' =>
-  /\/album(?:s)?\//i.test(url) ? 'album' : 'track'
-
 const writeRecord = async (
   db: Database['Service'],
   input: {
     readonly ownerUserId: string
     readonly externalAccountId: string
     readonly record: ImportedRecord
-    readonly musicEntityType: 'album' | 'track' | null
+    readonly musicEntityType: CanonicalMusicEntityType | null
     readonly musicEntityId: string | null
   }
 ): Promise<WriteResult> => {
@@ -184,28 +180,15 @@ const writeEffect = ({
 }: Parameters<BlueskyArchiveService['write']>[0]) =>
   Effect.gen(function* () {
     const db = yield* Database
-    const musicEntities = yield* MusicEntityService
-    const scraper = yield* MusicLinkScraperService
+    const identity = yield* CanonicalMusicIdentity
     return yield* Effect.forEach(records, (record) =>
       Effect.gen(function* () {
         const candidateUrl = record.candidateUrls[0]
-        const scraped = candidateUrl
-          ? yield* scraper.scrape({ url: candidateUrl })
-          : { links: [], entityMeta: undefined }
-        const resolved =
-          candidateUrl && scraped.entityMeta
-            ? yield* musicEntities
-                .scrapeAndCreateEntity(
-                  scraped.entityMeta.type === 'album' ? 'album' : entityTypeForUrl(candidateUrl),
-                  { url: candidateUrl }
-                )
-                .pipe(
-                  Effect.catchTags({
-                    DatabaseError: () => Effect.succeed(null),
-                    ValidationError: () => Effect.succeed(null)
-                  })
-                )
-            : null
+        const resolved = candidateUrl
+          ? yield* identity
+              .resolveSource({ url: candidateUrl, origin: 'bluesky' })
+              .pipe(Effect.catch(() => Effect.succeed(null)))
+          : null
 
         return yield* Effect.tryPromise({
           try: () =>
@@ -213,17 +196,12 @@ const writeEffect = ({
               ownerUserId,
               externalAccountId,
               record,
-              musicEntityType: resolved ? entityTypeForUrl(candidateUrl ?? '') : null,
+              musicEntityType: resolved?.entityType ?? null,
               musicEntityId: resolved?.entity.id ?? null
             }),
           catch: () => databaseError
         }).pipe(Effect.catchTag('DatabaseError', () => Effect.succeed<WriteResult>('failed')))
-      }).pipe(
-        Effect.catchTags({
-          MusicEntityResolutionUnavailable: () => Effect.succeed<WriteResult>('failed'),
-          MusicScraperError: () => Effect.succeed<WriteResult>('failed')
-        })
-      )
+      })
     ).pipe(
       Effect.map((results) => ({
         created: results.filter((result) => result === 'created').length,
@@ -238,14 +216,12 @@ export const BlueskyArchiveServiceLayer = Layer.effect(
   BlueskyArchiveService,
   Effect.gen(function* () {
     const db = yield* Database
-    const musicEntities = yield* MusicEntityService
-    const scraper = yield* MusicLinkScraperService
+    const identity = yield* CanonicalMusicIdentity
     return {
       write: (input) =>
         writeEffect(input).pipe(
           Effect.provideService(Database, db),
-          Effect.provideService(MusicEntityService, musicEntities),
-          Effect.provideService(MusicLinkScraperService, scraper)
+          Effect.provideService(CanonicalMusicIdentity, identity)
         )
     }
   })
