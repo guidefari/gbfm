@@ -1,4 +1,5 @@
 import { Button, Input, Label, Textarea, toast } from '@gbfm/ui'
+import { useQueryClient } from '@tanstack/react-query'
 import { Effect } from 'effect'
 import { RadioTower } from 'lucide-react'
 import { useCallback, useRef, useState, type ReactNode } from 'react'
@@ -9,7 +10,8 @@ import {
 } from '@/components/simple-markdown-editor'
 import { ExternalMediaPickerDialog } from '@/components/editorial/ExternalMediaPickerDialog'
 import { resolveMusicEntityBatchEffect } from '@/components/editorial/editorial-music-resolution'
-import { resolveMusicEntityReferenceEffect } from '@/lib/http'
+import { useSession } from '@/lib/auth-client'
+import { resolveMusicEntityReferenceWithCacheEffect } from '@/lib/music-entity-resolution'
 import type { EditorialFormData, EditorialTextField } from './-editorial-types'
 
 export function EditorialWritingCanvas({
@@ -23,6 +25,11 @@ export function EditorialWritingCanvas({
   onInputChange: (field: EditorialTextField, value: string) => void
   onPendingMusicChange: (count: number) => void
 }) {
+  const queryClient = useQueryClient()
+  const { data: session } = useSession()
+  const authorizationScope = session?.user
+    ? `${session.user.id}:${session.user.role ?? 'user'}`
+    : 'anonymous'
   const editorRef = useRef<SimpleMarkdownEditorHandle>(null)
   const [externalMediaOpen, setExternalMediaOpen] = useState(false)
 
@@ -32,8 +39,12 @@ export function EditorialWritingCanvas({
 
   const resolveMusicEntities = useCallback(
     (urls: ReadonlyArray<string>) =>
-      Effect.runPromise(resolveMusicEntityBatchEffect(urls, resolveMusicEntityReferenceEffect)),
-    []
+      Effect.runPromise(
+        resolveMusicEntityBatchEffect(urls, (url) =>
+          resolveMusicEntityReferenceWithCacheEffect(queryClient, url, authorizationScope)
+        )
+      ),
+    [authorizationScope, queryClient]
   )
 
   const reportResolutionFailure = useCallback((count: number) => {

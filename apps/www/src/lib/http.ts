@@ -805,68 +805,6 @@ export function useEnrichTrackFromUrl(url: string) {
   }
 }
 
-const ResolvedMusicEntityReferenceSchema = Schema.Struct({
-  entityType: Schema.Literals(['album', 'track', 'playlist']),
-  entity: Schema.Struct({ id: Schema.NonEmptyString })
-})
-
-export const resolveMusicEntityReferenceEffect = (url: string) =>
-  Effect.gen(function* () {
-    const client = yield* Effect.promise(getApiClient)
-    const response = yield* client.music.resolveMusicEntity({ payload: { url } }).pipe(
-      Effect.retry({
-        times: 1,
-        while: (error) => error instanceof HttpApiError.InternalServerError
-      }),
-      Effect.tapError((error) => captureException(error, { endpoint: 'music.resolveMusicEntity' }))
-    )
-    const resolved = yield* Schema.decodeUnknownEffect(ResolvedMusicEntityReferenceSchema)(response)
-
-    return {
-      type: resolved.entityType,
-      id: resolved.entity.id
-    }
-  })
-
-export type ResolvedMusicEntity = {
-  entityType: 'album' | 'track' | 'playlist'
-  entity: {
-    id: string
-    title: string
-    slug: string
-    coverImageUrl: string | null
-    artistNames?: string[] | null
-    description?: string | null
-  }
-  links: Array<{
-    platform: string
-    url: string
-  }>
-  coverImageUrl: string | null
-}
-
-export function useResolveMusicEntity(url: string) {
-  const { data, error, isLoading, isRefetching, refetch } = useQuery<ResolvedMusicEntity>({
-    queryKey: ['music/resolve', url],
-    queryFn: async () =>
-      fetcher(apiUrl('/music/resolve'), {
-        method: 'POST',
-        body: JSON.stringify({ url })
-      }),
-    enabled: Boolean(url) && url.length > 10,
-    retry: false,
-    staleTime: 15 * 60 * 1000
-  })
-
-  return {
-    data,
-    error,
-    isLoading,
-    isRefetching,
-    refetch
-  }
-}
-
 export function useUserLOL() {
   const { data, error, isPending } = useQuery<User, Error>({
     queryKey: ['user'],

@@ -37,9 +37,9 @@ import {
   useDeleteAdminEntityLink,
   useMicroPostBySlug,
   usePostTags,
-  useResolveMusicEntity,
   useUpdateAdminEntityLinkStatus
 } from '@/lib/http'
+import { useResolveMusicEntity } from '@/lib/music-entity-resolution'
 
 type PostType = 'post' | 'micro'
 type MusicEntityType = 'album' | 'track' | 'playlist'
@@ -252,7 +252,7 @@ function ResolvedMusicCard({
   displayedCoverImageUrl: string | null
   displayedEntityType: string | null
   displayedEntityTitle: string | null
-  displayedArtistNames: string[] | null
+  displayedArtistNames: ReadonlyArray<string> | null
   isResolving: boolean
   hasEntity: boolean
   onMusicUrlChange: (value: string) => void
