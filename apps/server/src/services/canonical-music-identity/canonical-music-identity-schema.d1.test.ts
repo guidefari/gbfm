@@ -25,6 +25,14 @@ beforeAll(async () => {
   ])
 })
 
+const queryPlan = async (sql: string, bindings: ReadonlyArray<string | number>) =>
+  (
+    await database
+      .prepare(`EXPLAIN QUERY PLAN ${sql}`)
+      .bind(...bindings)
+      .all<{ readonly detail: string }>()
+  ).results.map((row) => row.detail)
+
 const insertResolvedIdentity = (
   sourceKey: string,
   canonicalUrl: string,
@@ -41,20 +49,64 @@ const insertResolvedIdentity = (
     .run()
 
 describe('canonical music identity D1 migration', () => {
-  test('replays migrations through 0006 and creates every identity table', async () => {
+  test('replays migrations through 0007 and creates every identity table and page index', async () => {
     const result = await database
       .prepare(
         `SELECT name FROM sqlite_master
-         WHERE type = 'table' AND name LIKE 'music_source_%'
+         WHERE (type = 'table' AND (name LIKE 'music_source_%' OR name LIKE 'music_identity_%'))
+           OR (type = 'index' AND name IN (
+             'music_entity_links_backfill_page_idx',
+             'music_entity_resolution_claims_backfill_page_idx',
+             'music_identity_maintenance_candidates_source_page_idx',
+             'music_source_identities_resolving_audit_page_idx',
+             'music_source_identity_conflicts_audit_page_idx'
+           ))
          ORDER BY name`
       )
       .all<{ name: string }>()
 
     expect(result.results.map((row) => row.name)).toEqual([
+      'music_entity_links_backfill_page_idx',
+      'music_entity_resolution_claims_backfill_page_idx',
+      'music_identity_maintenance_actions',
+      'music_identity_maintenance_candidates',
+      'music_identity_maintenance_candidates_source_page_idx',
+      'music_identity_maintenance_findings',
+      'music_identity_maintenance_runs',
+      'music_identity_maintenance_source_keys',
       'music_source_aliases',
       'music_source_identities',
-      'music_source_identity_conflicts'
+      'music_source_identities_resolving_audit_page_idx',
+      'music_source_identity_conflicts',
+      'music_source_identity_conflicts_audit_page_idx'
     ])
+  })
+
+  test('uses maintenance pagination and candidate window indexes', async () => {
+    const claimPlan = await queryPlan(
+      `SELECT entity_type, canonical_url FROM music_entity_resolution_claims
+       WHERE entity_id IS NOT NULL AND updated_at > ?
+       ORDER BY updated_at, entity_type, canonical_url LIMIT ?`,
+      [-1, 25]
+    )
+    const leasePlan = await queryPlan(
+      `SELECT source_key FROM music_source_identities
+       WHERE state = 'resolving' AND source_key > ? ORDER BY source_key LIMIT ?`,
+      ['', 25]
+    )
+    const candidatePlan = await queryPlan(
+      `SELECT * FROM music_identity_maintenance_candidates
+       WHERE generation_id = ? AND source_key = ?
+       ORDER BY origin, origin_key LIMIT ?`,
+      ['generation', 'source', 101]
+    )
+
+    expect(claimPlan.join('\n')).toContain('music_entity_resolution_claims_backfill_page_idx')
+    expect(leasePlan.join('\n')).toContain('music_source_identities_resolving_audit_page_idx')
+    expect(candidatePlan.join('\n')).toContain(
+      'music_identity_maintenance_candidates_source_page_idx'
+    )
+    expect(candidatePlan.join('\n')).not.toContain('USE TEMP B-TREE FOR ORDER BY')
   })
 
   test('round-trips identity values through the Drizzle schema', async () => {

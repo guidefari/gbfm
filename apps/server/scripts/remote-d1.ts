@@ -1,18 +1,4 @@
 #!/usr/bin/env bun
-/**
- * D1Database implementation backed by the Cloudflare D1 REST API.
- *
- * Miniflare's D1 cannot reach a deployed database. This adapter satisfies the
- * D1Database interface against /d1/database/:id/query, so a plain script can
- * talk to real staging or production D1. seed-music-lookups.ts uses it.
- *
- * IMPORTANT: batch() is NOT atomic here. D1's REST API rejects bound
- * parameters alongside multi-statement SQL (error 7400), so each statement
- * becomes its own request and a partial failure leaves earlier statements
- * applied. Callers tolerate this by issuing only idempotent writes
- * (`INSERT OR REPLACE`), so re-running converges. Do not reuse this adapter
- * anywhere that depends on batch() rolling back.
- */
 
 import type {
   D1Database,
@@ -25,8 +11,12 @@ import type {
 type QueryResult = {
   readonly results?: ReadonlyArray<Record<string, unknown>>
   readonly success: boolean
+  readonly error?: string
   readonly meta: D1Meta & Record<string, unknown>
 }
+
+type Query = { readonly sql: string; readonly params?: ReadonlyArray<unknown> }
+type QueryBody = Query | { readonly batch: ReadonlyArray<Query> }
 
 type ApiResponse = {
   readonly success: boolean
@@ -34,10 +24,13 @@ type ApiResponse = {
   readonly result: ReadonlyArray<QueryResult>
 }
 
+type RemoteFetch = (url: string, init: RequestInit) => Promise<Response>
+
 export type RemoteD1Options = {
   readonly accountId: string
   readonly apiToken: string
   readonly databaseId: string
+  readonly fetch?: RemoteFetch
 }
 
 const endpointFor = (options: RemoteD1Options) =>
@@ -45,9 +38,9 @@ const endpointFor = (options: RemoteD1Options) =>
 
 const post = async (
   options: RemoteD1Options,
-  body: { sql: string; params?: ReadonlyArray<unknown> }
+  body: QueryBody
 ): Promise<ReadonlyArray<QueryResult>> => {
-  const response = await fetch(endpointFor(options), {
+  const response = await (options.fetch ?? fetch)(endpointFor(options), {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${options.apiToken}`,
@@ -62,24 +55,21 @@ const post = async (
     const detail = (payload.errors ?? []).map((e) => `${e.code}: ${e.message}`).join('; ')
     throw new Error(`D1 request failed (${response.status}): ${detail || 'unknown error'}`)
   }
+  for (const [index, result] of payload.result.entries()) {
+    if (!result.success) {
+      throw new Error(`D1 statement ${index} failed: ${result.error ?? 'unknown error'}`)
+    }
+  }
   return payload.result
 }
 
 const toResult = <T>(result: QueryResult): D1Result<T> => ({
-  /**
-   * The REST API returns untyped JSON rows, so the caller's row type is
-   * applied here at the single decode boundary rather than leaking `unknown`
-   * into every query site.
-   */
+  /** The REST API returns untyped rows; the prepared statement supplies their boundary type. */
   results: (result.results ?? []) as Array<T>,
   success: true,
   meta: result.meta
 })
 
-/**
- * A statement that returns no rows still yields one result object. An empty
- * `result` array means the request itself returned nothing to interpret.
- */
 const requireFirstResult = (results: ReadonlyArray<QueryResult>, sql: string): QueryResult => {
   const result = results[0]
   if (result === undefined) {
@@ -130,14 +120,6 @@ class RemoteStatement implements D1PreparedStatement {
   }
 }
 
-/**
- * How many parameterized statements are sent concurrently. D1 rejects bound
- * parameters alongside multi-statement SQL (error 7400), so each statement is
- * its own request and the batch's atomicity is lost -- acceptable here because
- * callers only issue idempotent `INSERT OR REPLACE` writes.
- */
-const REQUEST_CONCURRENCY = 8
-
 export const createRemoteD1 = (options: RemoteD1Options): D1Database => ({
   prepare: (sql: string) => new RemoteStatement(options, sql),
 
@@ -147,18 +129,14 @@ export const createRemoteD1 = (options: RemoteD1Options): D1Database => ({
       throw new Error('createRemoteD1().batch() only accepts statements from the same database')
     }
 
-    const output: Array<D1Result<T>> = []
-    for (let i = 0; i < remote.length; i += REQUEST_CONCURRENCY) {
-      const window = remote.slice(i, i + REQUEST_CONCURRENCY)
-      const settled = await Promise.all(
-        window.map(async (statement) => {
-          const results = await post(options, { sql: statement.sql, params: statement.params })
-          return toResult<T>(requireFirstResult(results, statement.sql))
-        })
-      )
-      output.push(...settled)
+    if (remote.length === 0) return []
+    const results = await post(options, {
+      batch: remote.map((statement) => ({ sql: statement.sql, params: statement.params }))
+    })
+    if (results.length !== remote.length) {
+      throw new Error(`D1 batch returned ${results.length} results for ${remote.length} statements`)
     }
-    return output
+    return results.map((result) => toResult<T>(result))
   },
 
   exec: async (sql: string): Promise<D1ExecResult> => {

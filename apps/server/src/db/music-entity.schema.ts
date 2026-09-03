@@ -353,6 +353,7 @@ export const musicEntityLinksTable = sqliteTable(
     index('music_entity_links_entity_idx').on(table.entityType, table.entityId),
     index('music_entity_links_status_idx').on(table.status),
     index('music_entity_links_platform_idx').on(table.platform),
+    index('music_entity_links_backfill_page_idx').on(table.createdAt, table.id),
     uniqueIndex('music_entity_links_identity_uq').on(
       table.entityType,
       table.entityId,
@@ -398,6 +399,7 @@ export const musicSourceIdentitiesTable = sqliteTable(
       .where(sql`${table.externalId} IS NOT NULL`),
     index('music_source_identities_entity_idx').on(table.entityType, table.entityId),
     index('music_source_identities_lease_idx').on(table.state, table.leaseExpiresAt),
+    index('music_source_identities_resolving_audit_page_idx').on(table.state, table.sourceKey),
     check(
       'music_source_identities_state_check',
       sql`(${table.state} = 'resolving' AND ${table.ownerToken} IS NOT NULL AND ${table.leaseExpiresAt} IS NOT NULL AND ${table.entityType} IS NULL AND ${table.entityId} IS NULL AND ${table.resolvedAt} IS NULL) OR (${table.state} = 'resolved' AND ${table.ownerToken} IS NULL AND ${table.leaseExpiresAt} IS NULL AND ${table.entityType} IS NOT NULL AND ${table.entityId} IS NOT NULL AND ${table.resolvedAt} IS NOT NULL)`
@@ -455,7 +457,144 @@ export const musicSourceIdentityConflictsTable = sqliteTable(
     check(
       'music_source_identity_conflicts_status_check',
       sql`${table.status} IN ('open', 'resolved', 'ignored')`
+    ),
+    index('music_source_identity_conflicts_audit_page_idx').on(
+      table.status,
+      table.detectedAt,
+      table.id
     )
+  ]
+)
+
+export const musicIdentityMaintenanceRunsTable = sqliteTable(
+  'music_identity_maintenance_runs',
+  {
+    generationId: text('generation_id').primaryKey(),
+    operation: text().notNull(),
+    phase: text().notNull(),
+    active: integer({ mode: 'boolean' }).notNull().default(true),
+    linkHighWaterCreatedAt: integer('link_high_water_created_at', {
+      mode: 'timestamp_ms'
+    }).notNull(),
+    linkHighWaterId: text('link_high_water_id').notNull(),
+    claimHighWaterUpdatedAt: integer('claim_high_water_updated_at', {
+      mode: 'timestamp_ms'
+    }).notNull(),
+    claimHighWaterEntityType: text('claim_high_water_entity_type').notNull(),
+    claimHighWaterCanonicalUrl: text('claim_high_water_canonical_url').notNull(),
+    cursorCreatedAt: integer('cursor_created_at', { mode: 'timestamp_ms' }).notNull(),
+    cursorId: text('cursor_id').notNull(),
+    claimCursorUpdatedAt: integer('claim_cursor_updated_at', {
+      mode: 'timestamp_ms'
+    }).notNull(),
+    claimCursorEntityType: text('claim_cursor_entity_type').notNull(),
+    claimCursorCanonicalUrl: text('claim_cursor_canonical_url').notNull(),
+    applyCursorSourceKey: text('apply_cursor_source_key').notNull(),
+    scannedCount: integer('scanned_count').notNull().default(0),
+    candidateCount: integer('candidate_count').notNull().default(0),
+    attemptedCount: integer('attempted_count').notNull().default(0),
+    invalidCount: integer('invalid_count').notNull().default(0),
+    orphanCount: integer('orphan_count').notNull().default(0),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull()
+  },
+  (table) => [
+    uniqueIndex('music_identity_maintenance_runs_active_uq')
+      .on(table.operation)
+      .where(sql`${table.active} = 1`)
+  ]
+)
+
+export const musicIdentityMaintenanceCandidatesTable = sqliteTable(
+  'music_identity_maintenance_candidates',
+  {
+    generationId: text('generation_id')
+      .notNull()
+      .references(() => musicIdentityMaintenanceRunsTable.generationId, {
+        onDelete: 'cascade'
+      }),
+    sourceKey: text('source_key').notNull(),
+    origin: text().notNull(),
+    originKey: text('origin_key').notNull(),
+    platform: text().notNull(),
+    sourceEntityType: text('source_entity_type').notNull(),
+    externalId: text('external_id'),
+    canonicalUrl: text('canonical_url').notNull(),
+    sourceUrl: text('source_url').notNull(),
+    normalizedUrl: text('normalized_url').notNull(),
+    entityType: text('entity_type').notNull(),
+    entityId: text('entity_id').notNull(),
+    status: text().notNull(),
+    verifiedAt: integer('verified_at', { mode: 'timestamp_ms' }),
+    scrapedAt: integer('scraped_at', { mode: 'timestamp_ms' }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull()
+  },
+  (table) => [
+    primaryKey({ columns: [table.generationId, table.origin, table.originKey] }),
+    index('music_identity_maintenance_candidates_source_page_idx').on(
+      table.generationId,
+      table.sourceKey,
+      table.origin,
+      table.originKey
+    )
+  ]
+)
+
+export const musicIdentityMaintenanceSourceKeysTable = sqliteTable(
+  'music_identity_maintenance_source_keys',
+  {
+    generationId: text('generation_id')
+      .notNull()
+      .references(() => musicIdentityMaintenanceRunsTable.generationId, {
+        onDelete: 'cascade'
+      }),
+    sourceKey: text('source_key').notNull()
+  },
+  (table) => [primaryKey({ columns: [table.generationId, table.sourceKey] })]
+)
+
+export const musicIdentityMaintenanceFindingsTable = sqliteTable(
+  'music_identity_maintenance_findings',
+  {
+    generationId: text('generation_id')
+      .notNull()
+      .references(() => musicIdentityMaintenanceRunsTable.generationId, {
+        onDelete: 'cascade'
+      }),
+    findingKey: text('finding_key').notNull(),
+    category: text().notNull(),
+    sourceKey: text('source_key'),
+    originKey: text('origin_key'),
+    entityType: text('entity_type'),
+    entityId: text('entity_id'),
+    detail: text().notNull(),
+    detectedAt: integer('detected_at', { mode: 'timestamp_ms' }).notNull()
+  },
+  (table) => [
+    primaryKey({ columns: [table.generationId, table.findingKey] }),
+    index('music_identity_maintenance_findings_page_idx').on(
+      table.generationId,
+      table.category,
+      table.findingKey
+    )
+  ]
+)
+
+export const musicIdentityMaintenanceActionsTable = sqliteTable(
+  'music_identity_maintenance_actions',
+  {
+    generationId: text('generation_id')
+      .notNull()
+      .references(() => musicIdentityMaintenanceRunsTable.generationId, {
+        onDelete: 'cascade'
+      }),
+    actionKey: text('action_key').notNull(),
+    kind: text().notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull()
+  },
+  (table) => [
+    primaryKey({ columns: [table.generationId, table.actionKey] }),
+    index('music_identity_maintenance_actions_kind_idx').on(table.generationId, table.kind)
   ]
 )
 
@@ -476,7 +615,12 @@ export const musicEntityResolutionClaimsTable = sqliteTable(
       .notNull()
       .$defaultFn(() => new Date())
   },
-  (table) => [primaryKey({ columns: [table.entityType, table.canonicalUrl] })]
+  (table) => [
+    primaryKey({ columns: [table.entityType, table.canonicalUrl] }),
+    index('music_entity_resolution_claims_backfill_page_idx')
+      .on(table.updatedAt, table.entityType, table.canonicalUrl)
+      .where(sql`${table.entityId} IS NOT NULL`)
+  ]
 )
 
 // ---------------------------------------------------------------------------
@@ -519,6 +663,9 @@ export type SelectMusicEntityLink = InferSelectModel<typeof musicEntityLinksTabl
 export type InsertMusicEntityLink = InferInsertModel<typeof musicEntityLinksTable>
 export type SelectMusicEntityResolutionClaim = InferSelectModel<
   typeof musicEntityResolutionClaimsTable
+>
+export type SelectMusicIdentityMaintenanceRun = InferSelectModel<
+  typeof musicIdentityMaintenanceRunsTable
 >
 export type SelectMusicSourceIdentity = InferSelectModel<typeof musicSourceIdentitiesTable>
 export type InsertMusicSourceIdentity = InferInsertModel<typeof musicSourceIdentitiesTable>
