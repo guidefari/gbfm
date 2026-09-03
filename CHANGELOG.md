@@ -1,3 +1,28 @@
+# [2.91.0](https://github.com/guidefari/gbfm/compare/v2.90.0...v2.91.0) (2026-09-03)
+
+
+### Bug Fixes
+
+* **dev:** pin local worker ports ([f53bb1c](https://github.com/guidefari/gbfm/commit/f53bb1c8aead0326e0c7538e1c1131b6f349c589))
+* **editorial:** clarify description field ([6869700](https://github.com/guidefari/gbfm/commit/68697003ba40cf6e7e43c1b9aa1db306dc25d4f0))
+* **editorial:** consolidate writing controls ([06c508f](https://github.com/guidefari/gbfm/commit/06c508f4f49ddb0726b8fc5c05585380dbe4e026))
+* **editorial:** place linked music after prose ([2fe1f1c](https://github.com/guidefari/gbfm/commit/2fe1f1c65bdda4a8a95addd668665e12892457a1))
+* **editorial:** refine the writing workspace ([eef49f2](https://github.com/guidefari/gbfm/commit/eef49f29f36cfe1e0e1c9fd2d74e567fcc7b7acb))
+
+
+### Features
+
+* **editorial:** add safe external media embeds ([ba37b3c](https://github.com/guidefari/gbfm/commit/ba37b3c4080ae575546d6f366c23deeb92bb2aef))
+* **editorial:** create immersive writing workspace ([56739ea](https://github.com/guidefari/gbfm/commit/56739eab521420ef97f3035633dd0927668cc063))
+* **editorial:** embed pasted Spotify links ([82ce028](https://github.com/guidefari/gbfm/commit/82ce028e35f01f1226a7c9bb6dbc2360ad081eb6))
+* **editorial:** resolve pasted music entities ([dd2d6db](https://github.com/guidefari/gbfm/commit/dd2d6db4419e30677359cf5a09674ab806813433))
+* **editorial:** share reusable post tags ([785dc3f](https://github.com/guidefari/gbfm/commit/785dc3fcda379c04768ad2e27a5d7ad693fbfa4e))
+* **pdf:** isolate QR generation worker ([8b8e1fb](https://github.com/guidefari/gbfm/commit/8b8e1fbdfc823892c4b031faab593e5c683c8839))
+* replace legacy markdown editor ([661da0f](https://github.com/guidefari/gbfm/commit/661da0f48b5c2007a30140332b4a9c65e135b1cb))
+* **tags:** unify post tag discovery ([e4862cd](https://github.com/guidefari/gbfm/commit/e4862cd70c9fc7df6274dca80221f826e5c1046b))
+* **www:** add editorial music entity embeds ([256e02a](https://github.com/guidefari/gbfm/commit/256e02a4190bd5eafc0532f7997467590e7cf9a6))
+* **www:** redesign editorial workspace ([bcce7be](https://github.com/guidefari/gbfm/commit/bcce7be9e3fd3ff2ce04fef3580324c0e87437a0))
+
 # [2.90.0](https://github.com/guidefari/gbfm/compare/v2.89.1...v2.90.0) (2026-09-02)
 
 
