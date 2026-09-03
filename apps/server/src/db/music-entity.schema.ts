@@ -1,6 +1,14 @@
 import { LINK_STATUS } from '@gbfm/core/status'
-import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
-import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
+import { type InferInsertModel, type InferSelectModel, relations, sql } from 'drizzle-orm'
+import {
+  check,
+  index,
+  integer,
+  primaryKey,
+  sqliteTable,
+  text,
+  uniqueIndex
+} from 'drizzle-orm/sqlite-core'
 import { user } from './auth.schema'
 
 // ---------------------------------------------------------------------------
@@ -353,6 +361,104 @@ export const musicEntityLinksTable = sqliteTable(
   ]
 )
 
+export const MUSIC_SOURCE_IDENTITY_STATES = ['resolving', 'resolved'] as const
+export type MusicSourceIdentityState = (typeof MUSIC_SOURCE_IDENTITY_STATES)[number]
+
+export const MUSIC_SOURCE_CONFLICT_STATUSES = ['open', 'resolved', 'ignored'] as const
+export type MusicSourceConflictStatus = (typeof MUSIC_SOURCE_CONFLICT_STATUSES)[number]
+
+export const musicSourceIdentitiesTable = sqliteTable(
+  'music_source_identities',
+  {
+    sourceKey: text('source_key').primaryKey(),
+    platform: text()
+      .notNull()
+      .references(() => musicPlatformsTable.id),
+    sourceEntityType: text('source_entity_type').notNull(),
+    externalId: text('external_id'),
+    canonicalUrl: text('canonical_url').notNull(),
+    state: text().$type<MusicSourceIdentityState>().notNull(),
+    entityType: text('entity_type').references(() => musicEntityTypesTable.id),
+    entityId: text('entity_id'),
+    ownerToken: text('owner_token'),
+    leaseExpiresAt: integer('lease_expires_at', { mode: 'timestamp_ms' }),
+    resolvedAt: integer('resolved_at', { mode: 'timestamp_ms' }),
+    lastScrapedAt: integer('last_scraped_at', { mode: 'timestamp_ms' }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date())
+  },
+  (table) => [
+    uniqueIndex('music_source_identities_canonical_url_uq').on(table.canonicalUrl),
+    uniqueIndex('music_source_identities_provider_id_uq')
+      .on(table.platform, table.sourceEntityType, table.externalId)
+      .where(sql`${table.externalId} IS NOT NULL`),
+    index('music_source_identities_entity_idx').on(table.entityType, table.entityId),
+    index('music_source_identities_lease_idx').on(table.state, table.leaseExpiresAt),
+    check(
+      'music_source_identities_state_check',
+      sql`(${table.state} = 'resolving' AND ${table.ownerToken} IS NOT NULL AND ${table.leaseExpiresAt} IS NOT NULL AND ${table.entityType} IS NULL AND ${table.entityId} IS NULL AND ${table.resolvedAt} IS NULL) OR (${table.state} = 'resolved' AND ${table.ownerToken} IS NULL AND ${table.leaseExpiresAt} IS NULL AND ${table.entityType} IS NOT NULL AND ${table.entityId} IS NOT NULL AND ${table.resolvedAt} IS NOT NULL)`
+    )
+  ]
+)
+
+export const musicSourceAliasesTable = sqliteTable(
+  'music_source_aliases',
+  {
+    normalizedUrl: text('normalized_url').primaryKey(),
+    sourceKey: text('source_key')
+      .notNull()
+      .references(() => musicSourceIdentitiesTable.sourceKey, { onDelete: 'cascade' }),
+    firstSeenAt: integer('first_seen_at', { mode: 'timestamp_ms' }).notNull(),
+    lastSeenAt: integer('last_seen_at', { mode: 'timestamp_ms' }).notNull()
+  },
+  (table) => [index('music_source_aliases_source_key_idx').on(table.sourceKey)]
+)
+
+export const musicSourceIdentityConflictsTable = sqliteTable(
+  'music_source_identity_conflicts',
+  {
+    id: text()
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    sourceKey: text('source_key')
+      .notNull()
+      .references(() => musicSourceIdentitiesTable.sourceKey, { onDelete: 'cascade' }),
+    incumbentEntityType: text('incumbent_entity_type')
+      .notNull()
+      .references(() => musicEntityTypesTable.id),
+    incumbentEntityId: text('incumbent_entity_id').notNull(),
+    candidateEntityType: text('candidate_entity_type')
+      .notNull()
+      .references(() => musicEntityTypesTable.id),
+    candidateEntityId: text('candidate_entity_id').notNull(),
+    reason: text().notNull(),
+    status: text().$type<MusicSourceConflictStatus>().notNull().default('open'),
+    detectedAt: integer('detected_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    resolvedAt: integer('resolved_at', { mode: 'timestamp_ms' })
+  },
+  (table) => [
+    uniqueIndex('music_source_identity_conflicts_open_uq')
+      .on(
+        table.sourceKey,
+        table.incumbentEntityType,
+        table.incumbentEntityId,
+        table.candidateEntityType,
+        table.candidateEntityId
+      )
+      .where(sql`${table.status} = 'open'`),
+    check(
+      'music_source_identity_conflicts_status_check',
+      sql`${table.status} IN ('open', 'resolved', 'ignored')`
+    )
+  ]
+)
+
 export const musicEntityResolutionClaimsTable = sqliteTable(
   'music_entity_resolution_claims',
   {
@@ -413,6 +519,16 @@ export type SelectMusicEntityLink = InferSelectModel<typeof musicEntityLinksTabl
 export type InsertMusicEntityLink = InferInsertModel<typeof musicEntityLinksTable>
 export type SelectMusicEntityResolutionClaim = InferSelectModel<
   typeof musicEntityResolutionClaimsTable
+>
+export type SelectMusicSourceIdentity = InferSelectModel<typeof musicSourceIdentitiesTable>
+export type InsertMusicSourceIdentity = InferInsertModel<typeof musicSourceIdentitiesTable>
+export type SelectMusicSourceAlias = InferSelectModel<typeof musicSourceAliasesTable>
+export type InsertMusicSourceAlias = InferInsertModel<typeof musicSourceAliasesTable>
+export type SelectMusicSourceIdentityConflict = InferSelectModel<
+  typeof musicSourceIdentityConflictsTable
+>
+export type InsertMusicSourceIdentityConflict = InferInsertModel<
+  typeof musicSourceIdentityConflictsTable
 >
 
 // ---------------------------------------------------------------------------
