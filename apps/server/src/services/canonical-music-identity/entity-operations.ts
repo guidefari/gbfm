@@ -1,6 +1,7 @@
 import { Effect } from 'effect'
 import type { DatabaseClient } from '@/db/layer'
 import { Database } from '@/db/layer'
+import type { SelectMusicEntityLink } from '@/db/music-entity.schema'
 import type {
   MusicLinkScraperService,
   MusicScraperError,
@@ -42,6 +43,23 @@ const referenceKey = (reference: EntityReference) => `${reference.entityType}:${
 
 const storageError = (operation: string, message: string) =>
   new MusicIdentityStorageError({ operation, message })
+
+type RefreshMode = 'automatic_enrichment' | 'administrator_refresh'
+
+const compareOptionalDate = (left: Date | null, right: Date | null) => {
+  if (left === null) return right === null ? 0 : 1
+  if (right === null) return -1
+  return left.getTime() - right.getTime()
+}
+
+const compareRefreshSourcePrecedence = (
+  left: SelectMusicEntityLink,
+  right: SelectMusicEntityLink
+) =>
+  compareOptionalDate(left.verifiedAt, right.verifiedAt) ||
+  compareOptionalDate(left.scrapedAt, right.scrapedAt) ||
+  left.createdAt.getTime() - right.createdAt.getTime() ||
+  left.id.localeCompare(right.id)
 
 export const makeEntityOperations = (
   db: DatabaseClient,
@@ -203,8 +221,9 @@ export const makeEntityOperations = (
       })
     )
 
-  const refresh = (input: RefreshMusicEntity, explicitRefresh: boolean) =>
-    Effect.gen(function* () {
+  const refresh = (input: RefreshMusicEntity, mode: RefreshMode) => {
+    const explicitRefresh = mode === 'administrator_refresh'
+    return Effect.gen(function* () {
       const reference = { entityType: input.entityType, entityId: input.entityId }
       yield* annotateEntity(reference)
       yield* Effect.annotateCurrentSpan('explicitRefresh', explicitRefresh)
@@ -223,10 +242,12 @@ export const makeEntityOperations = (
           links
         } satisfies RefreshedMusicEntity
       }
-      const exactSources = links.filter(
-        (link) => link.metadata?.confidence === 'exact_source' && link.status === 'verified'
-      )
-      const sourceLink = exactSources.length === 1 ? exactSources[0] : undefined
+      const exactSources = links
+        .filter(
+          (link) => link.metadata?.confidence === 'exact_source' && link.status === 'verified'
+        )
+        .sort(compareRefreshSourcePrecedence)
+      const sourceLink = exactSources[0]
       if (!sourceLink) {
         return yield* new MusicIdentitySourceLinkNotFound({
           entityType: input.entityType,
@@ -340,7 +361,13 @@ export const makeEntityOperations = (
           })
         }
       }
-      const refreshed = refreshedEntityRecord(input.entityType, input.entityId, result, current)
+      const refreshed = refreshedEntityRecord(
+        input.entityType,
+        input.entityId,
+        result,
+        current,
+        explicitRefresh ? 'replace_canonical' : 'preserve_canonical'
+      )
       const committed = yield* repository
         .updateEntityMetadata({
           entity: refreshed,
@@ -402,6 +429,7 @@ export const makeEntityOperations = (
         }
       })
     )
+  }
 
   const releaseLink = (input: ReleaseMusicSourceLink) =>
     Effect.gen(function* () {
@@ -435,8 +463,8 @@ export const makeEntityOperations = (
       return released
     }).pipe(withSafeTypedSpan('musicIdentity.releaseLink'))
 
-  const enrichEntity = (input: RefreshMusicEntity) => refresh(input, false)
-  const refreshEntity = (input: RefreshMusicEntity) => refresh(input, true)
+  const enrichEntity = (input: RefreshMusicEntity) => refresh(input, 'automatic_enrichment')
+  const refreshEntity = (input: RefreshMusicEntity) => refresh(input, 'administrator_refresh')
 
   return { attachLink, releaseLink, enrichEntity, refreshEntity }
 }

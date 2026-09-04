@@ -716,6 +716,114 @@ describe('CanonicalMusicIdentity', () => {
     expect(result.links.some((link) => link.platform === 'deezer')).toBe(true)
   })
 
+  test('automatic enrichment selects the earliest exact source without replacing canonical metadata', async () => {
+    const spotifyUrl = `https://open.spotify.com/track/${externalId()}`
+    const deezerUrl = `https://www.deezer.com/track/${Date.now() + 600}`
+    const youtubeUrl = `https://www.youtube.com/watch?v=${externalId()}`
+    let receivedInput: MusicScrapeInput | undefined
+    const scraper: MusicLinkScraperService = {
+      scrape: () => Effect.die('Automatic enrichment must not refresh provider metadata'),
+      discoverCrossPlatformLinks: (input) => {
+        receivedInput = input
+        return Effect.succeed({
+          links: [{ platform: 'youtube', url: youtubeUrl, scrapedAt: new Date() }],
+          entityMeta: {
+            title: 'Discovered Title',
+            artistName: 'Discovered Artist',
+            type: 'song'
+          }
+        })
+      }
+    }
+
+    const result = await serviceWith(scraper, (service) =>
+      Effect.gen(function* () {
+        const imported = yield* service.importProviderEntity({
+          snapshot: {
+            ...snapshot(spotifyUrl, 'Canonical Title', [
+              {
+                platform: 'deezer',
+                url: deezerUrl,
+                scrapedAt: new Date('2020-01-01T00:00:00.000Z'),
+                metadata: { discoveredBy: 'deezer', confidence: 'exact_source' }
+              }
+            ]),
+            artistNames: ['Canonical Artist']
+          },
+          origin: 'spotify_import'
+        })
+        const enriched = yield* service.enrichEntity({
+          entityType: 'track',
+          entityId: imported.entity.id,
+          actorId: 'playlist_enrichment',
+          origin: 'playlist_enrichment'
+        })
+        return { imported, enriched }
+      })
+    )
+
+    expect(receivedInput).toEqual({
+      entityType: 'track',
+      url: deezerUrl,
+      trackTitle: 'Canonical Title',
+      artistName: 'Canonical Artist'
+    })
+    expect(result.enriched.entity.id).toBe(result.imported.entity.id)
+    expect('title' in result.enriched.entity ? result.enriched.entity.title : '').toBe(
+      'Canonical Title'
+    )
+    expect(
+      'artistNames' in result.enriched.entity ? result.enriched.entity.artistNames : []
+    ).toEqual(['Canonical Artist'])
+    expect(result.enriched.links.some((link) => link.platform === 'youtube')).toBe(true)
+  })
+
+  test('administrator refresh selects the earliest exact source and replaces canonical metadata', async () => {
+    const spotifyUrl = `https://open.spotify.com/track/${externalId()}`
+    const deezerUrl = `https://www.deezer.com/track/${Date.now() + 700}`
+    const recorder = recordingScraper(() =>
+      Effect.succeed({
+        links: [],
+        entityMeta: { title: 'Refreshed Title', artistName: 'Refreshed Artist', type: 'song' }
+      })
+    )
+
+    const result = await serviceWith(recorder.service, (service) =>
+      Effect.gen(function* () {
+        const imported = yield* service.importProviderEntity({
+          snapshot: {
+            ...snapshot(spotifyUrl, 'Canonical Title', [
+              {
+                platform: 'deezer',
+                url: deezerUrl,
+                scrapedAt: new Date('2020-01-01T00:00:00.000Z'),
+                metadata: { discoveredBy: 'deezer', confidence: 'exact_source' }
+              }
+            ]),
+            artistNames: ['Canonical Artist']
+          },
+          origin: 'spotify_import'
+        })
+        const refreshed = yield* service.refreshEntity({
+          entityType: 'track',
+          entityId: imported.entity.id,
+          actorId: 'admin',
+          origin: 'manual'
+        })
+        return { imported, refreshed }
+      })
+    )
+
+    expect(recorder.calls).toEqual([{ entityType: 'track', url: deezerUrl }])
+    expect(result.refreshed.entity.id).toBe(result.imported.entity.id)
+    expect('title' in result.refreshed.entity ? result.refreshed.entity.title : '').toBe(
+      'Refreshed Title'
+    )
+    expect(
+      'artistNames' in result.refreshed.entity ? result.refreshed.entity.artistNames : []
+    ).toEqual(['Refreshed Artist'])
+  })
+
   test('refresh keeps stored artwork until a fetched replacement can be promoted', async () => {
     const sourceUrl = `https://open.spotify.com/track/${externalId()}`
     const storedArtwork = 'https://cdn.example.com/user-content/music/track/cover'

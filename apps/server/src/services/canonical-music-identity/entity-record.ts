@@ -92,9 +92,12 @@ export const storedImageFor = (entity: ResolvedEntity) =>
 const imageFor = (result: ScrapeResult, fallback?: ResolvedEntity) =>
   result.entityMeta?.thumbnailUrl ?? (fallback ? storedImageFor(fallback) : undefined)
 
+const storedArtistNamesFor = (entity: ResolvedEntity) =>
+  'artistNames' in entity ? (entity.artistNames ?? []) : []
+
 const artistNamesFor = (result: ScrapeResult, fallback?: ResolvedEntity) => {
   if (result.entityMeta?.artistName) return parseArtistNames(result.entityMeta.artistName)
-  return fallback && 'artistNames' in fallback ? (fallback.artistNames ?? []) : []
+  return fallback ? storedArtistNamesFor(fallback) : []
 }
 
 const prepareArtists = (db: DatabaseClient, names: readonly string[]) =>
@@ -160,12 +163,21 @@ export const refreshedEntityRecord = (
   entityType: EntityReference['entityType'],
   entityId: string,
   result: ScrapeResult,
-  fallback: ResolvedEntity
+  fallback: ResolvedEntity,
+  metadataPolicy: 'preserve_canonical' | 'replace_canonical'
 ): EntityRecord => ({
   entityType,
   entityId,
-  title: titleFor(entityType, result, fallback),
-  artistNames: artistNamesFor(result, fallback),
+  title:
+    metadataPolicy === 'replace_canonical'
+      ? titleFor(entityType, result, fallback)
+      : 'name' in fallback
+        ? fallback.name
+        : fallback.title,
+  artistNames:
+    metadataPolicy === 'replace_canonical'
+      ? artistNamesFor(result, fallback)
+      : storedArtistNamesFor(fallback),
   artists: [],
   imageUrl: storedImageFor(fallback),
   description:
