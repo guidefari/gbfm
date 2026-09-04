@@ -22,14 +22,24 @@ const response = (result: ReadonlyArray<RemoteResult>) =>
   })
 
 describe('remote D1 adapter', () => {
-  test('sends parameterized statements in one REST batch request', async () => {
-    const bodies: string[] = []
-    const recordingFetch: NonNullable<RemoteD1Options['fetch']> = async (_input, init) => {
-      bodies.push(await new Response(init.body).text())
-      return response([
-        { success: true, results: [], meta: { changes: 1 } },
-        { success: true, results: [], meta: { changes: 1 } }
-      ])
+  test('sends each parameterized batch statement as a documented REST query', async () => {
+    const requests: Array<{
+      readonly url: string
+      readonly method: string | undefined
+      readonly authorization: string | null
+      readonly contentType: string | null
+      readonly body: string
+    }> = []
+    const recordingFetch: NonNullable<RemoteD1Options['fetch']> = async (url, init) => {
+      const headers = new Headers(init.headers)
+      requests.push({
+        url,
+        method: init.method,
+        authorization: headers.get('Authorization'),
+        contentType: headers.get('Content-Type'),
+        body: await new Response(init.body).text()
+      })
+      return response([{ success: true, results: [], meta: { changes: 1 } }])
     }
     const database = createRemoteD1(options(recordingFetch))
 
@@ -38,36 +48,60 @@ describe('remote D1 adapter', () => {
       database.prepare('INSERT INTO two VALUES (?)').bind('two')
     ])
 
-    expect(bodies).toEqual([
-      JSON.stringify({
-        batch: [
-          { sql: 'INSERT INTO one VALUES (?)', params: ['one'] },
-          { sql: 'INSERT INTO two VALUES (?)', params: ['two'] }
-        ]
-      })
+    expect(requests).toEqual([
+      {
+        url: 'https://api.cloudflare.com/client/v4/accounts/account/d1/database/database/query',
+        method: 'POST',
+        authorization: 'Bearer token',
+        contentType: 'application/json',
+        body: JSON.stringify({ sql: 'INSERT INTO one VALUES (?)', params: ['one'] })
+      },
+      {
+        url: 'https://api.cloudflare.com/client/v4/accounts/account/d1/database/database/query',
+        method: 'POST',
+        authorization: 'Bearer token',
+        contentType: 'application/json',
+        body: JSON.stringify({ sql: 'INSERT INTO two VALUES (?)', params: ['two'] })
+      }
     ])
   })
 
-  test('rejects a failed result even when the response envelope succeeds', async () => {
+  test('validates every result when the response envelope succeeds', async () => {
     const failedFetch: NonNullable<RemoteD1Options['fetch']> = async () =>
-      response([{ success: false, error: 'constraint failed', results: [], meta: {} }])
-    const database = createRemoteD1(options(failedFetch))
-
-    await expect(database.prepare('SELECT 1').all()).rejects.toThrow(
-      'D1 statement 0 failed: constraint failed'
-    )
-  })
-
-  test('validates every result in a batch', async () => {
-    const partiallyFailedFetch: NonNullable<RemoteD1Options['fetch']> = async () =>
       response([
         { success: true, results: [], meta: {} },
         { success: false, error: 'second failed', results: [], meta: {} }
       ])
-    const database = createRemoteD1(options(partiallyFailedFetch))
+    const database = createRemoteD1(options(failedFetch))
 
-    await expect(
-      database.batch([database.prepare('SELECT 1'), database.prepare('SELECT 2')])
-    ).rejects.toThrow('D1 statement 1 failed: second failed')
+    await expect(database.prepare('SELECT 1; SELECT 2').all()).rejects.toThrow(
+      'D1 statement 1 failed: second failed'
+    )
+  })
+
+  test('reports a partial failure and does not start the next request window', async () => {
+    const bodies: string[] = []
+    let requestCount = 0
+    const partiallyFailedFetch: NonNullable<RemoteD1Options['fetch']> = async (_url, init) => {
+      const requestIndex = requestCount
+      requestCount += 1
+      bodies[requestIndex] = await new Response(init.body).text()
+      return response([
+        requestIndex === 1
+          ? { success: false, error: 'second failed', results: [], meta: {} }
+          : { success: true, results: [], meta: { changes: 1 } }
+      ])
+    }
+    const database = createRemoteD1(options(partiallyFailedFetch))
+    const statements = Array.from({ length: 9 }, (_, index) =>
+      database.prepare('INSERT INTO records VALUES (?)').bind(index)
+    )
+
+    await expect(database.batch(statements)).rejects.toThrow('D1 statement 0 failed: second failed')
+    expect(bodies).toEqual(
+      Array.from({ length: 8 }, (_, index) =>
+        JSON.stringify({ sql: 'INSERT INTO records VALUES (?)', params: [index] })
+      )
+    )
   })
 })

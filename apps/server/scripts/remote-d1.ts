@@ -16,7 +16,6 @@ type QueryResult = {
 }
 
 type Query = { readonly sql: string; readonly params?: ReadonlyArray<unknown> }
-type QueryBody = Query | { readonly batch: ReadonlyArray<Query> }
 
 type ApiResponse = {
   readonly success: boolean
@@ -36,10 +35,7 @@ export type RemoteD1Options = {
 const endpointFor = (options: RemoteD1Options) =>
   `https://api.cloudflare.com/client/v4/accounts/${options.accountId}/d1/database/${options.databaseId}/query`
 
-const post = async (
-  options: RemoteD1Options,
-  body: QueryBody
-): Promise<ReadonlyArray<QueryResult>> => {
+const post = async (options: RemoteD1Options, body: Query): Promise<ReadonlyArray<QueryResult>> => {
   const response = await (options.fetch ?? fetch)(endpointFor(options), {
     method: 'POST',
     headers: {
@@ -120,6 +116,14 @@ class RemoteStatement implements D1PreparedStatement {
   }
 }
 
+const REQUEST_CONCURRENCY = 8
+
+/**
+ * Creates a D1-compatible adapter for maintenance scripts.
+ *
+ * `batch()` uses bounded single-statement REST requests and is not atomic. Its
+ * callers must use idempotent, resumable writes.
+ */
 export const createRemoteD1 = (options: RemoteD1Options): D1Database => ({
   prepare: (sql: string) => new RemoteStatement(options, sql),
 
@@ -129,14 +133,18 @@ export const createRemoteD1 = (options: RemoteD1Options): D1Database => ({
       throw new Error('createRemoteD1().batch() only accepts statements from the same database')
     }
 
-    if (remote.length === 0) return []
-    const results = await post(options, {
-      batch: remote.map((statement) => ({ sql: statement.sql, params: statement.params }))
-    })
-    if (results.length !== remote.length) {
-      throw new Error(`D1 batch returned ${results.length} results for ${remote.length} statements`)
+    const output: Array<D1Result<T>> = []
+    for (let i = 0; i < remote.length; i += REQUEST_CONCURRENCY) {
+      const window = remote.slice(i, i + REQUEST_CONCURRENCY)
+      const settled = await Promise.all(
+        window.map(async (statement) => {
+          const results = await post(options, { sql: statement.sql, params: statement.params })
+          return toResult<T>(requireFirstResult(results, statement.sql))
+        })
+      )
+      output.push(...settled)
     }
-    return results.map((result) => toResult<T>(result))
+    return output
   },
 
   exec: async (sql: string): Promise<D1ExecResult> => {
