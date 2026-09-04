@@ -3,6 +3,7 @@ import { NavigationSessionResponse } from '@gbfm/api/navigation'
 import {
   AlbumListResponse,
   ArtistListResponse,
+  EntityLinkResponse,
   LabelListResponse,
   LabelResponse,
   PlaylistListResponse,
@@ -599,6 +600,113 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
     )
 
     expect(res.status).toBe(401)
+  })
+
+  it('adds and verifies ordinary and legacy album links without weakening provider identity checks', async () => {
+    const suffix = crypto.randomUUID()
+    const userId = `link-admin-${suffix}`
+    const token = `link-admin-token-${suffix}`
+    const albumId = crypto.randomUUID()
+    const links = [
+      { platform: 'discogs', url: `https://www.discogs.com/release/${suffix}` },
+      {
+        platform: 'youtube_music',
+        url: `https://music.youtube.com/watch?v=${suffix.replaceAll('-', '')}`
+      },
+      { platform: 'website', url: `https://artist-${suffix}.example.com/album` },
+      { platform: 'instagram', url: `https://www.instagram.com/artist-${suffix}` },
+      { platform: 'twitter', url: `https://x.com/artist_${suffix.replaceAll('-', '')}` },
+      { platform: 'discord', url: `https://discord.gg/${suffix.replaceAll('-', '')}` },
+      {
+        platform: 'youtube',
+        url: `https://www.youtube.com/watch?v=${suffix.replaceAll('-', '')}`
+      }
+    ] as const
+
+    await db.batch([
+      db.insert(user).values({
+        id: userId,
+        name: 'Link admin',
+        email: `${userId}@example.com`,
+        role: 'admin'
+      }),
+      db.insert(session).values({
+        id: crypto.randomUUID(),
+        token,
+        userId,
+        expiresAt: new Date(Date.now() + 60_000)
+      }),
+      db
+        .insert(musicEntityTypesTable)
+        .values({ id: 'album', displayName: 'Album' })
+        .onConflictDoNothing(),
+      db
+        .insert(musicPlatformsTable)
+        .values(
+          [...links.map(({ platform }) => platform), 'spotify', 'deezer'].map((platform) => ({
+            id: platform,
+            displayName: platform
+          }))
+        )
+        .onConflictDoNothing(),
+      db
+        .insert(musicAlbumsTable)
+        .values({ id: albumId, title: 'Link compatibility album', slug: `links-${suffix}` })
+    ])
+
+    const request = (
+      path: string,
+      method: 'POST' | 'PATCH',
+      body: Readonly<Record<string, string>>
+    ) =>
+      webHandler.handler(
+        new Request(`http://localhost${path}`, {
+          method,
+          headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+          body: JSON.stringify(body)
+        })
+      )
+
+    try {
+      for (const link of links) {
+        const added = await request(`/api/music/album/${albumId}/links`, 'POST', {
+          ...link,
+          status: 'rejected'
+        })
+        expect(added.status).toBe(200)
+        const addedLink = await decodeResponseBody(EntityLinkResponse, added)
+        expect(addedLink).toMatchObject({ ...link, status: 'rejected' })
+
+        const verified = await request(
+          `/api/music/album/${albumId}/links/${addedLink.id}`,
+          'PATCH',
+          { status: 'verified' }
+        )
+        expect(verified.status).toBe(200)
+        await expect(decodeResponseBody(EntityLinkResponse, verified)).resolves.toMatchObject({
+          ...link,
+          status: 'verified',
+          verifiedBy: userId
+        })
+      }
+
+      const mismatchedProvider = await request(`/api/music/album/${albumId}/links`, 'POST', {
+        platform: 'deezer',
+        url: `https://open.spotify.com/album/${suffix.replaceAll('-', '')}`
+      })
+      expect(mismatchedProvider.status).toBe(400)
+
+      const identities = await db
+        .select()
+        .from(musicSourceIdentitiesTable)
+        .where(eq(musicSourceIdentitiesTable.entityId, albumId))
+      expect(identities).toHaveLength(0)
+    } finally {
+      await db.delete(musicEntityLinksTable).where(eq(musicEntityLinksTable.entityId, albumId))
+      await db.delete(musicAlbumsTable).where(eq(musicAlbumsTable.id, albumId))
+      await db.delete(session).where(eq(session.userId, userId))
+      await db.delete(user).where(eq(user.id, userId))
+    }
   })
 
   it('POST /api/music/resolve returns 401 without a session cookie', async () => {

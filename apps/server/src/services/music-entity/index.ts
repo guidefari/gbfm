@@ -120,6 +120,11 @@ export type {
 
 type ScrapeableMusicEntityType = Exclude<MusicEntityType, 'label'>
 
+const usesCanonicalIdentity = (entityType: ScrapeableMusicEntityType, platform: string) =>
+  platform === 'spotify' ||
+  platform === 'deezer' ||
+  (platform === 'youtube' && (entityType === 'track' || entityType === 'playlist'))
+
 export interface MusicEntityService {
   readonly createArtist: (
     data: CreateArtistInput
@@ -377,13 +382,15 @@ export const MusicEntityServiceLayer = Layer.effect(
             : Effect.fail(new NotFoundError({ message: 'Music entity link not found', id: linkId }))
         }),
         Effect.flatMap((link) =>
-          identity.attachLink({
-            entityType,
-            entityId,
-            platform: link.platform,
-            url: link.url,
-            origin: 'manual'
-          })
+          usesCanonicalIdentity(entityType, link.platform)
+            ? identity.attachLink({
+                entityType,
+                entityId,
+                platform: link.platform,
+                url: link.url,
+                origin: 'manual'
+              })
+            : Effect.void
         ),
         Effect.andThen(
           provideDb(
@@ -527,10 +534,11 @@ export const MusicEntityServiceLayer = Layer.effect(
       getLinksForEntity: (entityType, entityId, statusFilter) =>
         provideDb(getLinksForEntityEffect(entityType, entityId, statusFilter)),
       addLink: (data) =>
-        data.entityType === 'artist' ||
-        data.entityType === 'album' ||
-        data.entityType === 'track' ||
-        data.entityType === 'playlist'
+        (data.entityType === 'artist' ||
+          data.entityType === 'album' ||
+          data.entityType === 'track' ||
+          data.entityType === 'playlist') &&
+        usesCanonicalIdentity(data.entityType, data.platform)
           ? attachIdentityLink(data, data.entityType)
           : provideDb(addLinkEffect(data)),
       updateLinkStatus: (entityType, entityId, linkId, status, verifiedBy, metadata) =>
