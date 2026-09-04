@@ -1,10 +1,14 @@
+import { eq } from 'drizzle-orm'
 import { Effect, Layer } from 'effect'
 import { beforeAll, describe, expect, test } from 'vitest'
 import { Database } from '@/db/layer'
 import {
+  musicEntityLinksTable,
   musicEntityTypesTable,
   musicPlatformsTable,
-  musicPlaylistsTable
+  musicPlaylistsTable,
+  musicPlaylistTracksTable,
+  musicTracksTable
 } from '@/db/music-entity.schema'
 import {
   CanonicalMusicIdentity,
@@ -25,10 +29,13 @@ import { db } from '@/test/d1'
 import { withTestLayer } from '@/test/effect'
 import {
   addSpotifyTrackToPlaylistEffect,
-  importSpotifyPlaylistEffect
+  importSpotifyPlaylistEffect,
+  syncPlaylistLinksEffect
 } from './playlist-tracks.service'
 
 const externalId = () => crypto.randomUUID().replaceAll('-', '').slice(0, 22)
+let nextDeezerId = Date.now()
+const deezerId = () => String(nextDeezerId++)
 
 beforeAll(async () => {
   await db
@@ -84,6 +91,63 @@ const runWithIdentity = <A, E>(
   )
 }
 
+type PlaylistTrackSeed = {
+  readonly trackId: string
+  readonly spotifyTrackId: string
+  readonly additionalExactDeezerUrl?: string
+}
+
+const seedPreBackfillPlaylist = async (
+  playlistId: string,
+  spotifyPlaylistId: string,
+  tracks: readonly PlaylistTrackSeed[]
+) => {
+  await db.insert(musicPlaylistsTable).values({
+    id: playlistId,
+    title: 'Pre-backfill playlist',
+    slug: playlistId
+  })
+  await db.insert(musicTracksTable).values(
+    tracks.map((track) => ({
+      id: track.trackId,
+      title: `Track ${track.spotifyTrackId}`,
+      artistNames: ['Artist'],
+      slug: track.trackId
+    }))
+  )
+  await db
+    .insert(musicPlaylistTracksTable)
+    .values(tracks.map((track, position) => ({ playlistId, trackId: track.trackId, position })))
+  await db.insert(musicEntityLinksTable).values([
+    {
+      entityType: 'playlist',
+      entityId: playlistId,
+      platform: 'spotify',
+      url: `https://open.spotify.com/playlist/${spotifyPlaylistId}`
+    },
+    ...tracks.flatMap((track) => [
+      {
+        entityType: 'track' as const,
+        entityId: track.trackId,
+        platform: 'spotify' as const,
+        url: `https://open.spotify.com/track/${track.spotifyTrackId}`,
+        metadata: { confidence: 'exact_source' as const }
+      },
+      ...(track.additionalExactDeezerUrl
+        ? [
+            {
+              entityType: 'track' as const,
+              entityId: track.trackId,
+              platform: 'deezer' as const,
+              url: track.additionalExactDeezerUrl,
+              metadata: { confidence: 'exact_source' as const }
+            }
+          ]
+        : [])
+    ])
+  ])
+}
+
 describe('playlist Spotify caller migration', () => {
   test('checks canonical track identity before invoking the Spotify detail loader', async () => {
     const spotifyTrackId = externalId()
@@ -126,6 +190,101 @@ describe('playlist Spotify caller migration', () => {
 
     expect(providerCalls).toBe(0)
     expect(result.created).toBe(false)
+  })
+
+  test('continues track enrichment when a pre-backfill playlist lacks exact-source metadata', async () => {
+    const playlistId = crypto.randomUUID()
+    const spotifyPlaylistId = externalId()
+    const trackId = crypto.randomUUID()
+    const spotifyTrackId = externalId()
+    const discoveredDeezerId = deezerId()
+    await seedPreBackfillPlaylist(playlistId, spotifyPlaylistId, [{ trackId, spotifyTrackId }])
+    const inputs: MusicScrapeInput[] = []
+    const scraper: MusicLinkScraperService = {
+      scrape: () => Effect.die('Playlist refresh should be skipped without exact-source metadata'),
+      discoverCrossPlatformLinks: (input) => {
+        inputs.push(input)
+        return Effect.succeed({
+          links: [
+            {
+              platform: 'deezer',
+              url: `https://www.deezer.com/track/${discoveredDeezerId}`,
+              scrapedAt: new Date()
+            }
+          ]
+        })
+      }
+    }
+
+    const result = await runWithIdentity(scraper, (identity) =>
+      Effect.gen(function* () {
+        const syncResult = yield* syncPlaylistLinksEffect(
+          identity,
+          artworkStore,
+          'https://cdn.example.com',
+          'bucket'
+        )(playlistId)
+        yield* Effect.sleep('100 millis')
+        return syncResult
+      })
+    )
+
+    expect(result).toEqual({ playlistId, queuedTrackCount: 1 })
+    await expect
+      .poll(() => inputs.map((input) => input.url))
+      .toEqual([`https://open.spotify.com/track/${spotifyTrackId}`])
+    await expect
+      .poll(async () => {
+        const links = await db
+          .select()
+          .from(musicEntityLinksTable)
+          .where(eq(musicEntityLinksTable.entityId, trackId))
+        return links.some((link) => link.platform === 'deezer')
+      })
+      .toBe(true)
+  })
+
+  test('continues enriching later tracks after a checked track failure', async () => {
+    const playlistId = crypto.randomUUID()
+    const spotifyPlaylistId = externalId()
+    const failingTrackId = crypto.randomUUID()
+    const failingSpotifyTrackId = externalId()
+    const laterTrackId = crypto.randomUUID()
+    const laterSpotifyTrackId = externalId()
+    await seedPreBackfillPlaylist(playlistId, spotifyPlaylistId, [
+      {
+        trackId: failingTrackId,
+        spotifyTrackId: failingSpotifyTrackId,
+        additionalExactDeezerUrl: `https://www.deezer.com/track/${deezerId()}`
+      },
+      { trackId: laterTrackId, spotifyTrackId: laterSpotifyTrackId }
+    ])
+    const inputs: MusicScrapeInput[] = []
+    const scraper: MusicLinkScraperService = {
+      scrape: () => Effect.die('Playlist refresh should be skipped without exact-source metadata'),
+      discoverCrossPlatformLinks: (input) => {
+        inputs.push(input)
+        return Effect.succeed({ links: [], entityMeta: { title: input.trackTitle } })
+      }
+    }
+
+    const result = await runWithIdentity(scraper, (identity) =>
+      Effect.gen(function* () {
+        const syncResult = yield* syncPlaylistLinksEffect(
+          identity,
+          artworkStore,
+          'https://cdn.example.com',
+          'bucket'
+        )(playlistId)
+        yield* Effect.sleep('100 millis')
+        return syncResult
+      })
+    )
+
+    expect(result).toEqual({ playlistId, queuedTrackCount: 2 })
+    await expect
+      .poll(() => inputs.map((input) => input.url))
+      .toEqual([`https://open.spotify.com/track/${laterSpotifyTrackId}`])
   })
 
   test('retries enrichment for a reused track without repeating successful provider work', async () => {

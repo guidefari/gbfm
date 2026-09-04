@@ -285,20 +285,26 @@ const enrichImportedPlaylistLinksEffect = (
     const uniqueTracks = [...new Map(tracks.map((track) => [track.trackId, track])).values()]
     const results = yield* Effect.forEach(
       uniqueTracks,
-      (track) => enrichTrackLinksEffect(identity, s3, cdnUrl, bucketName, playlistId, track),
+      (track) =>
+        enrichTrackLinksEffect(identity, s3, cdnUrl, bucketName, playlistId, track).pipe(
+          Effect.catch((error) =>
+            Effect.andThen(
+              Effect.logWarning('[MusicEntity] Playlist track link enrichment failed', {
+                playlistId,
+                trackId: track.trackId,
+                error: getErrorMessage(error)
+              }),
+              Effect.succeed({ insertedCount: 0 })
+            )
+          )
+        ),
       { concurrency: 1 }
     )
     return { insertedCount: results.reduce((sum, result) => sum + result.insertedCount, 0) }
   }).pipe(
     Effect.withSpan('musicEntity.enrichImportedPlaylistLinks', {
       attributes: { playlistId, trackCount: tracks.length }
-    }),
-    Effect.catch((error) =>
-      Effect.logError('[MusicEntity] Background playlist link enrichment failed', {
-        playlistId,
-        error: getErrorMessage(error)
-      })
-    )
+    })
   )
 
 const getPlaylistLinkSyncTargetsEffect = (playlistId: string) =>
@@ -610,13 +616,29 @@ export const syncPlaylistLinksEffect = (
 ) =>
   Effect.fn('musicEntity.syncPlaylistLinks')(function* (playlistId: string) {
     const db = yield* Database
-    const refreshedPlaylist = yield* identity.refreshEntity({
-      entityType: 'playlist',
-      entityId: playlistId,
-      actorId: 'playlist_sync',
-      origin: 'playlist_enrichment'
-    })
-    if (refreshedPlaylist.artworkUrl) {
+    const refreshedPlaylist = yield* identity
+      .refreshEntity({
+        entityType: 'playlist',
+        entityId: playlistId,
+        actorId: 'playlist_sync',
+        origin: 'playlist_enrichment'
+      })
+      .pipe(
+        Effect.catchTag('MusicIdentitySourceLinkNotFound', (error) =>
+          Effect.andThen(
+            Effect.logWarning(
+              '[MusicEntity] Playlist refresh skipped without a single exact source',
+              {
+                playlistId,
+                entityType: error.entityType,
+                entityId: error.entityId
+              }
+            ),
+            Effect.succeed(undefined)
+          )
+        )
+      )
+    if (refreshedPlaylist?.artworkUrl) {
       const publicCoverImageUrl = yield* copyMusicCoverImageBestEffort(
         s3,
         cdnUrl,
