@@ -2,7 +2,7 @@ import type { D1Database } from '@cloudflare/workers-types'
 import { Layer } from 'effect'
 import { DatabaseLayer } from '@/db/layer'
 import { createWebHandler } from '@/http/routes'
-import { AppLayer } from '@/runtime/services'
+import { AppLayer, type AppLayerOptions } from '@/runtime/services'
 import {
   WorkerSentryEnabledLive,
   WorkerSentryEnv,
@@ -16,6 +16,7 @@ import {
 } from '@/services/email-transport.service'
 import { SentryServiceLayer } from '@/services/sentry.service'
 import { SitemapCacheLayer, type SitemapKv } from '@/services/sitemap-cache'
+import type { ObjectStoreClient } from '@/services/storage/object-store-client'
 
 // Tests never call Sentry.withSentry, so Sentry stays disabled (no DSN) and
 // the tracing layer falls back to OpenTelemetry's no-op global tracer --
@@ -49,12 +50,13 @@ const inMemorySitemapKv = (): SitemapKv => {
 // Takes the D1Database instance rather than creating its own so a suite that
 // also seeds rows directly (via drizzle's `db` from src/test/database.ts)
 // reads and writes the same underlying database as the handler under test.
-/** Creates a Worker-shaped HTTP handler with a caller-chosen email transport test seam. */
+/** Creates a Worker-shaped HTTP handler with caller-chosen external service test seams. */
 export const createTestWebHandler = (
   d1: D1Database,
-  emailTransportLive: Layer.Layer<EmailTransportService> = RecordingEmailTransportLayer
+  emailTransportLive: Layer.Layer<EmailTransportService> = RecordingEmailTransportLayer,
+  objectStoreLive?: Layer.Layer<ObjectStoreClient>
 ) => {
-  const appServicesLive = AppLayer({
+  const services = {
     database: DatabaseLayer(d1),
     sitemapCache: SitemapCacheLayer(inMemorySitemapKv()),
     navigationLock: NavigationLockLocalLayer,
@@ -62,6 +64,9 @@ export const createTestWebHandler = (
     sentry: testSentryServiceLive,
     tracing: WorkerTracingLive,
     emailTransport: emailTransportLive
-  })
+  }
+  const appLayerOptions: AppLayerOptions =
+    objectStoreLive === undefined ? services : { ...services, objectStore: objectStoreLive }
+  const appServicesLive = AppLayer(appLayerOptions)
   return createWebHandler({ appServicesLive })
 }

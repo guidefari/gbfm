@@ -783,7 +783,11 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
               ).pipe(Effect.catchTag('NotFoundError', () => Effect.void))
             }
             return {
-              entity: toJsonEntity({ ...entity, coverImageUrl: publicCoverImageUrl }),
+              entity: toJsonEntity(
+                entityType === 'artist'
+                  ? { ...entity, imageUrl: publicCoverImageUrl }
+                  : { ...entity, coverImageUrl: publicCoverImageUrl }
+              ),
               entityType,
               links: result.links.map(toEntityLinkResponse),
               coverImageUrl: publicCoverImageUrl

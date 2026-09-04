@@ -21,9 +21,11 @@ import {
 import { SearchResults } from '@gbfm/api/search'
 import { decodeResponseBody } from '@gbfm/api/testing'
 import { and, eq } from 'drizzle-orm'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { Layer } from 'effect'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { d1, db } from '@/test/database'
 import { createTestWebHandler } from '@/test/http-handler'
+import { ObjectStoreClient } from '@/services/storage/object-store-client'
 import { audioTable } from '@/db/audio.schema'
 import { session, user } from '@/db/auth.schema'
 import { entityLabelsTable } from '@/db/tags.schema'
@@ -53,6 +55,21 @@ import { createWebHandler } from './routes'
 // working as more groups move from the Hono fallback onto the Effect router
 // (docs/migration-effect-http-api.md).
 let webHandler: ReturnType<typeof createWebHandler>
+
+const writableObjectStoreLayer = Layer.succeed(ObjectStoreClient, {
+  provider: 'r2',
+  putObject: () => Promise.resolve(),
+  presignPutObject: () => Promise.resolve('https://object-store.test/upload'),
+  deleteObject: () => Promise.resolve(),
+  headObject: () => Promise.resolve(null),
+  listObjects: () => Promise.resolve([]),
+  listBuckets: () => Promise.resolve([]),
+  createMultipartUpload: () => Promise.resolve('upload-id'),
+  presignUploadPart: () => Promise.resolve('https://object-store.test/part'),
+  completeMultipartUpload: () => Promise.resolve(),
+  abortMultipartUpload: () => Promise.resolve(),
+  listMultipartParts: () => Promise.resolve([])
+} satisfies ObjectStoreClient)
 
 beforeAll(async () => {
   // No longer imports @/app for its side effects: app.ts's initializeApp
@@ -862,6 +879,112 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
       expect(resolveBody.entity.id).toBe(artistId)
       expect(scrapeBody.entity.id).toBe(artistId)
     } finally {
+      await db
+        .delete(musicSourceIdentitiesTable)
+        .where(eq(musicSourceIdentitiesTable.sourceKey, sourceKey))
+      await db.delete(musicEntityLinksTable).where(eq(musicEntityLinksTable.entityId, artistId))
+      await db.delete(musicArtistsTable).where(eq(musicArtistsTable.id, artistId))
+      await db.delete(session).where(eq(session.userId, userId))
+      await db.delete(user).where(eq(user.id, userId))
+    }
+  })
+
+  it('POST /api/music/resolve returns copied artist artwork in imageUrl without coverImageUrl', async () => {
+    const suffix = crypto.randomUUID()
+    const userId = `resolve-artwork-admin-${suffix}`
+    const token = `resolve-artwork-token-${suffix}`
+    const artistId = crypto.randomUUID()
+    const spotifyArtistId = '5K4W6rqBFWDnAN6FQUkS6x'
+    const url = `https://open.spotify.com/artist/${spotifyArtistId}`
+    const sourceKey = `spotify:artist:${spotifyArtistId}`
+    const imageUrl = 'https://i.scdn.co/image/provider-artwork'
+    const copiedImageUrl = `https://cdn.goosebumps.fm/user-content/music/artist/${artistId}/cover`
+    const artworkHandler = createTestWebHandler(d1, undefined, writableObjectStoreLayer)
+
+    await db.batch([
+      db.insert(user).values({
+        id: userId,
+        name: 'Admin user',
+        email: `${userId}@example.com`,
+        role: 'admin'
+      }),
+      db.insert(session).values({
+        id: crypto.randomUUID(),
+        token,
+        userId,
+        expiresAt: new Date(Date.now() + 60_000)
+      }),
+      db
+        .insert(musicEntityTypesTable)
+        .values({ id: 'artist', displayName: 'Artist' })
+        .onConflictDoNothing(),
+      db
+        .insert(musicPlatformsTable)
+        .values({ id: 'spotify', displayName: 'Spotify' })
+        .onConflictDoNothing(),
+      db.insert(musicArtistsTable).values({
+        id: artistId,
+        name: 'Artwork artist',
+        imageUrl,
+        slug: `artwork-${suffix}`
+      }),
+      db.insert(musicEntityLinksTable).values({
+        entityType: 'artist',
+        entityId: artistId,
+        platform: 'spotify',
+        url,
+        status: 'verified',
+        metadata: { confidence: 'exact_source' }
+      }),
+      db.insert(musicSourceIdentitiesTable).values({
+        sourceKey,
+        platform: 'spotify',
+        sourceEntityType: 'artist',
+        externalId: spotifyArtistId,
+        canonicalUrl: url,
+        state: 'resolved',
+        entityType: 'artist',
+        entityId: artistId,
+        resolvedAt: new Date()
+      }),
+      db.insert(musicSourceAliasesTable).values({
+        normalizedUrl: url,
+        sourceKey,
+        firstSeenAt: new Date(),
+        lastSeenAt: new Date()
+      })
+    ])
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          new Response('image-bytes', {
+            status: 200,
+            headers: { 'content-type': 'image/jpeg' }
+          })
+        )
+      )
+    )
+
+    try {
+      const response = await artworkHandler.handler(
+        new Request('http://localhost/api/music/resolve', {
+          method: 'POST',
+          headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+          body: JSON.stringify({ url })
+        })
+      )
+
+      expect(response.status).toBe(200)
+      const body = await decodeResponseBody(ResolvedMusicEntityResponse, response)
+      expect(body.entityType).toBe('artist')
+      expect(body.coverImageUrl).toBe(copiedImageUrl)
+      expect(body.entity.imageUrl).toBe(copiedImageUrl)
+      expect(body.entity).not.toHaveProperty('coverImageUrl')
+    } finally {
+      vi.unstubAllGlobals()
+      await artworkHandler.dispose()
       await db
         .delete(musicSourceIdentitiesTable)
         .where(eq(musicSourceIdentitiesTable.sourceKey, sourceKey))
