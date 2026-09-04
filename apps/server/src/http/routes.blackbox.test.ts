@@ -619,7 +619,7 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
     expect(res.status).toBe(401)
   })
 
-  it('adds and verifies ordinary and legacy album links without weakening provider identity checks', async () => {
+  it('adds and verifies parser-incompatible ordinary and legacy album links', async () => {
     const suffix = crypto.randomUUID()
     const userId = `link-admin-${suffix}`
     const token = `link-admin-token-${suffix}`
@@ -721,6 +721,94 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
     } finally {
       await db.delete(musicEntityLinksTable).where(eq(musicEntityLinksTable.entityId, albumId))
       await db.delete(musicAlbumsTable).where(eq(musicAlbumsTable.id, albumId))
+      await db.delete(session).where(eq(session.userId, userId))
+      await db.delete(user).where(eq(user.id, userId))
+    }
+  })
+
+  it('rejects cross-entity Bandcamp and generic URL collisions', async () => {
+    const suffix = crypto.randomUUID()
+    const userId = `collision-admin-${suffix}`
+    const token = `collision-admin-token-${suffix}`
+    const incumbentId = crypto.randomUUID()
+    const candidateId = crypto.randomUUID()
+    const links = [
+      {
+        platform: 'bandcamp',
+        url: `https://artist-${suffix}.bandcamp.com/album/${suffix}`
+      },
+      {
+        platform: 'other',
+        url: `https://catalog-${suffix}.example.com/release?edition=deluxe`
+      }
+    ] as const
+
+    await db.batch([
+      db.insert(user).values({
+        id: userId,
+        name: 'Collision admin',
+        email: `${userId}@example.com`,
+        role: 'admin'
+      }),
+      db.insert(session).values({
+        id: crypto.randomUUID(),
+        token,
+        userId,
+        expiresAt: new Date(Date.now() + 60_000)
+      }),
+      db
+        .insert(musicEntityTypesTable)
+        .values({ id: 'album', displayName: 'Album' })
+        .onConflictDoNothing(),
+      db
+        .insert(musicPlatformsTable)
+        .values(links.map(({ platform }) => ({ id: platform, displayName: platform })))
+        .onConflictDoNothing(),
+      db.insert(musicAlbumsTable).values([
+        { id: incumbentId, title: 'Identity incumbent', slug: `incumbent-${suffix}` },
+        { id: candidateId, title: 'Identity candidate', slug: `candidate-${suffix}` }
+      ])
+    ])
+
+    const addLink = (entityId: string, link: (typeof links)[number]) =>
+      webHandler.handler(
+        new Request(`http://localhost/api/music/album/${entityId}/links`, {
+          method: 'POST',
+          headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+          body: JSON.stringify(link)
+        })
+      )
+
+    try {
+      for (const link of links) {
+        const attached = await addLink(incumbentId, link)
+        expect(attached.status).toBe(200)
+
+        const collision = await addLink(candidateId, link)
+        expect(collision.status).toBe(409)
+      }
+
+      const identities = await db
+        .select()
+        .from(musicSourceIdentitiesTable)
+        .where(eq(musicSourceIdentitiesTable.entityId, incumbentId))
+      const candidateLinks = await db
+        .select()
+        .from(musicEntityLinksTable)
+        .where(eq(musicEntityLinksTable.entityId, candidateId))
+
+      expect(new Set(identities.map(({ platform }) => platform))).toEqual(
+        new Set(['bandcamp', 'other'])
+      )
+      expect(candidateLinks).toHaveLength(0)
+    } finally {
+      await db
+        .delete(musicSourceIdentitiesTable)
+        .where(eq(musicSourceIdentitiesTable.entityId, incumbentId))
+      await db.delete(musicEntityLinksTable).where(eq(musicEntityLinksTable.entityId, incumbentId))
+      await db.delete(musicEntityLinksTable).where(eq(musicEntityLinksTable.entityId, candidateId))
+      await db.delete(musicAlbumsTable).where(eq(musicAlbumsTable.id, incumbentId))
+      await db.delete(musicAlbumsTable).where(eq(musicAlbumsTable.id, candidateId))
       await db.delete(session).where(eq(session.userId, userId))
       await db.delete(user).where(eq(user.id, userId))
     }

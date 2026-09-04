@@ -123,6 +123,12 @@ type ScrapeableMusicEntityType = Exclude<MusicEntityType, 'label'>
 const usesCanonicalIdentity = (entityType: ScrapeableMusicEntityType, platform: string) =>
   platform === 'spotify' ||
   platform === 'deezer' ||
+  platform === 'bandcamp' ||
+  platform === 'soundcloud' ||
+  platform === 'apple_music' ||
+  platform === 'tidal' ||
+  platform === 'amazon_music' ||
+  platform === 'other' ||
   (platform === 'youtube' && (entityType === 'track' || entityType === 'playlist'))
 
 export interface MusicEntityService {
