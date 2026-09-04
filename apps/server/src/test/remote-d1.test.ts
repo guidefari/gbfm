@@ -22,7 +22,7 @@ const response = (result: ReadonlyArray<RemoteResult>) =>
   })
 
 describe('remote D1 adapter', () => {
-  test('sends each parameterized batch statement as a documented REST query', async () => {
+  test('sends parameterized statements in one documented REST batch request', async () => {
     const requests: Array<{
       readonly url: string
       readonly method: string | undefined
@@ -39,7 +39,10 @@ describe('remote D1 adapter', () => {
         contentType: headers.get('Content-Type'),
         body: await new Response(init.body).text()
       })
-      return response([{ success: true, results: [], meta: { changes: 1 } }])
+      return response([
+        { success: true, results: [], meta: { changes: 1 } },
+        { success: true, results: [], meta: { changes: 1 } }
+      ])
     }
     const database = createRemoteD1(options(recordingFetch))
 
@@ -54,19 +57,26 @@ describe('remote D1 adapter', () => {
         method: 'POST',
         authorization: 'Bearer token',
         contentType: 'application/json',
-        body: JSON.stringify({ sql: 'INSERT INTO one VALUES (?)', params: ['one'] })
-      },
-      {
-        url: 'https://api.cloudflare.com/client/v4/accounts/account/d1/database/database/query',
-        method: 'POST',
-        authorization: 'Bearer token',
-        contentType: 'application/json',
-        body: JSON.stringify({ sql: 'INSERT INTO two VALUES (?)', params: ['two'] })
+        body: JSON.stringify({
+          batch: [
+            { sql: 'INSERT INTO one VALUES (?)', params: ['one'] },
+            { sql: 'INSERT INTO two VALUES (?)', params: ['two'] }
+          ]
+        })
       }
     ])
   })
 
-  test('validates every result when the response envelope succeeds', async () => {
+  test('does not send a request for an empty batch', async () => {
+    const unexpectedFetch: NonNullable<RemoteD1Options['fetch']> = async () => {
+      throw new Error('fetch must not be called')
+    }
+    const database = createRemoteD1(options(unexpectedFetch))
+
+    await expect(database.batch([])).resolves.toEqual([])
+  })
+
+  test('rejects when any result in a batch failed', async () => {
     const failedFetch: NonNullable<RemoteD1Options['fetch']> = async () =>
       response([
         { success: true, results: [], meta: {} },
@@ -74,34 +84,18 @@ describe('remote D1 adapter', () => {
       ])
     const database = createRemoteD1(options(failedFetch))
 
-    await expect(database.prepare('SELECT 1; SELECT 2').all()).rejects.toThrow(
-      'D1 statement 1 failed: second failed'
-    )
+    await expect(
+      database.batch([database.prepare('SELECT 1'), database.prepare('SELECT 2')])
+    ).rejects.toThrow('D1 statement 1 failed: second failed')
   })
 
-  test('reports a partial failure and does not start the next request window', async () => {
-    const bodies: string[] = []
-    let requestCount = 0
-    const partiallyFailedFetch: NonNullable<RemoteD1Options['fetch']> = async (_url, init) => {
-      const requestIndex = requestCount
-      requestCount += 1
-      bodies[requestIndex] = await new Response(init.body).text()
-      return response([
-        requestIndex === 1
-          ? { success: false, error: 'second failed', results: [], meta: {} }
-          : { success: true, results: [], meta: { changes: 1 } }
-      ])
-    }
-    const database = createRemoteD1(options(partiallyFailedFetch))
-    const statements = Array.from({ length: 9 }, (_, index) =>
-      database.prepare('INSERT INTO records VALUES (?)').bind(index)
-    )
+  test('rejects when the batch result count does not match the statement count', async () => {
+    const incompleteFetch: NonNullable<RemoteD1Options['fetch']> = async () =>
+      response([{ success: true, results: [], meta: {} }])
+    const database = createRemoteD1(options(incompleteFetch))
 
-    await expect(database.batch(statements)).rejects.toThrow('D1 statement 0 failed: second failed')
-    expect(bodies).toEqual(
-      Array.from({ length: 8 }, (_, index) =>
-        JSON.stringify({ sql: 'INSERT INTO records VALUES (?)', params: [index] })
-      )
-    )
+    await expect(
+      database.batch([database.prepare('SELECT 1'), database.prepare('SELECT 2')])
+    ).rejects.toThrow('D1 batch returned 1 results for 2 statements')
   })
 })
