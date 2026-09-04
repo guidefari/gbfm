@@ -47,6 +47,7 @@ import {
   CanonicalMusicIdentity,
   type MusicIdentityError
 } from '@/services/canonical-music-identity'
+import { parseMusicSource } from '@/services/canonical-music-identity/music-source'
 import {
   SpotifyService as SpotifyServiceTag,
   type SpotifyServiceError
@@ -120,16 +121,16 @@ export type {
 
 type ScrapeableMusicEntityType = Exclude<MusicEntityType, 'label'>
 
-const usesCanonicalIdentity = (entityType: ScrapeableMusicEntityType, platform: string) =>
-  platform === 'spotify' ||
-  platform === 'deezer' ||
-  platform === 'bandcamp' ||
-  platform === 'soundcloud' ||
-  platform === 'apple_music' ||
-  platform === 'tidal' ||
-  platform === 'amazon_music' ||
-  platform === 'other' ||
-  (platform === 'youtube' && (entityType === 'track' || entityType === 'playlist'))
+const isLegacyDirectLink = (entityType: ScrapeableMusicEntityType, platform: string, url: string) =>
+  parseMusicSource(url).pipe(
+    Effect.map(
+      (source) =>
+        entityType === 'album' &&
+        source.platform === 'youtube' &&
+        source.sourceEntityType === 'video' &&
+        (platform === 'youtube' || platform === 'youtube_music')
+    )
+  )
 
 export interface MusicEntityService {
   readonly createArtist: (
@@ -388,15 +389,24 @@ export const MusicEntityServiceLayer = Layer.effect(
             : Effect.fail(new NotFoundError({ message: 'Music entity link not found', id: linkId }))
         }),
         Effect.flatMap((link) =>
-          usesCanonicalIdentity(entityType, link.platform)
-            ? identity.attachLink({
-                entityType,
-                entityId,
-                platform: link.platform,
-                url: link.url,
-                origin: 'manual'
-              })
-            : Effect.void
+          identity
+            .attachLink({
+              entityType,
+              entityId,
+              platform: link.platform,
+              url: link.url,
+              origin: 'manual'
+            })
+            .pipe(
+              Effect.catchTag('MusicSourceInvalid', (error) =>
+                Effect.gen(function* () {
+                  if (error.reason !== 'type_mismatch') return yield* error
+                  const direct = yield* isLegacyDirectLink(entityType, link.platform, link.url)
+                  if (!direct) return yield* error
+                  return undefined
+                })
+              )
+            )
         ),
         Effect.andThen(
           provideDb(
@@ -449,7 +459,16 @@ export const MusicEntityServiceLayer = Layer.effect(
           )
         }
         return link
-      })
+      }).pipe(
+        Effect.catchTag('MusicSourceInvalid', (error) =>
+          Effect.gen(function* () {
+            if (error.reason !== 'type_mismatch') return yield* error
+            const direct = yield* isLegacyDirectLink(entityType, data.platform, data.url)
+            if (!direct) return yield* error
+            return yield* provideDb(addLinkEffect(data))
+          })
+        )
+      )
 
     return {
       createArtist: (data) => provideDb(createArtistEffect(data)),
@@ -540,11 +559,10 @@ export const MusicEntityServiceLayer = Layer.effect(
       getLinksForEntity: (entityType, entityId, statusFilter) =>
         provideDb(getLinksForEntityEffect(entityType, entityId, statusFilter)),
       addLink: (data) =>
-        (data.entityType === 'artist' ||
-          data.entityType === 'album' ||
-          data.entityType === 'track' ||
-          data.entityType === 'playlist') &&
-        usesCanonicalIdentity(data.entityType, data.platform)
+        data.entityType === 'artist' ||
+        data.entityType === 'album' ||
+        data.entityType === 'track' ||
+        data.entityType === 'playlist'
           ? attachIdentityLink(data, data.entityType)
           : provideDb(addLinkEffect(data)),
       updateLinkStatus: (entityType, entityId, linkId, status, verifiedBy, metadata) =>

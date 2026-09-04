@@ -1,7 +1,7 @@
 import { Effect } from 'effect'
 import type { DatabaseClient } from '@/db/layer'
 import { Database } from '@/db/layer'
-import type { SelectMusicEntityLink } from '@/db/music-entity.schema'
+import type { MusicPlatform, SelectMusicEntityLink } from '@/db/music-entity.schema'
 import type {
   MusicLinkScraperService,
   MusicScraperError,
@@ -61,6 +61,30 @@ const compareRefreshSourcePrecedence = (
   left.createdAt.getTime() - right.createdAt.getTime() ||
   left.id.localeCompare(right.id)
 
+const genericDisplayPlatforms = [
+  'discord',
+  'website',
+  'instagram',
+  'twitter',
+  'musicbrainz',
+  'discogs',
+  'other'
+] as const
+
+const displayPlatformFor = (
+  source: ParsedMusicSource,
+  requestedPlatform: AttachMusicSourceLink['platform']
+): MusicPlatform | undefined => {
+  if (source.platform === requestedPlatform) return source.platform
+  if (source.platform === 'other') {
+    return genericDisplayPlatforms.find((platform) => platform === requestedPlatform)
+  }
+  if (source.platform === 'youtube' && requestedPlatform === 'youtube_music') {
+    return 'youtube_music'
+  }
+  return undefined
+}
+
 export const makeEntityOperations = (
   db: DatabaseClient,
   scraper: MusicLinkScraperService,
@@ -81,12 +105,15 @@ export const makeEntityOperations = (
       yield* loadEntity(reference).pipe(provideDb)
       const source = yield* parseMusicSource(input.url, input.entityType)
       yield* annotateSource(source)
-      if (source.platform !== input.platform) {
+      const displayPlatform = displayPlatformFor(source, input.platform)
+      if (!displayPlatform) {
         return yield* new MusicSourceInvalid({
           reason: 'platform_mismatch',
           message: 'Music source platform does not match the requested platform'
         })
       }
+      const displayUrl =
+        displayPlatform === source.platform ? source.canonicalUrl : source.normalizedUrl
       const existing = yield* readReference(source)
       if (existing && referenceKey(existing) !== referenceKey(reference)) {
         yield* repository.recordConflict(
@@ -110,8 +137,8 @@ export const makeEntityOperations = (
         const rows = yield* repository.upsertLink(
           reference,
           {
-            platform: source.platform,
-            url: source.canonicalUrl,
+            platform: displayPlatform,
+            url: displayUrl,
             scrapedAt: now,
             metadata: { discoveredBy: 'manual', confidence: 'exact_source' }
           },
@@ -147,8 +174,8 @@ export const makeEntityOperations = (
       } else {
         const scrapedAt = new Date()
         const link: ScrapedLink = {
-          platform: source.platform,
-          url: source.canonicalUrl,
+          platform: displayPlatform,
+          url: displayUrl,
           scrapedAt,
           metadata: { discoveredBy: 'manual', confidence: 'exact_source' }
         }
@@ -184,14 +211,14 @@ export const makeEntityOperations = (
         }
       }
       const links = yield* repository.linksFor(reference)
-      const attached = links.find((candidate) => candidate.platform === source.platform)
+      const attached = links.find((candidate) => candidate.platform === displayPlatform)
       if (attached) return attached
       const now = new Date()
       const rows = yield* repository.upsertLink(
         reference,
         {
-          platform: source.platform,
-          url: source.canonicalUrl,
+          platform: displayPlatform,
+          url: displayUrl,
           scrapedAt: now,
           metadata: { discoveredBy: 'manual', confidence: 'exact_source' }
         },
