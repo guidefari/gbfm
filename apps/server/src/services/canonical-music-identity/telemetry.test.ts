@@ -8,7 +8,13 @@ import { MusicProviderRequestFailed } from '@/errors'
 import { withTestLayer } from '@/test/effect'
 import { MusicIdentityProviderUnavailable } from './errors'
 import { parseMusicSource } from './music-source'
-import { annotateEntity, annotateSource, withSafeSpan, withSafeTypedSpan } from './telemetry'
+import {
+  annotateEntity,
+  annotateSource,
+  getSafeErrorTag,
+  withSafeSpan,
+  withSafeTypedSpan
+} from './telemetry'
 
 const serializedTelemetry = <A>(value: A) => JSON.stringify(value)
 
@@ -28,6 +34,19 @@ const expectNoForbiddenTelemetry = (serialized: string, forbidden: readonly stri
 }
 
 describe('canonical music identity telemetry', () => {
+  test('extracts only schema-validated error tags', () => {
+    const privateMessage = 'Provider response included token=private'
+    expect(
+      getSafeErrorTag(
+        new MusicIdentityProviderUnavailable({
+          provider: 'spotify',
+          message: privateMessage
+        })
+      )
+    ).toBe('MusicIdentityProviderUnavailable')
+    expect(getSafeErrorTag({ _tag: privateMessage })).toBeUndefined()
+  })
+
   test('exports only safe failure data while restoring failures, defects, and interruption', async () => {
     const exporter = new InMemorySpanExporter()
     const provider = new NodeTracerProvider({

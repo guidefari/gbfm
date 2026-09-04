@@ -24,10 +24,18 @@ const SafeTaggedErrorSchema = Schema.Struct({
 })
 
 type SafeTaggedError = typeof SafeTaggedErrorSchema.Type
+type SafeErrorTag = SafeTaggedError['_tag']
 type SpanAttributes = Readonly<Record<string, string | number | boolean>>
 type SpanOptions = { readonly attributes?: SpanAttributes }
 
 const decodeSafeTaggedError = Schema.decodeUnknownOption(SafeTaggedErrorSchema)
+
+export function getSafeErrorTag(error: SafeTaggedError): SafeErrorTag
+export function getSafeErrorTag<Input>(error: Input): SafeErrorTag | undefined
+export function getSafeErrorTag<Input>(error: Input): SafeErrorTag | undefined {
+  const safeError = decodeSafeTaggedError(error)
+  return Option.isSome(safeError) ? safeError.value._tag : undefined
+}
 
 const sourceKeyHash = (sourceKey: string) =>
   Effect.promise(async () => {
@@ -55,9 +63,9 @@ const annotateExit = <A, E>(exit: Exit.Exit<A, E>) => {
   if (Exit.isSuccess(exit)) return Effect.void
   const error = Exit.findError(exit)
   if (Result.isFailure(error)) return Effect.annotateCurrentSpan('outcome', 'failure')
-  const safeError = decodeSafeTaggedError(error.success)
-  if (Option.isNone(safeError)) return Effect.annotateCurrentSpan('outcome', 'failure')
-  return Effect.annotateCurrentSpan({ outcome: 'failure', errorTag: safeError.value._tag })
+  const errorTag = getSafeErrorTag(error.success)
+  if (errorTag === undefined) return Effect.annotateCurrentSpan('outcome', 'failure')
+  return Effect.annotateCurrentSpan({ outcome: 'failure', errorTag })
 }
 
 const restoreExit = <A, E>(exit: Exit.Exit<A, E>): Effect.Effect<A, E> =>

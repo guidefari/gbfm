@@ -11,6 +11,7 @@ import {
 import { DatabaseError, getErrorMessage, MusicProviderInvalidInput } from '@/errors'
 import { copyMusicCoverImageBestEffort } from '@/services/music-cover-image.service'
 import type { CanonicalMusicIdentityService } from '@/services/canonical-music-identity'
+import { getSafeErrorTag } from '@/services/canonical-music-identity/telemetry'
 import type { S3Service } from '@/services/s3.service'
 import {
   getIdFromSpotifyUrl,
@@ -292,7 +293,7 @@ const enrichImportedPlaylistLinksEffect = (
               Effect.logWarning('[MusicEntity] Playlist track link enrichment failed', {
                 playlistId,
                 trackId: track.trackId,
-                error: getErrorMessage(error)
+                errorTag: getSafeErrorTag(error)
               }),
               Effect.succeed({ insertedCount: 0 })
             )

@@ -17,6 +17,7 @@ import {
 } from '@/services/canonical-music-identity'
 import {
   MusicLinkScraperService,
+  MusicScraperError,
   type MusicScrapeInput
 } from '@/services/music-link-scraper.service'
 import type { S3Service } from '@/services/s3.service'
@@ -218,14 +219,12 @@ describe('playlist Spotify caller migration', () => {
 
     const result = await runWithIdentity(scraper, (identity) =>
       Effect.gen(function* () {
-        const syncResult = yield* syncPlaylistLinksEffect(
+        return yield* syncPlaylistLinksEffect(
           identity,
           artworkStore,
           'https://cdn.example.com',
           'bucket'
         )(playlistId)
-        yield* Effect.sleep('100 millis')
-        return syncResult
       })
     )
 
@@ -251,6 +250,7 @@ describe('playlist Spotify caller migration', () => {
     const failingSpotifyTrackId = externalId()
     const laterTrackId = crypto.randomUUID()
     const laterSpotifyTrackId = externalId()
+    const laterDiscoveredDeezerUrl = `https://www.deezer.com/track/${deezerId()}`
     await seedPreBackfillPlaylist(playlistId, spotifyPlaylistId, [
       {
         trackId: failingTrackId,
@@ -264,27 +264,41 @@ describe('playlist Spotify caller migration', () => {
       scrape: () => Effect.die('Playlist refresh should be skipped without exact-source metadata'),
       discoverCrossPlatformLinks: (input) => {
         inputs.push(input)
-        return Effect.succeed({ links: [], entityMeta: { title: input.trackTitle } })
+        if (input.trackTitle === `Track ${failingSpotifyTrackId}`) {
+          return Effect.fail(
+            new MusicScraperError({
+              message: 'Provider response contained private request details',
+              provider: 'odesli',
+              statusCode: 503
+            })
+          )
+        }
+        return Effect.succeed({
+          links: [{ platform: 'deezer', url: laterDiscoveredDeezerUrl, scrapedAt: new Date() }]
+        })
       }
     }
 
     const result = await runWithIdentity(scraper, (identity) =>
-      Effect.gen(function* () {
-        const syncResult = yield* syncPlaylistLinksEffect(
-          identity,
-          artworkStore,
-          'https://cdn.example.com',
-          'bucket'
-        )(playlistId)
-        yield* Effect.sleep('100 millis')
-        return syncResult
-      })
+      syncPlaylistLinksEffect(
+        identity,
+        artworkStore,
+        'https://cdn.example.com',
+        'bucket'
+      )(playlistId)
     )
 
     expect(result).toEqual({ playlistId, queuedTrackCount: 2 })
     await expect
-      .poll(() => inputs.map((input) => input.url))
-      .toEqual([`https://open.spotify.com/track/${laterSpotifyTrackId}`])
+      .poll(async () => {
+        const links = await db
+          .select({ entityId: musicEntityLinksTable.entityId })
+          .from(musicEntityLinksTable)
+          .where(eq(musicEntityLinksTable.url, laterDiscoveredDeezerUrl))
+        return links.map((link) => link.entityId)
+      })
+      .toEqual([laterTrackId])
+    expect(inputs).toHaveLength(2)
   })
 
   test('retries enrichment for a reused track without repeating successful provider work', async () => {
