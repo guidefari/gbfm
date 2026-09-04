@@ -132,6 +132,12 @@ const isLegacyDirectLink = (entityType: ScrapeableMusicEntityType, platform: str
     )
   )
 
+const preserveCanonicalMetadata = (
+  link: SelectMusicEntityLink | undefined,
+  metadata: InsertMusicEntityLink['metadata']
+): InsertMusicEntityLink['metadata'] =>
+  link && metadata ? { ...metadata, ...link.metadata } : metadata
+
 export interface MusicEntityService {
   readonly createArtist: (
     data: CreateArtistInput
@@ -408,7 +414,7 @@ export const MusicEntityServiceLayer = Layer.effect(
               )
             )
         ),
-        Effect.andThen(
+        Effect.flatMap((identityLink) =>
           provideDb(
             updateLinkStatusEffect(
               entityType,
@@ -416,7 +422,7 @@ export const MusicEntityServiceLayer = Layer.effect(
               linkId,
               LINK_STATUS.VERIFIED,
               verifiedBy,
-              metadata
+              preserveCanonicalMetadata(identityLink, metadata)
             )
           )
         )
@@ -454,7 +460,7 @@ export const MusicEntityServiceLayer = Layer.effect(
               link.id,
               LINK_STATUS.VERIFIED,
               undefined,
-              data.metadata
+              preserveCanonicalMetadata(link, data.metadata)
             )
           )
         }

@@ -691,7 +691,16 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
     const request = (
       path: string,
       method: 'POST' | 'PATCH',
-      body: Readonly<Record<string, string>>
+      body:
+        | {
+            readonly platform: string
+            readonly url: string
+            readonly status: 'rejected'
+          }
+        | {
+            readonly status: 'verified'
+            readonly metadata?: { readonly reviewNote: string }
+          }
     ) =>
       webHandler.handler(
         new Request(`http://localhost${path}`, {
@@ -718,14 +727,20 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
         })
 
         const verified = await request(`${path}/${addedLink.id}`, 'PATCH', {
-          status: 'verified'
+          status: 'verified',
+          metadata: { reviewNote: 'approved' }
         })
         expect(verified.status).toBe(200)
         await expect(decodeResponseBody(EntityLinkResponse, verified)).resolves.toMatchObject({
           platform: link.platform,
           url: link.url,
           status: 'verified',
-          verifiedBy: userId
+          verifiedBy: userId,
+          metadata: {
+            discoveredBy: 'manual',
+            confidence: 'exact_source',
+            reviewNote: 'approved'
+          }
         })
       }
 
@@ -778,6 +793,151 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
       await db.delete(musicEntityLinksTable).where(eq(musicEntityLinksTable.entityId, trackId))
       await db.delete(musicTracksTable).where(eq(musicTracksTable.id, trackId))
       await db.delete(musicAlbumsTable).where(eq(musicAlbumsTable.id, albumId))
+      await db.delete(session).where(eq(session.userId, userId))
+      await db.delete(user).where(eq(user.id, userId))
+    }
+  })
+
+  it('releases a reverified YouTube Music identity after review metadata is added', async () => {
+    const suffix = crypto.randomUUID()
+    const userId = `reverify-admin-${suffix}`
+    const token = `reverify-admin-token-${suffix}`
+    const incumbentId = crypto.randomUUID()
+    const candidateId = crypto.randomUUID()
+    const videoId = `reverify${suffix.replaceAll('-', '')}`
+    const youtubeMusicUrl = `https://music.youtube.com/watch?v=${videoId}`
+    const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`
+    const sourceKey = `youtube:video:${videoId}`
+
+    await db.batch([
+      db.insert(user).values({
+        id: userId,
+        name: 'Reverify admin',
+        email: `${userId}@example.com`,
+        role: 'admin'
+      }),
+      db.insert(session).values({
+        id: crypto.randomUUID(),
+        token,
+        userId,
+        expiresAt: new Date(Date.now() + 60_000)
+      }),
+      db
+        .insert(musicEntityTypesTable)
+        .values({ id: 'track', displayName: 'Track' })
+        .onConflictDoNothing(),
+      db
+        .insert(musicPlatformsTable)
+        .values(
+          ['youtube_music', 'youtube'].map((platform) => ({
+            id: platform,
+            displayName: platform
+          }))
+        )
+        .onConflictDoNothing(),
+      db.insert(musicTracksTable).values([
+        { id: incumbentId, title: 'Reverified incumbent', slug: `reverified-${suffix}` },
+        { id: candidateId, title: 'Reverified candidate', slug: `candidate-${suffix}` }
+      ])
+    ])
+
+    const request = (
+      path: string,
+      method: 'POST' | 'PATCH' | 'DELETE',
+      body?:
+        | {
+            readonly platform: 'youtube_music' | 'youtube'
+            readonly url: string
+            readonly status?: 'rejected'
+          }
+        | {
+            readonly status: 'verified'
+            readonly metadata: { readonly reviewNote: string }
+          }
+    ) => {
+      const headers = new Headers({ authorization: `Bearer ${token}` })
+      if (body) headers.set('content-type', 'application/json')
+      return webHandler.handler(
+        new Request(`http://localhost${path}`, {
+          method,
+          headers,
+          body: body ? JSON.stringify(body) : undefined
+        })
+      )
+    }
+
+    try {
+      const incumbentPath = `/api/music/track/${incumbentId}/links`
+      const added = await request(incumbentPath, 'POST', {
+        platform: 'youtube_music',
+        url: youtubeMusicUrl,
+        status: 'rejected'
+      })
+      expect(added.status).toBe(200)
+      const addedLink = await decodeResponseBody(EntityLinkResponse, added)
+
+      const linkPath = `${incumbentPath}/${addedLink.id}`
+      const verified = await request(linkPath, 'PATCH', {
+        status: 'verified',
+        metadata: { reviewNote: 'approved' }
+      })
+      expect(verified.status).toBe(200)
+      const verifiedLink = await decodeResponseBody(EntityLinkResponse, verified)
+
+      const deleted = await request(linkPath, 'DELETE')
+      expect(deleted.status).toBe(204)
+
+      const attached = await request(`/api/music/track/${candidateId}/links`, 'POST', {
+        platform: 'youtube',
+        url: youtubeUrl
+      })
+      expect(attached.status).toBe(200)
+      const attachedLink = await decodeResponseBody(EntityLinkResponse, attached)
+      const identities = await db
+        .select()
+        .from(musicSourceIdentitiesTable)
+        .where(eq(musicSourceIdentitiesTable.sourceKey, sourceKey))
+      const aliases = await db
+        .select()
+        .from(musicSourceAliasesTable)
+        .where(eq(musicSourceAliasesTable.sourceKey, sourceKey))
+
+      expect(verifiedLink.metadata).toMatchObject({
+        discoveredBy: 'manual',
+        confidence: 'exact_source',
+        reviewNote: 'approved'
+      })
+      expect(attachedLink).toMatchObject({
+        entityId: candidateId,
+        platform: 'youtube',
+        url: youtubeUrl,
+        status: 'verified'
+      })
+      expect(identities).toEqual([
+        expect.objectContaining({
+          sourceKey,
+          platform: 'youtube',
+          entityType: 'track',
+          entityId: candidateId
+        })
+      ])
+      expect(aliases).toEqual([
+        expect.objectContaining({
+          normalizedUrl: youtubeUrl,
+          sourceKey
+        })
+      ])
+    } finally {
+      await db
+        .delete(musicSourceIdentitiesTable)
+        .where(eq(musicSourceIdentitiesTable.entityId, incumbentId))
+      await db
+        .delete(musicSourceIdentitiesTable)
+        .where(eq(musicSourceIdentitiesTable.entityId, candidateId))
+      await db.delete(musicEntityLinksTable).where(eq(musicEntityLinksTable.entityId, incumbentId))
+      await db.delete(musicEntityLinksTable).where(eq(musicEntityLinksTable.entityId, candidateId))
+      await db.delete(musicTracksTable).where(eq(musicTracksTable.id, incumbentId))
+      await db.delete(musicTracksTable).where(eq(musicTracksTable.id, candidateId))
       await db.delete(session).where(eq(session.userId, userId))
       await db.delete(user).where(eq(user.id, userId))
     }
