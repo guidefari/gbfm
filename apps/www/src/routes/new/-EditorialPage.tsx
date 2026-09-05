@@ -86,7 +86,7 @@ export function EditorialPage() {
   const { data: session } = useSession()
   const user = session?.user
   const artworkUploadId = useId()
-  const workspaceRef = useRef<HTMLDialogElement>(null)
+  const [workspace, setWorkspace] = useState<HTMLDialogElement | null>(null)
   const initializedNewCreator = useRef(false)
 
   const [formData, setFormData] = useState<EditorialFormData>(createEmptyFormData)
@@ -136,12 +136,11 @@ export function EditorialPage() {
   }, [artworkPreview])
 
   useEffect(() => {
-    const workspace = workspaceRef.current
     if (!workspace || workspace.open) return () => {}
 
     workspace.showModal()
     return () => workspace.close()
-  }, [])
+  }, [workspace])
 
   const currentSnapshot = useMemo(
     () =>
@@ -416,7 +415,7 @@ export function EditorialPage() {
 
   return (
     <dialog
-      ref={workspaceRef}
+      ref={setWorkspace}
       onCancel={(event) => event.preventDefault()}
       className='m-0 h-dvh max-h-none w-screen max-w-none overflow-y-auto border-0 bg-background p-0 px-4 text-foreground backdrop:bg-background sm:px-6 lg:px-8'>
       <EditorialWorkspaceHeader
@@ -433,6 +432,7 @@ export function EditorialPage() {
       <div className='mx-auto max-w-4xl'>
         <EditorialWritingCanvas
           formData={formData}
+          portalContainer={workspace}
           metadata={metadata}
           onInputChange={handleTextInputChange}
           onPendingMusicChange={setPendingMusicCount}
