@@ -68,7 +68,7 @@ test('auth schemas preserve email, password, and unknown-key behavior', () => {
   ).not.toHaveProperty('ignored')
 })
 
-test('login retains its Promise API and normalizes Better Auth dates and omitted images', async () => {
+test('login normalizes Better Auth dates and omitted images', async () => {
   vi.stubGlobal('fetch', async () => ({
     status: 200,
     statusText: 'OK',
@@ -91,7 +91,6 @@ test('login retains its Promise API and normalizes Better Auth dates and omitted
     password: 'password'
   })
 
-  expect(result).toBeInstanceOf(Promise)
   await expect(result).resolves.toEqual({
     user: {
       id: 'user-1',

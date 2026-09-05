@@ -22,10 +22,18 @@ describe('email API contract', () => {
     expect(Exit.isFailure(result)).toBe(true)
   })
 
-  it('rejects non-finite pagination and invalid calendar dates', () => {
+  it('rejects non-finite pagination', () => {
     expect(
       Exit.isFailure(
-        Schema.decodeUnknownExit(EmailLogsQuery)({ limit: 'Infinity', dateFrom: '2026-02-30' })
+        Schema.decodeUnknownExit(EmailLogsQuery)({ limit: 'Infinity', dateFrom: '2026-02-28' })
+      )
+    ).toBe(true)
+  })
+
+  it('rejects an invalid calendar date with valid pagination', () => {
+    expect(
+      Exit.isFailure(
+        Schema.decodeUnknownExit(EmailLogsQuery)({ limit: '20', dateFrom: '2026-02-30' })
       )
     ).toBe(true)
   })
@@ -78,6 +86,7 @@ describe('email API contract', () => {
       data: [
         {
           id: 'log-1',
+          metadata: { internalDeliveryToken: 'private-token' },
           userId: null,
           recipientEmail: 'listener@example.com',
           recipientName: null,
@@ -100,6 +109,11 @@ describe('email API contract', () => {
       pagination: { total: 1, limit: 20, offset: 0, hasMore: false }
     })
 
+    expect(response.data[0]).toMatchObject({
+      id: 'log-1',
+      recipientEmail: 'listener@example.com',
+      status: 'SENT'
+    })
     expect(response.data[0]).not.toHaveProperty('metadata')
   })
 })

@@ -1,5 +1,5 @@
 import { Effect } from 'effect'
-import { describe, expect, test } from 'vitest'
+import { expect, test } from 'vitest'
 import {
   parsePendingMusicEntityEffect,
   transformPastedEditorialContentEffect
@@ -7,87 +7,50 @@ import {
 
 const transform = (value: string) => Effect.runSync(transformPastedEditorialContentEffect(value))
 
-describe('transformPastedEditorialContentEffect', () => {
-  test('turns standalone Spotify URLs into pending music entities', () => {
-    const input = `First album
-https://open.spotify.com/album/6AwBhTb30oRIH35Og6SdKG?si=shared
+test('transforms standalone Spotify URLs, deduplicates resolution, and parses pending entities', () => {
+  const url = 'https://open.spotify.com/album/6AwBhTb30oRIH35Og6SdKG'
+  const otherUrl = 'https://open.spotify.com/album/1tLBaM7LWJkX1zi3K6wuLu'
+  const result = transform(`${url}?si=shared\n\n${url}\n\n${otherUrl}`)
 
-Second album
-https://open.spotify.com/album/1tLBaM7LWJkX1zi3K6wuLu?si=shared`
-
-    expect(transform(input)).toEqual({
-      content: `First album
-<MusicEntityPending url="https://open.spotify.com/album/6AwBhTb30oRIH35Og6SdKG" />
-
-Second album
-<MusicEntityPending url="https://open.spotify.com/album/1tLBaM7LWJkX1zi3K6wuLu" />`,
-      spotifyUrls: [
-        'https://open.spotify.com/album/6AwBhTb30oRIH35Og6SdKG',
-        'https://open.spotify.com/album/1tLBaM7LWJkX1zi3K6wuLu'
-      ]
-    })
+  expect(result).toEqual({
+    content: `<MusicEntityPending url="${url}" />\n\n<MusicEntityPending url="${url}" />\n\n<MusicEntityPending url="${otherUrl}" />`,
+    spotifyUrls: [url, otherUrl]
   })
-
-  test('deduplicates URLs before batch resolution', () => {
-    const url = 'https://open.spotify.com/album/6AwBhTb30oRIH35Og6SdKG'
-
-    expect(transform(`${url}\n\n${url}`).spotifyUrls).toEqual([url])
-  })
-
-  test('preserves an inline Spotify link and adds its entity after the paragraph', () => {
-    const input =
-      "let's close off with a non-algo ting, a cannon record for me - the self titled [Inner River](https://open.spotify.com/album/1BIXNamH3zTLBSb3my28k6?si=shared) album"
-
-    expect(transform(input)).toEqual({
-      content: `${input}\n\n<MusicEntityPending url="https://open.spotify.com/album/1BIXNamH3zTLBSb3my28k6" fallback="remove" />`,
-      spotifyUrls: ['https://open.spotify.com/album/1BIXNamH3zTLBSb3my28k6']
-    })
-  })
-
-  test('places inline Spotify entities between their paragraph and the following paragraph', () => {
-    const input = `Listen to [Inner River](https://open.spotify.com/album/1BIXNamH3zTLBSb3my28k6?si=shared) again.
-
-The next thought stays below the entity.`
-
-    expect(transform(input).content)
-      .toBe(`Listen to [Inner River](https://open.spotify.com/album/1BIXNamH3zTLBSb3my28k6?si=shared) again.
-
-<MusicEntityPending url="https://open.spotify.com/album/1BIXNamH3zTLBSb3my28k6" fallback="remove" />
-
-The next thought stays below the entity.`)
-  })
-
-  test('does not transform URLs inside fenced code', () => {
-    const input = `\`\`\`
-https://open.spotify.com/album/6AwBhTb30oRIH35Og6SdKG
-\`\`\``
-
-    expect(transform(input)).toEqual({ content: input, spotifyUrls: [] })
+  const [pending] = result.content.split('\n\n')
+  expect(Effect.runSync(parsePendingMusicEntityEffect(pending))).toEqual({
+    provider: 'spotify',
+    url,
+    fallback: 'restore-url'
   })
 })
 
-describe('parsePendingMusicEntityEffect', () => {
-  test('parses generated pending entities', () => {
-    const parsed = Effect.runSync(
-      parsePendingMusicEntityEffect(
-        '<MusicEntityPending url="https://open.spotify.com/album/6AwBhTb30oRIH35Og6SdKG" />'
-      )
-    )
+test('preserves inline links and places their entities before the following paragraph', () => {
+  const input = `Listen to [Inner River](https://open.spotify.com/album/1BIXNamH3zTLBSb3my28k6?si=shared) again.
 
-    expect(parsed).toEqual({
-      provider: 'spotify',
-      url: 'https://open.spotify.com/album/6AwBhTb30oRIH35Og6SdKG',
-      fallback: 'restore-url'
-    })
+The next thought stays below the entity.`
+
+  expect(transform(input)).toEqual({
+    content: `Listen to [Inner River](https://open.spotify.com/album/1BIXNamH3zTLBSb3my28k6?si=shared) again.
+
+<MusicEntityPending url="https://open.spotify.com/album/1BIXNamH3zTLBSb3my28k6" fallback="remove" />
+
+The next thought stays below the entity.`,
+    spotifyUrls: ['https://open.spotify.com/album/1BIXNamH3zTLBSb3my28k6']
   })
+})
 
-  test('rejects hand-written unsafe pending values', () => {
-    const parsed = Effect.runSync(
-      Effect.option(
-        parsePendingMusicEntityEffect('<MusicEntityPending url="javascript:alert(1)" />')
-      )
-    )
+test('does not transform URLs inside fenced code', () => {
+  const input = `\`\`\`
+https://open.spotify.com/album/6AwBhTb30oRIH35Og6SdKG
+\`\`\``
 
-    expect(parsed._tag).toBe('None')
-  })
+  expect(transform(input)).toEqual({ content: input, spotifyUrls: [] })
+})
+
+test('rejects hand-written unsafe pending values', () => {
+  const parsed = Effect.runSync(
+    Effect.option(parsePendingMusicEntityEffect('<MusicEntityPending url="javascript:alert(1)" />'))
+  )
+
+  expect(parsed._tag).toBe('None')
 })

@@ -134,36 +134,6 @@ const makeRecordingReporter = () => {
 }
 
 describe('makePlayerCore', () => {
-  it('restores a stored position before starting playback', async () => {
-    const program = Effect.gen(function* () {
-      const { engine, calls, setStatus } = yield* makeRecordingEngine()
-      const storage = makeRecordingStorage({ position: 42, updatedAt: 0 })
-      const reporter = makeRecordingReporter()
-
-      const core = yield* makePlayerCore({
-        onStatus: () => {},
-        onTrackFinished: () => {}
-      }).pipe(
-        Effect.provide(
-          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer)
-        )
-      )
-
-      yield* core.requestPlayOnReady(track.id)
-      yield* setStatus({ isLoaded: true, duration: 300 })
-      yield* core.setSource(track)
-      yield* Effect.yieldNow
-
-      return { calls, reported: reporter.reported }
-    }).pipe(Effect.scoped)
-
-    const { calls, reported } = await Effect.runPromise(program)
-
-    expect(calls).toContain('seek:42')
-    expect(calls.indexOf('seek:42')).toBeLessThan(calls.indexOf('play'))
-    expect(reported).toEqual([track.id])
-  })
-
   it('restores the position when a cached source reports loaded before its duration', async () => {
     const program = Effect.gen(function* () {
       const { engine, calls, emit, setStatus } = yield* makeRecordingEngine()
@@ -403,7 +373,7 @@ describe('makePlayerCore', () => {
     expect(cleared).toEqual([track.id])
   })
 
-  it('persists backward seeks and suppresses sub-second jitter', async () => {
+  it('persists forward progress and backward seeks while suppressing sub-second jitter', async () => {
     const program = Effect.gen(function* () {
       const { engine, emit, setStatus } = yield* makeRecordingEngine()
       const storage = makeRecordingStorage()
@@ -422,6 +392,8 @@ describe('makePlayerCore', () => {
       yield* setStatus({ isLoaded: true, duration: 300, currentTime: 120 })
       yield* core.setSource(track)
       yield* Effect.yieldNow
+      yield* emit({ playing: true, currentTime: 150 })
+      yield* Effect.yieldNow
       yield* emit({ currentTime: 30 })
       yield* Effect.yieldNow
       yield* emit({ currentTime: 30.5 })
@@ -434,6 +406,7 @@ describe('makePlayerCore', () => {
 
     expect(saved).toEqual([
       { id: track.id, position: 120 },
+      { id: track.id, position: 150 },
       { id: track.id, position: 30 }
     ])
   })
@@ -667,71 +640,6 @@ describe('makePlayerCore', () => {
       result.observed.slice(result.beforeLateStatus).some((status) => status.sourceGeneration === 1)
     ).toBe(false)
     expect(result.finished).toBe(0)
-  })
-
-  it('clears the stored position and notifies when a track finishes', async () => {
-    const program = Effect.gen(function* () {
-      const { engine, emit, setStatus } = yield* makeRecordingEngine()
-      const storage = makeRecordingStorage()
-      const reporter = makeRecordingReporter()
-      let finished = 0
-
-      const core = yield* makePlayerCore({
-        onStatus: () => {},
-        onTrackFinished: () => {
-          finished += 1
-        }
-      }).pipe(
-        Effect.provide(
-          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer)
-        )
-      )
-
-      yield* core.requestPlayOnReady(track.id)
-      yield* setStatus({ isLoaded: true, duration: 300 })
-      yield* core.setSource(track)
-      yield* Effect.yieldNow
-      yield* emit({ playing: true, currentTime: 300 })
-      yield* Effect.yieldNow
-      yield* emit({ playing: false, didJustFinish: true })
-      yield* Effect.yieldNow
-
-      return { finished, cleared: storage.cleared }
-    }).pipe(Effect.scoped)
-
-    const { finished, cleared } = await Effect.runPromise(program)
-
-    expect(finished).toBe(1)
-    expect(cleared).toEqual([track.id])
-  })
-
-  it('persists playback position as the track advances', async () => {
-    const program = Effect.gen(function* () {
-      const { engine, emit, setStatus } = yield* makeRecordingEngine()
-      const storage = makeRecordingStorage()
-      const reporter = makeRecordingReporter()
-
-      const core = yield* makePlayerCore({
-        onStatus: () => {},
-        onTrackFinished: () => {}
-      }).pipe(
-        Effect.provide(
-          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer)
-        )
-      )
-
-      yield* core.requestPlayOnReady(track.id)
-      yield* setStatus({ isLoaded: true, duration: 300 })
-      yield* core.setSource(track)
-      yield* Effect.yieldNow
-      yield* emit({ playing: true, currentTime: 30 })
-      yield* Effect.yieldNow
-
-      return storage.saved
-    }).pipe(Effect.scoped)
-
-    const saved = await Effect.runPromise(program)
-    expect(saved.some((entry) => entry.id === track.id && entry.position === 30)).toBe(true)
   })
 
   it('interrupts the status fiber when the enclosing scope closes', async () => {

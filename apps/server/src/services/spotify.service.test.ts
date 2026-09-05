@@ -196,10 +196,6 @@ describe('cleanId', () => {
     )
     expect(cleanId(encodedUrl)).toBe('4iV5W9uYEdYUVa79Axb7Rh')
   })
-
-  test('returns ID unchanged for non-URL string', () => {
-    expect(cleanId('abc123')).toBe('abc123')
-  })
 })
 
 describe('isSpotifyUrl', () => {

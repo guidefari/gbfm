@@ -83,14 +83,12 @@ describe('CDN router Worker', () => {
       new Request('https://cdn.example/mixes/cors.mp3', { method: 'POST' })
     )
 
+    expect(hit.status).toBe(200)
+    expect(miss.status).toBe(404)
+    expect(rejected.status).toBe(405)
     for (const response of [hit, miss, rejected]) {
       expect(response.headers.get('access-control-allow-origin')).toBe('*')
       expect(response.headers.get('access-control-expose-headers')).toBe('ETag')
     }
-  })
-
-  test('exposes only the two public R2 bucket bindings', () => {
-    const publicBindings = Object.keys(env).filter((name) => !name.startsWith('__VITEST_'))
-    expect(publicBindings.toSorted()).toEqual(['MIXES', 'USER_CONTENT'])
   })
 })

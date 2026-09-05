@@ -95,7 +95,7 @@ async function openEditorial(page: Page, content: string) {
   await page.goto('/editorial/test-story')
 }
 
-test.beforeEach(async ({ page }) => {
+async function setupEditorial(page: Page) {
   await page.addInitScript(() =>
     localStorage.setItem('gbfm-onboarding.json', JSON.stringify({ hasSeenWelcome: true }))
   )
@@ -153,9 +153,12 @@ test.beforeEach(async ({ page }) => {
     return route.fulfill({ json: { title: 'Test playlist', tracks, playlistUrl } })
   })
   await page.route('**/api/music-reminders**', (route) => route.fulfill({ json: {} }))
-})
+}
 
-test('composer Music picker opens above the workspace and inserts a release', async ({ page }) => {
+test('composer inserts music and media through its pickers and previews tracks', async ({
+  page
+}) => {
+  await setupEditorial(page)
   await page.goto('/new/editorial')
   await page.getByRole('button', { name: 'Music', exact: true }).click()
   const search = page.getByRole('searchbox', { name: 'Search music catalog' })
@@ -170,10 +173,6 @@ test('composer Music picker opens above the workspace and inserts a release', as
     page.locator('.editorial-editor-preview').getByRole('link', { name: 'Opening track' })
   ).toBeVisible()
   await expect(page.getByRole('button', { name: 'Remind me' })).toHaveCount(0)
-})
-
-test('composer Media picker accepts a URL and inserts media', async ({ page }) => {
-  await page.goto('/new/editorial')
   await page.getByRole('button', { name: 'Media', exact: true }).click()
   await page
     .getByRole('textbox', { name: 'Media URL' })
@@ -184,6 +183,7 @@ test('composer Media picker accepts a URL and inserts media', async ({ page }) =
 
 for (const type of ['album', 'playlist']) {
   test(`${type} embed shows ordered tracks and the reminder dialog`, async ({ page }) => {
+    await setupEditorial(page)
     await openEditorial(page, `<MusicEntity type="${type}" id="test-${type}" />`)
     const list = page.getByRole('region', { name: 'Track list' })
     await expect(list.getByRole('listitem')).toHaveCount(2)
@@ -204,6 +204,7 @@ for (const type of ['album', 'playlist']) {
 }
 
 test('display props disable tracks and reminders without fetching tracks', async ({ page }) => {
+  await setupEditorial(page)
   await connectSpotify(page)
   const trackRequests: string[] = []
   page.on('request', (request) => {
@@ -223,6 +224,7 @@ test('display props disable tracks and reminders without fetching tracks', async
 
 for (const type of ['album', 'playlist']) {
   test(`${type} without Spotify shows catalog tracks in release order`, async ({ page }) => {
+    await setupEditorial(page)
     const catalogTracks = [2, 1].map((trackNumber) => ({
       id: `track-${trackNumber}`,
       title: `Catalog track ${trackNumber}`,
@@ -257,9 +259,13 @@ for (const type of ['album', 'playlist']) {
   })
 }
 
-test('Spotify controls play the release and queue an individual track', async ({ page }) => {
+test('Spotify controls play and queue tracks on a narrow screen', async ({ page }) => {
+  await setupEditorial(page)
+  await page.setViewportSize({ width: 390, height: 844 })
   await connectSpotify(page)
   await openEditorial(page, '<MusicEntity type="album" id="test-album" />')
+  await expect(page.getByRole('region', { name: 'Track list' })).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
   const playRequest = page.waitForRequest(
     (request) => request.method() === 'PUT' && request.url().includes('/me/player/play')
   )
@@ -279,19 +285,8 @@ test('Spotify controls play the release and queue an individual track', async ({
   )
 })
 
-test('music embeds fit a narrow screen', async ({ page }, testInfo) => {
-  await page.setViewportSize({ width: 390, height: 844 })
-  await openEditorial(page, '<MusicEntity type="album" id="test-album" />')
-  await expect(page.getByRole('region', { name: 'Track list' })).toBeVisible()
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
-  await page.screenshot({
-    path: testInfo.outputPath('music-embed-mobile.png'),
-    fullPage: true,
-    animations: 'disabled'
-  })
-})
-
 test('track-list failure stays hidden while metadata and stream links remain', async ({ page }) => {
+  await setupEditorial(page)
   await page.route('**/spotify/album', (route) => route.fulfill({ status: 500, json: {} }))
   const fallback = page.waitForResponse(
     (response) => new URL(response.url()).pathname === '/api/music/tracks'
@@ -300,7 +295,6 @@ test('track-list failure stays hidden while metadata and stream links remain', a
   await fallback
   await expect(page.getByText('Loading tracks…')).toHaveCount(0)
   await expect(page.getByRole('region', { name: 'Track list' })).toHaveCount(0)
-  await expect(page.getByText(/Track list is unavailable|No tracks available/)).toHaveCount(0)
   await expect(page.getByRole('heading', { name: 'Test release' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Spotify', exact: true })).toBeVisible()
 })

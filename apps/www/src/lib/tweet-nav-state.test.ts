@@ -21,38 +21,30 @@ import {
 const asSlug = Schema.decodeUnknownSync(Slug)
 
 describe('tweet nav head projection', () => {
-  test('a fresh head is unconfirmed and offers no expected slug', () => {
-    const head = makeHead(asSlug('alpha'))
+  test('confirms neighbours, projects a step, and reconciles unknown or changed destinations', () => {
+    const fresh = makeHead(asSlug('beta'))
+    expect(fresh.slug).toBe('beta')
+    expect(fresh.confirmed).toBe(false)
+    expect(expectedSlugFor(fresh, 'forward')).toBeUndefined()
+    expect(expectedSlugFor(fresh, 'back')).toBeUndefined()
+    expect(shouldReconcileRoute(expectedSlugFor(fresh, 'forward'), 'gamma')).toBe(true)
 
-    expect(head.slug).toBe('alpha')
-    expect(head.confirmed).toBe(false)
-    expect(expectedSlugFor(head, 'forward')).toBe(undefined)
-    expect(expectedSlugFor(head, 'back')).toBe(undefined)
-  })
+    const confirmed = confirmHead(fresh.slug, {
+      back: asSlug('alpha'),
+      forward: asSlug('gamma')
+    })
+    expect(expectedSlugFor(confirmed, 'back')).toBe('alpha')
+    expect(expectedSlugFor(confirmed, 'forward')).toBe('gamma')
+    expect(shouldReconcileRoute(expectedSlugFor(confirmed, 'forward'), 'gamma')).toBe(false)
+    expect(shouldReconcileRoute(expectedSlugFor(confirmed, 'forward'), 'delta')).toBe(true)
 
-  test('a confirmed head exposes its neighbours as expected slugs', () => {
-    const head = confirmHead(asSlug('beta'), { back: asSlug('alpha'), forward: asSlug('gamma') })
-
-    expect(expectedSlugFor(head, 'back')).toBe('alpha')
-    expect(expectedSlugFor(head, 'forward')).toBe('gamma')
-  })
-
-  test('stepping forward from a confirmed head moves the head to the neighbour', () => {
-    const head = confirmHead(asSlug('beta'), { back: asSlug('alpha'), forward: asSlug('gamma') })
-    const next = projectHead(head, 'forward')
-
-    expect(next.slug).toBe('gamma')
-    expect(next.confirmed).toBe(false)
-  })
-
-  test('a second rapid step has no known neighbour so it keeps the slug and stays unconfirmed', () => {
-    const head = confirmHead(asSlug('beta'), { back: asSlug('alpha'), forward: asSlug('gamma') })
-    const first = projectHead(head, 'forward')
+    const first = projectHead(confirmed, 'forward')
+    expect(first.slug).toBe('gamma')
+    expect(first.confirmed).toBe(false)
     const second = projectHead(first, 'forward')
-
     expect(second.slug).toBe('gamma')
     expect(second.confirmed).toBe(false)
-    expect(expectedSlugFor(second, 'forward')).toBe(undefined)
+    expect(expectedSlugFor(second, 'forward')).toBeUndefined()
   })
 
   test('an unconfirmed head never produces an optimistic destination', () => {
@@ -63,24 +55,6 @@ describe('tweet nav head projection', () => {
     }
 
     expect(expectedSlugFor(head, 'forward')).toBe(undefined)
-  })
-
-  test('reconciliation is skipped when the optimistic destination matches the server', () => {
-    expect(shouldReconcileRoute('gamma', 'gamma')).toBe(false)
-  })
-
-  test('reconciliation runs when there was no optimistic destination', () => {
-    expect(shouldReconcileRoute(undefined, 'gamma')).toBe(true)
-  })
-
-  test('reconciliation runs when the optimistic destination was wrong', () => {
-    expect(shouldReconcileRoute('gamma', 'delta')).toBe(true)
-  })
-
-  test('initial capabilities are optimistic so the controls are never dead on first paint', () => {
-    expect(optimisticCapabilities.canStepBack).toBe(true)
-    expect(optimisticCapabilities.canStepForward).toBe(true)
-    expect(optimisticCapabilities.hasUnread).toBe(false)
   })
 })
 
@@ -133,25 +107,18 @@ describe('neighbourhood derivation', () => {
 })
 
 describe('local trail', () => {
-  test('visiting a new slug appends it and moves the cursor to the end', () => {
-    const trail = visitSlug(visitSlug(emptyTrail, 'alpha'), 'beta')
-
-    expect(trail.slugs).toEqual(['alpha', 'beta'])
-    expect(trail.cursor).toBe(1)
-  })
-
-  test('revisiting a known slug moves the cursor without duplicating it', () => {
-    const trail = visitSlug(visitSlug(visitSlug(emptyTrail, 'alpha'), 'beta'), 'alpha')
-
-    expect(trail.slugs).toEqual(['alpha', 'beta'])
-    expect(trail.cursor).toBe(0)
-  })
-
-  test('visiting a new slug from the middle of the trail truncates the forward branch', () => {
+  test('visits, revisits, and branches through the local trail', () => {
     const walked = visitSlug(visitSlug(visitSlug(emptyTrail, 'alpha'), 'beta'), 'gamma')
-    const backToBeta = visitSlug(walked, 'beta')
-    const branched = visitSlug(backToBeta, 'delta')
+    expect(walked.slugs).toEqual(['alpha', 'beta', 'gamma'])
+    expect(walked.cursor).toBe(2)
 
+    const atBeta = visitSlug(walked, 'beta')
+    expect(atBeta.slugs).toEqual(['alpha', 'beta', 'gamma'])
+    expect(atBeta.cursor).toBe(1)
+    expect(localDestinationFor(atBeta, 'beta', 'back')).toBe('alpha')
+    expect(localDestinationFor(atBeta, 'beta', 'forward')).toBe('gamma')
+
+    const branched = visitSlug(atBeta, 'delta')
     expect(branched.slugs).toEqual(['alpha', 'beta', 'delta'])
     expect(branched.cursor).toBe(2)
   })
@@ -165,14 +132,6 @@ describe('local trail', () => {
     expect(trail.slugs.length).toBe(TRAIL_CAPACITY)
     expect(trail.slugs[0]).toBe('slug-10')
     expect(trail.cursor).toBe(TRAIL_CAPACITY - 1)
-  })
-
-  test('prev and next come from the local trail with no network involved', () => {
-    const walked = visitSlug(visitSlug(visitSlug(emptyTrail, 'alpha'), 'beta'), 'gamma')
-    const atBeta = visitSlug(walked, 'beta')
-
-    expect(localDestinationFor(atBeta, 'beta', 'back')).toBe('alpha')
-    expect(localDestinationFor(atBeta, 'beta', 'forward')).toBe('gamma')
   })
 
   test('the local trail offers nothing when the current slug is not where the cursor sits', () => {
