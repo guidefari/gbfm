@@ -7,13 +7,13 @@ const SpotifyTrackResponse = Schema.Struct({
   title: Schema.String,
   artists: Schema.String,
   trackUrl: Schema.String,
-  previewUrl: Schema.optional(Schema.String)
+  previewUrl: Schema.optional(Schema.NullOr(Schema.String))
 })
 
 const SpotifyAlbumTrack = Schema.Struct({
   title: Schema.String,
   artists: Schema.String,
-  previewUrl: Schema.optional(Schema.String),
+  previewUrl: Schema.optional(Schema.NullOr(Schema.String)),
   trackUrl: Schema.String
 })
 

@@ -23,9 +23,10 @@ type StreamLink = {
 
 type Props = {
   links: StreamLink[]
+  showPlaybackControls?: boolean
 }
 
-export function StreamLinks({ links }: Props) {
+export function StreamLinks({ links, showPlaybackControls = true }: Props) {
   if (!links.length) return null
 
   const spotifyLink = links.find((link) => link.platform === 'spotify')
@@ -51,7 +52,7 @@ export function StreamLinks({ links }: Props) {
           </a>
         )
       })}
-      {spotifyLink ? <SpotifyEntityActions url={spotifyLink.url} /> : null}
+      {showPlaybackControls && spotifyLink ? <SpotifyEntityActions url={spotifyLink.url} /> : null}
     </div>
   )
 }

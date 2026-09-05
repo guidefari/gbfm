@@ -16,11 +16,13 @@ import type { EditorialFormData, EditorialTextField } from './-editorial-types'
 
 export function EditorialWritingCanvas({
   formData,
+  portalContainer,
   metadata,
   onInputChange,
   onPendingMusicChange
 }: {
   formData: EditorialFormData
+  portalContainer?: HTMLElement | null
   metadata: ReactNode
   onInputChange: (field: EditorialTextField, value: string) => void
   onPendingMusicChange: (count: number) => void
@@ -104,7 +106,7 @@ export function EditorialWritingCanvas({
           onMusicResolutionFailure={reportResolutionFailure}
           toolbarActions={
             <>
-              <MusicEntityPicker onInsert={insertBlock} />
+              <MusicEntityPicker onInsert={insertBlock} portalContainer={portalContainer} />
               <Button
                 type='button'
                 variant='ghost'
@@ -119,6 +121,7 @@ export function EditorialWritingCanvas({
         />
         <ExternalMediaPickerDialog
           open={externalMediaOpen}
+          portalContainer={portalContainer}
           onOpenChange={setExternalMediaOpen}
           onInsert={insertBlock}
         />

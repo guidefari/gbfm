@@ -21,6 +21,7 @@ import {
   getBandcampMetadataWithSpan
 } from '@/services/bandcamp.service'
 import { ConfigService } from '@/services/config.service'
+import { collectSpotifyTrackPages } from '@/services/spotify-track-pages'
 import {
   cleanId,
   extractSpotifyId,
@@ -388,12 +389,23 @@ const getAlbumEffect = (id: string) =>
       )
     )
 
+    const tracks = yield* collectSpotifyTrackPages(data.tracks, (options) =>
+      albums.getAlbumTracks(sanitizedId, options)
+    ).pipe(
+      Effect.mapError(
+        toProviderError('getAlbum', 'Failed to fetch album', {
+          entityType: 'album',
+          externalId: sanitizedId
+        })
+      )
+    )
+
     const album: Album = {
       albumType: data.album_type,
       albumImageUrl: data.images[0]?.url,
       title: data.name,
       artists: joinArtistNames(data.artists),
-      tracks: data.tracks.items.map((track) => ({
+      tracks: tracks.map((track) => ({
         title: track.name,
         artists: joinArtistNames(track.artists),
         previewUrl: track.preview_url ?? undefined,
@@ -426,11 +438,22 @@ const getPlaylistEffect = (id: string) =>
       )
     )
 
+    const items = yield* collectSpotifyTrackPages(data.tracks, (options) =>
+      playlists.getPlaylistItems(sanitizedId, options)
+    ).pipe(
+      Effect.mapError(
+        toProviderError('getPlaylist', 'Failed to fetch playlist', {
+          entityType: 'playlist',
+          externalId: sanitizedId
+        })
+      )
+    )
+
     const playlist: Playlist = {
       coverImageUrl: data.images[0]?.url,
       title: data.name,
       description: data.description ?? undefined,
-      tracks: playlistTracks(data.tracks.items).map((track) => ({
+      tracks: playlistTracks(items).map((track) => ({
         title: track.name,
         artists: joinArtistNames(track.artists),
         previewUrl: track.preview_url ?? undefined,

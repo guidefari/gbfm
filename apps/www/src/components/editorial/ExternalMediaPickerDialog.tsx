@@ -20,6 +20,7 @@ import {
 } from './external-media'
 
 export type ExternalMediaPickerDialogProps = {
+  readonly portalContainer?: HTMLElement | null
   readonly open: boolean
   readonly onOpenChange: (open: boolean) => void
   readonly onInsert: (markdown: string) => void
@@ -27,6 +28,7 @@ export type ExternalMediaPickerDialogProps = {
 
 export function ExternalMediaPickerDialog({
   open,
+  portalContainer,
   onOpenChange,
   onInsert
 }: ExternalMediaPickerDialogProps) {
@@ -69,7 +71,9 @@ export function ExternalMediaPickerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='w-[calc(100vw-2rem)] max-w-md overflow-hidden'>
+      <DialogContent
+        container={portalContainer}
+        className='w-[calc(100vw-2rem)] max-w-md overflow-hidden'>
         <DialogHeader>
           <DialogTitle>Embed external media</DialogTitle>
           <DialogDescription className='text-sm leading-relaxed'>
