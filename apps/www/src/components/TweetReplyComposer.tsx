@@ -2,12 +2,8 @@ import { Button, Input, Textarea, useToast } from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
 import { Loader2, MessageSquareQuote, Music4, TriangleAlert } from 'lucide-react'
 import { useSession } from '@/lib/auth-client'
-import {
-  extractTweetSlugFromText,
-  useCreateMicroPostReply,
-  useMicroPostBySlug,
-  useResolveMusicEntity
-} from '@/lib/http'
+import { extractTweetSlugFromText, useCreateMicroPostReply, useMicroPostBySlug } from '@/lib/http'
+import { useResolveMusicEntity } from '@/lib/music-entity-resolution'
 import { cn } from '@/lib/utils'
 import { useTweetReplyComposer, useTweetReplyComposerActions } from '@/store/tweetReplyComposer'
 
@@ -24,7 +20,7 @@ export function TweetReplyComposer({ parentSlug, compact = false, onPosted }: Pr
   const { open, setDraft, setMusicUrl, reset } = useTweetReplyComposerActions(parentSlug)
   const { toast } = useToast()
   const createReply = useCreateMicroPostReply(parentSlug)
-  const resolved = useResolveMusicEntity(musicUrl.trim())
+  const resolved = useResolveMusicEntity(musicUrl.trim(), 'reply')
   const quotedSlug = extractTweetSlugFromText(draft)
   const resolvedQuote = useMicroPostBySlug(quotedSlug)
 

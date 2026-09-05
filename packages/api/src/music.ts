@@ -2,6 +2,30 @@ import { Schema } from 'effect'
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup, HttpApiSchema } from 'effect/unstable/httpapi'
 import { AuthMiddleware } from './middleware/auth'
 
+export class MusicServiceUnavailableResponse extends Schema.Error<MusicServiceUnavailableResponse>(
+  'MusicServiceUnavailableResponse'
+)({
+  _tag: Schema.tag('ServiceUnavailable'),
+  retryAfterSeconds: Schema.optional(Schema.Number)
+}) {}
+
+export const MusicServiceUnavailableHttpError = MusicServiceUnavailableResponse.pipe(
+  HttpApiSchema.encodeToWithHeaders(
+    {
+      body: HttpApiError.ServiceUnavailable,
+      headers: { 'retry-after': Schema.optional(Schema.Number) }
+    },
+    {
+      decode: ({ headers }) =>
+        new MusicServiceUnavailableResponse({ retryAfterSeconds: headers['retry-after'] }),
+      encode: (error) => ({
+        body: new HttpApiError.ServiceUnavailable(),
+        headers: { 'retry-after': error.retryAfterSeconds }
+      })
+    }
+  )
+)
+
 // Mirrors apps/server/src/db/music-entity.schema.ts's selectMusicArtistSchema
 // (Zod, DB-facing) -- response fields are nullable to match actual column
 // nullability, not because the API wants to encourage nulls.
@@ -355,7 +379,8 @@ export const UpdateEntityLinkStatusInput = Schema.Struct({
 })
 
 export const ResolveMusicEntityInput = Schema.Struct({
-  url: UrlString
+  url: UrlString,
+  origin: Schema.optional(Schema.Literals(['editorial', 'tweet', 'reply']))
 })
 
 export const ResolvedMusicEntityResponse = Schema.Struct({
@@ -701,7 +726,13 @@ export const MusicGroup = HttpApiGroup.make('music')
       params: playlistIdParam,
       payload: AddSpotifyTrackToPlaylistInput,
       success: AddSpotifyTrackResultResponse,
-      error: [HttpApiError.BadRequest, HttpApiError.Forbidden]
+      error: [
+        HttpApiError.BadRequest,
+        HttpApiError.NotFound,
+        HttpApiError.Conflict,
+        HttpApiError.Forbidden,
+        MusicServiceUnavailableHttpError
+      ]
     }).middleware(AuthMiddleware)
   )
   .add(
@@ -715,7 +746,13 @@ export const MusicGroup = HttpApiGroup.make('music')
     HttpApiEndpoint.post('syncPlaylistLinks', '/api/music/playlists/:id/sync-links', {
       params: playlistIdParam,
       success: SyncPlaylistLinksResponse,
-      error: HttpApiError.Forbidden
+      error: [
+        HttpApiError.BadRequest,
+        HttpApiError.NotFound,
+        HttpApiError.Conflict,
+        HttpApiError.Forbidden,
+        MusicServiceUnavailableHttpError
+      ]
     }).middleware(AuthMiddleware)
   )
   // ---------------------------------------------------------------------
@@ -725,7 +762,13 @@ export const MusicGroup = HttpApiGroup.make('music')
     HttpApiEndpoint.post('resolveMusicEntity', '/api/music/resolve', {
       payload: ResolveMusicEntityInput,
       success: ResolvedMusicEntityResponse,
-      error: [HttpApiError.BadRequest, HttpApiError.Forbidden, HttpApiError.ServiceUnavailable]
+      error: [
+        HttpApiError.BadRequest,
+        HttpApiError.NotFound,
+        HttpApiError.Conflict,
+        HttpApiError.Forbidden,
+        MusicServiceUnavailableHttpError
+      ]
     }).middleware(AuthMiddleware)
   )
   // ---------------------------------------------------------------------
@@ -743,7 +786,13 @@ export const MusicGroup = HttpApiGroup.make('music')
       params: entityLinkParams,
       payload: AddEntityLinkInput,
       success: EntityLinkResponse,
-      error: HttpApiError.Forbidden
+      error: [
+        HttpApiError.BadRequest,
+        HttpApiError.NotFound,
+        HttpApiError.Conflict,
+        HttpApiError.Forbidden,
+        MusicServiceUnavailableHttpError
+      ]
     }).middleware(AuthMiddleware)
   )
   .add(
@@ -754,7 +803,13 @@ export const MusicGroup = HttpApiGroup.make('music')
         params: { ...entityLinkParams, linkId: Schema.String },
         payload: UpdateEntityLinkStatusInput,
         success: EntityLinkResponse,
-        error: [HttpApiError.NotFound, HttpApiError.Forbidden]
+        error: [
+          HttpApiError.BadRequest,
+          HttpApiError.NotFound,
+          HttpApiError.Conflict,
+          HttpApiError.Forbidden,
+          MusicServiceUnavailableHttpError
+        ]
       }
     ).middleware(AuthMiddleware)
   )
@@ -762,14 +817,26 @@ export const MusicGroup = HttpApiGroup.make('music')
     HttpApiEndpoint.delete('deleteEntityLink', '/api/music/:entityType/:entityId/links/:linkId', {
       params: { ...entityLinkParams, linkId: Schema.String },
       success: HttpApiSchema.NoContent,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden]
+      error: [
+        HttpApiError.BadRequest,
+        HttpApiError.NotFound,
+        HttpApiError.Conflict,
+        HttpApiError.Forbidden,
+        MusicServiceUnavailableHttpError
+      ]
     }).middleware(AuthMiddleware)
   )
   .add(
     HttpApiEndpoint.post('rescrapeEntityLinks', '/api/music/:entityType/:entityId/links/rescrape', {
       params: { entityType: ScrapeEntityType, entityId: Schema.String },
       success: RescrapeEntityLinksResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden, HttpApiError.ServiceUnavailable]
+      error: [
+        HttpApiError.BadRequest,
+        HttpApiError.NotFound,
+        HttpApiError.Conflict,
+        HttpApiError.Forbidden,
+        MusicServiceUnavailableHttpError
+      ]
     }).middleware(AuthMiddleware)
   )
   // ---------------------------------------------------------------------
@@ -780,7 +847,13 @@ export const MusicGroup = HttpApiGroup.make('music')
       params: { entityType: ScrapeEntityType },
       payload: ScrapeEntityLinksInput,
       success: ScrapeEntityLinksResponse,
-      error: [HttpApiError.BadRequest, HttpApiError.Forbidden, HttpApiError.ServiceUnavailable]
+      error: [
+        HttpApiError.BadRequest,
+        HttpApiError.NotFound,
+        HttpApiError.Conflict,
+        HttpApiError.Forbidden,
+        MusicServiceUnavailableHttpError
+      ]
     }).middleware(AuthMiddleware)
   )
 // ---------------------------------------------------------------------

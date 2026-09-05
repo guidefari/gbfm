@@ -5,7 +5,13 @@ import { projectEntityLabels, projectEntityLabelsForRows, replaceEntityLabels } 
 import { musicArtistsTable, type SelectMusicArtist } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { toSlug } from '@/services/to-slug'
-import { deleteEntityLabels, deleteLinksForEntity, requireInserted, requireOne } from './shared'
+import {
+  deleteEntityLabels,
+  deleteIdentitiesForEntity,
+  deleteLinksForEntity,
+  requireInserted,
+  requireOne
+} from './shared'
 
 export interface CreateArtistInput {
   name: string
@@ -130,7 +136,8 @@ export const deleteArtistEffect = (id: string) =>
     const rows = yield* Effect.tryPromise({
       try: () =>
         (async () => {
-          const [, , rows] = await db.batch([
+          const [, , , rows] = await db.batch([
+            deleteIdentitiesForEntity(db, 'artist', id),
             deleteLinksForEntity(db, 'artist', id),
             deleteEntityLabels(db, 'artist', id),
             db

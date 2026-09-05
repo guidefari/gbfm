@@ -3,9 +3,12 @@ import { NavigationSessionResponse } from '@gbfm/api/navigation'
 import {
   AlbumListResponse,
   ArtistListResponse,
+  EntityLinkResponse,
   LabelListResponse,
   LabelResponse,
   PlaylistListResponse,
+  ResolvedMusicEntityResponse,
+  ScrapeEntityLinksResponse,
   TrackListResponse
 } from '@gbfm/api/music'
 import {
@@ -18,9 +21,11 @@ import {
 import { SearchResults } from '@gbfm/api/search'
 import { decodeResponseBody } from '@gbfm/api/testing'
 import { and, eq } from 'drizzle-orm'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { Layer } from 'effect'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { d1, db } from '@/test/database'
 import { createTestWebHandler } from '@/test/http-handler'
+import { ObjectStoreClient } from '@/services/storage/object-store-client'
 import { audioTable } from '@/db/audio.schema'
 import { session, user } from '@/db/auth.schema'
 import { entityLabelsTable } from '@/db/tags.schema'
@@ -29,8 +34,12 @@ import { navigationSessions } from '@/db/navigation.schema'
 import {
   musicAlbumsTable,
   musicArtistsTable,
+  musicEntityLinksTable,
   musicEntityResolutionClaimsTable,
   musicEntityTypesTable,
+  musicPlatformsTable,
+  musicSourceAliasesTable,
+  musicSourceIdentitiesTable,
   musicTracksTable,
   musicLabelAlbumsTable,
   musicLabelArtistsTable,
@@ -46,6 +55,21 @@ import { createWebHandler } from './routes'
 // working as more groups move from the Hono fallback onto the Effect router
 // (docs/migration-effect-http-api.md).
 let webHandler: ReturnType<typeof createWebHandler>
+
+const writableObjectStoreLayer = Layer.succeed(ObjectStoreClient, {
+  provider: 'r2',
+  putObject: () => Promise.resolve(),
+  presignPutObject: () => Promise.resolve('https://object-store.test/upload'),
+  deleteObject: () => Promise.resolve(),
+  headObject: () => Promise.resolve(null),
+  listObjects: () => Promise.resolve([]),
+  listBuckets: () => Promise.resolve([]),
+  createMultipartUpload: () => Promise.resolve('upload-id'),
+  presignUploadPart: () => Promise.resolve('https://object-store.test/part'),
+  completeMultipartUpload: () => Promise.resolve(),
+  abortMultipartUpload: () => Promise.resolve(),
+  listMultipartParts: () => Promise.resolve([])
+} satisfies ObjectStoreClient)
 
 beforeAll(async () => {
   // No longer imports @/app for its side effects: app.ts's initializeApp
@@ -595,6 +619,475 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
     expect(res.status).toBe(401)
   })
 
+  it('preserves display platforms and retains the legacy album YouTube flow', async () => {
+    const suffix = crypto.randomUUID()
+    const userId = `link-admin-${suffix}`
+    const token = `link-admin-token-${suffix}`
+    const albumId = crypto.randomUUID()
+    const trackId = crypto.randomUUID()
+    const videoId = suffix.replaceAll('-', '')
+    const canonicalLinks = [
+      {
+        entityType: 'album',
+        entityId: albumId,
+        platform: 'discogs',
+        url: `https://www.discogs.com/release/${suffix}`
+      },
+      {
+        entityType: 'album',
+        entityId: albumId,
+        platform: 'website',
+        url: `https://artist-${suffix}.example.com/album`
+      },
+      {
+        entityType: 'track',
+        entityId: trackId,
+        platform: 'youtube_music',
+        url: `https://music.youtube.com/watch?v=${videoId}`
+      }
+    ] as const
+    const legacyLink = {
+      platform: 'youtube',
+      url: `https://www.youtube.com/watch?v=legacy${videoId}`
+    } as const
+
+    await db.batch([
+      db.insert(user).values({
+        id: userId,
+        name: 'Link admin',
+        email: `${userId}@example.com`,
+        role: 'admin'
+      }),
+      db.insert(session).values({
+        id: crypto.randomUUID(),
+        token,
+        userId,
+        expiresAt: new Date(Date.now() + 60_000)
+      }),
+      db
+        .insert(musicEntityTypesTable)
+        .values([
+          { id: 'album', displayName: 'Album' },
+          { id: 'track', displayName: 'Track' }
+        ])
+        .onConflictDoNothing(),
+      db
+        .insert(musicPlatformsTable)
+        .values(
+          ['discogs', 'website', 'youtube_music', 'youtube', 'other'].map((platform) => ({
+            id: platform,
+            displayName: platform
+          }))
+        )
+        .onConflictDoNothing(),
+      db
+        .insert(musicAlbumsTable)
+        .values({ id: albumId, title: 'Link compatibility album', slug: `links-${suffix}` }),
+      db
+        .insert(musicTracksTable)
+        .values({ id: trackId, title: 'Link compatibility track', slug: `track-links-${suffix}` })
+    ])
+
+    const request = (
+      path: string,
+      method: 'POST' | 'PATCH',
+      body:
+        | {
+            readonly platform: string
+            readonly url: string
+            readonly status: 'rejected'
+          }
+        | {
+            readonly status: 'verified'
+            readonly metadata?: { readonly reviewNote: string }
+          }
+    ) =>
+      webHandler.handler(
+        new Request(`http://localhost${path}`, {
+          method,
+          headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+          body: JSON.stringify(body)
+        })
+      )
+
+    try {
+      for (const link of canonicalLinks) {
+        const path = `/api/music/${link.entityType}/${link.entityId}/links`
+        const added = await request(path, 'POST', {
+          platform: link.platform,
+          url: link.url,
+          status: 'rejected'
+        })
+        expect(added.status).toBe(200)
+        const addedLink = await decodeResponseBody(EntityLinkResponse, added)
+        expect(addedLink).toMatchObject({
+          platform: link.platform,
+          url: link.url,
+          status: 'rejected'
+        })
+
+        const verified = await request(`${path}/${addedLink.id}`, 'PATCH', {
+          status: 'verified',
+          metadata: { reviewNote: 'approved' }
+        })
+        expect(verified.status).toBe(200)
+        await expect(decodeResponseBody(EntityLinkResponse, verified)).resolves.toMatchObject({
+          platform: link.platform,
+          url: link.url,
+          status: 'verified',
+          verifiedBy: userId,
+          metadata: {
+            discoveredBy: 'manual',
+            confidence: 'exact_source',
+            reviewNote: 'approved'
+          }
+        })
+      }
+
+      const legacyAdded = await request(`/api/music/album/${albumId}/links`, 'POST', {
+        ...legacyLink,
+        status: 'rejected'
+      })
+      expect(legacyAdded.status).toBe(200)
+      const legacyAddedLink = await decodeResponseBody(EntityLinkResponse, legacyAdded)
+      const legacyVerified = await request(
+        `/api/music/album/${albumId}/links/${legacyAddedLink.id}`,
+        'PATCH',
+        { status: 'verified' }
+      )
+      expect(legacyVerified.status).toBe(200)
+      await expect(decodeResponseBody(EntityLinkResponse, legacyVerified)).resolves.toMatchObject({
+        ...legacyLink,
+        status: 'verified',
+        verifiedBy: userId
+      })
+
+      const identities = await db.select().from(musicSourceIdentitiesTable)
+      const ownedIdentities = identities.filter(
+        ({ entityId }) => entityId === albumId || entityId === trackId
+      )
+      expect(ownedIdentities).toHaveLength(3)
+      expect(ownedIdentities.map(({ platform }) => platform).sort()).toEqual([
+        'other',
+        'other',
+        'youtube'
+      ])
+      expect(ownedIdentities).toContainEqual(
+        expect.objectContaining({
+          sourceKey: `youtube:video:${videoId}`,
+          entityType: 'track',
+          entityId: trackId
+        })
+      )
+      expect(
+        ownedIdentities.some(({ sourceKey }) => sourceKey === `youtube:video:legacy${videoId}`)
+      ).toBe(false)
+    } finally {
+      await db
+        .delete(musicSourceIdentitiesTable)
+        .where(eq(musicSourceIdentitiesTable.entityId, albumId))
+      await db
+        .delete(musicSourceIdentitiesTable)
+        .where(eq(musicSourceIdentitiesTable.entityId, trackId))
+      await db.delete(musicEntityLinksTable).where(eq(musicEntityLinksTable.entityId, albumId))
+      await db.delete(musicEntityLinksTable).where(eq(musicEntityLinksTable.entityId, trackId))
+      await db.delete(musicTracksTable).where(eq(musicTracksTable.id, trackId))
+      await db.delete(musicAlbumsTable).where(eq(musicAlbumsTable.id, albumId))
+      await db.delete(session).where(eq(session.userId, userId))
+      await db.delete(user).where(eq(user.id, userId))
+    }
+  })
+
+  it('releases a reverified YouTube Music identity after review metadata is added', async () => {
+    const suffix = crypto.randomUUID()
+    const userId = `reverify-admin-${suffix}`
+    const token = `reverify-admin-token-${suffix}`
+    const incumbentId = crypto.randomUUID()
+    const candidateId = crypto.randomUUID()
+    const videoId = `reverify${suffix.replaceAll('-', '')}`
+    const youtubeMusicUrl = `https://music.youtube.com/watch?v=${videoId}`
+    const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`
+    const sourceKey = `youtube:video:${videoId}`
+
+    await db.batch([
+      db.insert(user).values({
+        id: userId,
+        name: 'Reverify admin',
+        email: `${userId}@example.com`,
+        role: 'admin'
+      }),
+      db.insert(session).values({
+        id: crypto.randomUUID(),
+        token,
+        userId,
+        expiresAt: new Date(Date.now() + 60_000)
+      }),
+      db
+        .insert(musicEntityTypesTable)
+        .values({ id: 'track', displayName: 'Track' })
+        .onConflictDoNothing(),
+      db
+        .insert(musicPlatformsTable)
+        .values(
+          ['youtube_music', 'youtube'].map((platform) => ({
+            id: platform,
+            displayName: platform
+          }))
+        )
+        .onConflictDoNothing(),
+      db.insert(musicTracksTable).values([
+        { id: incumbentId, title: 'Reverified incumbent', slug: `reverified-${suffix}` },
+        { id: candidateId, title: 'Reverified candidate', slug: `candidate-${suffix}` }
+      ])
+    ])
+
+    const request = (
+      path: string,
+      method: 'POST' | 'PATCH' | 'DELETE',
+      body?:
+        | {
+            readonly platform: 'youtube_music' | 'youtube'
+            readonly url: string
+            readonly status?: 'rejected'
+          }
+        | {
+            readonly status: 'verified'
+            readonly metadata: { readonly reviewNote: string }
+          }
+    ) => {
+      const headers = new Headers({ authorization: `Bearer ${token}` })
+      if (body) headers.set('content-type', 'application/json')
+      return webHandler.handler(
+        new Request(`http://localhost${path}`, {
+          method,
+          headers,
+          body: body ? JSON.stringify(body) : undefined
+        })
+      )
+    }
+
+    try {
+      const incumbentPath = `/api/music/track/${incumbentId}/links`
+      const added = await request(incumbentPath, 'POST', {
+        platform: 'youtube_music',
+        url: youtubeMusicUrl,
+        status: 'rejected'
+      })
+      expect(added.status).toBe(200)
+      const addedLink = await decodeResponseBody(EntityLinkResponse, added)
+
+      const linkPath = `${incumbentPath}/${addedLink.id}`
+      const verified = await request(linkPath, 'PATCH', {
+        status: 'verified',
+        metadata: { reviewNote: 'approved' }
+      })
+      expect(verified.status).toBe(200)
+      const verifiedLink = await decodeResponseBody(EntityLinkResponse, verified)
+
+      const deleted = await request(linkPath, 'DELETE')
+      expect(deleted.status).toBe(204)
+
+      const attached = await request(`/api/music/track/${candidateId}/links`, 'POST', {
+        platform: 'youtube',
+        url: youtubeUrl
+      })
+      expect(attached.status).toBe(200)
+      const attachedLink = await decodeResponseBody(EntityLinkResponse, attached)
+      const identities = await db
+        .select()
+        .from(musicSourceIdentitiesTable)
+        .where(eq(musicSourceIdentitiesTable.sourceKey, sourceKey))
+      const aliases = await db
+        .select()
+        .from(musicSourceAliasesTable)
+        .where(eq(musicSourceAliasesTable.sourceKey, sourceKey))
+
+      expect(verifiedLink.metadata).toMatchObject({
+        discoveredBy: 'manual',
+        confidence: 'exact_source',
+        reviewNote: 'approved'
+      })
+      expect(attachedLink).toMatchObject({
+        entityId: candidateId,
+        platform: 'youtube',
+        url: youtubeUrl,
+        status: 'verified'
+      })
+      expect(identities).toEqual([
+        expect.objectContaining({
+          sourceKey,
+          platform: 'youtube',
+          entityType: 'track',
+          entityId: candidateId
+        })
+      ])
+      expect(aliases).toEqual([
+        expect.objectContaining({
+          normalizedUrl: youtubeUrl,
+          sourceKey
+        })
+      ])
+    } finally {
+      await db
+        .delete(musicSourceIdentitiesTable)
+        .where(eq(musicSourceIdentitiesTable.entityId, incumbentId))
+      await db
+        .delete(musicSourceIdentitiesTable)
+        .where(eq(musicSourceIdentitiesTable.entityId, candidateId))
+      await db.delete(musicEntityLinksTable).where(eq(musicEntityLinksTable.entityId, incumbentId))
+      await db.delete(musicEntityLinksTable).where(eq(musicEntityLinksTable.entityId, candidateId))
+      await db.delete(musicTracksTable).where(eq(musicTracksTable.id, incumbentId))
+      await db.delete(musicTracksTable).where(eq(musicTracksTable.id, candidateId))
+      await db.delete(session).where(eq(session.userId, userId))
+      await db.delete(user).where(eq(user.id, userId))
+    }
+  })
+
+  it('blocks mislabeled Spotify and cross-label generic and YouTube collisions', async () => {
+    const suffix = crypto.randomUUID()
+    const userId = `collision-admin-${suffix}`
+    const token = `collision-admin-token-${suffix}`
+    const incumbentId = crypto.randomUUID()
+    const candidateId = crypto.randomUUID()
+    const spotifyId = suffix.replaceAll('-', '')
+    const youtubeId = `yt${spotifyId}`
+    const spotifyUrl = `https://open.spotify.com/track/${spotifyId}`
+    const genericUrl = `https://catalog-${suffix}.example.com/release?edition=deluxe`
+    const youtubeMusicUrl = `https://music.youtube.com/watch?v=${youtubeId}`
+
+    await db.batch([
+      db.insert(user).values({
+        id: userId,
+        name: 'Collision admin',
+        email: `${userId}@example.com`,
+        role: 'admin'
+      }),
+      db.insert(session).values({
+        id: crypto.randomUUID(),
+        token,
+        userId,
+        expiresAt: new Date(Date.now() + 60_000)
+      }),
+      db
+        .insert(musicEntityTypesTable)
+        .values({ id: 'track', displayName: 'Track' })
+        .onConflictDoNothing(),
+      db
+        .insert(musicPlatformsTable)
+        .values(
+          ['spotify', 'website', 'discogs', 'youtube_music', 'youtube', 'other'].map(
+            (platform) => ({ id: platform, displayName: platform })
+          )
+        )
+        .onConflictDoNothing(),
+      db.insert(musicTracksTable).values([
+        { id: incumbentId, title: 'Identity incumbent', slug: `incumbent-${suffix}` },
+        { id: candidateId, title: 'Identity candidate', slug: `candidate-${suffix}` }
+      ])
+    ])
+
+    const addLink = (entityId: string, link: Readonly<{ platform: string; url: string }>) =>
+      webHandler.handler(
+        new Request(`http://localhost/api/music/track/${entityId}/links`, {
+          method: 'POST',
+          headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+          body: JSON.stringify(link)
+        })
+      )
+
+    try {
+      const spotifyAttached = await addLink(incumbentId, {
+        platform: 'spotify',
+        url: spotifyUrl
+      })
+      expect(spotifyAttached.status).toBe(200)
+
+      const mislabeledSpotify = await addLink(candidateId, {
+        platform: 'website',
+        url: spotifyUrl
+      })
+      expect(mislabeledSpotify.status).toBe(400)
+
+      const wrongSpotifyEntityType = await addLink(candidateId, {
+        platform: 'spotify',
+        url: `https://open.spotify.com/album/${spotifyId}`
+      })
+      expect(wrongSpotifyEntityType.status).toBe(400)
+
+      const genericAttached = await addLink(incumbentId, {
+        platform: 'website',
+        url: genericUrl
+      })
+      expect(genericAttached.status).toBe(200)
+      await expect(decodeResponseBody(EntityLinkResponse, genericAttached)).resolves.toMatchObject({
+        platform: 'website',
+        url: genericUrl
+      })
+
+      const genericCollision = await addLink(candidateId, {
+        platform: 'discogs',
+        url: genericUrl
+      })
+      expect(genericCollision.status).toBe(409)
+
+      const youtubeMusicAttached = await addLink(incumbentId, {
+        platform: 'youtube_music',
+        url: youtubeMusicUrl
+      })
+      expect(youtubeMusicAttached.status).toBe(200)
+      await expect(
+        decodeResponseBody(EntityLinkResponse, youtubeMusicAttached)
+      ).resolves.toMatchObject({
+        platform: 'youtube_music',
+        url: youtubeMusicUrl
+      })
+
+      const youtubeCollision = await addLink(candidateId, {
+        platform: 'youtube',
+        url: youtubeMusicUrl
+      })
+      expect(youtubeCollision.status).toBe(409)
+
+      const identities = await db
+        .select()
+        .from(musicSourceIdentitiesTable)
+        .where(eq(musicSourceIdentitiesTable.entityId, incumbentId))
+      const incumbentLinks = await db
+        .select()
+        .from(musicEntityLinksTable)
+        .where(eq(musicEntityLinksTable.entityId, incumbentId))
+      const candidateLinks = await db
+        .select()
+        .from(musicEntityLinksTable)
+        .where(eq(musicEntityLinksTable.entityId, candidateId))
+
+      expect(new Set(identities.map(({ platform }) => platform))).toEqual(
+        new Set(['spotify', 'other', 'youtube'])
+      )
+      expect(identities).toContainEqual(
+        expect.objectContaining({
+          sourceKey: `youtube:video:${youtubeId}`,
+          platform: 'youtube',
+          entityId: incumbentId
+        })
+      )
+      expect(new Set(incumbentLinks.map(({ platform }) => platform))).toEqual(
+        new Set(['spotify', 'website', 'youtube_music'])
+      )
+      expect(candidateLinks).toHaveLength(0)
+    } finally {
+      await db
+        .delete(musicSourceIdentitiesTable)
+        .where(eq(musicSourceIdentitiesTable.entityId, incumbentId))
+      await db.delete(musicEntityLinksTable).where(eq(musicEntityLinksTable.entityId, incumbentId))
+      await db.delete(musicEntityLinksTable).where(eq(musicEntityLinksTable.entityId, candidateId))
+      await db.delete(musicTracksTable).where(eq(musicTracksTable.id, incumbentId))
+      await db.delete(musicTracksTable).where(eq(musicTracksTable.id, candidateId))
+      await db.delete(session).where(eq(session.userId, userId))
+      await db.delete(user).where(eq(user.id, userId))
+    }
+  })
+
   it('POST /api/music/resolve returns 401 without a session cookie', async () => {
     const res = await webHandler.handler(
       new Request('http://localhost/api/music/resolve', {
@@ -636,10 +1129,16 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
       userId,
       expiresAt: new Date(Date.now() + 60_000)
     })
-    await db
-      .insert(musicEntityTypesTable)
-      .values({ id: 'track', displayName: 'Track' })
-      .onConflictDoNothing()
+    await db.batch([
+      db
+        .insert(musicEntityTypesTable)
+        .values({ id: 'track', displayName: 'Track' })
+        .onConflictDoNothing(),
+      db
+        .insert(musicPlatformsTable)
+        .values({ id: 'spotify', displayName: 'Spotify' })
+        .onConflictDoNothing()
+    ])
 
     try {
       const res = await webHandler.handler(
@@ -660,11 +1159,210 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
     }
   })
 
+  it('POST music resolve callers reuse an inferred artist identity without provider access', async () => {
+    const suffix = crypto.randomUUID()
+    const userId = `resolve-hit-admin-${suffix}`
+    const token = `resolve-hit-token-${suffix}`
+    const artistId = crypto.randomUUID()
+    const spotifyArtistId = '4iV5W9uYEdYUVa79Axb7Rh'
+    const url = `https://open.spotify.com/artist/${spotifyArtistId}`
+    const sourceKey = `spotify:artist:${spotifyArtistId}`
+
+    await db.batch([
+      db.insert(user).values({
+        id: userId,
+        name: 'Admin user',
+        email: `${userId}@example.com`,
+        role: 'admin'
+      }),
+      db.insert(session).values({
+        id: crypto.randomUUID(),
+        token,
+        userId,
+        expiresAt: new Date(Date.now() + 60_000)
+      }),
+      db
+        .insert(musicEntityTypesTable)
+        .values({ id: 'artist', displayName: 'Artist' })
+        .onConflictDoNothing(),
+      db
+        .insert(musicPlatformsTable)
+        .values({ id: 'spotify', displayName: 'Spotify' })
+        .onConflictDoNothing(),
+      db
+        .insert(musicArtistsTable)
+        .values({ id: artistId, name: 'Known artist', slug: `known-${suffix}` }),
+      db.insert(musicEntityLinksTable).values({
+        entityType: 'artist',
+        entityId: artistId,
+        platform: 'spotify',
+        url,
+        status: 'verified',
+        metadata: { confidence: 'exact_source' }
+      }),
+      db.insert(musicSourceIdentitiesTable).values({
+        sourceKey,
+        platform: 'spotify',
+        sourceEntityType: 'artist',
+        externalId: spotifyArtistId,
+        canonicalUrl: url,
+        state: 'resolved',
+        entityType: 'artist',
+        entityId: artistId,
+        resolvedAt: new Date()
+      }),
+      db.insert(musicSourceAliasesTable).values({
+        normalizedUrl: url,
+        sourceKey,
+        firstSeenAt: new Date(),
+        lastSeenAt: new Date()
+      })
+    ])
+
+    try {
+      const request = (path: string) =>
+        webHandler.handler(
+          new Request(`http://localhost${path}`, {
+            method: 'POST',
+            headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+            body: JSON.stringify({ url })
+          })
+        )
+      const [resolve, scrape] = await Promise.all([
+        request('/api/music/resolve'),
+        request('/api/music/artist/scrape')
+      ])
+
+      expect(resolve.status).toBe(200)
+      expect(scrape.status).toBe(200)
+      const resolveBody = await decodeResponseBody(ResolvedMusicEntityResponse, resolve)
+      const scrapeBody = await decodeResponseBody(ScrapeEntityLinksResponse, scrape)
+      expect(resolveBody.entityType).toBe('artist')
+      expect(resolveBody.entity.id).toBe(artistId)
+      expect(scrapeBody.entity.id).toBe(artistId)
+    } finally {
+      await db
+        .delete(musicSourceIdentitiesTable)
+        .where(eq(musicSourceIdentitiesTable.sourceKey, sourceKey))
+      await db.delete(musicEntityLinksTable).where(eq(musicEntityLinksTable.entityId, artistId))
+      await db.delete(musicArtistsTable).where(eq(musicArtistsTable.id, artistId))
+      await db.delete(session).where(eq(session.userId, userId))
+      await db.delete(user).where(eq(user.id, userId))
+    }
+  })
+
+  it('POST /api/music/resolve returns copied artist artwork in imageUrl without coverImageUrl', async () => {
+    const suffix = crypto.randomUUID()
+    const userId = `resolve-artwork-admin-${suffix}`
+    const token = `resolve-artwork-token-${suffix}`
+    const artistId = crypto.randomUUID()
+    const spotifyArtistId = '5K4W6rqBFWDnAN6FQUkS6x'
+    const url = `https://open.spotify.com/artist/${spotifyArtistId}`
+    const sourceKey = `spotify:artist:${spotifyArtistId}`
+    const imageUrl = 'https://i.scdn.co/image/provider-artwork'
+    const copiedImageUrl = `https://cdn.goosebumps.fm/user-content/music/artist/${artistId}/cover`
+    const artworkHandler = createTestWebHandler(d1, undefined, writableObjectStoreLayer)
+
+    await db.batch([
+      db.insert(user).values({
+        id: userId,
+        name: 'Admin user',
+        email: `${userId}@example.com`,
+        role: 'admin'
+      }),
+      db.insert(session).values({
+        id: crypto.randomUUID(),
+        token,
+        userId,
+        expiresAt: new Date(Date.now() + 60_000)
+      }),
+      db
+        .insert(musicEntityTypesTable)
+        .values({ id: 'artist', displayName: 'Artist' })
+        .onConflictDoNothing(),
+      db
+        .insert(musicPlatformsTable)
+        .values({ id: 'spotify', displayName: 'Spotify' })
+        .onConflictDoNothing(),
+      db.insert(musicArtistsTable).values({
+        id: artistId,
+        name: 'Artwork artist',
+        imageUrl,
+        slug: `artwork-${suffix}`
+      }),
+      db.insert(musicEntityLinksTable).values({
+        entityType: 'artist',
+        entityId: artistId,
+        platform: 'spotify',
+        url,
+        status: 'verified',
+        metadata: { confidence: 'exact_source' }
+      }),
+      db.insert(musicSourceIdentitiesTable).values({
+        sourceKey,
+        platform: 'spotify',
+        sourceEntityType: 'artist',
+        externalId: spotifyArtistId,
+        canonicalUrl: url,
+        state: 'resolved',
+        entityType: 'artist',
+        entityId: artistId,
+        resolvedAt: new Date()
+      }),
+      db.insert(musicSourceAliasesTable).values({
+        normalizedUrl: url,
+        sourceKey,
+        firstSeenAt: new Date(),
+        lastSeenAt: new Date()
+      })
+    ])
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          new Response('image-bytes', {
+            status: 200,
+            headers: { 'content-type': 'image/jpeg' }
+          })
+        )
+      )
+    )
+
+    try {
+      const response = await artworkHandler.handler(
+        new Request('http://localhost/api/music/resolve', {
+          method: 'POST',
+          headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+          body: JSON.stringify({ url })
+        })
+      )
+
+      expect(response.status).toBe(200)
+      const body = await decodeResponseBody(ResolvedMusicEntityResponse, response)
+      expect(body.entityType).toBe('artist')
+      expect(body.coverImageUrl).toBe(copiedImageUrl)
+      expect(body.entity.imageUrl).toBe(copiedImageUrl)
+      expect(body.entity).not.toHaveProperty('coverImageUrl')
+    } finally {
+      vi.unstubAllGlobals()
+      await artworkHandler.dispose()
+      await db
+        .delete(musicSourceIdentitiesTable)
+        .where(eq(musicSourceIdentitiesTable.sourceKey, sourceKey))
+      await db.delete(musicEntityLinksTable).where(eq(musicEntityLinksTable.entityId, artistId))
+      await db.delete(musicArtistsTable).where(eq(musicArtistsTable.id, artistId))
+      await db.delete(session).where(eq(session.userId, userId))
+      await db.delete(user).where(eq(user.id, userId))
+    }
+  })
+
   it('POST /api/music resolve endpoints return 503 while a claim lease is active', async () => {
     const suffix = crypto.randomUUID()
     const userId = `resolve-unavailable-admin-${suffix}`
     const token = `resolve-unavailable-admin-token-${suffix}`
-    const url = `https://open.spotify.com/track/${crypto.randomUUID()}`
+    const spotifyTrackId = '1234567890123456789012'
+    const url = `https://open.spotify.com/track/${spotifyTrackId}`
 
     await db.insert(user).values({
       id: userId,
@@ -678,13 +1376,23 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
       userId,
       expiresAt: new Date(Date.now() + 60_000)
     })
-    await db
-      .insert(musicEntityTypesTable)
-      .values({ id: 'track', displayName: 'Track' })
-      .onConflictDoNothing()
-    await db.insert(musicEntityResolutionClaimsTable).values({
-      entityType: 'track',
+    await db.batch([
+      db
+        .insert(musicEntityTypesTable)
+        .values({ id: 'track', displayName: 'Track' })
+        .onConflictDoNothing(),
+      db
+        .insert(musicPlatformsTable)
+        .values({ id: 'spotify', displayName: 'Spotify' })
+        .onConflictDoNothing()
+    ])
+    await db.insert(musicSourceIdentitiesTable).values({
+      sourceKey: `spotify:track:${spotifyTrackId}`,
+      platform: 'spotify',
+      sourceEntityType: 'track',
+      externalId: spotifyTrackId,
       canonicalUrl: url,
+      state: 'resolving',
       ownerToken: crypto.randomUUID(),
       leaseExpiresAt: new Date(Date.now() + 60_000)
     })
@@ -702,11 +1410,15 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
       ])
 
       expect(resolve.status).toBe(503)
+      expect(Number(resolve.headers.get('retry-after'))).toBeGreaterThan(0)
+      expect(Number(resolve.headers.get('retry-after'))).toBeLessThanOrEqual(60)
       expect(scrape.status).toBe(503)
+      expect(Number(scrape.headers.get('retry-after'))).toBeGreaterThan(0)
+      expect(Number(scrape.headers.get('retry-after'))).toBeLessThanOrEqual(60)
     } finally {
       await db
-        .delete(musicEntityResolutionClaimsTable)
-        .where(eq(musicEntityResolutionClaimsTable.canonicalUrl, url))
+        .delete(musicSourceIdentitiesTable)
+        .where(eq(musicSourceIdentitiesTable.canonicalUrl, url))
       await db.delete(session).where(eq(session.userId, userId))
       await db.delete(user).where(eq(user.id, userId))
     }

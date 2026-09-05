@@ -14,7 +14,9 @@ export const d1MigrationFiles = [
   '0002_email_provider_receipt.sql',
   '0003_music_entity_resolution_claim.sql',
   '0004_music_entity_resolution_claim_lease.sql',
-  '0005_navigation_lookup_indexes.sql'
+  '0005_navigation_lookup_indexes.sql',
+  '0006_canonical_music_identity.sql',
+  '0007_music_identity_backfill_checkpoint.sql'
 ] as const
 
 const splitStatements = (migration: string) =>

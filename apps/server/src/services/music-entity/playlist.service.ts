@@ -4,7 +4,12 @@ import { Database } from '@/db/layer'
 import { musicEntityLinksTable, musicPlaylistsTable } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { toSlug } from '@/services/to-slug'
-import { deleteLinksForEntity, requireInserted, requireOne } from './shared'
+import {
+  deleteIdentitiesForEntity,
+  deleteLinksForEntity,
+  requireInserted,
+  requireOne
+} from './shared'
 
 export interface CreatePlaylistInput {
   title: string
@@ -125,7 +130,8 @@ export const deletePlaylistEffect = (id: string) =>
     const rows = yield* Effect.tryPromise({
       try: () =>
         (async () => {
-          const [, rows] = await db.batch([
+          const [, , rows] = await db.batch([
+            deleteIdentitiesForEntity(db, 'playlist', id),
             deleteLinksForEntity(db, 'playlist', id),
             db
               .delete(musicPlaylistsTable)
