@@ -112,6 +112,10 @@ const storageError = (operation: string, message: string) =>
 
 const referenceKey = (reference: EntityReference) => `${reference.entityType}:${reference.entityId}`
 
+const unreachableEntityType = (entityType: never): never => {
+  throw new Error(`Unexpected canonical music entity type: ${String(entityType)}`)
+}
+
 const legacyFallbackType = (source: ParsedMusicSource, expectedType?: CanonicalMusicEntityType) => {
   if (expectedType) return expectedType
   const type = source.sourceEntityType
@@ -160,7 +164,7 @@ const resolvedResult = (
           created
         }
       default:
-        return reference.entityType
+        return unreachableEntityType(reference.entityType)
     }
   })
 
