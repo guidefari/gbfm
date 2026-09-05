@@ -1,4 +1,5 @@
 import { runSync } from '@mdx-js/mdx'
+import type { MDXComponents } from 'mdx/types'
 import { useEffect, useMemo } from 'react'
 import * as runtime from 'react/jsx-runtime'
 import { log } from '@/services/logger'
@@ -27,7 +28,13 @@ const renderContent = (mdxString: string): RenderedContent => {
   }
 }
 
-export function MDXRendrr({ mdxString }: { mdxString: string }) {
+export function MDXRendrr({
+  mdxString,
+  components
+}: {
+  mdxString: string
+  components?: MDXComponents
+}) {
   const rendered = useMemo(() => renderContent(mdxString), [mdxString])
 
   useEffect(() => {
@@ -49,5 +56,7 @@ export function MDXRendrr({ mdxString }: { mdxString: string }) {
   }
 
   const Content = rendered.Content
-  return <div>{Content ? <Content components={CustomMDXComponents} /> : null}</div>
+  return (
+    <div>{Content ? <Content components={{ ...CustomMDXComponents, ...components }} /> : null}</div>
+  )
 }

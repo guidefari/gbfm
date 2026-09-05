@@ -5,7 +5,8 @@
     "//#dev:alchemy": {
       "cache": false,
       "persistent": true,
-      "interactive": false
+      "interactive": false,
+      "passThroughEnv": ["ALCHEMY_PROFILE", "CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_API_TOKEN"]
     },
     "//#dev:mobile": {
       "cache": false,

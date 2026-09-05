@@ -40,7 +40,7 @@ export function useMusicEntity(entityType: string | null, entityId: string | nul
     enabled: Boolean(supportedType && entityId)
   })
 
-  const { data: links } = useQuery<EntityLink[]>({
+  const { data: links, isPending: isLinksPending } = useQuery<EntityLink[]>({
     queryKey: ['music-entity-links', entityType, entityId],
     queryFn: () => fetcher(apiUrl(`/music/${entityType}/${entityId}/links?status=verified`)),
     enabled: Boolean(supportedType && entityId)
@@ -50,6 +50,7 @@ export function useMusicEntity(entityType: string | null, entityId: string | nul
     entity: supportedType ? entity : undefined,
     entityType: supportedType,
     isPending: Boolean(supportedType) && isPending,
+    isLinksPending: Boolean(supportedType) && isLinksPending,
     verifiedLinks: links?.filter((l) => l.status === LINK_STATUS.VERIFIED) ?? []
   }
 }

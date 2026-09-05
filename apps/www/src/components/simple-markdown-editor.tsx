@@ -34,7 +34,7 @@ import {
   type ReactNode
 } from 'react'
 import { createPortal } from 'react-dom'
-import { MusicEntity } from '@/components/editor/music-entity/MusicEntity'
+import { MusicEntity, type MusicEntityProps } from '@/components/editor/music-entity/MusicEntity'
 import {
   createMusicEntityEditorEmbeds,
   type MusicEntityWidget
@@ -175,6 +175,10 @@ function ToolbarButton({
   )
 }
 
+function PreviewMusicEntity(props: MusicEntityProps) {
+  return <MusicEntity {...props} showPlaybackControls={false} showReminder={false} />
+}
+
 function PreviewPanel({ preview }: { preview: PreviewState }) {
   if (preview.status === 'empty') {
     return (
@@ -198,7 +202,7 @@ function PreviewPanel({ preview }: { preview: PreviewState }) {
     )
   }
 
-  return <MDXRendrr mdxString={preview.content} />
+  return <MDXRendrr mdxString={preview.content} components={{ MusicEntity: PreviewMusicEntity }} />
 }
 
 function ignorePendingMusic(): void {}
@@ -451,7 +455,7 @@ export const SimpleMarkdownEditor = forwardRef<
       </div>
       {musicEntityWidgets.map((widget) =>
         createPortal(
-          <MusicEntity type={widget.reference.type} id={widget.reference.id} />,
+          <PreviewMusicEntity type={widget.reference.type} id={widget.reference.id} />,
           widget.host,
           widget.key
         )

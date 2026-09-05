@@ -35,9 +35,10 @@ type PickerEntity = MusicEntityReference & {
 
 export interface MusicEntityPickerProps {
   readonly onInsert: (markdown: string) => void
+  readonly portalContainer?: HTMLElement | null
 }
 
-export function MusicEntityPicker({ onInsert }: MusicEntityPickerProps) {
+export function MusicEntityPicker({ onInsert, portalContainer }: MusicEntityPickerProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [type, setType] = useState<MusicEntityType | null>(null)
@@ -63,7 +64,9 @@ export function MusicEntityPicker({ onInsert }: MusicEntityPickerProps) {
           Music
         </Button>
       </DialogTrigger>
-      <DialogContent className='max-h-[85vh] w-[calc(100vw-2rem)] max-w-2xl overflow-hidden p-0'>
+      <DialogContent
+        container={portalContainer}
+        className='max-h-[85vh] w-[calc(100vw-2rem)] max-w-2xl overflow-hidden p-0'>
         <DialogHeader className='min-w-0 border-b border-border/70 px-6 py-5 pr-12'>
           <DialogTitle>Embed music</DialogTitle>
           <DialogDescription className='max-w-xl text-sm leading-relaxed'>
