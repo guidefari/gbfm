@@ -16,7 +16,7 @@ import type {
   ResolveMusicSource
 } from './contract'
 import { makeEntityOperations } from './entity-operations'
-import { loadEntity, prepareEntityRecord, slugFor } from './entity-record'
+import { loadEntity, loadResolvedEntity, prepareEntityRecord, slugFor } from './entity-record'
 import {
   MusicIdentityBusy,
   MusicIdentityConflict,
@@ -112,10 +112,6 @@ const storageError = (operation: string, message: string) =>
 
 const referenceKey = (reference: EntityReference) => `${reference.entityType}:${reference.entityId}`
 
-const unreachableEntityType = (entityType: never): never => {
-  throw new Error(`Unexpected canonical music entity type: ${String(entityType)}`)
-}
-
 const legacyFallbackType = (source: ParsedMusicSource, expectedType?: CanonicalMusicEntityType) => {
   if (expectedType) return expectedType
   const type = source.sourceEntityType
@@ -127,46 +123,7 @@ const legacyFallbackType = (source: ParsedMusicSource, expectedType?: CanonicalM
 const persistedArtwork = (resolved: AnyResolvedMusicEntity) =>
   resolved.entityType === 'artist' ? resolved.entity.imageUrl : resolved.entity.coverImageUrl
 
-const resolvedResult = (
-  repository: CanonicalMusicIdentityRepository,
-  reference: EntityReference,
-  created: boolean
-): Effect.Effect<AnyResolvedMusicEntity, MusicIdentityError, Database> =>
-  Effect.gen(function* () {
-    const links = yield* repository.linksFor(reference)
-    switch (reference.entityType) {
-      case 'artist':
-        return {
-          entityType: 'artist',
-          entity: yield* loadEntity({ entityType: 'artist', entityId: reference.entityId }),
-          links,
-          created
-        }
-      case 'album':
-        return {
-          entityType: 'album',
-          entity: yield* loadEntity({ entityType: 'album', entityId: reference.entityId }),
-          links,
-          created
-        }
-      case 'track':
-        return {
-          entityType: 'track',
-          entity: yield* loadEntity({ entityType: 'track', entityId: reference.entityId }),
-          links,
-          created
-        }
-      case 'playlist':
-        return {
-          entityType: 'playlist',
-          entity: yield* loadEntity({ entityType: 'playlist', entityId: reference.entityId }),
-          links,
-          created
-        }
-      default:
-        return unreachableEntityType(reference.entityType)
-    }
-  })
+const resolvedResult = loadResolvedEntity
 
 export const CanonicalMusicIdentityLayer = Layer.effect(
   CanonicalMusicIdentity,

@@ -41,15 +41,15 @@ import {
 } from '@/http/music-identity-http'
 import {
   CanonicalMusicIdentity,
-  type AnyResolvedMusicEntity,
-  type ResolvedEntity
+  type AnyResolvedMusicEntity
 } from '@/services/canonical-music-identity'
 import {
   type CreateAlbumInput as AlbumServiceCreateInput,
   type CreateLabelInput as LabelServiceCreateInput,
   type CreatePlaylistInput as PlaylistServiceCreateInput,
   type CreateTrackInput as TrackServiceCreateInput,
-  MusicEntityService
+  MusicEntityService,
+  type ScrapedMusicEntity
 } from '@/services/music-entity'
 import { getIdFromSpotifyUrl } from '@/services/url-utils'
 
@@ -145,11 +145,21 @@ const toResolvedMusicEntityResponse = (
   }
 }
 
-const toScrapeMusicEntityResponse = (entity: ResolvedEntity): ScrapeMusicEntityResponse => {
-  if ('name' in entity) return toArtistResponse(entity)
-  if ('releaseDate' in entity) return toAlbumResponse(entity)
-  if ('albumId' in entity) return toTrackResponse(entity)
-  return toPlaylistResponse(entity)
+const toScrapeMusicEntityResponse = (
+  result: AnyResolvedMusicEntity | ScrapedMusicEntity
+): ScrapeMusicEntityResponse => {
+  switch (result.entityType) {
+    case 'artist':
+      return toArtistResponse(result.entity)
+    case 'album':
+      return toAlbumResponse(result.entity)
+    case 'track':
+      return toTrackResponse(result.entity)
+    case 'playlist':
+      return toPlaylistResponse(result.entity)
+    default:
+      return unreachableEntityType(result)
+  }
 }
 
 // Generic so create keeps slug/name required and update keeps them optional.
@@ -900,7 +910,7 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
               )
             )
         return {
-          entity: toScrapeMusicEntityResponse(result.entity),
+          entity: toScrapeMusicEntityResponse(result),
           links: result.links.map(toEntityLinkResponse)
         }
       })

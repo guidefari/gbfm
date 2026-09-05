@@ -62,6 +62,7 @@ describe('scrapeAndCreateEntityWithoutSourceEffect', () => {
       entityType: 'track',
       trackTitle: `Metadata Track ${marker}`
     })
+    expect(result.entityType).toBe('track')
     expect(result.entity.id).toBeTruthy()
     expect(tracks.some((track) => track.id === result.entity.id)).toBe(true)
     expect(afterIdentities).toHaveLength(beforeIdentities.length)

@@ -24,7 +24,7 @@ import {
   MusicIdentityStorageError,
   MusicSourceInvalid
 } from './errors'
-import { loadEntity, refreshedEntityRecord } from './entity-record'
+import { loadEntity, loadResolvedEntity, refreshedEntityRecord } from './entity-record'
 import { parseMusicSource, type ParsedMusicSource } from './music-source'
 import { CanonicalMusicIdentityRepository, type EntityReference } from './repository'
 import { parseDiscoveredSources, uniqueLinks } from './source-result'
@@ -43,10 +43,6 @@ const referenceKey = (reference: EntityReference) => `${reference.entityType}:${
 
 const storageError = (operation: string, message: string) =>
   new MusicIdentityStorageError({ operation, message })
-
-const unreachableEntityType = (entityType: never): never => {
-  throw new Error(`Unexpected canonical music entity type: ${String(entityType)}`)
-}
 
 type RefreshMode = 'automatic_enrichment' | 'administrator_refresh'
 
@@ -80,57 +76,6 @@ const genericDisplayPlatforms = [
   'discogs',
   'other'
 ] as const
-
-const loadResolved = (
-  repository: CanonicalMusicIdentityRepository,
-  reference: EntityReference,
-  db: DatabaseClient
-): Effect.Effect<AnyResolvedMusicEntity, MusicIdentityError> =>
-  Effect.gen(function* () {
-    const links = yield* repository.linksFor(reference)
-    switch (reference.entityType) {
-      case 'artist':
-        return {
-          entityType: 'artist',
-          entity: yield* loadEntity({
-            entityType: 'artist',
-            entityId: reference.entityId
-          }).pipe(Effect.provideService(Database, db)),
-          links,
-          created: false
-        }
-      case 'album':
-        return {
-          entityType: 'album',
-          entity: yield* loadEntity({ entityType: 'album', entityId: reference.entityId }).pipe(
-            Effect.provideService(Database, db)
-          ),
-          links,
-          created: false
-        }
-      case 'track':
-        return {
-          entityType: 'track',
-          entity: yield* loadEntity({ entityType: 'track', entityId: reference.entityId }).pipe(
-            Effect.provideService(Database, db)
-          ),
-          links,
-          created: false
-        }
-      case 'playlist':
-        return {
-          entityType: 'playlist',
-          entity: yield* loadEntity({
-            entityType: 'playlist',
-            entityId: reference.entityId
-          }).pipe(Effect.provideService(Database, db)),
-          links,
-          created: false
-        }
-      default:
-        return unreachableEntityType(reference.entityType)
-    }
-  })
 
 const displayPlatformFor = (
   source: ParsedMusicSource,
@@ -325,7 +270,7 @@ export const makeEntityOperations = (
         )
       ) {
         yield* Effect.annotateCurrentSpan({ outcome: 'skipped', linkCount: links.length })
-        return yield* loadResolved(repository, reference, db)
+        return yield* loadResolvedEntity(repository, reference, false).pipe(provideDb)
       }
       const exactSources = links
         .filter(
@@ -491,7 +436,7 @@ export const makeEntityOperations = (
         yield* loadEntity(reference).pipe(provideDb)
         return yield* new MusicIdentityBusy({ retryAfterMs: claimLeaseMs })
       }
-      const resolved = yield* loadResolved(repository, reference, db)
+      const resolved = yield* loadResolvedEntity(repository, reference, false).pipe(provideDb)
       const delivered = yield* deliverMusicArtwork({
         resolved,
         candidateUrl: result.entityMeta?.thumbnailUrl,

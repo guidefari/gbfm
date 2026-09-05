@@ -93,7 +93,8 @@ import {
 } from './playlist-tracks.service'
 import {
   type MusicMetadataScrapeInput,
-  scrapeAndCreateEntityWithoutSourceEffect
+  scrapeAndCreateEntityWithoutSourceEffect,
+  type ScrapedMusicEntity
 } from './scrape.service'
 import {
   addArtistToTrackEffect,
@@ -111,7 +112,8 @@ export type {
   CreateArtistInput,
   CreateLabelInput,
   CreatePlaylistInput,
-  CreateTrackInput
+  CreateTrackInput,
+  ScrapedMusicEntity
 }
 
 type ScrapeableMusicEntityType = Exclude<MusicEntityType, 'label'>
@@ -325,13 +327,7 @@ export interface MusicEntityService {
   readonly scrapeAndCreateEntityWithoutSource: (
     entityType: ScrapeableMusicEntityType,
     input: MusicMetadataScrapeInput
-  ) => Effect.Effect<
-    {
-      entity: SelectMusicArtist | SelectMusicAlbum | SelectMusicTrack | SelectMusicPlaylist
-      links: readonly SelectMusicEntityLink[]
-    },
-    DatabaseError | MusicScraperError | ValidationError
-  >
+  ) => Effect.Effect<ScrapedMusicEntity, DatabaseError | MusicScraperError | ValidationError>
 }
 
 export const MusicEntityService = Context.Service<MusicEntityService>('MusicEntityService')
