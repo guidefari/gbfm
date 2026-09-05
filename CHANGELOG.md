@@ -1,3 +1,17 @@
+# [2.93.0](https://github.com/guidefari/gbfm/compare/v2.92.0...v2.93.0) (2026-09-05)
+
+
+### Bug Fixes
+
+* **editorial:** keep embed pickers inside the workspace dialog ([16902fc](https://github.com/guidefari/gbfm/commit/16902fc30c7d49d645288d074fb1fc7e0487dd62))
+* gap on editor toolbar ([44b725c](https://github.com/guidefari/gbfm/commit/44b725c0ffaccf962ce79aa9d7fb9d1da276e76b))
+* **spotify:** load every album and playlist track page ([0cd2065](https://github.com/guidefari/gbfm/commit/0cd2065e17e08165b185858d138d559092789ab4))
+
+
+### Features
+
+* **music:** share track lists and listening controls across embeds ([c7e3518](https://github.com/guidefari/gbfm/commit/c7e35181625f7af0e48a1ed2ba39051a61d66d67))
+
 # [2.92.0](https://github.com/guidefari/gbfm/compare/v2.91.0...v2.92.0) (2026-09-05)
 
 
