@@ -25,6 +25,7 @@ import { Layer } from 'effect'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { d1, db } from '@/test/database'
 import { createTestWebHandler } from '@/test/http-handler'
+import { MusicCoverImageFetcher } from '@/services/canonical-music-identity/artwork-delivery'
 import { ObjectStoreClient } from '@/services/storage/object-store-client'
 import { audioTable } from '@/db/audio.schema'
 import { session, user } from '@/db/auth.schema'
@@ -1246,7 +1247,6 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
     const sourceKey = `spotify:artist:${spotifyArtistId}`
     const imageUrl = 'https://i.scdn.co/image/provider-artwork'
     const copiedImageUrl = `https://cdn.goosebumps.fm/user-content/music/artist/${artistId}/cover`
-    const artworkHandler = createTestWebHandler(d1, undefined, writableObjectStoreLayer)
 
     await db.batch([
       db.insert(user).values({
@@ -1302,16 +1302,19 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
       })
     ])
 
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() =>
-        Promise.resolve(
-          new Response('image-bytes', {
-            status: 200,
-            headers: { 'content-type': 'image/jpeg' }
-          })
-        )
+    const artworkFetchLayer = Layer.succeed(MusicCoverImageFetcher, () =>
+      Promise.resolve(
+        new Response('image-bytes', {
+          status: 200,
+          headers: { 'content-type': 'image/jpeg' }
+        })
       )
+    )
+    const artworkHandler = createTestWebHandler(
+      d1,
+      undefined,
+      writableObjectStoreLayer,
+      artworkFetchLayer
     )
 
     try {
@@ -1326,11 +1329,11 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
       expect(response.status).toBe(200)
       const body = await decodeResponseBody(ResolvedMusicEntityResponse, response)
       expect(body.entityType).toBe('artist')
+      if (body.entityType !== 'artist') throw new Error('Expected resolved artist response')
       expect(body.coverImageUrl).toBe(copiedImageUrl)
       expect(body.entity.imageUrl).toBe(copiedImageUrl)
       expect(body.entity).not.toHaveProperty('coverImageUrl')
     } finally {
-      vi.unstubAllGlobals()
       await artworkHandler.dispose()
       await db
         .delete(musicSourceIdentitiesTable)

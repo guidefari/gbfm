@@ -8,9 +8,9 @@ import type {
   ScrapedLink
 } from '@/services/music-link-scraper.service'
 import type {
+  AnyResolvedMusicEntity,
   AttachMusicSourceLink,
   RefreshMusicEntity,
-  RefreshedMusicEntity,
   ReleaseMusicSourceLink
 } from './contract'
 import {
@@ -44,7 +44,17 @@ const referenceKey = (reference: EntityReference) => `${reference.entityType}:${
 const storageError = (operation: string, message: string) =>
   new MusicIdentityStorageError({ operation, message })
 
+const unreachableEntityType = (entityType: never): never => {
+  throw new Error(`Unexpected canonical music entity type: ${String(entityType)}`)
+}
+
 type RefreshMode = 'automatic_enrichment' | 'administrator_refresh'
+
+type DeliverMusicArtwork = (input: {
+  readonly resolved: AnyResolvedMusicEntity
+  readonly candidateUrl: string | undefined | null
+  readonly delivery: RefreshMusicEntity['artworkDelivery']
+}) => Effect.Effect<AnyResolvedMusicEntity, MusicIdentityError>
 
 const compareOptionalDate = (left: Date | null, right: Date | null) => {
   if (left === null) return right === null ? 0 : 1
@@ -71,6 +81,57 @@ const genericDisplayPlatforms = [
   'other'
 ] as const
 
+const loadResolved = (
+  repository: CanonicalMusicIdentityRepository,
+  reference: EntityReference,
+  db: DatabaseClient
+): Effect.Effect<AnyResolvedMusicEntity, MusicIdentityError> =>
+  Effect.gen(function* () {
+    const links = yield* repository.linksFor(reference)
+    switch (reference.entityType) {
+      case 'artist':
+        return {
+          entityType: 'artist',
+          entity: yield* loadEntity({
+            entityType: 'artist',
+            entityId: reference.entityId
+          }).pipe(Effect.provideService(Database, db)),
+          links,
+          created: false
+        }
+      case 'album':
+        return {
+          entityType: 'album',
+          entity: yield* loadEntity({ entityType: 'album', entityId: reference.entityId }).pipe(
+            Effect.provideService(Database, db)
+          ),
+          links,
+          created: false
+        }
+      case 'track':
+        return {
+          entityType: 'track',
+          entity: yield* loadEntity({ entityType: 'track', entityId: reference.entityId }).pipe(
+            Effect.provideService(Database, db)
+          ),
+          links,
+          created: false
+        }
+      case 'playlist':
+        return {
+          entityType: 'playlist',
+          entity: yield* loadEntity({
+            entityType: 'playlist',
+            entityId: reference.entityId
+          }).pipe(Effect.provideService(Database, db)),
+          links,
+          created: false
+        }
+      default:
+        return unreachableEntityType(reference.entityType)
+    }
+  })
+
 const displayPlatformFor = (
   source: ParsedMusicSource,
   requestedPlatform: AttachMusicSourceLink['platform']
@@ -94,7 +155,8 @@ export const makeEntityOperations = (
   providerError: (
     error: MusicScraperError
   ) => MusicIdentityProviderRejected | MusicIdentityProviderUnavailable,
-  claimLeaseMs: number
+  claimLeaseMs: number,
+  deliverMusicArtwork: DeliverMusicArtwork
 ) => {
   const provideDb = Effect.provideService(Database, db)
 
@@ -263,11 +325,7 @@ export const makeEntityOperations = (
         )
       ) {
         yield* Effect.annotateCurrentSpan({ outcome: 'skipped', linkCount: links.length })
-        return {
-          entityType: input.entityType,
-          entity: current,
-          links
-        } satisfies RefreshedMusicEntity
+        return yield* loadResolved(repository, reference, db)
       }
       const exactSources = links
         .filter(
@@ -433,19 +491,18 @@ export const makeEntityOperations = (
         yield* loadEntity(reference).pipe(provideDb)
         return yield* new MusicIdentityBusy({ retryAfterMs: claimLeaseMs })
       }
-      const entity = yield* loadEntity(reference).pipe(provideDb)
-      const storedLinks = yield* repository.linksFor(reference)
+      const resolved = yield* loadResolved(repository, reference, db)
+      const delivered = yield* deliverMusicArtwork({
+        resolved,
+        candidateUrl: result.entityMeta?.thumbnailUrl,
+        delivery: input.artworkDelivery
+      })
       yield* Effect.annotateCurrentSpan({
         outcome: 'success',
-        linkCount: storedLinks.length,
+        linkCount: delivered.links.length,
         aliasCount: sources.length
       })
-      return {
-        entityType: input.entityType,
-        entity,
-        links: storedLinks,
-        artworkUrl: result.entityMeta?.thumbnailUrl
-      } satisfies RefreshedMusicEntity
+      return delivered
     }).pipe(
       withSafeTypedSpan('musicIdentity.refreshEntity', {
         attributes: {

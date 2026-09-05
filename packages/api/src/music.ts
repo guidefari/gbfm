@@ -383,12 +383,46 @@ export const ResolveMusicEntityInput = Schema.Struct({
   origin: Schema.optional(Schema.Literals(['editorial', 'tweet', 'reply']))
 })
 
-export const ResolvedMusicEntityResponse = Schema.Struct({
-  entityType: EntityType,
-  entity: Schema.Record(Schema.String, Schema.Unknown),
-  links: Schema.Array(EntityLinkResponse),
+export const ResolvedArtistResponse = Schema.Struct({
+  entityType: Schema.Literal('artist'),
+  entity: ArtistResponse,
+  links: EntityLinkListResponse,
   coverImageUrl: Schema.NullOr(Schema.String)
 })
+
+export const ResolvedAlbumResponse = Schema.Struct({
+  entityType: Schema.Literal('album'),
+  entity: AlbumResponse,
+  links: EntityLinkListResponse,
+  coverImageUrl: Schema.NullOr(Schema.String)
+})
+
+export const ResolvedTrackResponse = Schema.Struct({
+  entityType: Schema.Literal('track'),
+  entity: TrackResponse,
+  links: EntityLinkListResponse,
+  coverImageUrl: Schema.NullOr(Schema.String)
+})
+
+export const ResolvedPlaylistResponse = Schema.Struct({
+  entityType: Schema.Literal('playlist'),
+  entity: PlaylistResponse,
+  links: EntityLinkListResponse,
+  coverImageUrl: Schema.NullOr(Schema.String)
+})
+
+export const ResolvedMusicEntityResponse = Schema.Union([
+  ResolvedArtistResponse,
+  ResolvedAlbumResponse,
+  ResolvedTrackResponse,
+  ResolvedPlaylistResponse
+])
+export type ResolvedMusicEntityResponse = typeof ResolvedMusicEntityResponse.Type
+
+export type EmbeddableResolvedMusicEntityResponse = Exclude<
+  ResolvedMusicEntityResponse,
+  { readonly entityType: 'artist' }
+>
 
 export const ScrapeEntityLinksInput = Schema.Struct({
   url: Schema.optional(UrlString),
@@ -399,9 +433,15 @@ export const ScrapeEntityLinksInput = Schema.Struct({
   isrc: Schema.optional(Schema.String)
 })
 
+export type ScrapeMusicEntityResponse =
+  | ArtistResponse
+  | AlbumResponse
+  | TrackResponse
+  | PlaylistResponse
+
 export const ScrapeEntityLinksResponse = Schema.Struct({
-  entity: Schema.Record(Schema.String, Schema.Unknown),
-  links: Schema.Array(EntityLinkResponse)
+  entity: Schema.Union([ArtistResponse, AlbumResponse, TrackResponse, PlaylistResponse]),
+  links: EntityLinkListResponse
 })
 
 export const RescrapeEntityLinksResponse = Schema.Struct({

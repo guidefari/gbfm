@@ -1,9 +1,22 @@
 import type { Effect } from 'effect'
-import type { SelectMusicEntityLink } from '@/db/music-entity.schema'
+import type {
+  SelectMusicAlbum,
+  SelectMusicArtist,
+  SelectMusicEntityLink,
+  SelectMusicPlaylist,
+  SelectMusicTrack
+} from '@/db/music-entity.schema'
 import type { MusicIdentityError } from './errors'
 import type { CanonicalMusicEntityType } from './music-source'
-import type { ResolvedEntity } from './entity-record'
 import type { ProviderMusicSnapshot } from './source-result'
+
+export const ARTWORK_DELIVERY = {
+  preserve: 'preserve',
+  required: 'required',
+  bestEffort: 'best_effort'
+} as const
+
+export type ArtworkDelivery = (typeof ARTWORK_DELIVERY)[keyof typeof ARTWORK_DELIVERY]
 
 export type ResolutionOrigin =
   | 'editorial'
@@ -18,17 +31,20 @@ export type ResolveMusicSource = {
   readonly url: string
   readonly expectedType?: CanonicalMusicEntityType
   readonly origin: ResolutionOrigin
+  readonly artworkDelivery: ArtworkDelivery
 }
 
 export type ImportProviderMusicEntity = {
   readonly snapshot: ProviderMusicSnapshot
   readonly origin: 'spotify_import' | 'playlist_enrichment'
+  readonly artworkDelivery: ArtworkDelivery
 }
 
 export type ImportProviderMusicEntityLazy<E, R> = {
   readonly entityType: CanonicalMusicEntityType
   readonly sourceUrl: string
   readonly origin: 'spotify_import' | 'playlist_enrichment'
+  readonly artworkDelivery: ArtworkDelivery
   readonly loadSnapshot: Effect.Effect<ProviderMusicSnapshot, E, R>
 }
 
@@ -54,32 +70,37 @@ export type RefreshMusicEntity = {
   readonly entityId: string
   readonly actorId: string
   readonly origin: 'manual' | 'playlist_enrichment'
+  readonly artworkDelivery: ArtworkDelivery
 }
 
-export type ResolvedMusicEntity = {
-  readonly entityType: CanonicalMusicEntityType
-  readonly entity: ResolvedEntity
+export type MusicEntityByType = {
+  readonly artist: SelectMusicArtist
+  readonly album: SelectMusicAlbum
+  readonly track: SelectMusicTrack
+  readonly playlist: SelectMusicPlaylist & { readonly spotifyUrl?: string | null }
+}
+
+export type ResolvedMusicEntity<T extends CanonicalMusicEntityType = CanonicalMusicEntityType> = {
+  readonly entityType: T
+  readonly entity: MusicEntityByType[T]
   readonly links: readonly SelectMusicEntityLink[]
   readonly created: boolean
 }
 
-export type RefreshedMusicEntity = {
-  readonly entityType: CanonicalMusicEntityType
-  readonly entity: ResolvedEntity
-  readonly links: readonly SelectMusicEntityLink[]
-  readonly artworkUrl?: string
-}
+export type AnyResolvedMusicEntity = {
+  readonly [T in CanonicalMusicEntityType]: ResolvedMusicEntity<T>
+}[CanonicalMusicEntityType]
 
 export interface CanonicalMusicIdentityService {
   readonly resolveSource: (
     input: ResolveMusicSource
-  ) => Effect.Effect<ResolvedMusicEntity, MusicIdentityError>
+  ) => Effect.Effect<AnyResolvedMusicEntity, MusicIdentityError>
   readonly importProviderEntity: (
     input: ImportProviderMusicEntity
-  ) => Effect.Effect<ResolvedMusicEntity, MusicIdentityError>
+  ) => Effect.Effect<AnyResolvedMusicEntity, MusicIdentityError>
   readonly importProviderEntityLazy: <E, R>(
     input: ImportProviderMusicEntityLazy<E, R>
-  ) => Effect.Effect<ResolvedMusicEntity, MusicIdentityError | E, R>
+  ) => Effect.Effect<AnyResolvedMusicEntity, MusicIdentityError | E, R>
   readonly attachLink: (
     input: AttachMusicSourceLink
   ) => Effect.Effect<SelectMusicEntityLink, MusicIdentityError>
@@ -88,8 +109,8 @@ export interface CanonicalMusicIdentityService {
   ) => Effect.Effect<SelectMusicEntityLink | undefined, MusicIdentityError>
   readonly enrichEntity: (
     input: RefreshMusicEntity
-  ) => Effect.Effect<RefreshedMusicEntity, MusicIdentityError>
+  ) => Effect.Effect<AnyResolvedMusicEntity, MusicIdentityError>
   readonly refreshEntity: (
     input: RefreshMusicEntity
-  ) => Effect.Effect<RefreshedMusicEntity, MusicIdentityError>
+  ) => Effect.Effect<AnyResolvedMusicEntity, MusicIdentityError>
 }

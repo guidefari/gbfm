@@ -9,10 +9,8 @@ import {
   type SelectMusicEntityLink
 } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage, MusicProviderInvalidInput } from '@/errors'
-import { copyMusicCoverImageBestEffort } from '@/services/music-cover-image.service'
 import type { CanonicalMusicIdentityService } from '@/services/canonical-music-identity'
 import { getSafeErrorTag } from '@/services/canonical-music-identity/telemetry'
-import type { S3Service } from '@/services/s3.service'
 import {
   getIdFromSpotifyUrl,
   type SpotifyImportPlaylist,
@@ -20,10 +18,6 @@ import {
   type SpotifyService
 } from '@/services/spotify.service'
 import { type ImportedTrackTarget, requireInserted } from './shared'
-import { updateTrackEffect } from './track.service'
-
-type MusicArtworkStore = Pick<S3Service, 'uploadFile'>
-
 export const getPlaylistTracksEffect = (playlistId: string) =>
   Effect.gen(function* () {
     const db = yield* Database
@@ -241,9 +235,6 @@ const spotifyTrackSnapshot = (track: SpotifyImportTrack) => ({
 
 const enrichTrackLinksEffect = (
   identity: CanonicalMusicIdentityService,
-  s3: MusicArtworkStore,
-  cdnUrl: string,
-  bucketName: string,
   playlistId: string,
   track: ImportedTrackTarget
 ) =>
@@ -252,21 +243,9 @@ const enrichTrackLinksEffect = (
       entityType: 'track',
       entityId: track.trackId,
       actorId: 'playlist_enrichment',
-      origin: 'playlist_enrichment'
+      origin: 'playlist_enrichment',
+      artworkDelivery: 'best_effort'
     })
-    if (refreshed.artworkUrl) {
-      const publicCoverImageUrl = yield* copyMusicCoverImageBestEffort(
-        s3,
-        cdnUrl,
-        bucketName,
-        'track',
-        track.trackId,
-        refreshed.artworkUrl
-      )
-      if (publicCoverImageUrl) {
-        yield* updateTrackEffect(track.trackId, { coverImageUrl: publicCoverImageUrl })
-      }
-    }
     return { insertedCount: refreshed.links.filter((link) => link.platform !== 'spotify').length }
   }).pipe(
     Effect.withSpan('musicEntity.enrichTrackLinks', {
@@ -276,9 +255,6 @@ const enrichTrackLinksEffect = (
 
 const enrichImportedPlaylistLinksEffect = (
   identity: CanonicalMusicIdentityService,
-  s3: MusicArtworkStore,
-  cdnUrl: string,
-  bucketName: string,
   playlistId: string,
   tracks: ImportedTrackTarget[]
 ) =>
@@ -287,7 +263,7 @@ const enrichImportedPlaylistLinksEffect = (
     const results = yield* Effect.forEach(
       uniqueTracks,
       (track) =>
-        enrichTrackLinksEffect(identity, s3, cdnUrl, bucketName, playlistId, track).pipe(
+        enrichTrackLinksEffect(identity, playlistId, track).pipe(
           Effect.catch((error) =>
             Effect.andThen(
               Effect.logWarning('[MusicEntity] Playlist track link enrichment failed', {
@@ -350,6 +326,7 @@ export const addSpotifyTrackToPlaylistEffect = (
       entityType: 'track',
       sourceUrl: spotifyUrl,
       origin: 'spotify_import',
+      artworkDelivery: 'preserve',
       loadSnapshot: Effect.suspend(() => spotify.getTrackForImport(id)).pipe(
         Effect.map(spotifyTrackSnapshot)
       )
@@ -411,10 +388,7 @@ export const addSpotifyTrackToPlaylistEffect = (
 
 export const importSpotifyPlaylistEffect = (
   spotify: Pick<SpotifyService, 'getPlaylistForImport'>,
-  identity: CanonicalMusicIdentityService,
-  s3: MusicArtworkStore,
-  cdnUrl: string,
-  bucketName: string
+  identity: CanonicalMusicIdentityService
 ) =>
   Effect.fn('musicEntity.importSpotifyPlaylist')(function* (
     url: string,
@@ -430,54 +404,30 @@ export const importSpotifyPlaylistEffect = (
     }
 
     const data: SpotifyImportPlaylist = yield* spotify.getPlaylistForImport(id)
-    const storedCoverImageUrl = data.coverImageUrl
-      ? yield* copyMusicCoverImageBestEffort(
-          s3,
-          cdnUrl,
-          bucketName,
-          'playlist',
-          id,
-          data.coverImageUrl
-        )
-      : null
     const resolvedPlaylist = yield* identity.importProviderEntity({
       snapshot: {
         entityType: 'playlist',
         sourceUrl: data.playlistUrl,
         title: data.title,
-        imageUrl: storedCoverImageUrl ?? data.coverImageUrl ?? undefined,
+        imageUrl: data.coverImageUrl ?? undefined,
         description: data.description ?? undefined,
         curatorId,
         sourceMetadata: { spotifyPlaylistId: data.spotifyPlaylistId }
       },
-      origin: 'spotify_import'
+      origin: 'spotify_import',
+      artworkDelivery: 'best_effort'
     })
-    const playlistId = resolvedPlaylist.entity.id
-    const playlistRows = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select()
-          .from(musicPlaylistsTable)
-          .where(eq(musicPlaylistsTable.id, playlistId))
-          .limit(1),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to load imported playlist: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'music_playlists'
-        })
-    })
-    const playlist = playlistRows[0]
-    if (!playlist) {
-      return yield* new DatabaseError({
-        message: 'Imported Spotify playlist was not persisted',
-        operation: 'select',
-        table: 'music_playlists'
-      })
+    if (resolvedPlaylist.entityType !== 'playlist') {
+      return yield* Effect.die('Spotify playlist import resolved to a non-playlist entity')
     }
+    const playlist = resolvedPlaylist.entity
     const tracks = yield* Effect.forEach(data.tracks, (track) =>
       identity
-        .importProviderEntity({ snapshot: spotifyTrackSnapshot(track), origin: 'spotify_import' })
+        .importProviderEntity({
+          snapshot: spotifyTrackSnapshot(track),
+          origin: 'spotify_import',
+          artworkDelivery: 'preserve'
+        })
         .pipe(
           Effect.map((resolved) => ({ trackId: resolved.entity.id, created: resolved.created }))
         )
@@ -499,7 +449,7 @@ export const importSpotifyPlaylistEffect = (
               .set({
                 title: data.title,
                 description: data.description,
-                coverImageUrl: storedCoverImageUrl ?? current.coverImageUrl ?? data.coverImageUrl,
+                coverImageUrl: current.coverImageUrl,
                 curatorId: current.curatorId ?? curatorId ?? null,
                 revision,
                 updatedAt: new Date()
@@ -597,9 +547,6 @@ export const importSpotifyPlaylistEffect = (
 
       yield* enrichImportedPlaylistLinksEffect(
         identity,
-        s3,
-        cdnUrl,
-        bucketName,
         result.playlist.id,
         result.importedTracks
       ).pipe(Effect.forkDetach)
@@ -609,20 +556,16 @@ export const importSpotifyPlaylistEffect = (
     return importResult
   })
 
-export const syncPlaylistLinksEffect = (
-  identity: CanonicalMusicIdentityService,
-  s3: MusicArtworkStore,
-  cdnUrl: string,
-  bucketName: string
-) =>
+export const syncPlaylistLinksEffect = (identity: CanonicalMusicIdentityService) =>
   Effect.fn('musicEntity.syncPlaylistLinks')(function* (playlistId: string) {
     const db = yield* Database
-    const refreshedPlaylist = yield* identity
+    yield* identity
       .refreshEntity({
         entityType: 'playlist',
         entityId: playlistId,
         actorId: 'playlist_sync',
-        origin: 'playlist_enrichment'
+        origin: 'playlist_enrichment',
+        artworkDelivery: 'best_effort'
       })
       .pipe(
         Effect.catchTag('MusicIdentitySourceLinkNotFound', (error) =>
@@ -639,32 +582,6 @@ export const syncPlaylistLinksEffect = (
           )
         )
       )
-    if (refreshedPlaylist?.artworkUrl) {
-      const publicCoverImageUrl = yield* copyMusicCoverImageBestEffort(
-        s3,
-        cdnUrl,
-        bucketName,
-        'playlist',
-        playlistId,
-        refreshedPlaylist.artworkUrl
-      )
-      if (publicCoverImageUrl && publicCoverImageUrl !== refreshedPlaylist.artworkUrl) {
-        yield* Effect.tryPromise({
-          try: () =>
-            db
-              .update(musicPlaylistsTable)
-              .set({ coverImageUrl: publicCoverImageUrl, updatedAt: new Date() })
-              .where(eq(musicPlaylistsTable.id, playlistId)),
-          catch: (error) =>
-            new DatabaseError({
-              message: `Failed to update playlist cover image: ${getErrorMessage(error)}`,
-              operation: 'update',
-              table: 'music_playlists'
-            })
-        })
-      }
-    }
-
     const targets = yield* getPlaylistLinkSyncTargetsEffect(playlistId)
 
     if (targets.length === 0) return { playlistId, queuedTrackCount: 0 }
@@ -674,14 +591,7 @@ export const syncPlaylistLinksEffect = (
       trackCount: targets.length
     })
 
-    yield* enrichImportedPlaylistLinksEffect(
-      identity,
-      s3,
-      cdnUrl,
-      bucketName,
-      playlistId,
-      targets
-    ).pipe(Effect.forkDetach)
+    yield* enrichImportedPlaylistLinksEffect(identity, playlistId, targets).pipe(Effect.forkDetach)
 
     return { playlistId, queuedTrackCount: targets.length }
   })

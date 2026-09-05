@@ -9,6 +9,8 @@ import {
   EntityType,
   MusicPlatform,
   ResolveMusicEntityInput,
+  ResolvedMusicEntityResponse,
+  ScrapeEntityLinksResponse,
   ScrapeEntityType,
   UpdateAlbumInput,
   UpdateEntityLinkStatusInput,
@@ -88,6 +90,115 @@ describe('music API contract', () => {
         publishedAt: null
       })
       expect(result.publishedAt).toBeNull()
+    })
+  })
+
+  describe('resolved music entity responses', () => {
+    const timestamps = {
+      publishedAt: null,
+      createdById: null,
+      createdAt: '2026-03-01T00:00:00.000Z',
+      updatedAt: '2026-03-01T00:00:00.000Z'
+    }
+    const artist = {
+      id: 'artist-1',
+      name: 'Artist',
+      bio: null,
+      imageUrl: 'https://cdn.example.com/artist.jpg',
+      genres: ['ambient'],
+      slug: 'artist',
+      ...timestamps
+    }
+    const album = {
+      id: 'album-1',
+      title: 'Album',
+      artistNames: ['Artist'],
+      releaseDate: null,
+      coverImageUrl: null,
+      genres: [],
+      albumType: null,
+      slug: 'album',
+      ...timestamps
+    }
+    const track = {
+      id: 'track-1',
+      title: 'Track',
+      artistNames: ['Artist'],
+      coverImageUrl: null,
+      albumId: null,
+      trackNumber: 1,
+      slug: 'track',
+      ...timestamps
+    }
+    const playlist = {
+      id: 'playlist-1',
+      title: 'Playlist',
+      description: null,
+      coverImageUrl: null,
+      curatorId: null,
+      slug: 'playlist',
+      spotifyUrl: 'https://open.spotify.com/playlist/playlist-1',
+      ...timestamps
+    }
+
+    it('accepts all four correlated variants', () => {
+      const variants = [
+        { entityType: 'artist', entity: artist, coverImageUrl: artist.imageUrl },
+        { entityType: 'album', entity: album, coverImageUrl: album.coverImageUrl },
+        { entityType: 'track', entity: track, coverImageUrl: track.coverImageUrl },
+        { entityType: 'playlist', entity: playlist, coverImageUrl: playlist.coverImageUrl }
+      ] as const
+
+      for (const variant of variants) {
+        const result = Schema.decodeUnknownSync(ResolvedMusicEntityResponse)({
+          ...variant,
+          links: []
+        })
+        expect(result.entityType).toBe(variant.entityType)
+        expect(result.entity.id).toBe(variant.entity.id)
+      }
+    })
+
+    it('rejects mismatched entity discriminants', () => {
+      const mismatches = [
+        { entityType: 'artist', entity: album },
+        { entityType: 'album', entity: track },
+        { entityType: 'track', entity: playlist },
+        { entityType: 'playlist', entity: artist }
+      ] as const
+
+      for (const mismatch of mismatches) {
+        const result = Schema.decodeUnknownExit(ResolvedMusicEntityResponse)({
+          ...mismatch,
+          links: [],
+          coverImageUrl: null
+        })
+        expect(Exit.isFailure(result)).toBe(true)
+      }
+    })
+
+    it('accepts all four concrete scrape entities and rejects labels', () => {
+      for (const entity of [artist, album, track, playlist]) {
+        const result = Schema.decodeUnknownSync(ScrapeEntityLinksResponse)({ entity, links: [] })
+        expect(result.entity.id).toBe(entity.id)
+      }
+
+      const labelResult = Schema.decodeUnknownExit(ScrapeEntityLinksResponse)({
+        entity: {
+          id: 'label-1',
+          name: 'Label',
+          description: null,
+          imageUrl: null,
+          bannerImageUrl: null,
+          slug: 'label',
+          content: '',
+          tags: null,
+          genres: null,
+          ...timestamps
+        },
+        links: []
+      })
+      expect(Exit.isFailure(labelResult)).toBe(true)
     })
   })
 

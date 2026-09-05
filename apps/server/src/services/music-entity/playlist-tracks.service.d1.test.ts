@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { Effect, Layer } from 'effect'
 import { beforeAll, describe, expect, test } from 'vitest'
 import { Database } from '@/db/layer'
+import { ConfigService, createConfig } from '@/services/config.service'
 import {
   musicEntityLinksTable,
   musicEntityTypesTable,
@@ -20,7 +21,7 @@ import {
   MusicScraperError,
   type MusicScrapeInput
 } from '@/services/music-link-scraper.service'
-import type { S3Service } from '@/services/s3.service'
+import { S3Service } from '@/services/s3.service'
 import type {
   SpotifyImportPlaylist,
   SpotifyImportTrack,
@@ -28,6 +29,7 @@ import type {
 } from '@/services/spotify.service'
 import { db } from '@/test/d1'
 import { withTestLayer } from '@/test/effect'
+import { makeTestS3Service } from '@/test/s3'
 import {
   addSpotifyTrackToPlaylistEffect,
   importSpotifyPlaylistEffect,
@@ -71,17 +73,15 @@ const trackFixture = (spotifyTrackId: string): SpotifyImportTrack => ({
   trackNumber: null
 })
 
-const artworkStore: Pick<S3Service, 'uploadFile'> = {
-  uploadFile: () => Effect.die('Artwork should not be copied without an image')
-}
-
 const runWithIdentity = <A, E>(
   scraper: MusicLinkScraperService,
   use: (identity: CanonicalMusicIdentityService) => Effect.Effect<A, E, Database>
 ) => {
-  const dependencies = Layer.merge(
+  const dependencies = Layer.mergeAll(
     Layer.succeed(Database, db),
-    Layer.succeed(MusicLinkScraperService, scraper)
+    Layer.succeed(MusicLinkScraperService, scraper),
+    Layer.succeed(ConfigService, createConfig()),
+    Layer.succeed(S3Service, makeTestS3Service())
   )
   const identityLayer = CanonicalMusicIdentityLayer.pipe(Layer.provide(dependencies))
   return Effect.runPromise(
@@ -180,7 +180,8 @@ describe('playlist Spotify caller migration', () => {
             title: track.title,
             artistNames: track.artistNames
           },
-          origin: 'spotify_import'
+          origin: 'spotify_import',
+          artworkDelivery: 'preserve'
         })
         return yield* addSpotifyTrackToPlaylistEffect(spotify, identity)(
           playlistId,
@@ -219,12 +220,7 @@ describe('playlist Spotify caller migration', () => {
 
     const result = await runWithIdentity(scraper, (identity) =>
       Effect.gen(function* () {
-        return yield* syncPlaylistLinksEffect(
-          identity,
-          artworkStore,
-          'https://cdn.example.com',
-          'bucket'
-        )(playlistId)
+        return yield* syncPlaylistLinksEffect(identity)(playlistId)
       })
     )
 
@@ -280,12 +276,7 @@ describe('playlist Spotify caller migration', () => {
     }
 
     const result = await runWithIdentity(scraper, (identity) =>
-      syncPlaylistLinksEffect(
-        identity,
-        artworkStore,
-        'https://cdn.example.com',
-        'bucket'
-      )(playlistId)
+      syncPlaylistLinksEffect(identity)(playlistId)
     )
 
     expect(result).toEqual({ playlistId, queuedTrackCount: 2 })
@@ -349,22 +340,17 @@ describe('playlist Spotify caller migration', () => {
             title: track.title,
             artistNames: track.artistNames
           },
-          origin: 'spotify_import'
+          origin: 'spotify_import',
+          artworkDelivery: 'preserve'
         })
         const first = yield* importSpotifyPlaylistEffect(
           spotify,
-          identity,
-          artworkStore,
-          'https://cdn.example.com',
-          'bucket'
+          identity
         )(`${playlist.playlistUrl}?si=test`)
         yield* Effect.sleep('100 millis')
         const second = yield* importSpotifyPlaylistEffect(
           spotify,
-          identity,
-          artworkStore,
-          'https://cdn.example.com',
-          'bucket'
+          identity
         )(`${playlist.playlistUrl}?si=test`)
         yield* Effect.sleep('100 millis')
         return { reused, first, second }

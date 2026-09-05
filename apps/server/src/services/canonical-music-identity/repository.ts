@@ -3,10 +3,14 @@ import { Effect } from 'effect'
 import { LINK_STATUS } from '@gbfm/core/status'
 import type { DatabaseClient } from '@/db/layer'
 import {
+  musicAlbumsTable,
+  musicArtistsTable,
   musicEntityLinksTable,
+  musicPlaylistsTable,
   musicSourceAliasesTable,
   musicSourceIdentitiesTable,
   musicSourceIdentityConflictsTable,
+  musicTracksTable,
   type SelectMusicSourceIdentity
 } from '@/db/music-entity.schema'
 import { getErrorMessage } from '@/errors'
@@ -58,6 +62,10 @@ const storageError = (operation: string, cause: unknown) =>
     operation,
     message: getErrorMessage(cause)
   })
+
+const unreachableEntityType = (entityType: never): never => {
+  throw new Error(`Unexpected canonical music entity type: ${String(entityType)}`)
+}
 
 const resolvedReference = (identity: SelectMusicSourceIdentity): EntityReference | undefined => {
   if (
@@ -458,6 +466,38 @@ export class CanonicalMusicIdentityRepository {
         return (completion?.meta.changes ?? 0) === input.ownedSources.length
       },
       catch: (cause) => storageError('commit', cause)
+    })
+
+  readonly updateArtwork = (reference: EntityReference, artworkUrl: string) =>
+    Effect.tryPromise({
+      try: () => {
+        const updatedAt = new Date()
+        switch (reference.entityType) {
+          case 'artist':
+            return this.db
+              .update(musicArtistsTable)
+              .set({ imageUrl: artworkUrl, updatedAt })
+              .where(eq(musicArtistsTable.id, reference.entityId))
+          case 'album':
+            return this.db
+              .update(musicAlbumsTable)
+              .set({ coverImageUrl: artworkUrl, updatedAt })
+              .where(eq(musicAlbumsTable.id, reference.entityId))
+          case 'track':
+            return this.db
+              .update(musicTracksTable)
+              .set({ coverImageUrl: artworkUrl, updatedAt })
+              .where(eq(musicTracksTable.id, reference.entityId))
+          case 'playlist':
+            return this.db
+              .update(musicPlaylistsTable)
+              .set({ coverImageUrl: artworkUrl, updatedAt })
+              .where(eq(musicPlaylistsTable.id, reference.entityId))
+          default:
+            return unreachableEntityType(reference.entityType)
+        }
+      },
+      catch: (cause) => storageError('updateArtwork', cause)
     })
 
   readonly recordConflict = (

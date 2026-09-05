@@ -7,6 +7,7 @@ const SafeTaggedErrorSchema = Schema.Struct({
     'MusicSourceInvalid',
     'MusicIdentityBusy',
     'MusicIdentityAliasCollision',
+    'MusicIdentityArtworkDeliveryFailed',
     'MusicIdentityConflict',
     'MusicIdentityEntityNotFound',
     'MusicIdentitySourceLinkNotFound',

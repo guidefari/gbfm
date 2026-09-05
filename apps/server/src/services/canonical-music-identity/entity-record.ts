@@ -43,13 +43,44 @@ const translateEntityError = (reference: EntityReference) =>
       : storageError('loadEntity', error.message)
   )
 
-export const loadEntity = (
+export function loadEntity(
+  reference: EntityReference & { readonly entityType: 'artist' }
+): Effect.Effect<
+  SelectMusicArtist,
+  MusicIdentityEntityNotFound | MusicIdentityStorageError,
+  Database
+>
+export function loadEntity(
+  reference: EntityReference & { readonly entityType: 'album' }
+): Effect.Effect<
+  SelectMusicAlbum,
+  MusicIdentityEntityNotFound | MusicIdentityStorageError,
+  Database
+>
+export function loadEntity(
+  reference: EntityReference & { readonly entityType: 'track' }
+): Effect.Effect<
+  SelectMusicTrack,
+  MusicIdentityEntityNotFound | MusicIdentityStorageError,
+  Database
+>
+export function loadEntity(
+  reference: EntityReference & { readonly entityType: 'playlist' }
+): Effect.Effect<
+  SelectMusicPlaylist & { readonly spotifyUrl?: string | null },
+  MusicIdentityEntityNotFound | MusicIdentityStorageError,
+  Database
+>
+export function loadEntity(
+  reference: EntityReference
+): Effect.Effect<ResolvedEntity, MusicIdentityEntityNotFound | MusicIdentityStorageError, Database>
+export function loadEntity(
   reference: EntityReference
 ): Effect.Effect<
   ResolvedEntity,
   MusicIdentityEntityNotFound | MusicIdentityStorageError,
   Database
-> => {
+> {
   switch (reference.entityType) {
     case 'artist':
       return getArtistByIdEffect(reference.entityId).pipe(translateEntityError(reference))

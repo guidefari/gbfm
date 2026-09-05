@@ -73,6 +73,16 @@ export class MusicIdentityProviderUnavailable extends Schema.TaggedError<MusicId
   { provider: Schema.String, statusCode: Schema.optional(Schema.Number), message: Schema.String }
 ) {}
 
+export class MusicIdentityArtworkDeliveryFailed extends Schema.TaggedError<MusicIdentityArtworkDeliveryFailed>()(
+  'MusicIdentityArtworkDeliveryFailed',
+  {
+    entityType: Schema.Literals(['artist', 'album', 'track', 'playlist']),
+    entityId: Schema.String,
+    operation: Schema.Literal('upload'),
+    message: Schema.String
+  }
+) {}
+
 export class MusicIdentityStorageError extends Schema.TaggedError<MusicIdentityStorageError>()(
   'MusicIdentityStorageError',
   { operation: Schema.String, message: Schema.String }
@@ -82,6 +92,7 @@ export type MusicIdentityError =
   | MusicSourceInvalid
   | MusicIdentityBusy
   | MusicIdentityAliasCollision
+  | MusicIdentityArtworkDeliveryFailed
   | MusicIdentityConflict
   | MusicIdentityEntityNotFound
   | MusicIdentitySourceLinkNotFound

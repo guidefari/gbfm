@@ -8,6 +8,7 @@ import {
   WorkerSentryEnv,
   WorkerTracingLive
 } from '@/runtime/sentry-worker'
+import { MusicCoverImageFetcher } from '@/services/canonical-music-identity/artwork-delivery'
 import { NavigationLockLocalLayer } from '@/services/navigation-lock'
 import { SpotifyImportResolverLocalLayer } from '@/services/spotify-import-resolver.service'
 import {
@@ -54,7 +55,8 @@ const inMemorySitemapKv = (): SitemapKv => {
 export const createTestWebHandler = (
   d1: D1Database,
   emailTransportLive: Layer.Layer<EmailTransportService> = RecordingEmailTransportLayer,
-  objectStoreLive?: Layer.Layer<ObjectStoreClient>
+  objectStoreLive?: Layer.Layer<ObjectStoreClient>,
+  musicCoverImageFetcherLive: Layer.Layer<never> = Layer.succeed(MusicCoverImageFetcher, fetch)
 ) => {
   const services = {
     database: DatabaseLayer(d1),
@@ -63,7 +65,8 @@ export const createTestWebHandler = (
     spotifyImportResolver: SpotifyImportResolverLocalLayer,
     sentry: testSentryServiceLive,
     tracing: WorkerTracingLive,
-    emailTransport: emailTransportLive
+    emailTransport: emailTransportLive,
+    musicCoverImageFetcher: musicCoverImageFetcherLive
   }
   const appLayerOptions: AppLayerOptions =
     objectStoreLive === undefined ? services : { ...services, objectStore: objectStoreLive }
