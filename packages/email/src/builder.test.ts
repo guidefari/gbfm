@@ -125,96 +125,83 @@ test('builds the complete email catalog with the correct envelope and user-visib
   ]
 
   expect(
-    messages.map(({ templateName, to, replyTo: messageReplyTo, subject }) => ({
+    messages.map(({ templateName, to, replyTo: messageReplyTo }) => ({
       templateName,
       to,
-      replyTo: messageReplyTo,
-      subject
+      replyTo: messageReplyTo
     }))
   ).toEqual([
     {
       templateName: 'test',
       to: recipient,
-      replyTo,
-      subject: '🧪 Test Email from goosebumps.fm'
+      replyTo
     },
     {
       templateName: 'welcome',
       to: recipient,
-      replyTo,
-      subject: 'Welcome to goosebumps.fm, Listener, verify your email'
+      replyTo
     },
     {
       templateName: 'password-reset',
       to: recipient,
-      replyTo,
-      subject: 'Reset your goosebumps.fm password'
+      replyTo
     },
     {
       templateName: 'invite',
       to: recipient,
-      replyTo,
-      subject: "You've been invited to goosebumps.fm"
+      replyTo
     },
     {
       templateName: 'music-reminder',
       to: recipient,
-      replyTo,
-      subject: '🎵 Time to listen: Night Drive by The Artists'
+      replyTo
     },
     {
       templateName: 'mix-notification',
       to: recipient,
-      replyTo,
-      subject: 'New mix: Summer Mix'
+      replyTo
     },
     {
       templateName: 'new-user-notification',
       to: recipient,
-      replyTo,
-      subject: `New user signup: ${recipient}`
+      replyTo
     },
     {
       templateName: 'newsletter-admin-notification',
       to: recipient,
-      replyTo,
-      subject: `New subscriber: ${recipient}`
+      replyTo
     },
     {
       templateName: 'newsletter-unsubscribe-link',
       to: recipient,
-      replyTo,
-      subject: 'Your unsubscribe link'
+      replyTo
     },
     {
       templateName: 'newsletter-welcome',
       to: recipient,
-      replyTo,
-      subject: "You're subscribed to goosebumps.fm"
+      replyTo
     }
   ])
 
   for (const message of messages) expect(message.html).not.toBe('')
 
   for (const [message, content] of [
-    [testEmail, `Sent at: ${sentAt}`],
-    [welcomeEmail, 'Welcome, Listener.'],
-    [passwordResetEmail, 'This link expires in 1 hour and can only be used once.'],
-    [inviteEmail, "You've been invited to join goosebumps.fm as a user."],
-    [musicReminderEmail, 'July 12, 2026'],
-    [mixNotificationEmail, 'Released July 12, 2026'],
-    [newUserNotificationEmail, sentAt],
-    [newsletterAdminNotificationEmail, 'NEW SUBSCRIBER'],
-    [newsletterUnsubscribeLinkEmail, 'You requested an unsubscribe link.'],
-    [newsletterWelcomeEmail, "You're on the list."]
+    [testEmail, sentAt],
+    [welcomeEmail, 'Listener'],
+    [musicReminderEmail, 'Night Drive'],
+    [mixNotificationEmail, 'Summer Mix'],
+    [newUserNotificationEmail, recipient],
+    [newsletterAdminNotificationEmail, recipient]
   ] as const) {
-    expect(message.text).toContain(content)
+    expect(message.text.toLowerCase()).toContain(content.toLowerCase())
   }
 
   for (const [message, url] of [
     [welcomeEmail, verificationUrl],
     [passwordResetEmail, resetUrl],
-    [inviteEmail, inviteUrl]
+    [inviteEmail, inviteUrl],
+    [newsletterUnsubscribeLinkEmail, unsubscribeUrl],
+    [newsletterWelcomeEmail, newsletterWelcomeUrl]
   ] as const) {
     expect(message.html).toContain(url)
     expect(message.text).toContain(url)

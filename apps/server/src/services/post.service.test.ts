@@ -138,10 +138,6 @@ describe('generatePostSlug', () => {
   test('falls back to a generic slug when title and content are both empty', () => {
     expect(stripSlugSuffix(generatePostSlug(null, null))).toBe('post')
   })
-
-  test('produces a non-empty slug', () => {
-    expect(generatePostSlug(null, null).length).toBeGreaterThan(0)
-  })
 })
 
 describe('post type refinement', () => {

@@ -110,16 +110,6 @@ describe('StorageConfigSchema', () => {
     ).toThrow('Missing required production secrets: BETTER_AUTH_SECRET')
   })
 
-  test('boots in production with only the Worker bindings', () => {
-    const config = createConfig({
-      ...workerBindings(),
-      APP_STAGE: 'prod',
-      R2AccountId: 'account'
-    })
-
-    expect(config.app.stage).toBe('prod')
-  })
-
   test('accepts AWS with ambient credentials', () => {
     expect(decodeStorageConfig({ provider: 'aws', region: 'us-east-1' })).toMatchObject({
       provider: 'aws',

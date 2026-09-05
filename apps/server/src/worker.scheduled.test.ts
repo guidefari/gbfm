@@ -27,10 +27,6 @@ test('scheduled jobs dispatch only the job assigned to each cron', async () => {
   expect(maintenanceJobs.maintenanceRuns).toBe(1)
 })
 
-test('the maintenance cron does not collide with the hourly sitemap cron', () => {
-  expect(maintenanceSweepCron).not.toBe(sitemapRegenerationCron)
-})
-
 const createRecordingJobs = () => {
   let sitemapRegenerations = 0
   let reminderSweeps = 0

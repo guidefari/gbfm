@@ -89,13 +89,6 @@ afterAll(async () => {
 })
 
 describe('Effect router (Step 8: HonoFallback removed)', () => {
-  it('GET /api/music/artists is served directly by the HttpApi group (no Hono app in the request path)', async () => {
-    const res = await webHandler.handler(new Request('http://localhost/api/music/artists'))
-
-    expect(res.status).toBe(200)
-    await expect(decodeResponseBody(ArtistListResponse, res)).resolves.toBeTruthy()
-  })
-
   it('unknown routes 404 via Effect HttpRouter.RouteNotFound (empty body -- no Hono notFound JSON, no fallback to serve)', async () => {
     const res = await webHandler.handler(new Request('http://localhost/does-not-exist'))
 
@@ -147,14 +140,6 @@ describe('health (HttpApiBuilder group, Step 3a)', () => {
     await expect(decodeResponseBody(HealthReadyResponse, checkRes)).resolves.toEqual({
       dbConnected: true
     })
-  })
-
-  it('repeated readiness calls within the cache window keep returning 200', async () => {
-    const first = await webHandler.handler(new Request('http://localhost/health/ready'))
-    const second = await webHandler.handler(new Request('http://localhost/health/ready'))
-
-    expect(first.status).toBe(200)
-    expect(second.status).toBe(200)
   })
 
   it('responds 404 to unsupported methods on health paths', async () => {

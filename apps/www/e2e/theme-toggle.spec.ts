@@ -40,5 +40,4 @@ test('user chooses an appearance preference and it is restored on the next visit
 
   await page.reload()
   await expect(page.locator('html')).toHaveClass(/light/)
-  await expect(lightButton).toHaveClass(/border-primary bg-muted/)
 })

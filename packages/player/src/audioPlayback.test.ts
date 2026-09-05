@@ -328,7 +328,7 @@ describe('makeAudioPlayback', () => {
   it('applies volume and mute to the engine', async () => {
     const storage = makeRecordingStorage()
     const { reporter } = makeReporter()
-    const { engine, calls, volumeStates } = await Effect.runPromise(makeRecordingEngine())
+    const { engine, volumeStates } = await Effect.runPromise(makeRecordingEngine())
     const playReporter = makeRecordingPlayReporter()
     const runtime = makeRuntime(engine, storage, playReporter)
 
@@ -343,8 +343,6 @@ describe('makeAudioPlayback', () => {
         }).pipe(Effect.scoped)
       )
 
-      expect(calls).toContain('volume:0.4')
-      expect(calls).toContain('muted:true')
       expect(volumeStates.some((entry) => entry.kind === 'volume' && entry.value === 0.4)).toBe(
         true
       )
@@ -463,7 +461,7 @@ describe('makeAudioPlayback', () => {
 
   it('reports pause and seek intents through the shared reporter', async () => {
     const storage = makeRecordingStorage()
-    const { reporter } = makeReporter()
+    const { reporter, paused, seeks } = makeReporter()
     const { engine, calls, setStatus } = await Effect.runPromise(makeRecordingEngine())
     const playReporter = makeRecordingPlayReporter()
     const runtime = makeRuntime(engine, storage, playReporter)
@@ -486,6 +484,8 @@ describe('makeAudioPlayback', () => {
 
       expect(calls).toContain('seek:12')
       expect(calls).toContain('pause')
+      expect(seeks).toEqual([{ trackId: 'one', fromTime: 0, toTime: 12, method: 'scrub' }])
+      expect(paused).toEqual([{ trackId: 'one', title: 'one', currentTime: 0, duration: 300 }])
       expect(playReporter.reported).toEqual(['one'])
     } finally {
       await runtime.dispose()

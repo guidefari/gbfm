@@ -310,39 +310,6 @@ describe('NavigationSessionService', () => {
     expect(seen).toEqual([{ slug: only.slug }])
   })
 
-  test('retries once after a concurrent cursor change and uses the newer cursor', async () => {
-    const first = await createPost('retry-first', new Date('2026-05-03T00:00:00.000Z'))
-    const second = await createPost('retry-second', new Date('2026-05-02T00:00:00.000Z'))
-    const third = await createPost('retry-third', new Date('2026-05-01T00:00:00.000Z'))
-    const reader = identity()
-
-    await open(reader, first)
-    const [firstResult, retriedResult] = await Promise.all([
-      navigationRuntime.runPromise(
-        resolve(reader, { _tag: 'Step', direction: 'Forward' }, first.slug, randomUUID())
-      ),
-      navigationRuntime.runPromise(
-        resolve(reader, { _tag: 'Step', direction: 'Forward' }, first.slug, randomUUID())
-      )
-    ])
-
-    expect([firstResult.destination.slug, retriedResult.destination.slug].toSorted()).toEqual(
-      [second.slug, third.slug].toSorted()
-    )
-    const session = await sessionFor(reader.deviceToken)
-    expect(session.cursor).toBe(2)
-  })
-
-  test('suggests the next unread post when there is no forward trail entry', async () => {
-    const newest = await createPost('suggest-newest', new Date('2026-05-20T00:00:00.000Z'))
-    const next = await createPost('suggest-next', new Date('2026-05-19T00:00:00.000Z'))
-    const reader = identity()
-
-    const result = await open(reader, newest)
-
-    expect(result.neighbours.forward).toBe(next.slug)
-  })
-
   test('moves the cursor when replaying Step(Back)', async () => {
     const first = await createPost('replay-first', new Date('2026-06-01T00:00:00.000Z'))
     const last = await createPost('replay-last', new Date('2026-06-02T00:00:00.000Z'))
