@@ -123,8 +123,6 @@ const legacyFallbackType = (source: ParsedMusicSource, expectedType?: CanonicalM
 const persistedArtwork = (resolved: AnyResolvedMusicEntity) =>
   resolved.entityType === 'artist' ? resolved.entity.imageUrl : resolved.entity.coverImageUrl
 
-const resolvedResult = loadResolvedEntity
-
 export const CanonicalMusicIdentityLayer = Layer.effect(
   CanonicalMusicIdentity,
   Effect.gen(function* () {
@@ -142,7 +140,8 @@ export const CanonicalMusicIdentityLayer = Layer.effect(
       config,
       fetcher,
       repository,
-      reload: (reference, created) => resolvedResult(repository, reference, created).pipe(provideDb)
+      reload: (reference, created) =>
+        loadResolvedEntity(repository, reference, created).pipe(provideDb)
     })
 
     const readReference = (source: ParsedMusicSource) =>
@@ -265,7 +264,7 @@ export const CanonicalMusicIdentityLayer = Layer.effect(
         const ownerToken = crypto.randomUUID()
         const claim = yield* claimWithWait(source, ownerToken)
         if (claim !== 'owned') {
-          return yield* resolvedResult(repository, claim, false).pipe(provideDb)
+          return yield* loadResolvedEntity(repository, claim, false).pipe(provideDb)
         }
         const adopted = yield* repository
           .commit({
@@ -298,10 +297,10 @@ export const CanonicalMusicIdentityLayer = Layer.effect(
             ),
             withSafeTypedSpan('musicIdentity.commit')
           )
-        if (adopted) return yield* resolvedResult(repository, legacy, false).pipe(provideDb)
+        if (adopted) return yield* loadResolvedEntity(repository, legacy, false).pipe(provideDb)
         yield* repository.release([source.sourceKey], ownerToken)
         const winner = yield* readReference(source)
-        if (winner) return yield* resolvedResult(repository, winner, false).pipe(provideDb)
+        if (winner) return yield* loadResolvedEntity(repository, winner, false).pipe(provideDb)
         return yield* new MusicIdentityBusy({ retryAfterMs: leaseTiming.leaseMs })
       })
 
@@ -343,7 +342,7 @@ export const CanonicalMusicIdentityLayer = Layer.effect(
     ): Effect.Effect<AnyResolvedMusicEntity, MusicIdentityError | E, R> =>
       Effect.gen(function* () {
         const hit = yield* readReference(initial)
-        if (hit) return yield* resolvedResult(repository, hit, false).pipe(provideDb)
+        if (hit) return yield* loadResolvedEntity(repository, hit, false).pipe(provideDb)
         if (fallbackType) {
           const adopted = yield* adoptLegacy(initial, fallbackType)
           if (adopted) return adopted
@@ -352,7 +351,7 @@ export const CanonicalMusicIdentityLayer = Layer.effect(
         const ownerToken = crypto.randomUUID()
         const firstClaim = yield* claimWithWait(initial, ownerToken)
         if (firstClaim !== 'owned') {
-          return yield* resolvedResult(repository, firstClaim, false).pipe(provideDb)
+          return yield* loadResolvedEntity(repository, firstClaim, false).pipe(provideDb)
         }
 
         const ownedSources: ParsedMusicSource[] = [initial]
@@ -396,7 +395,7 @@ export const CanonicalMusicIdentityLayer = Layer.effect(
                 ownerToken
               )
               const winner = yield* waitForResolved(initial)
-              return yield* resolvedResult(repository, winner, false).pipe(provideDb)
+              return yield* loadResolvedEntity(repository, winner, false).pipe(provideDb)
             }
             const claim = yield* claimWithWait(source, ownerToken, 0, attempted)
             if (claim === 'owned') ownedSources.push(source)
@@ -490,10 +489,10 @@ export const CanonicalMusicIdentityLayer = Layer.effect(
             )
           if (!committed) {
             const winner = yield* readReference(initial)
-            if (winner) return yield* resolvedResult(repository, winner, false).pipe(provideDb)
+            if (winner) return yield* loadResolvedEntity(repository, winner, false).pipe(provideDb)
             return yield* new MusicIdentityBusy({ retryAfterMs: leaseTiming.leaseMs })
           }
-          return yield* resolvedResult(repository, reference, !incumbent).pipe(provideDb)
+          return yield* loadResolvedEntity(repository, reference, !incumbent).pipe(provideDb)
         }).pipe(
           Effect.tapError(() =>
             repository.release(
