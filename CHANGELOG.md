@@ -1,3 +1,29 @@
+# [2.92.0](https://github.com/guidefari/gbfm/compare/v2.91.0...v2.92.0) (2026-09-05)
+
+
+### Bug Fixes
+
+* **music:** derive link identity from parsed source ([6c16d67](https://github.com/guidefari/gbfm/commit/6c16d67b9d62f432ba32b7c465ceb31658a64c1d))
+* **music:** enforce parser-supported link identity ([1128cad](https://github.com/guidefari/gbfm/commit/1128caddc46bf5de7c971227b3ce67daa47395c5))
+* **music:** keep playlist link sync best effort ([006c0db](https://github.com/guidefari/gbfm/commit/006c0dbd5390d120ae74aed5f04745956fdc7ea4))
+* **music:** make identity refresh deterministic ([f3340ea](https://github.com/guidefari/gbfm/commit/f3340eaea7580fc9e3eca2052df30f286be4f6b3))
+* **music:** preserve canonical metadata on verification ([f6d280a](https://github.com/guidefari/gbfm/commit/f6d280a836ad75aa1a935bde4b535b11a544f73f))
+* **music:** preserve legacy link workflows ([bca5e22](https://github.com/guidefari/gbfm/commit/bca5e2281c93a6bb59abc8af9986775642925a04))
+* **music:** return copied artist artwork URL ([1126eab](https://github.com/guidefari/gbfm/commit/1126eabb2d4b0ff8aa1274b16df98d069eafb536))
+* **music:** sanitize playlist enrichment failures ([47085c8](https://github.com/guidefari/gbfm/commit/47085c82bd5a625397e74970de8527f67b9ad2f7))
+* **server:** restore atomic remote D1 batches ([80bd26d](https://github.com/guidefari/gbfm/commit/80bd26d02b9b106d326cce52e97294b3c681766d))
+* **server:** restore valid remote D1 queries ([310f453](https://github.com/guidefari/gbfm/commit/310f4538c2fdae1a0cd6236ad40c8893ff5f6c0f))
+
+
+### Features
+
+* **editorial:** share music resolution cache ([bdd895f](https://github.com/guidefari/gbfm/commit/bdd895ffa21869a81406a15b0a79809d3419525b))
+* **music:** add canonical source identity schema ([0cf831f](https://github.com/guidefari/gbfm/commit/0cf831f21430ffd5694b1979f1fa4cdad80bb4b7))
+* **music:** add identity maintenance tooling ([7089351](https://github.com/guidefari/gbfm/commit/7089351b23568f32b48f0706cc022be6d4a081c7))
+* **music:** add identity rollout telemetry ([6981bf5](https://github.com/guidefari/gbfm/commit/6981bf5725cec7d166e4c294548ac8cceb112126))
+* **music:** resolve canonical source identities ([b0126d8](https://github.com/guidefari/gbfm/commit/b0126d8b838d9dfba3334a3abb645b61db065a7f))
+* **music:** route callers through canonical identity ([7264dc1](https://github.com/guidefari/gbfm/commit/7264dc131e6c979a77d11fbc0d25134015ed5b64))
+
 # [2.91.0](https://github.com/guidefari/gbfm/compare/v2.90.0...v2.91.0) (2026-09-03)
 
 
