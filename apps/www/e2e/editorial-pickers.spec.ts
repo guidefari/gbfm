@@ -48,6 +48,30 @@ test('Music opens an interactive picker inside the editorial workspace', async (
   await expect(page.getByRole('heading', { name: 'Test release' })).toBeVisible()
 })
 
+test('sticky toolbar meets the workspace header without a gap', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/new/editorial')
+  await page.locator('.cm-content').fill('Ambient listening notes.\n\n'.repeat(80))
+  await page.getByRole('button', { name: 'Preview', exact: true }).click()
+  await page.locator('dialog[open]').evaluate((element) => {
+    element.scrollTop = 500
+  })
+  await expect
+    .poll(async () => {
+      const header = await page.locator('dialog[open] header').boundingBox()
+      const toolbar = await page.locator('.editorial-editor-topbar').boundingBox()
+      if (!header || !toolbar) return null
+      return toolbar.y - (header.y + header.height)
+    })
+    .toBe(0)
+  await expect(page.locator('.editorial-editor-topbar')).toHaveCSS('border-top-width', '0px')
+  await expect(page.locator('dialog[open] header')).toHaveCSS('border-bottom-width', '1px')
+  await page.screenshot({
+    path: testInfo.outputPath('editorial-sticky-toolbar.png'),
+    animations: 'disabled'
+  })
+})
+
 test('Media inserts a player without leaving the editorial workspace', async ({ page }) => {
   await page.goto('/new/editorial')
   await page.getByRole('button', { name: 'Media', exact: true }).click()
