@@ -1,3 +1,10 @@
+## [2.93.1](https://github.com/guidefari/gbfm/compare/v2.93.0...v2.93.1) (2026-09-06)
+
+
+### Bug Fixes
+
+* **music:** fail fast on unknown entity types ([d2eb19e](https://github.com/guidefari/gbfm/commit/d2eb19eaa3335cfd7a71ed588b294e780d0c2be7))
+
 # [2.93.0](https://github.com/guidefari/gbfm/compare/v2.92.0...v2.93.0) (2026-09-05)
 
 
