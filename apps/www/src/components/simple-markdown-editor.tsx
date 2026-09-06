@@ -240,20 +240,20 @@ export const SimpleMarkdownEditor = forwardRef<
   const editorHost = useRef<HTMLDivElement | null>(null)
   const editorView = useRef<EditorView | null>(null)
   const onChangeRef = useRef(onChange)
+  const resolveMusicEntitiesRef = useRef(resolveMusicEntities)
+  const onPendingMusicChangeRef = useRef(onPendingMusicChange)
+  const onMusicResolutionFailureRef = useRef(onMusicResolutionFailure)
   const syncing = useRef(false)
   const placeholderCompartment = useRef(new Compartment())
   const acceptingWidgets = useRef(true)
-  const initialEditorConfig = useRef({
-    value,
-    placeholder,
-    resolveMusicEntities,
-    onPendingMusicChange,
-    onMusicResolutionFailure
-  })
+  const initialEditorConfig = useRef({ value, placeholder, resolveMusicEntities })
   const [mode, setMode] = useState<EditorMode>('edit')
   const [preview, setPreview] = useState<PreviewState>({ status: 'empty' })
   const [musicEntityWidgets, setMusicEntityWidgets] = useState<ReadonlyArray<MusicEntityWidget>>([])
   onChangeRef.current = onChange
+  resolveMusicEntitiesRef.current = resolveMusicEntities
+  onPendingMusicChangeRef.current = onPendingMusicChange
+  onMusicResolutionFailureRef.current = onMusicResolutionFailure
 
   const mountMusicEntity = useCallback((widget: MusicEntityWidget) => {
     if (!acceptingWidgets.current) return
@@ -274,14 +274,15 @@ export const SimpleMarkdownEditor = forwardRef<
 
     acceptingWidgets.current = true
     const config = initialEditorConfig.current
-    const musicEntityExtensions = config.resolveMusicEntities
+    const initialResolver = config.resolveMusicEntities
+    const musicEntityExtensions = initialResolver
       ? [
           createMusicEntityEditorEmbeds({
-            resolve: config.resolveMusicEntities,
+            resolve: (urls) => (resolveMusicEntitiesRef.current ?? initialResolver)(urls),
             mount: mountMusicEntity,
             unmount: unmountMusicEntity,
-            onPendingChange: config.onPendingMusicChange,
-            onResolutionFailure: config.onMusicResolutionFailure
+            onPendingChange: (count) => onPendingMusicChangeRef.current(count),
+            onResolutionFailure: (count) => onMusicResolutionFailureRef.current(count)
           })
         ]
       : []
@@ -302,8 +303,8 @@ export const SimpleMarkdownEditor = forwardRef<
 
     return () => {
       acceptingWidgets.current = false
-      config.onPendingMusicChange(0)
       view.destroy()
+      setMusicEntityWidgets([])
       if (editorView.current === view) editorView.current = null
     }
   }, [mountMusicEntity, unmountMusicEntity])
