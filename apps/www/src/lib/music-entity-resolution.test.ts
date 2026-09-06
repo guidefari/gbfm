@@ -16,8 +16,15 @@ const resolvedEntity: ResolvedMusicEntity = {
   entity: {
     id: 'track-1',
     title: 'Track one',
+    artistNames: [],
+    coverImageUrl: null,
+    albumId: null,
+    trackNumber: null,
     slug: 'track-one',
-    coverImageUrl: null
+    publishedAt: null,
+    createdById: null,
+    createdAt: '2026-09-05T00:00:00.000Z',
+    updatedAt: '2026-09-05T00:00:00.000Z'
   },
   links: [],
   coverImageUrl: null
@@ -137,8 +144,14 @@ describe('music entity resolution cache', () => {
           entity: {
             id: 'artist-1',
             name: 'Artist one',
+            bio: null,
+            imageUrl: null,
+            genres: [],
             slug: 'artist-one',
-            imageUrl: null
+            publishedAt: null,
+            createdById: null,
+            createdAt: '2026-09-05T00:00:00.000Z',
+            updatedAt: '2026-09-05T00:00:00.000Z'
           },
           links: [],
           coverImageUrl: null

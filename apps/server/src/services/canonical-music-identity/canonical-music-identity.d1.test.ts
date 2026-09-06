@@ -6,6 +6,8 @@ import { and, eq } from 'drizzle-orm'
 import { Effect, Exit, Layer, Result } from 'effect'
 import { beforeAll, describe, expect, test } from 'vitest'
 import { Database } from '@/db/layer'
+import { S3Error } from '@/errors'
+import { ConfigService, createConfig } from '@/services/config.service'
 import {
   musicAlbumArtistsTable,
   musicAlbumsTable,
@@ -30,8 +32,11 @@ import { deleteAlbumEffect } from '@/services/music-entity/album.service'
 import { deleteArtistEffect } from '@/services/music-entity/artist.service'
 import { deletePlaylistEffect } from '@/services/music-entity/playlist.service'
 import { deleteTrackEffect } from '@/services/music-entity/track.service'
+import { MusicCoverImageFetcher, type MusicCoverImageFetch } from './artwork-delivery'
+import { S3Service, type S3Service as S3ServiceType } from '@/services/s3.service'
 import { db } from '@/test/d1'
 import { withTestLayer } from '@/test/effect'
+import { makeTestS3Service } from '@/test/s3'
 import type { MusicIdentityError } from './errors'
 import { parseMusicSource } from './music-source'
 import { CanonicalMusicIdentityRepository } from './repository'
@@ -68,14 +73,23 @@ beforeAll(async () => {
     .onConflictDoNothing()
 })
 
+type ArtworkTestDependencies = {
+  readonly s3: S3ServiceType
+  readonly fetcher: MusicCoverImageFetch
+}
+
 const serviceEffect = <A>(
   scraper: MusicLinkScraperService,
   use: (service: CanonicalMusicIdentityService) => Effect.Effect<A, MusicIdentityError>,
-  leaseTiming?: CanonicalMusicIdentityLeaseTimingConfig
+  leaseTiming?: CanonicalMusicIdentityLeaseTimingConfig,
+  artwork?: ArtworkTestDependencies
 ) => {
-  const baseDependencies = Layer.merge(
+  const baseDependencies = Layer.mergeAll(
     Layer.succeed(Database, db),
-    Layer.succeed(MusicLinkScraperService, scraper)
+    Layer.succeed(MusicLinkScraperService, scraper),
+    Layer.succeed(ConfigService, createConfig()),
+    Layer.succeed(S3Service, artwork?.s3 ?? makeTestS3Service()),
+    Layer.succeed(MusicCoverImageFetcher, artwork?.fetcher ?? fetch)
   )
   const dependencies = leaseTiming
     ? Layer.merge(baseDependencies, Layer.succeed(CanonicalMusicIdentityLeaseTiming, leaseTiming))
@@ -86,13 +100,15 @@ const serviceEffect = <A>(
 
 const serviceWith = <A>(
   scraper: MusicLinkScraperService,
-  use: (service: CanonicalMusicIdentityService) => Effect.Effect<A, MusicIdentityError>
-) => Effect.runPromise(serviceEffect(scraper, use))
+  use: (service: CanonicalMusicIdentityService) => Effect.Effect<A, MusicIdentityError>,
+  artwork?: ArtworkTestDependencies
+) => Effect.runPromise(serviceEffect(scraper, use, undefined, artwork))
 
 const serviceExitWith = <A>(
   scraper: MusicLinkScraperService,
-  use: (service: CanonicalMusicIdentityService) => Effect.Effect<A, MusicIdentityError>
-) => Effect.runPromiseExit(serviceEffect(scraper, use))
+  use: (service: CanonicalMusicIdentityService) => Effect.Effect<A, MusicIdentityError>,
+  artwork?: ArtworkTestDependencies
+) => Effect.runPromiseExit(serviceEffect(scraper, use, undefined, artwork))
 
 const recordingScraper = (
   scrape: (input: MusicScrapeInput) => Effect.Effect<ScrapeResult, never>
@@ -121,6 +137,187 @@ const snapshot = (
 })
 
 describe('CanonicalMusicIdentity', () => {
+  test('persists and returns required artwork after upload', async () => {
+    const sourceUrl = `https://open.spotify.com/track/${externalId()}`
+    const artworkUrl = 'https://i.scdn.co/image/strict-success'
+    const uploads: string[] = []
+    const fetches: string[] = []
+    const scraper = recordingScraper(() =>
+      Effect.succeed({
+        links: [],
+        entityMeta: {
+          title: 'Strict artwork track',
+          artistName: 'Artist',
+          type: 'song',
+          thumbnailUrl: artworkUrl
+        }
+      })
+    )
+    const artwork = {
+      s3: makeTestS3Service((key) => {
+        uploads.push(key)
+        return Effect.succeed(key)
+      }),
+      fetcher: (input: string | URL | Request) => {
+        fetches.push(new Request(input).url)
+        return Promise.resolve(
+          new Response(new Uint8Array([1, 2, 3]), {
+            headers: { 'content-type': 'image/jpeg' }
+          })
+        )
+      }
+    }
+
+    const result = await serviceWith(
+      scraper.service,
+      (service) =>
+        service.resolveSource({
+          url: sourceUrl,
+          expectedType: 'track',
+          origin: 'editorial',
+          artworkDelivery: 'required'
+        }),
+      artwork
+    )
+    if (result.entityType !== 'track') throw new Error('Expected a track result')
+    const stored = await db
+      .select()
+      .from(musicTracksTable)
+      .where(eq(musicTracksTable.id, result.entity.id))
+      .limit(1)
+    const expectedUrl = `https://cdn.goosebumps.fm/user-content/music/track/${result.entity.id}/cover`
+
+    expect(fetches).toEqual([artworkUrl])
+    expect(uploads).toEqual([`music/track/${result.entity.id}/cover`])
+    expect(result.entity.coverImageUrl).toBe(expectedUrl)
+    expect(stored[0]?.coverImageUrl).toBe(expectedUrl)
+  })
+
+  test('keeps canonical identity after required artwork failure and repairs it on retry', async () => {
+    const id = externalId()
+    const sourceUrl = `https://open.spotify.com/track/${id}`
+    const artworkUrl = 'https://i.scdn.co/image/strict-retry'
+    let uploadAttempts = 0
+    const scraper = recordingScraper(() =>
+      Effect.succeed({
+        links: [],
+        entityMeta: {
+          title: 'Strict retry track',
+          artistName: 'Artist',
+          type: 'song',
+          thumbnailUrl: artworkUrl
+        }
+      })
+    )
+    const artwork = {
+      s3: makeTestS3Service((key) => {
+        uploadAttempts += 1
+        return uploadAttempts === 1
+          ? Effect.fail(new S3Error({ message: 'Unavailable', operation: 'uploadFile', key }))
+          : Effect.succeed(key)
+      }),
+      fetcher: () =>
+        Promise.resolve(
+          new Response(new Uint8Array([1, 2, 3]), {
+            headers: { 'content-type': 'image/jpeg' }
+          })
+        )
+    }
+
+    const first = await serviceExitWith(
+      scraper.service,
+      (service) =>
+        service.resolveSource({
+          url: sourceUrl,
+          expectedType: 'track',
+          origin: 'editorial',
+          artworkDelivery: 'required'
+        }),
+      artwork
+    )
+    expect(Result.getOrThrow(Exit.findError(first))).toMatchObject({
+      _tag: 'MusicIdentityArtworkDeliveryFailed',
+      operation: 'upload'
+    })
+
+    const identityRows = await db
+      .select()
+      .from(musicSourceIdentitiesTable)
+      .where(eq(musicSourceIdentitiesTable.sourceKey, `spotify:track:${id}`))
+      .limit(1)
+    const entityId = identityRows[0]?.entityId
+    expect(entityId).toBeTruthy()
+    if (!entityId) throw new Error('Expected persisted canonical identity')
+    const failedArtworkRows = await db
+      .select()
+      .from(musicTracksTable)
+      .where(eq(musicTracksTable.id, entityId))
+      .limit(1)
+    expect(failedArtworkRows[0]?.coverImageUrl).toBe(artworkUrl)
+
+    const retried = await serviceWith(
+      scraper.service,
+      (service) =>
+        service.resolveSource({
+          url: sourceUrl,
+          expectedType: 'track',
+          origin: 'editorial',
+          artworkDelivery: 'required'
+        }),
+      artwork
+    )
+    if (retried.entityType !== 'track') throw new Error('Expected a track result')
+
+    expect(retried.entity.id).toBe(entityId)
+    expect(retried.entity.coverImageUrl).toBe(
+      `https://cdn.goosebumps.fm/user-content/music/track/${entityId}/cover`
+    )
+    expect(scraper.calls).toHaveLength(1)
+    expect(uploadAttempts).toBe(2)
+  })
+
+  test('returns persisted playlist unchanged when best-effort artwork upload fails', async () => {
+    const sourceUrl = `https://open.spotify.com/playlist/${externalId()}`
+    const artworkUrl = 'https://i.scdn.co/image/best-effort'
+    const artwork = {
+      s3: makeTestS3Service((key) =>
+        Effect.fail(new S3Error({ message: 'Unavailable', operation: 'uploadFile', key }))
+      ),
+      fetcher: () =>
+        Promise.resolve(
+          new Response(new Uint8Array([1, 2, 3]), {
+            headers: { 'content-type': 'image/jpeg' }
+          })
+        )
+    }
+    const recorder = recordingScraper(() => Effect.die('Provider must not be called'))
+
+    const result = await serviceWith(
+      recorder.service,
+      (service) =>
+        service.importProviderEntity({
+          snapshot: {
+            entityType: 'playlist',
+            sourceUrl,
+            title: 'Best effort playlist',
+            imageUrl: artworkUrl
+          },
+          origin: 'spotify_import',
+          artworkDelivery: 'best_effort'
+        }),
+      artwork
+    )
+    if (result.entityType !== 'playlist') throw new Error('Expected a playlist result')
+    const stored = await db
+      .select()
+      .from(musicPlaylistsTable)
+      .where(eq(musicPlaylistsTable.id, result.entity.id))
+      .limit(1)
+
+    expect(result.entity.coverImageUrl).toBe(artworkUrl)
+    expect(stored[0]?.coverImageUrl).toBe(artworkUrl)
+  })
+
   test('returns indexed source and alias hits without provider calls', async () => {
     const id = externalId()
     const sourceUrl = `https://open.spotify.com/track/${id}?si=first`
@@ -130,17 +327,20 @@ describe('CanonicalMusicIdentity', () => {
       Effect.gen(function* () {
         const imported = yield* service.importProviderEntity({
           snapshot: snapshot(sourceUrl),
-          origin: 'spotify_import'
+          origin: 'spotify_import',
+          artworkDelivery: 'preserve'
         })
         const canonical = yield* service.resolveSource({
           url: `https://open.spotify.com/track/${id}`,
           expectedType: 'track',
-          origin: 'editorial'
+          origin: 'editorial',
+          artworkDelivery: 'preserve'
         })
         const secondAlias = yield* service.resolveSource({
           url: `https://open.spotify.com/track/${id}?utm_source=share`,
           expectedType: 'track',
-          origin: 'tweet'
+          origin: 'tweet',
+          artworkDelivery: 'preserve'
         })
         return { imported, canonical, secondAlias }
       })
@@ -171,7 +371,12 @@ describe('CanonicalMusicIdentity', () => {
     const resolve = serviceEffect(
       recorder.service,
       (service) =>
-        service.resolveSource({ url: sourceUrl, expectedType: 'track', origin: 'editorial' }),
+        service.resolveSource({
+          url: sourceUrl,
+          expectedType: 'track',
+          origin: 'editorial',
+          artworkDelivery: 'preserve'
+        }),
       leaseTiming
     )
 
@@ -226,7 +431,12 @@ describe('CanonicalMusicIdentity', () => {
       serviceEffect(
         recorder.service,
         (service) =>
-          service.resolveSource({ url: sourceUrl, expectedType: 'track', origin: 'editorial' }),
+          service.resolveSource({
+            url: sourceUrl,
+            expectedType: 'track',
+            origin: 'editorial',
+            artworkDelivery: 'preserve'
+          }),
         leaseTiming
       )
     )
@@ -266,7 +476,12 @@ describe('CanonicalMusicIdentity', () => {
     const recorder = recordingScraper(() => Effect.die('provider must not be called'))
 
     const exit = await serviceExitWith(recorder.service, (service) =>
-      service.resolveSource({ url: sourceUrl, expectedType: 'track', origin: 'editorial' })
+      service.resolveSource({
+        url: sourceUrl,
+        expectedType: 'track',
+        origin: 'editorial',
+        artworkDelivery: 'preserve'
+      })
     )
 
     expect(Result.getOrThrow(Exit.findError(exit))).toMatchObject({
@@ -344,7 +559,12 @@ describe('CanonicalMusicIdentity', () => {
     )
 
     const result = await serviceWith(recorder.service, (service) =>
-      service.resolveSource({ url: sourceUrl, expectedType: 'track', origin: 'reply' })
+      service.resolveSource({
+        url: sourceUrl,
+        expectedType: 'track',
+        origin: 'reply',
+        artworkDelivery: 'preserve'
+      })
     )
     const identities = await db
       .select()
@@ -375,12 +595,14 @@ describe('CanonicalMusicIdentity', () => {
       Effect.gen(function* () {
         const incumbent = yield* service.importProviderEntity({
           snapshot: snapshot(spotifyUrl),
-          origin: 'spotify_import'
+          origin: 'spotify_import',
+          artworkDelivery: 'preserve'
         })
         const discovered = yield* service.resolveSource({
           url: deezerUrl,
           expectedType: 'track',
-          origin: 'bluesky'
+          origin: 'bluesky',
+          artworkDelivery: 'preserve'
         })
         return { incumbent, discovered }
       })
@@ -411,16 +633,19 @@ describe('CanonicalMusicIdentity', () => {
       Effect.gen(function* () {
         yield* service.importProviderEntity({
           snapshot: snapshot(spotifyUrl, 'Spotify Entity'),
-          origin: 'spotify_import'
+          origin: 'spotify_import',
+          artworkDelivery: 'preserve'
         })
         yield* service.importProviderEntity({
           snapshot: snapshot(deezerUrl, 'Deezer Entity'),
-          origin: 'playlist_enrichment'
+          origin: 'playlist_enrichment',
+          artworkDelivery: 'preserve'
         })
         return yield* service.resolveSource({
           url: youtubeUrl,
           expectedType: 'track',
-          origin: 'tweet'
+          origin: 'tweet',
+          artworkDelivery: 'preserve'
         })
       })
     )
@@ -448,7 +673,12 @@ describe('CanonicalMusicIdentity', () => {
     }
 
     const exit = await serviceExitWith(scraper, (service) =>
-      service.resolveSource({ url: sourceUrl, expectedType: 'track', origin: 'editorial' })
+      service.resolveSource({
+        url: sourceUrl,
+        expectedType: 'track',
+        origin: 'editorial',
+        artworkDelivery: 'preserve'
+      })
     )
     const identities = await db
       .select()
@@ -476,7 +706,8 @@ describe('CanonicalMusicIdentity', () => {
       Effect.gen(function* () {
         yield* service.importProviderEntity({
           snapshot: snapshot(sourceUrl),
-          origin: 'spotify_import'
+          origin: 'spotify_import',
+          artworkDelivery: 'preserve'
         })
         return yield* service.attachLink({
           entityType: 'track',
@@ -510,7 +741,8 @@ describe('CanonicalMusicIdentity', () => {
     const result = await serviceWith(recorder.service, (service) =>
       service.importProviderEntity({
         snapshot: snapshot(sourceUrl),
-        origin: 'playlist_enrichment'
+        origin: 'playlist_enrichment',
+        artworkDelivery: 'preserve'
       })
     )
 
@@ -530,6 +762,7 @@ describe('CanonicalMusicIdentity', () => {
           entityType: 'track',
           sourceUrl,
           origin: 'spotify_import',
+          artworkDelivery: 'preserve',
           loadSnapshot: Effect.sync(() => {
             loads += 1
             return snapshot(sourceUrl, 'Lazy track')
@@ -539,6 +772,7 @@ describe('CanonicalMusicIdentity', () => {
           entityType: 'track',
           sourceUrl,
           origin: 'spotify_import',
+          artworkDelivery: 'preserve',
           loadSnapshot: Effect.sync(() => {
             loads += 1
             return snapshot(sourceUrl, 'Should not load')
@@ -591,11 +825,13 @@ describe('CanonicalMusicIdentity', () => {
       Effect.gen(function* () {
         const rejected = yield* service.importProviderEntity({
           snapshot: snapshot(rejectedUrl, 'Rejected source'),
-          origin: 'spotify_import'
+          origin: 'spotify_import',
+          artworkDelivery: 'preserve'
         })
         const deleted = yield* service.importProviderEntity({
           snapshot: snapshot(deletedUrl, 'Deleted source'),
-          origin: 'spotify_import'
+          origin: 'spotify_import',
+          artworkDelivery: 'preserve'
         })
         const rejectedLink = rejected.links.find((link) => link.platform === 'spotify')
         const deletedLink = deleted.links.find((link) => link.platform === 'spotify')
@@ -641,7 +877,8 @@ describe('CanonicalMusicIdentity', () => {
       Effect.gen(function* () {
         const imported = yield* service.importProviderEntity({
           snapshot: snapshot(sourceUrl, 'Reverified source'),
-          origin: 'spotify_import'
+          origin: 'spotify_import',
+          artworkDelivery: 'preserve'
         })
         const link = imported.links.find((candidate) => candidate.platform === 'spotify')
         if (!link) return yield* Effect.die('Expected source link')
@@ -698,13 +935,15 @@ describe('CanonicalMusicIdentity', () => {
       Effect.gen(function* () {
         const imported = yield* service.importProviderEntity({
           snapshot: snapshot(sourceUrl),
-          origin: 'spotify_import'
+          origin: 'spotify_import',
+          artworkDelivery: 'preserve'
         })
         const input: RefreshMusicEntity = {
           entityType: 'track',
           entityId: imported.entity.id,
           actorId: 'playlist_enrichment',
-          origin: 'playlist_enrichment'
+          origin: 'playlist_enrichment',
+          artworkDelivery: 'preserve'
         }
         yield* service.enrichEntity(input).pipe(Effect.catch(() => Effect.void))
         yield* service.enrichEntity(input)
@@ -750,13 +989,15 @@ describe('CanonicalMusicIdentity', () => {
             ]),
             artistNames: ['Canonical Artist']
           },
-          origin: 'spotify_import'
+          origin: 'spotify_import',
+          artworkDelivery: 'preserve'
         })
         const enriched = yield* service.enrichEntity({
           entityType: 'track',
           entityId: imported.entity.id,
           actorId: 'playlist_enrichment',
-          origin: 'playlist_enrichment'
+          origin: 'playlist_enrichment',
+          artworkDelivery: 'preserve'
         })
         return { imported, enriched }
       })
@@ -802,13 +1043,15 @@ describe('CanonicalMusicIdentity', () => {
             ]),
             artistNames: ['Canonical Artist']
           },
-          origin: 'spotify_import'
+          origin: 'spotify_import',
+          artworkDelivery: 'preserve'
         })
         const refreshed = yield* service.refreshEntity({
           entityType: 'track',
           entityId: imported.entity.id,
           actorId: 'admin',
-          origin: 'manual'
+          origin: 'manual',
+          artworkDelivery: 'preserve'
         })
         return { imported, refreshed }
       })
@@ -839,19 +1082,20 @@ describe('CanonicalMusicIdentity', () => {
       Effect.gen(function* () {
         const imported = yield* service.importProviderEntity({
           snapshot: { ...snapshot(sourceUrl), imageUrl: storedArtwork },
-          origin: 'spotify_import'
+          origin: 'spotify_import',
+          artworkDelivery: 'preserve'
         })
         return yield* service.refreshEntity({
           entityType: 'track',
           entityId: imported.entity.id,
           actorId: 'admin',
-          origin: 'manual'
+          origin: 'manual',
+          artworkDelivery: 'preserve'
         })
       })
     )
 
     expect('coverImageUrl' in result.entity && result.entity.coverImageUrl).toBe(storedArtwork)
-    expect(result.artworkUrl).toBe(providerArtwork)
   })
 
   test('infers artist and playlist types when the caller does not specify one', async () => {
@@ -878,7 +1122,11 @@ describe('CanonicalMusicIdentity', () => {
 
     const results = await serviceWith(recorder.service, (service) =>
       Effect.forEach(cases, (candidate) =>
-        service.resolveSource({ url: candidate.sourceUrl, origin: 'bluesky' })
+        service.resolveSource({
+          url: candidate.sourceUrl,
+          origin: 'bluesky',
+          artworkDelivery: 'preserve'
+        })
       )
     )
 
@@ -903,13 +1151,15 @@ describe('CanonicalMusicIdentity', () => {
       Effect.gen(function* () {
         const imported = yield* service.importProviderEntity({
           snapshot: snapshot(sourceUrl, 'Original Title'),
-          origin: 'spotify_import'
+          origin: 'spotify_import',
+          artworkDelivery: 'preserve'
         })
         return yield* service.refreshEntity({
           entityType: 'track',
           entityId: imported.entity.id,
           actorId: crypto.randomUUID(),
-          origin: 'manual'
+          origin: 'manual',
+          artworkDelivery: 'preserve'
         })
       })
     )
@@ -976,7 +1226,8 @@ describe('CanonicalMusicIdentity', () => {
           service.resolveSource({
             url: variant.requested,
             expectedType: 'track',
-            origin: 'editorial'
+            origin: 'editorial',
+            artworkDelivery: 'preserve'
           })
         )
         expect(recorder.calls).toHaveLength(0)
@@ -985,7 +1236,8 @@ describe('CanonicalMusicIdentity', () => {
             entityType: 'track',
             entityId: result.entity.id,
             actorId: 'legacy-refresh',
-            origin: 'manual'
+            origin: 'manual',
+            artworkDelivery: 'preserve'
           })
         )
         return resolved
@@ -1028,14 +1280,16 @@ describe('CanonicalMusicIdentity', () => {
       service.resolveSource({
         url: spotifyUrl,
         expectedType: 'track',
-        origin: 'editorial'
+        origin: 'editorial',
+        artworkDelivery: 'preserve'
       })
     )
     const deezer = serviceWith(recorder.service, (service) =>
       service.resolveSource({
         url: deezerUrl,
         expectedType: 'track',
-        origin: 'tweet'
+        origin: 'tweet',
+        artworkDelivery: 'preserve'
       })
     )
     await bothStarted.promise
@@ -1088,7 +1342,8 @@ describe('CanonicalMusicIdentity', () => {
               service.resolveSource({
                 url: spotifyUrl,
                 expectedType: 'track',
-                origin: 'editorial'
+                origin: 'editorial',
+                artworkDelivery: 'preserve'
               }),
             { leaseMs: 30_000, waitAttempts: 0, waitMs: 1 }
           ),
@@ -1177,7 +1432,8 @@ describe('CanonicalMusicIdentity', () => {
             title: 'Shared Title',
             artistNames: ['First Artist', 'Second Artist']
           },
-          origin: 'spotify_import'
+          origin: 'spotify_import',
+          artworkDelivery: 'preserve'
         })
         const track = yield* service.importProviderEntity({
           snapshot: {
@@ -1186,7 +1442,8 @@ describe('CanonicalMusicIdentity', () => {
             title: 'Shared Title',
             artistNames: ['first artist', 'Second Artist']
           },
-          origin: 'playlist_enrichment'
+          origin: 'playlist_enrichment',
+          artworkDelivery: 'preserve'
         })
         return { album, track }
       })
@@ -1239,7 +1496,8 @@ describe('CanonicalMusicIdentity', () => {
             description: 'Playlist description',
             sourceMetadata: { spotifyPlaylistId: 'playlist-id' }
           },
-          origin: 'spotify_import'
+          origin: 'spotify_import',
+          artworkDelivery: 'preserve'
         })
         const track = yield* service.importProviderEntity({
           snapshot: {
@@ -1256,7 +1514,8 @@ describe('CanonicalMusicIdentity', () => {
               albumSpotifyId: 'album-id'
             }
           },
-          origin: 'playlist_enrichment'
+          origin: 'playlist_enrichment',
+          artworkDelivery: 'preserve'
         })
         return { playlist, track }
       })
@@ -1291,7 +1550,12 @@ describe('CanonicalMusicIdentity', () => {
     )
 
     const result = await serviceWith(recorder.service, (service) =>
-      service.resolveSource({ url: requested, expectedType: 'track', origin: 'editorial' })
+      service.resolveSource({
+        url: requested,
+        expectedType: 'track',
+        origin: 'editorial',
+        artworkDelivery: 'preserve'
+      })
     )
     const source = result.links.find((link) => link.platform === 'spotify')
 
@@ -1319,7 +1583,8 @@ describe('CanonicalMusicIdentity', () => {
       Effect.gen(function* () {
         const imported = yield* service.importProviderEntity({
           snapshot: { entityType: 'playlist', sourceUrl, title: 'Playlist' },
-          origin: 'spotify_import'
+          origin: 'spotify_import',
+          artworkDelivery: 'preserve'
         })
         yield* Effect.tryPromise(() =>
           db.insert(musicEntityLinksTable).values({
@@ -1335,7 +1600,8 @@ describe('CanonicalMusicIdentity', () => {
           entityType: 'playlist',
           entityId: imported.entity.id,
           actorId: crypto.randomUUID(),
-          origin: 'manual'
+          origin: 'manual',
+          artworkDelivery: 'preserve'
         })
       })
     )
@@ -1376,7 +1642,12 @@ describe('CanonicalMusicIdentity', () => {
     const recorder = recordingScraper(() => Effect.die('provider must not be called'))
 
     const exit = await serviceExitWith(recorder.service, (service) =>
-      service.resolveSource({ url: requestedUrl, expectedType: 'track', origin: 'editorial' })
+      service.resolveSource({
+        url: requestedUrl,
+        expectedType: 'track',
+        origin: 'editorial',
+        artworkDelivery: 'preserve'
+      })
     )
     const aliases = await db
       .select()
@@ -1415,7 +1686,8 @@ describe('CanonicalMusicIdentity', () => {
         service.resolveSource({
           url: `https://open.spotify.com/track/${externalId()}`,
           expectedType: 'track',
-          origin: 'editorial'
+          origin: 'editorial',
+          artworkDelivery: 'preserve'
         })
       )
       const error = Result.getOrThrow(Exit.findError(exit))
@@ -1504,7 +1776,8 @@ describe('CanonicalMusicIdentity', () => {
     const imported = await serviceWith(recorder.service, (service) =>
       service.importProviderEntity({
         snapshot: snapshot(sourceUrl, 'Delete During Refresh'),
-        origin: 'spotify_import'
+        origin: 'spotify_import',
+        artworkDelivery: 'preserve'
       })
     )
     const refresh = serviceExitWith(recorder.service, (service) =>
@@ -1512,7 +1785,8 @@ describe('CanonicalMusicIdentity', () => {
         entityType: 'track',
         entityId: imported.entity.id,
         actorId: crypto.randomUUID(),
-        origin: 'manual'
+        origin: 'manual',
+        artworkDelivery: 'preserve'
       })
     )
     await started.promise
@@ -1547,15 +1821,18 @@ describe('CanonicalMusicIdentity', () => {
       Effect.all({
         artist: service.importProviderEntity({
           snapshot: { entityType: 'artist', sourceUrl: sources.artist, title: 'Delete Artist' },
-          origin: 'spotify_import'
+          origin: 'spotify_import',
+          artworkDelivery: 'preserve'
         }),
         album: service.importProviderEntity({
           snapshot: { entityType: 'album', sourceUrl: sources.album, title: 'Delete Album' },
-          origin: 'spotify_import'
+          origin: 'spotify_import',
+          artworkDelivery: 'preserve'
         }),
         track: service.importProviderEntity({
           snapshot: { entityType: 'track', sourceUrl: sources.track, title: 'Delete Track' },
-          origin: 'spotify_import'
+          origin: 'spotify_import',
+          artworkDelivery: 'preserve'
         }),
         playlist: service.importProviderEntity({
           snapshot: {
@@ -1563,7 +1840,8 @@ describe('CanonicalMusicIdentity', () => {
             sourceUrl: sources.playlist,
             title: 'Delete Playlist'
           },
-          origin: 'spotify_import'
+          origin: 'spotify_import',
+          artworkDelivery: 'preserve'
         })
       })
     )
@@ -1617,19 +1895,22 @@ describe('CanonicalMusicIdentity', () => {
               metadata: { discoveredBy: 'spotify', confidence: 'exact_source' }
             }
           ]),
-          origin: 'spotify_import'
+          origin: 'spotify_import',
+          artworkDelivery: 'preserve'
         })
         const first = yield* service.refreshEntity({
           entityType: 'track',
           entityId: imported.entity.id,
           actorId: crypto.randomUUID(),
-          origin: 'manual'
+          origin: 'manual',
+          artworkDelivery: 'preserve'
         })
         const second = yield* service.refreshEntity({
           entityType: 'track',
           entityId: imported.entity.id,
           actorId: crypto.randomUUID(),
-          origin: 'manual'
+          origin: 'manual',
+          artworkDelivery: 'preserve'
         })
         return { imported, first, second }
       })

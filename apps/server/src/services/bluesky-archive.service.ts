@@ -186,7 +186,11 @@ const writeEffect = ({
         const candidateUrl = record.candidateUrls[0]
         const resolved = candidateUrl
           ? yield* identity
-              .resolveSource({ url: candidateUrl, origin: 'bluesky' })
+              .resolveSource({
+                url: candidateUrl,
+                origin: 'bluesky',
+                artworkDelivery: 'preserve'
+              })
               .pipe(Effect.catch(() => Effect.succeed(null)))
           : null
 

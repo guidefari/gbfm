@@ -6,9 +6,12 @@ import { externalAccounts } from '@/db/external-account.schema'
 import { musicEntityTypesTable, musicPlatformsTable } from '@/db/music-entity.schema'
 import { postCreators, postsTable } from '@/db/post.schema'
 import { Database } from '@/db/layer'
+import { ConfigService, createConfig } from '@/services/config.service'
 import { MusicLinkScraperService, MusicScraperError } from '@/services/music-link-scraper.service'
+import { S3Service } from '@/services/s3.service'
 import { db } from '@/test/d1'
 import { withTestLayer } from '@/test/effect'
+import { makeTestS3Service } from '@/test/s3'
 import type { ImportedRecord } from './bluesky-importer.service'
 import { BlueskyArchiveService, BlueskyArchiveServiceLayer } from './bluesky-archive.service'
 import { CanonicalMusicIdentityLayer } from './canonical-music-identity'
@@ -57,9 +60,11 @@ const runArchive = async (scraper: MusicLinkScraperService, importedRecord: Impo
     providerAccountId: importedRecord.authorDid
   })
 
-  const dependencies = Layer.merge(
+  const dependencies = Layer.mergeAll(
     Layer.succeed(Database, db),
-    Layer.succeed(MusicLinkScraperService, scraper)
+    Layer.succeed(MusicLinkScraperService, scraper),
+    Layer.succeed(ConfigService, createConfig()),
+    Layer.succeed(S3Service, makeTestS3Service())
   )
   const identityLayer = CanonicalMusicIdentityLayer.pipe(Layer.provide(dependencies))
   const archiveLayer = BlueskyArchiveServiceLayer.pipe(

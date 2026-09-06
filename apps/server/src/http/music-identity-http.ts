@@ -55,5 +55,6 @@ export const mapMusicIdentityErrors = <A, E, R>(
     ),
     Effect.catchTag('MusicIdentityEntityNotFound', () => new HttpApiError.NotFound()),
     Effect.catchTag('MusicIdentitySourceLinkNotFound', () => new HttpApiError.NotFound()),
+    Effect.catchTag('MusicIdentityArtworkDeliveryFailed', (cause) => Effect.die(cause)),
     Effect.catchTag('MusicIdentityStorageError', (cause) => Effect.die(cause))
   )

@@ -8,9 +8,9 @@ import type {
   ScrapedLink
 } from '@/services/music-link-scraper.service'
 import type {
+  AnyResolvedMusicEntity,
   AttachMusicSourceLink,
   RefreshMusicEntity,
-  RefreshedMusicEntity,
   ReleaseMusicSourceLink
 } from './contract'
 import {
@@ -24,7 +24,7 @@ import {
   MusicIdentityStorageError,
   MusicSourceInvalid
 } from './errors'
-import { loadEntity, refreshedEntityRecord } from './entity-record'
+import { loadEntity, loadResolvedEntity, refreshedEntityRecord } from './entity-record'
 import { parseMusicSource, type ParsedMusicSource } from './music-source'
 import { CanonicalMusicIdentityRepository, type EntityReference } from './repository'
 import { parseDiscoveredSources, uniqueLinks } from './source-result'
@@ -45,6 +45,12 @@ const storageError = (operation: string, message: string) =>
   new MusicIdentityStorageError({ operation, message })
 
 type RefreshMode = 'automatic_enrichment' | 'administrator_refresh'
+
+type DeliverMusicArtwork = (input: {
+  readonly resolved: AnyResolvedMusicEntity
+  readonly candidateUrl: string | undefined | null
+  readonly delivery: RefreshMusicEntity['artworkDelivery']
+}) => Effect.Effect<AnyResolvedMusicEntity, MusicIdentityError>
 
 const compareOptionalDate = (left: Date | null, right: Date | null) => {
   if (left === null) return right === null ? 0 : 1
@@ -94,7 +100,8 @@ export const makeEntityOperations = (
   providerError: (
     error: MusicScraperError
   ) => MusicIdentityProviderRejected | MusicIdentityProviderUnavailable,
-  claimLeaseMs: number
+  claimLeaseMs: number,
+  deliverMusicArtwork: DeliverMusicArtwork
 ) => {
   const provideDb = Effect.provideService(Database, db)
 
@@ -263,11 +270,7 @@ export const makeEntityOperations = (
         )
       ) {
         yield* Effect.annotateCurrentSpan({ outcome: 'skipped', linkCount: links.length })
-        return {
-          entityType: input.entityType,
-          entity: current,
-          links
-        } satisfies RefreshedMusicEntity
+        return yield* loadResolvedEntity(repository, reference, false).pipe(provideDb)
       }
       const exactSources = links
         .filter(
@@ -433,19 +436,18 @@ export const makeEntityOperations = (
         yield* loadEntity(reference).pipe(provideDb)
         return yield* new MusicIdentityBusy({ retryAfterMs: claimLeaseMs })
       }
-      const entity = yield* loadEntity(reference).pipe(provideDb)
-      const storedLinks = yield* repository.linksFor(reference)
+      const resolved = yield* loadResolvedEntity(repository, reference, false).pipe(provideDb)
+      const delivered = yield* deliverMusicArtwork({
+        resolved,
+        candidateUrl: result.entityMeta?.thumbnailUrl,
+        delivery: input.artworkDelivery
+      })
       yield* Effect.annotateCurrentSpan({
         outcome: 'success',
-        linkCount: storedLinks.length,
+        linkCount: delivered.links.length,
         aliasCount: sources.length
       })
-      return {
-        entityType: input.entityType,
-        entity,
-        links: storedLinks,
-        artworkUrl: result.entityMeta?.thumbnailUrl
-      } satisfies RefreshedMusicEntity
+      return delivered
     }).pipe(
       withSafeTypedSpan('musicIdentity.refreshEntity', {
         attributes: {

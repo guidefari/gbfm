@@ -14,7 +14,6 @@ import type {
 } from '@/db/music-entity.schema'
 import { DatabaseError, NotFoundError } from '@/errors'
 import type { ValidationError } from '@/errors'
-import { ConfigService as ConfigServiceTag } from '@/services/config.service'
 import { Database } from '@/db/layer'
 import {
   affiliateAlbumWithLabelEffect,
@@ -39,10 +38,8 @@ import {
 } from './label.service'
 import {
   MusicLinkScraperService as MusicLinkScraperServiceTag,
-  type MusicScrapeInput,
   type MusicScraperError
 } from '@/services/music-link-scraper.service'
-import { S3Service as S3ServiceTag } from '@/services/s3.service'
 import {
   CanonicalMusicIdentity,
   type MusicIdentityError
@@ -95,11 +92,10 @@ import {
   syncPlaylistLinksEffect
 } from './playlist-tracks.service'
 import {
-  MusicEntityResolutionUnavailable,
-  refreshEntityLinksEffect,
-  scrapeAndCreateEntityEffect
+  type MusicMetadataScrapeInput,
+  scrapeAndCreateEntityWithoutSourceEffect,
+  type ScrapedMusicEntity
 } from './scrape.service'
-export { MusicEntityResolutionUnavailable } from './scrape.service'
 import {
   addArtistToTrackEffect,
   type CreateTrackInput,
@@ -116,7 +112,8 @@ export type {
   CreateArtistInput,
   CreateLabelInput,
   CreatePlaylistInput,
-  CreateTrackInput
+  CreateTrackInput,
+  ScrapedMusicEntity
 }
 
 type ScrapeableMusicEntityType = Exclude<MusicEntityType, 'label'>
@@ -327,28 +324,10 @@ export interface MusicEntityService {
     linkId: string
   ) => Effect.Effect<void, DatabaseError | NotFoundError | MusicIdentityError>
 
-  readonly scrapeAndCreateEntity: (
+  readonly scrapeAndCreateEntityWithoutSource: (
     entityType: ScrapeableMusicEntityType,
-    input: MusicScrapeInput
-  ) => Effect.Effect<
-    {
-      entity: SelectMusicArtist | SelectMusicAlbum | SelectMusicTrack | SelectMusicPlaylist
-      links: SelectMusicEntityLink[]
-    },
-    | DatabaseError
-    | MusicEntityResolutionUnavailable
-    | MusicScraperError
-    | ValidationError
-    | MusicIdentityError
-  >
-  readonly refreshEntityLinks: (
-    entityType: ScrapeableMusicEntityType,
-    entityId: string,
-    actorId?: string
-  ) => Effect.Effect<
-    { links: SelectMusicEntityLink[] },
-    DatabaseError | MusicScraperError | NotFoundError | MusicIdentityError
-  >
+    input: MusicMetadataScrapeInput
+  ) => Effect.Effect<ScrapedMusicEntity, DatabaseError | MusicScraperError | ValidationError>
 }
 
 export const MusicEntityService = Context.Service<MusicEntityService>('MusicEntityService')
@@ -359,8 +338,6 @@ export const MusicEntityServiceLayer = Layer.effect(
     const scraper = yield* MusicLinkScraperServiceTag
     const spotify = yield* SpotifyServiceTag
     const identity = yield* CanonicalMusicIdentity
-    const s3 = yield* S3ServiceTag
-    const config = yield* ConfigServiceTag
     const db = yield* Database
     const provideDb = Effect.provideService(Database, db)
     const releaseIdentityLink = (
@@ -534,24 +511,8 @@ export const MusicEntityServiceLayer = Layer.effect(
       addSpotifyTrackToPlaylist: (playlistId, spotifyUrl) =>
         provideDb(addSpotifyTrackToPlaylistEffect(spotify, identity)(playlistId, spotifyUrl)),
       importSpotifyPlaylist: (url, curatorId) =>
-        provideDb(
-          importSpotifyPlaylistEffect(
-            spotify,
-            identity,
-            s3,
-            config.urls.bucketRouter,
-            config.buckets.userContent
-          )(url, curatorId)
-        ),
-      syncPlaylistLinks: (playlistId) =>
-        provideDb(
-          syncPlaylistLinksEffect(
-            identity,
-            s3,
-            config.urls.bucketRouter,
-            config.buckets.userContent
-          )(playlistId)
-        ),
+        provideDb(importSpotifyPlaylistEffect(spotify, identity)(url, curatorId)),
+      syncPlaylistLinks: (playlistId) => provideDb(syncPlaylistLinksEffect(identity)(playlistId)),
 
       addArtistToAlbum: (albumId, artistId, opts) =>
         provideDb(addArtistToAlbumEffect(albumId, artistId, opts)),
@@ -589,21 +550,8 @@ export const MusicEntityServiceLayer = Layer.effect(
         entityType === 'label'
           ? provideDb(deleteLinkEffect(entityType, entityId, linkId))
           : releaseIdentityLink(entityType, entityId, linkId, 'delete').pipe(Effect.asVoid),
-      scrapeAndCreateEntity: (entityType, input) =>
-        input.url
-          ? identity
-              .resolveSource({ url: input.url, expectedType: entityType, origin: 'manual' })
-              .pipe(Effect.map(({ entity, links }) => ({ entity, links: [...links] })))
-          : provideDb(scrapeAndCreateEntityEffect(scraper, entityType, input)),
-      refreshEntityLinks: (entityType, entityId, actorId) =>
-        identity
-          .refreshEntity({
-            entityType,
-            entityId,
-            actorId: actorId ?? 'admin',
-            origin: 'manual'
-          })
-          .pipe(Effect.map(({ links }) => ({ links: [...links] })))
+      scrapeAndCreateEntityWithoutSource: (entityType, input) =>
+        provideDb(scrapeAndCreateEntityWithoutSourceEffect(scraper, entityType, input))
     } satisfies MusicEntityService
   })
 )

@@ -12,6 +12,8 @@ import type {
   EntityLinkResponse,
   LabelResponse,
   PlaylistResponse,
+  ResolvedMusicEntityResponse,
+  ScrapeMusicEntityResponse,
   TrackResponse,
   UpdateAlbumInput,
   UpdateArtistInput,
@@ -25,34 +27,30 @@ import type {
   SelectMusicAlbum,
   SelectMusicArtist,
   SelectMusicEntityLink,
-  MusicEntityMetadataValue,
   SelectMdxCompiledMusicLabel,
   SelectMusicLabel,
   SelectMusicPlaylist,
   SelectMusicTrack
 } from '@/db/music-entity.schema'
 import { getErrorMessage, type MusicProviderError } from '@/errors'
-import {
-  dieOnDatabaseError as makeDieOnDatabaseError,
-  dieOnS3Error as makeDieOnS3Error
-} from '@/http/handler-utils'
+import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
 import {
   mapMusicIdentityErrors,
   mapSpotifyTrackImportErrors,
   PROVIDER_UNAVAILABLE_RETRY_AFTER_SECONDS
 } from '@/http/music-identity-http'
-import { CanonicalMusicIdentity } from '@/services/canonical-music-identity'
-import { ConfigService } from '@/services/config.service'
-import { copyMusicCoverImageEffect } from '@/services/music-cover-image.service'
+import {
+  CanonicalMusicIdentity,
+  type AnyResolvedMusicEntity
+} from '@/services/canonical-music-identity'
 import {
   type CreateAlbumInput as AlbumServiceCreateInput,
   type CreateLabelInput as LabelServiceCreateInput,
   type CreatePlaylistInput as PlaylistServiceCreateInput,
   type CreateTrackInput as TrackServiceCreateInput,
-  MusicEntityResolutionUnavailable,
-  MusicEntityService
+  MusicEntityService,
+  type ScrapedMusicEntity
 } from '@/services/music-entity'
-import { S3Service } from '@/services/s3.service'
 import { getIdFromSpotifyUrl } from '@/services/url-utils'
 
 const decodeMusicEntityMetadata = Schema.decodeUnknownSync(Schema.JsonObject)
@@ -104,6 +102,65 @@ const toEntityLinkResponse = (row: SelectMusicEntityLink): EntityLinkResponse =>
   createdAt: row.createdAt.toISOString(),
   updatedAt: row.updatedAt.toISOString()
 })
+
+const unreachableEntityType = (entityType: never): never => {
+  throw new Error(`Unexpected canonical music entity type: ${String(entityType)}`)
+}
+
+const toResolvedMusicEntityResponse = (
+  resolved: AnyResolvedMusicEntity
+): ResolvedMusicEntityResponse => {
+  const links = resolved.links.map(toEntityLinkResponse)
+  switch (resolved.entityType) {
+    case 'artist':
+      return {
+        entityType: 'artist',
+        entity: toArtistResponse(resolved.entity),
+        links,
+        coverImageUrl: resolved.entity.imageUrl
+      }
+    case 'album':
+      return {
+        entityType: 'album',
+        entity: toAlbumResponse(resolved.entity),
+        links,
+        coverImageUrl: resolved.entity.coverImageUrl
+      }
+    case 'track':
+      return {
+        entityType: 'track',
+        entity: toTrackResponse(resolved.entity),
+        links,
+        coverImageUrl: resolved.entity.coverImageUrl
+      }
+    case 'playlist':
+      return {
+        entityType: 'playlist',
+        entity: toPlaylistResponse(resolved.entity),
+        links,
+        coverImageUrl: resolved.entity.coverImageUrl
+      }
+    default:
+      return unreachableEntityType(resolved)
+  }
+}
+
+const toScrapeMusicEntityResponse = (
+  result: AnyResolvedMusicEntity | ScrapedMusicEntity
+): ScrapeMusicEntityResponse => {
+  switch (result.entityType) {
+    case 'artist':
+      return toArtistResponse(result.entity)
+    case 'album':
+      return toAlbumResponse(result.entity)
+    case 'track':
+      return toTrackResponse(result.entity)
+    case 'playlist':
+      return toPlaylistResponse(result.entity)
+    default:
+      return unreachableEntityType(result)
+  }
+}
 
 // Generic so create keeps slug/name required and update keeps them optional.
 const toServiceFields = <T extends CreateArtistInput | UpdateArtistInput>(
@@ -189,7 +246,6 @@ const toLabelUpdateFields = (input: UpdateLabelInput): Partial<LabelServiceCreat
 })
 
 const dieOnDatabaseError = makeDieOnDatabaseError('music')
-const dieOnS3Error = makeDieOnS3Error('music')
 
 // A music provider failure is an infra failure (network/API), not
 // client-fixable by resubmitting differently, except where the handler
@@ -219,24 +275,6 @@ const requireAdmin = Effect.gen(function* () {
 
   return undefined
 })
-
-// scrapeAndCreateEntity returns a raw Drizzle row (Date fields, entity-type
-// dependent shape) but the API contract treats the resolved/scraped entity
-// as an opaque JSON record (ResolvedMusicEntityResponse/
-// ScrapeEntityLinksResponse both use Schema.Record) -- same looseness the
-// old Hono handler had via z.record(z.string(), z.unknown()). Dates need
-// converting or they'd serialize inconsistently.
-type JsonEntityValue = MusicEntityMetadataValue | Date
-
-const toJsonEntity = (
-  entity: Record<string, JsonEntityValue>
-): Record<string, MusicEntityMetadataValue> =>
-  Object.fromEntries(
-    Object.entries(entity).map(([key, value]) => [
-      key,
-      value instanceof Date ? value.toISOString() : value
-    ])
-  )
 
 export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =>
   handlers
@@ -737,70 +775,15 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
     .handle('resolveMusicEntity', ({ payload }) =>
       Effect.gen(function* () {
         yield* requireAdmin
-        const svc = yield* MusicEntityService
         const identity = yield* CanonicalMusicIdentity
         const result = yield* mapMusicIdentityErrors(
-          identity.resolveSource({ url: payload.url, origin: payload.origin ?? 'editorial' })
+          identity.resolveSource({
+            url: payload.url,
+            origin: payload.origin ?? 'editorial',
+            artworkDelivery: 'required'
+          })
         )
-        const { entityType, entity } = result
-        const coverImageUrl =
-          'imageUrl' in entity
-            ? entity.imageUrl
-            : 'coverImageUrl' in entity
-              ? entity.coverImageUrl
-              : null
-
-        if (coverImageUrl) {
-          const config = yield* ConfigService
-          const s3 = yield* S3Service
-          const publicCoverImageUrl = yield* dieOnS3Error(
-            copyMusicCoverImageEffect(
-              s3,
-              config.urls.bucketRouter,
-              config.buckets.userContent,
-              entityType,
-              entity.id,
-              coverImageUrl
-            )
-          )
-
-          if (publicCoverImageUrl && publicCoverImageUrl !== coverImageUrl) {
-            if (entityType === 'artist') {
-              yield* dieOnDatabaseError(
-                svc.updateArtist(entity.id, { imageUrl: publicCoverImageUrl })
-              ).pipe(Effect.catchTag('NotFoundError', () => Effect.void))
-            } else if (entityType === 'album') {
-              yield* dieOnDatabaseError(
-                svc.updateAlbum(entity.id, { coverImageUrl: publicCoverImageUrl })
-              ).pipe(Effect.catchTag('NotFoundError', () => Effect.void))
-            } else if (entityType === 'track') {
-              yield* dieOnDatabaseError(
-                svc.updateTrack(entity.id, { coverImageUrl: publicCoverImageUrl })
-              ).pipe(Effect.catchTag('NotFoundError', () => Effect.void))
-            } else {
-              yield* dieOnDatabaseError(
-                svc.updatePlaylist(entity.id, { coverImageUrl: publicCoverImageUrl })
-              ).pipe(Effect.catchTag('NotFoundError', () => Effect.void))
-            }
-            return {
-              entity: toJsonEntity(
-                entityType === 'artist'
-                  ? { ...entity, imageUrl: publicCoverImageUrl }
-                  : { ...entity, coverImageUrl: publicCoverImageUrl }
-              ),
-              entityType,
-              links: result.links.map(toEntityLinkResponse),
-              coverImageUrl: publicCoverImageUrl
-            }
-          }
-        }
-
-        return {
-          entity: toJsonEntity(entity),
-          entityType,
-          links: result.links.map(toEntityLinkResponse),
-          coverImageUrl
-        }
+        return toResolvedMusicEntityResponse(result)
       })
     )
     // -----------------------------------------------------------------
@@ -869,20 +852,15 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
       Effect.gen(function* () {
         yield* requireAdmin
         const { user } = yield* AuthSession
-        const svc = yield* MusicEntityService
-        const result = yield* dieOnDatabaseError(
-          mapMusicIdentityErrors(
-            svc.refreshEntityLinks(params.entityType, params.entityId, user.id)
-          ).pipe(
-            Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
-            Effect.catchTag(
-              'MusicScraperError',
-              () =>
-                new MusicServiceUnavailableResponse({
-                  retryAfterSeconds: PROVIDER_UNAVAILABLE_RETRY_AFTER_SECONDS
-                })
-            )
-          )
+        const identity = yield* CanonicalMusicIdentity
+        const result = yield* mapMusicIdentityErrors(
+          identity.refreshEntity({
+            entityType: params.entityType,
+            entityId: params.entityId,
+            actorId: user.id,
+            origin: 'manual',
+            artworkDelivery: 'preserve'
+          })
         )
         return { links: result.links.map(toEntityLinkResponse) }
       })
@@ -904,30 +882,35 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
           return yield* new HttpApiError.BadRequest()
         }
         const svc = yield* MusicEntityService
-        const result = yield* dieOnDatabaseError(
-          mapMusicIdentityErrors(svc.scrapeAndCreateEntity(params.entityType, payload)).pipe(
-            Effect.catchTag('ValidationError', () => Effect.fail(new HttpApiError.BadRequest())),
-            Effect.catchTag('MusicScraperError', (error) =>
-              Effect.gen(function* () {
-                if (error.statusCode === 400 || error.statusCode === 404) {
-                  return yield* new HttpApiError.BadRequest()
-                }
-                return yield* new MusicServiceUnavailableResponse({
-                  retryAfterSeconds: PROVIDER_UNAVAILABLE_RETRY_AFTER_SECONDS
-                })
+        const identity = yield* CanonicalMusicIdentity
+        const result = payload.url
+          ? yield* mapMusicIdentityErrors(
+              identity.resolveSource({
+                url: payload.url,
+                expectedType: params.entityType,
+                origin: 'manual',
+                artworkDelivery: 'preserve'
               })
-            ),
-            Effect.catchTag(
-              'MusicEntityResolutionUnavailable',
-              (error) =>
-                new MusicServiceUnavailableResponse({
-                  retryAfterSeconds: Math.max(1, Math.ceil(error.retryAfterMs / 1000))
-                })
             )
-          )
-        )
+          : yield* dieOnDatabaseError(
+              svc.scrapeAndCreateEntityWithoutSource(params.entityType, payload).pipe(
+                Effect.catchTag('ValidationError', () =>
+                  Effect.fail(new HttpApiError.BadRequest())
+                ),
+                Effect.catchTag('MusicScraperError', (error) =>
+                  Effect.gen(function* () {
+                    if (error.statusCode === 400 || error.statusCode === 404) {
+                      return yield* new HttpApiError.BadRequest()
+                    }
+                    return yield* new MusicServiceUnavailableResponse({
+                      retryAfterSeconds: PROVIDER_UNAVAILABLE_RETRY_AFTER_SECONDS
+                    })
+                  })
+                )
+              )
+            )
         return {
-          entity: toJsonEntity(result.entity),
+          entity: toScrapeMusicEntityResponse(result),
           links: result.links.map(toEntityLinkResponse)
         }
       })

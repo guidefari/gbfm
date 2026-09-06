@@ -24,6 +24,7 @@ import type { EmailTransportService } from '@/services/email-transport.service'
 import { FavoriteServiceLayer } from '@/services/favorite.service'
 import { AppLoggerLive } from '@/services/logger.service'
 import { CanonicalMusicIdentityLayer } from '@/services/canonical-music-identity'
+import { MusicCoverImageFetcher } from '@/services/canonical-music-identity/artwork-delivery'
 import { MusicEntityServiceLayer } from '@/services/music-entity'
 import { MusicBrainzIdentityLive } from '@/services/musicbrainz-identity.service'
 import { MusicLinkScraperServiceLayer } from '@/services/music-link-scraper.service'
@@ -68,6 +69,7 @@ export interface AppLayerOptions {
   readonly config?: Layer.Layer<ConfigService>
   readonly objectStore?: Layer.Layer<ObjectStoreClient>
   readonly qrCode?: Layer.Layer<QRCodeService>
+  readonly musicCoverImageFetcher?: Layer.Layer<never>
 }
 
 export const AppLayer = ({
@@ -80,7 +82,8 @@ export const AppLayer = ({
   emailTransport: emailTransportLive,
   config: configLive = ConfigServiceLayer,
   objectStore: objectStoreLive = UnavailableObjectStoreClientLayer,
-  qrCode: qrCodeLive = QRCodeServiceUnavailableLayer
+  qrCode: qrCodeLive = QRCodeServiceUnavailableLayer,
+  musicCoverImageFetcher: musicCoverImageFetcherLive = Layer.succeed(MusicCoverImageFetcher, fetch)
 }: AppLayerOptions) => {
   const EmailDeliveryWithDependencies = EmailDeliveryLive.pipe(
     Layer.provide(Layer.mergeAll(databaseLive, configLive, emailTransportLive))
@@ -96,6 +99,7 @@ export const AppLayer = ({
     SpotifyServiceLayer.pipe(Layer.provide(configLive)),
     DeezerServiceLayer,
     MusicBrainzIdentityLive,
+    musicCoverImageFetcherLive,
     MusicReminderServiceLayer,
     NavigationRetentionServiceLayer,
     spotifyImportResolverLive,

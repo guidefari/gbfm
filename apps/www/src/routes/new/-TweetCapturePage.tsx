@@ -437,8 +437,9 @@ export function TweetCapturePage() {
   const displayedEntityTitle = resolved.data?.entity?.title ?? existingMusicEntity?.title ?? null
   const displayedCoverImageUrl =
     resolved.data?.coverImageUrl ?? existingMusicEntity?.coverImageUrl ?? null
-  const displayedArtistNames =
-    resolved.data?.entity?.artistNames ?? existingMusicEntity?.artistNames ?? null
+  const resolvedArtistNames =
+    resolved.data && 'artistNames' in resolved.data.entity ? resolved.data.entity.artistNames : null
+  const displayedArtistNames = resolvedArtistNames ?? existingMusicEntity?.artistNames ?? null
   const currentEntityType = displayedEntityType
   const currentEntityId = resolved.data?.entity?.id ?? existingPost?.musicEntityId ?? null
   const entityLinks = useAdminEntityLinks(

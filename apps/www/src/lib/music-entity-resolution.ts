@@ -1,3 +1,7 @@
+import type {
+  EmbeddableResolvedMusicEntityResponse,
+  ResolvedMusicEntityResponse
+} from '@gbfm/api/music'
 import { queryOptions, useQuery, type QueryClient } from '@tanstack/react-query'
 import { Effect, Schema } from 'effect'
 import { HttpApiError } from 'effect/unstable/httpapi'
@@ -19,45 +23,7 @@ const MusicEntityReferenceSchema = Schema.Struct({
   id: Schema.NonEmptyString
 })
 
-const ResolvedMusicEntityLinksSchema = Schema.Array(
-  Schema.Struct({
-    platform: Schema.String,
-    url: Schema.String
-  })
-)
-
-const ResolvedMusicEntitySchema = Schema.Struct({
-  entityType: Schema.Literals(['album', 'track', 'playlist']),
-  entity: Schema.Struct({
-    id: Schema.NonEmptyString,
-    title: Schema.String,
-    slug: Schema.String,
-    coverImageUrl: Schema.NullOr(Schema.String),
-    artistNames: Schema.optional(Schema.NullOr(Schema.Array(Schema.String))),
-    description: Schema.optional(Schema.NullOr(Schema.String))
-  }),
-  links: ResolvedMusicEntityLinksSchema,
-  coverImageUrl: Schema.NullOr(Schema.String)
-})
-
-const ResolvedArtistSchema = Schema.Struct({
-  entityType: Schema.Literal('artist'),
-  entity: Schema.Struct({
-    id: Schema.NonEmptyString,
-    name: Schema.String,
-    slug: Schema.String,
-    imageUrl: Schema.NullOr(Schema.String)
-  }),
-  links: ResolvedMusicEntityLinksSchema,
-  coverImageUrl: Schema.NullOr(Schema.String)
-})
-
-const MusicResolutionResponseSchema = Schema.Union([
-  ResolvedMusicEntitySchema,
-  ResolvedArtistSchema
-])
-
-export type ResolvedMusicEntity = typeof ResolvedMusicEntitySchema.Type
+export type ResolvedMusicEntity = EmbeddableResolvedMusicEntityResponse
 
 export class MusicEntityResolutionFailed extends Schema.TaggedError<MusicEntityResolutionFailed>()(
   'MusicEntityResolutionFailed',
@@ -71,9 +37,7 @@ export type ResolveMusicEntityEffect = (
   origin: AuthoringMusicResolutionOrigin
 ) => Effect.Effect<ResolvedMusicEntity, MusicEntityResolutionFailed>
 
-type MusicResolutionResponse = typeof MusicResolutionResponseSchema.Type
-
-export const ensureEmbeddableMusicEntity = (resolved: MusicResolutionResponse) =>
+export const ensureEmbeddableMusicEntity = (resolved: ResolvedMusicEntityResponse) =>
   resolved.entityType === 'artist'
     ? Effect.fail(
         new MusicEntityResolutionFailed({
@@ -178,8 +142,7 @@ export const resolveMusicEntityEffect: ResolveMusicEntityEffect = (url, origin) 
       }),
       Effect.tapError((error) => captureException(error, { endpoint: 'music.resolveMusicEntity' }))
     )
-    const resolved = yield* Schema.decodeUnknownEffect(MusicResolutionResponseSchema)(response)
-    return yield* ensureEmbeddableMusicEntity(resolved)
+    return yield* ensureEmbeddableMusicEntity(response)
   }).pipe(
     Effect.mapError(
       () => new MusicEntityResolutionFailed({ message: 'Could not resolve music link' })

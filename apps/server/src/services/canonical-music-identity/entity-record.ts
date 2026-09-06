@@ -18,10 +18,16 @@ import { getPlaylistByIdEffect } from '@/services/music-entity/playlist.service'
 import { uniqueSlug } from '@/services/music-entity/shared'
 import { getTrackByIdEffect } from '@/services/music-entity/track.service'
 import type { ScrapeResult } from '@/services/music-link-scraper.service'
+import type { AnyResolvedMusicEntity } from './contract'
 import { parseArtistNames } from '@/services/parse-artist-names'
 import { toSlug } from '@/services/to-slug'
 import { MusicIdentityEntityNotFound, MusicIdentityStorageError } from './errors'
-import type { EntityArtist, EntityRecord, EntityReference } from './repository'
+import type {
+  CanonicalMusicIdentityRepository,
+  EntityArtist,
+  EntityRecord,
+  EntityReference
+} from './repository'
 
 export type ResolvedEntity =
   | SelectMusicArtist
@@ -43,13 +49,44 @@ const translateEntityError = (reference: EntityReference) =>
       : storageError('loadEntity', error.message)
   )
 
-export const loadEntity = (
+export function loadEntity(
+  reference: EntityReference & { readonly entityType: 'artist' }
+): Effect.Effect<
+  SelectMusicArtist,
+  MusicIdentityEntityNotFound | MusicIdentityStorageError,
+  Database
+>
+export function loadEntity(
+  reference: EntityReference & { readonly entityType: 'album' }
+): Effect.Effect<
+  SelectMusicAlbum,
+  MusicIdentityEntityNotFound | MusicIdentityStorageError,
+  Database
+>
+export function loadEntity(
+  reference: EntityReference & { readonly entityType: 'track' }
+): Effect.Effect<
+  SelectMusicTrack,
+  MusicIdentityEntityNotFound | MusicIdentityStorageError,
+  Database
+>
+export function loadEntity(
+  reference: EntityReference & { readonly entityType: 'playlist' }
+): Effect.Effect<
+  SelectMusicPlaylist & { readonly spotifyUrl?: string | null },
+  MusicIdentityEntityNotFound | MusicIdentityStorageError,
+  Database
+>
+export function loadEntity(
+  reference: EntityReference
+): Effect.Effect<ResolvedEntity, MusicIdentityEntityNotFound | MusicIdentityStorageError, Database>
+export function loadEntity(
   reference: EntityReference
 ): Effect.Effect<
   ResolvedEntity,
   MusicIdentityEntityNotFound | MusicIdentityStorageError,
   Database
-> => {
+> {
   switch (reference.entityType) {
     case 'artist':
       return getArtistByIdEffect(reference.entityId).pipe(translateEntityError(reference))
@@ -63,6 +100,51 @@ export const loadEntity = (
       return unreachable(reference.entityType)
   }
 }
+
+export const loadResolvedEntity = (
+  repository: CanonicalMusicIdentityRepository,
+  reference: EntityReference,
+  created: boolean
+): Effect.Effect<
+  AnyResolvedMusicEntity,
+  MusicIdentityStorageError | MusicIdentityEntityNotFound,
+  Database
+> =>
+  Effect.gen(function* () {
+    const links = yield* repository.linksFor(reference)
+    switch (reference.entityType) {
+      case 'artist':
+        return {
+          entityType: 'artist',
+          entity: yield* loadEntity({ entityType: 'artist', entityId: reference.entityId }),
+          links,
+          created
+        }
+      case 'album':
+        return {
+          entityType: 'album',
+          entity: yield* loadEntity({ entityType: 'album', entityId: reference.entityId }),
+          links,
+          created
+        }
+      case 'track':
+        return {
+          entityType: 'track',
+          entity: yield* loadEntity({ entityType: 'track', entityId: reference.entityId }),
+          links,
+          created
+        }
+      case 'playlist':
+        return {
+          entityType: 'playlist',
+          entity: yield* loadEntity({ entityType: 'playlist', entityId: reference.entityId }),
+          links,
+          created
+        }
+      default:
+        return unreachable(reference.entityType)
+    }
+  })
 
 const titleFor = (
   entityType: EntityReference['entityType'],
