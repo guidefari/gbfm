@@ -323,39 +323,67 @@ const buildPostWithCreators = (post: PostRow, mdx: MdxService) =>
           })
       })
     })
-    const compiledContent = projectedPost.content
-      ? yield* mdx.compile(projectedPost.content).pipe(Effect.orElseSucceed(() => ''))
-      : ''
-    const compiled = {
-      ...projectedPost,
-      compiledContent,
-      creators
-    } satisfies SelectMdxCompiledPost
+    const compiled = yield* compilePost(projectedPost, creators, mdx)
     const blueskySource = blueskySources[0]
     return blueskySource ? { ...compiled, blueskySource } : compiled
   })
 
-const buildPostWithPreloadedCreators = (
-  post: PostRow,
-  creators: Array<{ id: string; name: string; username: string | null }>,
+// Compilation only accepts label-projected rows; loading relations belongs to callers.
+const compilePost = (
+  post: SelectPost,
+  creators: SelectMdxCompiledPost['creators'],
   mdx: MdxService
 ) =>
   Effect.gen(function* () {
-    const db = yield* Database
-    const projectedPost = yield* Effect.tryPromise({
-      try: () => projectEntityLabels(db, 'post', post),
-      catch: (error) =>
-        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
-    })
-    const compiledContent = projectedPost.content
-      ? yield* mdx.compile(projectedPost.content).pipe(Effect.orElseSucceed(() => ''))
+    const compiledContent = post.content
+      ? yield* mdx.compile(post.content).pipe(Effect.orElseSucceed(() => ''))
       : ''
 
     return {
-      ...projectedPost,
+      ...post,
       compiledContent,
       creators
     } satisfies SelectMdxCompiledPost
+  })
+
+const loadPostRelations = (rows: PostRow[]) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    const postIds = rows.map((post) => post.id)
+    const creatorsByPostId = new Map<string, NonNullable<SelectMdxCompiledPost['creators']>>()
+    if (postIds.length === 0) return { rows: [], creatorsByPostId }
+
+    const creatorsData = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select({
+            postId: postCreators.postId,
+            id: usersTable.id,
+            name: usersTable.name,
+            username: usersTable.username
+          })
+          .from(postCreators)
+          .innerJoin(usersTable, eq(postCreators.creatorId, usersTable.id))
+          .where(inArray(postCreators.postId, postIds)),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch creators: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'post_creators'
+        })
+    })
+    for (const { postId, ...creator } of creatorsData) {
+      const creators = creatorsByPostId.get(postId) ?? []
+      creators.push(creator)
+      creatorsByPostId.set(postId, creators)
+    }
+
+    const projectedRows = yield* Effect.tryPromise({
+      try: () => projectEntityLabelsForRows(db, 'post', rows),
+      catch: (error) =>
+        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+    })
+    return { rows: projectedRows, creatorsByPostId }
   })
 
 export const toEditorialPost = (
@@ -528,49 +556,7 @@ const getAllEffect = (
     })
 
     const postIds = data.map((p) => p.id)
-
-    const creatorsData =
-      postIds.length > 0
-        ? yield* Effect.tryPromise({
-            try: () =>
-              db
-                .select({
-                  postId: postCreators.postId,
-                  creatorId: usersTable.id,
-                  creatorName: usersTable.name,
-                  creatorUsername: usersTable.username
-                })
-                .from(postCreators)
-                .innerJoin(usersTable, eq(postCreators.creatorId, usersTable.id))
-                .where(inArray(postCreators.postId, postIds)),
-            catch: (error) =>
-              new DatabaseError({
-                message: `Failed to fetch creators: ${getErrorMessage(error)}`,
-                operation: 'select',
-                table: 'post_creators'
-              })
-          }).pipe(
-            Effect.withSpan('post.getAll.creators', { attributes: { postCount: postIds.length } })
-          )
-        : []
-
-    const creatorsByPostId: Record<
-      string,
-      Array<{ id: string; name: string; username: string | null }>
-    > = {}
-    for (const row of creatorsData) {
-      const existing = creatorsByPostId[row.postId]
-      const creator = {
-        id: row.creatorId,
-        name: row.creatorName,
-        username: row.creatorUsername
-      }
-      if (existing) {
-        existing.push(creator)
-      } else {
-        creatorsByPostId[row.postId] = [creator]
-      }
-    }
+    const { rows: projectedData, creatorsByPostId } = yield* loadPostRelations(data)
 
     const sourcesData =
       postIds.length > 0
@@ -602,17 +588,12 @@ const getAllEffect = (
       sourcesData.flatMap(({ postId, ...source }) => (postId ? [[postId, source] as const] : []))
     )
 
-    const projectedData = yield* Effect.tryPromise({
-      try: () => projectEntityLabelsForRows(db, 'post', data),
-      catch: (error) =>
-        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
-    })
     const compiledData: SelectMdxCompiledPost[] = yield* Effect.forEach(
       projectedData,
       (post) => {
-        const creators = creatorsByPostId[post.id] ?? []
+        const creators = creatorsByPostId.get(post.id) ?? []
         const blueskySource = sourceByPostId.get(post.id)
-        return buildPostWithPreloadedCreators(post, creators, mdx).pipe(
+        return compilePost(post, creators, mdx).pipe(
           Effect.map((compiled) => (blueskySource ? { ...compiled, blueskySource } : compiled))
         )
       },
@@ -1005,53 +986,13 @@ const searchMicroPostsEffect = (
     })
 
     const postIds = data.map((p) => p.id)
-
-    const creatorsData =
-      postIds.length > 0
-        ? yield* Effect.tryPromise({
-            try: () =>
-              db
-                .select({
-                  postId: postCreators.postId,
-                  creatorId: usersTable.id,
-                  creatorName: usersTable.name,
-                  creatorUsername: usersTable.username
-                })
-                .from(postCreators)
-                .innerJoin(usersTable, eq(postCreators.creatorId, usersTable.id))
-                .where(inArray(postCreators.postId, postIds)),
-            catch: (error) =>
-              new DatabaseError({
-                message: `Failed to fetch creators: ${getErrorMessage(error)}`,
-                operation: 'select',
-                table: 'post_creators'
-              })
-          })
-        : []
-
-    const creatorsByPostId: Record<
-      string,
-      Array<{ id: string; name: string; username: string | null }>
-    > = {}
-    for (const row of creatorsData) {
-      const existing = creatorsByPostId[row.postId]
-      const creator = {
-        id: row.creatorId,
-        name: row.creatorName,
-        username: row.creatorUsername
-      }
-      if (existing) {
-        existing.push(creator)
-      } else {
-        creatorsByPostId[row.postId] = [creator]
-      }
-    }
+    const { rows: projectedData, creatorsByPostId } = yield* loadPostRelations(data)
 
     const replyCountsByParentId = yield* fetchReplyCountsByParentId(postIds)
 
     const compiledData = yield* Effect.forEach(
-      data,
-      (post) => buildPostWithPreloadedCreators(post, creatorsByPostId[post.id] ?? [], mdx),
+      projectedData,
+      (post) => compilePost(post, creatorsByPostId.get(post.id) ?? [], mdx),
       { concurrency: 5 }
     )
 
@@ -1402,14 +1343,7 @@ const getMicroPostBySlugEffect = (slug: string, mdx: MdxService) =>
       tags: tags.length > 0 ? tags : null,
       genres: genres.length > 0 ? genres : null
     }
-    const compiledContent = projectedPost.content
-      ? yield* mdx.compile(projectedPost.content).pipe(Effect.orElseSucceed(() => ''))
-      : ''
-    const compiled = {
-      ...projectedPost,
-      compiledContent,
-      creators
-    } satisfies SelectMdxCompiledPost
+    const compiled = yield* compilePost(projectedPost, creators, mdx)
     const blueskySource = blueskySources[0]
     const enriched = blueskySource ? { ...compiled, blueskySource } : compiled
     return yield* toMicroPost(enriched).pipe(
@@ -1804,53 +1738,13 @@ const getMicroPostRepliesEffect = (
     const total = countResult[0]?.total ?? 0
 
     const postIds = data.map((p) => p.id)
-
-    const creatorsData =
-      postIds.length > 0
-        ? yield* Effect.tryPromise({
-            try: () =>
-              db
-                .select({
-                  postId: postCreators.postId,
-                  creatorId: usersTable.id,
-                  creatorName: usersTable.name,
-                  creatorUsername: usersTable.username
-                })
-                .from(postCreators)
-                .innerJoin(usersTable, eq(postCreators.creatorId, usersTable.id))
-                .where(inArray(postCreators.postId, postIds)),
-            catch: (error) =>
-              new DatabaseError({
-                message: `Failed to fetch creators: ${getErrorMessage(error)}`,
-                operation: 'select',
-                table: 'post_creators'
-              })
-          })
-        : []
-
-    const creatorsByPostId: Record<
-      string,
-      Array<{ id: string; name: string; username: string | null }>
-    > = {}
-    for (const row of creatorsData) {
-      const existing = creatorsByPostId[row.postId]
-      const creator = {
-        id: row.creatorId,
-        name: row.creatorName,
-        username: row.creatorUsername
-      }
-      if (existing) {
-        existing.push(creator)
-      } else {
-        creatorsByPostId[row.postId] = [creator]
-      }
-    }
+    const { rows: projectedData, creatorsByPostId } = yield* loadPostRelations(data)
 
     const replyCountsByParentId = yield* fetchReplyCountsByParentId(postIds)
 
     const compiledData = yield* Effect.forEach(
-      data,
-      (post) => buildPostWithPreloadedCreators(post, creatorsByPostId[post.id] ?? [], mdx),
+      projectedData,
+      (post) => compilePost(post, creatorsByPostId.get(post.id) ?? [], mdx),
       { concurrency: 5 }
     )
 
@@ -1975,53 +1869,16 @@ const getMicroPostThreadEffect = (
         })
     })
 
-    const rowsToCompile = [rootRow, focusRow, ...descendantRows]
-    const postIds = rowsToCompile.map((p) => p.id)
-
-    const creatorsData =
-      postIds.length > 0
-        ? yield* Effect.tryPromise({
-            try: () =>
-              db
-                .select({
-                  postId: postCreators.postId,
-                  creatorId: usersTable.id,
-                  creatorName: usersTable.name,
-                  creatorUsername: usersTable.username
-                })
-                .from(postCreators)
-                .innerJoin(usersTable, eq(postCreators.creatorId, usersTable.id))
-                .where(inArray(postCreators.postId, postIds)),
-            catch: (error) =>
-              new DatabaseError({
-                message: `Failed to fetch creators: ${getErrorMessage(error)}`,
-                operation: 'select',
-                table: 'post_creators'
-              })
-          })
-        : []
-
-    const creatorsByPostId: Record<
-      string,
-      Array<{ id: string; name: string; username: string | null }>
-    > = {}
-    for (const row of creatorsData) {
-      const existing = creatorsByPostId[row.postId]
-      const creator = {
-        id: row.creatorId,
-        name: row.creatorName,
-        username: row.creatorUsername
-      }
-      if (existing) {
-        existing.push(creator)
-      } else {
-        creatorsByPostId[row.postId] = [creator]
-      }
-    }
+    // Root/focus may also occur in the page. Project each identity once, including
+    // across label-query chunks, without changing the returned page order.
+    const rowsToCompile = [
+      ...new Map([rootRow, focusRow, ...descendantRows].map((post) => [post.id, post])).values()
+    ]
+    const { rows: projectedRows, creatorsByPostId } = yield* loadPostRelations(rowsToCompile)
 
     const sentry = yield* SentryService
-    const compileRow = (post: PostRow) =>
-      buildPostWithPreloadedCreators(post, creatorsByPostId[post.id] ?? [], mdx).pipe(
+    const compileRow = (post: SelectPost) =>
+      compilePost(post, creatorsByPostId.get(post.id) ?? [], mdx).pipe(
         Effect.flatMap((compiled) =>
           toMicroPost(compiled).pipe(
             Effect.catchTag('DatabaseError', (e) =>
@@ -2038,7 +1895,11 @@ const getMicroPostThreadEffect = (
         )
       )
 
-    const root = yield* compileRow(rootRow)
+    const compiledRows = yield* Effect.forEach(projectedRows, compileRow, { concurrency: 5 })
+    const compiledById = new Map(
+      compiledRows.flatMap((post) => (post ? [[post.id, post] as const] : []))
+    )
+    const root = compiledById.get(rootRow.id)
     if (!root) {
       return yield* new DatabaseError({
         message: `Root post was not a micro post: ${rootRow.slug}`,
@@ -2047,7 +1908,7 @@ const getMicroPostThreadEffect = (
       })
     }
 
-    const focus = yield* compileRow(focusRow)
+    const focus = compiledById.get(focusRow.id)
     if (!focus) {
       return yield* new DatabaseError({
         message: `Focus post was not a micro post: ${focusRow.slug}`,
@@ -2056,10 +1917,10 @@ const getMicroPostThreadEffect = (
       })
     }
 
-    const compiledDescendants = yield* Effect.forEach(descendantRows, compileRow, {
-      concurrency: 5
+    const posts = descendantRows.flatMap((row) => {
+      const post = compiledById.get(row.id)
+      return post ? [post] : []
     })
-    const posts = compiledDescendants.filter((p): p is SelectMdxCompiledMicroPost => p !== null)
 
     return {
       root,
