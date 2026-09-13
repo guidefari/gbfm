@@ -1,9 +1,12 @@
 import { Schema } from 'effect'
-import { TweetCardPresentation } from '@gbfm/tweet-card'
-import { DEFAULT_OG_IMAGE, generateMicroPostSEO } from './lib/seo'
+import { getStaticSiteMetadata, renderMetadataHtml, SiteMetadata } from '@gbfm/site-metadata'
 
 type Fetcher = {
   readonly fetch: (request: Request) => Promise<Response>
+}
+
+type WorkerExecutionContext = {
+  readonly waitUntil: (promise: Promise<unknown>) => void
 }
 
 export interface SeoWorkerEnv {
@@ -12,82 +15,81 @@ export interface SeoWorkerEnv {
   readonly SOCIAL_IMAGES: Fetcher
 }
 
-const TweetMetadataSource = Schema.Struct({
-  title: Schema.NullOr(Schema.String),
-  description: Schema.NullOr(Schema.String),
-  thumbnailUrl: Schema.NullOr(Schema.String),
-  slug: Schema.String,
-  createdAt: Schema.String,
-  updatedAt: Schema.String,
-  creators: Schema.optional(Schema.Array(Schema.Struct({ name: Schema.String })))
-})
+type MetadataRoute = {
+  readonly kind:
+    | 'mix'
+    | 'track'
+    | 'show'
+    | 'release'
+    | 'label'
+    | 'profile'
+    | 'editorial'
+    | 'tweet'
+    | 'slug'
+  readonly slug: string
+}
 
-type TweetMetadataSource = typeof TweetMetadataSource.Type
+const decodeMetadata = Schema.decodeUnknownSync(SiteMetadata)
 
-const escapeHtml = (value: string) =>
-  value.replace(
-    /[&<>"']/g,
-    (character) =>
-      ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-      })[character] ?? character
-  )
+const reservedTopLevelRoutes = new Set([
+  'auth',
+  'changelog',
+  'dashboard',
+  'djs',
+  'editorial',
+  'invite',
+  'labels',
+  'mix-upload',
+  'mixes',
+  'new',
+  'privacy',
+  'profile',
+  'releases',
+  'reminders',
+  'shows',
+  'spotify',
+  'subscribe',
+  'tags',
+  'terms',
+  'tracks',
+  'tweet',
+  'tweets',
+  'unsubscribe'
+])
 
-const renderTweetHead = (post: TweetMetadataSource, slug: string, socialImage?: string) => {
-  const seo = generateMicroPostSEO(post, slug)
-  const title = `${seo.title} | goosebumps.fm`
-  const image = socialImage ?? seo.image ?? DEFAULT_OG_IMAGE
-  const authors = post.creators?.map((creator) => creator.name) ?? []
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Article',
-    headline: seo.title,
-    description: seo.description,
-    image,
-    url: seo.url,
-    datePublished: post.createdAt,
-    dateModified: post.updatedAt,
-    publisher: {
-      '@type': 'Organization',
-      name: 'goosebumps.fm',
-      url: 'https://goosebumps.fm'
-    },
-    ...(authors.length > 0
-      ? { author: authors.map((name) => ({ '@type': 'Person', name })) }
-      : undefined)
+const metadataKind = (segment: string): MetadataRoute['kind'] | null => {
+  switch (segment) {
+    case 'mixes':
+      return 'mix'
+    case 'tracks':
+      return 'track'
+    case 'shows':
+      return 'show'
+    case 'releases':
+      return 'release'
+    case 'labels':
+      return 'label'
+    case 'profile':
+      return 'profile'
+    case 'editorial':
+      return 'editorial'
+    case 'tweet':
+      return 'tweet'
+    default:
+      return null
   }
-  const safeJsonLd = JSON.stringify(jsonLd).replace(/</g, String.raw`\u003c`)
-  const meta = (attribute: 'name' | 'property', key: string, content: string) =>
-    `<meta ${attribute}="${key}" content="${escapeHtml(content)}" data-gbfm-edge-seo>`
+}
 
-  return [
-    `<title data-gbfm-edge-seo>${escapeHtml(title)}</title>`,
-    meta('name', 'description', seo.description),
-    meta('property', 'og:type', 'article'),
-    meta('property', 'og:title', title),
-    meta('property', 'og:description', seo.description),
-    meta('property', 'og:url', seo.url),
-    meta('property', 'og:site_name', 'goosebumps.fm'),
-    meta('property', 'og:image', image),
-    ...(socialImage
-      ? [meta('property', 'og:image:width', '1200'), meta('property', 'og:image:height', '630')]
-      : []),
-    meta('property', 'og:image:alt', `${seo.title} on goosebumps.fm`),
-    meta('property', 'article:published_time', post.createdAt),
-    meta('property', 'article:modified_time', post.updatedAt),
-    ...authors.map((author) => meta('property', 'article:author', author)),
-    meta('name', 'twitter:card', 'summary_large_image'),
-    meta('name', 'twitter:title', title),
-    meta('name', 'twitter:description', seo.description),
-    meta('name', 'twitter:image', image),
-    meta('name', 'twitter:image:alt', `${seo.title} on goosebumps.fm`),
-    `<link rel="canonical" href="${escapeHtml(seo.url)}" data-gbfm-edge-seo>`,
-    `<script type="application/ld+json" data-gbfm-edge-seo>${safeJsonLd}</script>`
-  ].join('\n    ')
+const metadataRoute = (pathname: string): MetadataRoute | null => {
+  const segments = pathname.split('/').filter(Boolean)
+  if (segments.length === 1 && segments[0] && !reservedTopLevelRoutes.has(segments[0])) {
+    return { kind: 'slug', slug: segments[0] }
+  }
+  if (segments.length !== 2 || !segments[1]) return null
+  if (segments[0] === 'tweet' && (segments[1] === 'latest' || segments[1] === 'new')) return null
+
+  const kind = metadataKind(segments[0] ?? '')
+  return kind ? { kind, slug: segments[1] } : null
 }
 
 const injectHead = (html: string, head: string) => {
@@ -95,54 +97,64 @@ const injectHead = (html: string, head: string) => {
   return withoutDefaultTitle.replace('</head>', `    ${head}\n  </head>`)
 }
 
-const tweetSlug = (pathname: string) => /^\/tweet\/([^/]+)\/?$/.exec(pathname)?.[1]
+const noindexHtml = (html: string) =>
+  injectHead(html, '<meta name="robots" content="noindex, nofollow">')
 
-const fetchTweetSocialImage = async (env: SeoWorkerEnv, slug: string) => {
-  try {
-    const response = await env.API.fetch(
-      new Request(
-        `https://api.internal/api/content/posts/micro/${encodeURIComponent(slug)}/share-presentation`
-      )
-    )
-    if (!response.ok) return undefined
-    return Schema.decodeUnknownSync(TweetCardPresentation)(await response.json()).images.openGraph
-  } catch {
-    return undefined
-  }
+const htmlResponse = async (source: Response, html: string, status = source.status) => {
+  const headers = new Headers(source.headers)
+  headers.delete('content-length')
+  headers.delete('content-encoding')
+  headers.set('content-type', 'text/html; charset=utf-8')
+  return new Response(html, { status, headers })
 }
 
+/** Injects canonical metadata into every public dynamic SPA document. */
 export const handleRequest = async (request: Request, env: SeoWorkerEnv): Promise<Response> => {
   const pathname = new URL(request.url).pathname
+  if (pathname === '/sitemap.xml') return env.API.fetch(request)
   if (pathname.startsWith('/social/tweets/')) return env.SOCIAL_IMAGES.fetch(request)
 
-  const slug = request.method === 'GET' ? tweetSlug(pathname) : undefined
   const assetResponse = await env.ASSETS.fetch(request)
-  if (!slug || !assetResponse.ok) return assetResponse
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
+    return assetResponse
+  }
+  if (!assetResponse.headers.get('content-type')?.startsWith('text/html')) return assetResponse
+
+  const staticMetadata = getStaticSiteMetadata(pathname)
+  if (staticMetadata) {
+    const html = injectHead(await assetResponse.text(), renderMetadataHtml(staticMetadata))
+    return htmlResponse(assetResponse, request.method === 'HEAD' ? '' : html)
+  }
+
+  const route = metadataRoute(pathname)
+  if (!route || !assetResponse.ok) return assetResponse
   const fallbackResponse = assetResponse.clone()
 
   try {
     const apiResponse = await env.API.fetch(
-      new Request(`https://api.internal/api/content/posts/micro/${slug}`)
+      new Request(
+        `https://api.internal/api/site-metadata/${route.kind}/${encodeURIComponent(route.slug)}`
+      )
     )
-    if (!apiResponse.ok) return assetResponse
+    if (apiResponse.status === 404) {
+      const html = noindexHtml(await assetResponse.text())
+      return htmlResponse(assetResponse, request.method === 'HEAD' ? '' : html, 404)
+    }
+    if (!apiResponse.ok) return fallbackResponse
 
-    const post = Schema.decodeUnknownSync(TweetMetadataSource)(await apiResponse.json())
-    const socialImage = await fetchTweetSocialImage(env, post.slug)
-    const html = injectHead(
-      await assetResponse.text(),
-      renderTweetHead(post, post.slug, socialImage)
-    )
-    const headers = new Headers(assetResponse.headers)
-    headers.delete('content-length')
-    headers.delete('content-encoding')
-    headers.set('content-type', 'text/html; charset=utf-8')
-
-    return new Response(html, { status: assetResponse.status, headers })
-  } catch {
+    const metadata = decodeMetadata(await apiResponse.json())
+    const html = injectHead(await assetResponse.text(), renderMetadataHtml(metadata))
+    return htmlResponse(assetResponse, request.method === 'HEAD' ? '' : html)
+  } catch (error) {
+    console.error('site metadata injection failed', {
+      path: pathname,
+      errorName: error instanceof Error ? error.name : 'UnknownError'
+    })
     return fallbackResponse
   }
 }
 
 export default {
-  fetch: handleRequest
+  fetch: (request: Request, env: SeoWorkerEnv, _context: WorkerExecutionContext) =>
+    handleRequest(request, env)
 }

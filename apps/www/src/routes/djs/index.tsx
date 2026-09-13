@@ -1,12 +1,10 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { type DjListItem, useDjs } from '@/lib/http'
-import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
+import { generateSEOHead, STATIC_PAGE_SEO } from '@/lib/seo'
 
 export const Route = createFileRoute('/djs/')({
   component: DjsListPage,
-  head: () => ({
-    meta: generateSEOMeta(STATIC_PAGE_SEO.djs)
-  })
+  head: () => generateSEOHead(STATIC_PAGE_SEO.djs)
 })
 
 function DjsListPage() {

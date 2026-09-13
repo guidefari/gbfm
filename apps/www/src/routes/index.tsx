@@ -1,12 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { FeaturedMixHero } from '@/components/home/FeaturedMixHero'
-import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
+import { generateSEOHead, STATIC_PAGE_SEO } from '@/lib/seo'
 
 export const Route = createFileRoute('/')({
   component: Index,
-  head: () => ({
-    meta: generateSEOMeta(STATIC_PAGE_SEO.home)
-  })
+  head: () => generateSEOHead(STATIC_PAGE_SEO.home)
 })
 
 function Index() {

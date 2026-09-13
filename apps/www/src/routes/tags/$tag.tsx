@@ -9,17 +9,18 @@ import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
 import { TweetQuoteCard } from '@/components/TweetQuoteCard'
 import { TweetTagLinks } from '@/components/TweetTagLinks'
 import { useMicroPosts } from '@/lib/http'
-import { generateSEOMeta } from '@/lib/seo'
+import { generateSEOHead, generateStaticPageSEO } from '@/lib/seo'
 
 export const Route = createFileRoute('/tags/$tag')({
   component: TagPage,
-  head: ({ params }) => ({
-    meta: generateSEOMeta({
-      title: `#${params.tag}`,
-      description: `Posts tagged #${params.tag} on goosebumps.fm`,
-      url: `/tags/${params.tag}`
-    })
-  })
+  head: ({ params }) =>
+    generateSEOHead(
+      generateStaticPageSEO(
+        `#${params.tag}`,
+        `Posts tagged #${params.tag} on goosebumps.fm`,
+        `/tags/${encodeURIComponent(params.tag)}`
+      )
+    )
 })
 
 type TagPost = ReturnType<typeof useMicroPosts>['data'][number]

@@ -34,6 +34,19 @@ const fetchMixes = Effect.gen(function* () {
   })
 })
 
+const fetchTracks = Effect.gen(function* () {
+  const db = yield* Database
+  return yield* Effect.tryPromise({
+    try: () =>
+      db
+        .select({ slug: audioTable.slug, updatedAt: audioTable.updatedAt })
+        .from(audioTable)
+        .where(and(eq(audioTable.draft, false), eq(audioTable.type, 'track'))),
+    catch: (error) =>
+      new DatabaseError({ message: String(error), operation: 'select', table: 'audio' })
+  })
+})
+
 const fetchShows = Effect.gen(function* () {
   const db = yield* Database
   return yield* Effect.tryPromise({
@@ -146,15 +159,16 @@ const fetchPosts = Effect.gen(function* () {
 
 // Effect to fetch all sitemap data
 export const fetchSitemapData = Effect.gen(function* () {
-  const [mixes, shows, releases, labels, profiles, posts] = yield* Effect.all([
+  const [mixes, tracks, shows, releases, labels, profiles, posts] = yield* Effect.all([
     fetchMixes,
+    fetchTracks,
     fetchShows,
     fetchReleases,
     fetchLabels,
     fetchProfiles,
     fetchPosts
   ])
-  const sitemapData: SitemapData = { mixes, shows, releases, labels, profiles, posts }
+  const sitemapData: SitemapData = { mixes, tracks, shows, releases, labels, profiles, posts }
   return sitemapData
 })
 
@@ -164,14 +178,13 @@ export const regenerateSitemap = Effect.gen(function* () {
   const data = yield* fetchSitemapData
   const config = yield* ConfigService
   const siteUrl = config.urls.frontend.replace(/\/$/, '')
-  const shareUrl = config.urls.share.replace(/\/$/, '')
-  const xml = buildSitemapXml(data, siteUrl, shareUrl)
+  const xml = buildSitemapXml(data, siteUrl)
 
   const sitemap = { xml, generatedAt: new Date() }
   yield* cache.write(sitemap)
 
   yield* Effect.log(
-    `✅ Sitemap regenerated with ${data.mixes.length} mixes, ${data.shows.length} shows, ${data.releases.length} releases, ${data.labels.length} labels, ${data.profiles.filter((p) => p.username).length} profiles, ${data.posts.length} posts`
+    `✅ Sitemap regenerated with ${data.mixes.length} mixes, ${data.tracks.length} tracks, ${data.shows.length} shows, ${data.releases.length} releases, ${data.labels.length} labels, ${data.profiles.filter((p) => p.username).length} profiles, ${data.posts.length} posts`
   )
 
   return sitemap

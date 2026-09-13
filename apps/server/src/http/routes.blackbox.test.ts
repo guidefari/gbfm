@@ -21,6 +21,7 @@ import {
 import { SearchResults } from '@gbfm/api/search'
 import { decodeResponseBody } from '@gbfm/api/testing'
 import { TweetCardPresentation } from '@gbfm/tweet-card'
+import { SiteMetadata } from '@gbfm/site-metadata'
 import { and, eq } from 'drizzle-orm'
 import { Layer } from 'effect'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
@@ -3041,11 +3042,12 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
         webHandler.handler(new Request(`http://localhost/api/music/labels/slug/${slug}`)),
         webHandler.handler(new Request(`http://localhost/api/content/releases/${slug}`)),
         webHandler.handler(new Request(`http://localhost/api/content/audio/mix/${slug}/edit`)),
+        webHandler.handler(new Request(`http://localhost/api/site-metadata/mix/${slug}`)),
         webHandler.handler(new Request(`http://localhost/s/mix/${slug}`)),
         webHandler.handler(new Request(`http://localhost/s/post/${slug}`))
       ])
       expect(responses.map((response) => response.status)).toEqual([
-        404, 404, 404, 404, 404, 401, 404, 404
+        404, 404, 404, 404, 404, 401, 404, 404, 404
       ])
 
       const [audioList, audioTags, posts, postTags, episodes, labels, rss] = await Promise.all([
@@ -3115,6 +3117,43 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
     expect(res.headers.get('content-type')).toContain('application/xml')
     const body = await res.text()
     expect(body).toContain('<urlset')
+  })
+
+  it('serves one canonical metadata projection through the API and legacy share document', async () => {
+    const suffix = crypto.randomUUID()
+    const slug = `metadata-mix-${suffix}`
+    await db.insert(audioTable).values({
+      title: 'Metadata mix',
+      description: 'A mix with one canonical metadata model.',
+      slug,
+      content: '',
+      type: 'mix',
+      url: 'https://audio.example.com/metadata-mix.mp3',
+      draft: false
+    })
+
+    try {
+      const [metadataResponse, shareResponse] = await Promise.all([
+        webHandler.handler(new Request(`http://localhost/api/site-metadata/mix/${slug}`)),
+        webHandler.handler(new Request(`http://localhost/s/mix/${slug}`))
+      ])
+      const metadata = await decodeResponseBody(SiteMetadata, metadataResponse)
+      const shareHtml = await shareResponse.text()
+
+      expect(metadataResponse.status).toBe(200)
+      expect(metadata).toMatchObject({
+        kind: 'mix',
+        title: 'Metadata mix',
+        description: 'A mix with one canonical metadata model.',
+        canonicalUrl: `http://127.0.0.1:5173/mixes/${slug}`,
+        audio: { url: 'https://audio.example.com/metadata-mix.mp3' }
+      })
+      expect(shareResponse.status).toBe(200)
+      expect(shareHtml).toContain(`<meta property="og:url" content="${metadata.canonicalUrl}">`)
+      expect(shareHtml).toContain(`<link rel="canonical" href="${metadata.canonicalUrl}">`)
+    } finally {
+      await db.delete(audioTable).where(eq(audioTable.slug, slug))
+    }
   })
 
   it('GET /s/mix/:slug returns 404 HTML for an unknown mix', async () => {

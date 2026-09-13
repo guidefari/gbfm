@@ -17,6 +17,7 @@ import { ProfileGroup } from './profile'
 import { ReleaseGroup } from './release'
 import { ResolveGroup } from './resolve'
 import { SearchGroup } from './search'
+import { SiteMetadataGroup } from './site-metadata'
 import { ShowsGroup } from './shows'
 import { SpotifyGroup } from './spotify'
 import { UploadGroup } from './upload'
@@ -27,6 +28,7 @@ export const Api = HttpApi.make('gbfm')
   .add(InternalGroup)
   .add(MusicGroup)
   .add(SearchGroup)
+  .add(SiteMetadataGroup)
   .add(ProfileGroup)
   .add(ResolveGroup)
   .add(AdminGroup)

@@ -11,9 +11,11 @@ import {
   takeSpotifyReturnPath
 } from '@/lib/spotify-pkce'
 import { runAppEffect } from '@/runtime'
+import { privateHead } from '@/lib/seo'
 
 export const Route = createFileRoute('/spotify/callback')({
-  component: SpotifyCallback
+  component: SpotifyCallback,
+  head: () => privateHead('Spotify connection')
 })
 
 function SpotifyCallback() {

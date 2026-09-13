@@ -29,7 +29,7 @@ import {
 } from '@/lib/http'
 import { mdxMusicReferences } from '@/lib/mdx-music-references'
 import { queryClient } from '@/lib/query-client'
-import { generateMicroPostSEO, generateSEOMeta } from '@/lib/seo'
+import { generateMicroPostSEO, generateSEOHead, notFoundHead } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
 
 type PostDependencyReference = {
@@ -115,16 +115,9 @@ export const Route = createFileRoute('/tweet/$slug')({
   },
   head: ({ loaderData, params }) => {
     if (!loaderData?.post) {
-      return {
-        meta: [
-          { title: 'Tweet | goosebumps.fm' },
-          { name: 'description', content: 'Short updates on goosebumps.fm' }
-        ]
-      }
+      return notFoundHead('Tweet', 'Short updates on goosebumps.fm')
     }
-
-    const seoData = generateMicroPostSEO(loaderData.post, params.slug)
-    return { meta: generateSEOMeta(seoData) }
+    return generateSEOHead(generateMicroPostSEO(loaderData.post, params.slug))
   }
 })
 

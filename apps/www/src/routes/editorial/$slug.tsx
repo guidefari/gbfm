@@ -9,7 +9,7 @@ import { RouteError } from '@/components/RouteError'
 import { ShareButton } from '@/components/ShareButton'
 import { getApiClient } from '@/lib/api-client'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
-import { generatePostSEO, generateSEOMeta } from '@/lib/seo'
+import { generatePostSEO, generateSEOHead, notFoundHead } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
 
 export const Route = createFileRoute('/editorial/$slug')({
@@ -51,16 +51,9 @@ export const Route = createFileRoute('/editorial/$slug')({
   },
   head: ({ loaderData, params }) => {
     if (!loaderData?.post) {
-      return {
-        meta: [
-          { title: 'Post | goosebumps.fm' },
-          { name: 'description', content: 'Read posts on goosebumps.fm' }
-        ]
-      }
+      return notFoundHead('Post', 'Read posts on goosebumps.fm')
     }
-
-    const seoData = generatePostSEO(loaderData.post, params.slug)
-    return { meta: generateSEOMeta(seoData) }
+    return generateSEOHead(generatePostSEO(loaderData.post, params.slug))
   }
 })
 

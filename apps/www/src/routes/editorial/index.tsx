@@ -5,7 +5,7 @@ import { EditorialListItem } from '@/components/EditorialListItem'
 import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
 import { QueryError } from '@/components/QueryError'
 import { useEditorialPosts } from '@/lib/http'
-import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
+import { generateSEOHead, STATIC_PAGE_SEO } from '@/lib/seo'
 
 const searchSchema = Schema.Struct({
   tag: Schema.optional(Schema.String)
@@ -14,9 +14,7 @@ const searchSchema = Schema.Struct({
 export const Route = createFileRoute('/editorial/')({
   component: EditorialListPage,
   validateSearch: Schema.toStandardSchemaV1(searchSchema),
-  head: () => ({
-    meta: generateSEOMeta(STATIC_PAGE_SEO.editorial)
-  })
+  head: () => generateSEOHead(STATIC_PAGE_SEO.editorial)
 })
 
 function EditorialListPage() {

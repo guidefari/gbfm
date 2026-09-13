@@ -129,6 +129,7 @@
         "@gbfm/core": "workspace:*",
         "@gbfm/email": "workspace:*",
         "@gbfm/pdf-generator": "workspace:*",
+        "@gbfm/site-metadata": "workspace:*",
         "@gbfm/tweet-card": "workspace:*",
         "@mdx-js/mdx": "3.1.1",
         "@opentelemetry/api": "^1.9.1",
@@ -205,6 +206,7 @@
         "@gbfm/core": "workspace:*",
         "@gbfm/player": "workspace:*",
         "@gbfm/server": "workspace:",
+        "@gbfm/site-metadata": "workspace:*",
         "@gbfm/spotify": "workspace:*",
         "@gbfm/theme": "workspace:*",
         "@gbfm/tweet-card": "workspace:*",
@@ -261,6 +263,7 @@
       "name": "@gbfm/api",
       "version": "0.0.1",
       "dependencies": {
+        "@gbfm/site-metadata": "workspace:*",
         "@gbfm/tweet-card": "workspace:*",
         "effect": "4.0.0-rc.111",
       },
@@ -314,6 +317,18 @@
       "devDependencies": {
         "@types/bun": "1.3.13",
         "typescript": "6.0.3",
+        "vitest": "4.1.11",
+      },
+    },
+    "packages/site-metadata": {
+      "name": "@gbfm/site-metadata",
+      "version": "0.0.1",
+      "dependencies": {
+        "effect": "4.0.0-rc.111",
+      },
+      "devDependencies": {
+        "@types/bun": "1.3.13",
+        "@typescript/native-preview": "7.0.0-dev.20260612.1",
         "vitest": "4.1.11",
       },
     },
@@ -962,6 +977,8 @@
     "@gbfm/player": ["@gbfm/player@workspace:packages/player"],
 
     "@gbfm/server": ["@gbfm/server@workspace:apps/server"],
+
+    "@gbfm/site-metadata": ["@gbfm/site-metadata@workspace:packages/site-metadata"],
 
     "@gbfm/social-image": ["@gbfm/social-image@workspace:apps/social-image"],
 
