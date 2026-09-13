@@ -1,17 +1,19 @@
 import type { D1Database } from '@cloudflare/workers-types'
 import { drizzle } from 'drizzle-orm/d1'
-import { beforeAll, describe, expect, test } from 'vitest'
+import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import {
   musicSourceAliasesTable,
   musicSourceIdentitiesTable,
   musicSourceIdentityConflictsTable
 } from '@/db/music-entity.schema'
-import { createMigratedD1Database } from '@/test/migrate-d1'
+import { createMigratedD1Database, type MigratedD1Database } from '@/test/migrate-d1'
 
 let database: D1Database
+let databaseResource: MigratedD1Database
 
 beforeAll(async () => {
-  database = await createMigratedD1Database()
+  databaseResource = await createMigratedD1Database()
+  database = databaseResource.database
   await database.batch([
     database
       .prepare('INSERT INTO music_platforms (id, displayName) VALUES (?, ?)')
@@ -24,6 +26,8 @@ beforeAll(async () => {
       .bind('track', 'Track')
   ])
 })
+
+afterAll(() => databaseResource.dispose())
 
 const queryPlan = async (sql: string, bindings: ReadonlyArray<string | number>) =>
   (

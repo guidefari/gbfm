@@ -3,10 +3,11 @@ import { applyD1Migrations, createMigratedD1Database } from '@/test/migrate-d1'
 
 describe('email provider receipt migration', () => {
   test('preserves historical SES IDs as provider-neutral receipts and removes the SES column', async () => {
-    const d1 = await createMigratedD1Database([
+    await using d1Resource = await createMigratedD1Database([
       '0000_public_thunderbolt.sql',
       '0001_search_fts.sql'
     ])
+    const d1 = d1Resource.database
     await d1
       .prepare(
         `INSERT INTO email_delivery_logs (
@@ -42,10 +43,11 @@ describe('email provider receipt migration', () => {
   })
 
   test('keeps a null historical SES ID as a null neutral receipt', async () => {
-    const d1 = await createMigratedD1Database([
+    await using d1Resource = await createMigratedD1Database([
       '0000_public_thunderbolt.sql',
       '0001_search_fts.sql'
     ])
+    const d1 = d1Resource.database
     await d1
       .prepare(
         `INSERT INTO email_delivery_logs (

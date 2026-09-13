@@ -43,7 +43,8 @@ const makeTrackingEmailTransport = () => {
 
 describe('sendMixNotification', () => {
   test('skips explicitly addressed disabled and unsubscribed recipients before transport or logging', async () => {
-    const d1 = await createMigratedD1Database()
+    await using d1Resource = await createMigratedD1Database()
+    const d1 = d1Resource.database
     const database = Effect.runSync(withTestLayer(Database, DatabaseLayer(d1)))
     const transport = makeTrackingEmailTransport()
     const webHandler = createTestWebHandler(d1, transport.layer)
@@ -121,7 +122,8 @@ describe('sendMixNotification', () => {
   })
 
   test('limits delivery concurrency to five while retaining one receipt and log per recipient', async () => {
-    const d1 = await createMigratedD1Database()
+    await using d1Resource = await createMigratedD1Database()
+    const d1 = d1Resource.database
     const database = Effect.runSync(withTestLayer(Database, DatabaseLayer(d1)))
     const transport = makeTrackingEmailTransport()
     const webHandler = createTestWebHandler(d1, transport.layer)
