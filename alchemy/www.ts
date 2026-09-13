@@ -31,7 +31,7 @@ export const website = ({ config, websiteConfig, api, socialImages, apiUrl }: We
         : { url: true }),
       assets: {
         notFoundHandling: 'single-page-application',
-        runWorkerFirst: ['/tweet/*', '/social/tweets/*']
+        runWorkerFirst: true
       },
       observability: workerObservability(config.isProduction),
       dev: config.isLocalDev

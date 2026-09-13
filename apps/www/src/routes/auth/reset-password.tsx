@@ -8,6 +8,7 @@ import { AuthPageLayout, AuthStatusNotice } from '@/components/Auth/AuthPageLayo
 import { useSession } from '@/lib/auth-client'
 import { apiUrl } from '@/lib/http'
 import { readResponseErrorMessage } from '@/lib/response'
+import { privateHead } from '@/lib/seo'
 
 export const searchSchema = Schema.Struct({
   token: Schema.optional(Schema.String),
@@ -16,6 +17,7 @@ export const searchSchema = Schema.Struct({
 
 export const Route = createFileRoute('/auth/reset-password')({
   component: ResetPasswordPage,
+  head: () => privateHead('Reset password'),
   validateSearch: Schema.toStandardSchemaV1(searchSchema)
 })
 

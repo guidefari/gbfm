@@ -11,8 +11,10 @@ import {
 } from '@/components/Auth/UsernameAvailability'
 import { authClient, signUp } from '@/lib/auth-client'
 import { useCooldown } from '@/lib/useCooldown'
+import { privateHead } from '@/lib/seo'
 
 export const Route = createFileRoute('/auth/sign-up')({
+  head: () => privateHead('Sign up'),
   beforeLoad: ({ context }) => {
     if (context.auth.isAuthenticated) {
       throw redirect({

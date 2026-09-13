@@ -2,7 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { Effect } from 'effect'
 import { PublicProfilePage } from '@/components/profile/PublicProfilePage'
 import { getApiClient } from '@/lib/api-client'
-import { generateProfileSEO, generateSEOMeta } from '@/lib/seo'
+import { generateProfileSEO, generateSEOHead, notFoundHead } from '@/lib/seo'
 
 export const Route = createFileRoute('/profile/$username')({
   component: ProfilePage,
@@ -20,19 +20,9 @@ export const Route = createFileRoute('/profile/$username')({
   },
   head: ({ loaderData, params }) => {
     if (!loaderData?.profile) {
-      return {
-        meta: [
-          { title: 'Profile not found | goosebumps.fm' },
-          {
-            name: 'description',
-            content: 'This profile does not exist on goosebumps.fm'
-          }
-        ]
-      }
+      return notFoundHead('Profile not found', 'This profile does not exist on goosebumps.fm')
     }
-
-    const seoData = generateProfileSEO(loaderData.profile, params.username)
-    return { meta: generateSEOMeta(seoData) }
+    return generateSEOHead(generateProfileSEO(loaderData.profile, params.username))
   }
 })
 

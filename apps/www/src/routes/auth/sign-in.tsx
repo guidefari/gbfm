@@ -5,6 +5,7 @@ import { Schema } from 'effect'
 import { useState } from 'react'
 import { AuthPageLayout, AuthStatusNotice } from '@/components/Auth/AuthPageLayout'
 import { signIn } from '@/lib/auth-client'
+import { privateHead } from '@/lib/seo'
 
 const searchSchema = Schema.Struct({
   redirect: Schema.optional(Schema.String)
@@ -14,6 +15,7 @@ const safeRedirect = (target: string | undefined) =>
   target && target.startsWith('/') && !target.startsWith('//') ? target : '/'
 
 export const Route = createFileRoute('/auth/sign-in')({
+  head: () => privateHead('Sign in'),
   validateSearch: Schema.toStandardSchemaV1(searchSchema),
   beforeLoad: ({ context, search }) => {
     if (context.auth.isAuthenticated) {

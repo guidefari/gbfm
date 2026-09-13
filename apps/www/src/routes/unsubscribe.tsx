@@ -4,6 +4,7 @@ import { Schema } from 'effect'
 import { CheckCircle, Loader2, Mail, XCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNewsletterUnsubscribe, useRequestNewsletterUnsubscribe } from '@/lib/http'
+import { privateHead } from '@/lib/seo'
 
 const searchSchema = Schema.Struct({
   token: Schema.optional(Schema.String)
@@ -11,6 +12,7 @@ const searchSchema = Schema.Struct({
 
 export const Route = createFileRoute('/unsubscribe')({
   component: Unsubscribe,
+  head: () => privateHead('Unsubscribe'),
   validateSearch: Schema.toStandardSchemaV1(searchSchema)
 })
 

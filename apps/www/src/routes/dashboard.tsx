@@ -1,11 +1,9 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router'
-import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
+import { notFoundHead } from '@/lib/seo'
 
 export const Route = createFileRoute('/dashboard')({
   component: DashboardLayoutRoute,
-  head: () => ({
-    meta: generateSEOMeta(STATIC_PAGE_SEO.dashboard)
-  })
+  head: () => notFoundHead('Dashboard', 'Your personal dashboard on goosebumps.fm')
 })
 
 function DashboardLayoutRoute() {

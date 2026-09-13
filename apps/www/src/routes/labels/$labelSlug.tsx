@@ -8,7 +8,7 @@ import { RouteError } from '@/components/RouteError'
 import { ShareButton } from '@/components/ShareButton'
 import { getApiClient } from '@/lib/api-client'
 import { useSession } from '@/lib/auth-client'
-import { generateLabelSEO, generateSEOMeta } from '@/lib/seo'
+import { generateLabelSEO, generateSEOHead, notFoundHead } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
 import { useSetCurrentContent } from '@/store'
 
@@ -53,14 +53,10 @@ export const Route = createFileRoute('/labels/$labelSlug')({
       links: links.map((link) => ({ ...link }))
     }
   },
-  head: ({ loaderData, params }) => ({
-    meta: loaderData?.label
-      ? generateSEOMeta(generateLabelSEO(loaderData.label, params.labelSlug))
-      : [
-          { title: 'Label | goosebumps.fm' },
-          { name: 'description', content: 'Explore music labels on goosebumps.fm' }
-        ]
-  })
+  head: ({ loaderData, params }) =>
+    loaderData?.label
+      ? generateSEOHead(generateLabelSEO(loaderData.label, params.labelSlug))
+      : notFoundHead('Label', 'Explore music labels on goosebumps.fm')
 })
 
 function LabelPage() {

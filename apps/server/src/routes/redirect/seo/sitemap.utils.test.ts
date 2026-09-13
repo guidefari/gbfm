@@ -40,6 +40,7 @@ describe('sitemap.utils', () => {
         { slug: 'summer-vibes', updatedAt: new Date('2024-06-01') },
         { slug: 'chill-beats', updatedAt: new Date('2024-06-10') }
       ],
+      tracks: [{ slug: 'deep-cut', updatedAt: new Date('2024-06-11') }],
       shows: [{ slug: 'weekly-mix', updatedAt: new Date('2024-05-15') }],
       releases: [{ slug: 'debut-album', updatedAt: new Date('2024-04-20') }],
       labels: [{ slug: 'underground-sounds', updatedAt: new Date('2024-03-01') }],
@@ -77,12 +78,15 @@ describe('sitemap.utils', () => {
     test('includes static listing pages', () => {
       const xml = buildSitemapXml(mockData, 'https://goosebumps.fm')
 
-      expect(xml).toContain('<loc>https://goosebumps.fm/mixes</loc>')
       expect(xml).toContain('<loc>https://goosebumps.fm/shows</loc>')
-      expect(xml).toContain('<loc>https://goosebumps.fm/releases</loc>')
       expect(xml).toContain('<loc>https://goosebumps.fm/labels</loc>')
       expect(xml).toContain('<loc>https://goosebumps.fm/editorial</loc>')
-      expect(xml).toContain('<loc>https://goosebumps.fm/tweet</loc>')
+      expect(xml).toContain('<loc>https://goosebumps.fm/djs</loc>')
+      expect(xml).toContain('<loc>https://goosebumps.fm/tags</loc>')
+      expect(xml).not.toContain('<loc>https://goosebumps.fm/mixes</loc>')
+      expect(xml).not.toContain('<loc>https://goosebumps.fm/tracks</loc>')
+      expect(xml).not.toContain('<loc>https://goosebumps.fm/releases</loc>')
+      expect(xml).not.toContain('<loc>https://goosebumps.fm/tweet</loc>')
     })
 
     test('includes all mixes', () => {
@@ -90,6 +94,13 @@ describe('sitemap.utils', () => {
 
       expect(xml).toContain('<loc>https://goosebumps.fm/mixes/summer-vibes</loc>')
       expect(xml).toContain('<loc>https://goosebumps.fm/mixes/chill-beats</loc>')
+    })
+
+    test('includes tracks at canonical SPA URLs and never indexes legacy share redirects', () => {
+      const xml = buildSitemapXml(mockData, 'https://goosebumps.fm')
+
+      expect(xml).toContain('<loc>https://goosebumps.fm/tracks/deep-cut</loc>')
+      expect(xml).not.toContain('/s/')
     })
 
     test('includes shows', () => {
@@ -128,10 +139,13 @@ describe('sitemap.utils', () => {
       const nonStaticProfiles = profileMatches?.filter(
         (m) =>
           !m.includes('/mixes') &&
+          !m.includes('/tracks') &&
           !m.includes('/shows') &&
           !m.includes('/releases') &&
           !m.includes('/labels') &&
           !m.includes('/editorial') &&
+          !m.includes('/djs') &&
+          !m.includes('/tags') &&
           !m.includes('/tweet')
       )
       expect(nonStaticProfiles).toHaveLength(1)
@@ -167,6 +181,7 @@ describe('sitemap.utils', () => {
         // Use fixed dates for snapshot stability
         const fixedData: SitemapData = {
           mixes: [{ slug: 'test-mix', updatedAt: new Date('2024-01-15') }],
+          tracks: [{ slug: 'test-track', updatedAt: new Date('2024-01-16') }],
           shows: [{ slug: 'test-show', updatedAt: new Date('2024-01-10') }],
           releases: [{ slug: 'test-release', updatedAt: new Date('2024-01-05') }],
           labels: [{ slug: 'test-label', updatedAt: new Date('2024-01-01') }],
@@ -240,6 +255,7 @@ describe('sitemap.utils', () => {
     test('handles empty data gracefully', () => {
       const emptyData: SitemapData = {
         mixes: [],
+        tracks: [],
         shows: [],
         releases: [],
         labels: [],
@@ -251,7 +267,7 @@ describe('sitemap.utils', () => {
 
       // Should still have homepage and static pages
       expect(xml).toContain('<loc>https://goosebumps.fm</loc>')
-      expect(xml).toContain('<loc>https://goosebumps.fm/mixes</loc>')
+      expect(xml).toContain('<loc>https://goosebumps.fm/shows</loc>')
       expect(xml).toContain('</urlset>')
     })
   })

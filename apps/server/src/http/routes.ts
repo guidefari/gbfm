@@ -27,6 +27,7 @@ import { ReleaseHandlersLive } from '@/http/release.handlers'
 import { ResolveHandlersLive } from '@/http/resolve.handlers'
 import { SearchHandlersLive } from '@/http/search.handlers'
 import { SearchCacheHeaderLive } from '@/http/search.middleware'
+import { SiteMetadataHandlersLive } from '@/http/site-metadata.handlers'
 import { ShowsHandlersLive } from '@/http/shows.handlers'
 import { SiteRoutesLive } from '@/http/site-routes'
 import { SpotifyHandlersLive } from '@/http/spotify.handlers'
@@ -76,6 +77,7 @@ export const createWebHandler = (options: {
     Layer.provide(InternalHandlersLive),
     Layer.provide(MusicHandlersLive),
     Layer.provide(SearchHandlersLive),
+    Layer.provide(SiteMetadataHandlersLive),
     Layer.provide(ProfileHandlersLive),
     Layer.provide(ResolveHandlersLive),
     Layer.provide(AdminHandlersLive),

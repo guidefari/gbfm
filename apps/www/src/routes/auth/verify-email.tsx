@@ -4,6 +4,7 @@ import { Loader2, MailCheck } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { AuthPageLayout, AuthStatusNotice } from '@/components/Auth/AuthPageLayout'
 import { authClient } from '@/lib/auth-client'
+import { privateHead } from '@/lib/seo'
 
 const searchSchema = Schema.Struct({
   token: Schema.optional(Schema.String),
@@ -13,6 +14,7 @@ const searchSchema = Schema.Struct({
 
 export const Route = createFileRoute('/auth/verify-email')({
   component: VerifyEmailPage,
+  head: () => privateHead('Verify email'),
   validateSearch: Schema.toStandardSchemaV1(searchSchema)
 })
 

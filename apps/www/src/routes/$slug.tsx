@@ -2,7 +2,12 @@ import { createFileRoute, Link, Navigate } from '@tanstack/react-router'
 import { Effect } from 'effect'
 import { PublicProfilePage } from '@/components/profile/PublicProfilePage'
 import { getApiClient } from '@/lib/api-client'
-import { generateProfileSEO, generateResolvedShowSEO, generateSEOMeta } from '@/lib/seo'
+import {
+  generateProfileSEO,
+  generateResolvedShowSEO,
+  generateSEOHead,
+  notFoundHead
+} from '@/lib/seo'
 
 export const Route = createFileRoute('/$slug')({
   component: SlugPage,
@@ -19,24 +24,13 @@ export const Route = createFileRoute('/$slug')({
   },
   head: ({ loaderData, params }) => {
     if (!loaderData?.resolved) {
-      return {
-        meta: [
-          { title: 'Not found | goosebumps.fm' },
-          {
-            name: 'description',
-            content: 'This page does not exist on goosebumps.fm'
-          }
-        ]
-      }
+      return notFoundHead('Not found', 'This page does not exist on goosebumps.fm')
     }
 
     if (loaderData.resolved.type === 'profile') {
-      const seoData = generateProfileSEO(loaderData.resolved.data, params.slug)
-      return { meta: generateSEOMeta(seoData) }
+      return generateSEOHead(generateProfileSEO(loaderData.resolved.data, params.slug))
     }
-
-    const seoData = generateResolvedShowSEO(loaderData.resolved.data, params.slug)
-    return { meta: generateSEOMeta(seoData) }
+    return generateSEOHead(generateResolvedShowSEO(loaderData.resolved.data))
   }
 })
 
