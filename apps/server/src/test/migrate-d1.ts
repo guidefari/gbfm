@@ -31,11 +31,10 @@ export const applyD1Migrations = async (
   migrations: ReadonlyArray<(typeof d1MigrationFiles)[number]> = d1MigrationFiles
 ) => {
   for (const migration of migrations) {
-    for (const statement of splitStatements(
+    const statements = splitStatements(
       readFileSync(path.join(migrationsDirectory, migration), 'utf8')
-    )) {
-      await database.prepare(statement).run()
-    }
+    ).map((statement) => database.prepare(statement))
+    if (statements.length > 0) await database.batch(statements)
   }
 }
 

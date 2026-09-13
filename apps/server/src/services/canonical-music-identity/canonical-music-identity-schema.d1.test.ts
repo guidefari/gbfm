@@ -6,10 +6,7 @@ import {
   musicSourceIdentitiesTable,
   musicSourceIdentityConflictsTable
 } from '@/db/music-entity.schema'
-import {
-  createMigratedD1Database,
-  type MigratedD1Database
-} from '@/test/migrate-d1'
+import { createMigratedD1Database, type MigratedD1Database } from '@/test/migrate-d1'
 
 let database: D1Database
 let databaseResource: MigratedD1Database

@@ -4,10 +4,7 @@ import { Effect } from 'effect'
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 import * as schema from '@/db/exports'
 import type { DatabaseClient } from '@/db/layer'
-import {
-  createMigratedD1Database,
-  type MigratedD1Database
-} from '@/test/migrate-d1'
+import { createMigratedD1Database, type MigratedD1Database } from '@/test/migrate-d1'
 import { MusicIdentityStorageError } from './errors'
 import {
   auditMusicIdentities,
