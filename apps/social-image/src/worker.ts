@@ -136,7 +136,17 @@ export const handleRequest = async (
     }
 
     const key = `tweet-cards/${route.slug}/${route.revision}/${route.format}.png`
-    const cached = await env.CARDS.get(key)
+    let cached: StoredObject | null
+    try {
+      cached = await env.CARDS.get(key)
+    } catch (error) {
+      console.error('social image cache read failed', {
+        format: route.format,
+        revision: route.revision,
+        errorName: error instanceof Error ? error.name : 'UnknownError'
+      })
+      cached = null
+    }
     if (cached) {
       return new Response(request.method === 'HEAD' ? null : cached.body, { headers: cacheHeaders })
     }
@@ -144,7 +154,15 @@ export const handleRequest = async (
     const bytes = await (
       render ?? ((model, format) => renderTweetCard(model, format, renderAssets(env)))
     )(presentation.model, route.format)
-    await env.CARDS.put(key, bytes, { httpMetadata: { contentType: 'image/png' } })
+    try {
+      await env.CARDS.put(key, bytes, { httpMetadata: { contentType: 'image/png' } })
+    } catch (error) {
+      console.error('social image cache write failed', {
+        format: route.format,
+        revision: route.revision,
+        errorName: error instanceof Error ? error.name : 'UnknownError'
+      })
+    }
     return new Response(request.method === 'HEAD' ? null : bytes, { headers: cacheHeaders })
   } catch (error) {
     console.error('social image request failed', {

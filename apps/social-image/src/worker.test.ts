@@ -95,6 +95,31 @@ describe('social image worker', () => {
     expect(renders).toBe(0)
   })
 
+  test('serves a rendered card when the optional R2 cache write fails', async () => {
+    const card = await presentation()
+    const baseEnv = testEnv(card)
+    const env: SocialImageEnv = {
+      ...baseEnv,
+      CARDS: {
+        ...baseEnv.CARDS,
+        put: async () => {
+          throw new Error('R2 unavailable')
+        }
+      }
+    }
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const rendered = new Uint8Array([137, 80, 78, 71])
+
+    const response = await handleRequest(
+      new Request(card.images.openGraph),
+      env,
+      async () => rendered
+    )
+
+    expect(response.status).toBe(200)
+    expect(new Uint8Array(await response.arrayBuffer())).toEqual(rendered)
+  })
+
   test('redirects an obsolete revision to the current immutable URL', async () => {
     const card = await presentation()
     const env = testEnv(card)
