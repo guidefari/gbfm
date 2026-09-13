@@ -67,7 +67,8 @@ const reminderLayer = (d1: D1Database, messages: Array<OutboundEmailMessage>) =>
 
 describe('reminder queue delivery', () => {
   test('reclaims a failed delivery on queue retry and persists the accepted receipt', async () => {
-    const d1 = await createMigratedD1Database()
+    await using d1Resource = await createMigratedD1Database()
+    const d1 = d1Resource.database
     const database = Effect.runSync(withTestLayer(Database, DatabaseLayer(d1)))
     const messages: Array<OutboundEmailMessage> = []
     const layer = reminderLayer(d1, messages)

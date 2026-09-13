@@ -39,16 +39,37 @@ export const applyD1Migrations = async (
   }
 }
 
-/** Creates a Miniflare D1 database with the requested forward migrations. */
+/** An isolated migrated D1 binding and the Miniflare runtime that owns it. */
+export interface MigratedD1Database extends AsyncDisposable {
+  readonly database: D1Database
+  readonly dispose: () => Promise<void>
+}
+
+/** Creates an explicitly owned Miniflare D1 database with the requested forward migrations. */
 export const createMigratedD1Database = async (
   migrations: ReadonlyArray<(typeof d1MigrationFiles)[number]> = d1MigrationFiles
-) => {
+): Promise<MigratedD1Database> => {
   const miniflare = new Miniflare({
     script: 'export default { fetch() { return new Response() } }',
     modules: true,
     d1Databases: { DB: 'test-d1' }
   })
-  const database = await miniflare.getD1Database('DB')
-  await applyD1Migrations(database, migrations)
-  return database
+  try {
+    const database = await miniflare.getD1Database('DB')
+    await applyD1Migrations(database, migrations)
+    let disposed = false
+    const dispose = async () => {
+      if (disposed) return
+      disposed = true
+      await miniflare.dispose()
+    }
+    return {
+      database,
+      dispose,
+      [Symbol.asyncDispose]: dispose
+    }
+  } catch (cause) {
+    await miniflare.dispose()
+    throw cause
+  }
 }

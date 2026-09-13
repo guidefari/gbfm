@@ -1,11 +1,13 @@
 import type { D1Database } from '@cloudflare/workers-types'
 import { drizzle } from 'drizzle-orm/d1'
 import { Effect } from 'effect'
-import { Miniflare } from 'miniflare'
-import { beforeEach, describe, expect, test } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 import * as schema from '@/db/exports'
 import type { DatabaseClient } from '@/db/layer'
-import { createMigratedD1Database } from '@/test/migrate-d1'
+import {
+  createMigratedD1Database,
+  type MigratedD1Database
+} from '@/test/migrate-d1'
 import { MusicIdentityStorageError } from './errors'
 import {
   auditMusicIdentities,
@@ -15,6 +17,7 @@ import {
 
 let database: D1Database
 let db: DatabaseClient
+let databaseResource: MigratedD1Database
 
 const run = <A>(effect: Effect.Effect<A, MusicIdentityStorageError>) => Effect.runPromise(effect)
 
@@ -81,7 +84,8 @@ const applyToCompletion = async (batchSize = 10) => {
 }
 
 beforeEach(async () => {
-  database = await createMigratedD1Database()
+  databaseResource = await createMigratedD1Database()
+  database = databaseResource.database
   db = drizzle(database, { schema })
   await database.batch([
     database
@@ -95,6 +99,8 @@ beforeEach(async () => {
       .bind('spotify', 'Spotify')
   ])
 })
+
+afterEach(() => databaseResource.dispose())
 
 describe('identity maintenance', () => {
   test('keeps the default preview immutable', async () => {
@@ -702,12 +708,8 @@ describe('identity maintenance', () => {
   })
 
   test('pages clean aliases before detecting later defects', async () => {
-    const miniflare = new Miniflare({
-      script: 'export default { fetch() { return new Response() } }',
-      modules: true,
-      d1Databases: { DB: 'orphan-alias-d1' }
-    })
-    database = await miniflare.getD1Database('DB')
+    await using aliasDatabaseResource = await createMigratedD1Database([])
+    database = aliasDatabaseResource.database
     await database
       .prepare('CREATE TABLE music_source_identities (source_key text PRIMARY KEY)')
       .run()

@@ -84,7 +84,8 @@ const deliveryLayer = (d1: D1Database, transport: Layer.Layer<EmailTransportServ
 
 describe('EmailDelivery', () => {
   test('rejects an invalid sender while composing delivery before inserting PENDING', async () => {
-    const d1 = await createMigratedD1Database()
+    await using d1Resource = await createMigratedD1Database()
+    const d1 = d1Resource.database
     const database = Effect.runSync(withTestLayer(Database, DatabaseLayer(d1)))
     const recording = makeRecordingEmailTransport()
     const config = createConfig(workerBindings())
@@ -109,7 +110,8 @@ describe('EmailDelivery', () => {
   })
 
   test('records provider acceptance through the recording transport and returns its receipt', async () => {
-    const d1 = await createMigratedD1Database()
+    await using d1Resource = await createMigratedD1Database()
+    const d1 = d1Resource.database
     const database = Effect.runSync(withTestLayer(Database, DatabaseLayer(d1)))
     const recording = makeRecordingEmailTransport({ messageId: 'recorded-1' })
 
@@ -153,7 +155,8 @@ describe('EmailDelivery', () => {
   })
 
   test('persists PENDING before the transport observes the message', async () => {
-    const d1 = await createMigratedD1Database()
+    await using d1Resource = await createMigratedD1Database()
+    const d1 = d1Resource.database
     const database = Effect.runSync(withTestLayer(Database, DatabaseLayer(d1)))
     const observedStatuses: string[] = []
     const transport = Layer.succeed(EmailTransport, {
@@ -183,7 +186,8 @@ describe('EmailDelivery', () => {
   })
 
   test('records a safe rejection category and returns a typed delivery failure', async () => {
-    const d1 = await createMigratedD1Database()
+    await using d1Resource = await createMigratedD1Database()
+    const d1 = d1Resource.database
     const database = Effect.runSync(withTestLayer(Database, DatabaseLayer(d1)))
     const recording = makeRecordingEmailTransport({
       failure: new EmailRejected({ reason: 'delivery-failed' })
@@ -216,7 +220,8 @@ describe('EmailDelivery', () => {
   })
 
   test('does not overwrite terminal delivery-log rows', async () => {
-    const d1 = await createMigratedD1Database()
+    await using d1Resource = await createMigratedD1Database()
+    const d1 = d1Resource.database
     const database = Effect.runSync(withTestLayer(Database, DatabaseLayer(d1)))
     const sent = await createPendingEmailDeliveryLog(
       {
@@ -265,7 +270,8 @@ describe('EmailDelivery', () => {
   })
 
   test('marks unavailable transport failures FAILED before returning an unavailable error', async () => {
-    const d1 = await createMigratedD1Database()
+    await using d1Resource = await createMigratedD1Database()
+    const d1 = d1Resource.database
     const database = Effect.runSync(withTestLayer(Database, DatabaseLayer(d1)))
     const recording = makeRecordingEmailTransport({ unavailable: true })
 
@@ -288,7 +294,8 @@ describe('EmailDelivery', () => {
   })
 
   test('returns persistence evidence when marking a failed delivery conflicts with a terminal transition', async () => {
-    const d1 = await createMigratedD1Database()
+    await using d1Resource = await createMigratedD1Database()
+    const d1 = d1Resource.database
     const database = Effect.runSync(withTestLayer(Database, DatabaseLayer(d1)))
     const conflictingTransport = Layer.succeed(EmailTransport, {
       send: () =>
