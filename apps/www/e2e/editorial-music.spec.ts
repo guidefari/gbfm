@@ -12,6 +12,25 @@ const album = {
   artistNames: ['Test artist'],
   description: null
 }
+const resolvedAlbum = {
+  entityType: 'album',
+  entity: {
+    id: album.id,
+    title: album.title,
+    artistNames: album.artistNames,
+    releaseDate: null,
+    coverImageUrl: album.coverImageUrl,
+    genres: [],
+    albumType: 'album',
+    slug: album.slug,
+    publishedAt: null,
+    createdById: null,
+    createdAt: '2026-01-01',
+    updatedAt: '2026-01-01'
+  },
+  links: [],
+  coverImageUrl: null
+}
 const tracks = [
   { title: 'Opening track', artists: 'Test artist', trackUrl, previewUrl: null },
   { title: 'Closing track', artists: 'Guest artist', trackUrl }
@@ -95,6 +114,18 @@ async function openEditorial(page: Page, content: string) {
   await page.goto('/editorial/test-story')
 }
 
+async function pasteSpotifyUrl(page: Page, url: string) {
+  const editor = page.locator('.cm-content')
+  await editor.click()
+  await editor.evaluate((element, value) => {
+    const clipboardData = new DataTransfer()
+    clipboardData.setData('text/plain', value)
+    element.dispatchEvent(
+      new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData })
+    )
+  }, url)
+}
+
 async function setupEditorial(page: Page) {
   await page.addInitScript(() =>
     localStorage.setItem('gbfm-onboarding.json', JSON.stringify({ hasSeenWelcome: true }))
@@ -154,6 +185,56 @@ async function setupEditorial(page: Page) {
   })
   await page.route('**/api/music-reminders**', (route) => route.fulfill({ json: {} }))
 }
+
+test('pending Spotify embeds gate saving until resolution and render the resolved entity', async ({
+  page
+}) => {
+  await setupEditorial(page)
+  let releaseResolution: () => void = () => {}
+  const resolutionHeld = new Promise<void>((resolve) => {
+    releaseResolution = resolve
+  })
+  await page.route('**/api/music/resolve', async (route) => {
+    await resolutionHeld
+    await route.fulfill({ json: resolvedAlbum })
+  })
+  await page.goto('/new/editorial')
+  await page.getByLabel('Title').fill('Spotify story')
+
+  const resolutionRequest = page.waitForRequest(
+    (request) => request.method() === 'POST' && request.url().endsWith('/api/music/resolve')
+  )
+  await pasteSpotifyUrl(page, albumUrl)
+  await resolutionRequest
+
+  const pending = page.locator('.editorial-music-entity-pending')
+  await expect(pending).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Save draft' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Publish' })).toBeDisabled()
+
+  releaseResolution()
+  await expect(pending).toHaveCount(0)
+  await page.locator('.cm-content').press('End')
+  await page.locator('.cm-content').press('Enter')
+  await expect(page.getByRole('heading', { name: album.title })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Save draft' })).toBeEnabled()
+  await expect(page.getByRole('button', { name: 'Publish' })).toBeEnabled()
+})
+
+test('failed Spotify resolution restores the URL and clears pending state', async ({ page }) => {
+  await setupEditorial(page)
+  await page.route('**/api/music/resolve', (route) =>
+    route.fulfill({ status: 400, json: { _tag: 'BadRequest' } })
+  )
+  await page.goto('/new/editorial')
+  await page.getByLabel('Title').fill('Spotify story')
+  await pasteSpotifyUrl(page, albumUrl)
+
+  await expect(page.locator('.editorial-music-entity-pending')).toHaveCount(0)
+  await expect(page.locator('.cm-content')).toContainText(albumUrl)
+  await expect(page.getByRole('button', { name: 'Save draft' })).toBeEnabled()
+  await expect(page.getByRole('button', { name: 'Publish' })).toBeEnabled()
+})
 
 test('composer inserts music and media through its pickers and previews tracks', async ({
   page

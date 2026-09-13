@@ -1,15 +1,14 @@
 import { EditorState, RangeSetBuilder, StateField, type Extension } from '@codemirror/state'
-import { Decoration, EditorView, type DecorationSet } from '@codemirror/view'
+import { Decoration, EditorView, ViewPlugin, type DecorationSet } from '@codemirror/view'
 import { Effect, Option } from 'effect'
-import {
-  parseMusicEntityMarkdownEffect,
-  serializeMusicEntity
-} from '@/components/editor/music-entity/music-entity-markdown'
-import {
-  parsePendingMusicEntityEffect,
-  transformPastedEditorialContentEffect
-} from '@/components/editorial/editorial-paste'
+import { parseMusicEntityMarkdownEffect } from '@/components/editor/music-entity/music-entity-markdown'
+import { parsePendingMusicEntityEffect } from '@/components/editorial/editorial-paste'
 import type { MusicEntityResolution } from './editorial-music-resolution'
+import {
+  createEditorialMusicLifecycle,
+  type EditorialMusicDocumentChange,
+  type EditorialMusicSelection
+} from './editorial-music-lifecycle'
 import {
   PendingMusicEntityWidget,
   ResolvedMusicEntityWidget,
@@ -25,8 +24,14 @@ export type MusicEntityEditorOptions = MusicEntityWidgetLifecycle & {
 }
 
 export function createMusicEntityEditorEmbeds(options: MusicEntityEditorOptions): Extension {
+  const lifecycle = createEditorialMusicLifecycle({ resolve: options.resolve })
   const entityState = StateField.define<DecorationSet>({
-    create: (state) => musicEntityDecorations(state, options),
+    create: (state) => {
+      const document = state.doc.toString()
+      lifecycle.initialize(document)
+      options.onPendingChange(lifecycle.pendingCount(document))
+      return musicEntityDecorations(state, options)
+    },
     update(decorations, transaction) {
       return transaction.docChanged || transaction.selection !== transaction.startState.selection
         ? musicEntityDecorations(transaction.state, options)
@@ -35,8 +40,15 @@ export function createMusicEntityEditorEmbeds(options: MusicEntityEditorOptions)
     provide: (field) => EditorView.decorations.from(field)
   })
 
-  const pendingListener = EditorView.updateListener.of((update) => {
-    if (update.docChanged) options.onPendingChange(countPendingEntities(update.state))
+  const lifecycleListener = EditorView.updateListener.of((update) => {
+    if (!update.docChanged) return
+    const changes: EditorialMusicDocumentChange[] = []
+    update.changes.iterChanges((fromA, toA, _fromB, _toB, inserted) => {
+      changes.push({ from: fromA, to: toA, insert: inserted.toString() })
+    })
+    const document = update.state.doc.toString()
+    lifecycle.update(document, changes)
+    options.onPendingChange(lifecycle.pendingCount(document))
   })
 
   const pasteHandler = EditorView.domEventHandlers({
@@ -44,35 +56,40 @@ export function createMusicEntityEditorEmbeds(options: MusicEntityEditorOptions)
       const pastedText = event.clipboardData?.getData('text/plain')
       if (!pastedText) return false
 
-      const transformed = Effect.runSync(
-        transformPastedEditorialContentEffect(pastedText).pipe(
-          Effect.catch(() =>
-            Effect.succeed({ content: pastedText, spotifyUrls: new Array<string>() })
-          )
-        )
+      const selections: EditorialMusicSelection[] = view.state.selection.ranges.map(
+        ({ from, to }) => ({ from, to })
       )
-      if (transformed.spotifyUrls.length === 0) return false
+      const paste = lifecycle.preparePaste({
+        document: view.state.doc.toString(),
+        selections,
+        text: pastedText
+      })
+      if (!paste) return false
 
       event.preventDefault()
       view.dispatch({
-        ...view.state.replaceSelection(transformed.content),
+        ...view.state.replaceSelection(paste.content),
         scrollIntoView: true
       })
-
-      void options
-        .resolve(transformed.spotifyUrls)
-        .then((results) => settlePendingEntities(view, results, options))
-        .catch(() => {
-          const failed = transformed.spotifyUrls.map(
-            (url): MusicEntityResolution => ({ status: 'failed', url })
-          )
-          settlePendingEntities(view, failed, options)
-        })
+      void paste.commit().then((settlement) => {
+        if (!view.dom.isConnected) return
+        if (settlement.changes.length > 0) view.dispatch({ changes: settlement.changes })
+        if (settlement.failureCount > 0) options.onResolutionFailure(settlement.failureCount)
+      })
       return true
     }
   })
 
-  return [entityState, pendingListener, pasteHandler]
+  const lifecyclePlugin = ViewPlugin.fromClass(
+    class {
+      destroy() {
+        lifecycle.dispose()
+        options.onPendingChange(0)
+      }
+    }
+  )
+
+  return [entityState, lifecycleListener, pasteHandler, lifecyclePlugin]
 }
 
 function musicEntityDecorations(
@@ -116,51 +133,6 @@ function musicEntityDecorations(
   }
 
   return decorations.finish()
-}
-
-function settlePendingEntities(
-  view: EditorView,
-  results: ReadonlyArray<MusicEntityResolution>,
-  options: MusicEntityEditorOptions
-): void {
-  if (!view.dom.isConnected) return
-
-  const resultsByUrl = new Map(results.map((result) => [result.url, result]))
-  const changes: Array<{ readonly from: number; readonly to: number; readonly insert: string }> = []
-
-  for (let lineNumber = 1; lineNumber <= view.state.doc.lines; lineNumber += 1) {
-    const line = view.state.doc.line(lineNumber)
-    const pending = Effect.runSync(Effect.option(parsePendingMusicEntityEffect(line.text)))
-    if (Option.isNone(pending)) continue
-
-    const result = resultsByUrl.get(pending.value.url)
-    if (!result) continue
-
-    changes.push({
-      from: line.from,
-      to: line.to,
-      insert:
-        result.status === 'resolved'
-          ? serializeMusicEntity(result.reference)
-          : pending.value.fallback === 'restore-url'
-            ? result.url
-            : ''
-    })
-  }
-
-  if (changes.length > 0) view.dispatch({ changes })
-  const failureCount = results.filter((result) => result.status === 'failed').length
-  if (failureCount > 0) options.onResolutionFailure(failureCount)
-}
-
-function countPendingEntities(state: EditorState): number {
-  let count = 0
-  for (let lineNumber = 1; lineNumber <= state.doc.lines; lineNumber += 1) {
-    const line = state.doc.line(lineNumber)
-    const pending = Effect.runSync(Effect.option(parsePendingMusicEntityEffect(line.text)))
-    if (Option.isSome(pending)) count += 1
-  }
-  return count
 }
 
 function selectionTouchesLine(state: EditorState, from: number, to: number): boolean {
