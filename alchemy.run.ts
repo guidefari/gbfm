@@ -8,6 +8,7 @@ import { dnsRedirects } from './alchemy/dns'
 import { emailResources } from './alchemy/email'
 import { qrPdfWorker } from './alchemy/qr-pdf'
 import { secretsStore } from './alchemy/secrets'
+import { socialImageWorker } from './alchemy/social-image'
 import { stageConfig } from './alchemy/stage'
 import { storage } from './alchemy/storage'
 import { website } from './alchemy/www'
@@ -43,6 +44,7 @@ export default Alchemy.Stack(
       qrPdf,
       adminEmail: deployment.adminEmail
     })
+    const socialImages = yield* socialImageWorker(config, store, api)
 
     yield* dnsRedirects(config)
 
@@ -50,6 +52,7 @@ export default Alchemy.Stack(
       config,
       websiteConfig: deployment.website,
       api,
+      socialImages,
       apiUrl: api.url
     })
 
@@ -62,7 +65,8 @@ export default Alchemy.Stack(
       wwwDomains: www.urls,
       databaseName: store.db.databaseName,
       userContentBucketName: store.userContent.bucketName,
-      mixesBucketName: store.mixes.bucketName
+      mixesBucketName: store.mixes.bucketName,
+      socialCardsBucketName: store.socialCards.bucketName
     }
   })
 )

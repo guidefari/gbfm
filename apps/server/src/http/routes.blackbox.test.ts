@@ -20,6 +20,7 @@ import {
 } from '@gbfm/api/post'
 import { SearchResults } from '@gbfm/api/search'
 import { decodeResponseBody } from '@gbfm/api/testing'
+import { TweetCardPresentation } from '@gbfm/tweet-card'
 import { and, eq } from 'drizzle-orm'
 import { Layer } from 'effect'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
@@ -3585,6 +3586,68 @@ describe('GET /api/content/posts/micro/:slug', () => {
       new Request(`http://localhost/api/content/posts/micro/does-not-exist-${crypto.randomUUID()}`)
     )
     expect(res.status).toBe(404)
+  })
+})
+
+describe('GET /api/content/posts/micro/:slug/share-presentation', () => {
+  it('combines the tweet, creator, and music entity into revisioned image URLs', async () => {
+    const suffix = crypto.randomUUID()
+    const userId = `share-presentation-${suffix}`
+    const slug = `share-presentation-${suffix}`
+    const trackId = crypto.randomUUID()
+    await db.insert(user).values({
+      id: userId,
+      name: 'Share Author',
+      username: `share-author-${suffix}`,
+      image: 'https://cdn.goosebumps.fm/user-content/share-author.png',
+      email: `${userId}@example.com`
+    })
+    await db.insert(musicTracksTable).values({
+      id: trackId,
+      title: 'A Different Track',
+      slug: `different-track-${suffix}`,
+      artistNames: ['Artist One', 'Artist Two'],
+      coverImageUrl: 'https://cdn.goosebumps.fm/user-content/different-track.png'
+    })
+    const [post] = await db
+      .insert(postsTable)
+      .values({
+        title: 'This commentary identifies the rendered card',
+        slug,
+        type: 'micro',
+        draft: false,
+        musicEntityType: 'track',
+        musicEntityId: trackId
+      })
+      .returning()
+    if (!post) throw new Error('Failed to seed post')
+    await db.insert(postCreators).values({ postId: post.id, creatorId: userId })
+
+    try {
+      const response = await webHandler.handler(
+        new Request(`http://localhost/api/content/posts/micro/${slug}/share-presentation`)
+      )
+      expect(response.status).toBe(200)
+      const body = await decodeResponseBody(TweetCardPresentation, response)
+      expect(body.model).toMatchObject({
+        commentary: 'This commentary identifies the rendered card',
+        authorName: 'Share Author',
+        username: `share-author-${suffix}`,
+        avatarUrl: 'https://cdn.goosebumps.fm/user-content/share-author.png',
+        entityLabel: 'TRACK',
+        entityTitle: 'A Different Track',
+        entityArtists: 'Artist One, Artist Two',
+        coverImageUrl: 'https://cdn.goosebumps.fm/user-content/different-track.png'
+      })
+      expect(body.images.openGraph).toBe(
+        `https://goosebumps.fm/social/tweets/${slug}/${body.revision}/open-graph.png`
+      )
+    } finally {
+      await db.delete(postCreators).where(eq(postCreators.postId, post.id))
+      await db.delete(postsTable).where(eq(postsTable.id, post.id))
+      await db.delete(musicTracksTable).where(eq(musicTracksTable.id, trackId))
+      await db.delete(user).where(eq(user.id, userId))
+    }
   })
 })
 

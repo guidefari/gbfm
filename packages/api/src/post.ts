@@ -1,5 +1,6 @@
 import { Schema } from 'effect'
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/unstable/httpapi'
+import { TweetCardPresentation } from '@gbfm/tweet-card'
 import { AuthMiddleware } from './middleware/auth'
 
 const UuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -290,6 +291,17 @@ export const PostGroup = HttpApiGroup.make('post')
       success: CompiledMicroPostResponse,
       error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
     })
+  )
+  .add(
+    HttpApiEndpoint.get(
+      'getTweetSharePresentation',
+      '/api/content/posts/micro/:slug/share-presentation',
+      {
+        params: SlugParam,
+        success: TweetCardPresentation,
+        error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
+      }
+    )
   )
   .add(
     HttpApiEndpoint.get('getMicroPostBySlug', '/api/content/posts/micro/:slug', {

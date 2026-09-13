@@ -1,4 +1,5 @@
 import { Schema } from 'effect'
+import { TweetCardPresentation } from '@gbfm/tweet-card'
 import { DEFAULT_OG_IMAGE, generateMicroPostSEO } from './lib/seo'
 
 type Fetcher = {
@@ -8,6 +9,7 @@ type Fetcher = {
 export interface SeoWorkerEnv {
   readonly API: Fetcher
   readonly ASSETS: Fetcher
+  readonly SOCIAL_IMAGES: Fetcher
 }
 
 const TweetMetadataSource = Schema.Struct({
@@ -35,10 +37,10 @@ const escapeHtml = (value: string) =>
       })[character] ?? character
   )
 
-const renderTweetHead = (post: TweetMetadataSource, slug: string) => {
+const renderTweetHead = (post: TweetMetadataSource, slug: string, socialImage?: string) => {
   const seo = generateMicroPostSEO(post, slug)
   const title = `${seo.title} | goosebumps.fm`
-  const image = seo.image ?? DEFAULT_OG_IMAGE
+  const image = socialImage ?? seo.image ?? DEFAULT_OG_IMAGE
   const authors = post.creators?.map((creator) => creator.name) ?? []
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -71,7 +73,10 @@ const renderTweetHead = (post: TweetMetadataSource, slug: string) => {
     meta('property', 'og:url', seo.url),
     meta('property', 'og:site_name', 'goosebumps.fm'),
     meta('property', 'og:image', image),
-    meta('property', 'og:image:alt', `${seo.title} thumbnail`),
+    ...(socialImage
+      ? [meta('property', 'og:image:width', '1200'), meta('property', 'og:image:height', '630')]
+      : []),
+    meta('property', 'og:image:alt', `${seo.title} on goosebumps.fm`),
     meta('property', 'article:published_time', post.createdAt),
     meta('property', 'article:modified_time', post.updatedAt),
     ...authors.map((author) => meta('property', 'article:author', author)),
@@ -79,7 +84,7 @@ const renderTweetHead = (post: TweetMetadataSource, slug: string) => {
     meta('name', 'twitter:title', title),
     meta('name', 'twitter:description', seo.description),
     meta('name', 'twitter:image', image),
-    meta('name', 'twitter:image:alt', `${seo.title} thumbnail`),
+    meta('name', 'twitter:image:alt', `${seo.title} on goosebumps.fm`),
     `<link rel="canonical" href="${escapeHtml(seo.url)}" data-gbfm-edge-seo>`,
     `<script type="application/ld+json" data-gbfm-edge-seo>${safeJsonLd}</script>`
   ].join('\n    ')
@@ -92,8 +97,25 @@ const injectHead = (html: string, head: string) => {
 
 const tweetSlug = (pathname: string) => /^\/tweet\/([^/]+)\/?$/.exec(pathname)?.[1]
 
+const fetchTweetSocialImage = async (env: SeoWorkerEnv, slug: string) => {
+  try {
+    const response = await env.API.fetch(
+      new Request(
+        `https://api.internal/api/content/posts/micro/${encodeURIComponent(slug)}/share-presentation`
+      )
+    )
+    if (!response.ok) return undefined
+    return Schema.decodeUnknownSync(TweetCardPresentation)(await response.json()).images.openGraph
+  } catch {
+    return undefined
+  }
+}
+
 export const handleRequest = async (request: Request, env: SeoWorkerEnv): Promise<Response> => {
-  const slug = request.method === 'GET' ? tweetSlug(new URL(request.url).pathname) : undefined
+  const pathname = new URL(request.url).pathname
+  if (pathname.startsWith('/social/tweets/')) return env.SOCIAL_IMAGES.fetch(request)
+
+  const slug = request.method === 'GET' ? tweetSlug(pathname) : undefined
   const assetResponse = await env.ASSETS.fetch(request)
   if (!slug || !assetResponse.ok) return assetResponse
   const fallbackResponse = assetResponse.clone()
@@ -105,7 +127,11 @@ export const handleRequest = async (request: Request, env: SeoWorkerEnv): Promis
     if (!apiResponse.ok) return assetResponse
 
     const post = Schema.decodeUnknownSync(TweetMetadataSource)(await apiResponse.json())
-    const html = injectHead(await assetResponse.text(), renderTweetHead(post, post.slug))
+    const socialImage = await fetchTweetSocialImage(env, post.slug)
+    const html = injectHead(
+      await assetResponse.text(),
+      renderTweetHead(post, post.slug, socialImage)
+    )
     const headers = new Headers(assetResponse.headers)
     headers.delete('content-length')
     headers.delete('content-encoding')

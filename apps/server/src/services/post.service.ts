@@ -16,6 +16,11 @@ import {
   sql
 } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
+import {
+  buildTweetCardPresentation,
+  type TweetCardEntityInput,
+  type TweetCardPresentation
+} from '@gbfm/tweet-card'
 import { Database } from '@/db/layer'
 import {
   hasEntityLabel,
@@ -122,6 +127,9 @@ export interface PostService {
   readonly getMicroPostBySlug: (
     slug: string
   ) => Effect.Effect<SelectMdxCompiledMicroPost, DatabaseError | NotFoundError>
+  readonly getTweetSharePresentation: (
+    slug: string
+  ) => Effect.Effect<TweetCardPresentation, DatabaseError | NotFoundError>
   readonly getMicroPostReferenceBySlug: (
     slug: string
   ) => Effect.Effect<{ readonly id: string; readonly slug: string }, DatabaseError | NotFoundError>
@@ -1362,6 +1370,122 @@ const getMicroPostBySlugEffect = (slug: string, mdx: MdxService) =>
     })
   )
 
+const getTweetCardEntity = (type: string | null, id: string | null) =>
+  Effect.gen(function* () {
+    if (!id) return null
+    const db = yield* Database
+
+    if (type === 'album') {
+      const rows = yield* Effect.tryPromise({
+        try: () =>
+          db
+            .select({
+              title: musicAlbumsTable.title,
+              artists: musicAlbumsTable.artistNames,
+              coverImageUrl: musicAlbumsTable.coverImageUrl
+            })
+            .from(musicAlbumsTable)
+            .where(eq(musicAlbumsTable.id, id))
+            .limit(1),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to fetch tweet album: ${getErrorMessage(error)}`,
+            operation: 'select',
+            table: 'music_albums'
+          })
+      })
+      const entity = rows[0]
+      return entity ? ({ type, ...entity } satisfies TweetCardEntityInput) : null
+    }
+
+    if (type === 'track') {
+      const rows = yield* Effect.tryPromise({
+        try: () =>
+          db
+            .select({
+              title: musicTracksTable.title,
+              artists: musicTracksTable.artistNames,
+              coverImageUrl: musicTracksTable.coverImageUrl
+            })
+            .from(musicTracksTable)
+            .where(eq(musicTracksTable.id, id))
+            .limit(1),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to fetch tweet track: ${getErrorMessage(error)}`,
+            operation: 'select',
+            table: 'music_tracks'
+          })
+      })
+      const entity = rows[0]
+      return entity ? ({ type, ...entity } satisfies TweetCardEntityInput) : null
+    }
+
+    if (type === 'playlist') {
+      const rows = yield* Effect.tryPromise({
+        try: () =>
+          db
+            .select({
+              title: musicPlaylistsTable.title,
+              coverImageUrl: musicPlaylistsTable.coverImageUrl
+            })
+            .from(musicPlaylistsTable)
+            .where(eq(musicPlaylistsTable.id, id))
+            .limit(1),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to fetch tweet playlist: ${getErrorMessage(error)}`,
+            operation: 'select',
+            table: 'music_playlists'
+          })
+      })
+      const entity = rows[0]
+      return entity ? ({ type, ...entity, artists: null } satisfies TweetCardEntityInput) : null
+    }
+
+    return null
+  })
+
+const getTweetSharePresentationEffect = (slug: string, mdx: MdxService) =>
+  Effect.gen(function* () {
+    const post = yield* getMicroPostBySlugEffect(slug, mdx)
+    const entity = yield* getTweetCardEntity(post.musicEntityType, post.musicEntityId)
+    const creator = post.creators?.[0]
+    const db = yield* Database
+    const avatarRows = creator
+      ? yield* Effect.tryPromise({
+          try: () =>
+            db
+              .select({ image: usersTable.image })
+              .from(usersTable)
+              .where(eq(usersTable.id, creator.id))
+              .limit(1),
+          catch: (error) =>
+            new DatabaseError({
+              message: `Failed to fetch tweet creator avatar: ${getErrorMessage(error)}`,
+              operation: 'select',
+              table: 'user'
+            })
+        })
+      : []
+
+    return yield* Effect.promise(() =>
+      buildTweetCardPresentation({
+        slug: post.slug,
+        commentary: post.title ?? '',
+        createdAt: post.createdAt.toISOString(),
+        creator: creator
+          ? {
+              name: creator.name,
+              username: creator.username,
+              avatarUrl: avatarRows[0]?.image ?? null
+            }
+          : null,
+        entity
+      })
+    )
+  }).pipe(Effect.withSpan('post.getTweetSharePresentation', { attributes: { slug } }))
+
 const getMicroPostByIdEffect = (id: string, mdx: MdxService) =>
   Effect.gen(function* () {
     const db = yield* Database
@@ -2084,6 +2208,7 @@ export const PostServiceLayer = Layer.effect(
       getEditorialBySlug: (slug) => provideDb(getEditorialBySlugEffect(slug, mdx)),
       getMicroPosts: (opts) => provideDb(getMicroPostsEffect(opts, mdx)),
       getMicroPostBySlug: (slug) => provideDb(getMicroPostBySlugEffect(slug, mdx)),
+      getTweetSharePresentation: (slug) => provideDb(getTweetSharePresentationEffect(slug, mdx)),
       getMicroPostReferenceBySlug: (slug) => provideDb(getMicroPostReferenceBySlugEffect(slug)),
       getMicroPostById: (id) => provideDb(getMicroPostByIdEffect(id, mdx)),
       getPostTags: () => provideDb(getPostTagsEffect()),

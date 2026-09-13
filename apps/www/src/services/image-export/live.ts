@@ -1,41 +1,22 @@
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
-import { toBlob, toPng } from 'html-to-image'
 import { ImageRenderError, ImageSaveError, ImageShareDismissed } from './errors'
-import { ImageExport, type ImageRenderOptions, type ImageSaveOutcome } from './service'
+import { ImageExport, type ImageSaveOutcome } from './service'
 
 const OBJECT_URL_TTL_MS = 10_000
-
-const isWebKit = () => {
-  if (!('navigator' in globalThis)) return false
-  return /AppleWebKit/.test(navigator.userAgent) && !/Chrome\//.test(navigator.userAgent)
-}
 
 const canShareFiles = Effect.sync(() => 'navigator' in globalThis && 'canShare' in navigator)
 
 const isAbort = (cause: unknown) => cause instanceof DOMException && cause.name === 'AbortError'
 
-const render = (node: HTMLElement, options: ImageRenderOptions) =>
-  Effect.gen(function* () {
-    // WebKit rasterizes the first render before embedded images finish
-    // decoding, dropping the artwork; warm-up renders work around it
-    if (isWebKit()) {
-      yield* Effect.tryPromise({
-        try: () => toPng(node, options).then(() => toPng(node, options)),
-        catch: (cause) => new ImageRenderError({ message: 'webkit warm-up render failed', cause })
-      })
-    }
-
-    const blob = yield* Effect.tryPromise({
-      try: () => toBlob(node, options),
-      catch: (cause) => new ImageRenderError({ message: 'rasterization failed', cause })
-    })
-
-    if (!blob) {
-      return yield* new ImageRenderError({ message: 'rasterization produced no blob' })
-    }
-
-    return blob
+const load = (url: string) =>
+  Effect.tryPromise({
+    try: async () => {
+      const response = await fetch(url)
+      if (!response.ok) throw new Error(`Image request returned ${response.status}`)
+      return response.blob()
+    },
+    catch: (cause) => new ImageRenderError({ message: 'image request failed', cause })
   })
 
 /** Data URLs above a small cap are silently dropped by iOS Safari, so the
@@ -75,7 +56,7 @@ const save = (blob: Blob, fileName: string): Effect.Effect<ImageSaveOutcome, Ima
   })
 
 export const ImageExportLive = Layer.sync(ImageExport, () => ({
-  render,
+  load,
   save,
   canShareFiles
 }))
