@@ -146,7 +146,13 @@ export const handleRequest = async (
     )(presentation.model, route.format)
     await env.CARDS.put(key, bytes, { httpMetadata: { contentType: 'image/png' } })
     return new Response(request.method === 'HEAD' ? null : bytes, { headers: cacheHeaders })
-  } catch {
+  } catch (error) {
+    console.error('social image request failed', {
+      method: request.method,
+      format: route.format,
+      revision: route.revision,
+      errorName: error instanceof Error ? error.name : 'UnknownError'
+    })
     return new Response('Image generation failed', { status: 500 })
   }
 }
@@ -175,7 +181,8 @@ export const cleanupExpiredCards = async (bucket: CardBucket, now: Date) => {
 }
 
 export default {
-  fetch: handleRequest,
+  fetch: (request: Request, env: SocialImageEnv, _context: Pick<ExecutionContext, 'waitUntil'>) =>
+    handleRequest(request, env),
   scheduled: (_controller: ScheduledController, env: SocialImageEnv): Promise<void> =>
     cleanupExpiredCards(env.CARDS, new Date()).then((report) => {
       console.log('social image cleanup finished', report)

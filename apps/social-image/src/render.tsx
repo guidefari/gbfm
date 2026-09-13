@@ -15,10 +15,17 @@ export interface TweetCardRenderAssets {
 let runtimeReady: Promise<void> | undefined
 
 const initializeRuntime = (assets: TweetCardRenderAssets) => {
-  runtimeReady ??= Promise.all([
-    assets.loadBinary('yoga.wasm').then(initSatori),
-    assets.loadBinary('resvg.wasm').then(initWasm)
-  ]).then(() => undefined)
+  if (!runtimeReady) {
+    runtimeReady = Promise.all([
+      assets.loadBinary('yoga.wasm').then(initSatori),
+      assets.loadBinary('resvg.wasm').then(initWasm)
+    ])
+      .then(() => undefined)
+      .catch((error) => {
+        runtimeReady = undefined
+        throw error
+      })
+  }
   return runtimeReady
 }
 

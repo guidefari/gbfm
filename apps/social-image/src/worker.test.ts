@@ -1,6 +1,6 @@
 import { buildTweetCardPresentation, type TweetCardPresentation } from '@gbfm/tweet-card'
-import { describe, expect, test } from 'vitest'
-import { cleanupExpiredCards, handleRequest, type SocialImageEnv } from './worker'
+import { afterEach, describe, expect, test, vi } from 'vitest'
+import worker, { cleanupExpiredCards, handleRequest, type SocialImageEnv } from './worker'
 
 const presentation = async (): Promise<TweetCardPresentation> =>
   buildTweetCardPresentation({
@@ -37,6 +37,31 @@ const testEnv = (
 }
 
 describe('social image worker', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  test('keeps the runtime execution context out of the renderer seam', async () => {
+    const card = await presentation()
+    const requestedAssets: string[] = []
+    const env = {
+      ...testEnv(card),
+      ASSETS: {
+        fetch: async (request: Request) => {
+          requestedAssets.push(new URL(request.url).pathname)
+          return new Response('temporarily unavailable', { status: 503 })
+        }
+      }
+    }
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const context: Pick<ExecutionContext, 'waitUntil'> = { waitUntil: () => {} }
+
+    const response = await worker.fetch(new Request(card.images.openGraph), env, context)
+
+    expect(response.status).toBe(500)
+    expect(requestedAssets).toContain('/yoga.wasm')
+  })
+
   test('renders and stores a revisioned card on cache miss', async () => {
     const card = await presentation()
     const env = testEnv(card)
@@ -83,6 +108,31 @@ describe('social image worker', () => {
 
     expect(response.status).toBe(302)
     expect(response.headers.get('location')).toBe(card.images.sleeve)
+  })
+
+  test('logs safe request diagnostics when image generation fails', async () => {
+    const card = await presentation()
+    const privateContent = 'PRIVATE TWEET CONTENT MUST NOT LEAK'
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const response = await handleRequest(
+      new Request(card.images.poster),
+      testEnv(card),
+      async () => {
+        throw new Error(privateContent)
+      }
+    )
+
+    expect(response.status).toBe(500)
+    expect(error).toHaveBeenCalledWith(
+      'social image request failed',
+      expect.objectContaining({
+        method: 'GET',
+        format: 'poster',
+        revision: card.revision,
+        errorName: 'Error'
+      })
+    )
+    expect(JSON.stringify(error.mock.calls)).not.toContain(privateContent)
   })
 
   test('deletes only generated cards older than the retention window', async () => {
