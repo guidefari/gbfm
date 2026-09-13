@@ -14,7 +14,11 @@ import { postsTable } from '@/db/post.schema'
 import { CorpusExhausted, Slug } from '@/domain/navigation'
 import { MdxServiceLayer } from '@/lib/mdx'
 import { ConfigServiceLayer } from '@/services/config.service'
-import { NavigationLockLocalLayer } from '@/services/navigation-lock'
+import {
+  NavigationLock,
+  NavigationLockLocalLayer,
+  type NavigationLockContract
+} from '@/services/navigation-lock'
 import { PostServiceLayer } from '@/services/post.service'
 import { UploadAssetServiceLayer } from '@/services/upload-asset.service'
 import {
@@ -39,6 +43,28 @@ const navigationLayer = NavigationSessionServiceLayer.pipe(
   Layer.provide(NavigationLockLocalLayer)
 )
 const navigationRuntime = ManagedRuntime.make(navigationLayer)
+
+const withLock = async (
+  decorate: (lock: NavigationLockContract) => NavigationLockContract,
+  run: (runtime: typeof navigationRuntime) => Promise<void>
+) => {
+  const runtime = ManagedRuntime.make(
+    NavigationSessionServiceLayer.pipe(
+      Layer.provide(postLayer),
+      Layer.provide(DatabaseTestLayer),
+      Layer.provide(
+        Layer.effect(NavigationLock, Effect.map(NavigationLock, decorate)).pipe(
+          Layer.provide(NavigationLockLocalLayer)
+        )
+      )
+    )
+  )
+  try {
+    await run(runtime)
+  } finally {
+    await runtime.dispose()
+  }
+}
 
 let roundTrips = 0
 
@@ -192,6 +218,215 @@ afterEach(async () => {
 })
 
 describe('NavigationSessionService', () => {
+  test('deduplicates concurrent append intents and returns the persisted destination', async () => {
+    const first = await createPost('duplicate-first', new Date('2026-01-04T00:00:00.000Z'))
+    const second = await createPost('duplicate-second', new Date('2026-01-03T00:00:00.000Z'))
+    await createPost('duplicate-unread', new Date('2026-01-02T00:00:00.000Z'))
+    const reader = identity()
+    const token = randomUUID()
+    await open(reader, first)
+
+    const results = await Promise.all(
+      [0, 1].map(() =>
+        navigationRuntime.runPromise(
+          resolve(reader, { _tag: 'Step', direction: 'Forward' }, first.slug, token)
+        )
+      )
+    )
+
+    expect(results[0]).toEqual(results[1])
+    expect(results[0]?.destination.slug).toBe(second.slug)
+    expect(results[0]?.trailPosition).toEqual({ index: 1, length: 2 })
+    const session = await sessionFor(reader.deviceToken)
+    expect(session.lastIntentToken).toBe(token)
+    expect(
+      await db
+        .select()
+        .from(navigationTrailEntries)
+        .where(eq(navigationTrailEntries.sessionId, session.id))
+    ).toHaveLength(2)
+    expect((await navigationRuntime.runPromise(read(reader))).slug).toBe(second.slug)
+  })
+
+  test('retries concurrent replay cursor updates and syncs the lock for a subsequent append', async () => {
+    const first = await createPost('cas-first', new Date('2026-01-04T00:00:00.000Z'))
+    const middle = await createPost('cas-middle', new Date('2026-01-03T00:00:00.000Z'))
+    const last = await createPost('cas-last', new Date('2026-01-02T00:00:00.000Z'))
+    const unread = await createPost('cas-unread', new Date('2026-01-01T00:00:00.000Z'))
+    const reader = identity()
+    await open(reader, first)
+    await open(reader, middle)
+    await open(reader, last)
+
+    const results = await Promise.all(
+      [0, 1].map(() =>
+        navigationRuntime.runPromise(
+          resolve(reader, { _tag: 'Step', direction: 'Back' }, last.slug, randomUUID())
+        )
+      )
+    )
+    expect(results.map((result) => result.destination.slug).toSorted()).toEqual(
+      [first.slug, middle.slug].toSorted()
+    )
+    expect((await navigationRuntime.runPromise(read(reader))).slug).toBe(first.slug)
+
+    await navigationRuntime.runPromise(
+      resolve(reader, { _tag: 'Step', direction: 'Forward' }, first.slug, randomUUID())
+    )
+    await navigationRuntime.runPromise(
+      resolve(reader, { _tag: 'Step', direction: 'Forward' }, middle.slug, randomUUID())
+    )
+    const appended = await navigationRuntime.runPromise(
+      resolve(reader, { _tag: 'Step', direction: 'Forward' }, last.slug, randomUUID())
+    )
+    expect(appended.destination.slug).toBe(unread.slug)
+    expect(appended.trailPosition).toEqual({ index: 3, length: 4 })
+  })
+
+  test('rejects after five lock retries without persisting a visit', async () => {
+    const post = await createPost('retry-budget', new Date('2026-01-01T00:00:00.000Z'))
+    const reader = identity()
+    let decisions = 0
+    await withLock(
+      (lock) => ({
+        ...lock,
+        decide: () =>
+          Effect.sync(() => {
+            decisions += 1
+            return { _tag: 'Retry' as const }
+          })
+      }),
+      async (runtime) => {
+        await expect(
+          runtime.runPromise(
+            resolve(reader, { _tag: 'Open', slug: post.slug }, post.slug, randomUUID())
+          )
+        ).rejects.toMatchObject({ _tag: 'NoSuchMove', command: 'Open' })
+        expect(decisions).toBe(6)
+        expect(await runtime.runPromise(read(reader))).toEqual({
+          slug: null,
+          capabilities: { canStepBack: false, canStepForward: false, hasUnread: false }
+        })
+      }
+    )
+  })
+
+  test('releases a reservation after a failed append so the next visit can succeed', async () => {
+    const first = await createPost('failure-first', new Date('2026-01-03T00:00:00.000Z'))
+    const deleted = await createPost('failure-deleted', new Date('2026-01-02T00:00:00.000Z'))
+    const next = await createPost('failure-next', new Date('2026-01-01T00:00:00.000Z'))
+    const reader = identity()
+    let removeDestination = false
+    let resets = 0
+    await withLock(
+      (lock) => ({
+        ...lock,
+        decide: (identity, request) =>
+          lock.decide(identity, request).pipe(
+            Effect.tap(() =>
+              removeDestination
+                ? Effect.promise(async () => {
+                    removeDestination = false
+                    await db.delete(postsTable).where(eq(postsTable.id, deleted.id))
+                  })
+                : Effect.void
+            )
+          ),
+        reset: (identity) =>
+          lock.reset(identity).pipe(
+            Effect.tap(() =>
+              Effect.sync(() => {
+                resets += 1
+              })
+            )
+          )
+      }),
+      async (runtime) => {
+        await runtime.runPromise(
+          resolve(reader, { _tag: 'Open', slug: first.slug }, first.slug, randomUUID())
+        )
+        removeDestination = true
+        await expect(
+          runtime.runPromise(
+            resolve(reader, { _tag: 'Step', direction: 'Forward' }, first.slug, randomUUID())
+          )
+        ).rejects.toMatchObject({ _tag: 'DatabaseError', operation: 'write' })
+        expect(resets).toBe(1)
+        expect((await runtime.runPromise(read(reader))).slug).toBe(first.slug)
+        const result = await runtime.runPromise(
+          resolve(reader, { _tag: 'Step', direction: 'Forward' }, first.slug, randomUUID())
+        )
+        expect(result.destination.slug).toBe(next.slug)
+        expect(result.trailPosition).toEqual({ index: 1, length: 2 })
+      }
+    )
+  })
+
+  test('previews an initial Open without creating a session and matches its persisted result', async () => {
+    const first = await createPost('initial-first', new Date('2026-01-02T00:00:00.000Z'))
+    const next = await createPost('initial-next', new Date('2026-01-01T00:00:00.000Z'))
+    const reader = identity()
+    const preview = await navigationRuntime.runPromise(
+      peek(reader, { _tag: 'Open', slug: first.slug }, first.slug)
+    )
+    expect((await navigationRuntime.runPromise(read(reader))).slug).toBeNull()
+    expect(preview.trailPosition).toEqual({ index: 0, length: 1 })
+    expect(preview.neighbourhood).toEqual({ back: [], forward: [next.slug] })
+    expect(await open(reader, first)).toEqual(preview)
+  })
+
+  test('preserves the different unread date bounds of preview and persisted replay', async () => {
+    const oldest = await createPost('bounds-oldest', new Date('2026-01-01T00:00:00.000Z'))
+    const unread = await createPost('bounds-unread', new Date('2026-01-02T00:00:00.000Z'))
+    const newest = await createPost('bounds-newest', new Date('2026-01-03T00:00:00.000Z'))
+    const reader = identity()
+    await open(reader, oldest)
+    await open(reader, newest)
+
+    const back = await navigationRuntime.runPromise(
+      peek(reader, { _tag: 'Step', direction: 'Back' }, newest.slug)
+    )
+    const fastOpen = await navigationRuntime.runPromise(
+      peek(reader, { _tag: 'Open', slug: oldest.slug }, newest.slug)
+    )
+    expect(fastOpen).toEqual(back)
+    expect(back.neighbourhood.forward).toEqual([newest.slug, unread.slug])
+    expect(back.capabilities.hasUnread).toBe(true)
+    expect((await navigationRuntime.runPromise(read(reader))).slug).toBe(newest.slug)
+
+    const replay = await navigationRuntime.runPromise(
+      resolve(reader, { _tag: 'Step', direction: 'Back' }, newest.slug, randomUUID())
+    )
+    expect(replay.neighbourhood.forward).toEqual([newest.slug])
+    expect(replay.capabilities).toEqual({
+      canStepBack: false,
+      canStepForward: true,
+      hasUnread: false
+    })
+    expect(replay.trailPosition).toEqual(back.trailPosition)
+  })
+
+  test('reset clears persisted history and lock state without affecting another reader', async () => {
+    const first = await createPost('reset-first', new Date('2026-01-02T00:00:00.000Z'))
+    const next = await createPost('reset-next', new Date('2026-01-01T00:00:00.000Z'))
+    const reader = identity()
+    const other = identity()
+    await open(reader, first)
+    await open(reader, next)
+    await open(other, next)
+    await navigationRuntime.runPromise(
+      Effect.gen(function* () {
+        const navigation = yield* NavigationSessionService
+        yield* navigation.reset(reader)
+      })
+    )
+    expect((await navigationRuntime.runPromise(read(reader))).slug).toBeNull()
+    expect((await navigationRuntime.runPromise(read(other))).slug).toBe(next.slug)
+    const restarted = await open(reader, first)
+    expect(restarted.trailPosition).toEqual({ index: 0, length: 1 })
+    expect(restarted.neighbourhood.forward).toEqual([next.slug])
+  })
+
   test('serializes concurrent forward resolves without losing a cursor update', async () => {
     const first = await createPost('concurrent-first', new Date('2026-01-03T00:00:00.000Z'))
     const second = await createPost('concurrent-second', new Date('2026-01-02T00:00:00.000Z'))
