@@ -8,6 +8,7 @@ import type { StageConfig } from './stage'
 export interface WebsiteInput {
   readonly config: StageConfig
   readonly websiteConfig: WebsiteConfig
+  readonly api: Cloudflare.Worker
   readonly apiUrl: Output.Output<string | undefined>
 }
 
@@ -16,16 +17,20 @@ const requireApiUrl = (url: string | undefined) => {
   return url
 }
 
-export const website = ({ config, websiteConfig, apiUrl }: WebsiteInput) =>
+export const website = ({ config, websiteConfig, api, apiUrl }: WebsiteInput) =>
   Effect.gen(function* () {
     return yield* Cloudflare.Website.StaticSite('Www', {
       cwd: 'apps/www',
       command: 'bun run build',
       outdir: 'dist',
+      main: './apps/www/src/seo-worker.ts',
       ...(config.isProduction
         ? { domain: { name: 'www.goosebumps.fm', aliases: ['goosebumps.fm'] } }
         : { url: true }),
-      assets: { notFoundHandling: 'single-page-application' },
+      assets: {
+        notFoundHandling: 'single-page-application',
+        runWorkerFirst: ['/tweet/*']
+      },
       observability: workerObservability(config.isProduction),
       dev: config.isLocalDev
         ? {
@@ -34,6 +39,7 @@ export const website = ({ config, websiteConfig, apiUrl }: WebsiteInput) =>
           }
         : undefined,
       env: {
+        API: api,
         ...(config.isLocalDev
           ? { VPS_PROXY_TARGET: Output.map(apiUrl, requireApiUrl) }
           : undefined),

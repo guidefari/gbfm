@@ -19,6 +19,8 @@ export interface SEOHeadData {
   audioUrl?: string
 }
 
+type MicroPostSEOInput = Pick<SelectMdxCompiledMicroPost, 'title' | 'description' | 'thumbnailUrl'>
+
 export function generateSEOMeta(data: SEOHeadData) {
   const { title, description, url, image = DEFAULT_OG_IMAGE, type = 'website', audioUrl } = data
 
@@ -138,7 +140,7 @@ export function generatePostSEO(post: SelectMdxCompiledEditorialPost, slug: stri
   }
 }
 
-export function generateMicroPostSEO(post: SelectMdxCompiledMicroPost, slug: string): SEOHeadData {
+export function generateMicroPostSEO(post: MicroPostSEOInput, slug: string): SEOHeadData {
   const title = post.title || slug
   const description = post.description || `Read ${title} on goosebumps.fm`
   const url = `${SITE_URL}/tweet/${slug}`

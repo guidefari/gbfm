@@ -49,6 +49,7 @@ export default Alchemy.Stack(
     const www = yield* website({
       config,
       websiteConfig: deployment.website,
+      api,
       apiUrl: api.url
     })
 
