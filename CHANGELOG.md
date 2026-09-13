@@ -1,3 +1,10 @@
+# [2.94.0](https://github.com/guidefari/gbfm/compare/v2.93.1...v2.94.0) (2026-09-13)
+
+
+### Features
+
+* **www:** render tweet metadata at the edge ([#327](https://github.com/guidefari/gbfm/issues/327)) ([88b081a](https://github.com/guidefari/gbfm/commit/88b081a195d434f4b0d4f21989c64270b2c1c3cb))
+
 ## [2.93.1](https://github.com/guidefari/gbfm/compare/v2.93.0...v2.93.1) (2026-09-06)
 
 

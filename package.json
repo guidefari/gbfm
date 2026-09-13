@@ -1,6 +1,6 @@
 {
   "name": "gbfm",
-  "version": "2.93.1",
+  "version": "2.94.0",
   "sideEffects": false,
   "private": true,
   "packageManager": "bun@1.4.0",
