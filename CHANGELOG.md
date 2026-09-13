@@ -1,3 +1,10 @@
+# [2.95.0](https://github.com/guidefari/gbfm/compare/v2.94.0...v2.95.0) (2026-09-13)
+
+
+### Features
+
+* **social:** unify generated tweet share images ([#328](https://github.com/guidefari/gbfm/issues/328)) ([76df302](https://github.com/guidefari/gbfm/commit/76df3027e9a3fb692f369bfbd5c01e3a43fc4f25))
+
 # [2.94.0](https://github.com/guidefari/gbfm/compare/v2.93.1...v2.94.0) (2026-09-13)
 
 
