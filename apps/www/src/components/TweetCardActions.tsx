@@ -3,15 +3,11 @@ import { toast } from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
 import { Edit3, ImageDown, Link2, MessageSquareQuote } from 'lucide-react'
 import { useState } from 'react'
-import {
-  TweetDownloadDialog,
-  type TweetDownloadPost
-} from '@/components/tweet-export/TweetDownloadDialog'
+import { TweetDownloadDialog } from '@/components/tweet-export/TweetDownloadDialog'
 import { getShareUrl } from '@/lib/share'
 import { log } from '@/services/logger'
 
 type Props = {
-  post: TweetDownloadPost
   slug: string
   canEdit: boolean
   replyCount?: number
@@ -23,7 +19,6 @@ const actionButtonClassName =
   'inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground'
 
 export function TweetCardActions({
-  post,
   slug,
   canEdit,
   replyCount,
@@ -95,12 +90,7 @@ export function TweetCardActions({
         </button>
       )}
 
-      <TweetDownloadDialog
-        post={post}
-        slug={slug}
-        open={downloadOpen}
-        onOpenChange={setDownloadOpen}
-      />
+      <TweetDownloadDialog slug={slug} open={downloadOpen} onOpenChange={setDownloadOpen} />
     </div>
   )
 }

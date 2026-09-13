@@ -193,7 +193,6 @@ function TweetPostPage() {
 
         <div className='border-t border-border/40 pt-3'>
           <TweetCardActions
-            post={post}
             slug={slug}
             canEdit={canEdit}
             replyCount={replyCount}

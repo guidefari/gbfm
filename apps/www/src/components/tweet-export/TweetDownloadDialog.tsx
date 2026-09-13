@@ -1,3 +1,4 @@
+import { TweetCardPresentation } from '@gbfm/tweet-card'
 import {
   Button,
   Dialog,
@@ -6,88 +7,70 @@ import {
   DialogHeader,
   DialogTitle
 } from '@gbfm/ui'
+import { useQuery } from '@tanstack/react-query'
+import { Schema } from 'effect'
 import { Loader2 } from 'lucide-react'
-import { useRef, useState } from 'react'
-import { usePublicProfile } from '@/lib/http'
+import { useState } from 'react'
+import { apiUrl, fetcher } from '@/lib/http'
 import { runAppEffect } from '@/runtime'
 import { exportTweetImageEffect } from './export-tweet-image'
-import { PosterFrame, SleeveFrame } from './frames'
-import { buildTweetExportData, type TweetDownloadPost } from './tweet-export-data'
-import { useMusicEntity } from './use-music-entity'
 import { useCanShareFiles } from './use-can-share-files'
 import { usePrerenderedTweetImage } from './use-prerendered-image'
 
-const EXPORT_WIDTH = 540
-
 const formats = [
-  { key: 'poster', name: 'poster', Frame: PosterFrame },
-  { key: 'sleeve', name: 'sleeve', Frame: SleeveFrame }
+  { key: 'poster', name: 'poster', aspect: 'aspect-[4/5]' },
+  { key: 'sleeve', name: 'sleeve', aspect: 'aspect-[9/16]' }
 ] as const
 
 type FormatKey = (typeof formats)[number]['key']
 
-export type { TweetDownloadPost }
-
 type Props = {
-  post: TweetDownloadPost
-  slug: string
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  readonly slug: string
+  readonly open: boolean
+  readonly onOpenChange: (open: boolean) => void
 }
 
-export function TweetDownloadDialog({ post, slug, open, onOpenChange }: Props) {
+const decodePresentation = Schema.decodeUnknownSync(TweetCardPresentation)
+
+export function TweetDownloadDialog({ slug, open, onOpenChange }: Props) {
   const [format, setFormat] = useState<FormatKey>('poster')
   const [exporting, setExporting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const exportRef = useRef<HTMLDivElement>(null)
-
-  const primaryCreator = post.creators?.[0]
-  const { data: profile } = usePublicProfile(primaryCreator?.username ?? '')
-  const { entity, entityType, isPending } = useMusicEntity(
-    post.musicEntityType ?? null,
-    post.musicEntityId ?? null
-  )
   const canShareFiles = useCanShareFiles()
-
-  const data = buildTweetExportData({
-    post,
-    slug,
-    avatarUrl: profile?.image,
-    entityType,
-    entity
+  const {
+    data: presentation,
+    isPending,
+    isError
+  } = useQuery({
+    queryKey: ['tweet-share-presentation', slug],
+    queryFn: async () =>
+      decodePresentation(await fetcher(apiUrl(`/content/posts/micro/${slug}/share-presentation`))),
+    enabled: open
   })
-
-  const ActiveFrame = formats.find((f) => f.key === format)?.Frame ?? PosterFrame
-
-  const renderKey = JSON.stringify([open, format, data])
-
+  const imageUrl = presentation?.images[format] ?? null
+  const activeFormat = formats.find((candidate) => candidate.key === format) ?? formats[0]
   const prerendered = usePrerenderedTweetImage({
-    enabled: open && !isPending,
-    renderKey,
-    nodeRef: exportRef,
-    frameWidth: EXPORT_WIDTH,
+    enabled: open && Boolean(imageUrl),
+    imageUrl,
     slug,
     format
   })
 
   const exportImage = async () => {
-    const node = exportRef.current
-    if (!node) return
-
+    if (!imageUrl) return
     setExporting(true)
     setError(null)
     try {
       await runAppEffect(
         exportTweetImageEffect({
-          node,
-          frameWidth: EXPORT_WIDTH,
+          imageUrl,
           slug,
           format,
           blob: prerendered.consume()
         })
       )
     } catch {
-      setError('image generation failed, try again')
+      setError('image download failed, try again')
     } finally {
       setExporting(false)
     }
@@ -98,39 +81,54 @@ export function TweetDownloadDialog({ post, slug, open, onOpenChange }: Props) {
       <DialogContent className='flex max-h-[90dvh] w-[calc(100vw-2rem)] max-w-md flex-col gap-0 overflow-hidden p-0'>
         <DialogHeader className='shrink-0 space-y-1.5 p-4 pb-3 pr-12'>
           <DialogTitle className='font-black'>download for socials</DialogTitle>
-          <DialogDescription>save this tweet as an image you can post anywhere</DialogDescription>
+          <DialogDescription>the same image used when this tweet link is shared</DialogDescription>
         </DialogHeader>
 
         <div className='flex shrink-0 gap-2 px-4 pb-3'>
-          {formats.map((f) => (
+          {formats.map((candidate) => (
             <button
-              key={f.key}
+              key={candidate.key}
               type='button'
-              onClick={() => setFormat(f.key)}
+              onClick={() => setFormat(candidate.key)}
               className={`rounded-sm border px-3 py-1.5 font-mono text-xs font-bold tracking-widest transition-colors ${
-                format === f.key
+                format === candidate.key
                   ? 'border-highlight bg-highlight/10 text-highlight'
                   : 'border-border/60 text-muted-foreground hover:border-border hover:text-foreground'
               }`}>
-              {f.name}
+              {candidate.name}
             </button>
           ))}
         </div>
 
         <div className='min-h-0 flex-1 overflow-y-auto overscroll-contain px-4'>
-          <div className='mx-auto w-full max-w-sm'>
-            <ActiveFrame data={data} />
+          <div
+            className={`mx-auto w-full max-w-sm overflow-hidden bg-muted ${activeFormat.aspect}`}>
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt={`${format} preview`}
+                className='h-full w-full object-contain'
+              />
+            ) : (
+              <div className='flex h-full items-center justify-center text-muted-foreground'>
+                {isPending ? <Loader2 className='h-6 w-6 animate-spin' /> : 'preview unavailable'}
+              </div>
+            )}
           </div>
         </div>
 
         <div className='shrink-0 space-y-2 border-t border-border/40 p-4'>
-          {error && <p className='text-base text-destructive'>{error}</p>}
-
-          <Button onClick={exportImage} disabled={exporting || isPending} className='w-full'>
+          {(error || isError) && (
+            <p className='text-base text-destructive'>{error ?? 'preview failed, try again'}</p>
+          )}
+          <Button
+            onClick={exportImage}
+            disabled={exporting || isPending || !imageUrl}
+            className='w-full'>
             {exporting ? (
               <>
                 <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                generating…
+                preparing…
               </>
             ) : canShareFiles ? (
               `share ${format} png`
@@ -139,16 +137,6 @@ export function TweetDownloadDialog({ post, slug, open, onOpenChange }: Props) {
             )}
           </Button>
         </div>
-
-        {open && (
-          <div
-            aria-hidden
-            className='pointer-events-none fixed left-0 top-0 h-0 w-0 overflow-hidden'>
-            <div ref={exportRef} style={{ width: EXPORT_WIDTH }}>
-              <ActiveFrame data={data} />
-            </div>
-          </div>
-        )}
       </DialogContent>
     </Dialog>
   )

@@ -79,7 +79,6 @@ export function TweetReplyCard({
         {reply.tags && reply.tags.length > 0 && <TweetTagLinks tags={[...reply.tags]} />}
 
         <TweetCardActions
-          post={reply}
           slug={reply.slug}
           canEdit={canEdit}
           replyCount={canNest ? replyCount : undefined}

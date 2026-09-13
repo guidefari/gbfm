@@ -4,27 +4,22 @@ import { renderTweetImageEffect } from './export-tweet-image'
 
 export type PrerenderInput = {
   readonly enabled: boolean
-  readonly renderKey: string
-  readonly nodeRef: { readonly current: HTMLElement | null }
-  readonly frameWidth: number
+  readonly imageUrl: string | null
   readonly slug: string
   readonly format: string
 }
 
 export type PrerenderedImage = {
   readonly pending: boolean
-  /** The PNG for the currently selected format, or null when the pre-render
-   *  has not landed yet and the caller must rasterize on demand. */
+  /** The PNG for the selected format, or null while the preload is pending. */
   readonly consume: () => Blob | null
 }
 
-/** Rasterizes ahead of the tap so `navigator.share` runs inside the transient
- *  activation window iOS Safari and Chrome Android require. */
+/** Loads ahead of the tap so `navigator.share` runs inside the transient
+ * activation window iOS Safari and Chrome Android require. */
 export function usePrerenderedTweetImage({
   enabled,
-  renderKey,
-  nodeRef,
-  frameWidth,
+  imageUrl,
   slug,
   format
 }: PrerenderInput): PrerenderedImage {
@@ -34,8 +29,7 @@ export function usePrerenderedTweetImage({
   useEffect(() => {
     blobRef.current = null
 
-    const node = enabled ? nodeRef.current : null
-    if (!node) {
+    if (!enabled || !imageUrl) {
       setPending(false)
       return () => {}
     }
@@ -43,7 +37,7 @@ export function usePrerenderedTweetImage({
     let active = true
     setPending(true)
 
-    void runAppEffect(renderTweetImageEffect({ node, frameWidth, slug, format }))
+    void runAppEffect(renderTweetImageEffect({ imageUrl, slug, format }))
       .then((rendered) => {
         if (active) blobRef.current = rendered
       })
@@ -57,7 +51,7 @@ export function usePrerenderedTweetImage({
     return () => {
       active = false
     }
-  }, [enabled, renderKey, nodeRef, frameWidth, slug, format])
+  }, [enabled, imageUrl, slug, format])
 
   const consume = useCallback(() => blobRef.current, [])
 

@@ -196,6 +196,16 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
         return toDateStrings(post)
       })
     )
+    .handle('getTweetSharePresentation', ({ params }) =>
+      Effect.gen(function* () {
+        const svc = yield* PostService
+        return yield* dieOnDatabaseError(
+          svc
+            .getTweetSharePresentation(params.slug)
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+        )
+      })
+    )
     .handle('getMicroPostById', ({ params }) =>
       Effect.gen(function* () {
         const svc = yield* PostService

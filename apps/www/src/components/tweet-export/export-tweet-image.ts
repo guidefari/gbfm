@@ -3,11 +3,8 @@ import { captureException } from '@/services/analytics'
 import { ImageExport, type ImageExportError, type ImageSaveOutcome } from '@/services/image-export'
 import type { ImageRenderError } from '@/services/image-export'
 
-const EXPORT_PIXEL_WIDTH = 1080
-
 export type TweetImageRenderRequest = {
-  readonly node: HTMLElement
-  readonly frameWidth: number
+  readonly imageUrl: string
   readonly slug: string
   readonly format: string
 }
@@ -30,17 +27,11 @@ const reportFailure =
     )
 
 export const renderTweetImageEffect = ({
-  node,
-  frameWidth,
+  imageUrl,
   slug,
   format
 }: TweetImageRenderRequest): Effect.Effect<Blob, ImageRenderError, ImageExport> =>
-  ImageExport.use((imageExport) =>
-    imageExport.render(node, {
-      pixelRatio: EXPORT_PIXEL_WIDTH / frameWidth,
-      cacheBust: true
-    })
-  ).pipe(reportFailure(slug, format))
+  ImageExport.use((imageExport) => imageExport.load(imageUrl)).pipe(reportFailure(slug, format))
 
 export const saveTweetImageEffect = ({
   blob,
@@ -51,16 +42,15 @@ export const saveTweetImageEffect = ({
     reportFailure(slug, format)
   )
 
-/** `blob` is the eagerly pre-rendered PNG for the current format. When it is
- *  absent the tap beat the pre-render, so we rasterize on demand instead. */
+/** `blob` is the eagerly loaded PNG for the current format. When it is absent,
+ * the tap beat the preload, so the image is loaded on demand instead. */
 export const exportTweetImageEffect = ({
-  node,
-  frameWidth,
+  imageUrl,
   slug,
   format,
   blob
 }: TweetImageExportRequest): Effect.Effect<ImageSaveOutcome, ImageExportError, ImageExport> =>
   Effect.gen(function* () {
-    const ready = blob ?? (yield* renderTweetImageEffect({ node, frameWidth, slug, format }))
+    const ready = blob ?? (yield* renderTweetImageEffect({ imageUrl, slug, format }))
     return yield* saveTweetImageEffect({ blob: ready, slug, format })
   })

@@ -6,11 +6,8 @@ import { ImageRenderError, ImageSaveError } from '@/services/image-export/errors
 import type { ImageExportStub } from '@/services/image-export/test'
 import { exportTweetImageEffect } from './export-tweet-image'
 
-const node = Object.create(null)
-
 const request = (blob: Blob | null) => ({
-  node,
-  frameWidth: 540,
+  imageUrl: 'https://goosebumps.fm/social/tweets/unreal/revision/poster.png',
   slug: 'unreal',
   format: 'poster',
   blob
@@ -32,7 +29,7 @@ describe('exportTweetImageEffect', () => {
 
     const exit = await run(
       {
-        render: Effect.sync(() => {
+        load: Effect.sync(() => {
           renders += 1
           return freshlyRendered
         }),
@@ -53,7 +50,7 @@ describe('exportTweetImageEffect', () => {
 
     const exit = await run(
       {
-        render: Effect.sync(() => {
+        load: Effect.sync(() => {
           renders += 1
           return freshlyRendered
         }),
@@ -73,7 +70,7 @@ describe('exportTweetImageEffect', () => {
 
     const exit = await run(
       {
-        render: Effect.fail(new ImageRenderError({ message: 'rasterization failed' })),
+        load: Effect.fail(new ImageRenderError({ message: 'image request failed' })),
         onSave: (fileName) => saved.push(fileName)
       },
       null
