@@ -69,7 +69,6 @@ export type SelectMdxCompiledPost = SelectPost & {
     id: string
     name: string
     username: string | null
-    image?: string | null
   }>
   replyCount?: number
 }

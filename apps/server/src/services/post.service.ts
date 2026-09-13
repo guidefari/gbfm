@@ -1310,8 +1310,7 @@ const getMicroPostBySlugEffect = (slug: string, mdx: MdxService) =>
             .select({
               id: usersTable.id,
               name: usersTable.name,
-              username: usersTable.username,
-              image: usersTable.image
+              username: usersTable.username
             })
             .from(postCreators)
             .innerJoin(usersTable, eq(postCreators.creatorId, usersTable.id))
@@ -1452,6 +1451,23 @@ const getTweetSharePresentationEffect = (slug: string, mdx: MdxService) =>
     const post = yield* getMicroPostBySlugEffect(slug, mdx)
     const entity = yield* getTweetCardEntity(post.musicEntityType, post.musicEntityId)
     const creator = post.creators?.[0]
+    const db = yield* Database
+    const avatarRows = creator
+      ? yield* Effect.tryPromise({
+          try: () =>
+            db
+              .select({ image: usersTable.image })
+              .from(usersTable)
+              .where(eq(usersTable.id, creator.id))
+              .limit(1),
+          catch: (error) =>
+            new DatabaseError({
+              message: `Failed to fetch tweet creator avatar: ${getErrorMessage(error)}`,
+              operation: 'select',
+              table: 'user'
+            })
+        })
+      : []
 
     return yield* Effect.promise(() =>
       buildTweetCardPresentation({
@@ -1462,7 +1478,7 @@ const getTweetSharePresentationEffect = (slug: string, mdx: MdxService) =>
           ? {
               name: creator.name,
               username: creator.username,
-              avatarUrl: creator.image ?? null
+              avatarUrl: avatarRows[0]?.image ?? null
             }
           : null,
         entity
