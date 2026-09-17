@@ -46,7 +46,7 @@ const loadProfile = (setState: SetConnectionState) =>
     fetchSpotifyProfileEffect().pipe(
       Effect.map((profile) =>
         setState((state) =>
-          state._tag === 'Connected'
+          SpotifyConnectionState.$is('Connected')(state)
             ? SpotifyConnectionState.Connected({ session: state.session, profile })
             : state
         )
@@ -54,7 +54,7 @@ const loadProfile = (setState: SetConnectionState) =>
       Effect.catch((error: SpotifyRequestError) =>
         Effect.sync(() =>
           setState((state) =>
-            state._tag === 'Connected'
+            SpotifyConnectionState.$is('Connected')(state)
               ? SpotifyConnectionState.Connected({ ...state, error: spotifyErrorMessage(error) })
               : state
           )
@@ -89,7 +89,9 @@ const makeBootstrapAtom = (setState: SetConnectionState) =>
     Effect.promise(() =>
       readStoredSession(setState).finally(() =>
         setState((state) =>
-          state._tag === 'Bootstrapping' ? SpotifyConnectionState.Disconnected({}) : state
+          SpotifyConnectionState.$is('Bootstrapping')(state)
+            ? SpotifyConnectionState.Disconnected({})
+            : state
         )
       )
     )
@@ -143,7 +145,9 @@ export const useConnectSpotify = () => {
       await runSpotifyEffect(exchangeAndPersist(callback.code, setState))
     } finally {
       setState((state) =>
-        state._tag === 'Connecting' ? SpotifyConnectionState.Disconnected({}) : state
+        SpotifyConnectionState.$is('Connecting')(state)
+          ? SpotifyConnectionState.Disconnected({})
+          : state
       )
     }
   }, [setState])
@@ -156,7 +160,7 @@ const exchangeAndPersist = (code: string, setState: SetConnectionState) =>
     yield* fetchSpotifyProfileEffect().pipe(
       Effect.map((profile) =>
         setState((state) =>
-          state._tag === 'Connected'
+          SpotifyConnectionState.$is('Connected')(state)
             ? SpotifyConnectionState.Connected({ session: state.session, profile })
             : state
         )
@@ -164,7 +168,7 @@ const exchangeAndPersist = (code: string, setState: SetConnectionState) =>
       Effect.catch((error: SpotifyRequestError) =>
         Effect.sync(() =>
           setState((state) =>
-            state._tag === 'Connected'
+            SpotifyConnectionState.$is('Connected')(state)
               ? SpotifyConnectionState.Connected({ ...state, error: spotifyErrorMessage(error) })
               : state
           )

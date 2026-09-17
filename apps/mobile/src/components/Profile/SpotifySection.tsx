@@ -1,6 +1,11 @@
 import { Text, TouchableOpacity, View } from 'react-native'
 import { SPOTIFY_GREEN, SpotifyIcon } from '@/spotify/SpotifyIcon'
-import { useConnectSpotify, useDisconnectSpotify, useSpotifyConnection } from '@/spotify/connection'
+import {
+  SpotifyConnectionState,
+  useConnectSpotify,
+  useDisconnectSpotify,
+  useSpotifyConnection
+} from '@/spotify/connection'
 import { SpotifyToast, useSpotifyToast } from '@/spotify/SpotifyToast'
 import { useThemeColors } from '@/theme/colors'
 import { SpotifyPasteAndPlay } from './SpotifyPasteAndPlay'
@@ -27,9 +32,9 @@ export function SpotifySection() {
         <Text style={{ color: colors.strong, fontSize: 20, fontWeight: '700' }}>Spotify</Text>
       </View>
 
-      {connection._tag === 'Bootstrapping' ? (
+      {SpotifyConnectionState.$is('Bootstrapping')(connection) ? (
         <Text style={{ color: colors.muted, fontSize: 14 }}>Checking session...</Text>
-      ) : connection._tag === 'Connected' ? (
+      ) : SpotifyConnectionState.$is('Connected')(connection) ? (
         <View
           style={{
             backgroundColor: colors.surface,
@@ -65,17 +70,19 @@ export function SpotifySection() {
         <TouchableOpacity
           accessibilityRole='button'
           accessibilityLabel='Connect Spotify'
-          disabled={connection._tag === 'Connecting'}
+          disabled={SpotifyConnectionState.$is('Connecting')(connection)}
           onPress={() => void connect()}
           style={{
             backgroundColor: SPOTIFY_GREEN,
             borderRadius: 4,
             paddingVertical: 14,
             alignItems: 'center',
-            opacity: connection._tag === 'Connecting' ? 0.6 : 1
+            opacity: SpotifyConnectionState.$is('Connecting')(connection) ? 0.6 : 1
           }}>
           <Text style={{ color: '#000', fontSize: 15, fontWeight: '700' }}>
-            {connection._tag === 'Connecting' ? 'Connecting...' : 'Connect Spotify'}
+            {SpotifyConnectionState.$is('Connecting')(connection)
+              ? 'Connecting...'
+              : 'Connect Spotify'}
           </Text>
         </TouchableOpacity>
       )}
