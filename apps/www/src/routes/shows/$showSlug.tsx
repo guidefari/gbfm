@@ -1,13 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Effect } from 'effect'
-import { useEffect } from 'react'
 import { RouteError } from '@/components/RouteError'
 import { ShowsBrowser } from '@/components/shows/ShowsBrowser'
 import { ShowsPageLayout } from '@/components/shows/ShowsPageLayout'
 import { getApiClient } from '@/lib/api-client'
 import { generateSEOMeta, generateShowSEO } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
-import { useSetCurrentContent } from '@/store'
 
 export const Route = createFileRoute('/shows/$showSlug')({
   component: ShowPage,
@@ -54,23 +52,8 @@ export const Route = createFileRoute('/shows/$showSlug')({
 })
 
 function ShowPage() {
-  const { showSlug } = Route.useParams()
   const { show } = Route.useLoaderData()
   const navigate = Route.useNavigate()
-  const setCurrentContent = useSetCurrentContent()
-
-  useEffect(() => {
-    if (show?.hosts) {
-      const contentInfo = {
-        id: showSlug,
-        archetype: 'show',
-        creatorIds: show.hosts.map((host) => host.id)
-      }
-      setCurrentContent(contentInfo)
-    }
-
-    return () => setCurrentContent(null)
-  }, [show, showSlug, setCurrentContent])
 
   if (!show) return <div className='p-4 text-center'>No data</div>
 
