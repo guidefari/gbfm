@@ -27,9 +27,9 @@ export function SpotifySection() {
         <Text style={{ color: colors.strong, fontSize: 20, fontWeight: '700' }}>Spotify</Text>
       </View>
 
-      {connection.status === 'bootstrapping' ? (
+      {connection._tag === 'Bootstrapping' ? (
         <Text style={{ color: colors.muted, fontSize: 14 }}>Checking session...</Text>
-      ) : connection.status === 'connected' ? (
+      ) : connection._tag === 'Connected' ? (
         <View
           style={{
             backgroundColor: colors.surface,
@@ -65,17 +65,17 @@ export function SpotifySection() {
         <TouchableOpacity
           accessibilityRole='button'
           accessibilityLabel='Connect Spotify'
-          disabled={connection.status === 'connecting'}
+          disabled={connection._tag === 'Connecting'}
           onPress={() => void connect()}
           style={{
             backgroundColor: SPOTIFY_GREEN,
             borderRadius: 4,
             paddingVertical: 14,
             alignItems: 'center',
-            opacity: connection.status === 'connecting' ? 0.6 : 1
+            opacity: connection._tag === 'Connecting' ? 0.6 : 1
           }}>
           <Text style={{ color: '#000', fontSize: 15, fontWeight: '700' }}>
-            {connection.status === 'connecting' ? 'Connecting...' : 'Connect Spotify'}
+            {connection._tag === 'Connecting' ? 'Connecting...' : 'Connect Spotify'}
           </Text>
         </TouchableOpacity>
       )}

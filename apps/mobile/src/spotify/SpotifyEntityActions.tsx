@@ -34,7 +34,7 @@ export function SpotifyEntityActions({ url, onNotice }: Props) {
   const colors = useThemeColors()
 
   const entity = spotifyEntityFromUrl(url)
-  if (!entity || connection.status !== 'connected') return null
+  if (!entity || connection._tag !== 'Connected') return null
 
   const openInSpotify = () => {
     void Linking.openURL(url)
