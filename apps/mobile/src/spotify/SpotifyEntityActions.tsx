@@ -14,7 +14,7 @@ import { useState } from 'react'
 import { Text, TouchableOpacity, View } from 'react-native'
 import { SPOTIFY_GREEN, SpotifyIcon } from './SpotifyIcon'
 import { runSpotifyEffect } from './runtime'
-import { useSpotifyConnection } from './connection'
+import { SpotifyConnectionState, useSpotifyConnection } from './connection'
 import { useThemeColors } from '@/theme/colors'
 
 type Props = {
@@ -29,12 +29,12 @@ const entityNoun = {
 } satisfies Record<SpotifyEntityRef['kind'], string>
 
 export function SpotifyEntityActions({ url, onNotice }: Props) {
-  const session = useSpotifyConnection((state) => state.session)
+  const connection = useSpotifyConnection((state) => state)
   const [pending, setPending] = useState<'play' | 'queue' | null>(null)
   const colors = useThemeColors()
 
   const entity = spotifyEntityFromUrl(url)
-  if (!entity || !session) return null
+  if (!entity || !SpotifyConnectionState.$is('Connected')(connection)) return null
 
   const openInSpotify = () => {
     void Linking.openURL(url)
