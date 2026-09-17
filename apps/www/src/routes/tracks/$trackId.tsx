@@ -1,12 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Effect } from 'effect'
-import * as React from 'react'
 import { LongPost } from '@/components/Layout/LongPost'
 import { RouteError } from '@/components/RouteError'
 import { getApiClient } from '@/lib/api-client'
 import { generateSEOHead, generateTrackSEO, notFoundHead } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
-import { useSetCurrentContent } from '@/store'
 
 export const Route = createFileRoute('/tracks/$trackId')({
   component: TrackPage,
@@ -42,20 +40,6 @@ export const Route = createFileRoute('/tracks/$trackId')({
 function TrackPage() {
   const { trackId } = Route.useParams()
   const { track: data } = Route.useLoaderData()
-  const setCurrentContent = useSetCurrentContent()
-
-  React.useEffect(() => {
-    if (data?.creators) {
-      const contentInfo = {
-        id: trackId,
-        archetype: 'track',
-        creatorIds: data.creators.map((creator) => creator.id)
-      }
-      setCurrentContent(contentInfo)
-    }
-
-    return () => setCurrentContent(null)
-  }, [data, trackId, setCurrentContent])
 
   if (!data) return <div>No data</div>
 

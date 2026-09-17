@@ -2,7 +2,6 @@ import { Button } from '@gbfm/ui'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Effect } from 'effect'
 import { Edit } from 'lucide-react'
-import { useEffect } from 'react'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { RouteError } from '@/components/RouteError'
 import { ShareButton } from '@/components/ShareButton'
@@ -10,7 +9,6 @@ import { getApiClient } from '@/lib/api-client'
 import { useSession } from '@/lib/auth-client'
 import { generateLabelSEO, generateSEOHead, notFoundHead } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
-import { useSetCurrentContent } from '@/store'
 
 export const Route = createFileRoute('/labels/$labelSlug')({
   component: LabelPage,
@@ -62,20 +60,9 @@ export const Route = createFileRoute('/labels/$labelSlug')({
 function LabelPage() {
   const { labelSlug } = Route.useParams()
   const { label, links } = Route.useLoaderData()
-  const setCurrentContent = useSetCurrentContent()
   const { data: session } = useSession()
   const navigate = useNavigate()
   const isAdmin = session?.user?.role === 'admin'
-
-  useEffect(() => {
-    setCurrentContent({
-      id: label.id,
-      archetype: 'label',
-      creatorIds: label.creators?.map((creator) => creator.id) ?? []
-    })
-
-    return () => setCurrentContent(null)
-  }, [label, setCurrentContent])
 
   return (
     <div className='mx-auto max-w-6xl'>

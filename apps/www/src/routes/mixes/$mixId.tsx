@@ -34,7 +34,6 @@ import { useMixQRPdf, useShowById } from '@/lib/http'
 import { captureException } from '@/services/analytics'
 import { getShareUrl } from '@/lib/share'
 import { generateMixSEO, generateSEOHead, notFoundHead } from '@/lib/seo'
-import { useSetCurrentContent } from '@/store'
 import { useNowPlayingTrack, usePlayerActions, useTransport } from '@/services/player'
 import { toQueueTrack } from '@/services/player/toQueueTrack'
 
@@ -68,24 +67,9 @@ export const Route = createFileRoute('/mixes/$mixId')({
 })
 
 function MixPage() {
-  const { mixId } = Route.useParams()
-  const setCurrentContent = useSetCurrentContent()
   const { mix } = Route.useLoaderData()
   const router = useRouter()
   const canGoBack = useCanGoBack()
-
-  React.useEffect(() => {
-    if (mix?.creators) {
-      const contentInfo = {
-        id: mixId,
-        archetype: 'mix',
-        creatorIds: mix.creators.map((creator) => creator.id)
-      }
-      setCurrentContent(contentInfo)
-    }
-
-    return () => setCurrentContent(null)
-  }, [mix, mixId, setCurrentContent])
 
   if (!mix) return <div>No data</div>
 

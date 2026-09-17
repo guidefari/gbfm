@@ -1,12 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Effect } from 'effect'
-import * as React from 'react'
 import { LongPost } from '@/components/Layout/LongPost'
 import { RouteError } from '@/components/RouteError'
 import { getApiClient } from '@/lib/api-client'
 import { generateReleaseSEO, generateSEOHead, notFoundHead } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
-import { useSetCurrentContent } from '@/store'
 
 export const Route = createFileRoute('/releases/$slug')({
   component: ReleasePage,
@@ -45,20 +43,6 @@ export const Route = createFileRoute('/releases/$slug')({
 function ReleasePage() {
   const { slug } = Route.useParams()
   const { release: data } = Route.useLoaderData()
-  const setCurrentContent = useSetCurrentContent()
-
-  React.useEffect(() => {
-    if (data) {
-      const contentInfo = {
-        id: slug,
-        archetype: 'release',
-        creatorIds: [] // Releases don't have creators directly
-      }
-      setCurrentContent(contentInfo)
-    }
-
-    return () => setCurrentContent(null)
-  }, [data, slug, setCurrentContent])
 
   if (!data) return <div className='p-4 text-center'>No data</div>
 
