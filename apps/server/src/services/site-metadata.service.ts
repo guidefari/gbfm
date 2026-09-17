@@ -13,12 +13,28 @@ import { AudioService } from '@/services/audio.service'
 import { ConfigService } from '@/services/config.service'
 import { MusicEntityService } from '@/services/music-entity'
 import { PostService } from '@/services/post.service'
-import { ProfileService } from '@/services/profile.service'
+import { ProfileService, type PublicProfile } from '@/services/profile.service'
 import { ReleaseService } from '@/services/release.service'
 import { ResolveService } from '@/services/resolve.service'
 import { ShowService } from '@/services/show.service'
 
 const iso = (date: Date | null | undefined) => date?.toISOString() ?? null
+
+const metadataFromProfile = (profile: PublicProfile, slug: string, siteUrl: string) => {
+  const contributionCount =
+    profile.content.mixes.length +
+    profile.content.shows.length +
+    profile.content.editorials.length +
+    profile.content.tweets.length
+  return makeProfileSiteMetadata({
+    slug,
+    title: profile.name,
+    imageUrl: profile.image,
+    publishedAt: iso(profile.createdAt),
+    contributionCount,
+    siteUrl
+  })
+}
 
 const metadataForAudio = (kind: 'mix' | 'track', slug: string, siteUrl: string) =>
   Effect.gen(function* () {
@@ -93,19 +109,7 @@ const metadataForProfile = (username: string, siteUrl: string) =>
   Effect.gen(function* () {
     const service = yield* ProfileService
     const profile = yield* service.getPublicProfile(username)
-    const contributionCount =
-      profile.content.mixes.length +
-      profile.content.shows.length +
-      profile.content.editorials.length +
-      profile.content.tweets.length
-    return makeProfileSiteMetadata({
-      slug: username,
-      title: profile.name,
-      imageUrl: profile.image,
-      publishedAt: iso(profile.createdAt),
-      contributionCount,
-      siteUrl
-    })
+    return metadataFromProfile(profile, username, siteUrl)
   })
 
 const metadataForPost = (kind: 'editorial' | 'tweet' | 'post', slug: string, siteUrl: string) =>
@@ -140,9 +144,9 @@ const metadataForResolvedSlug = (slug: string, siteUrl: string) =>
   Effect.gen(function* () {
     const service = yield* ResolveService
     const resolved = yield* service.resolve(slug)
-    return yield* resolved.type === 'profile'
-      ? metadataForProfile(slug, siteUrl)
-      : metadataForShow(resolved.data.slug, siteUrl)
+    return resolved.type === 'profile'
+      ? metadataFromProfile(resolved.data, slug, siteUrl)
+      : yield* metadataForShow(resolved.data.slug, siteUrl)
   })
 
 /** Resolves a published public route into the canonical metadata projection. */

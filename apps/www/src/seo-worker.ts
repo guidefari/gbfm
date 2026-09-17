@@ -138,7 +138,10 @@ export const handleRequest = async (request: Request, env: SeoWorkerEnv): Promis
     )
     if (apiResponse.status === 404) {
       const html = noindexHtml(await assetResponse.text())
-      return htmlResponse(assetResponse, request.method === 'HEAD' ? '' : html, 404)
+      const response = await htmlResponse(assetResponse, request.method === 'HEAD' ? '' : html, 404)
+      response.headers.set('cache-control', 'no-store')
+      response.headers.delete('etag')
+      return response
     }
     if (!apiResponse.ok) return fallbackResponse
 

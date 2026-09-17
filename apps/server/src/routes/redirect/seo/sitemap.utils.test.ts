@@ -32,6 +32,14 @@ describe('sitemap.utils', () => {
       expect(entry).toContain('<changefreq>weekly</changefreq>')
       expect(entry).toContain('<priority>0.8</priority>')
     })
+
+    test('escapes XML special characters in locations', () => {
+      const date = new Date('2024-06-15T12:30:00Z')
+      const entry = buildUrlEntry('https://goosebumps.fm/tracks/r&b<live>', date)
+
+      expect(entry).toContain('<loc>https://goosebumps.fm/tracks/r&amp;b&lt;live&gt;</loc>')
+      expect(entry).not.toContain('<loc>https://goosebumps.fm/tracks/r&b<live></loc>')
+    })
   })
 
   describe('buildSitemapXml', () => {

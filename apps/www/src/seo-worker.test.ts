@@ -85,12 +85,27 @@ describe('site metadata worker', () => {
   })
 
   test('returns a noindex 404 document when public metadata does not exist', async () => {
+    const testEnv: SeoWorkerEnv = {
+      ...env(new Response('Not found', { status: 404 })),
+      ASSETS: fetcher(
+        async () =>
+          new Response(indexHtml, {
+            headers: {
+              'content-type': 'text/html',
+              'cache-control': 'public, max-age=3600',
+              etag: 'spa-shell'
+            }
+          })
+      )
+    }
     const response = await handleRequest(
       new Request('https://goosebumps.fm/tracks/draft-or-missing'),
-      env(new Response('Not found', { status: 404 }))
+      testEnv
     )
 
     expect(response.status).toBe(404)
+    expect(response.headers.get('cache-control')).toBe('no-store')
+    expect(response.headers.has('etag')).toBe(false)
     expect(await response.text()).toContain('<meta name="robots" content="noindex, nofollow">')
   })
 

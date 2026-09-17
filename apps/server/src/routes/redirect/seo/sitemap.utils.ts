@@ -30,6 +30,20 @@ export const formatDate = (date: Date): string => {
   return date.toISOString().split('T')[0] ?? ''
 }
 
+const escapeXmlText = (value: string): string =>
+  value.replace(/[&<>]/g, (character) => {
+    switch (character) {
+      case '&':
+        return '&amp;'
+      case '<':
+        return '&lt;'
+      case '>':
+        return '&gt;'
+      default:
+        return character
+    }
+  })
+
 export const buildUrlEntry = (
   loc: string,
   lastmod: Date,
@@ -37,7 +51,7 @@ export const buildUrlEntry = (
   priority: string = '0.8'
 ): string => {
   return `  <url>
-    <loc>${loc}</loc>
+    <loc>${escapeXmlText(loc)}</loc>
     <lastmod>${formatDate(lastmod)}</lastmod>
     <changefreq>${changefreq}</changefreq>
     <priority>${priority}</priority>
