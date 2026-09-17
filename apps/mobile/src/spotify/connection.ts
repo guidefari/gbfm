@@ -20,25 +20,22 @@ import { env } from '@/env'
 import { SPOTIFY_REDIRECT_URI } from './constants'
 import { runSpotifyEffect } from './runtime'
 
-export type SpotifyConnectionState = {
-  readonly session: SpotifyAuthSession | undefined
-  readonly profile: SpotifyProfile | undefined
-  readonly isBootstrapping: boolean
-  readonly isConnecting: boolean
-  readonly error: string | null
-}
+export type SpotifyConnectionState =
+  | { readonly status: 'bootstrapping' }
+  | { readonly status: 'disconnected'; readonly error?: string }
+  | { readonly status: 'connecting' }
+  | {
+      readonly status: 'connected'
+      readonly session: SpotifyAuthSession
+      readonly profile?: SpotifyProfile
+      readonly error?: string
+    }
 
-const emptyConnectionState: SpotifyConnectionState = {
-  session: undefined,
-  profile: undefined,
-  isBootstrapping: true,
-  isConnecting: false,
-  error: null
-}
+const bootstrappingConnection: SpotifyConnectionState = { status: 'bootstrapping' }
 
-export const spotifyConnectionState = Atom.make<SpotifyConnectionState>(emptyConnectionState).pipe(
-  Atom.keepAlive
-)
+export const spotifyConnectionState = Atom.make<SpotifyConnectionState>(
+  bootstrappingConnection
+).pipe(Atom.keepAlive)
 
 type SetConnectionState = (
   update: (state: SpotifyConnectionState) => SpotifyConnectionState
@@ -47,9 +44,17 @@ type SetConnectionState = (
 const loadProfile = (setState: SetConnectionState) =>
   runSpotifyEffect(
     fetchSpotifyProfileEffect().pipe(
-      Effect.map((profile) => setState((state) => ({ ...state, profile }))),
+      Effect.map((profile) =>
+        setState((state) =>
+          state.status === 'connected' ? { ...state, profile, error: undefined } : state
+        )
+      ),
       Effect.catch((error: SpotifyRequestError) =>
-        Effect.sync(() => setState((state) => ({ ...state, error: spotifyErrorMessage(error) })))
+        Effect.sync(() =>
+          setState((state) =>
+            state.status === 'connected' ? { ...state, error: spotifyErrorMessage(error) } : state
+          )
+        )
       )
     )
   )
@@ -59,14 +64,14 @@ const readStoredSession = async (setState: SetConnectionState) => {
     getValidSpotifyAuthSessionEffect().pipe(
       Effect.catch((error: SpotifyRequestError) =>
         Effect.sync(() => {
-          setState((state) => ({ ...state, error: spotifyErrorMessage(error) }))
+          setState(() => ({ status: 'disconnected', error: spotifyErrorMessage(error) }))
           return undefined
         })
       )
     )
   )
 
-  setState((state) => ({ ...state, session: stored }))
+  setState(() => (stored ? { status: 'connected', session: stored } : { status: 'disconnected' }))
   if (stored) await loadProfile(setState)
   return stored
 }
@@ -75,7 +80,7 @@ const makeBootstrapAtom = (setState: SetConnectionState) =>
   Atom.make(
     Effect.promise(() =>
       readStoredSession(setState).finally(() =>
-        setState((state) => ({ ...state, isBootstrapping: false }))
+        setState((state) => (state.status === 'bootstrapping' ? { status: 'disconnected' } : state))
       )
     )
   )
@@ -97,11 +102,11 @@ export const useConnectSpotify = () => {
 
   return useCallback(async () => {
     if (!env.EXPO_PUBLIC_SPOTIFY_CLIENT_ID) {
-      setState((state) => ({ ...state, error: 'Missing EXPO_PUBLIC_SPOTIFY_CLIENT_ID.' }))
+      setState(() => ({ status: 'disconnected', error: 'Missing EXPO_PUBLIC_SPOTIFY_CLIENT_ID.' }))
       return
     }
 
-    setState((state) => ({ ...state, error: null, isConnecting: true }))
+    setState(() => ({ status: 'connecting' }))
 
     try {
       const authUrl = await runSpotifyEffect(
@@ -114,14 +119,17 @@ export const useConnectSpotify = () => {
 
       const callback = readAuthorizationCallback(new URL(result.url))
       if (callback.error) {
-        setState((state) => ({ ...state, error: callback.error ?? 'Spotify login failed.' }))
+        setState(() => ({
+          status: 'disconnected',
+          error: callback.error ?? 'Spotify login failed.'
+        }))
         return
       }
       if (!callback.code) return
 
       await runSpotifyEffect(exchangeAndPersist(callback.code, setState))
     } finally {
-      setState((state) => ({ ...state, isConnecting: false }))
+      setState((state) => (state.status === 'connecting' ? { status: 'disconnected' } : state))
     }
   }, [setState])
 }
@@ -129,16 +137,26 @@ export const useConnectSpotify = () => {
 const exchangeAndPersist = (code: string, setState: SetConnectionState) =>
   Effect.gen(function* () {
     const session = yield* exchangeSpotifyPkceCodeEffect(code)
-    setState((state) => ({ ...state, session }))
+    setState(() => ({ status: 'connected', session }))
     yield* fetchSpotifyProfileEffect().pipe(
-      Effect.map((profile) => setState((state) => ({ ...state, profile }))),
+      Effect.map((profile) =>
+        setState((state) =>
+          state.status === 'connected' ? { ...state, profile, error: undefined } : state
+        )
+      ),
       Effect.catch((error: SpotifyRequestError) =>
-        Effect.sync(() => setState((state) => ({ ...state, error: spotifyErrorMessage(error) })))
+        Effect.sync(() =>
+          setState((state) =>
+            state.status === 'connected' ? { ...state, error: spotifyErrorMessage(error) } : state
+          )
+        )
       )
     )
   }).pipe(
     Effect.catch((error: SpotifyRequestError) =>
-      Effect.sync(() => setState((state) => ({ ...state, error: spotifyErrorMessage(error) })))
+      Effect.sync(() =>
+        setState(() => ({ status: 'disconnected', error: spotifyErrorMessage(error) }))
+      )
     )
   )
 
@@ -146,6 +164,6 @@ export const useDisconnectSpotify = () => {
   const setState = useSetSpotifyConnectionState()
   return useCallback(() => {
     void runSpotifyEffect(logoutSpotifyEffect())
-    setState(() => ({ ...emptyConnectionState, isBootstrapping: false }))
+    setState(() => ({ status: 'disconnected' }))
   }, [setState])
 }

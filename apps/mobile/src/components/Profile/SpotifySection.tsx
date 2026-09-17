@@ -14,11 +14,7 @@ const formatExpiresIn = (expiresAt: number) => {
 }
 
 export function SpotifySection() {
-  const session = useSpotifyConnection((state) => state.session)
-  const profile = useSpotifyConnection((state) => state.profile)
-  const isBootstrapping = useSpotifyConnection((state) => state.isBootstrapping)
-  const isConnecting = useSpotifyConnection((state) => state.isConnecting)
-  const error = useSpotifyConnection((state) => state.error)
+  const connection = useSpotifyConnection((state) => state)
   const connect = useConnectSpotify()
   const disconnect = useDisconnectSpotify()
   const colors = useThemeColors()
@@ -31,9 +27,9 @@ export function SpotifySection() {
         <Text style={{ color: colors.strong, fontSize: 20, fontWeight: '700' }}>Spotify</Text>
       </View>
 
-      {isBootstrapping ? (
+      {connection.status === 'bootstrapping' ? (
         <Text style={{ color: colors.muted, fontSize: 14 }}>Checking session...</Text>
-      ) : session ? (
+      ) : connection.status === 'connected' ? (
         <View
           style={{
             backgroundColor: colors.surface,
@@ -43,10 +39,10 @@ export function SpotifySection() {
           }}>
           <View>
             <Text style={{ color: colors.strong, fontSize: 16, fontWeight: '600' }}>
-              {profile?.display_name ?? profile?.id ?? 'Connected'}
+              {connection.profile?.display_name ?? connection.profile?.id ?? 'Connected'}
             </Text>
             <Text style={{ color: colors.muted, fontSize: 13, marginTop: 2 }}>
-              Token expires {formatExpiresIn(session.accessTokenExpiresAt)}
+              Token expires {formatExpiresIn(connection.session.accessTokenExpiresAt)}
             </Text>
           </View>
           <TouchableOpacity
@@ -69,23 +65,23 @@ export function SpotifySection() {
         <TouchableOpacity
           accessibilityRole='button'
           accessibilityLabel='Connect Spotify'
-          disabled={isConnecting}
+          disabled={connection.status === 'connecting'}
           onPress={() => void connect()}
           style={{
             backgroundColor: SPOTIFY_GREEN,
             borderRadius: 4,
             paddingVertical: 14,
             alignItems: 'center',
-            opacity: isConnecting ? 0.6 : 1
+            opacity: connection.status === 'connecting' ? 0.6 : 1
           }}>
           <Text style={{ color: '#000', fontSize: 15, fontWeight: '700' }}>
-            {isConnecting ? 'Connecting...' : 'Connect Spotify'}
+            {connection.status === 'connecting' ? 'Connecting...' : 'Connect Spotify'}
           </Text>
         </TouchableOpacity>
       )}
 
-      {error ? (
-        <Text style={{ color: colors.error, fontSize: 13, marginTop: 8 }}>{error}</Text>
+      {'error' in connection && connection.error ? (
+        <Text style={{ color: colors.error, fontSize: 13, marginTop: 8 }}>{connection.error}</Text>
       ) : null}
 
       <SpotifyToast notice={notice} />

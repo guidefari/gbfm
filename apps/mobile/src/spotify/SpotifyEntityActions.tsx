@@ -29,12 +29,12 @@ const entityNoun = {
 } satisfies Record<SpotifyEntityRef['kind'], string>
 
 export function SpotifyEntityActions({ url, onNotice }: Props) {
-  const session = useSpotifyConnection((state) => state.session)
+  const connection = useSpotifyConnection((state) => state)
   const [pending, setPending] = useState<'play' | 'queue' | null>(null)
   const colors = useThemeColors()
 
   const entity = spotifyEntityFromUrl(url)
-  if (!entity || !session) return null
+  if (!entity || connection.status !== 'connected') return null
 
   const openInSpotify = () => {
     void Linking.openURL(url)
