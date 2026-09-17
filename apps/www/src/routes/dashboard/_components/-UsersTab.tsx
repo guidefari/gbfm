@@ -46,6 +46,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Check, MoreHorizontal, Plus, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useUsernameAvailability } from '@/components/Auth/UsernameAvailability'
 import { SortableSocialLinkRow } from '@/components/profile/social-link-fields'
 import { authClient } from '@/lib/auth-client'
 import {
@@ -123,7 +124,6 @@ export function UsersTab() {
     password: '',
     role: 'user'
   })
-  const [debouncedUsername, setDebouncedUsername] = useState('')
   const [editUserDialog, setEditUserDialog] = useState(false)
   const [editDialogTab, setEditDialogTab] = useState<'details' | 'social-links'>('details')
   const [editUser, setEditUser] = useState<{
@@ -146,26 +146,11 @@ export function UsersTab() {
   const [socialLinksDraft, setSocialLinksDraft] = useState<Array<SocialLink & { tempId: string }>>(
     []
   )
-  const [debouncedEditUsername, setDebouncedEditUsername] = useState('')
   const [originalUsername, setOriginalUsername] = useState('')
 
   const socialLinksQuery = useAdminUserSocialLinks(editUser.id)
   const bioQuery = useAdminUserBio(editUser.id)
   const replaceAdminUserSocialLinksMutation = useReplaceAdminUserSocialLinks()
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedUsername(newUser.username)
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [newUser.username])
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedEditUsername(editUser.username)
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [editUser.username])
 
   useEffect(() => {
     if (!editUserDialog) return
@@ -209,27 +194,8 @@ export function UsersTab() {
     }
   })
 
-  const { data: usernameAvailability, isPending: checkingUsername } = useQuery({
-    queryKey: ['username', 'availability', debouncedUsername],
-    queryFn: async () => {
-      const result = await authClient.isUsernameAvailable({
-        username: debouncedUsername
-      })
-      return result.data
-    },
-    enabled: debouncedUsername.length >= 2
-  })
-
-  const { data: editUsernameAvailability, isPending: checkingEditUsername } = useQuery({
-    queryKey: ['username', 'availability', debouncedEditUsername],
-    queryFn: async () => {
-      const result = await authClient.isUsernameAvailable({
-        username: debouncedEditUsername
-      })
-      return result.data
-    },
-    enabled: debouncedEditUsername.length >= 2 && debouncedEditUsername !== originalUsername
-  })
+  const usernameAvailability = useUsernameAvailability(newUser.username)
+  const editUsernameAvailability = useUsernameAvailability(editUser.username, originalUsername)
 
   const sendInviteMutation = useMutation({
     mutationFn: async (userId: string) =>
@@ -273,7 +239,6 @@ export function UsersTab() {
         password: '',
         role: 'user'
       })
-      setDebouncedUsername('')
       toast({ title: 'User created successfully' })
 
       const createdUserId = result?.data?.user?.id
@@ -676,11 +641,11 @@ export function UsersTab() {
                   placeholder='johndoe'
                   className='pr-8'
                 />
-                {newUser.username.length >= 2 && (
+                {usernameAvailability.state !== 'idle' && (
                   <div className='absolute -translate-y-1/2 right-2 top-1/2'>
-                    {checkingUsername ? (
+                    {usernameAvailability.state === 'checking' ? (
                       <div className='w-4 h-4 border-2 rounded-full animate-spin border-muted-foreground border-t-transparent' />
-                    ) : usernameAvailability?.available ? (
+                    ) : usernameAvailability.available ? (
                       <Check className='w-4 h-4 text-green-500' />
                     ) : (
                       <X className='w-4 h-4 text-destructive' />
@@ -688,11 +653,9 @@ export function UsersTab() {
                   </div>
                 )}
               </div>
-              {newUser.username.length >= 2 &&
-                !checkingUsername &&
-                !usernameAvailability?.available && (
-                  <p className='text-xs text-destructive'>Username is already taken</p>
-                )}
+              {usernameAvailability.state === 'taken' && (
+                <p className='text-xs text-destructive'>Username is already taken</p>
+              )}
             </div>
             <div className='space-y-2'>
               <Label htmlFor='email'>Email</Label>
@@ -744,7 +707,7 @@ export function UsersTab() {
               disabled={
                 createUserMutation.isPending ||
                 (!newUser.email && !newUser.username) ||
-                (newUser.username.length >= 2 && !usernameAvailability?.available)
+                (usernameAvailability.state !== 'idle' && !usernameAvailability.available)
               }>
               {createUserMutation.isPending ? 'Creating...' : 'Create User'}
             </Button>
@@ -801,24 +764,22 @@ export function UsersTab() {
                     placeholder='johndoe'
                     className='pr-8'
                   />
-                  {editUser.username.length >= 2 && editUser.username !== originalUsername && (
-                    <div className='absolute -translate-y-1/2 right-2 top-1/2'>
-                      {checkingEditUsername ? (
-                        <div className='w-4 h-4 border-2 rounded-full animate-spin border-muted-foreground border-t-transparent' />
-                      ) : editUsernameAvailability?.available ? (
-                        <Check className='w-4 h-4 text-green-500' />
-                      ) : (
-                        <X className='w-4 h-4 text-destructive' />
-                      )}
-                    </div>
-                  )}
+                  {editUsernameAvailability.state !== 'idle' &&
+                    editUsernameAvailability.state !== 'unchanged' && (
+                      <div className='absolute -translate-y-1/2 right-2 top-1/2'>
+                        {editUsernameAvailability.state === 'checking' ? (
+                          <div className='w-4 h-4 border-2 rounded-full animate-spin border-muted-foreground border-t-transparent' />
+                        ) : editUsernameAvailability.available ? (
+                          <Check className='w-4 h-4 text-green-500' />
+                        ) : (
+                          <X className='w-4 h-4 text-destructive' />
+                        )}
+                      </div>
+                    )}
                 </div>
-                {editUser.username.length >= 2 &&
-                  editUser.username !== originalUsername &&
-                  !checkingEditUsername &&
-                  !editUsernameAvailability?.available && (
-                    <p className='text-xs text-destructive'>Username is already taken</p>
-                  )}
+                {editUsernameAvailability.state === 'taken' && (
+                  <p className='text-xs text-destructive'>Username is already taken</p>
+                )}
               </div>
               <div className='space-y-2'>
                 <Label htmlFor='edit-email'>Email</Label>
@@ -939,9 +900,7 @@ export function UsersTab() {
                   updateUserMutation.isPending ||
                   !editUser.name ||
                   !editUser.email ||
-                  (editUser.username.length >= 2 &&
-                    editUser.username !== originalUsername &&
-                    !editUsernameAvailability?.available)
+                  (editUsernameAvailability.state !== 'idle' && !editUsernameAvailability.available)
                 }>
                 {updateUserMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
