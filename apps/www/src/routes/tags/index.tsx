@@ -1,17 +1,11 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { QueryError } from '@/components/QueryError'
 import { usePostTags } from '@/lib/http'
-import { generateSEOMeta } from '@/lib/seo'
+import { generateSEOHead, STATIC_PAGE_SEO } from '@/lib/seo'
 
 export const Route = createFileRoute('/tags/')({
   component: TagsIndexPage,
-  head: () => ({
-    meta: generateSEOMeta({
-      title: 'Tags',
-      description: 'Browse posts by tag on goosebumps.fm',
-      url: '/tags'
-    })
-  })
+  head: () => generateSEOHead(STATIC_PAGE_SEO.tags)
 })
 
 function TagsIndexPage() {

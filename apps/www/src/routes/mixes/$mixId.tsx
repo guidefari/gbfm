@@ -33,6 +33,7 @@ import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useMixQRPdf, useShowById } from '@/lib/http'
 import { captureException } from '@/services/analytics'
 import { getShareUrl } from '@/lib/share'
+import { generateMixSEO, generateSEOHead, notFoundHead } from '@/lib/seo'
 import { useNowPlayingTrack, usePlayerActions, useTransport } from '@/services/player'
 import { toQueueTrack } from '@/services/player/toQueueTrack'
 
@@ -60,77 +61,8 @@ export const Route = createFileRoute('/mixes/$mixId')({
     }
   },
   head: ({ loaderData, params }) => {
-    const siteUrl = 'https://goosebumps.fm'
-    const mixUrl = `${siteUrl}/mixes/${params.mixId}`
-    const mix = loaderData?.mix
-
-    const title = mix?.title || params.mixId
-    const description = mix?.description || `Listen to ${title} on goosebumps.fm`
-    const image = mix?.thumbnailUrl || 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'
-
-    return {
-      meta: [
-        {
-          title: `${title} | goosebumps.fm`
-        },
-        {
-          name: 'description',
-          content: description
-        },
-        {
-          property: 'og:type',
-          content: 'music.song'
-        },
-        {
-          property: 'og:title',
-          content: `${title} | goosebumps.fm`
-        },
-        {
-          property: 'og:description',
-          content: description
-        },
-        {
-          property: 'og:url',
-          content: mixUrl
-        },
-        {
-          property: 'og:site_name',
-          content: 'goosebumps.fm'
-        },
-        {
-          property: 'og:image',
-          content: image
-        },
-        {
-          property: 'og:image:width',
-          content: '1200'
-        },
-        {
-          property: 'og:image:height',
-          content: '630'
-        },
-        {
-          property: 'og:audio',
-          content: mix?.url || ''
-        },
-        {
-          name: 'twitter:card',
-          content: 'summary_large_image'
-        },
-        {
-          name: 'twitter:title',
-          content: `${title} | goosebumps.fm`
-        },
-        {
-          name: 'twitter:description',
-          content: description
-        },
-        {
-          name: 'twitter:image',
-          content: image
-        }
-      ]
-    }
+    if (!loaderData?.mix) return notFoundHead('Mix', 'Listen to mixes on goosebumps.fm')
+    return generateSEOHead(generateMixSEO(loaderData.mix, params.mixId))
   }
 })
 

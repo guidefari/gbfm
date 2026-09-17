@@ -29,6 +29,7 @@
     "@gbfm/api": "workspace:*",
     "@gbfm/core": "workspace:*",
     "@gbfm/player": "workspace:*",
+    "@gbfm/site-metadata": "workspace:*",
     "@gbfm/spotify": "workspace:*",
     "@gbfm/theme": "workspace:*",
     "@gbfm/tweet-card": "workspace:*",

@@ -2,305 +2,148 @@ import type {
   SelectMdxCompiledAudio,
   SelectMdxCompiledEditorialPost,
   SelectMdxCompiledMicroPost,
-  SelectMdxCompiledRelease,
-  SelectMdxCompiledShow
+  SelectMdxCompiledRelease
 } from '@gbfm/server/schemas'
+import {
+  makeAudioSiteMetadata,
+  makeLabelSiteMetadata,
+  makePostSiteMetadata,
+  makeProfileSiteMetadata,
+  makeReleaseSiteMetadata,
+  makeShowSiteMetadata,
+  makeStaticSiteMetadata,
+  renderDocumentHead,
+  STATIC_SITE_METADATA
+} from '@gbfm/site-metadata'
 import type { MusicLabel, PublicProfile } from './http'
 
-export const SITE_URL = 'https://goosebumps.fm'
-export const DEFAULT_OG_IMAGE = 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'
+const iso = (value: Date | string | null | undefined) =>
+  value ? new Date(value).toISOString() : null
 
-export interface SEOHeadData {
-  title: string
-  description: string
-  url: string
-  image?: string
-  type?: string
-  audioUrl?: string
-}
+export const generateSEOHead = renderDocumentHead
 
-type MicroPostSEOInput = Pick<SelectMdxCompiledMicroPost, 'title' | 'description' | 'thumbnailUrl'>
-
-export function generateSEOMeta(data: SEOHeadData) {
-  const { title, description, url, image = DEFAULT_OG_IMAGE, type = 'website', audioUrl } = data
-
-  const meta = [
-    {
-      title: `${title} | goosebumps.fm`
-    },
-    {
-      name: 'description',
-      content: description
-    },
-    {
-      property: 'og:type',
-      content: type
-    },
-    {
-      property: 'og:title',
-      content: `${title} | goosebumps.fm`
-    },
-    {
-      property: 'og:description',
-      content: description
-    },
-    {
-      property: 'og:url',
-      content: url
-    },
-    {
-      property: 'og:site_name',
-      content: 'goosebumps.fm'
-    },
-    {
-      property: 'og:image',
-      content: image
-    },
-    {
-      property: 'og:image:width',
-      content: '1200'
-    },
-    {
-      property: 'og:image:height',
-      content: '630'
-    },
-    {
-      name: 'twitter:card',
-      content: 'summary_large_image'
-    },
-    {
-      name: 'twitter:title',
-      content: `${title} | goosebumps.fm`
-    },
-    {
-      name: 'twitter:description',
-      content: description
-    },
-    {
-      name: 'twitter:image',
-      content: image
-    }
+export const notFoundHead = (title: string, description: string) => ({
+  meta: [
+    { title: `${title} | goosebumps.fm` },
+    { name: 'description', content: description },
+    { name: 'robots', content: 'noindex, nofollow' }
   ]
+})
 
-  // Add audio-specific tags for music content
-  if (audioUrl && (type === 'music.song' || type === 'music.album')) {
-    meta.push({
-      property: 'og:audio',
-      content: audioUrl
-    })
-  }
+export const privateHead = (title: string) =>
+  notFoundHead(title, 'This page is not intended for search results.')
 
-  return meta
+const audioMetadata = (kind: 'mix' | 'track', audio: SelectMdxCompiledAudio, slug: string) =>
+  makeAudioSiteMetadata({
+    kind,
+    slug,
+    title: audio.title,
+    description: audio.description,
+    imageUrl: audio.thumbnailUrl,
+    creators: audio.creators?.map((creator) => creator.name) ?? [],
+    publishedAt: iso(audio.createdAt),
+    modifiedAt: iso(audio.updatedAt),
+    audioUrl: audio.url
+  })
+
+export const generateMixSEO = (mix: SelectMdxCompiledAudio, slug: string) =>
+  audioMetadata('mix', mix, slug)
+
+export const generateTrackSEO = (track: SelectMdxCompiledAudio, slug: string) =>
+  audioMetadata('track', track, slug)
+
+export const generatePostSEO = (post: SelectMdxCompiledEditorialPost, slug: string) =>
+  makePostSiteMetadata({
+    kind: 'editorial',
+    slug,
+    title: post.title,
+    description: post.description,
+    imageUrl: post.thumbnailUrl,
+    creators: post.creators?.map((creator) => creator.name) ?? [],
+    publishedAt: iso(post.createdAt),
+    modifiedAt: iso(post.updatedAt)
+  })
+
+type MicroPostSEOInput = Pick<
+  SelectMdxCompiledMicroPost,
+  'title' | 'description' | 'thumbnailUrl' | 'createdAt' | 'updatedAt' | 'creators'
+>
+
+export const generateMicroPostSEO = (post: MicroPostSEOInput, slug: string) =>
+  makePostSiteMetadata({
+    kind: 'tweet',
+    slug,
+    title: post.title,
+    description: post.description,
+    imageUrl: post.thumbnailUrl,
+    creators: post.creators?.map((creator) => creator.name) ?? [],
+    publishedAt: iso(post.createdAt),
+    modifiedAt: iso(post.updatedAt)
+  })
+
+export const generateLabelSEO = (label: MusicLabel, slug: string) =>
+  makeLabelSiteMetadata({
+    slug,
+    title: label.name,
+    description: label.description,
+    imageUrl: label.imageUrl,
+    creators: label.creators?.map((creator) => creator.name) ?? [],
+    publishedAt: iso(label.publishedAt ?? label.createdAt),
+    modifiedAt: iso(label.updatedAt)
+  })
+
+export const generateReleaseSEO = (release: SelectMdxCompiledRelease, slug: string) =>
+  makeReleaseSiteMetadata({
+    slug,
+    title: release.title,
+    description: release.description,
+    imageUrl: release.thumbnailUrl,
+    creators: [],
+    publishedAt: iso(release.releaseDate ?? release.createdAt),
+    modifiedAt: iso(release.updatedAt)
+  })
+
+type ShowSEOInput = {
+  readonly title: string
+  readonly description: string | null
+  readonly thumbnailUrl: string | null
+  readonly bannerImageUrl?: string | null
+  readonly createdAt?: Date | string
+  readonly updatedAt?: Date | string
+  readonly hosts?: ReadonlyArray<{ readonly name: string }>
 }
 
-export function generateMixSEO(mix: SelectMdxCompiledAudio, mixId: string): SEOHeadData {
-  const title = mix.title || mixId
-  const description = mix.description || `Listen to ${title} on goosebumps.fm`
-  const url = `${SITE_URL}/mixes/${mixId}`
-  const image = mix.thumbnailUrl || DEFAULT_OG_IMAGE
+export const generateShowSEO = (show: ShowSEOInput, slug: string) =>
+  makeShowSiteMetadata({
+    slug,
+    title: show.title,
+    description: show.description,
+    imageUrl: show.bannerImageUrl ?? show.thumbnailUrl,
+    creators: show.hosts?.map((host) => host.name) ?? [],
+    publishedAt: iso(show.createdAt),
+    modifiedAt: iso(show.updatedAt)
+  })
 
-  return {
-    title,
-    description,
-    url,
-    image,
-    type: 'music.song',
-    audioUrl: mix.url || undefined
-  }
+export type ResolvedShowData = ShowSEOInput & {
+  readonly slug: string
+  readonly hosts: ReadonlyArray<{ readonly name: string }>
 }
 
-export function generateTrackSEO(track: SelectMdxCompiledAudio, trackId: string): SEOHeadData {
-  const title = track.title || trackId
-  const description = track.description || `Listen to ${title} on goosebumps.fm`
-  const url = `${SITE_URL}/tracks/${trackId}`
-  const image = track.thumbnailUrl || DEFAULT_OG_IMAGE
+export const generateResolvedShowSEO = (show: ResolvedShowData) => generateShowSEO(show, show.slug)
 
-  return {
-    title,
-    description,
-    url,
-    image,
-    type: 'music.song',
-    audioUrl: track.url || undefined
-  }
-}
+export const generateProfileSEO = (profile: PublicProfile, username: string) =>
+  makeProfileSiteMetadata({
+    slug: username,
+    title: profile.name,
+    imageUrl: profile.image,
+    publishedAt: iso(profile.createdAt),
+    contributionCount:
+      (profile.content?.mixes?.length ?? 0) +
+      (profile.content?.shows?.length ?? 0) +
+      (profile.content?.editorials?.length ?? 0) +
+      (profile.content?.tweets?.length ?? 0)
+  })
 
-export function generatePostSEO(post: SelectMdxCompiledEditorialPost, slug: string): SEOHeadData {
-  const title = post.title || slug
-  const description = post.description || `Read ${title} on goosebumps.fm`
-  const url = `${SITE_URL}/editorial/${slug}`
-  const image = post.thumbnailUrl || DEFAULT_OG_IMAGE
+export const generateStaticPageSEO = makeStaticSiteMetadata
 
-  return {
-    title,
-    description,
-    url,
-    image,
-    type: 'article'
-  }
-}
-
-export function generateMicroPostSEO(post: MicroPostSEOInput, slug: string): SEOHeadData {
-  const title = post.title || slug
-  const description = post.description || `Read ${title} on goosebumps.fm`
-  const url = `${SITE_URL}/tweet/${slug}`
-  const image = post.thumbnailUrl || DEFAULT_OG_IMAGE
-
-  return {
-    title,
-    description,
-    url,
-    image,
-    type: 'article'
-  }
-}
-
-export function generateLabelSEO(label: MusicLabel, labelSlug: string): SEOHeadData {
-  const title = label.name || labelSlug
-  const description = label.description || `Explore music from ${title} on goosebumps.fm`
-  const url = `${SITE_URL}/labels/${labelSlug}`
-  const image = label.imageUrl || DEFAULT_OG_IMAGE
-
-  return {
-    title,
-    description,
-    url,
-    image,
-    type: 'website'
-  }
-}
-
-export function generateReleaseSEO(release: SelectMdxCompiledRelease, slug: string): SEOHeadData {
-  const title = release.title || slug
-  const description = release.description || `Discover ${title} on goosebumps.fm`
-  const url = `${SITE_URL}/releases/${slug}`
-  const image = release.thumbnailUrl || DEFAULT_OG_IMAGE
-
-  return {
-    title,
-    description,
-    url,
-    image,
-    type: 'music.album'
-  }
-}
-
-export function generateShowSEO(show: SelectMdxCompiledShow, slug: string): SEOHeadData {
-  const title = show.title || slug
-  const hostNames = show.hosts?.map((h) => h.name).join(', ')
-  const description =
-    show.description ||
-    (hostNames
-      ? `${title} hosted by ${hostNames} on goosebumps.fm`
-      : `Listen to ${title} on goosebumps.fm`)
-  const url = `${SITE_URL}/shows/${slug}`
-  const image = show.thumbnailUrl || DEFAULT_OG_IMAGE
-
-  return {
-    title,
-    description,
-    url,
-    image,
-    type: 'website'
-  }
-}
-
-export function generateStaticPageSEO(
-  title: string,
-  description: string,
-  path: string
-): SEOHeadData {
-  return {
-    title,
-    description,
-    url: `${SITE_URL}${path}`,
-    type: 'website'
-  }
-}
-
-export type ResolvedShowData = {
-  id: string
-  title: string
-  slug: string
-  description: string | null
-  thumbnailUrl: string | null
-  compiledContent: string | null
-  hosts: ReadonlyArray<{ id: string; name: string }>
-}
-
-export function generateResolvedShowSEO(show: ResolvedShowData, slug: string): SEOHeadData {
-  const title = show.title || slug
-  const hostNames = show.hosts?.map((h) => h.name).join(', ')
-  const description =
-    show.description ||
-    (hostNames
-      ? `${title} hosted by ${hostNames} on goosebumps.fm`
-      : `Listen to ${title} on goosebumps.fm`)
-  const url = `${SITE_URL}/${slug}`
-  const image = show.thumbnailUrl || DEFAULT_OG_IMAGE
-
-  return {
-    title,
-    description,
-    url,
-    image,
-    type: 'website'
-  }
-}
-
-export function generateProfileSEO(profile: PublicProfile, username: string): SEOHeadData {
-  const displayName = profile.name
-  const contentCount = (profile.content?.mixes?.length ?? 0) + (profile.content?.shows?.length ?? 0)
-  const description =
-    contentCount > 0
-      ? `${displayName} has ${contentCount} ${contentCount === 1 ? 'contribution' : 'contributions'} on goosebumps.fm`
-      : `${displayName}'s profile on goosebumps.fm`
-  const url = `${SITE_URL}/${username}`
-  const image = profile.image || DEFAULT_OG_IMAGE
-
-  return {
-    title: displayName,
-    description,
-    url,
-    image,
-    type: 'profile'
-  }
-}
-
-export const STATIC_PAGE_SEO = {
-  home: generateStaticPageSEO(
-    'goosebumps.fm',
-    'Discover curated music mixes, tracks, and releases. Your destination for deep house, electronic, and soulful sounds.',
-    '/'
-  ),
-  labels: generateStaticPageSEO(
-    'Record Labels',
-    'Discover independent record labels and their music catalogs on goosebumps.fm.',
-    '/labels'
-  ),
-  shows: generateStaticPageSEO(
-    'Radio Shows',
-    'Discover radio shows and residencies on goosebumps.fm. Subscribe to get notified of new episodes.',
-    '/shows'
-  ),
-  dashboard: generateStaticPageSEO(
-    'Dashboard',
-    'Your personal dashboard on goosebumps.fm. Access your favorites, recent plays, and reminders.',
-    '/dashboard'
-  ),
-  editorial: generateStaticPageSEO(
-    'Editorial',
-    'Long-form posts, essays, and deep dives on goosebumps.fm.',
-    '/editorial'
-  ),
-  tweet: generateStaticPageSEO(
-    'Tweet',
-    'Short thoughts, updates, and micro posts on goosebumps.fm.',
-    '/tweet'
-  ),
-  djs: generateStaticPageSEO(
-    'DJs & Residents',
-    'Browse the DJs and residents who have published mixes on goosebumps.fm.',
-    '/djs'
-  )
-} as const
+export const STATIC_PAGE_SEO = STATIC_SITE_METADATA

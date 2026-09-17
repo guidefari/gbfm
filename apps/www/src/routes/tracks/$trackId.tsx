@@ -3,7 +3,7 @@ import { Effect } from 'effect'
 import { LongPost } from '@/components/Layout/LongPost'
 import { RouteError } from '@/components/RouteError'
 import { getApiClient } from '@/lib/api-client'
-import { generateSEOMeta, generateTrackSEO } from '@/lib/seo'
+import { generateSEOHead, generateTrackSEO, notFoundHead } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
 
 export const Route = createFileRoute('/tracks/$trackId')({
@@ -31,23 +31,9 @@ export const Route = createFileRoute('/tracks/$trackId')({
   },
   head: ({ loaderData, params }) => {
     if (!loaderData?.track) {
-      return {
-        meta: [
-          {
-            title: 'Track | goosebumps.fm'
-          },
-          {
-            name: 'description',
-            content: 'Listen to individual tracks on goosebumps.fm'
-          }
-        ]
-      }
+      return notFoundHead('Track', 'Listen to individual tracks on goosebumps.fm')
     }
-
-    const seoData = generateTrackSEO(loaderData.track, params.trackId)
-    return {
-      meta: generateSEOMeta(seoData)
-    }
+    return generateSEOHead(generateTrackSEO(loaderData.track, params.trackId))
   }
 })
 

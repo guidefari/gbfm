@@ -10,6 +10,7 @@
     "./music-reminders": "./src/music-reminders.ts",
     "./navigation": "./src/navigation.ts",
     "./search": "./src/search.ts",
+    "./site-metadata": "./src/site-metadata.ts",
     "./profile": "./src/profile.ts",
     "./resolve": "./src/resolve.ts",
     "./invite": "./src/invite.ts",
@@ -35,6 +36,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@gbfm/site-metadata": "workspace:*",
     "@gbfm/tweet-card": "workspace:*",
     "effect": "4.0.0-rc.111"
   },

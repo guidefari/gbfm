@@ -1,13 +1,7 @@
 import { Button } from '@gbfm/ui'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowRight, Headphones, LayoutGrid, Mic2 } from 'lucide-react'
-import { generateSEOMeta, generateStaticPageSEO } from '@/lib/seo'
-
-const pageSEO = generateStaticPageSEO(
-  'An invite for Charlie3000',
-  'A personal invitation to Charlie3000 to record a guest mix for goosebumps.fm',
-  '/invite/charlie3000'
-)
+import { generateSEOHead, STATIC_PAGE_SEO } from '@/lib/seo'
 
 const featureCards = [
   {
@@ -38,9 +32,7 @@ const facts: Fact[] = [
 
 export const Route = createFileRoute('/invite/charlie3000')({
   component: InviteCharliePage,
-  head: () => ({
-    meta: generateSEOMeta(pageSEO)
-  })
+  head: () => generateSEOHead(STATIC_PAGE_SEO.inviteCharlie3000)
 })
 
 function InviteCharliePage() {

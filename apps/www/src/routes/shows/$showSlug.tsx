@@ -4,7 +4,7 @@ import { RouteError } from '@/components/RouteError'
 import { ShowsBrowser } from '@/components/shows/ShowsBrowser'
 import { ShowsPageLayout } from '@/components/shows/ShowsPageLayout'
 import { getApiClient } from '@/lib/api-client'
-import { generateSEOMeta, generateShowSEO } from '@/lib/seo'
+import { generateSEOHead, generateShowSEO, notFoundHead } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
 
 export const Route = createFileRoute('/shows/$showSlug')({
@@ -31,23 +31,9 @@ export const Route = createFileRoute('/shows/$showSlug')({
   },
   head: ({ loaderData, params }) => {
     if (!loaderData?.show) {
-      return {
-        meta: [
-          {
-            title: 'Show | goosebumps.fm'
-          },
-          {
-            name: 'description',
-            content: 'Explore radio shows on goosebumps.fm'
-          }
-        ]
-      }
+      return notFoundHead('Show', 'Explore radio shows on goosebumps.fm')
     }
-
-    const seoData = generateShowSEO(loaderData.show, params.showSlug)
-    return {
-      meta: generateSEOMeta(seoData)
-    }
+    return generateSEOHead(generateShowSEO(loaderData.show, params.showSlug))
   }
 })
 

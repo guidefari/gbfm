@@ -1,7 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { generateSEOHead, STATIC_PAGE_SEO } from '@/lib/seo'
 
 export const Route = createFileRoute('/terms')({
-  component: TermsPage
+  component: TermsPage,
+  head: () => generateSEOHead(STATIC_PAGE_SEO.terms)
 })
 
 function TermsPage() {

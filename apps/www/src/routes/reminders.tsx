@@ -10,6 +10,7 @@ import {
   useMusicReminders
 } from '@/lib/http'
 import { log } from '@/services/logger'
+import { privateHead } from '@/lib/seo'
 
 interface MusicReminder {
   id: string
@@ -26,7 +27,8 @@ interface MusicReminder {
 }
 
 export const Route = createFileRoute('/reminders')({
-  component: MusicReminders
+  component: MusicReminders,
+  head: () => privateHead('Music reminders')
 })
 
 const formatReminderDateValue = (value: string) => {

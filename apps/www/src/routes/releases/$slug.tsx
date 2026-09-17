@@ -3,7 +3,7 @@ import { Effect } from 'effect'
 import { LongPost } from '@/components/Layout/LongPost'
 import { RouteError } from '@/components/RouteError'
 import { getApiClient } from '@/lib/api-client'
-import { generateReleaseSEO, generateSEOMeta } from '@/lib/seo'
+import { generateReleaseSEO, generateSEOHead, notFoundHead } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
 
 export const Route = createFileRoute('/releases/$slug')({
@@ -34,23 +34,9 @@ export const Route = createFileRoute('/releases/$slug')({
   },
   head: ({ loaderData, params }) => {
     if (!loaderData?.release) {
-      return {
-        meta: [
-          {
-            title: 'Release | goosebumps.fm'
-          },
-          {
-            name: 'description',
-            content: 'Discover music releases on goosebumps.fm'
-          }
-        ]
-      }
+      return notFoundHead('Release', 'Discover music releases on goosebumps.fm')
     }
-
-    const seoData = generateReleaseSEO(loaderData.release, params.slug)
-    return {
-      meta: generateSEOMeta(seoData)
-    }
+    return generateSEOHead(generateReleaseSEO(loaderData.release, params.slug))
   }
 })
 

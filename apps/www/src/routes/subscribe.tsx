@@ -3,9 +3,11 @@ import { createFileRoute } from '@tanstack/react-router'
 import { CheckCircle, Loader2, Mail } from 'lucide-react'
 import { useState } from 'react'
 import { useNewsletterSubscribe } from '@/lib/http'
+import { generateSEOHead, STATIC_PAGE_SEO } from '@/lib/seo'
 
 export const Route = createFileRoute('/subscribe')({
-  component: Subscribe
+  component: Subscribe,
+  head: () => generateSEOHead(STATIC_PAGE_SEO.subscribe)
 })
 
 function Subscribe() {

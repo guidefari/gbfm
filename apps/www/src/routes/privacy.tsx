@@ -1,7 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { generateSEOHead, STATIC_PAGE_SEO } from '@/lib/seo'
 
 export const Route = createFileRoute('/privacy')({
-  component: PrivacyPage
+  component: PrivacyPage,
+  head: () => generateSEOHead(STATIC_PAGE_SEO.privacy)
 })
 
 function PrivacyPage() {

@@ -5,10 +5,12 @@ import { MailCheck } from 'lucide-react'
 import { useState } from 'react'
 import { AuthPageLayout, AuthStatusNotice } from '@/components/Auth/AuthPageLayout'
 import { authClient } from '@/lib/auth-client'
+import { privateHead } from '@/lib/seo'
 import { useCooldown } from '@/lib/useCooldown'
 
 export const Route = createFileRoute('/auth/forgot-password')({
-  component: ForgotPasswordPage
+  component: ForgotPasswordPage,
+  head: () => privateHead('Forgot password')
 })
 
 const RESEND_COOLDOWN_SECONDS = 30
