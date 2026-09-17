@@ -1,3 +1,10 @@
+# [2.96.0](https://github.com/guidefari/gbfm/compare/v2.95.0...v2.96.0) (2026-09-17)
+
+
+### Features
+
+* unify site-wide metadata ([#330](https://github.com/guidefari/gbfm/issues/330)) ([0d4f001](https://github.com/guidefari/gbfm/commit/0d4f001605337b1613c0d1b54d6b9090d31e2529))
+
 # [2.95.0](https://github.com/guidefari/gbfm/compare/v2.94.0...v2.95.0) (2026-09-13)
 
 
