@@ -59,7 +59,7 @@ describe('social image worker', () => {
     const response = await worker.fetch(new Request(card.images.openGraph), env, context)
 
     expect(response.status).toBe(500)
-    expect(requestedAssets).toContain('/yoga.wasm')
+    expect(requestedAssets).toContain('/JetBrainsMono-Bold.ttf')
   })
 
   test('renders and stores a revisioned card on cache miss', async () => {
