@@ -699,38 +699,40 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
       )
 
     try {
-      for (const link of canonicalLinks) {
-        const path = `/api/music/${link.entityType}/${link.entityId}/links`
-        const added = await request(path, 'POST', {
-          platform: link.platform,
-          url: link.url,
-          status: 'rejected'
-        })
-        expect(added.status).toBe(200)
-        const addedLink = await decodeResponseBody(EntityLinkResponse, added)
-        expect(addedLink).toMatchObject({
-          platform: link.platform,
-          url: link.url,
-          status: 'rejected'
-        })
+      await Promise.all(
+        canonicalLinks.map(async (link) => {
+          const path = `/api/music/${link.entityType}/${link.entityId}/links`
+          const added = await request(path, 'POST', {
+            platform: link.platform,
+            url: link.url,
+            status: 'rejected'
+          })
+          expect(added.status).toBe(200)
+          const addedLink = await decodeResponseBody(EntityLinkResponse, added)
+          expect(addedLink).toMatchObject({
+            platform: link.platform,
+            url: link.url,
+            status: 'rejected'
+          })
 
-        const verified = await request(`${path}/${addedLink.id}`, 'PATCH', {
-          status: 'verified',
-          metadata: { reviewNote: 'approved' }
+          const verified = await request(`${path}/${addedLink.id}`, 'PATCH', {
+            status: 'verified',
+            metadata: { reviewNote: 'approved' }
+          })
+          expect(verified.status).toBe(200)
+          await expect(decodeResponseBody(EntityLinkResponse, verified)).resolves.toMatchObject({
+            platform: link.platform,
+            url: link.url,
+            status: 'verified',
+            verifiedBy: userId,
+            metadata: {
+              discoveredBy: 'manual',
+              confidence: 'exact_source',
+              reviewNote: 'approved'
+            }
+          })
         })
-        expect(verified.status).toBe(200)
-        await expect(decodeResponseBody(EntityLinkResponse, verified)).resolves.toMatchObject({
-          platform: link.platform,
-          url: link.url,
-          status: 'verified',
-          verifiedBy: userId,
-          metadata: {
-            discoveredBy: 'manual',
-            confidence: 'exact_source',
-            reviewNote: 'approved'
-          }
-        })
-      }
+      )
 
       const legacyAdded = await request(`/api/music/album/${albumId}/links`, 'POST', {
         ...legacyLink,
