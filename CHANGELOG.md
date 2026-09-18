@@ -1,3 +1,10 @@
+## [2.96.1](https://github.com/guidefari/gbfm/compare/v2.96.0...v2.96.1) (2026-09-18)
+
+
+### Bug Fixes
+
+* **social:** render generated images in workerd ([#336](https://github.com/guidefari/gbfm/issues/336)) ([7087dc8](https://github.com/guidefari/gbfm/commit/7087dc8588f6ab279568aa1a3ab3acb6f9f63889))
+
 # [2.96.0](https://github.com/guidefari/gbfm/compare/v2.95.0...v2.96.0) (2026-09-17)
 
 
