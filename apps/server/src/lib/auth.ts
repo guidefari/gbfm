@@ -9,6 +9,7 @@ import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { admin, bearer, username } from 'better-auth/plugins'
 import { Clock, Context, Effect, Layer } from 'effect'
+import { browserOrigins } from '@/lib/browser-origins'
 import * as authSchema from '@/db/auth.schema'
 import { Database, type DatabaseClient } from '@/db/layer'
 import { EMAIL_NOTIFICATION_TYPES } from '@/db/email.schema'
@@ -138,17 +139,7 @@ const makeAuth = (
       updateAge: 60 * 60 * 24,
       cookieCache: { enabled: true, maxAge: 5 * 60 }
     },
-    trustedOrigins: [
-      config.urls.frontend,
-      'http://127.0.0.1:5173',
-      'http://localhost:5173',
-      'http://127.0.0.1:3003',
-      'http://localhost:3003',
-      'https://gbfm.localhost',
-      'https://gbfm.test',
-      'https://www.goosebumps.fm',
-      'https://goosebumps.fm'
-    ],
+    trustedOrigins: browserOrigins(config.urls.frontend),
     secret: config.auth.betterAuthSecret,
     baseURL: config.auth.betterAuthUrl,
     basePath: '/auth',

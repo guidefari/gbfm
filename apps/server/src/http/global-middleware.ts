@@ -1,5 +1,6 @@
 import { Cause, Effect, Exit, Layer } from 'effect'
 import { HttpMiddleware, HttpRouter, HttpServerRequest } from 'effect/unstable/http'
+import { browserOrigins } from '@/lib/browser-origins'
 import { checkPerformanceHealth, recordRequest } from '@/lib/performance-monitoring'
 import { ConfigService } from '@/services/config.service'
 import { SentryService } from '@/services/sentry.service'
@@ -20,23 +21,12 @@ import { SentryService } from '@/services/sentry.service'
 // the CORS headers -- so this uses the predicate form of allowedOrigins
 // (not a fixed array) to reproduce that exact fallback behavior rather than
 // Effect's own array-mode "omit the header for unknown origins" semantics.
-const ALLOWED_ORIGINS = [
-  'http://127.0.0.1:5173',
-  'http://localhost:4173',
-  'http://127.0.0.1:3003',
-  'https://gbfm.localhost',
-  'https://gbfm.test',
-  'https://www.goosebumps.fm',
-  'https://goosebumps.fm'
-]
-
 export const CorsLive = Layer.unwrap(
   Effect.gen(function* () {
     const config = yield* ConfigService
     return HttpRouter.middleware(
       HttpMiddleware.cors({
-        allowedOrigins: (origin) =>
-          ALLOWED_ORIGINS.includes(origin) || origin === config.urls.frontend,
+        allowedOrigins: browserOrigins(config.urls.frontend),
         allowedMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
         allowedHeaders: [
           'Content-Type',
