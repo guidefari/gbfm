@@ -5,5 +5,3 @@ declare global {
     interface Env extends SocialImageEnv {}
   }
 }
-
-
