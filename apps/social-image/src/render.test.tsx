@@ -1,5 +1,7 @@
-import { readFile } from 'node:fs/promises'
+import { env } from 'cloudflare:workers'
 import { describe, expect, test } from 'vitest'
+import resvgWasm from '../assets/resvg.wasm'
+import yogaWasm from '../assets/yoga.wasm'
 import { renderTweetCard, type TweetCardRenderAssets } from './render'
 
 const model = {
@@ -15,24 +17,18 @@ const model = {
   url: 'https://goosebumps.fm/tweet/retryable-renderer'
 }
 
-const assetPath = (
-  name:
-    | Parameters<TweetCardRenderAssets['loadWasm']>[0]
-    | Parameters<TweetCardRenderAssets['loadFont']>[0]
-) => new URL(`../assets/${name}`, import.meta.url).pathname
-
 describe('tweet card renderer runtime', () => {
   test('retries initialization after a transient asset failure', async () => {
     let failInitialization = true
     const assets: TweetCardRenderAssets = {
       loadWasm: async (name) => {
         if (failInitialization) throw new Error('transient static asset failure')
-        const bytes = await readFile(assetPath(name))
-        return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
+        return name === 'yoga.wasm' ? yogaWasm : resvgWasm
       },
       loadFont: async (name) => {
-        const bytes = await readFile(assetPath(name))
-        return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
+        const response = await env.ASSETS.fetch(new Request(`https://assets.internal/${name}`))
+        if (!response.ok) throw new Error(`Render asset ${name} returned ${response.status}`)
+        return response.arrayBuffer()
       },
       loadImage: async () => null
     }
