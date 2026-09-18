@@ -1,5 +1,7 @@
 import { Schema } from 'effect'
 import { TweetCardPresentation, type TweetCardFormat, type TweetCardModel } from '@gbfm/tweet-card'
+import resvgWasm from '../assets/resvg.wasm'
+import yogaWasm from '../assets/yoga.wasm'
 import { renderTweetCard, type TweetCardRenderAssets } from './render'
 
 type Fetcher = {
@@ -90,7 +92,8 @@ const bytesToBase64 = (bytes: Uint8Array) => {
 }
 
 const renderAssets = (env: SocialImageEnv): TweetCardRenderAssets => ({
-  loadBinary: async (name) => {
+  loadWasm: async (name) => (name === 'yoga.wasm' ? yogaWasm : resvgWasm),
+  loadFont: async (name) => {
     const response = await env.ASSETS.fetch(new Request(`https://assets.internal/${name}`))
     if (!response.ok) throw new Error(`Render asset ${name} returned ${response.status}`)
     return response.arrayBuffer()

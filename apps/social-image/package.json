@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "vitest run",
+    "test": "vitest run src/render.test.tsx && vitest run --config vitest.workerd.config.ts",
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
@@ -13,9 +13,10 @@
     "effect": "4.0.0-rc.111",
     "qrcode": "1.5.4",
     "react": "19.2.7",
-    "satori": "0.18.3"
+    "satori": "0.19.2"
   },
   "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "0.20.3",
     "@cloudflare/workers-types": "5.20260810.1",
     "@types/bun": "1.3.13",
     "@types/qrcode": "1.5.6",

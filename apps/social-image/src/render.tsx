@@ -6,8 +6,9 @@ import { tweetCardTemplate } from './template'
 
 /** Binary and remote asset loader required by the Worker renderer. */
 export interface TweetCardRenderAssets {
-  readonly loadBinary: (
-    name: 'yoga.wasm' | 'resvg.wasm' | 'JetBrainsMono-Bold.ttf' | 'JetBrainsMono-ExtraBold.ttf'
+  readonly loadWasm: (name: 'yoga.wasm' | 'resvg.wasm') => Promise<WebAssembly.Module | ArrayBuffer>
+  readonly loadFont: (
+    name: 'JetBrainsMono-Bold.ttf' | 'JetBrainsMono-ExtraBold.ttf'
   ) => Promise<ArrayBuffer>
   readonly loadImage: (url: string) => Promise<string | null>
 }
@@ -17,8 +18,8 @@ let runtimeReady: Promise<void> | undefined
 const initializeRuntime = (assets: TweetCardRenderAssets) => {
   if (!runtimeReady) {
     runtimeReady = Promise.all([
-      assets.loadBinary('yoga.wasm').then(initSatori),
-      assets.loadBinary('resvg.wasm').then(initWasm)
+      assets.loadWasm('yoga.wasm').then(initSatori),
+      assets.loadWasm('resvg.wasm').then(initWasm)
     ])
       .then(() => undefined)
       .catch((error) => {
@@ -47,8 +48,8 @@ export const renderTweetCard = async (
 ): Promise<Uint8Array> => {
   await initializeRuntime(assets)
   const [bold, extraBold, coverImageUrl, avatarUrl, qrUrl] = await Promise.all([
-    assets.loadBinary('JetBrainsMono-Bold.ttf'),
-    assets.loadBinary('JetBrainsMono-ExtraBold.ttf'),
+    assets.loadFont('JetBrainsMono-Bold.ttf'),
+    assets.loadFont('JetBrainsMono-ExtraBold.ttf'),
     model.coverImageUrl ? assets.loadImage(model.coverImageUrl) : null,
     model.avatarUrl ? assets.loadImage(model.avatarUrl) : null,
     qrDataUrl(model.url)
