@@ -1,10 +1,13 @@
 import { env } from 'cloudflare:workers'
 import { describe, expect, test } from 'vitest'
+import type { TweetCardModel } from '@gbfm/social-card'
 import resvgWasm from '../assets/resvg.wasm'
 import yogaWasm from '../assets/yoga.wasm'
-import { renderTweetCard, type TweetCardRenderAssets } from './render'
+import { renderSocialCard, type SocialCardRenderAssets } from './render'
 
-const model = {
+const model: TweetCardModel = {
+  _tag: 'TweetCard',
+  kind: 'tweet',
   commentary: 'A retryable renderer initialization',
   authorName: 'Guide',
   username: 'guide',
@@ -20,7 +23,7 @@ const model = {
 describe('tweet card renderer runtime', () => {
   test('retries initialization after a transient asset failure', async () => {
     let failInitialization = true
-    const assets: TweetCardRenderAssets = {
+    const assets: SocialCardRenderAssets = {
       loadWasm: async (name) => {
         if (failInitialization) throw new Error('transient static asset failure')
         return name === 'yoga.wasm' ? yogaWasm : resvgWasm
@@ -33,12 +36,12 @@ describe('tweet card renderer runtime', () => {
       loadImage: async () => null
     }
 
-    await expect(renderTweetCard(model, 'openGraph', assets)).rejects.toThrow(
+    await expect(renderSocialCard(model, 'openGraph', assets)).rejects.toThrow(
       'transient static asset failure'
     )
     failInitialization = false
 
-    const png = await renderTweetCard(model, 'openGraph', assets)
+    const png = await renderSocialCard(model, 'openGraph', assets)
     expect(png.subarray(0, 8)).toEqual(
       new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
     )

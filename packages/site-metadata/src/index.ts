@@ -4,7 +4,7 @@ import { Schema } from 'effect'
 export const SITE_URL = 'https://goosebumps.fm'
 
 /** Branded fallback image with known Open Graph dimensions. */
-export const SITE_DEFAULT_IMAGE = 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'
+export const SITE_DEFAULT_IMAGE = 'https://goosebumps.fm/og-default.png'
 
 /** Public content variants with distinct structured-data semantics. */
 export const SiteMetadataKind = Schema.Literals([
@@ -213,8 +213,8 @@ export const makeSiteMetadata = (
   image: {
     url: input.imageUrl ?? SITE_DEFAULT_IMAGE,
     alt: input.imageAlt,
-    width: input.imageUrl === null ? 1080 : (input.imageWidth ?? null),
-    height: input.imageUrl === null ? 1080 : (input.imageHeight ?? null)
+    width: input.imageUrl === null ? 1200 : (input.imageWidth ?? null),
+    height: input.imageUrl === null ? 630 : (input.imageHeight ?? null)
   },
   creators: input.creators,
   publishedAt: input.publishedAt,

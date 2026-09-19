@@ -17,7 +17,7 @@ const metadata: SiteMetadata = makeSiteMetadata({
   description: 'A rediscovered pairing worth hearing.',
   canonicalUrl: 'https://goosebumps.fm/tweet/vusa-just-resurfaced',
   imageUrl:
-    'https://goosebumps.fm/social/tweets/vusa-just-resurfaced/0123456789abcdef/open-graph.png',
+    'https://goosebumps.fm/social/cards/tweet/vusa-just-resurfaced/0123456789abcdef/open-graph.png',
   imageAlt: 'Vusa just resurfaced this on goosebumps.fm',
   imageWidth: 1200,
   imageHeight: 630,
@@ -162,13 +162,11 @@ describe('site metadata worker', () => {
     error.mockRestore()
   })
 
-  test('proxies generated social image requests to the image worker', async () => {
-    const response = await handleRequest(
-      new Request(
-        'https://goosebumps.fm/social/tweets/vusa-just-resurfaced/0123456789abcdef/open-graph.png'
-      ),
-      env()
-    )
+  test.each([
+    'https://goosebumps.fm/social/cards/show/far-end-radio/0123456789abcdef/open-graph.png',
+    'https://goosebumps.fm/social/tweets/vusa-just-resurfaced/0123456789abcdef/open-graph.png'
+  ])('proxies the generated social image route %s to the image worker', async (url) => {
+    const response = await handleRequest(new Request(url), env())
 
     expect(await response.text()).toBe('social image')
   })

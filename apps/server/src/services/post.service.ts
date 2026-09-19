@@ -16,11 +16,7 @@ import {
   sql
 } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
-import {
-  buildTweetCardPresentation,
-  type TweetCardEntityInput,
-  type TweetCardPresentation
-} from '@gbfm/tweet-card'
+import { type TweetCardEntityInput, type TweetCardPresentationInput } from '@gbfm/social-card'
 import { Database } from '@/db/layer'
 import {
   hasEntityLabel,
@@ -127,9 +123,9 @@ export interface PostService {
   readonly getMicroPostBySlug: (
     slug: string
   ) => Effect.Effect<SelectMdxCompiledMicroPost, DatabaseError | NotFoundError>
-  readonly getTweetSharePresentation: (
+  readonly getTweetCardInput: (
     slug: string
-  ) => Effect.Effect<TweetCardPresentation, DatabaseError | NotFoundError>
+  ) => Effect.Effect<TweetCardPresentationInput, DatabaseError | NotFoundError>
   readonly getMicroPostReferenceBySlug: (
     slug: string
   ) => Effect.Effect<{ readonly id: string; readonly slug: string }, DatabaseError | NotFoundError>
@@ -1446,7 +1442,7 @@ const getTweetCardEntity = (type: string | null, id: string | null) =>
     return null
   })
 
-const getTweetSharePresentationEffect = (slug: string, mdx: MdxService) =>
+const getTweetCardInputEffect = (slug: string, mdx: MdxService) =>
   Effect.gen(function* () {
     const post = yield* getMicroPostBySlugEffect(slug, mdx)
     const entity = yield* getTweetCardEntity(post.musicEntityType, post.musicEntityId)
@@ -1469,22 +1465,20 @@ const getTweetSharePresentationEffect = (slug: string, mdx: MdxService) =>
         })
       : []
 
-    return yield* Effect.promise(() =>
-      buildTweetCardPresentation({
-        slug: post.slug,
-        commentary: post.title ?? '',
-        createdAt: post.createdAt.toISOString(),
-        creator: creator
-          ? {
-              name: creator.name,
-              username: creator.username,
-              avatarUrl: avatarRows[0]?.image ?? null
-            }
-          : null,
-        entity
-      })
-    )
-  }).pipe(Effect.withSpan('post.getTweetSharePresentation', { attributes: { slug } }))
+    return {
+      slug: post.slug,
+      commentary: post.title ?? '',
+      createdAt: post.createdAt.toISOString(),
+      creator: creator
+        ? {
+            name: creator.name,
+            username: creator.username,
+            avatarUrl: avatarRows[0]?.image ?? null
+          }
+        : null,
+      entity
+    }
+  }).pipe(Effect.withSpan('post.getTweetCardInput', { attributes: { slug } }))
 
 const getMicroPostByIdEffect = (id: string, mdx: MdxService) =>
   Effect.gen(function* () {
@@ -2208,7 +2202,7 @@ export const PostServiceLayer = Layer.effect(
       getEditorialBySlug: (slug) => provideDb(getEditorialBySlugEffect(slug, mdx)),
       getMicroPosts: (opts) => provideDb(getMicroPostsEffect(opts, mdx)),
       getMicroPostBySlug: (slug) => provideDb(getMicroPostBySlugEffect(slug, mdx)),
-      getTweetSharePresentation: (slug) => provideDb(getTweetSharePresentationEffect(slug, mdx)),
+      getTweetCardInput: (slug) => provideDb(getTweetCardInputEffect(slug, mdx)),
       getMicroPostReferenceBySlug: (slug) => provideDb(getMicroPostReferenceBySlugEffect(slug)),
       getMicroPostById: (id) => provideDb(getMicroPostByIdEffect(id, mdx)),
       getPostTags: () => provideDb(getPostTagsEffect()),

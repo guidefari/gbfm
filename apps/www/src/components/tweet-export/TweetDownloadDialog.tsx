@@ -1,4 +1,4 @@
-import { TweetCardPresentation } from '@gbfm/tweet-card'
+import { TweetCardPresentation } from '@gbfm/social-card'
 import {
   Button,
   Dialog,
@@ -43,8 +43,7 @@ export function TweetDownloadDialog({ slug, open, onOpenChange }: Props) {
     isError
   } = useQuery({
     queryKey: ['tweet-share-presentation', slug],
-    queryFn: async () =>
-      decodePresentation(await fetcher(apiUrl(`/content/posts/micro/${slug}/share-presentation`))),
+    queryFn: async () => decodePresentation(await fetcher(apiUrl(`/social-cards/tweet/${slug}`))),
     enabled: open
   })
   const imageUrl = presentation?.images[format] ?? null
