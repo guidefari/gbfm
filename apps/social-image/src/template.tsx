@@ -1,5 +1,12 @@
 import type { ReactNode } from 'react'
-import type { TweetCardFormat, TweetCardModel } from '@gbfm/tweet-card'
+import type {
+  ArtworkCardModel,
+  EditorialCardModel,
+  IdentityCardModel,
+  SocialCardFormat,
+  SocialCardModel,
+  TweetCardModel
+} from '@gbfm/social-card'
 
 const colors = {
   background: '#111827',
@@ -16,7 +23,7 @@ const base = {
   color: colors.foreground
 } as const
 
-const commentarySize = (length: number, format: TweetCardFormat) => {
+const commentarySize = (length: number, format: SocialCardFormat) => {
   if (format === 'openGraph') return length > 150 ? 35 : length > 90 ? 42 : 50
   if (format === 'sleeve') return length > 200 ? 38 : length > 110 ? 46 : 54
   return length > 200 ? 42 : length > 110 ? 52 : 64
@@ -169,7 +176,7 @@ function Commentary({
   format
 }: {
   readonly data: TweetCardModel
-  readonly format: TweetCardFormat
+  readonly format: SocialCardFormat
 }) {
   return (
     <div style={{ ...base, borderLeft: `8px solid ${colors.highlight}`, paddingLeft: 34 }}>
@@ -294,10 +301,345 @@ function OpenGraph({ data }: { readonly data: TweetCardModel }) {
 /** Creates the static React tree consumed by Satori for a requested format. */
 export const tweetCardTemplate = (
   data: TweetCardModel,
-  format: TweetCardFormat,
+  format: SocialCardFormat,
   qrUrl: string
 ): ReactNode => {
   if (format === 'poster') return <Poster data={data} qrUrl={qrUrl} />
   if (format === 'sleeve') return <Sleeve data={data} qrUrl={qrUrl} />
   return <OpenGraph data={data} />
+}
+
+function Brand() {
+  return (
+    <div style={{ ...base, alignItems: 'center', fontSize: 20, fontWeight: 900 }}>
+      <div style={{ ...base, color: colors.highlight }}>goosebumps.</div>
+      <div style={{ ...base, color: colors.muted }}>fm</div>
+    </div>
+  )
+}
+
+function ArtworkFallback({ label }: { readonly label: string }) {
+  return (
+    <div
+      style={{
+        ...base,
+        width: '100%',
+        height: '100%',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundImage: `linear-gradient(145deg, ${colors.panel}, #22382f)`,
+        color: colors.highlight,
+        fontSize: 24,
+        fontWeight: 900,
+        letterSpacing: 5
+      }}>
+      <div style={base}>GOOSEBUMPS</div>
+      <div style={{ ...base, marginTop: 12, color: colors.muted, fontSize: 16 }}>{label}</div>
+    </div>
+  )
+}
+
+function ArtworkCard({ data }: { readonly data: ArtworkCardModel }) {
+  const creatorLine = data.creators.length > 0 ? data.creators.join(', ') : 'goosebumps.fm'
+  return (
+    <div
+      style={{
+        ...base,
+        width: 1200,
+        height: 630,
+        padding: 60,
+        backgroundColor: colors.background,
+        justifyContent: 'space-between'
+      }}>
+      <div
+        style={{
+          ...base,
+          width: 570,
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          paddingRight: 48
+        }}>
+        <Brand />
+        <div style={{ ...base, flexDirection: 'column' }}>
+          <div
+            style={{
+              ...base,
+              color: colors.highlight,
+              fontSize: 18,
+              fontWeight: 900,
+              letterSpacing: 7,
+              marginBottom: 22
+            }}>
+            {data.eyebrow}
+          </div>
+          <div
+            style={{
+              ...base,
+              color: colors.white,
+              fontSize: data.title.length > 54 ? 43 : 52,
+              fontWeight: 900,
+              lineHeight: 1.08,
+              letterSpacing: -2,
+              lineClamp: 3
+            }}>
+            {data.title}
+          </div>
+          <div
+            style={{
+              ...base,
+              color: colors.muted,
+              fontSize: 22,
+              lineHeight: 1.35,
+              marginTop: 20,
+              lineClamp: 2
+            }}>
+            {creatorLine}
+          </div>
+        </div>
+        <div style={{ ...base, color: colors.muted, fontSize: 15, letterSpacing: 3 }}>
+          LISTEN ON GOOSEBUMPS.FM
+        </div>
+      </div>
+      <div
+        style={{
+          ...base,
+          width: 510,
+          height: 510,
+          overflow: 'hidden',
+          border: `2px solid ${colors.muted}`,
+          boxShadow: '18px 18px 0 #22382f'
+        }}>
+        {data.artworkUrl ? (
+          <img
+            src={data.artworkUrl}
+            alt=''
+            width={510}
+            height={510}
+            style={{ width: 510, height: 510, objectFit: 'cover' }}
+          />
+        ) : (
+          <ArtworkFallback label={data.eyebrow} />
+        )}
+      </div>
+    </div>
+  )
+}
+
+function IdentityCard({ data }: { readonly data: IdentityCardModel }) {
+  return (
+    <div
+      style={{
+        ...base,
+        width: 1200,
+        height: 630,
+        padding: 60,
+        backgroundColor: colors.background,
+        alignItems: 'center'
+      }}>
+      <div
+        style={{
+          ...base,
+          width: 430,
+          height: 430,
+          flexShrink: 0,
+          overflow: 'hidden',
+          borderRadius: data.kind === 'profile' ? 215 : 28,
+          border: `3px solid ${colors.highlight}`
+        }}>
+        {data.imageUrl ? (
+          <img
+            src={data.imageUrl}
+            alt=''
+            width={430}
+            height={430}
+            style={{ width: 430, height: 430, objectFit: 'cover' }}
+          />
+        ) : (
+          <ArtworkFallback label={data.eyebrow} />
+        )}
+      </div>
+      <div
+        style={{
+          ...base,
+          height: 510,
+          flex: 1,
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          paddingLeft: 70
+        }}>
+        <Brand />
+        <div style={{ ...base, flexDirection: 'column' }}>
+          <div
+            style={{
+              ...base,
+              color: colors.highlight,
+              fontSize: 18,
+              fontWeight: 900,
+              letterSpacing: 7,
+              marginBottom: 18
+            }}>
+            {data.eyebrow}
+          </div>
+          <div
+            style={{
+              ...base,
+              color: colors.white,
+              fontSize: data.title.length > 35 ? 45 : 57,
+              fontWeight: 900,
+              lineHeight: 1.05,
+              letterSpacing: -2,
+              lineClamp: 3
+            }}>
+            {data.title}
+          </div>
+          <div
+            style={{
+              ...base,
+              color: colors.foreground,
+              fontSize: 19,
+              lineHeight: 1.4,
+              marginTop: 22,
+              lineClamp: 3
+            }}>
+            {data.description}
+          </div>
+        </div>
+        <div style={{ ...base, color: colors.muted, fontSize: 17 }}>
+          {data.detail ?? 'goosebumps.fm'}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function EditorialCard({ data }: { readonly data: EditorialCardModel }) {
+  const attribution = [
+    data.authors.length > 0 ? `By ${data.authors.join(', ')}` : null,
+    data.publishedLabel
+  ]
+    .filter((part) => part !== null)
+    .join(' · ')
+
+  return (
+    <div
+      style={{
+        ...base,
+        width: 1200,
+        height: 630,
+        padding: 60,
+        backgroundColor: colors.background,
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+      {data.imageUrl ? (
+        <img
+          src={data.imageUrl}
+          alt=''
+          width={440}
+          height={630}
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            width: 440,
+            height: 630,
+            objectFit: 'cover',
+            opacity: 0.42
+          }}
+        />
+      ) : (
+        <div
+          style={{
+            ...base,
+            position: 'absolute',
+            top: -130,
+            right: -120,
+            width: 520,
+            height: 760,
+            transform: 'rotate(18deg)',
+            backgroundImage: `linear-gradient(145deg, ${colors.panel}, #22382f)`
+          }}
+        />
+      )}
+      <div
+        style={{
+          ...base,
+          width: 840,
+          height: 510,
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          position: 'relative',
+          paddingRight: 70
+        }}>
+        <div style={{ ...base, justifyContent: 'space-between', alignItems: 'center' }}>
+          <Brand />
+          <div
+            style={{
+              ...base,
+              color: colors.highlight,
+              fontSize: 17,
+              fontWeight: 900,
+              letterSpacing: 7
+            }}>
+            EDITORIAL
+          </div>
+        </div>
+        <div
+          style={{
+            ...base,
+            flexDirection: 'column',
+            borderLeft: `8px solid ${colors.highlight}`,
+            paddingLeft: 34
+          }}>
+          <div
+            style={{
+              ...base,
+              color: colors.white,
+              fontSize: data.title.length > 55 ? 44 : 55,
+              fontWeight: 900,
+              lineHeight: 1.08,
+              letterSpacing: -2,
+              lineClamp: 3
+            }}>
+            {data.title}
+          </div>
+          <div
+            style={{
+              ...base,
+              color: colors.foreground,
+              fontSize: 20,
+              lineHeight: 1.4,
+              marginTop: 20,
+              lineClamp: 2
+            }}>
+            {data.description}
+          </div>
+        </div>
+        <div style={{ ...base, color: colors.muted, fontSize: 17 }}>
+          {attribution || 'goosebumps.fm'}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** Creates the static React tree consumed by Satori for any supported card. */
+export const socialCardTemplate = (
+  data: SocialCardModel,
+  format: SocialCardFormat,
+  qrUrl: string
+): ReactNode => {
+  switch (data._tag) {
+    case 'ArtworkCard':
+      return <ArtworkCard data={data} />
+    case 'IdentityCard':
+      return <IdentityCard data={data} />
+    case 'EditorialCard':
+      return <EditorialCard data={data} />
+    case 'TweetCard':
+      return tweetCardTemplate(data, format, qrUrl)
+    default:
+      return data satisfies never
+  }
 }

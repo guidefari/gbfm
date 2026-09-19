@@ -130,7 +130,7 @@
         "@gbfm/email": "workspace:*",
         "@gbfm/pdf-generator": "workspace:*",
         "@gbfm/site-metadata": "workspace:*",
-        "@gbfm/tweet-card": "workspace:*",
+        "@gbfm/social-card": "workspace:*",
         "@mdx-js/mdx": "3.1.1",
         "@opentelemetry/api": "^1.9.1",
         "@opentelemetry/exporter-trace-otlp-http": "0.215.0",
@@ -172,7 +172,7 @@
       "name": "@gbfm/social-image",
       "version": "0.0.1",
       "dependencies": {
-        "@gbfm/tweet-card": "workspace:*",
+        "@gbfm/social-card": "workspace:*",
         "@resvg/resvg-wasm": "2.6.2",
         "effect": "4.0.0-rc.111",
         "qrcode": "1.5.4",
@@ -208,9 +208,9 @@
         "@gbfm/player": "workspace:*",
         "@gbfm/server": "workspace:",
         "@gbfm/site-metadata": "workspace:*",
+        "@gbfm/social-card": "workspace:*",
         "@gbfm/spotify": "workspace:*",
         "@gbfm/theme": "workspace:*",
-        "@gbfm/tweet-card": "workspace:*",
         "@gbfm/ui": "workspace:*",
         "@guide/utils": "npm:@jsr/guide__utils@0.1.1",
         "@hookform/resolvers": "5.2.2",
@@ -265,7 +265,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@gbfm/site-metadata": "workspace:*",
-        "@gbfm/tweet-card": "workspace:*",
+        "@gbfm/social-card": "workspace:*",
         "effect": "4.0.0-rc.111",
       },
       "devDependencies": {
@@ -328,6 +328,19 @@
         "effect": "4.0.0-rc.111",
       },
       "devDependencies": {
+        "@types/bun": "1.3.13",
+        "@typescript/native-preview": "7.0.0-dev.20260612.1",
+        "vitest": "4.1.11",
+      },
+    },
+    "packages/social-card": {
+      "name": "@gbfm/social-card",
+      "version": "0.0.1",
+      "dependencies": {
+        "effect": "4.0.0-rc.111",
+      },
+      "devDependencies": {
+        "@cloudflare/workers-types": "5.20260810.1",
         "@types/bun": "1.3.13",
         "@typescript/native-preview": "7.0.0-dev.20260612.1",
         "vitest": "4.1.11",
@@ -980,6 +993,8 @@
     "@gbfm/server": ["@gbfm/server@workspace:apps/server"],
 
     "@gbfm/site-metadata": ["@gbfm/site-metadata@workspace:packages/site-metadata"],
+
+    "@gbfm/social-card": ["@gbfm/social-card@workspace:packages/social-card"],
 
     "@gbfm/social-image": ["@gbfm/social-image@workspace:apps/social-image"],
 

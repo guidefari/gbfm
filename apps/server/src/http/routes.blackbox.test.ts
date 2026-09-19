@@ -20,7 +20,7 @@ import {
 } from '@gbfm/api/post'
 import { SearchResults } from '@gbfm/api/search'
 import { decodeResponseBody } from '@gbfm/api/testing'
-import { TweetCardPresentation } from '@gbfm/tweet-card'
+import { SocialCardPresentation, TweetCardPresentation } from '@gbfm/social-card'
 import { SiteMetadata } from '@gbfm/site-metadata'
 import { and, eq } from 'drizzle-orm'
 import { Layer } from 'effect'
@@ -3135,11 +3135,13 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
     })
 
     try {
-      const [metadataResponse, shareResponse] = await Promise.all([
+      const [metadataResponse, cardResponse, shareResponse] = await Promise.all([
         webHandler.handler(new Request(`http://localhost/api/site-metadata/mix/${slug}`)),
+        webHandler.handler(new Request(`http://localhost/api/social-cards/mix/${slug}`)),
         webHandler.handler(new Request(`http://localhost/s/mix/${slug}`))
       ])
       const metadata = await decodeResponseBody(SiteMetadata, metadataResponse)
+      const card = await decodeResponseBody(SocialCardPresentation, cardResponse)
       const shareHtml = await shareResponse.text()
 
       expect(metadataResponse.status).toBe(200)
@@ -3148,7 +3150,19 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
         title: 'Metadata mix',
         description: 'A mix with one canonical metadata model.',
         canonicalUrl: `http://127.0.0.1:5173/mixes/${slug}`,
+        image: {
+          url: card.images.openGraph,
+          width: 1200,
+          height: 630
+        },
         audio: { url: 'https://audio.example.com/metadata-mix.mp3' }
+      })
+      expect(card).toMatchObject({
+        model: {
+          _tag: 'ArtworkCard',
+          kind: 'mix',
+          title: 'Metadata mix'
+        }
       })
       expect(shareResponse.status).toBe(200)
       expect(shareHtml).toContain(`<meta property="og:url" content="${metadata.canonicalUrl}">`)
@@ -3630,7 +3644,7 @@ describe('GET /api/content/posts/micro/:slug', () => {
   })
 })
 
-describe('GET /api/content/posts/micro/:slug/share-presentation', () => {
+describe('GET /api/social-cards/tweet/:slug', () => {
   it('combines the tweet, creator, and music entity into revisioned image URLs', async () => {
     const suffix = crypto.randomUUID()
     const userId = `share-presentation-${suffix}`
@@ -3666,7 +3680,7 @@ describe('GET /api/content/posts/micro/:slug/share-presentation', () => {
 
     try {
       const response = await webHandler.handler(
-        new Request(`http://localhost/api/content/posts/micro/${slug}/share-presentation`)
+        new Request(`http://localhost/api/social-cards/tweet/${slug}`)
       )
       expect(response.status).toBe(200)
       const body = await decodeResponseBody(TweetCardPresentation, response)
@@ -3681,7 +3695,7 @@ describe('GET /api/content/posts/micro/:slug/share-presentation', () => {
         coverImageUrl: 'https://cdn.goosebumps.fm/user-content/different-track.png'
       })
       expect(body.images.openGraph).toBe(
-        `https://goosebumps.fm/social/tweets/${slug}/${body.revision}/open-graph.png`
+        `https://goosebumps.fm/social/cards/tweet/${slug}/${body.revision}/open-graph.png`
       )
     } finally {
       await db.delete(postCreators).where(eq(postCreators.postId, post.id))

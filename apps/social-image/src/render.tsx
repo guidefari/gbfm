@@ -1,11 +1,15 @@
-import { TWEET_CARD_DIMENSIONS, type TweetCardFormat, type TweetCardModel } from '@gbfm/tweet-card'
+import {
+  SOCIAL_CARD_DIMENSIONS,
+  type SocialCardFormat,
+  type SocialCardModel
+} from '@gbfm/social-card'
 import { Resvg, initWasm } from '@resvg/resvg-wasm'
 import QRCode from 'qrcode'
 import satori, { init as initSatori } from 'satori/standalone'
-import { tweetCardTemplate } from './template'
+import { socialCardTemplate } from './template'
 
 /** Binary and remote asset loader required by the Worker renderer. */
-export interface TweetCardRenderAssets {
+export interface SocialCardRenderAssets {
   readonly loadWasm: (name: 'yoga.wasm' | 'resvg.wasm') => Promise<WebAssembly.Module | ArrayBuffer>
   readonly loadFont: (
     name: 'JetBrainsMono-Bold.ttf' | 'JetBrainsMono-ExtraBold.ttf'
@@ -15,7 +19,7 @@ export interface TweetCardRenderAssets {
 
 let runtimeReady: Promise<void> | undefined
 
-const initializeRuntime = (assets: TweetCardRenderAssets) => {
+const initializeRuntime = (assets: SocialCardRenderAssets) => {
   if (!runtimeReady) {
     runtimeReady = Promise.all([
       assets.loadWasm('yoga.wasm').then(initSatori),
@@ -40,23 +44,53 @@ const qrDataUrl = async (url: string) => {
   return `data:image/svg+xml;base64,${btoa(svg)}`
 }
 
-/** Renders one normalized tweet card to its fixed-size PNG representation. */
-export const renderTweetCard = async (
-  model: TweetCardModel,
-  format: TweetCardFormat,
-  assets: TweetCardRenderAssets
+const hydrateImages = async (model: SocialCardModel, assets: SocialCardRenderAssets) => {
+  switch (model._tag) {
+    case 'ArtworkCard':
+      return {
+        ...model,
+        artworkUrl: model.artworkUrl ? await assets.loadImage(model.artworkUrl) : null
+      }
+    case 'IdentityCard':
+      return {
+        ...model,
+        imageUrl: model.imageUrl ? await assets.loadImage(model.imageUrl) : null
+      }
+    case 'EditorialCard':
+      return {
+        ...model,
+        imageUrl: model.imageUrl ? await assets.loadImage(model.imageUrl) : null
+      }
+    case 'TweetCard': {
+      const [coverImageUrl, avatarUrl] = await Promise.all([
+        model.coverImageUrl ? assets.loadImage(model.coverImageUrl) : null,
+        model.avatarUrl ? assets.loadImage(model.avatarUrl) : null
+      ])
+      return { ...model, coverImageUrl, avatarUrl }
+    }
+    default:
+      return model satisfies never
+  }
+}
+
+/** Renders one normalized social card to its fixed-size PNG representation. */
+export const renderSocialCard = async (
+  model: SocialCardModel,
+  format: SocialCardFormat,
+  assets: SocialCardRenderAssets
 ): Promise<Uint8Array> => {
+  if (model._tag !== 'TweetCard' && format !== 'openGraph') {
+    throw new Error(`${model._tag} does not support ${format}`)
+  }
   await initializeRuntime(assets)
-  const [bold, extraBold, coverImageUrl, avatarUrl, qrUrl] = await Promise.all([
+  const [bold, extraBold, hydratedModel, qrUrl] = await Promise.all([
     assets.loadFont('JetBrainsMono-Bold.ttf'),
     assets.loadFont('JetBrainsMono-ExtraBold.ttf'),
-    model.coverImageUrl ? assets.loadImage(model.coverImageUrl) : null,
-    model.avatarUrl ? assets.loadImage(model.avatarUrl) : null,
-    qrDataUrl(model.url)
+    hydrateImages(model, assets),
+    model._tag === 'TweetCard' && format !== 'openGraph' ? qrDataUrl(model.url) : ''
   ])
-  const hydratedModel = { ...model, coverImageUrl, avatarUrl }
-  const [width, height] = TWEET_CARD_DIMENSIONS[format]
-  const svg = await satori(tweetCardTemplate(hydratedModel, format, qrUrl), {
+  const [width, height] = SOCIAL_CARD_DIMENSIONS[format]
+  const svg = await satori(socialCardTemplate(hydratedModel, format, qrUrl), {
     width,
     height,
     fonts: [

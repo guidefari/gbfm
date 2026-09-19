@@ -82,7 +82,7 @@ describe('site metadata', () => {
       title: 'deep-cut',
       description: 'Listen to deep-cut on goosebumps.fm',
       canonicalUrl: 'https://goosebumps.fm/tracks/deep-cut',
-      image: { url: SITE_DEFAULT_IMAGE, width: 1080, height: 1080 }
+      image: { url: SITE_DEFAULT_IMAGE, width: 1200, height: 630 }
     })
   })
 

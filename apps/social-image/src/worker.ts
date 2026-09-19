@@ -1,8 +1,13 @@
 import { Schema } from 'effect'
-import { TweetCardPresentation, type TweetCardFormat, type TweetCardModel } from '@gbfm/tweet-card'
+import {
+  SocialCardPresentation,
+  type SocialCardFormat,
+  type SocialCardKind,
+  type SocialCardModel
+} from '@gbfm/social-card'
 import resvgWasm from '../assets/resvg.wasm'
 import yogaWasm from '../assets/yoga.wasm'
-import { renderTweetCard, type TweetCardRenderAssets } from './render'
+import { renderSocialCard, type SocialCardRenderAssets } from './render'
 
 type Fetcher = {
   readonly fetch: (request: Request) => Promise<Response>
@@ -41,7 +46,15 @@ export interface SocialImageEnv {
   readonly CARDS: CardBucket
 }
 
-type Render = (model: TweetCardModel, format: TweetCardFormat) => Promise<Uint8Array>
+type Render = (model: SocialCardModel, format: SocialCardFormat) => Promise<Uint8Array>
+
+type ImageRoute = {
+  readonly kind: SocialCardKind
+  readonly slug: string
+  readonly revision: string
+  readonly format: SocialCardFormat
+  readonly legacy: boolean
+}
 
 const RETENTION_MS = 30 * 24 * 60 * 60 * 1_000
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024
@@ -51,36 +64,73 @@ const cacheHeaders = {
   'x-content-type-options': 'nosniff'
 }
 
-const imageFormat = (filename: string): TweetCardFormat | null => {
+const imageFormat = (filename: string): SocialCardFormat | null => {
   if (filename === 'poster.png') return 'poster'
   if (filename === 'sleeve.png') return 'sleeve'
   if (filename === 'open-graph.png') return 'openGraph'
   return null
 }
 
-const parseImagePath = (pathname: string) => {
-  const match = /^\/social\/tweets\/([^/]+)\/([a-f0-9]{16})\/([^/]+)$/.exec(pathname)
+const cardKind = (value: string): SocialCardKind | null => {
+  switch (value) {
+    case 'mix':
+    case 'track':
+    case 'release':
+    case 'show':
+    case 'label':
+    case 'profile':
+    case 'editorial':
+    case 'tweet':
+      return value
+    default:
+      return null
+  }
+}
+
+const parseImagePath = (pathname: string): ImageRoute | null => {
+  const genericMatch = /^\/social\/cards\/([^/]+)\/([^/]+)\/([a-f0-9]{16})\/([^/]+)$/.exec(pathname)
+  const legacyMatch = /^\/social\/tweets\/([^/]+)\/([a-f0-9]{16})\/([^/]+)$/.exec(pathname)
+  const match = genericMatch ?? legacyMatch
   if (!match) return null
-  const [, encodedSlug, revision, filename] = match
+  const kindValue = genericMatch?.[1] ?? 'tweet'
+  const encodedSlug = genericMatch?.[2] ?? legacyMatch?.[1]
+  const revision = genericMatch?.[3] ?? legacyMatch?.[2]
+  const filename = genericMatch?.[4] ?? legacyMatch?.[3]
+  if (!kindValue) return null
+  const kind = cardKind(kindValue)
+  if (!kind) return null
   const format = filename ? imageFormat(filename) : null
   if (!encodedSlug || !revision || !format) return null
+  if (kind !== 'tweet' && format !== 'openGraph') return null
   try {
-    return { slug: decodeURIComponent(encodedSlug), revision, format }
+    return {
+      kind,
+      slug: decodeURIComponent(encodedSlug),
+      revision,
+      format,
+      legacy: legacyMatch !== null
+    }
   } catch {
     return null
   }
 }
 
-const decodePresentation = Schema.decodeUnknownSync(TweetCardPresentation)
+const decodePresentation = Schema.decodeUnknownSync(SocialCardPresentation)
 
-const fetchPresentation = async (env: SocialImageEnv, slug: string) => {
+const fetchPresentation = async (env: SocialImageEnv, route: ImageRoute, signal: AbortSignal) => {
   const response = await env.API.fetch(
     new Request(
-      `https://api.internal/api/content/posts/micro/${encodeURIComponent(slug)}/share-presentation`
+      `https://api.internal/api/social-cards/${route.kind}/${encodeURIComponent(route.slug)}`,
+      { signal }
     )
   )
-  if (!response.ok) return null
-  return decodePresentation(await response.json())
+  if (response.status === 404) return null
+  if (!response.ok) throw new Error(`Social card API returned ${response.status}`)
+  const presentation = decodePresentation(await response.json())
+  if (presentation.model.kind !== route.kind) {
+    throw new Error('Social card API returned a mismatched kind')
+  }
+  return presentation
 }
 
 const bytesToBase64 = (bytes: Uint8Array) => {
@@ -91,7 +141,7 @@ const bytesToBase64 = (bytes: Uint8Array) => {
   return btoa(binary)
 }
 
-const renderAssets = (env: SocialImageEnv): TweetCardRenderAssets => ({
+const renderAssets = (env: SocialImageEnv): SocialCardRenderAssets => ({
   loadWasm: async (name) => (name === 'yoga.wasm' ? yogaWasm : resvgWasm),
   loadFont: async (name) => {
     const response = await env.ASSETS.fetch(new Request(`https://assets.internal/${name}`))
@@ -116,8 +166,10 @@ const renderAssets = (env: SocialImageEnv): TweetCardRenderAssets => ({
   }
 })
 
-const imageFor = (presentation: TweetCardPresentation, format: TweetCardFormat) =>
-  presentation.images[format]
+const imageFor = (presentation: SocialCardPresentation, format: SocialCardFormat) => {
+  if (format === 'openGraph') return presentation.images.openGraph
+  return 'poster' in presentation.images ? presentation.images[format] : null
+}
 
 /** Serves immutable generated cards and redirects stale revisions to current content. */
 export const handleRequest = async (
@@ -132,13 +184,15 @@ export const handleRequest = async (
   if (!route) return new Response('Not found', { status: 404 })
 
   try {
-    const presentation = await fetchPresentation(env, route.slug)
+    const presentation = await fetchPresentation(env, route, request.signal)
     if (!presentation) return new Response('Not found', { status: 404 })
-    if (presentation.revision !== route.revision) {
-      return Response.redirect(imageFor(presentation, route.format), 302)
+    const currentImage = imageFor(presentation, route.format)
+    if (!currentImage) return new Response('Not found', { status: 404 })
+    if (route.legacy || presentation.revision !== route.revision) {
+      return Response.redirect(currentImage, 302)
     }
 
-    const key = `tweet-cards/${route.slug}/${route.revision}/${route.format}.png`
+    const key = `social-cards/${route.kind}/${route.slug}/${route.revision}/${route.format}.png`
     let cached: StoredObject | null
     try {
       cached = await env.CARDS.get(key)
@@ -155,7 +209,7 @@ export const handleRequest = async (
     }
 
     const bytes = await (
-      render ?? ((model, format) => renderTweetCard(model, format, renderAssets(env)))
+      render ?? ((model, format) => renderSocialCard(model, format, renderAssets(env)))
     )(presentation.model, route.format)
     try {
       await env.CARDS.put(key, bytes, { httpMetadata: { contentType: 'image/png' } })
@@ -170,6 +224,7 @@ export const handleRequest = async (
   } catch (error) {
     console.error('social image request failed', {
       method: request.method,
+      kind: route.kind,
       format: route.format,
       revision: route.revision,
       errorName: error instanceof Error ? error.name : 'UnknownError'
@@ -181,22 +236,24 @@ export const handleRequest = async (
 /** Deletes generated cards after 30 days; a requested current revision regenerates on demand. */
 export const cleanupExpiredCards = async (bucket: CardBucket, now: Date) => {
   const cutoff = now.getTime() - RETENTION_MS
-  let cursor: string | undefined
   let scanned = 0
   let deleted = 0
 
-  do {
-    const page = await bucket.list({ prefix: 'tweet-cards/', ...(cursor ? { cursor } : undefined) })
-    scanned += page.objects.length
-    const expired = page.objects
-      .filter((object) => object.uploaded.getTime() < cutoff)
-      .map((object) => object.key)
-    if (expired.length > 0) {
-      await bucket.delete(expired)
-      deleted += expired.length
-    }
-    cursor = page.truncated ? page.cursor : undefined
-  } while (cursor)
+  for (const prefix of ['social-cards/', 'tweet-cards/']) {
+    let cursor: string | undefined
+    do {
+      const page = await bucket.list({ prefix, ...(cursor ? { cursor } : undefined) })
+      scanned += page.objects.length
+      const expired = page.objects
+        .filter((object) => object.uploaded.getTime() < cutoff)
+        .map((object) => object.key)
+      if (expired.length > 0) {
+        await bucket.delete(expired)
+        deleted += expired.length
+      }
+      cursor = page.truncated ? page.cursor : undefined
+    } while (cursor)
+  }
 
   return { scanned, deleted }
 }

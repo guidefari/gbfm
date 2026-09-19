@@ -112,7 +112,9 @@ const htmlResponse = async (source: Response, html: string, status = source.stat
 export const handleRequest = async (request: Request, env: SeoWorkerEnv): Promise<Response> => {
   const pathname = new URL(request.url).pathname
   if (pathname === '/sitemap.xml') return env.API.fetch(request)
-  if (pathname.startsWith('/social/tweets/')) return env.SOCIAL_IMAGES.fetch(request)
+  if (pathname.startsWith('/social/cards/') || pathname.startsWith('/social/tweets/')) {
+    return env.SOCIAL_IMAGES.fetch(request)
+  }
 
   const assetResponse = await env.ASSETS.fetch(request)
   if (request.method !== 'GET' && request.method !== 'HEAD') {

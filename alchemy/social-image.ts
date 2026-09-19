@@ -4,7 +4,7 @@ import type { StageConfig } from './stage'
 import type { Storage } from './storage'
 import { workerObservability } from './observability'
 
-/** Deploys the single rasterization boundary for tweet share images. */
+/** Deploys the single rasterization boundary for site-wide social images. */
 export const socialImageWorker = (config: StageConfig, store: Storage, api: Cloudflare.Worker) =>
   Effect.gen(function* () {
     return yield* Cloudflare.Worker('SocialImage', {

@@ -9,7 +9,7 @@ import { buildErrorHtml, buildShareHtml } from '@/routes/redirect/redirect.templ
 import { getCachedSitemap } from '@/routes/redirect/seo/sitemap.service'
 import { rssFeedHtml } from '@/routes/rss/rss.template'
 import { ConfigService } from '@/services/config.service'
-import { resolveSiteMetadata } from '@/services/site-metadata.service'
+import { resolveSiteMetadata } from '@/services/site-presentation.service'
 
 type HtmlResult = { readonly html: string; readonly status: 200 | 400 | 404 | 500 }
 
