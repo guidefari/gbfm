@@ -15,10 +15,11 @@ function useDebounced<T>(value: T, delay: number) {
   return debounced
 }
 
-export function useUsernameAvailability(username: string) {
+export function useUsernameAvailability(username: string, currentUsername?: string) {
   const trimmed = username.trim()
+  const unchanged = currentUsername !== undefined && trimmed === currentUsername.trim()
   const debounced = useDebounced(trimmed, DEBOUNCE_MS)
-  const enabled = debounced.length >= MIN_LENGTH
+  const enabled = debounced.length >= MIN_LENGTH && !unchanged
 
   const { data, isFetching } = useQuery({
     queryKey: ['username-availability', debounced],
@@ -29,6 +30,7 @@ export function useUsernameAvailability(username: string) {
     enabled
   })
 
+  if (unchanged) return { state: 'unchanged' as const, available: true, isFetching: false }
   if (!enabled) return { state: 'idle' as const, available: false, isFetching: false }
   if (isFetching || debounced !== trimmed)
     return { state: 'checking' as const, available: false, isFetching: true }
@@ -36,10 +38,16 @@ export function useUsernameAvailability(username: string) {
   return { state: 'taken' as const, available: false, isFetching: false }
 }
 
-export function UsernameAvailability({ username }: { username: string }) {
-  const { state } = useUsernameAvailability(username)
+export function UsernameAvailability({
+  username,
+  currentUsername
+}: {
+  username: string
+  currentUsername?: string
+}) {
+  const { state } = useUsernameAvailability(username, currentUsername)
 
-  if (state === 'idle') return null
+  if (state === 'idle' || state === 'unchanged') return null
   if (state === 'checking')
     return (
       <Loader2
