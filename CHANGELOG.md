@@ -1,3 +1,10 @@
+# [2.97.0](https://github.com/guidefari/gbfm/compare/v2.96.1...v2.97.0) (2026-09-19)
+
+
+### Features
+
+* **seo:** add site-wide social cards ([#338](https://github.com/guidefari/gbfm/issues/338)) ([df77572](https://github.com/guidefari/gbfm/commit/df7757277e51a22543cd46d6728f1f732802af14))
+
 ## [2.96.1](https://github.com/guidefari/gbfm/compare/v2.96.0...v2.96.1) (2026-09-18)
 
 
