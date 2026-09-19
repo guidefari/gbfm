@@ -195,18 +195,18 @@ const templateVersions = {
 } as const satisfies Readonly<Record<SocialCardModel['_tag'], string>>
 
 const eyebrowByKind = {
-  mix: 'MIX',
-  track: 'TRACK',
-  release: 'RELEASE',
-  show: 'RADIO SHOW',
-  label: 'RECORD LABEL',
-  profile: 'CONTRIBUTOR'
+  mix: 'Mix',
+  track: 'Track',
+  release: 'Release',
+  show: 'Radio show',
+  label: 'Record label',
+  profile: 'Contributor'
 } as const
 
 const entityLabels = {
-  album: 'ALBUM',
-  track: 'TRACK',
-  playlist: 'PLAYLIST'
+  album: 'Album',
+  track: 'Track',
+  playlist: 'Playlist'
 } as const satisfies Readonly<Record<TweetCardEntityInput['type'], string>>
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {

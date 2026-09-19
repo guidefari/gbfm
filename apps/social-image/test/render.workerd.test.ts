@@ -45,7 +45,7 @@ describe('tweet card renderer in workerd', () => {
     {
       _tag: 'ArtworkCard',
       kind: 'mix',
-      eyebrow: 'MIX',
+      eyebrow: 'Mix',
       title: 'Forest Drive West at goosebumps.fm',
       creators: ['Forest Drive West'],
       artworkUrl: null
@@ -53,7 +53,7 @@ describe('tweet card renderer in workerd', () => {
     {
       _tag: 'IdentityCard',
       kind: 'show',
-      eyebrow: 'RADIO SHOW',
+      eyebrow: 'Radio show',
       title: 'Far End Radio',
       description: 'An open-ended monthly radio residency.',
       detail: 'Hosted by Guide Fari',

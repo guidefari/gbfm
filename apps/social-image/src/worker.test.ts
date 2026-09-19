@@ -5,7 +5,12 @@ import {
   type TweetCardPresentation
 } from '@gbfm/social-card'
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import worker, { cleanupExpiredCards, handleRequest, type SocialImageEnv } from './worker'
+import worker, {
+  cleanupExpiredCards,
+  handleRequest,
+  loadRemoteImage,
+  type SocialImageEnv
+} from './worker'
 
 const presentation = async (): Promise<TweetCardPresentation> =>
   buildTweetCardPresentation({
@@ -48,6 +53,14 @@ const testEnv = (
       }
     }
   }
+}
+
+const imageResponse = (url: string) => {
+  const response = new Response(new Uint8Array([137, 80, 78, 71]), {
+    headers: { 'content-type': 'image/png' }
+  })
+  Object.defineProperty(response, 'url', { value: url })
+  return response
 }
 
 describe('social image worker', () => {
@@ -203,29 +216,95 @@ describe('social image worker', () => {
     expect(JSON.stringify(error.mock.calls)).not.toContain(privateContent)
   })
 
+  test('loads images from approved production and music hosts', async () => {
+    const requests: string[] = []
+    const fetchImage = async (url: URL) => {
+      requests.push(url.href)
+      return imageResponse(url.href)
+    }
+
+    const cdnImage = await loadRemoteImage(
+      'https://cdn.goosebumps.fm/user-content/cover.png',
+      fetchImage
+    )
+    const musicImage = await loadRemoteImage('https://i.scdn.co/image/cover', fetchImage)
+
+    expect(cdnImage).toBe('data:image/png;base64,iVBORw==')
+    expect(musicImage).toBe('data:image/png;base64,iVBORw==')
+    expect(requests).toEqual([
+      'https://cdn.goosebumps.fm/user-content/cover.png',
+      'https://i.scdn.co/image/cover'
+    ])
+  })
+
+  test.each([
+    'http://cdn.goosebumps.fm/user-content/cover.png',
+    'https://user:password@cdn.goosebumps.fm/user-content/cover.png',
+    'https://api.internal/private.png',
+    'https://localhost/private.png',
+    'https://127.0.0.1/private.png',
+    'https://evilbcbits.com/cover.png',
+    'https://cdn.goosebumps.fm.attacker.example/cover.png'
+  ])('rejects unapproved image URL %s without fetching it', async (url) => {
+    let requests = 0
+
+    const image = await loadRemoteImage(url, async () => {
+      requests += 1
+      return imageResponse(url)
+    })
+
+    expect(image).toBeNull()
+    expect(requests).toBe(0)
+  })
+
+  test('rejects a redirect from an approved image host to an unapproved host', async () => {
+    let requests = 0
+
+    const image = await loadRemoteImage('https://i.scdn.co/image/cover', async () => {
+      requests += 1
+      return imageResponse('https://api.internal/private.png')
+    })
+
+    expect(image).toBeNull()
+    expect(requests).toBe(1)
+  })
+
   test('deletes only generated cards older than the retention window', async () => {
     const card = await presentation()
     const env = testEnv(card)
-    env.CARDS.list = async ({ prefix } = {}) =>
-      prefix === 'social-cards/'
-        ? {
-            objects: [
-              {
-                key: 'social-cards/mix/old.png',
-                uploaded: new Date('2026-07-01T00:00:00.000Z')
-              },
-              {
-                key: 'social-cards/mix/current.png',
-                uploaded: new Date('2026-09-01T00:00:00.000Z')
-              }
-            ],
-            truncated: false
-          }
-        : { objects: [], truncated: false }
+    env.CARDS.list = async ({ prefix } = {}) => {
+      if (prefix === 'social-cards/') {
+        return {
+          objects: [
+            {
+              key: 'social-cards/mix/old.png',
+              uploaded: new Date('2026-07-01T00:00:00.000Z')
+            },
+            {
+              key: 'social-cards/mix/current.png',
+              uploaded: new Date('2026-09-01T00:00:00.000Z')
+            }
+          ],
+          truncated: false
+        }
+      }
+      if (prefix === 'tweet-cards/') {
+        return {
+          objects: [
+            {
+              key: 'tweet-cards/legacy/old.png',
+              uploaded: new Date('2026-07-01T00:00:00.000Z')
+            }
+          ],
+          truncated: false
+        }
+      }
+      return { objects: [], truncated: false }
+    }
 
     const report = await cleanupExpiredCards(env.CARDS, new Date('2026-09-13T00:00:00.000Z'))
 
-    expect(report).toEqual({ scanned: 2, deleted: 1 })
-    expect(env.deleted).toEqual(['social-cards/mix/old.png'])
+    expect(report).toEqual({ scanned: 3, deleted: 2 })
+    expect(env.deleted).toEqual(['social-cards/mix/old.png', 'tweet-cards/legacy/old.png'])
   })
 })

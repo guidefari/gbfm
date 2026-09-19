@@ -47,6 +47,7 @@ export interface SocialImageEnv {
 }
 
 type Render = (model: SocialCardModel, format: SocialCardFormat) => Promise<Uint8Array>
+type ImageFetcher = (url: URL, init: RequestInit) => Promise<Response>
 
 type ImageRoute = {
   readonly kind: SocialCardKind
@@ -58,6 +59,49 @@ type ImageRoute = {
 
 const RETENTION_MS = 30 * 24 * 60 * 60 * 1_000
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024
+const CURRENT_CARD_PREFIX = 'social-cards/'
+// Keep scanning the previous Worker's prefix until its deployed objects have aged past retention.
+const LEGACY_TWEET_CARD_PREFIX = 'tweet-cards/'
+
+const approvedImageHosts = new Set([
+  'archive.org',
+  'cdn.goosebumps.fm',
+  'coverartarchive.org',
+  'd20tmfka7s58bt.cloudfront.net',
+  'i.scdn.co',
+  'images-na.ssl-images-amazon.com',
+  'img.youtube.com',
+  'm.media-amazon.com',
+  'mosaic.scdn.co',
+  'resources.tidal.com'
+])
+
+const approvedImageHostSuffixes = [
+  '.archive.org',
+  '.bcbits.com',
+  '.dzcdn.net',
+  '.mzstatic.com',
+  '.sndcdn.com',
+  '.spotifycdn.com',
+  '.ytimg.com'
+] as const
+
+const approvedImageUrl = (value: string) => {
+  try {
+    const url = new URL(value)
+    if (url.protocol !== 'https:' || url.username || url.password) return null
+    if (
+      !approvedImageHosts.has(url.hostname) &&
+      !approvedImageHostSuffixes.some((suffix) => url.hostname.endsWith(suffix))
+    ) {
+      return null
+    }
+    return url
+  } catch {
+    return null
+  }
+}
+
 const cacheHeaders = {
   'cache-control': 'public, max-age=31536000, immutable',
   'content-type': 'image/png',
@@ -141,6 +185,27 @@ const bytesToBase64 = (bytes: Uint8Array) => {
   return btoa(binary)
 }
 
+/** Loads an approved remote image without allowing redirects to escape the host allowlist. */
+export const loadRemoteImage = async (
+  value: string,
+  fetchImage: ImageFetcher = fetch
+): Promise<string | null> => {
+  try {
+    const url = approvedImageUrl(value)
+    if (!url) return null
+    const response = await fetchImage(url, { signal: AbortSignal.timeout(5_000) })
+    if (!response.ok || !approvedImageUrl(response.url)) return null
+    const contentType = response.headers.get('content-type')?.split(';')[0]
+    const declaredSize = Number(response.headers.get('content-length') ?? 0)
+    if (!contentType?.startsWith('image/') || declaredSize > MAX_IMAGE_BYTES) return null
+    const bytes = new Uint8Array(await response.arrayBuffer())
+    if (bytes.byteLength > MAX_IMAGE_BYTES) return null
+    return `data:${contentType};base64,${bytesToBase64(bytes)}`
+  } catch {
+    return null
+  }
+}
+
 const renderAssets = (env: SocialImageEnv): SocialCardRenderAssets => ({
   loadWasm: async (name) => (name === 'yoga.wasm' ? yogaWasm : resvgWasm),
   loadFont: async (name) => {
@@ -148,22 +213,7 @@ const renderAssets = (env: SocialImageEnv): SocialCardRenderAssets => ({
     if (!response.ok) throw new Error(`Render asset ${name} returned ${response.status}`)
     return response.arrayBuffer()
   },
-  loadImage: async (value) => {
-    try {
-      const url = new URL(value)
-      if (url.protocol !== 'https:') return null
-      const response = await fetch(url, { signal: AbortSignal.timeout(5_000) })
-      if (!response.ok) return null
-      const contentType = response.headers.get('content-type')?.split(';')[0]
-      const declaredSize = Number(response.headers.get('content-length') ?? 0)
-      if (!contentType?.startsWith('image/') || declaredSize > MAX_IMAGE_BYTES) return null
-      const bytes = new Uint8Array(await response.arrayBuffer())
-      if (bytes.byteLength > MAX_IMAGE_BYTES) return null
-      return `data:${contentType};base64,${bytesToBase64(bytes)}`
-    } catch {
-      return null
-    }
-  }
+  loadImage: loadRemoteImage
 })
 
 const imageFor = (presentation: SocialCardPresentation, format: SocialCardFormat) => {
@@ -239,7 +289,7 @@ export const cleanupExpiredCards = async (bucket: CardBucket, now: Date) => {
   let scanned = 0
   let deleted = 0
 
-  for (const prefix of ['social-cards/', 'tweet-cards/']) {
+  for (const prefix of [CURRENT_CARD_PREFIX, LEGACY_TWEET_CARD_PREFIX]) {
     let cursor: string | undefined
     do {
       const page = await bucket.list({ prefix, ...(cursor ? { cursor } : undefined) })

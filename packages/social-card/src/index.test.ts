@@ -67,7 +67,7 @@ describe('social card presentation', () => {
     expect(show.model).toMatchObject({
       _tag: 'IdentityCard',
       kind: 'show',
-      eyebrow: 'RADIO SHOW',
+      eyebrow: 'Radio show',
       detail: 'Hosted by Guide Fari'
     })
     expect(editorial.model).toMatchObject({
@@ -98,6 +98,7 @@ describe('social card presentation', () => {
 
     expect(presentation.model.kind).toBe('tweet')
     expect(presentation.model._tag).toBe('TweetCard')
+    expect(presentation.model.entityLabel).toBe('Album')
     expect(Object.keys(presentation.images)).toEqual(TWEET_CARD_FORMATS)
     expect(presentation.images.openGraph).toContain('/social/cards/tweet/vusa-just-resurfaced/')
   })

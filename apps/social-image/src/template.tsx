@@ -93,7 +93,8 @@ function Artwork({
                 ...base,
                 color: 'rgba(255,255,255,0.65)',
                 fontSize: size * 0.025,
-                letterSpacing: size * 0.008
+                letterSpacing: size * 0.008,
+                textTransform: 'uppercase'
               }}>
               {data.entityLabel}
             </div>
@@ -219,7 +220,14 @@ function Poster({ data, qrUrl }: { readonly data: TweetCardModel; readonly qrUrl
           <div style={{ ...base, alignItems: 'center', marginBottom: 34 }}>
             <Artwork data={data} size={150} showMetadata={false} />
             <div style={{ ...base, flexDirection: 'column', marginLeft: 28 }}>
-              <div style={{ ...base, color: colors.muted, fontSize: 18, letterSpacing: 6 }}>
+              <div
+                style={{
+                  ...base,
+                  color: colors.muted,
+                  fontSize: 18,
+                  letterSpacing: 6,
+                  textTransform: 'uppercase'
+                }}>
                 {data.entityLabel}
               </div>
               <div style={{ ...base, fontSize: 32, fontWeight: 900 }}>{data.entityTitle}</div>
@@ -334,8 +342,17 @@ function ArtworkFallback({ label }: { readonly label: string }) {
         fontWeight: 900,
         letterSpacing: 5
       }}>
-      <div style={base}>GOOSEBUMPS</div>
-      <div style={{ ...base, marginTop: 12, color: colors.muted, fontSize: 16 }}>{label}</div>
+      <div style={{ ...base, textTransform: 'uppercase' }}>goosebumps</div>
+      <div
+        style={{
+          ...base,
+          marginTop: 12,
+          color: colors.muted,
+          fontSize: 16,
+          textTransform: 'uppercase'
+        }}>
+        {label}
+      </div>
     </div>
   )
 }
@@ -369,7 +386,8 @@ function ArtworkCard({ data }: { readonly data: ArtworkCardModel }) {
               fontSize: 18,
               fontWeight: 900,
               letterSpacing: 7,
-              marginBottom: 22
+              marginBottom: 22,
+              textTransform: 'uppercase'
             }}>
             {data.eyebrow}
           </div>
@@ -397,8 +415,15 @@ function ArtworkCard({ data }: { readonly data: ArtworkCardModel }) {
             {creatorLine}
           </div>
         </div>
-        <div style={{ ...base, color: colors.muted, fontSize: 15, letterSpacing: 3 }}>
-          LISTEN ON GOOSEBUMPS.FM
+        <div
+          style={{
+            ...base,
+            color: colors.muted,
+            fontSize: 15,
+            letterSpacing: 3,
+            textTransform: 'uppercase'
+          }}>
+          Listen on goosebumps.fm
         </div>
       </div>
       <div
@@ -477,7 +502,8 @@ function IdentityCard({ data }: { readonly data: IdentityCardModel }) {
               fontSize: 18,
               fontWeight: 900,
               letterSpacing: 7,
-              marginBottom: 18
+              marginBottom: 18,
+              textTransform: 'uppercase'
             }}>
             {data.eyebrow}
           </div>
@@ -580,9 +606,10 @@ function EditorialCard({ data }: { readonly data: EditorialCardModel }) {
               color: colors.highlight,
               fontSize: 17,
               fontWeight: 900,
-              letterSpacing: 7
+              letterSpacing: 7,
+              textTransform: 'uppercase'
             }}>
-            EDITORIAL
+            Editorial
           </div>
         </div>
         <div

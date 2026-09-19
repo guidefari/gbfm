@@ -3689,7 +3689,7 @@ describe('GET /api/social-cards/tweet/:slug', () => {
         authorName: 'Share Author',
         username: `share-author-${suffix}`,
         avatarUrl: 'https://cdn.goosebumps.fm/user-content/share-author.png',
-        entityLabel: 'TRACK',
+        entityLabel: 'Track',
         entityTitle: 'A Different Track',
         entityArtists: 'Artist One, Artist Two',
         coverImageUrl: 'https://cdn.goosebumps.fm/user-content/different-track.png'
