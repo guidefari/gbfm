@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "vitest run src/render.test.tsx && vitest run --config vitest.workerd.config.ts",
+    "test": "vitest run",
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
