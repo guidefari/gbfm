@@ -1,3 +1,10 @@
+## [2.97.1](https://github.com/guidefari/gbfm/compare/v2.97.0...v2.97.1) (2026-09-23)
+
+
+### Bug Fixes
+
+* **editor:** stop pointing TypeScript SDK at tsgo ([5769b15](https://github.com/guidefari/gbfm/commit/5769b154bef80f852c897cd04f83393ac9b6d377))
+
 # [2.97.0](https://github.com/guidefari/gbfm/compare/v2.96.1...v2.97.0) (2026-09-19)
 
 

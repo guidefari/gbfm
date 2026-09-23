@@ -9,6 +9,5 @@
     "titleBar.activeBackground": "#78b1fbcc",
     "titleBar.inactiveBackground": "#7abcd780"
   },
-  "js/ts.tsdk.path": "./node_modules/typescript",
   "js/ts.experimental.useTsgo": true
 }
