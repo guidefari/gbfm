@@ -57,6 +57,7 @@ export const apiWorker = ({
         MIXES: store.mixes,
         SITEMAP: store.sitemap,
         REMINDERS: store.reminders,
+        PLAYLIST_ENRICHMENT: store.playlistEnrichment,
         QR_PDF: qrPdf,
         ...(email === undefined ? undefined : { EMAIL: email }),
         EMAIL_SENDER: emailConfig.emailSender,
@@ -85,6 +86,12 @@ export const apiWorker = ({
     yield* Cloudflare.Queues.Consumer('ReminderConsumer', {
       queueId: store.reminders.queueId,
       scriptName: api.workerName
+    })
+    yield* Cloudflare.Queues.Consumer('PlaylistEnrichmentConsumer', {
+      queueId: store.playlistEnrichment.queueId,
+      scriptName: api.workerName,
+      deadLetterQueue: store.playlistEnrichmentFailures.queueName,
+      settings: { maxRetries: 5, retryDelay: 30 }
     })
 
     return api

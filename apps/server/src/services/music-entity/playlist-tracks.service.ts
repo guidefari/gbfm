@@ -1,5 +1,5 @@
 import { and, eq, inArray, sql } from 'drizzle-orm'
-import { Effect } from 'effect'
+import { Effect, Exit, Result } from 'effect'
 import { Database } from '@/db/layer'
 import {
   musicEntityLinksTable,
@@ -253,6 +253,12 @@ const enrichTrackLinksEffect = (
     })
   )
 
+const getExitErrorTag = <A, E>(exit: Exit.Exit<A, E>) => {
+  if (Exit.isSuccess(exit)) return undefined
+  const error = Exit.findError(exit)
+  return Result.isSuccess(error) ? getSafeErrorTag(error.success) : undefined
+}
+
 const enrichImportedPlaylistLinksEffect = (
   identity: CanonicalMusicIdentityService,
   playlistId: string,
@@ -260,24 +266,31 @@ const enrichImportedPlaylistLinksEffect = (
 ) =>
   Effect.gen(function* () {
     const uniqueTracks = [...new Map(tracks.map((track) => [track.trackId, track])).values()]
-    const results = yield* Effect.forEach(
+    const exits = yield* Effect.forEach(
       uniqueTracks,
       (track) =>
-        enrichTrackLinksEffect(identity, playlistId, track).pipe(
-          Effect.catch((error) =>
-            Effect.andThen(
-              Effect.logWarning('[MusicEntity] Playlist track link enrichment failed', {
-                playlistId,
-                trackId: track.trackId,
-                errorTag: getSafeErrorTag(error)
-              }),
-              Effect.succeed({ insertedCount: 0 })
-            )
+        Effect.exit(enrichTrackLinksEffect(identity, playlistId, track)).pipe(
+          Effect.tap((exit) =>
+            Exit.isFailure(exit)
+              ? Effect.logWarning('[MusicEntity] Playlist track link enrichment failed', {
+                  playlistId,
+                  trackId: track.trackId,
+                  errorTag: getExitErrorTag(exit)
+                })
+              : Effect.void
           )
         ),
       { concurrency: 1 }
     )
-    return { insertedCount: results.reduce((sum, result) => sum + result.insertedCount, 0) }
+    const failure = exits.find(Exit.isFailure)
+    if (failure) return yield* Effect.failCause(failure.cause)
+
+    return {
+      insertedCount: exits.reduce(
+        (sum, exit) => sum + (Exit.isSuccess(exit) ? exit.value.insertedCount : 0),
+        0
+      )
+    }
   }).pipe(
     Effect.withSpan('musicEntity.enrichImportedPlaylistLinks', {
       attributes: { playlistId, trackCount: tracks.length }
@@ -511,21 +524,7 @@ export const importSpotifyPlaylistEffect = (
             playlist: updated,
             trackCount: data.tracks.length,
             createdTrackCount: tracks.filter((track) => track.created).length,
-            reusedTrackCount: tracks.filter((track) => !track.created).length,
-            importedTracks: data.tracks.flatMap((track, index) => {
-              const resolved = tracks[index]
-              return resolved
-                ? [
-                    {
-                      trackId: resolved.trackId,
-                      trackUrl: track.trackUrl,
-                      title: track.title,
-                      artistNames: track.artistNames,
-                      created: resolved.created
-                    }
-                  ]
-                : []
-            })
+            reusedTrackCount: tracks.filter((track) => !track.created).length
           }
         }
 
@@ -539,26 +538,19 @@ export const importSpotifyPlaylistEffect = (
         })
     })
 
-    if (result.importedTracks.length > 0) {
-      yield* Effect.logInfo('[MusicEntity] Scheduling background playlist link enrichment', {
-        playlistId: result.playlist.id,
-        trackCount: result.importedTracks.length
-      })
+    return result
+  })
 
-      yield* enrichImportedPlaylistLinksEffect(
-        identity,
-        result.playlist.id,
-        result.importedTracks
-      ).pipe(Effect.forkDetach)
-    }
+export const enrichPlaylistLinksEffect = (identity: CanonicalMusicIdentityService) =>
+  Effect.fn('musicEntity.enrichPlaylistLinks')(function* (playlistId: string) {
+    const targets = yield* getPlaylistLinkSyncTargetsEffect(playlistId)
+    const result = yield* enrichImportedPlaylistLinksEffect(identity, playlistId, targets)
 
-    const { importedTracks: _, ...importResult } = result
-    return importResult
+    return { playlistId, trackCount: targets.length, insertedCount: result.insertedCount }
   })
 
 export const syncPlaylistLinksEffect = (identity: CanonicalMusicIdentityService) =>
   Effect.fn('musicEntity.syncPlaylistLinks')(function* (playlistId: string) {
-    const db = yield* Database
     yield* identity
       .refreshEntity({
         entityType: 'playlist',
@@ -582,16 +574,5 @@ export const syncPlaylistLinksEffect = (identity: CanonicalMusicIdentityService)
           )
         )
       )
-    const targets = yield* getPlaylistLinkSyncTargetsEffect(playlistId)
-
-    if (targets.length === 0) return { playlistId, queuedTrackCount: 0 }
-
-    yield* Effect.logInfo('[MusicEntity] Scheduling manual playlist link sync', {
-      playlistId,
-      trackCount: targets.length
-    })
-
-    yield* enrichImportedPlaylistLinksEffect(identity, playlistId, targets).pipe(Effect.forkDetach)
-
-    return { playlistId, queuedTrackCount: targets.length }
+    return yield* enrichPlaylistLinksEffect(identity)(playlistId)
   })

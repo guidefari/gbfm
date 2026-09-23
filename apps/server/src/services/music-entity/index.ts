@@ -86,6 +86,7 @@ import {
   addSpotifyTrackToPlaylistEffect,
   addTrackToPlaylistEffect,
   getPlaylistTracksEffect,
+  enrichPlaylistLinksEffect,
   importSpotifyPlaylistEffect,
   removeTrackFromPlaylistEffect,
   reorderPlaylistTracksEffect,
@@ -279,8 +280,14 @@ export interface MusicEntityService {
   readonly syncPlaylistLinks: (
     playlistId: string
   ) => Effect.Effect<
-    { playlistId: string; queuedTrackCount: number },
+    { playlistId: string; trackCount: number; insertedCount: number },
     DatabaseError | SpotifyServiceError | MusicIdentityError
+  >
+  readonly enrichPlaylistLinks: (
+    playlistId: string
+  ) => Effect.Effect<
+    { playlistId: string; trackCount: number; insertedCount: number },
+    DatabaseError | MusicIdentityError
   >
 
   readonly addArtistToAlbum: (
@@ -512,6 +519,8 @@ export const MusicEntityServiceLayer = Layer.effect(
         provideDb(addSpotifyTrackToPlaylistEffect(spotify, identity)(playlistId, spotifyUrl)),
       importSpotifyPlaylist: (url, curatorId) =>
         provideDb(importSpotifyPlaylistEffect(spotify, identity)(url, curatorId)),
+      enrichPlaylistLinks: (playlistId) =>
+        provideDb(enrichPlaylistLinksEffect(identity)(playlistId)),
       syncPlaylistLinks: (playlistId) => provideDb(syncPlaylistLinksEffect(identity)(playlistId)),
 
       addArtistToAlbum: (albumId, artistId, opts) =>

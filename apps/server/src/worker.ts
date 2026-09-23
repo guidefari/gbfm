@@ -13,7 +13,7 @@ import type {
 import * as Sentry from '@sentry/cloudflare'
 import type { ErrorEvent, TracesSamplerSamplingContext, TransactionEvent } from '@sentry/core'
 import { traceSampleRate } from '@gbfm/core/observability/trace-sampling'
-import { Effect, Layer } from 'effect'
+import { Effect, Layer, Schema } from 'effect'
 import type { NavigationLockDurableObject } from '@/durable-objects/navigation-lock.do'
 import type { SpotifyImportResolverDurableObject } from '@/durable-objects/spotify-import-resolver.do'
 import { DatabaseLayer } from '@/db/layer'
@@ -40,11 +40,16 @@ import {
   sendClaimedReminder
 } from '@/services/reminder-processor'
 import { ReminderQueue, ReminderQueueLayer, type ReminderJob } from '@/services/reminder-queue'
+import {
+  PlaylistEnrichmentJob,
+  PlaylistEnrichmentQueueLayer
+} from '@/services/playlist-enrichment-queue'
 import { cleanupExpiredQrPdfs } from '@/services/qr-cache-cleanup'
 import { SitemapCacheLayer } from '@/services/sitemap-cache'
 import { dispatchScheduledJob } from '@/scheduled'
 import { BlueskySyncService } from '@/services/bluesky-sync.service'
 import { NavigationRetentionService } from '@/services/navigation-retention.service'
+import { MusicEntityService } from '@/services/music-entity'
 import { SentryServiceLayer } from '@/services/sentry.service'
 import { CloudflareEmailTransportLayer } from '@/services/cloudflare-email.adapter'
 import {
@@ -72,6 +77,7 @@ export type ApiEnv = WorkerConfigBindings & {
   readonly MIXES: R2Bucket
   readonly SITEMAP: KVNamespace
   readonly REMINDERS: Queue<ReminderJob>
+  readonly PLAYLIST_ENRICHMENT: Queue<PlaylistEnrichmentJob>
   readonly QR_PDF: Fetcher
   readonly EMAIL?: SendEmail
   readonly EMAIL_TRANSPORT_MODE?: 'cloudflare' | 'recording'
@@ -190,6 +196,7 @@ const appServicesLive = (env: ApiEnv) => {
     sitemapCache: SitemapCacheLayer(env.SITEMAP),
     navigationLock: navigationLockLive(env),
     spotifyImportResolver: spotifyImportResolverLive(env),
+    playlistEnrichmentQueue: playlistEnrichmentQueueLive(env),
     sentry: workerSentryServiceLive(env),
     tracing: WorkerTracingLive,
     config: configLive,
@@ -230,6 +237,8 @@ const sentryOptions = (env: ApiEnv) => {
 }
 
 const reminderQueueLive = (env: ApiEnv) => ReminderQueueLayer(env.REMINDERS)
+const playlistEnrichmentQueueLive = (env: ApiEnv) =>
+  PlaylistEnrichmentQueueLayer(env.PLAYLIST_ENRICHMENT)
 
 const enqueueDueReminders = Effect.gen(function* () {
   const dueReminders = yield* queryDueReminders
@@ -324,7 +333,25 @@ const processReminderMessage = (env: ApiEnv, job: ReminderJob) =>
     // oxlint-disable-next-line effecttsgo/strict-effect-provide -- Queue dispatch is an Effect application entry point.
   }).pipe(Effect.provide(appServicesLive(env)))
 
-export default Sentry.withSentry<ApiEnv, ReminderJob>(sentryOptions, {
+const processPlaylistEnrichmentMessage = (env: ApiEnv, payload: PlaylistEnrichmentJob) =>
+  Effect.gen(function* () {
+    const job = yield* Schema.decodeUnknownEffect(PlaylistEnrichmentJob)(payload)
+    const music = yield* MusicEntityService
+    const startedAt = Date.now()
+
+    const result = yield* job.reason === 'manual'
+      ? music.syncPlaylistLinks(job.playlistId)
+      : music.enrichPlaylistLinks(job.playlistId)
+    yield* Effect.logInfo('[worker.queue] Playlist link enrichment finished', {
+      ...result,
+      durationMs: Date.now() - startedAt
+    })
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- Queue dispatch is an Effect application entry point.
+  }).pipe(Effect.provide(appServicesLive(env)))
+
+type ApiQueueJob = ReminderJob | PlaylistEnrichmentJob
+
+export default Sentry.withSentry<ApiEnv, ApiQueueJob>(sentryOptions, {
   async fetch(request: Request, env: ApiEnv, ctx: ExecutionContext): Promise<Response> {
     return ctx.tracing.enterSpan('gbfm.api.request', async (span): Promise<Response> => {
       span.setAttribute('http.request.method', request.method)
@@ -347,12 +374,21 @@ export default Sentry.withSentry<ApiEnv, ReminderJob>(sentryOptions, {
     })
   },
 
-  async queue(batch: MessageBatch<ReminderJob>, env: ApiEnv): Promise<void> {
+  async queue(batch: MessageBatch<ApiQueueJob>, env: ApiEnv): Promise<void> {
     for (const message of batch.messages) {
-      const exit = await Effect.runPromiseExit(processReminderMessage(env, message.body))
+      const job = message.body
+      const exit =
+        '_tag' in job
+          ? await Effect.runPromiseExit(processPlaylistEnrichmentMessage(env, job))
+          : await Effect.runPromiseExit(processReminderMessage(env, job))
       if (exit._tag === 'Success') {
         message.ack()
       } else {
+        await Effect.runPromise(
+          Effect.logError('[worker.queue] Job failed; requesting retry', {
+            jobType: '_tag' in job ? 'playlist_enrichment' : 'reminder'
+          })
+        )
         message.retry()
       }
     }

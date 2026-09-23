@@ -305,13 +305,18 @@ export const ImportSpotifyPlaylistInput = Schema.Struct({
   url: UrlString
 })
 
-export const ImportSpotifyPlaylistQueuedResponse = Schema.Struct({
-  status: Schema.Literal('Queued')
+export const ImportSpotifyPlaylistResponse = Schema.Struct({
+  status: Schema.Literal('Imported'),
+  playlistId: Schema.String,
+  trackCount: Schema.Number,
+  createdTrackCount: Schema.Number,
+  reusedTrackCount: Schema.Number,
+  enrichmentStatus: Schema.Literals(['Accepted', 'Unavailable'])
 })
 
 export const SyncPlaylistLinksResponse = Schema.Struct({
   playlistId: Schema.String,
-  queuedTrackCount: Schema.Number
+  status: Schema.Literal('Accepted')
 })
 
 const albumIdParam = { id: Schema.String }
@@ -778,8 +783,14 @@ export const MusicGroup = HttpApiGroup.make('music')
   .add(
     HttpApiEndpoint.post('importSpotifyPlaylist', '/api/music/playlists/import/spotify', {
       payload: ImportSpotifyPlaylistInput,
-      success: ImportSpotifyPlaylistQueuedResponse,
-      error: [HttpApiError.BadRequest, HttpApiError.Forbidden]
+      success: ImportSpotifyPlaylistResponse,
+      error: [
+        HttpApiError.BadRequest,
+        HttpApiError.NotFound,
+        HttpApiError.Conflict,
+        HttpApiError.Forbidden,
+        MusicServiceUnavailableHttpError
+      ]
     }).middleware(AuthMiddleware)
   )
   .add(

@@ -51,7 +51,7 @@ interface PlaylistTracksApiRow {
 
 interface SyncResult {
   playlistId: string
-  queuedTrackCount: number
+  status: 'Accepted'
 }
 
 interface Props {
@@ -195,11 +195,8 @@ export function PlaylistEditor({ playlist }: Props) {
       }),
     onSuccess: (data) => {
       toast({
-        title: 'Sync queued',
-        description:
-          data.queuedTrackCount > 0
-            ? `Queued ${data.queuedTrackCount} tracks for background enrichment`
-            : 'No Spotify source links found to sync'
+        title: 'Sync accepted',
+        description: `Playlist ${data.playlistId} was accepted for background enrichment`
       })
     },
     onError: (error: Error) => {

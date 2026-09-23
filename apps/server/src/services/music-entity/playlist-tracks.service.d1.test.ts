@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import { Effect, Layer } from 'effect'
+import { Effect, Exit, Layer } from 'effect'
 import { beforeAll, describe, expect, test } from 'vitest'
 import { Database } from '@/db/layer'
 import { ConfigService, createConfig } from '@/services/config.service'
@@ -32,6 +32,7 @@ import { withTestLayer } from '@/test/effect'
 import { makeTestS3Service } from '@/test/s3'
 import {
   addSpotifyTrackToPlaylistEffect,
+  enrichPlaylistLinksEffect,
   importSpotifyPlaylistEffect,
   syncPlaylistLinksEffect
 } from './playlist-tracks.service'
@@ -224,19 +225,15 @@ describe('playlist Spotify caller migration', () => {
       })
     )
 
-    expect(result).toEqual({ playlistId, queuedTrackCount: 1 })
-    await expect
-      .poll(() => inputs.map((input) => input.url))
-      .toEqual([`https://open.spotify.com/track/${spotifyTrackId}`])
-    await expect
-      .poll(async () => {
-        const links = await db
-          .select()
-          .from(musicEntityLinksTable)
-          .where(eq(musicEntityLinksTable.entityId, trackId))
-        return links.some((link) => link.platform === 'deezer')
-      })
-      .toBe(true)
+    expect(result).toEqual({ playlistId, trackCount: 1, insertedCount: 1 })
+    expect(inputs.map((input) => input.url)).toEqual([
+      `https://open.spotify.com/track/${spotifyTrackId}`
+    ])
+    const links = await db
+      .select()
+      .from(musicEntityLinksTable)
+      .where(eq(musicEntityLinksTable.entityId, trackId))
+    expect(links.some((link) => link.platform === 'deezer')).toBe(true)
   })
 
   test('continues enriching later tracks after a checked track failure', async () => {
@@ -275,20 +272,16 @@ describe('playlist Spotify caller migration', () => {
       }
     }
 
-    const result = await runWithIdentity(scraper, (identity) =>
-      syncPlaylistLinksEffect(identity)(playlistId)
+    const exit = await runWithIdentity(scraper, (identity) =>
+      Effect.exit(syncPlaylistLinksEffect(identity)(playlistId))
     )
 
-    expect(result).toEqual({ playlistId, queuedTrackCount: 2 })
-    await expect
-      .poll(async () => {
-        const links = await db
-          .select({ entityId: musicEntityLinksTable.entityId })
-          .from(musicEntityLinksTable)
-          .where(eq(musicEntityLinksTable.url, laterDiscoveredDeezerUrl))
-        return links.map((link) => link.entityId)
-      })
-      .toEqual([laterTrackId])
+    expect(Exit.isFailure(exit)).toBe(true)
+    const links = await db
+      .select({ entityId: musicEntityLinksTable.entityId })
+      .from(musicEntityLinksTable)
+      .where(eq(musicEntityLinksTable.url, laterDiscoveredDeezerUrl))
+    expect(links.map((link) => link.entityId)).toEqual([laterTrackId])
     expect(inputs).toHaveLength(2)
   })
 
@@ -347,12 +340,12 @@ describe('playlist Spotify caller migration', () => {
           spotify,
           identity
         )(`${playlist.playlistUrl}?si=test`)
-        yield* Effect.sleep('100 millis')
+        yield* enrichPlaylistLinksEffect(identity)(first.playlist.id)
         const second = yield* importSpotifyPlaylistEffect(
           spotify,
           identity
         )(`${playlist.playlistUrl}?si=test`)
-        yield* Effect.sleep('100 millis')
+        yield* enrichPlaylistLinksEffect(identity)(second.playlist.id)
         return { reused, first, second }
       })
     )

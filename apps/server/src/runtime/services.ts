@@ -29,6 +29,7 @@ import { MusicEntityServiceLayer } from '@/services/music-entity'
 import { MusicBrainzIdentityLive } from '@/services/musicbrainz-identity.service'
 import { MusicLinkScraperServiceLayer } from '@/services/music-link-scraper.service'
 import { MusicReminderServiceLayer } from '@/services/music-reminder.service'
+import { type PlaylistEnrichmentQueue } from '@/services/playlist-enrichment-queue'
 import { NavigationRetentionServiceLayer } from '@/services/navigation-retention.service'
 import { type NavigationLock } from '@/services/navigation-lock'
 import { type SpotifyImportResolver } from '@/services/spotify-import-resolver.service'
@@ -63,6 +64,7 @@ export interface AppLayerOptions {
   readonly sitemapCache: Layer.Layer<SitemapCache>
   readonly navigationLock: Layer.Layer<NavigationLock>
   readonly spotifyImportResolver: Layer.Layer<SpotifyImportResolver, never, Database>
+  readonly playlistEnrichmentQueue: Layer.Layer<PlaylistEnrichmentQueue>
   readonly sentry: Layer.Layer<SentryService>
   readonly tracing: Layer.Layer<OtelTracer.OtelTracer>
   readonly emailTransport: Layer.Layer<EmailTransportService>
@@ -77,6 +79,7 @@ export const AppLayer = ({
   sitemapCache: sitemapCacheLive,
   navigationLock: navigationLockLive,
   spotifyImportResolver: spotifyImportResolverLive,
+  playlistEnrichmentQueue: playlistEnrichmentQueueLive,
   sentry: sentryLive,
   tracing: tracingLive,
   emailTransport: emailTransportLive,
@@ -101,6 +104,7 @@ export const AppLayer = ({
     MusicBrainzIdentityLive,
     musicCoverImageFetcherLive,
     MusicReminderServiceLayer,
+    playlistEnrichmentQueueLive,
     NavigationRetentionServiceLayer,
     spotifyImportResolverLive,
     NavigationSessionServiceLayer.pipe(

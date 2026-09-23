@@ -40,8 +40,19 @@ export const storage = (config: StageConfig) =>
     const socialCards = yield* Cloudflare.R2.Bucket('SocialCards')
     const sitemap = yield* Cloudflare.KV.Namespace('Sitemap')
     const reminders = yield* Cloudflare.Queues.Queue('Reminders')
+    const playlistEnrichment = yield* Cloudflare.Queues.Queue('PlaylistEnrichment')
+    const playlistEnrichmentFailures = yield* Cloudflare.Queues.Queue('PlaylistEnrichmentFailures')
 
-    return { db, userContent, mixes, socialCards, sitemap, reminders }
+    return {
+      db,
+      userContent,
+      mixes,
+      socialCards,
+      sitemap,
+      reminders,
+      playlistEnrichment,
+      playlistEnrichmentFailures
+    }
   })
 
 export type Storage = Effect.Success<ReturnType<typeof storage>>
