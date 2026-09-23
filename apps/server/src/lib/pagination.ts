@@ -2,7 +2,7 @@ import { Effect, Schema, SchemaGetter, SchemaIssue } from 'effect'
 
 const CoercedFinite = Schema.Unknown.pipe(
   Schema.decodeTo(Schema.Finite, {
-    decode: SchemaGetter.transformOrFail((value, options) =>
+    decode: SchemaGetter.transformEffect((value, options) =>
       Effect.try({
         try: () => Number(value),
         catch: () => new SchemaIssue.InvalidValue({ message: 'Expected number' }, value, options)

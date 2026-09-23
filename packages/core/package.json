@@ -17,13 +17,13 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "effect": "4.0.0-rc.111"
+    "effect": "4.0.0-rc.117"
   },
   "devDependencies": {
-    "@types/bun": "1.3.13",
-    "@types/react": "19.2.17",
+    "@types/bun": "1.4.2",
+    "@types/react": "19.3.0",
     "react": "19.2.7",
-    "typescript": "6.0.3",
+    "typescript": "7.0.2",
     "vitest": "4.1.11"
   },
   "peerDependencies": {

@@ -1,9 +1,10 @@
-import type * as Sentry from '@sentry/core'
+import type * as Sentry from '@sentry/bun'
+import type { SpanAttributeValue } from '@sentry/core'
 import { Option, Schema } from 'effect'
 
 const DATABASE_AUTO_INTEGRATIONS = new Set(['Postgres', 'PostgresJs'])
 
-const isLocalUrl = (cause: Sentry.SpanAttributeValue | string | undefined) => {
+const isLocalUrl = (cause: SpanAttributeValue | string | undefined) => {
   const value = Option.getOrUndefined(Schema.decodeUnknownOption(Schema.String)(cause))
   return value !== undefined && (value.includes('127.0.0.1') || value.includes('localhost'))
 }

@@ -11,13 +11,13 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@spotify-effect/browser": "0.6.6",
-    "@spotify-effect/core": "0.6.6",
-    "effect": "4.0.0-rc.111"
+    "@spotify-effect/browser": "0.6.7",
+    "@spotify-effect/core": "0.6.7",
+    "effect": "4.0.0-rc.117"
   },
   "devDependencies": {
-    "@types/bun": "1.3.13",
-    "typescript": "6.0.3",
+    "@types/bun": "1.4.2",
+    "typescript": "7.0.2",
     "vitest": "4.1.11"
   }
 }
