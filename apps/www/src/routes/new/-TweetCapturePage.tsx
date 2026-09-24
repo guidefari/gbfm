@@ -4,7 +4,6 @@ import { canCreatePosts as roleCanCreatePosts } from '@gbfm/core/roles'
 import { LINK_STATUS, type LinkStatus } from '@gbfm/core/status'
 import { normalizeSlugBase } from '@gbfm/core/utils/slug'
 import {
-  Badge,
   Button,
   Card,
   CardContent,
@@ -13,18 +12,14 @@ import {
   Input,
   Label,
   MusicEntityLinksPanel,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
+  TagsInput,
   Textarea,
   toast
 } from '@gbfm/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useRouter, useSearch } from '@tanstack/react-router'
-import { ArrowLeft, Loader2, MessageSquareQuote, Music4, Send, Tag, X } from 'lucide-react'
+import { ArrowLeft, Loader2, MessageSquareQuote, Music4, Send, Tag } from 'lucide-react'
 import { type KeyboardEvent, type ReactNode, useEffect, useMemo, useState } from 'react'
-import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { PostPageHeader } from '@/components/PostPageHeader'
 import { useSession } from '@/lib/auth-client'
 import {
@@ -116,7 +111,7 @@ function TweetComposerCard({
             <Label
               htmlFor='title'
               className='text-xs font-medium tracking-wide text-muted-foreground'>
-              Title
+              Tweet
             </Label>
             {title.length > 0 ? (
               <span className='text-xs tabular-nums text-muted-foreground'>{title.length}/255</span>
@@ -150,7 +145,11 @@ function TweetComposerCard({
         </div>
 
         <div className='flex items-center gap-3 pt-1'>
-          <Button onClick={onSubmit} disabled={!canSubmit || isPending} className='gap-2'>
+          <Button
+            onClick={onSubmit}
+            disabled={!canSubmit || isPending}
+            size='lg'
+            className='gap-2 font-semibold'>
             {isPending ? <Loader2 className='size-4 animate-spin' /> : <Send className='size-4' />}
             {isEditMode ? 'Update tweet' : 'Save tweet'}
           </Button>
@@ -164,20 +163,14 @@ function TweetComposerCard({
 function TweetTagsCard({
   tags,
   availableTags,
-  newTag,
-  onToggleTag,
-  onNewTagChange,
-  onAddNewTag
+  onAddTag,
+  onRemoveTag
 }: {
   tags: string[]
-  availableTags: string[]
-  newTag: string
-  onToggleTag: (tag: string) => void
-  onNewTagChange: (value: string) => void
-  onAddNewTag: (event: KeyboardEvent<HTMLInputElement>) => void
+  availableTags: readonly string[]
+  onAddTag: (tag: string) => void
+  onRemoveTag: (tag: string) => void
 }) {
-  const customTags = tags.filter((tag) => !availableTags.includes(tag))
-
   return (
     <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
       <CardHeader className='pb-3'>
@@ -186,54 +179,43 @@ function TweetTagsCard({
           Tags
         </CardTitle>
       </CardHeader>
-      <CardContent className='space-y-3'>
-        {availableTags.length > 0 && (
-          <div className='flex flex-wrap gap-2'>
-            {availableTags.map((tag) => (
-              <button
-                key={tag}
-                type='button'
-                onClick={() => onToggleTag(tag)}
-                className={`px-3 py-1.5 rounded-sm text-xs font-medium border transition-all ${
-                  tags.includes(tag)
-                    ? 'bg-gb-pastel-green-2 border-gb-pastel-green-2 text-gb-darker-bg'
-                    : 'bg-transparent border-gb-pastel-green-2/30 text-gb-default-text hover:border-gb-highlight/50'
-                }`}>
-                {tag}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className='relative'>
-          <Tag className='absolute w-4 h-4 left-3 top-3.5 text-muted-foreground' />
-          <Input
-            value={newTag}
-            onChange={(e) => onNewTagChange(e.target.value)}
-            onKeyDown={onAddNewTag}
-            placeholder='Add custom tag (Press Enter)'
-            className='pl-10'
-          />
-        </div>
-
-        {customTags.length > 0 && (
-          <div className='flex flex-wrap gap-2'>
-            {customTags.map((tag) => (
-              <Badge
-                key={tag}
-                variant='secondary'
-                className='flex items-center gap-1 bg-gb-pastel-green-2/20 text-gb-pastel-green-1'>
-                {tag}
-                <X
-                  className='w-3 h-3 cursor-pointer hover:text-gb-highlight'
-                  onClick={() => onToggleTag(tag)}
-                />
-              </Badge>
-            ))}
-          </div>
-        )}
+      <CardContent>
+        <TagsInput
+          label=''
+          tags={tags}
+          availableTags={availableTags}
+          onAddTag={onAddTag}
+          onRemoveTag={onRemoveTag}
+          contentTypeLabel='tweet'
+        />
       </CardContent>
     </Card>
+  )
+}
+
+function CoverArt({ url, isResolving }: { url: string | null; isResolving: boolean }) {
+  const [failed, setFailed] = useState(false)
+  const showImage = url && !failed
+
+  return (
+    <div className='size-14 shrink-0 overflow-hidden rounded-sm bg-muted'>
+      {showImage ? (
+        <img
+          src={url}
+          alt='Cover art'
+          className='size-full object-cover'
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <div className='flex size-full items-center justify-center text-muted-foreground'>
+          {isResolving ? (
+            <Loader2 className='size-4 animate-spin' />
+          ) : (
+            <Music4 className='size-4' />
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -292,23 +274,7 @@ function ResolvedMusicCard({
         </div>
 
         <div className='flex items-center gap-3 rounded-md border border-gb-pastel-green-2/15 bg-black/20 p-2.5'>
-          <div className='size-14 shrink-0 overflow-hidden rounded-sm bg-muted'>
-            {displayedCoverImageUrl ? (
-              <img
-                src={displayedCoverImageUrl}
-                alt='Cover art'
-                className='size-full object-cover'
-              />
-            ) : (
-              <div className='flex size-full items-center justify-center text-muted-foreground'>
-                {isResolving ? (
-                  <Loader2 className='size-4 animate-spin' />
-                ) : (
-                  <Music4 className='size-4' />
-                )}
-              </div>
-            )}
-          </div>
+          <CoverArt url={displayedCoverImageUrl} isResolving={isResolving} />
           <div className='min-w-0 flex-1'>
             <div className='truncate text-base font-medium'>
               {displayedEntityTitle || (isResolving ? 'Resolving…' : 'Paste a link to start')}
@@ -374,13 +340,11 @@ export function TweetCapturePage() {
   const user = session?.user
   const search = useSearch({ from: '/new/tweet' })
   const isEditMode = Boolean(search.edit)
-  const isDesktop = useMediaQuery('(min-width: 1024px)')
 
   const [musicUrl, setMusicUrl] = useState('')
   const [title, setTitle] = useState('')
   const [commentary, setCommentary] = useState('')
   const [tags, setTags] = useState<string[]>([])
-  const [newTag, setNewTag] = useState('')
   const { data: availableTags } = usePostTags()
 
   const { data: existingPost, isPending: loadingPost } = useQuery({
@@ -411,20 +375,12 @@ export function TweetCapturePage() {
     setTags(existingPost.tags ?? [])
   }, [existingPost])
 
-  function toggleTag(tag: string) {
-    setTags((prev) =>
-      prev.includes(tag) ? prev.filter((existing) => existing !== tag) : [...prev, tag]
-    )
+  function addTag(tag: string) {
+    setTags((prev) => (prev.includes(tag) ? prev : [...prev, tag]))
   }
 
-  function addNewTag(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key !== 'Enter') return
-    event.preventDefault()
-    const trimmed = newTag.trim()
-    if (trimmed && !tags.includes(trimmed)) {
-      toggleTag(trimmed)
-    }
-    setNewTag('')
+  function removeTag(tag: string) {
+    setTags((prev) => prev.filter((existing) => existing !== tag))
   }
 
   const canSubmit = useMemo(() => Boolean(title.trim() || commentary.trim()), [title, commentary])
@@ -743,11 +699,9 @@ export function TweetCapturePage() {
         const tagsCard = (
           <TweetTagsCard
             tags={tags}
-            availableTags={availableTags}
-            newTag={newTag}
-            onToggleTag={toggleTag}
-            onNewTagChange={setNewTag}
-            onAddNewTag={addNewTag}
+            availableTags={availableTags ?? []}
+            onAddTag={addTag}
+            onRemoveTag={removeTag}
           />
         )
 
@@ -759,33 +713,15 @@ export function TweetCapturePage() {
           />
         ) : null
 
-        if (!isDesktop) {
-          return (
-            <Tabs defaultValue='music' className='w-full'>
-              <TabsList className='grid w-full grid-cols-3'>
-                <TabsTrigger value='music'>Music</TabsTrigger>
-                <TabsTrigger value='post'>Post</TabsTrigger>
-                <TabsTrigger value='tags'>Tags</TabsTrigger>
-              </TabsList>
-              <TabsContent value='music'>{musicCard}</TabsContent>
-              <TabsContent value='post' className='space-y-6'>
+        return (
+          <div className='space-y-6'>
+            {musicCard}
+            <div className='grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start'>
+              <div className='space-y-6'>
                 {composerCard}
                 {quoteCard}
-              </TabsContent>
-              <TabsContent value='tags'>{tagsCard}</TabsContent>
-            </Tabs>
-          )
-        }
-
-        return (
-          <div className='grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]'>
-            <div className='space-y-6'>
-              {composerCard}
+              </div>
               {tagsCard}
-            </div>
-            <div className='space-y-6'>
-              {musicCard}
-              {quoteCard}
             </div>
           </div>
         )
