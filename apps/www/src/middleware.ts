@@ -2,6 +2,7 @@ import { defineMiddleware } from 'astro:middleware'
 import { canCreatePosts } from '@gbfm/core/roles'
 import * as Sentry from '@sentry/astro'
 import { Effect, Schema } from 'effect'
+import { API_ORIGIN } from '@/lib/api-origin'
 import { buildHref } from '@/lib/navigation'
 import type { PageAuth } from '@/lib/page'
 
@@ -24,9 +25,8 @@ const readAuth = async (
   readonly auth: PageAuth
   readonly setCookie: string | null
 }> => {
-  const apiOrigin = import.meta.env.VITE_VPS_BASE_URL || new URL(request.url).origin
   try {
-    const response = await fetch(new URL('/auth/get-session', apiOrigin), {
+    const response = await fetch(new URL('/auth/get-session', API_ORIGIN), {
       headers: {
         cookie: request.headers.get('cookie') ?? ''
       },

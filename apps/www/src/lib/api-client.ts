@@ -2,16 +2,13 @@ import { Api } from '@gbfm/api/api'
 import { Effect, Layer } from 'effect'
 import { FetchHttpClient } from 'effect/unstable/http'
 import { HttpApiClient } from 'effect/unstable/httpapi'
-
-const VPS_BASE_URL =
-  import.meta.env.VITE_VPS_BASE_URL ||
-  ('window' in globalThis ? window.location.origin : 'http://localhost:4321')
+import { API_ORIGIN } from './api-origin'
 
 const FetchLive = FetchHttpClient.layer.pipe(
   Layer.provide(Layer.succeed(FetchHttpClient.RequestInit, { credentials: 'include' }))
 )
 
-const buildClient = () => HttpApiClient.make(Api, { baseUrl: VPS_BASE_URL })
+const buildClient = () => HttpApiClient.make(Api, { baseUrl: API_ORIGIN })
 
 export type ApiClient = Effect.Success<ReturnType<typeof buildClient>>
 
