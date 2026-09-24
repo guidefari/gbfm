@@ -1,9 +1,9 @@
 'use client'
 
-import { toast } from '@gbfm/ui'
+import { Button, toast } from '@gbfm/ui'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, useRouter } from '@tanstack/react-router'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, Loader2, RadioTower } from 'lucide-react'
 import {
   type ChangeEvent,
   type MouseEvent,
@@ -25,8 +25,10 @@ import type {
   EditorialPost,
   EditorialSaveState
 } from './-editorial-types'
+import { MusicEntityPicker } from '@/components/editor/music-entity/MusicEntityPicker'
+import { ExternalMediaPickerDialog } from '@/components/editorial/ExternalMediaPickerDialog'
+import { ComposerCanvas } from './-ComposerCanvas'
 import { ComposerHeader } from './-ComposerHeader'
-import { EditorialWritingCanvas } from './-EditorialWritingCanvas'
 
 interface EditorialSaveRequest {
   formData: EditorialFormData
@@ -96,6 +98,7 @@ export function EditorialComposer({ editSlug }: { editSlug: string | undefined }
   const [pendingMusicCount, setPendingMusicCount] = useState(0)
   const [slugIsManual, setSlugIsManual] = useState(Boolean(editSlug))
   const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null)
+  const [externalMediaOpen, setExternalMediaOpen] = useState(false)
 
   const {
     isEditMode,
@@ -399,24 +402,55 @@ export function EditorialComposer({ editSlug }: { editSlug: string | undefined }
         onPublish={() => handleSave(false)}
       />
 
-      <div className='mx-auto max-w-4xl'>
-        <EditorialWritingCanvas
-          formData={formData}
-          portalContainer={null}
-          metadata={metadata}
-          tagCompletion={{
-            getAvailableTags: () => availableTags,
-            getSelectedTags: () => formData.tags,
-            onSelectTag: (tag) =>
-              setFormData((previous) => ({
-                ...previous,
-                tags: Array.from(new Set([...previous.tags, tag]))
-              }))
-          }}
-          onInputChange={handleTextInputChange}
-          onPendingMusicChange={setPendingMusicCount}
-        />
-      </div>
+      <ComposerCanvas
+        title={formData.title}
+        titlePlaceholder='Story title'
+        description={formData.description}
+        descriptionPlaceholder='Add a short description…'
+        onDescriptionChange={(value) => handleTextInputChange('description', value)}
+        content={formData.content}
+        tags={formData.tags}
+        availableTags={availableTags}
+        contentPlaceholder='Start writing…'
+        contentTypeLabel='Editorial'
+        resolutionScope='editorial'
+        metadataSlot={metadata}
+        onTitleChange={(value) => handleTextInputChange('title', value)}
+        onContentChange={(value) => handleTextInputChange('content', value)}
+        onAddTag={(tag) =>
+          setFormData((previous) => ({
+            ...previous,
+            tags: Array.from(new Set([...previous.tags, tag]))
+          }))
+        }
+        onRemoveTag={(tag) =>
+          setFormData((previous) => ({
+            ...previous,
+            tags: previous.tags.filter((existing) => existing !== tag)
+          }))
+        }
+        onPendingMusicChange={setPendingMusicCount}
+        editorToolbarActions={(insertBlock) => (
+          <>
+            <MusicEntityPicker onInsert={insertBlock} portalContainer={null} />
+            <Button
+              type='button'
+              variant='ghost'
+              size='sm'
+              onClick={() => setExternalMediaOpen(true)}
+              className='h-9 gap-1.5 px-2 text-xs'>
+              <RadioTower className='size-4' />
+              Media
+            </Button>
+            <ExternalMediaPickerDialog
+              open={externalMediaOpen}
+              portalContainer={null}
+              onOpenChange={setExternalMediaOpen}
+              onInsert={insertBlock}
+            />
+          </>
+        )}
+      />
     </div>
   )
 }

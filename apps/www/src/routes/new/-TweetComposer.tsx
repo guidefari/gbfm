@@ -3,17 +3,11 @@
 import { canCreatePosts as roleCanCreatePosts } from '@gbfm/core/roles'
 import { LINK_STATUS, type LinkStatus } from '@gbfm/core/status'
 import { normalizeSlugBase } from '@gbfm/core/utils/slug'
-import { Input, Label, MusicEntityLinksPanel, TagsInput, toast } from '@gbfm/ui'
+import { MusicEntityLinksPanel, toast } from '@gbfm/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useRouter } from '@tanstack/react-router'
 import { Loader2, MessageSquareQuote, Music4, X } from 'lucide-react'
-import { Effect } from 'effect'
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import {
-  SimpleMarkdownEditor,
-  type SimpleMarkdownEditorHandle
-} from '@/components/simple-markdown-editor'
-import { resolveMusicEntityBatchEffect } from '@/components/editorial/editorial-music-resolution'
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { useSession } from '@/lib/auth-client'
 import {
   apiUrl,
@@ -27,10 +21,8 @@ import {
   usePostTags,
   useUpdateAdminEntityLinkStatus
 } from '@/lib/http'
-import {
-  resolveMusicEntityReferenceWithCacheEffect,
-  useResolveMusicEntity
-} from '@/lib/music-entity-resolution'
+import { useResolveMusicEntity } from '@/lib/music-entity-resolution'
+import { ComposerCanvas } from './-ComposerCanvas'
 import { ComposerHeader } from './-ComposerHeader'
 import type { EditorialSaveState } from './-editorial-types'
 import { TWEET_MAX_LENGTH } from './-tweet-hashtags'
@@ -213,8 +205,6 @@ export function TweetComposer({ editSlug }: { editSlug: string | undefined }) {
   const router = useRouter()
   const { data: session } = useSession()
   const user = session?.user
-  const authorizationScope = user ? `${user.id}:${user.role ?? 'user'}` : 'anonymous'
-  const editorRef = useRef<SimpleMarkdownEditorHandle>(null)
 
   const [musicUrl, setMusicUrl] = useState('')
   const [tweet, setTweet] = useState('')
@@ -254,24 +244,6 @@ export function TweetComposer({ editSlug }: { editSlug: string | undefined }) {
   }, [existingPost])
 
   const tweetCount = tweet.length
-
-  const resolveMusicEntities = useCallback(
-    (urls: ReadonlyArray<string>) =>
-      Effect.runPromise(
-        resolveMusicEntityBatchEffect(urls, (url) =>
-          resolveMusicEntityReferenceWithCacheEffect(queryClient, url, authorizationScope, 'tweet')
-        )
-      ),
-    [authorizationScope, queryClient]
-  )
-
-  const reportResolutionFailure = useCallback((count: number) => {
-    toast({
-      title: count === 1 ? 'Could not add one music link' : `Could not add ${count} music links`,
-      description: 'The original links were kept in your commentary.',
-      variant: 'destructive'
-    })
-  }, [])
 
   function handleTweetChange(value: string) {
     const musicMatch =
@@ -554,11 +526,10 @@ export function TweetComposer({ editSlug }: { editSlug: string | undefined }) {
         onPublish={() => submitMutation.mutate()}
       />
 
-      <div className='mx-auto max-w-4xl py-8'>
-        <div className='flex items-end justify-between gap-3'>
-          <Label htmlFor='tweet-quip' className='sr-only'>
-            Tweet
-          </Label>
+      <ComposerCanvas
+        title={tweet}
+        titlePlaceholder='A short quip, e.g. “I dig this”'
+        titleHint={
           <span
             className={`tabular-nums text-xs ${
               overLimit
@@ -569,18 +540,19 @@ export function TweetComposer({ editSlug }: { editSlug: string | undefined }) {
             }`}>
             {tweetCount}/{TWEET_MAX_LENGTH}
           </span>
-        </div>
-        <Input
-          id='tweet-quip'
-          value={tweet}
-          onChange={(event) => handleTweetChange(event.target.value)}
-          placeholder='A short quip, e.g. “I dig this”'
-          autoFocus
-          style={{ boxShadow: 'none' }}
-          className='h-auto !border-0 bg-transparent px-0 text-3xl font-semibold tracking-tight text-foreground !shadow-none placeholder:text-muted-foreground/55 focus-visible:!ring-0 sm:text-4xl'
-        />
-
-        <div className='mt-6'>
+        }
+        content={commentary}
+        tags={tags}
+        availableTags={availableTags}
+        contentPlaceholder='Why this one? Paste a tweet link here to quote it.'
+        contentTypeLabel='Tweet'
+        resolutionScope='tweet'
+        onTitleChange={handleTweetChange}
+        onContentChange={setCommentary}
+        onAddTag={addTag}
+        onRemoveTag={removeTag}
+        onPendingMusicChange={setPendingMusicCount}
+        musicSlot={
           <MusicSlot
             hasEntity={hasEntity}
             musicUrl={musicUrl}
@@ -606,42 +578,16 @@ export function TweetComposer({ editSlug }: { editSlug: string | undefined }) {
               ) : null
             }
           />
-        </div>
-
-        <div className='mt-6'>
-          <TagsInput
-            tags={tags}
-            availableTags={availableTags}
-            label='Tags'
-            onAddTag={addTag}
-            onRemoveTag={removeTag}
-            contentTypeLabel='Tweet'
-          />
-        </div>
-
-        <section className='mt-8' aria-label='Commentary'>
-          <SimpleMarkdownEditor
-            ref={editorRef}
-            value={commentary}
-            onChange={setCommentary}
-            placeholder='Why this one? Paste a tweet link here to quote it.'
-            resolveMusicEntities={resolveMusicEntities}
-            onPendingMusicChange={setPendingMusicCount}
-            onMusicResolutionFailure={reportResolutionFailure}
-            tagCompletion={{
-              getAvailableTags: () => availableTags,
-              getSelectedTags: () => tags,
-              onSelectTag: addTag
-            }}
-          />
+        }
+        belowEditorSlot={
           <QuotedTweet
             slug={quotedSlug}
             isPending={resolvedQuote.isPending}
             title={resolvedQuote.data?.title}
             content={resolvedQuote.data?.content}
           />
-        </section>
-      </div>
+        }
+      />
     </div>
   )
 }
