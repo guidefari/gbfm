@@ -155,6 +155,7 @@ export function ComposerCanvas({
           onMusicResolutionFailure={reportResolutionFailure}
           tagCompletion={tagCompletion}
           toolbarActions={editorToolbarActions?.(insertBlock)}
+          hideViewModes
         />
         {belowEditorSlot}
       </section>

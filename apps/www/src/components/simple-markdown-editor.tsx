@@ -63,6 +63,7 @@ interface SimpleMarkdownEditorProps {
   onPendingMusicChange?: (count: number) => void
   onMusicResolutionFailure?: (count: number) => void
   tagCompletion?: HashtagCompletionOptions
+  hideViewModes?: boolean
 }
 
 export interface SimpleMarkdownEditorHandle {
@@ -236,7 +237,8 @@ export const SimpleMarkdownEditor = forwardRef<
     resolveMusicEntities,
     onPendingMusicChange = ignorePendingMusic,
     onMusicResolutionFailure = ignorePendingMusic,
-    tagCompletion
+    tagCompletion,
+    hideViewModes = false
   },
   ref
 ) {
@@ -444,18 +446,20 @@ export const SimpleMarkdownEditor = forwardRef<
             <div className='editorial-editor-toolbar-actions'>{toolbarActions}</div>
           ) : null}
         </div>
-        <div className='editorial-editor-modes' aria-label='Editor view'>
-          {editorModes.map((item) => (
-            <EditorControl
-              key={item.value}
-              className={mode === item.value ? 'editorial-editor-mode-active' : ''}
-              aria-pressed={mode === item.value}
-              onClick={() => setMode(item.value)}>
-              {item.icon}
-              <span>{item.label}</span>
-            </EditorControl>
-          ))}
-        </div>
+        {hideViewModes ? null : (
+          <div className='editorial-editor-modes' aria-label='Editor view'>
+            {editorModes.map((item) => (
+              <EditorControl
+                key={item.value}
+                className={mode === item.value ? 'editorial-editor-mode-active' : ''}
+                aria-pressed={mode === item.value}
+                onClick={() => setMode(item.value)}>
+                {item.icon}
+                <span>{item.label}</span>
+              </EditorControl>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className={isSplit ? 'grid overflow-hidden md:grid-cols-2' : 'overflow-hidden'}>
