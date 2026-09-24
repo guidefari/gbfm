@@ -1,3 +1,15 @@
+# [2.99.0](https://github.com/guidefari/gbfm/compare/v2.98.1...v2.99.0) (2026-09-24)
+
+
+### Bug Fixes
+
+* **editorial:** stop hashtag stripping from corrupting markdown and word-joined text ([91f1ac8](https://github.com/guidefari/gbfm/commit/91f1ac80d4ab1c427fdbc2f735500172534856ec))
+
+
+### Features
+
+* **www:** unify tweet and editorial into one /new composer ([89e1475](https://github.com/guidefari/gbfm/commit/89e147558d4cadc9701d4b688ccd81d44a04e70f))
+
 ## [2.98.1](https://github.com/guidefari/gbfm/compare/v2.98.0...v2.98.1) (2026-09-24)
 
 
