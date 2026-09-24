@@ -1,6 +1,6 @@
 import { useFeatureFlag } from '@gbfm/core/feature-flags'
 import { toast } from '@gbfm/ui'
-import { Link } from '@tanstack/react-router'
+import { Link } from '@/lib/navigation'
 import { Edit3, ImageDown, Link2, MessageSquareQuote } from 'lucide-react'
 import { useState } from 'react'
 import { TweetDownloadDialog } from '@/components/tweet-export/TweetDownloadDialog'

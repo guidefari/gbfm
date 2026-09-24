@@ -1,4 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createPageComponent } from '@/components/PageApp'
+import { createFileRoute } from '@/lib/page'
 import { Effect } from 'effect'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { RouteError } from '@/components/RouteError'
@@ -19,6 +20,7 @@ import { TweetReplyList } from '@/components/TweetReplyList'
 import { TweetTagLinks } from '@/components/TweetTagLinks'
 import { useSession } from '@/lib/auth-client'
 import { getApiClient } from '@/lib/api-client'
+import { nullOnNotFound } from '@/lib/http-errors'
 import {
   microPostByIdQueryOptions,
   microPostRepliesQueryOptions,
@@ -81,15 +83,18 @@ export const Route = createFileRoute('/tweet/$slug')({
       .fetchQuery(microPostRepliesQueryOptions(params.slug))
       .catch(() => undefined)
     const client = await getApiClient()
-    const post = await Effect.runPromise(
-      client.post
-        .getMicroPostBySlug({ params: { slug: params.slug } })
-        .pipe(
-          Effect.tapError((error) =>
-            captureException(error, { endpoint: 'post.getMicroPostBySlug' })
+    const post = await nullOnNotFound(
+      Effect.runPromise(
+        client.post
+          .getMicroPostBySlug({ params: { slug: params.slug } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'post.getMicroPostBySlug' })
+            )
           )
-        )
+      )
     )
+    if (post === null) return { post: null }
     const rootDependenciesPromise = Promise.all([
       ...prefetchPostDependencies(post),
       ...(post.parentPostId
@@ -201,3 +206,5 @@ function TweetPostPage() {
     </div>
   )
 }
+
+export const Page = createPageComponent(Route)

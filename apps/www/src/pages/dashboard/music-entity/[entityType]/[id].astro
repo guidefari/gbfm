@@ -1,0 +1,14 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { buildHref } from '@/lib/navigation'
+import { PageRedirect } from '@/lib/page'
+import { preparePage } from '@/lib/prepare-page'
+import { Page, Route } from '@/routes/dashboard/music-entity.$entityType.$id'
+const { entityType, id } = Astro.params
+if (entityType === undefined || id === undefined || entityType === '' || id === '') return new Response('Not found', { status: 404 })
+if (!Astro.locals.auth.isAuthenticated) return Astro.redirect(buildHref({ to: '/auth/sign-in', search: { redirect: Astro.url.href } }))
+let prepared
+try { prepared = await preparePage(Route, Astro.url, { entityType, id }, Astro.locals.auth) }
+catch (cause) { if (cause instanceof PageRedirect) return Astro.redirect(buildHref(cause.options)); throw cause }
+---
+<BaseLayout head={prepared.head}><Page client:load params={prepared.params} search={prepared.search} loaderData={prepared.loaderData} /></BaseLayout>

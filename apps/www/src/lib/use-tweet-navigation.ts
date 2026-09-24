@@ -1,6 +1,6 @@
 import { useAtomSet, useAtomValue } from '@effect/atom-react'
 import type { NavigationResultResponse } from '@gbfm/api/navigation'
-import { useRouter } from '@tanstack/react-router'
+import { useRouter } from '@/lib/navigation'
 import { Data, Effect, Fiber } from 'effect'
 import * as Atom from 'effect/unstable/reactivity/Atom'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'

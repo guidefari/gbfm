@@ -1,4 +1,4 @@
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate } from '@/lib/navigation'
 import { useState } from 'react'
 import { useFeaturedMix } from '@/lib/useFeaturedMix'
 import { useNowPlayingTrack, usePlayerActions, useTransport } from '@/services/player'

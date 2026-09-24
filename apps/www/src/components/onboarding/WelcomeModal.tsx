@@ -6,7 +6,7 @@ import {
   DialogHeader,
   DialogTitle
 } from '@gbfm/ui'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate } from '@/lib/navigation'
 import { Bell, Disc3, Heart } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useSession } from '@/lib/auth-client'

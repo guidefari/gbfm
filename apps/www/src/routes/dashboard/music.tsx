@@ -12,7 +12,9 @@ import {
   TabsTrigger,
   toast
 } from '@gbfm/ui'
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createPageComponent } from '@/components/PageApp'
+import { Link, useNavigate } from '@/lib/navigation'
+import { createFileRoute } from '@/lib/page'
 import {
   type MusicAlbum,
   type MusicArtist,
@@ -30,6 +32,8 @@ import { PlaylistsTab } from './_components/-PlaylistsTab'
 export const Route = createFileRoute('/dashboard/music')({
   component: AdminMusicPage
 })
+
+export const Page = createPageComponent(Route)
 
 function AdminMusicPage() {
   return (

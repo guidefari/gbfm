@@ -1,4 +1,6 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createPageComponent } from '@/components/PageApp'
+import { createFileRoute } from '@/lib/page'
+import { Link } from '@/lib/navigation'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useLabels } from '@/lib/http'
 import { generateSEOHead, STATIC_PAGE_SEO } from '@/lib/seo'
@@ -70,3 +72,5 @@ function Component() {
     </div>
   )
 }
+
+export const Page = createPageComponent(Route)

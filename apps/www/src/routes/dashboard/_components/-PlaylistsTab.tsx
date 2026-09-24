@@ -1,6 +1,6 @@
 import { Button, Input, Label, toast } from '@gbfm/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link } from '@tanstack/react-router'
+import { Link } from '@/lib/navigation'
 import { ArrowLeft, ChevronDown, ChevronRight, Loader2, Pencil, Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { CoverThumb } from '@/components/CoverThumb'

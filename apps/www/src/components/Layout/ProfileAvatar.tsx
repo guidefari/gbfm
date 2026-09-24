@@ -7,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@gbfm/ui'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate } from '@/lib/navigation'
 import { signOut, useSession } from '@/lib/auth-client'
 import { useUIActions } from '@/store/ui'
 

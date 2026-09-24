@@ -1,4 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createPageComponent } from '@/components/PageApp'
+import { createFileRoute } from '@/lib/page'
 import { ChangePasswordCard } from '@/components/dashboard/ChangePasswordCard'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { ProfileCard } from '@/components/dashboard/ProfileCard'
@@ -8,6 +9,8 @@ import { useSession } from '@/lib/auth-client'
 export const Route = createFileRoute('/dashboard/profile')({
   component: DashboardProfile
 })
+
+export const Page = createPageComponent(Route)
 
 function DashboardProfile() {
   const { data: session } = useSession()

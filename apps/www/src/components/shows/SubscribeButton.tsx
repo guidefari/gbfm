@@ -1,5 +1,5 @@
 import { Button, toast } from '@gbfm/ui'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate } from '@/lib/navigation'
 import { Bell, BellOff, Loader2 } from 'lucide-react'
 import { useSession } from '@/lib/auth-client'
 import { useSubscribeToShow, useUnsubscribeFromShow, useUserSubscriptions } from '@/lib/http'

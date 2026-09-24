@@ -1,10 +1,13 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createPageComponent } from '@/components/PageApp'
+import { createFileRoute } from '@/lib/page'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { PlayerPreferencesCard } from '@/components/dashboard/PlayerPreferencesCard'
 
 export const Route = createFileRoute('/dashboard/player')({
   component: DashboardPlayer
 })
+
+export const Page = createPageComponent(Route)
 
 function DashboardPlayer() {
   return (

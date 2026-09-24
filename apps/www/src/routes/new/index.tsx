@@ -1,8 +1,9 @@
 'use client'
 
 import { canCreatePosts } from '@gbfm/core/roles'
-import { createFileRoute, redirect } from '@tanstack/react-router'
 import { Schema } from 'effect'
+import { createPageComponent } from '@/components/PageApp'
+import { createFileRoute, redirect } from '@/lib/page'
 import { signInRedirect } from '@/lib/route-guards'
 import { privateHead } from '@/lib/seo'
 import { NewContentPage } from './-NewContentPage'
@@ -23,5 +24,11 @@ export const Route = createFileRoute('/new/')({
     }
   },
   validateSearch: Schema.toStandardSchemaV1(searchSchema),
-  component: NewContentPage
+  component: NewContentRoutePage
 })
+
+function NewContentRoutePage() {
+  return <NewContentPage search={Route.useSearch()} />
+}
+
+export const Page = createPageComponent(Route)

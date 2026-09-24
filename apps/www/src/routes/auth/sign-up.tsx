@@ -1,15 +1,17 @@
 import { getFormString } from '@gbfm/core/utils'
 import { GenericAuthForm, isPasswordValid, PasswordChecklist, ProfilePreviewCard } from '@gbfm/ui'
-import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { MailCheck } from 'lucide-react'
 import { useState } from 'react'
 import { AuthPageLayout, AuthStatusNotice } from '@/components/Auth/AuthPageLayout'
 import { TermsConsent } from '@/components/Auth/TermsConsent'
+import { createPageComponent } from '@/components/PageApp'
 import {
   UsernameAvailability,
   useUsernameAvailability
 } from '@/components/Auth/UsernameAvailability'
 import { authClient, signUp } from '@/lib/auth-client'
+import { Link } from '@/lib/navigation'
+import { createFileRoute, redirect } from '@/lib/page'
 import { useCooldown } from '@/lib/useCooldown'
 import { privateHead } from '@/lib/seo'
 
@@ -24,6 +26,8 @@ export const Route = createFileRoute('/auth/sign-up')({
   },
   component: SignUpPage
 })
+
+export const Page = createPageComponent(Route)
 
 const RESEND_COOLDOWN_SECONDS = 30
 

@@ -1,4 +1,4 @@
-import { Link, useLocation } from '@tanstack/react-router'
+import { Link, useLocation } from '@/lib/navigation'
 import { useSession } from '@/lib/auth-client'
 
 export function AdminAccessGuard({ children }: { children: React.ReactNode }) {

@@ -1,11 +1,14 @@
 import { Card, CardContent } from '@gbfm/ui'
-import { createFileRoute } from '@tanstack/react-router'
+import { createPageComponent } from '@/components/PageApp'
+import { createFileRoute } from '@/lib/page'
 import { AdminPage } from './_components/-AdminLayout'
 import { SearchTab } from './_components/-SearchTab'
 
 export const Route = createFileRoute('/dashboard/search')({
   component: AdminSearchPage
 })
+
+export const Page = createPageComponent(Route)
 
 function AdminSearchPage() {
   return (

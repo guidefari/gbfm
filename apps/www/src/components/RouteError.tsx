@@ -1,5 +1,5 @@
 import { Button } from '@gbfm/ui'
-import { Link, useRouter } from '@tanstack/react-router'
+import { Link, useRouter } from '@/lib/navigation'
 import { SearchX, WifiOff } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'

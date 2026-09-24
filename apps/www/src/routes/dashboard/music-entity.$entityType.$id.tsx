@@ -1,6 +1,8 @@
 import type { MusicEntityType } from '@gbfm/ui'
 import { Button } from '@gbfm/ui'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createPageComponent } from '@/components/PageApp'
+import { Link } from '@/lib/navigation'
+import { createFileRoute } from '@/lib/page'
 import { ArrowLeft } from 'lucide-react'
 import { AdminAccessGuard } from './_components/-AdminAccessGuard'
 import { MusicEntityDetailPage } from './_components/-MusicEntityDetailPage'
@@ -8,6 +10,8 @@ import { MusicEntityDetailPage } from './_components/-MusicEntityDetailPage'
 export const Route = createFileRoute('/dashboard/music-entity/$entityType/$id')({
   component: MusicDetailRoute
 })
+
+export const Page = createPageComponent(Route)
 
 const VALID_TYPES: MusicEntityType[] = ['artist', 'album', 'track', 'playlist', 'label']
 

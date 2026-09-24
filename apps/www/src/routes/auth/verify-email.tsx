@@ -1,9 +1,11 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { Schema } from 'effect'
 import { Loader2, MailCheck } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { AuthPageLayout, AuthStatusNotice } from '@/components/Auth/AuthPageLayout'
+import { createPageComponent } from '@/components/PageApp'
 import { authClient } from '@/lib/auth-client'
+import { Link, useNavigate } from '@/lib/navigation'
+import { createFileRoute } from '@/lib/page'
 import { privateHead } from '@/lib/seo'
 
 const searchSchema = Schema.Struct({
@@ -13,15 +15,21 @@ const searchSchema = Schema.Struct({
 })
 
 export const Route = createFileRoute('/auth/verify-email')({
-  component: VerifyEmailPage,
+  component: VerifyEmailRoutePage,
   head: () => privateHead('Verify email'),
   validateSearch: Schema.toStandardSchemaV1(searchSchema)
 })
 
+export const Page = createPageComponent(Route)
+
 type Status = 'verifying' | 'success' | 'error'
 
-function VerifyEmailPage() {
-  const { token, error: searchError, callbackURL } = Route.useSearch()
+function VerifyEmailRoutePage() {
+  return <VerifyEmailPage search={Route.useSearch()} />
+}
+
+function VerifyEmailPage({ search }: { search: typeof searchSchema.Type }) {
+  const { token, error: searchError, callbackURL } = search
   const navigate = useNavigate()
   const [status, setStatus] = useState<Status>(
     searchError ? 'error' : token ? 'verifying' : 'error'

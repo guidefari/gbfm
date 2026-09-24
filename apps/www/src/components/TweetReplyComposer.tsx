@@ -1,5 +1,5 @@
 import { Button, Input, Textarea, useToast } from '@gbfm/ui'
-import { Link } from '@tanstack/react-router'
+import { Link } from '@/lib/navigation'
 import { Loader2, MessageSquareQuote, Music4, TriangleAlert } from 'lucide-react'
 import { useSession } from '@/lib/auth-client'
 import { extractTweetSlugFromText, useCreateMicroPostReply, useMicroPostBySlug } from '@/lib/http'

@@ -1,6 +1,6 @@
 import { getMixRecencyLabel } from '@gbfm/core/utils'
 import type { SelectMdxCompiledEditorialPost } from '@gbfm/server/schemas'
-import { Link } from '@tanstack/react-router'
+import { Link } from '@/lib/navigation'
 import { Sparkles } from 'lucide-react'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 

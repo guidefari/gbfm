@@ -1,4 +1,4 @@
-import { useRouter } from '@tanstack/react-router'
+import { useRouter } from '@/lib/navigation'
 import type { MouseEvent } from 'react'
 import { useState } from 'react'
 import { MDXRendrr } from '@/components/MDXRendrr'

@@ -1,8 +1,10 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createPageComponent } from '@/components/PageApp'
+import { createFileRoute } from '@/lib/page'
 import { Schema } from 'effect'
 import { ContentManager } from '@/components/content/ContentManager'
 import { ContentPageShell } from '@/components/content/ContentPageShell'
 import { dashboardMixesSearchSchema } from '@/lib/dashboard-search-schema'
+import { useNavigate } from '@/lib/navigation'
 import { AdminAccessGuard } from './_components/-AdminAccessGuard'
 
 export const Route = createFileRoute('/dashboard/all/mixes')({
@@ -10,9 +12,11 @@ export const Route = createFileRoute('/dashboard/all/mixes')({
   component: AdminMixesPage
 })
 
+export const Page = createPageComponent(Route)
+
 function AdminMixesPage() {
   const { offset, sort, order } = Route.useSearch()
-  const navigate = Route.useNavigate()
+  const navigate = useNavigate()
 
   return (
     <ContentPageShell

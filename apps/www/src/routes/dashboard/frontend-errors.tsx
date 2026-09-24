@@ -1,5 +1,6 @@
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@gbfm/ui'
-import { createFileRoute } from '@tanstack/react-router'
+import { createPageComponent } from '@/components/PageApp'
+import { createFileRoute } from '@/lib/page'
 import { AlertTriangle, CheckCircle2, RadioTower } from 'lucide-react'
 import * as React from 'react'
 import { apiUrl, fetcher } from '@/lib/http'
@@ -8,6 +9,8 @@ import { AdminPage } from './_components/-AdminLayout'
 export const Route = createFileRoute('/dashboard/frontend-errors')({
   component: FrontendErrorsPage
 })
+
+export const Page = createPageComponent(Route)
 
 type DemoResult = {
   label: string

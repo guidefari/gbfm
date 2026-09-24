@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet } from '@tanstack/react-router'
+import { createFileRoute, Outlet } from '@/lib/page'
 
 export const Route = createFileRoute('/tweet')({
   component: TweetPage

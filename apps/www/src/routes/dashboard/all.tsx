@@ -1,4 +1,5 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createPageComponent } from '@/components/PageApp'
+import { createFileRoute, redirect } from '@/lib/page'
 
 export const Route = createFileRoute('/dashboard/all')({
   beforeLoad: ({ location }) => {
@@ -12,3 +13,5 @@ export const Route = createFileRoute('/dashboard/all')({
     })
   }
 })
+
+export const Page = createPageComponent(Route)

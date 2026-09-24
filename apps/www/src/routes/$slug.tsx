@@ -1,7 +1,10 @@
-import { createFileRoute, Link, Navigate } from '@tanstack/react-router'
+import { createPageComponent } from '@/components/PageApp'
+import { Link, Navigate } from '@/lib/navigation'
+import { createFileRoute } from '@/lib/page'
 import { Effect } from 'effect'
 import { PublicProfilePage } from '@/components/profile/PublicProfilePage'
 import { getApiClient } from '@/lib/api-client'
+import { nullOnNotFound } from '@/lib/http-errors'
 import {
   generateProfileSEO,
   generateResolvedShowSEO,
@@ -12,15 +15,11 @@ import {
 export const Route = createFileRoute('/$slug')({
   component: SlugPage,
   loader: async ({ params }) => {
-    try {
-      const client = await getApiClient()
-      const resolved = await Effect.runPromise(
-        client.resolve.resolveSlug({ params: { slug: params.slug } })
-      )
-      return { resolved }
-    } catch {
-      return { resolved: null }
-    }
+    const client = await getApiClient()
+    const resolved = await nullOnNotFound(
+      Effect.runPromise(client.resolve.resolveSlug({ params: { slug: params.slug } }))
+    )
+    return { resolved }
   },
   head: ({ loaderData, params }) => {
     if (!loaderData?.resolved) {
@@ -71,3 +70,5 @@ function SlugPage() {
 
   return <Navigate to='/shows/$showSlug' params={{ showSlug: resolved.data.slug }} />
 }
+
+export const Page = createPageComponent(Route)

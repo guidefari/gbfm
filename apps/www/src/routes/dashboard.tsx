@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet } from '@tanstack/react-router'
+import { createFileRoute, Outlet } from '@/lib/page'
 import { notFoundHead } from '@/lib/seo'
 
 export const Route = createFileRoute('/dashboard')({

@@ -1,4 +1,6 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createPageComponent } from '@/components/PageApp'
+import { createFileRoute } from '@/lib/page'
+import { Link } from '@/lib/navigation'
 import { type DjListItem, useDjs } from '@/lib/http'
 import { generateSEOHead, STATIC_PAGE_SEO } from '@/lib/seo'
 
@@ -94,3 +96,5 @@ function DjsSkeleton() {
     </div>
   )
 }
+
+export const Page = createPageComponent(Route)

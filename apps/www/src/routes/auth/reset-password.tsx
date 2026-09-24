@@ -1,12 +1,14 @@
 import { getFormString } from '@gbfm/core/utils'
 import { GenericAuthForm, isPasswordValid, PasswordChecklist } from '@gbfm/ui'
 import { useMutation } from '@tanstack/react-query'
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { Schema } from 'effect'
 import { useState } from 'react'
 import { AuthPageLayout, AuthStatusNotice } from '@/components/Auth/AuthPageLayout'
+import { createPageComponent } from '@/components/PageApp'
 import { useSession } from '@/lib/auth-client'
 import { apiUrl } from '@/lib/http'
+import { Link, useNavigate } from '@/lib/navigation'
+import { createFileRoute } from '@/lib/page'
 import { readResponseErrorMessage } from '@/lib/response'
 import { privateHead } from '@/lib/seo'
 
@@ -16,10 +18,12 @@ export const searchSchema = Schema.Struct({
 })
 
 export const Route = createFileRoute('/auth/reset-password')({
-  component: ResetPasswordPage,
+  component: ResetPasswordRoutePage,
   head: () => privateHead('Reset password'),
   validateSearch: Schema.toStandardSchemaV1(searchSchema)
 })
+
+export const Page = createPageComponent(Route)
 
 async function confirmInvite(token: string, password: string) {
   const res = await fetch(apiUrl('/invite/confirm'), {
@@ -33,8 +37,11 @@ async function confirmInvite(token: string, password: string) {
   }
 }
 
-function ResetPasswordPage() {
-  const search = Route.useSearch()
+function ResetPasswordRoutePage() {
+  return <ResetPasswordPage search={Route.useSearch()} />
+}
+
+function ResetPasswordPage({ search }: { search: typeof searchSchema.Type }) {
   const navigate = useNavigate()
   const { data: session, refetch: refetchSession } = useSession()
   const [password, setPassword] = useState('')

@@ -1,9 +1,12 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createPageComponent } from '@/components/PageApp'
+import { useNavigate } from '@/lib/navigation'
+import { createFileRoute } from '@/lib/page'
 import { Effect } from 'effect'
 import { RouteError } from '@/components/RouteError'
 import { ShowsBrowser } from '@/components/shows/ShowsBrowser'
 import { ShowsPageLayout } from '@/components/shows/ShowsPageLayout'
 import { getApiClient } from '@/lib/api-client'
+import { nullOnNotFound } from '@/lib/http-errors'
 import { generateSEOHead, generateShowSEO, notFoundHead } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
 
@@ -12,13 +15,16 @@ export const Route = createFileRoute('/shows/$showSlug')({
   errorComponent: ({ error }) => <RouteError error={error} />,
   loader: async ({ params }) => {
     const client = await getApiClient()
-    const show = await Effect.runPromise(
-      client.shows
-        .getShowBySlug({ params: { slug: params.showSlug } })
-        .pipe(
-          Effect.tapError((error) => captureException(error, { endpoint: 'shows.getShowBySlug' }))
-        )
+    const show = await nullOnNotFound(
+      Effect.runPromise(
+        client.shows
+          .getShowBySlug({ params: { slug: params.showSlug } })
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'shows.getShowBySlug' }))
+          )
+      )
     )
+    if (show === null) return { show: null }
     return {
       show: {
         ...show,
@@ -39,7 +45,7 @@ export const Route = createFileRoute('/shows/$showSlug')({
 
 function ShowPage() {
   const { show } = Route.useLoaderData()
-  const navigate = Route.useNavigate()
+  const navigate = useNavigate()
 
   if (!show) return <div className='p-4 text-center'>No data</div>
 
@@ -52,3 +58,5 @@ function ShowPage() {
     </ShowsPageLayout>
   )
 }
+
+export const Page = createPageComponent(Route)

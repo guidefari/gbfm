@@ -1,4 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createPageComponent } from '@/components/PageApp'
+import { createFileRoute } from '@/lib/page'
 import { generateSEOHead, STATIC_PAGE_SEO } from '@/lib/seo'
 
 export const Route = createFileRoute('/terms')({
@@ -17,3 +18,5 @@ function TermsPage() {
     </div>
   )
 }
+
+export const Page = createPageComponent(Route)

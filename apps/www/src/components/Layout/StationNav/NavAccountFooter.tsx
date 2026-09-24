@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from '@tanstack/react-router'
+import { Link, useLocation, useNavigate } from '@/lib/navigation'
 import { LayoutDashboard, LogIn, LogOut } from 'lucide-react'
 import { useCallback } from 'react'
 import { signOut, useSession } from '@/lib/auth-client'

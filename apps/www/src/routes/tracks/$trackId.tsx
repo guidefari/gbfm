@@ -1,8 +1,10 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createPageComponent } from '@/components/PageApp'
+import { createFileRoute } from '@/lib/page'
 import { Effect } from 'effect'
 import { LongPost } from '@/components/Layout/LongPost'
 import { RouteError } from '@/components/RouteError'
 import { getApiClient } from '@/lib/api-client'
+import { nullOnNotFound } from '@/lib/http-errors'
 import { generateSEOHead, generateTrackSEO, notFoundHead } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
 
@@ -11,13 +13,18 @@ export const Route = createFileRoute('/tracks/$trackId')({
   errorComponent: ({ error }) => <RouteError error={error} />,
   loader: async ({ params }) => {
     const client = await getApiClient()
-    const track = await Effect.runPromise(
-      client.audio
-        .getAudioBySlug({ params: { type: 'track', slug: params.trackId } })
-        .pipe(
-          Effect.tapError((error) => captureException(error, { endpoint: 'audio.getAudioBySlug' }))
-        )
+    const track = await nullOnNotFound(
+      Effect.runPromise(
+        client.audio
+          .getAudioBySlug({ params: { type: 'track', slug: params.trackId } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'audio.getAudioBySlug' })
+            )
+          )
+      )
     )
+    if (track === null) return { track: null }
     return {
       track: {
         ...track,
@@ -56,3 +63,5 @@ function TrackPage() {
     />
   )
 }
+
+export const Page = createPageComponent(Route)

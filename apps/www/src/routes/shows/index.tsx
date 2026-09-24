@@ -1,4 +1,6 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createPageComponent } from '@/components/PageApp'
+import { useNavigate } from '@/lib/navigation'
+import { createFileRoute } from '@/lib/page'
 import { Schema } from 'effect'
 import { useEffect, useMemo } from 'react'
 import { ShowsBrowser } from '@/components/shows/ShowsBrowser'
@@ -18,7 +20,7 @@ export const Route = createFileRoute('/shows/')({
 
 function ShowsListPage() {
   const { show: selectedSlug } = Route.useSearch()
-  const navigate = Route.useNavigate()
+  const navigate = useNavigate()
   const { data } = useAllShows()
 
   useEffect(() => {
@@ -45,3 +47,5 @@ function ShowsListPage() {
     </ShowsPageLayout>
   )
 }
+
+export const Page = createPageComponent(Route)

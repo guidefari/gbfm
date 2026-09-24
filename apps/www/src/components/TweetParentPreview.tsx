@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link } from '@/lib/navigation'
 import { useMicroPostById } from '@/lib/http'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
 

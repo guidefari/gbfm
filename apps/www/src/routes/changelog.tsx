@@ -1,6 +1,7 @@
 import changelogSource from 'virtual:repo-changelog'
 import { compile } from '@mdx-js/mdx'
-import { createFileRoute } from '@tanstack/react-router'
+import { createPageComponent } from '@/components/PageApp'
+import { createFileRoute } from '@/lib/page'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { generateSEOHead, STATIC_PAGE_SEO } from '@/lib/seo'
 
@@ -40,3 +41,5 @@ function ChangelogPage() {
     </main>
   )
 }
+
+export const Page = createPageComponent(Route)

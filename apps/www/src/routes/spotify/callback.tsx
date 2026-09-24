@@ -1,4 +1,6 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createPageComponent } from '@/components/PageApp'
+import { createFileRoute } from '@/lib/page'
+import { useNavigate } from '@/lib/navigation'
 import * as Effect from 'effect/Effect'
 import { useEffect, useState } from 'react'
 import {
@@ -76,3 +78,5 @@ function SpotifyCallback() {
     </div>
   )
 }
+
+export const Page = createPageComponent(Route)

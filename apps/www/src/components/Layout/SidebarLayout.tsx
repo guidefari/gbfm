@@ -1,5 +1,5 @@
 import { Button, cn, ScrollArea, Sheet, SheetContent, SheetTitle, SheetTrigger } from '@gbfm/ui'
-import { Link, type LinkProps, useLocation } from '@tanstack/react-router'
+import { Link, type LinkProps, useLocation } from '@/lib/navigation'
 import type { LucideIcon } from 'lucide-react'
 import { Menu } from 'lucide-react'
 import { type ReactNode, useState } from 'react'

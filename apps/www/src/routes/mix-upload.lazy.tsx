@@ -22,7 +22,6 @@ import {
   UploadSummaryCard
 } from '@gbfm/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createLazyFileRoute, useRouter } from '@tanstack/react-router'
 import * as Cause from 'effect/Cause'
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
@@ -38,6 +37,7 @@ import { useResumableUpload, type ResumableUploadError } from '@/hooks/useResuma
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { authClient, useSession } from '@/lib/auth-client'
 import { apiUrl, useAllShows, useAudioBySlugForEdit, useAudioTags } from '@/lib/http'
+import { useRouter } from '@/lib/navigation'
 import { runAppEffect } from '@/runtime'
 import {
   AudioUploadError,
@@ -65,11 +65,7 @@ type SubmitResult = SubmitSuccess | ResumableUploadOutcome
 const isSubmitSuccess = (value: SubmitResult): value is SubmitSuccess =>
   'audioUrl' in value && 'imageUrl' in value && 'record' in value
 
-export const Route = createLazyFileRoute('/mix-upload')({
-  component: MixUploadPage
-})
-
-const mixUploadSearchSchema = Schema.Struct({
+export const mixUploadSearchSchema = Schema.Struct({
   edit: Schema.optional(Schema.String),
   title: Schema.optional(Schema.String),
   description: Schema.optional(Schema.String),
@@ -146,10 +142,14 @@ const hasDraftContent = (d: MixUploadDraft): boolean =>
     d.creatorId
   )
 
-function MixUploadPage() {
+export function MixUploadPage({
+  search: rawSearch
+}: {
+  search: typeof mixUploadSearchSchema.Type
+}) {
   const { data: session } = useSession()
   const user = session?.user
-  const parsedSearch = Schema.decodeUnknownOption(mixUploadSearchSchema)(Route.useSearch())
+  const parsedSearch = Schema.decodeUnknownOption(mixUploadSearchSchema)(rawSearch)
   const search = Option.getOrElse(parsedSearch, () => emptyMixUploadSearch)
   const isEditMode = Boolean(search.edit)
   const editType = search.type || 'mix'

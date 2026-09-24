@@ -1,4 +1,6 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createPageComponent } from '@/components/PageApp'
+import { useNavigate } from '@/lib/navigation'
+import { createFileRoute } from '@/lib/page'
 import { Schema } from 'effect'
 import { X } from 'lucide-react'
 import { EditorialListItem } from '@/components/EditorialListItem'
@@ -19,7 +21,7 @@ export const Route = createFileRoute('/editorial/')({
 
 function EditorialListPage() {
   const { tag } = Route.useSearch()
-  const navigate = Route.useNavigate()
+  const navigate = useNavigate()
   const { data, error, isPending, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useEditorialPosts(tag)
 
@@ -82,3 +84,5 @@ function EditorialListPage() {
     </div>
   )
 }
+
+export const Page = createPageComponent(Route)

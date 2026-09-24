@@ -1,10 +1,12 @@
 import { getFormString } from '@gbfm/core/utils'
 import { GenericAuthForm } from '@gbfm/ui'
-import { createFileRoute, Link } from '@tanstack/react-router'
 import { MailCheck } from 'lucide-react'
 import { useState } from 'react'
 import { AuthPageLayout, AuthStatusNotice } from '@/components/Auth/AuthPageLayout'
+import { createPageComponent } from '@/components/PageApp'
 import { authClient } from '@/lib/auth-client'
+import { Link } from '@/lib/navigation'
+import { createFileRoute } from '@/lib/page'
 import { privateHead } from '@/lib/seo'
 import { useCooldown } from '@/lib/useCooldown'
 
@@ -12,6 +14,8 @@ export const Route = createFileRoute('/auth/forgot-password')({
   component: ForgotPasswordPage,
   head: () => privateHead('Forgot password')
 })
+
+export const Page = createPageComponent(Route)
 
 const RESEND_COOLDOWN_SECONDS = 30
 

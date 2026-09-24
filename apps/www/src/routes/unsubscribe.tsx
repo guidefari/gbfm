@@ -1,5 +1,6 @@
+import { createPageComponent } from '@/components/PageApp'
 import { Button, Input } from '@gbfm/ui'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from '@/lib/page'
 import { Schema } from 'effect'
 import { CheckCircle, Loader2, Mail, XCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -130,3 +131,5 @@ function RequestUnsubscribeForm() {
     </section>
   )
 }
+
+export const Page = createPageComponent(Route)

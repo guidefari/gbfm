@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link } from '@/lib/navigation'
 import { Bell, Plus } from 'lucide-react'
 import { useMusicReminders } from '@/lib/http'
 

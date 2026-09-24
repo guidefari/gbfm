@@ -7,18 +7,10 @@ import {
 } from '@gbfm/player'
 import { useAtomSet, useAtomValue } from '@effect/atom-react'
 import { Effect, Layer, ManagedRuntime, Option, Schema } from 'effect'
-import {
-  createContext,
-  use,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  type PropsWithChildren
-} from 'react'
+import { createContext, use, useCallback, useEffect, useMemo, type PropsWithChildren } from 'react'
 import { MediaSessionServiceLayer } from '@/services/media-session'
 import { PlayerStorageLive } from './storage'
-import { playbackAtom, visibilityAtom } from './atoms'
+import { playbackAtom, visibilityAtom, type PlaybackSnapshot } from './atoms'
 import { HtmlAudioEngineLayer } from './htmlAudioEngine'
 import {
   trackAudioCompleted,
@@ -58,6 +50,77 @@ type PlayerActions = {
 
 type AudioPlayback = Effect.Success<ReturnType<typeof makeAudioPlayback>>
 
+type PlayerRuntime = ManagedRuntime.ManagedRuntime<
+  AudioEngine | PlayerStorage | PlayReporter,
+  never
+>
+
+let playerRuntime: PlayerRuntime | null = null
+let audioPlayback: AudioPlayback | null = null
+const playbackListeners = new Set<(snapshot: PlaybackSnapshot) => void>()
+
+const publishPlaybackSnapshot = (snapshot: PlaybackSnapshot) => {
+  playbackListeners.forEach((listener) => listener(snapshot))
+}
+
+const ensurePlayerRuntime = () => {
+  if (playerRuntime !== null) return playerRuntime
+
+  const audio = new Audio()
+  const runtime = ManagedRuntime.make(
+    Layer.mergeAll(
+      HtmlAudioEngineLayer(audio).pipe(Layer.provideMerge(MediaSessionServiceLayer)),
+      PlayReporterLive
+    ).pipe(Layer.provideMerge(PlayerStorageLive))
+  )
+  playerRuntime = runtime
+
+  runtime.runFork(
+    Effect.gen(function* () {
+      const playback = yield* makeAudioPlayback(runtime, {
+        onTrackPlayed: (track) =>
+          Effect.sync(() => {
+            trackAudioPlayed({ trackId: track.id, title: track.title, slug: track.slug })
+          }),
+        onTrackPaused: ({ trackId, title, currentTime, duration }) =>
+          Effect.sync(() => {
+            trackAudioPaused({ trackId, title, currentTime, duration })
+          }),
+        onTrackCompleted: ({ trackId, title, duration }) =>
+          Effect.sync(() => {
+            trackAudioCompleted({ trackId, title, duration })
+          }),
+        onTrackSeek: ({ trackId, fromTime, toTime, method }) =>
+          Effect.sync(() => {
+            trackAudioSeek({ trackId, fromTime, toTime, method })
+          }),
+        onQueueAction: ({ action, trackId, queueLength }) =>
+          Effect.sync(() => {
+            trackAudioQueueAction({ action, trackId, queueLength })
+          }),
+        onError: (message, error) =>
+          Effect.sync(() => {
+            const parsedMessage = Schema.decodeUnknownOption(Schema.String)(error)
+            trackAudioError({
+              trackId: null,
+              title: 'unknown',
+              errorMessage:
+                error instanceof Error
+                  ? error.message
+                  : Option.getOrElse(parsedMessage, () => message)
+            })
+          })
+      })
+      audioPlayback = playback
+      const unsubscribe = playback.subscribeSnapshot(publishPlaybackSnapshot)
+      yield* Effect.addFinalizer(() => Effect.sync(unsubscribe))
+      return yield* Effect.never
+    }).pipe(Effect.scoped)
+  )
+
+  return runtime
+}
+
 const PlayerActionsContext = createContext<PlayerActions | null>(null)
 
 export const usePlayerActions = (): PlayerActions => {
@@ -70,78 +133,20 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
   const setPlaybackSnapshot = useAtomSet(playbackAtom)
   const visibility = useAtomValue(visibilityAtom)
   const setVisibility = useAtomSet(visibilityAtom)
-  const runtimeRef = useRef<ManagedRuntime.ManagedRuntime<
-    AudioEngine | PlayerStorage | PlayReporter,
-    never
-  > | null>(null)
-  const playbackRef = useRef<AudioPlayback | null>(null)
 
   const runPlayback = useCallback((operation: (playback: AudioPlayback) => Effect.Effect<void>) => {
-    const playback = playbackRef.current
-    const runtime = runtimeRef.current
+    const playback = audioPlayback
+    const runtime = playerRuntime
     if (!playback || !runtime) return
     runtime.runFork(operation(playback))
   }, [])
 
   useEffect(() => {
-    const audio = new Audio()
-
-    const runtime = ManagedRuntime.make(
-      Layer.mergeAll(
-        HtmlAudioEngineLayer(audio).pipe(Layer.provideMerge(MediaSessionServiceLayer)),
-        PlayReporterLive
-      ).pipe(Layer.provideMerge(PlayerStorageLive))
-    )
-    runtimeRef.current = runtime
-
-    runtime.runFork(
-      Effect.gen(function* () {
-        const playback = yield* makeAudioPlayback(runtime, {
-          onTrackPlayed: (track) =>
-            Effect.sync(() => {
-              trackAudioPlayed({ trackId: track.id, title: track.title, slug: track.slug })
-            }),
-          onTrackPaused: ({ trackId, title, currentTime, duration }) =>
-            Effect.sync(() => {
-              trackAudioPaused({ trackId, title, currentTime, duration })
-            }),
-          onTrackCompleted: ({ trackId, title, duration }) =>
-            Effect.sync(() => {
-              trackAudioCompleted({ trackId, title, duration })
-            }),
-          onTrackSeek: ({ trackId, fromTime, toTime, method }) =>
-            Effect.sync(() => {
-              trackAudioSeek({ trackId, fromTime, toTime, method })
-            }),
-          onQueueAction: ({ action, trackId, queueLength }) =>
-            Effect.sync(() => {
-              trackAudioQueueAction({ action, trackId, queueLength })
-            }),
-          onError: (message, error) =>
-            Effect.sync(() => {
-              const parsedMessage = Schema.decodeUnknownOption(Schema.String)(error)
-              trackAudioError({
-                trackId: null,
-                title: 'unknown',
-                errorMessage:
-                  error instanceof Error
-                    ? error.message
-                    : Option.getOrElse(parsedMessage, () => message)
-              })
-            })
-        })
-        playbackRef.current = playback
-        const unsubscribe = playback.subscribeSnapshot(setPlaybackSnapshot)
-        yield* Effect.addFinalizer(() => Effect.sync(unsubscribe))
-        return yield* Effect.never
-      }).pipe(Effect.scoped)
-    )
+    ensurePlayerRuntime()
+    playbackListeners.add(setPlaybackSnapshot)
 
     return () => {
-      playbackRef.current = null
-      runtimeRef.current = null
-      audio.pause()
-      void runtime.dispose()
+      playbackListeners.delete(setPlaybackSnapshot)
     }
   }, [setPlaybackSnapshot])
 

@@ -1,3 +1,4 @@
+import { createPageComponent } from '@/components/PageApp'
 import { useFeatureFlag } from '@gbfm/core/feature-flags'
 import {
   Badge,
@@ -9,7 +10,8 @@ import {
   useToast
 } from '@gbfm/ui'
 import type { SelectMdxCompiledAudio } from '@gbfm/server/schemas'
-import { createFileRoute, Link, useCanGoBack, useNavigate, useRouter } from '@tanstack/react-router'
+import { createFileRoute } from '@/lib/page'
+import { Link, useCanGoBack, useNavigate, useRouter } from '@/lib/navigation'
 import { Effect } from 'effect'
 import {
   ArrowLeft,
@@ -30,6 +32,7 @@ import { RouteError } from '@/components/RouteError'
 import { useSession } from '@/lib/auth-client'
 import { getApiClient } from '@/lib/api-client'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
+import { nullOnNotFound } from '@/lib/http-errors'
 import { useMixQRPdf, useShowById } from '@/lib/http'
 import { captureException } from '@/services/analytics'
 import { getShareUrl } from '@/lib/share'
@@ -42,13 +45,18 @@ export const Route = createFileRoute('/mixes/$mixId')({
   errorComponent: ({ error }) => <RouteError error={error} />,
   loader: async ({ params }) => {
     const client = await getApiClient()
-    const mix = await Effect.runPromise(
-      client.audio
-        .getAudioBySlug({ params: { type: 'mix', slug: params.mixId } })
-        .pipe(
-          Effect.tapError((error) => captureException(error, { endpoint: 'audio.getAudioBySlug' }))
-        )
+    const mix = await nullOnNotFound(
+      Effect.runPromise(
+        client.audio
+          .getAudioBySlug({ params: { type: 'mix', slug: params.mixId } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'audio.getAudioBySlug' })
+            )
+          )
+      )
     )
+    if (mix === null) return { mix: null }
     return {
       mix: {
         ...mix,
@@ -412,3 +420,5 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
     </div>
   )
 }
+
+export const Page = createPageComponent(Route)

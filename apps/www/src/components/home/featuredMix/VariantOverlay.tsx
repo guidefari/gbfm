@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link } from '@/lib/navigation'
 import { Disc3, Pause, Play, Radio } from 'lucide-react'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { toImageSrcSet, toImageUrl } from '@/lib/image'

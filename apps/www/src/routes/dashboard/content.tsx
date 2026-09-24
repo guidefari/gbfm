@@ -1,11 +1,11 @@
 import { canCreatePosts } from '@gbfm/core/roles'
-import { createFileRoute, redirect } from '@tanstack/react-router'
-import { signInRedirect } from '@/lib/route-guards'
+import { createPageComponent } from '@/components/PageApp'
+import { createFileRoute, redirect } from '@/lib/page'
 
 export const Route = createFileRoute('/dashboard/content')({
   beforeLoad: ({ context, location }) => {
     if (!context.auth.isAuthenticated) {
-      throw signInRedirect(location.href)
+      throw redirect({ to: '/auth/sign-in', search: { redirect: location.href } })
     }
     if (!canCreatePosts(context.auth.user?.role)) {
       throw redirect({ to: '/dashboard' })
@@ -20,3 +20,5 @@ export const Route = createFileRoute('/dashboard/content')({
     })
   }
 })
+
+export const Page = createPageComponent(Route)
