@@ -121,23 +121,13 @@ export const navConfig: NavItem[] = [
     minRole: 'editor'
   },
   {
-    id: 'create-tweet',
-    name: 'New tweet',
-    slug: '/new/tweet',
+    id: 'create-post',
+    name: 'New post',
+    slug: '/new',
     icon: <MessageSquare className={iconSytles} />,
     tier: 'create',
     surfaces: ['overlay'],
-    description: 'Capture a tweet into the editorial feed.',
-    minRole: 'editor'
-  },
-  {
-    id: 'create-editorial',
-    name: 'New editorial',
-    slug: '/new/editorial',
-    icon: <Newspaper className={iconSytles} />,
-    tier: 'create',
-    surfaces: ['overlay'],
-    description: 'Write a long-form editorial post.',
+    description: 'Capture a tweet or write a long-form editorial.',
     minRole: 'editor'
   },
   {

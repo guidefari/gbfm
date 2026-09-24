@@ -57,6 +57,7 @@ import { Route as LabelsIndexRouteImport } from './routes/labels/index'
 import { Route as LabelsLabelSlugRouteImport } from './routes/labels/$labelSlug'
 import { Route as MixesIndexRouteImport } from './routes/mixes/index'
 import { Route as MixesMixIdRouteImport } from './routes/mixes/$mixId'
+import { Route as NewIndexRouteImport } from './routes/new/index'
 import { Route as NewEditorialRouteImport } from './routes/new/editorial'
 import { Route as NewTweetRouteImport } from './routes/new/tweet'
 import { Route as ProfileUsernameRouteImport } from './routes/profile/$username'
@@ -319,6 +320,11 @@ const MixesMixIdRoute = MixesMixIdRouteImport.update({
   path: '/$mixId',
   getParentRoute: () => MixesRouteRoute,
 } as any)
+const NewIndexRoute = NewIndexRouteImport.update({
+  id: '/new/',
+  path: '/new/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NewEditorialRoute = NewEditorialRouteImport.update({
   id: '/new/editorial',
   path: '/new/editorial',
@@ -487,6 +493,7 @@ export interface FileRoutesByFullPath {
   '/editorial/': typeof EditorialIndexRoute
   '/labels/': typeof LabelsIndexRoute
   '/mixes/': typeof MixesIndexRoute
+  '/new/': typeof NewIndexRoute
   '/shows/': typeof ShowsIndexRoute
   '/tags/': typeof TagsIndexRoute
   '/tweet/': typeof TweetIndexRoute
@@ -553,6 +560,7 @@ export interface FileRoutesByTo {
   '/editorial': typeof EditorialIndexRoute
   '/labels': typeof LabelsIndexRoute
   '/mixes': typeof MixesIndexRoute
+  '/new': typeof NewIndexRoute
   '/shows': typeof ShowsIndexRoute
   '/tags': typeof TagsIndexRoute
   '/tweet': typeof TweetIndexRoute
@@ -625,6 +633,7 @@ export interface FileRoutesById {
   '/editorial/': typeof EditorialIndexRoute
   '/labels/': typeof LabelsIndexRoute
   '/mixes/': typeof MixesIndexRoute
+  '/new/': typeof NewIndexRoute
   '/shows/': typeof ShowsIndexRoute
   '/tags/': typeof TagsIndexRoute
   '/tweet/': typeof TweetIndexRoute
@@ -698,6 +707,7 @@ export interface FileRouteTypes {
     | '/editorial/'
     | '/labels/'
     | '/mixes/'
+    | '/new/'
     | '/shows/'
     | '/tags/'
     | '/tweet/'
@@ -764,6 +774,7 @@ export interface FileRouteTypes {
     | '/editorial'
     | '/labels'
     | '/mixes'
+    | '/new'
     | '/shows'
     | '/tags'
     | '/tweet'
@@ -835,6 +846,7 @@ export interface FileRouteTypes {
     | '/editorial/'
     | '/labels/'
     | '/mixes/'
+    | '/new/'
     | '/shows/'
     | '/tags/'
     | '/tweet/'
@@ -878,6 +890,7 @@ export interface RootRouteChildren {
   SpotifyCallbackRoute: typeof SpotifyCallbackRoute
   TagsTagRoute: typeof TagsTagRoute
   DjsIndexRoute: typeof DjsIndexRoute
+  NewIndexRoute: typeof NewIndexRoute
   ShowsIndexRoute: typeof ShowsIndexRoute
   TagsIndexRoute: typeof TagsIndexRoute
 }
@@ -1220,6 +1233,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MixesMixIdRouteImport
       parentRoute: typeof MixesRouteRoute
     }
+    '/new/': {
+      id: '/new/'
+      path: '/new'
+      fullPath: '/new/'
+      preLoaderRoute: typeof NewIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/new/editorial': {
       id: '/new/editorial'
       path: '/new/editorial'
@@ -1554,6 +1574,7 @@ const rootRouteChildren: RootRouteChildren = {
   SpotifyCallbackRoute: SpotifyCallbackRoute,
   TagsTagRoute: TagsTagRoute,
   DjsIndexRoute: DjsIndexRoute,
+  NewIndexRoute: NewIndexRoute,
   ShowsIndexRoute: ShowsIndexRoute,
   TagsIndexRoute: TagsIndexRoute,
 }

@@ -1,26 +1,13 @@
-'use client'
-
-import { canCreatePosts } from '@gbfm/core/roles'
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { Schema } from 'effect'
-import { signInRedirect } from '@/lib/route-guards'
-import { privateHead } from '@/lib/seo'
-import { TweetCapturePage } from './-TweetCapturePage'
 
 const searchSchema = Schema.Struct({
   edit: Schema.optional(Schema.String)
 })
 
 export const Route = createFileRoute('/new/tweet')({
-  head: () => privateHead('Write a post'),
-  beforeLoad: ({ context, location }) => {
-    if (!context.auth.isAuthenticated) {
-      throw signInRedirect(location.href)
-    }
-    if (!canCreatePosts(context.auth.user?.role)) {
-      throw redirect({ to: '/' })
-    }
-  },
   validateSearch: Schema.toStandardSchemaV1(searchSchema),
-  component: TweetCapturePage
+  beforeLoad: ({ search }) => {
+    throw redirect({ to: '/new', search: { mode: 'tweet', edit: search.edit } })
+  }
 })

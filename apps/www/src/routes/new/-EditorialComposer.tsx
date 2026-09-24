@@ -1,8 +1,8 @@
 'use client'
 
 import { toast } from '@gbfm/ui'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, useRouter, useSearch } from '@tanstack/react-router'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Link, useRouter } from '@tanstack/react-router'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import {
   type ChangeEvent,
@@ -16,6 +16,7 @@ import {
 import { useSession } from '@/lib/auth-client'
 import { apiUrl, fetcher } from '@/lib/http'
 import { uploadImageDirectToS3 } from '@/lib/upload/image-upload'
+import { useContentEdit } from './-useContentEdit'
 import { EditorialMetadataPanel } from './-EditorialMetadataSidebar'
 import type {
   EditorialCreator,
@@ -78,15 +79,12 @@ function createEditorSnapshot(
   })
 }
 
-export function EditorialPage() {
-  const search = useSearch({ from: '/new/editorial' })
-  const isEditMode = Boolean(search.edit)
+export function EditorialComposer({ editSlug }: { editSlug: string | undefined }) {
   const queryClient = useQueryClient()
   const router = useRouter()
   const { data: session } = useSession()
   const user = session?.user
   const artworkUploadId = useId()
-  const [workspace, setWorkspace] = useState<HTMLDialogElement | null>(null)
   const initializedNewCreator = useRef(false)
 
   const [formData, setFormData] = useState<EditorialFormData>(createEmptyFormData)
@@ -95,14 +93,14 @@ export function EditorialPage() {
   const [uploadStep, setUploadStep] = useState<'idle' | 'uploading-image' | 'saving'>('idle')
   const [selectedCreators, setSelectedCreators] = useState<EditorialCreator[]>([])
   const [pendingMusicCount, setPendingMusicCount] = useState(0)
-  const [slugIsManual, setSlugIsManual] = useState(isEditMode)
+  const [slugIsManual, setSlugIsManual] = useState(Boolean(editSlug))
   const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null)
 
-  const { data: existingPost, isPending: loadingPost } = useQuery({
-    queryKey: ['post', search.edit],
-    queryFn: () => fetcher<EditorialPost>(apiUrl(`/content/posts/${search.edit}/edit`)),
-    enabled: isEditMode && Boolean(search.edit)
-  })
+  const {
+    isEditMode,
+    data: existingPost,
+    isPending: loadingPost
+  } = useContentEdit<EditorialPost>(editSlug)
 
   useEffect(() => {
     if (!existingPost) return
@@ -134,13 +132,6 @@ export function EditorialPage() {
       if (artworkPreview) URL.revokeObjectURL(artworkPreview)
     }
   }, [artworkPreview])
-
-  useEffect(() => {
-    if (!workspace || workspace.open) return () => {}
-
-    workspace.showModal()
-    return () => workspace.close()
-  }, [workspace])
 
   const currentSnapshot = useMemo(
     () =>
@@ -201,9 +192,7 @@ export function EditorialPage() {
         creatorIds: creatorIds.length > 0 ? creatorIds : [user.id]
       }
 
-      const endpoint = isEditMode
-        ? apiUrl(`/content/posts/${search.edit}`)
-        : apiUrl('/content/post')
+      const endpoint = isEditMode ? apiUrl(`/content/posts/${editSlug}`) : apiUrl('/content/post')
 
       return fetcher<EditorialPost>(endpoint, {
         method: isEditMode ? 'PATCH' : 'POST',
@@ -212,7 +201,7 @@ export function EditorialPage() {
     },
     onSuccess: async (savedPost, savedRequest) => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['post', search.edit] }),
+        queryClient.invalidateQueries({ queryKey: ['post', editSlug] }),
         queryClient.invalidateQueries({
           queryKey: ['post', 'editorial', savedPost.slug]
         }),
@@ -245,8 +234,8 @@ export function EditorialPage() {
       if (savedRequest.formData.draft) {
         if (!isEditMode) {
           void router.navigate({
-            to: '/new/editorial',
-            search: { edit: savedPost.id },
+            to: '/new',
+            search: { mode: 'editorial', edit: savedPost.id },
             replace: true
           })
         }
@@ -359,32 +348,15 @@ export function EditorialPage() {
 
   const navigation =
     isEditMode && existingPost ? (
-      <div className='flex items-center gap-3 text-xs text-muted-foreground'>
-        <Link
-          to='/editorial/$slug'
-          params={{ slug: existingPost.slug }}
-          onClick={confirmNavigation}
-          className='inline-flex items-center gap-1 hover:text-foreground'>
-          <ArrowLeft className='size-3.5' />
-          Back to post
-        </Link>
-        <Link
-          to='/new/tweet'
-          search={{ edit: undefined }}
-          onClick={confirmNavigation}
-          className='hover:text-foreground'>
-          Tweet capture
-        </Link>
-      </div>
-    ) : (
       <Link
-        to='/new/tweet'
-        search={{ edit: undefined }}
+        to='/editorial/$slug'
+        params={{ slug: existingPost.slug }}
         onClick={confirmNavigation}
-        className='text-xs text-muted-foreground hover:text-foreground'>
-        Switch to tweet capture
+        className='inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground'>
+        <ArrowLeft className='size-3.5' />
+        Back to post
       </Link>
-    )
+    ) : null
 
   const metadata = (
     <EditorialMetadataPanel
@@ -414,10 +386,7 @@ export function EditorialPage() {
   )
 
   return (
-    <dialog
-      ref={setWorkspace}
-      onCancel={(event) => event.preventDefault()}
-      className='m-0 h-dvh max-h-none w-screen max-w-none overflow-y-auto border-0 bg-background p-0 px-4 text-foreground backdrop:bg-background sm:px-6 lg:px-8'>
+    <div className='text-foreground'>
       <EditorialWorkspaceHeader
         title={isEditMode ? 'Edit editorial' : 'New editorial'}
         navigation={navigation}
@@ -432,12 +401,12 @@ export function EditorialPage() {
       <div className='mx-auto max-w-4xl'>
         <EditorialWritingCanvas
           formData={formData}
-          portalContainer={workspace}
+          portalContainer={null}
           metadata={metadata}
           onInputChange={handleTextInputChange}
           onPendingMusicChange={setPendingMusicCount}
         />
       </div>
-    </dialog>
+    </div>
   )
 }

@@ -6,7 +6,7 @@ import { normalizeSlugBase } from '@gbfm/core/utils/slug'
 import { Button, Label, MusicEntityLinksPanel, Textarea, toast } from '@gbfm/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
-import { Link, useRouter, useSearch } from '@tanstack/react-router'
+import { Link, useRouter } from '@tanstack/react-router'
 import { ArrowLeft, Loader2, MessageSquareQuote, Music4, Send, Tag, X } from 'lucide-react'
 import { type KeyboardEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { PostPageHeader } from '@/components/PostPageHeader'
@@ -23,6 +23,7 @@ import {
   usePostTags,
   useUpdateAdminEntityLinkStatus
 } from '@/lib/http'
+import { useContentEdit } from './-useContentEdit'
 import { useResolveMusicEntity } from '@/lib/music-entity-resolution'
 import {
   type ActiveField,
@@ -415,13 +416,11 @@ function TweetPreview({
   )
 }
 
-export function TweetCapturePage() {
+export function TweetComposer({ editSlug }: { editSlug: string | undefined }) {
   const queryClient = useQueryClient()
   const router = useRouter()
   const { data: session } = useSession()
   const user = session?.user
-  const search = useSearch({ from: '/new/tweet' })
-  const isEditMode = Boolean(search.edit)
 
   const [musicUrl, setMusicUrl] = useState('')
   const [tweet, setTweet] = useState('')
@@ -430,11 +429,11 @@ export function TweetCapturePage() {
   const [caret, setCaret] = useState(0)
   const { data: availableTags } = usePostTags()
 
-  const { data: existingPost, isPending: loadingPost } = useQuery({
-    queryKey: ['post', search.edit],
-    queryFn: () => fetcher<PostItem>(apiUrl(`/content/posts/${search.edit}/edit`)),
-    enabled: isEditMode && Boolean(search.edit)
-  })
+  const {
+    isEditMode,
+    data: existingPost,
+    isPending: loadingPost
+  } = useContentEdit<PostItem>(editSlug)
 
   const { data: existingMusicEntity } = useQuery<MusicEntityPreview>({
     queryKey: ['music-entity', existingPost?.musicEntityType, existingPost?.musicEntityId],
@@ -726,7 +725,7 @@ export function TweetCapturePage() {
     },
     onSuccess: async (savedPost) => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['post', search.edit] }),
+        queryClient.invalidateQueries({ queryKey: ['post', editSlug] }),
         queryClient.invalidateQueries({
           queryKey: ['post', 'micro', savedPost.slug]
         }),
@@ -784,7 +783,7 @@ export function TweetCapturePage() {
   const slug = normalizeSlugBase(publishedTweet || 'tweet') || 'tweet'
 
   return (
-    <div className='mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8'>
+    <>
       <PostPageHeader
         title={isEditMode ? 'Edit Tweet' : 'Tweet Capture'}
         description={
@@ -803,14 +802,6 @@ export function TweetCapturePage() {
               Back to tweet
             </Link>
           ) : undefined
-        }
-        switchLink={
-          <Link
-            to='/new/editorial'
-            search={{ edit: undefined }}
-            className='mt-2 inline-flex items-center gap-1 text-base text-muted-foreground underline underline-offset-4 hover:text-foreground'>
-            Switch to editorial
-          </Link>
         }
       />
 
@@ -970,6 +961,6 @@ export function TweetCapturePage() {
           tags={tags}
         />
       </div>
-    </div>
+    </>
   )
 }
