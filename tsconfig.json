@@ -3,5 +3,5 @@
   "compilerOptions": {
     "noEmit": true
   },
-  "include": ["alchemy.run.ts", "alchemy/**/*.ts"]
+  "include": ["alchemy.run.ts", "alchemy/**/*.ts", "cmdz.ts", "cmdz-module.d.ts"]
 }

@@ -5,8 +5,7 @@
   "private": true,
   "packageManager": "bun@1.4.0",
   "scripts": {
-    "dev": "turbo run dev:alchemy --ui=tui",
-    "dev:full": "turbo run dev:alchemy dev:mobile dev:ui dev:email dev:otel --ui=tui",
+    "dev": "cmdz",
     "dev:alchemy": "bunx alchemy dev --stage=dev",
     "dev:mobile": "bun --filter @gbfm/mobile start -- --lan",
     "dev:ui": "bun run ui:playground",

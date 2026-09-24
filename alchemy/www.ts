@@ -33,7 +33,9 @@ export const website = ({ config, websiteConfig, api, socialImages, apiUrl }: We
         runWorkerFirst: true
       },
       observability: workerObservability(config.isProduction),
-      ...(config.isLocalDev ? { dev: {} } : undefined),
+      ...(config.isLocalDev
+        ? { dev: { mode: 'external', url: 'https://gbfm.localhost' } }
+        : undefined),
       env: {
         API: api,
         SOCIAL_IMAGES: socialImages,
