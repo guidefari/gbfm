@@ -373,18 +373,6 @@ export function EditorialComposer({ editSlug }: { editSlug: string | undefined }
       onRemoveArtwork={removeArtwork}
       onThumbnailUrlChange={(value) => handleTextInputChange('thumbnailUrl', value)}
       onSlugChange={(value) => handleTextInputChange('slug', value)}
-      onAddTag={(tag) =>
-        setFormData((previous) => ({
-          ...previous,
-          tags: Array.from(new Set([...previous.tags, tag]))
-        }))
-      }
-      onRemoveTag={(tag) =>
-        setFormData((previous) => ({
-          ...previous,
-          tags: previous.tags.filter((existing) => existing !== tag)
-        }))
-      }
       onCreatorChange={handleCreatorChange}
     />
   )

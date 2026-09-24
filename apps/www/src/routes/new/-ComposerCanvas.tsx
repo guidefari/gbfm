@@ -102,7 +102,7 @@ export function ComposerCanvas({
   }
 
   return (
-    <div className='mx-auto max-w-4xl py-8'>
+    <div className='pt-8'>
       <div className='pb-6'>
         {titleHint ? <div className='mb-2 flex justify-end'>{titleHint}</div> : null}
         <Label htmlFor='composer-title' className='sr-only'>
