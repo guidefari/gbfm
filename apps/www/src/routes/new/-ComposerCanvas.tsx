@@ -1,7 +1,7 @@
 'use client'
 
-import { Input, Label, Textarea } from '@gbfm/ui'
-import { type ReactNode, useCallback, useRef } from 'react'
+import { Label, Textarea } from '@gbfm/ui'
+import { type ReactNode, useCallback, useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Effect } from 'effect'
 import { toast } from '@gbfm/ui'
@@ -61,6 +61,18 @@ export function ComposerCanvas({
     ? `${session.user.id}:${session.user.role ?? 'user'}`
     : 'anonymous'
   const editorRef = useRef<SimpleMarkdownEditorHandle>(null)
+  const autoGrow = useRef<HTMLTextAreaElement>(null)
+
+  const resizeTitle = useCallback(() => {
+    const node = autoGrow.current
+    if (!node) return
+    node.style.height = 'auto'
+    node.style.height = `${node.scrollHeight}px`
+  }, [])
+
+  useEffect(() => {
+    resizeTitle()
+  }, [resizeTitle, title])
 
   const insertBlock = useCallback((markdown: string) => {
     editorRef.current?.insertAtCursor(`\n\n${markdown.trim()}\n\n`)
@@ -102,14 +114,16 @@ export function ComposerCanvas({
         <Label htmlFor='composer-title' className='sr-only'>
           Title
         </Label>
-        <Input
+        <textarea
           id='composer-title'
+          ref={autoGrow}
           value={title}
           onChange={(event) => onTitleChange(event.target.value)}
+          onInput={resizeTitle}
           placeholder={titlePlaceholder}
           autoFocus
-          style={{ boxShadow: 'none' }}
-          className='h-auto !border-0 bg-transparent px-0 text-3xl font-semibold tracking-tight text-foreground !shadow-none placeholder:text-muted-foreground/55 focus-visible:!ring-0 sm:text-4xl'
+          rows={1}
+          className='block w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-3xl font-semibold leading-tight tracking-tight text-foreground caret-foreground outline-none placeholder:text-muted-foreground/55 sm:text-4xl'
         />
         {onDescriptionChange ? (
           <div className='mt-3 max-w-3xl'>
