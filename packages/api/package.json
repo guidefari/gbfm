@@ -22,6 +22,7 @@
     "./newsletter": "./src/newsletter.ts",
     "./file-manager": "./src/file-manager.ts",
     "./spotify": "./src/spotify.ts",
+    "./telemetry": "./src/telemetry.ts",
     "./shows": "./src/shows.ts",
     "./user": "./src/user.ts",
     "./upload": "./src/upload.ts",

@@ -1,3 +1,17 @@
+# [2.100.0](https://github.com/guidefari/gbfm/compare/v2.99.0...v2.100.0) (2026-09-24)
+
+
+### Bug Fixes
+
+* **www:** align composer widths and surface editorial artwork ([61bf5a9](https://github.com/guidefari/gbfm/commit/61bf5a95e62d841d332adacdb298bb4c275b976d))
+
+
+### Features
+
+* **www:** add # tag autocomplete to the markdown editor ([7d8b692](https://github.com/guidefari/gbfm/commit/7d8b69260daaaf767d673784147913492045c3dd)), closes [#fragment](https://github.com/guidefari/gbfm/issues/fragment)
+* **www:** hide editor view-mode toggle in the composer ([4923b7c](https://github.com/guidefari/gbfm/commit/4923b7ccc733faf9df0b798e6a4916766f4b4571))
+* **www:** two-step composer with autosave drafts and a publish modal ([7edc96f](https://github.com/guidefari/gbfm/commit/7edc96f45ca63704606ae8fa1cc99e4e237272d2))
+
 # [2.99.0](https://github.com/guidefari/gbfm/compare/v2.98.1...v2.99.0) (2026-09-24)
 
 

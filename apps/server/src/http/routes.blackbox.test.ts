@@ -140,6 +140,50 @@ describe('better-auth route (Step 2c)', () => {
   })
 })
 
+describe('client telemetry', () => {
+  it('accepts bounded anonymous navigation timings', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/telemetry/navigation', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          fromRoute: '/',
+          toRoute: '/tweet/:slug',
+          navigationType: 'push',
+          direction: 'forward',
+          status: 'ok',
+          preparationMs: 7118.3,
+          swapMs: 11.4,
+          pageLoadMs: 2.5,
+          totalMs: 7137
+        })
+      })
+    )
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toBe(true)
+  })
+
+  it('rejects invalid timing values', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/telemetry/navigation', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          fromRoute: '/',
+          toRoute: '/tweets',
+          navigationType: 'push',
+          direction: 'forward',
+          status: 'ok',
+          totalMs: -1
+        })
+      })
+    )
+
+    expect(res.status).toBe(400)
+  })
+})
+
 describe('health (HttpApiBuilder group, Step 3a)', () => {
   it('GET /health/live returns 200 without checking the database', async () => {
     const res = await webHandler.handler(new Request('http://localhost/health/live'))

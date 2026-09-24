@@ -8,4 +8,6 @@ Production exports 100 percent of traces and logs without retaining another copy
 
 The API request handler creates a `gbfm.api.request` custom span with the HTTP method and URL path. Cloudflare automatically nests supported platform operations such as D1, R2, KV, Durable Object, and outbound fetch calls beneath the active request trace.
 
+Astro client transitions post bounded route names and lifecycle durations to the API after each navigation. The API records every event as a `client.navigation` span with `navigation.preparation_ms`, `navigation.swap_ms`, `navigation.page_load_ms`, and `navigation.total_ms` attributes. Route parameters and query values are never exported.
+
 Open the provisioned `GBFM / Cloudflare Workers` dashboard at `https://grafana.planetaryescape.co.za` to inspect invocation rate, failures, p95 duration, trigger mix, top spans, traces, and logs.
