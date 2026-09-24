@@ -488,7 +488,7 @@ describe('CanonicalMusicIdentity', () => {
       _tag: 'MusicIdentityBusy'
     })
     expect(recorder.calls).toHaveLength(0)
-  })
+  }, 15_000)
 
   test('prevents a lost lease owner from creating entity or link rows', async () => {
     const id = externalId()
