@@ -1,3 +1,10 @@
+## [2.98.1](https://github.com/guidefari/gbfm/compare/v2.98.0...v2.98.1) (2026-09-24)
+
+
+### Bug Fixes
+
+* **music:** make playlist enrichment durable ([#346](https://github.com/guidefari/gbfm/issues/346)) ([3e5eae8](https://github.com/guidefari/gbfm/commit/3e5eae856d927d02d1cb1334362a95124f99b81f)), closes [#342](https://github.com/guidefari/gbfm/issues/342)
+
 # [2.98.0](https://github.com/guidefari/gbfm/compare/v2.97.1...v2.98.0) (2026-09-24)
 
 
