@@ -1,3 +1,11 @@
+# [2.98.0](https://github.com/guidefari/gbfm/compare/v2.97.1...v2.98.0) (2026-09-24)
+
+
+### Features
+
+* tweet dx ([0e65f77](https://github.com/guidefari/gbfm/commit/0e65f7704dcc969511bb1be1b21a779ffae8ddab))
+* **www:** redesign tweet capture around the resolve-first flow ([0da7c1a](https://github.com/guidefari/gbfm/commit/0da7c1a9e0399e22f6611823a7f8e7ea9b0728ee))
+
 ## [2.97.1](https://github.com/guidefari/gbfm/compare/v2.97.0...v2.97.1) (2026-09-23)
 
 
