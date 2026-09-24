@@ -1,7 +1,7 @@
 const TAG_CHAR = String.raw`[\w&-]`
-const HASHTAG_GLOBAL = new RegExp(`#(${TAG_CHAR}+)`, 'g')
+const HASHTAG_GLOBAL = new RegExp(`(^|\\s)#(${TAG_CHAR}+)`, 'g')
 const TRAILING_FRAGMENT = new RegExp(`(^|\\s)#(${TAG_CHAR}*)$`)
-const HASHTAG_STRIP = new RegExp(`(^|\\s)#${TAG_CHAR}*`, 'g')
+const HASHTAG_STRIP = new RegExp(`(^|\\s)#${TAG_CHAR}+`, 'g')
 
 export const TWEET_MAX_LENGTH = 255
 
@@ -22,7 +22,7 @@ export function extractHashtags(...fields: string[]): string[] {
   const result: string[] = []
   for (const field of fields) {
     for (const match of field.matchAll(HASHTAG_GLOBAL)) {
-      const tag = match[1].toLowerCase()
+      const tag = match[2].toLowerCase()
       if (!seen.has(tag)) {
         seen.add(tag)
         result.push(tag)

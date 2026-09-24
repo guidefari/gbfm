@@ -26,6 +26,10 @@ describe('extractHashtags', () => {
   it('keeps ampersands and hyphens inside tags', () => {
     expect(extractHashtags('#r&b #new-release')).toEqual(['r&b', 'new-release'])
   })
+
+  it('ignores a hash attached to the end of a word', () => {
+    expect(extractHashtags('wow#idm')).toEqual([])
+  })
 })
 
 describe('stripHashtags', () => {
@@ -39,6 +43,11 @@ describe('stripHashtags', () => {
 
   it('does not treat a bare hash mid-word as a tag boundary error', () => {
     expect(stripHashtags('great #house set')).toBe('great set')
+  })
+
+  it('leaves a markdown heading hash intact', () => {
+    expect(stripHashtags('# My take')).toBe('# My take')
+    expect(stripHashtags('## Section')).toBe('## Section')
   })
 })
 
