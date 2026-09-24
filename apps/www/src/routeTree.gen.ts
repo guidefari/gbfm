@@ -34,12 +34,10 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardAdminRouteImport } from './routes/dashboard/admin'
 import { Route as DashboardAllRouteImport } from './routes/dashboard/all'
 import { Route as DashboardAppearanceRouteImport } from './routes/dashboard/appearance'
-import { Route as DashboardBlueskyRouteImport } from './routes/dashboard/bluesky'
 import { Route as DashboardContentRouteImport } from './routes/dashboard/content'
 import { Route as DashboardEmailRouteImport } from './routes/dashboard/email'
 import { Route as DashboardEmailLogsRouteImport } from './routes/dashboard/email-logs'
 import { Route as DashboardFrontendErrorsRouteImport } from './routes/dashboard/frontend-errors'
-import { Route as DashboardImportsRouteImport } from './routes/dashboard/imports'
 import { Route as DashboardIntegrationsRouteImport } from './routes/dashboard/integrations'
 import { Route as DashboardMusicRouteImport } from './routes/dashboard/music'
 import { Route as DashboardNewsletterRouteImport } from './routes/dashboard/newsletter'
@@ -206,11 +204,6 @@ const DashboardAppearanceRoute = DashboardAppearanceRouteImport.update({
   path: '/appearance',
   getParentRoute: () => DashboardRoute,
 } as any)
-const DashboardBlueskyRoute = DashboardBlueskyRouteImport.update({
-  id: '/bluesky',
-  path: '/bluesky',
-  getParentRoute: () => DashboardRoute,
-} as any)
 const DashboardContentRoute = DashboardContentRouteImport.update({
   id: '/content',
   path: '/content',
@@ -229,11 +222,6 @@ const DashboardEmailLogsRoute = DashboardEmailLogsRouteImport.update({
 const DashboardFrontendErrorsRoute = DashboardFrontendErrorsRouteImport.update({
   id: '/frontend-errors',
   path: '/frontend-errors',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardImportsRoute = DashboardImportsRouteImport.update({
-  id: '/imports',
-  path: '/imports',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardIntegrationsRoute = DashboardIntegrationsRouteImport.update({
@@ -464,12 +452,10 @@ export interface FileRoutesByFullPath {
   '/dashboard/admin': typeof DashboardAdminRoute
   '/dashboard/all': typeof DashboardAllRouteWithChildren
   '/dashboard/appearance': typeof DashboardAppearanceRoute
-  '/dashboard/bluesky': typeof DashboardBlueskyRoute
   '/dashboard/content': typeof DashboardContentRouteWithChildren
   '/dashboard/email': typeof DashboardEmailRoute
   '/dashboard/email-logs': typeof DashboardEmailLogsRoute
   '/dashboard/frontend-errors': typeof DashboardFrontendErrorsRoute
-  '/dashboard/imports': typeof DashboardImportsRoute
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
   '/dashboard/music': typeof DashboardMusicRoute
   '/dashboard/newsletter': typeof DashboardNewsletterRoute
@@ -532,12 +518,10 @@ export interface FileRoutesByTo {
   '/dashboard/admin': typeof DashboardAdminRoute
   '/dashboard/all': typeof DashboardAllRouteWithChildren
   '/dashboard/appearance': typeof DashboardAppearanceRoute
-  '/dashboard/bluesky': typeof DashboardBlueskyRoute
   '/dashboard/content': typeof DashboardContentRouteWithChildren
   '/dashboard/email': typeof DashboardEmailRoute
   '/dashboard/email-logs': typeof DashboardEmailLogsRoute
   '/dashboard/frontend-errors': typeof DashboardFrontendErrorsRoute
-  '/dashboard/imports': typeof DashboardImportsRoute
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
   '/dashboard/music': typeof DashboardMusicRoute
   '/dashboard/newsletter': typeof DashboardNewsletterRoute
@@ -606,12 +590,10 @@ export interface FileRoutesById {
   '/dashboard/admin': typeof DashboardAdminRoute
   '/dashboard/all': typeof DashboardAllRouteWithChildren
   '/dashboard/appearance': typeof DashboardAppearanceRoute
-  '/dashboard/bluesky': typeof DashboardBlueskyRoute
   '/dashboard/content': typeof DashboardContentRouteWithChildren
   '/dashboard/email': typeof DashboardEmailRoute
   '/dashboard/email-logs': typeof DashboardEmailLogsRoute
   '/dashboard/frontend-errors': typeof DashboardFrontendErrorsRoute
-  '/dashboard/imports': typeof DashboardImportsRoute
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
   '/dashboard/music': typeof DashboardMusicRoute
   '/dashboard/newsletter': typeof DashboardNewsletterRoute
@@ -681,12 +663,10 @@ export interface FileRouteTypes {
     | '/dashboard/admin'
     | '/dashboard/all'
     | '/dashboard/appearance'
-    | '/dashboard/bluesky'
     | '/dashboard/content'
     | '/dashboard/email'
     | '/dashboard/email-logs'
     | '/dashboard/frontend-errors'
-    | '/dashboard/imports'
     | '/dashboard/integrations'
     | '/dashboard/music'
     | '/dashboard/newsletter'
@@ -749,12 +729,10 @@ export interface FileRouteTypes {
     | '/dashboard/admin'
     | '/dashboard/all'
     | '/dashboard/appearance'
-    | '/dashboard/bluesky'
     | '/dashboard/content'
     | '/dashboard/email'
     | '/dashboard/email-logs'
     | '/dashboard/frontend-errors'
-    | '/dashboard/imports'
     | '/dashboard/integrations'
     | '/dashboard/music'
     | '/dashboard/newsletter'
@@ -822,12 +800,10 @@ export interface FileRouteTypes {
     | '/dashboard/admin'
     | '/dashboard/all'
     | '/dashboard/appearance'
-    | '/dashboard/bluesky'
     | '/dashboard/content'
     | '/dashboard/email'
     | '/dashboard/email-logs'
     | '/dashboard/frontend-errors'
-    | '/dashboard/imports'
     | '/dashboard/integrations'
     | '/dashboard/music'
     | '/dashboard/newsletter'
@@ -1083,13 +1059,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAppearanceRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/bluesky': {
-      id: '/dashboard/bluesky'
-      path: '/bluesky'
-      fullPath: '/dashboard/bluesky'
-      preLoaderRoute: typeof DashboardBlueskyRouteImport
-      parentRoute: typeof DashboardRoute
-    }
     '/dashboard/content': {
       id: '/dashboard/content'
       path: '/content'
@@ -1116,13 +1085,6 @@ declare module '@tanstack/react-router' {
       path: '/frontend-errors'
       fullPath: '/dashboard/frontend-errors'
       preLoaderRoute: typeof DashboardFrontendErrorsRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/imports': {
-      id: '/dashboard/imports'
-      path: '/imports'
-      fullPath: '/dashboard/imports'
-      preLoaderRoute: typeof DashboardImportsRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/integrations': {
@@ -1515,12 +1477,10 @@ interface DashboardRouteChildren {
   DashboardAdminRoute: typeof DashboardAdminRoute
   DashboardAllRoute: typeof DashboardAllRouteWithChildren
   DashboardAppearanceRoute: typeof DashboardAppearanceRoute
-  DashboardBlueskyRoute: typeof DashboardBlueskyRoute
   DashboardContentRoute: typeof DashboardContentRouteWithChildren
   DashboardEmailRoute: typeof DashboardEmailRoute
   DashboardEmailLogsRoute: typeof DashboardEmailLogsRoute
   DashboardFrontendErrorsRoute: typeof DashboardFrontendErrorsRoute
-  DashboardImportsRoute: typeof DashboardImportsRoute
   DashboardIntegrationsRoute: typeof DashboardIntegrationsRoute
   DashboardMusicRoute: typeof DashboardMusicRoute
   DashboardNewsletterRoute: typeof DashboardNewsletterRoute
@@ -1540,12 +1500,10 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAdminRoute: DashboardAdminRoute,
   DashboardAllRoute: DashboardAllRouteWithChildren,
   DashboardAppearanceRoute: DashboardAppearanceRoute,
-  DashboardBlueskyRoute: DashboardBlueskyRoute,
   DashboardContentRoute: DashboardContentRouteWithChildren,
   DashboardEmailRoute: DashboardEmailRoute,
   DashboardEmailLogsRoute: DashboardEmailLogsRoute,
   DashboardFrontendErrorsRoute: DashboardFrontendErrorsRoute,
-  DashboardImportsRoute: DashboardImportsRoute,
   DashboardIntegrationsRoute: DashboardIntegrationsRoute,
   DashboardMusicRoute: DashboardMusicRoute,
   DashboardNewsletterRoute: DashboardNewsletterRoute,

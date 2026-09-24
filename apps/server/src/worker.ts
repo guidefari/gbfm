@@ -47,7 +47,6 @@ import {
 import { cleanupExpiredQrPdfs } from '@/services/qr-cache-cleanup'
 import { SitemapCacheLayer } from '@/services/sitemap-cache'
 import { dispatchScheduledJob } from '@/scheduled'
-import { BlueskySyncService } from '@/services/bluesky-sync.service'
 import { NavigationRetentionService } from '@/services/navigation-retention.service'
 import { MusicEntityService } from '@/services/music-entity'
 import { SentryServiceLayer } from '@/services/sentry.service'
@@ -275,8 +274,6 @@ const runSitemapRegeneration = (env: ApiEnv) =>
     )
   )
 
-// Ported from the AWS `BlueskySyncTask`. Each sweep is isolated so a failure
-// in one still lets the other run, which is what the standalone task did.
 const runMaintenanceSweep = (env: ApiEnv) =>
   Effect.gen(function* () {
     const retention = yield* NavigationRetentionService
@@ -285,17 +282,6 @@ const runMaintenanceSweep = (env: ApiEnv) =>
   }).pipe(
     Effect.catch((error) =>
       Effect.logError('[worker.scheduled] navigation retention sweep failed', { error })
-    ),
-    Effect.andThen(
-      Effect.gen(function* () {
-        const sync = yield* BlueskySyncService
-        const report = yield* sync.syncScheduled()
-        yield* Effect.logInfo('[worker.scheduled] bluesky sync finished', report)
-      }).pipe(
-        Effect.catch((error) =>
-          Effect.logError('[worker.scheduled] bluesky sync failed', { error })
-        )
-      )
     ),
     // Replaces the S3 lifecycle rule that expired `qr-pdfs/` after a day. R2
     // lifecycle rules cannot target a prefix, so the sweep does it instead.

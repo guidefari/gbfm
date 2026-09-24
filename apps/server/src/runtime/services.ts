@@ -10,14 +10,6 @@ export { Database, DatabaseLayer } from '@/db/layer'
 
 import { AudioServiceLayer } from '@/services/audio.service'
 import { ConfigServiceLayer, type ConfigService } from '@/services/config.service'
-import { BlueskyAccountServiceLayer } from '@/services/bluesky-account.service'
-import { BlueskyArchiveServiceLayer } from '@/services/bluesky-archive.service'
-import { BlueskyClientLayer } from '@/services/bluesky-client.service'
-import { BlueskyImportServiceLayer } from '@/services/bluesky-importer.service'
-import { BlueskyRunsServiceLayer } from '@/services/bluesky-runs.service'
-import { BlueskySyncServiceLayer } from '@/services/bluesky-sync.service'
-import { LockServiceLayer } from '@/services/lock.service'
-import { CryptoServiceLayer } from '@/services/crypto.service'
 import { DeezerServiceLayer } from '@/services/deezer.service'
 import { EmailDeliveryLive } from '@/services/email-delivery.service'
 import type { EmailTransportService } from '@/services/email-transport.service'
@@ -93,10 +85,6 @@ export const AppLayer = ({
   )
   const UploadAssetDepsLive = Layer.mergeAll(configLive, UploadAssetServiceLayer)
   const BaseServicesLayer = Layer.mergeAll(
-    BlueskyClientLayer,
-    BlueskyImportServiceLayer,
-    LockServiceLayer,
-    CryptoServiceLayer.pipe(Layer.provide(configLive)),
     EmailDeliveryWithDependencies,
     FavoriteServiceLayer,
     SpotifyServiceLayer.pipe(Layer.provide(configLive)),
@@ -141,22 +129,11 @@ export const AppLayer = ({
   const MusicEntityLive = MusicEntityServiceLayer.pipe(
     Layer.provide(Layer.mergeAll(BaseServicesLayer, CanonicalMusicIdentityLive))
   )
-  const BlueskyArchiveLive = BlueskyArchiveServiceLayer.pipe(
-    Layer.provide(Layer.mergeAll(BaseServicesLayer, CanonicalMusicIdentityLive, MusicEntityLive))
-  )
-  const BlueskySyncLive = BlueskySyncServiceLayer.pipe(
-    Layer.provide(Layer.mergeAll(BaseServicesLayer, MusicEntityLive, BlueskyArchiveLive))
-  )
-
   const ServicesLayer = Layer.mergeAll(
     BaseServicesLayer,
     qrCodeLive,
     CanonicalMusicIdentityLive,
-    MusicEntityLive,
-    BlueskyAccountServiceLayer.pipe(Layer.provide(BaseServicesLayer)),
-    BlueskyArchiveLive,
-    BlueskyRunsServiceLayer.pipe(Layer.provide(databaseLive)),
-    BlueskySyncLive
+    MusicEntityLive
   ).pipe(Layer.provide(databaseLive))
 
   return Layer.mergeAll(

@@ -3,17 +3,7 @@
 import { canCreatePosts as roleCanCreatePosts } from '@gbfm/core/roles'
 import { LINK_STATUS, type LinkStatus } from '@gbfm/core/status'
 import { normalizeSlugBase } from '@gbfm/core/utils/slug'
-import {
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  Label,
-  MusicEntityLinksPanel,
-  Textarea,
-  toast
-} from '@gbfm/ui'
+import { Button, Label, MusicEntityLinksPanel, Textarea, toast } from '@gbfm/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { Link, useRouter, useSearch } from '@tanstack/react-router'
@@ -74,15 +64,6 @@ interface PostItem {
   musicEntityId: string | null
   quotedPostId?: string | null
   creators?: Array<{ id: string; name: string; username: string | null }>
-  blueskySource?: {
-    authorDid: string
-    authorHandle: string | null
-    publicUrl: string
-    sourceCreatedAt: string
-    sourceStatus: string
-    locallyEdited: boolean
-    lastError: string | null
-  }
 }
 
 const entityPathByType = {
@@ -848,30 +829,6 @@ export function TweetCapturePage() {
           {submitMutation.isPending ? 'Saving…' : isEditMode ? 'Update tweet' : 'Save tweet'}
         </Button>
       </div>
-
-      {existingPost?.blueskySource ? (
-        <Card className='mb-6 border-border'>
-          <CardHeader>
-            <CardTitle className='text-sm tracking-widest'>Bluesky source</CardTitle>
-          </CardHeader>
-          <CardContent className='space-y-2 text-xs text-muted-foreground'>
-            <p>
-              {existingPost.blueskySource.authorHandle ?? existingPost.blueskySource.authorDid} ·{' '}
-              {existingPost.blueskySource.sourceStatus}
-            </p>
-            <a
-              href={existingPost.blueskySource.publicUrl}
-              target='_blank'
-              rel='noreferrer'
-              className='text-highlight underline underline-offset-4'>
-              Open original post
-            </a>
-            {existingPost.blueskySource.lastError ? (
-              <p className='text-destructive'>{existingPost.blueskySource.lastError}</p>
-            ) : null}
-          </CardContent>
-        </Card>
-      ) : null}
 
       <div className='grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]'>
         <div className='flex flex-col bg-gb-darker-bg'>

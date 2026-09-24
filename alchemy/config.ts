@@ -6,7 +6,6 @@ const secretSources = {
   SENTRY_BACKEND_DSN: 'SENTRY_BACKEND_DSN',
   VITE_PUBLIC_SENTRY_DSN: 'VITE_PUBLIC_SENTRY_DSN',
   BETTER_AUTH_SECRET: 'BETTER_AUTH_SECRET',
-  GBFM_ENCRYPTION_ROOT_KEY: 'GBFM_ENCRYPTION_ROOT_KEY',
   StorageRegion: 'StorageRegion',
   StorageAccessKeyId: 'StorageAccessKeyId',
   StorageSecretAccessKey: 'StorageSecretAccessKey'
@@ -61,7 +60,6 @@ export const deploymentConfig = (isLocalDev: boolean) =>
         SENTRY_BACKEND_DSN: read(secretSources.SENTRY_BACKEND_DSN),
         VITE_PUBLIC_SENTRY_DSN: sentryDsn,
         BETTER_AUTH_SECRET: read(secretSources.BETTER_AUTH_SECRET),
-        GBFM_ENCRYPTION_ROOT_KEY: read(secretSources.GBFM_ENCRYPTION_ROOT_KEY),
         StorageRegion: read(secretSources.StorageRegion),
         StorageAccessKeyId: read(secretSources.StorageAccessKeyId),
         StorageSecretAccessKey: read(secretSources.StorageSecretAccessKey)
