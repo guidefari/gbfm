@@ -8,6 +8,7 @@ import {
   SimpleMarkdownEditor,
   type SimpleMarkdownEditorHandle
 } from '@/components/simple-markdown-editor'
+import type { HashtagCompletionOptions } from '@/components/hashtag-tag-complete'
 import { ExternalMediaPickerDialog } from '@/components/editorial/ExternalMediaPickerDialog'
 import { resolveMusicEntityBatchEffect } from '@/components/editorial/editorial-music-resolution'
 import { useSession } from '@/lib/auth-client'
@@ -18,12 +19,14 @@ export function EditorialWritingCanvas({
   formData,
   portalContainer,
   metadata,
+  tagCompletion,
   onInputChange,
   onPendingMusicChange
 }: {
   formData: EditorialFormData
   portalContainer?: HTMLElement | null
   metadata: ReactNode
+  tagCompletion?: HashtagCompletionOptions
   onInputChange: (field: EditorialTextField, value: string) => void
   onPendingMusicChange: (count: number) => void
 }) {
@@ -104,6 +107,7 @@ export function EditorialWritingCanvas({
           resolveMusicEntities={resolveMusicEntities}
           onPendingMusicChange={onPendingMusicChange}
           onMusicResolutionFailure={reportResolutionFailure}
+          tagCompletion={tagCompletion}
           toolbarActions={
             <>
               <MusicEntityPicker onInsert={insertBlock} portalContainer={portalContainer} />

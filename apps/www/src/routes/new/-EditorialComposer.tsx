@@ -14,7 +14,7 @@ import {
   useState
 } from 'react'
 import { useSession } from '@/lib/auth-client'
-import { apiUrl, fetcher } from '@/lib/http'
+import { apiUrl, fetcher, usePostTags } from '@/lib/http'
 import { uploadImageDirectToS3 } from '@/lib/upload/image-upload'
 import { useContentEdit } from './-useContentEdit'
 import { EditorialMetadataPanel } from './-EditorialMetadataSidebar'
@@ -84,6 +84,7 @@ export function EditorialComposer({ editSlug }: { editSlug: string | undefined }
   const router = useRouter()
   const { data: session } = useSession()
   const user = session?.user
+  const { data: availableTags } = usePostTags()
   const artworkUploadId = useId()
   const initializedNewCreator = useRef(false)
 
@@ -403,6 +404,15 @@ export function EditorialComposer({ editSlug }: { editSlug: string | undefined }
           formData={formData}
           portalContainer={null}
           metadata={metadata}
+          tagCompletion={{
+            getAvailableTags: () => availableTags,
+            getSelectedTags: () => formData.tags,
+            onSelectTag: (tag) =>
+              setFormData((previous) => ({
+                ...previous,
+                tags: Array.from(new Set([...previous.tags, tag]))
+              }))
+          }}
           onInputChange={handleTextInputChange}
           onPendingMusicChange={setPendingMusicCount}
         />

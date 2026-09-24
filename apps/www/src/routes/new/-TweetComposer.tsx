@@ -628,6 +628,11 @@ export function TweetComposer({ editSlug }: { editSlug: string | undefined }) {
             resolveMusicEntities={resolveMusicEntities}
             onPendingMusicChange={setPendingMusicCount}
             onMusicResolutionFailure={reportResolutionFailure}
+            tagCompletion={{
+              getAvailableTags: () => availableTags,
+              getSelectedTags: () => tags,
+              onSelectTag: addTag
+            }}
           />
           <QuotedTweet
             slug={quotedSlug}

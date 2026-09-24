@@ -1,7 +1,7 @@
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { markdown } from '@codemirror/lang-markdown'
 import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language'
-import { Compartment, EditorState } from '@codemirror/state'
+import { Compartment, EditorState, type Extension } from '@codemirror/state'
 import {
   EditorView,
   highlightActiveLine,
@@ -40,6 +40,7 @@ import {
   type MusicEntityWidget
 } from '@/components/editorial/music-entity-editor-embeds'
 import type { MusicEntityResolution } from '@/components/editorial/editorial-music-resolution'
+import { hashtagTagComplete, type HashtagCompletionOptions } from './hashtag-tag-complete'
 import { log } from '@/services/logger'
 import { MDXRendrr } from './MDXRendrr'
 import {
@@ -61,6 +62,7 @@ interface SimpleMarkdownEditorProps {
   ) => Promise<ReadonlyArray<MusicEntityResolution>>
   onPendingMusicChange?: (count: number) => void
   onMusicResolutionFailure?: (count: number) => void
+  tagCompletion?: HashtagCompletionOptions
 }
 
 export interface SimpleMarkdownEditorHandle {
@@ -125,7 +127,7 @@ function createExtensions(
   syncing: { current: boolean },
   placeholderCompartment: Compartment,
   placeholder: string | undefined,
-  musicEntityExtensions: ReadonlyArray<ReturnType<typeof createMusicEntityEditorEmbeds>>
+  extraExtensions: ReadonlyArray<Extension>
 ) {
   return [
     markdown(),
@@ -134,7 +136,7 @@ function createExtensions(
     highlightActiveLine(),
     EditorView.lineWrapping,
     editorTheme,
-    ...musicEntityExtensions,
+    ...extraExtensions,
     placeholderCompartment.of(editorPlaceholder(placeholder ?? '')),
     keymap.of([
       { key: 'Mod-b', run: (view) => (toggleInlineMarkdown(view, '**', '**', 'bold text'), true) },
@@ -233,7 +235,8 @@ export const SimpleMarkdownEditor = forwardRef<
     toolbarActions,
     resolveMusicEntities,
     onPendingMusicChange = ignorePendingMusic,
-    onMusicResolutionFailure = ignorePendingMusic
+    onMusicResolutionFailure = ignorePendingMusic,
+    tagCompletion
   },
   ref
 ) {
@@ -243,6 +246,7 @@ export const SimpleMarkdownEditor = forwardRef<
   const resolveMusicEntitiesRef = useRef(resolveMusicEntities)
   const onPendingMusicChangeRef = useRef(onPendingMusicChange)
   const onMusicResolutionFailureRef = useRef(onMusicResolutionFailure)
+  const tagCompletionRef = useRef(tagCompletion)
   const syncing = useRef(false)
   const placeholderCompartment = useRef(new Compartment())
   const acceptingWidgets = useRef(true)
@@ -252,6 +256,7 @@ export const SimpleMarkdownEditor = forwardRef<
   const [musicEntityWidgets, setMusicEntityWidgets] = useState<ReadonlyArray<MusicEntityWidget>>([])
   onChangeRef.current = onChange
   resolveMusicEntitiesRef.current = resolveMusicEntities
+  tagCompletionRef.current = tagCompletion
   onPendingMusicChangeRef.current = onPendingMusicChange
   onMusicResolutionFailureRef.current = onMusicResolutionFailure
 
@@ -275,7 +280,7 @@ export const SimpleMarkdownEditor = forwardRef<
     acceptingWidgets.current = true
     const config = initialEditorConfig.current
     const initialResolver = config.resolveMusicEntities
-    const musicEntityExtensions = initialResolver
+    const extraExtensions: Extension[] = initialResolver
       ? [
           createMusicEntityEditorEmbeds({
             resolve: (urls) => (resolveMusicEntitiesRef.current ?? initialResolver)(urls),
@@ -286,6 +291,16 @@ export const SimpleMarkdownEditor = forwardRef<
           })
         ]
       : []
+
+    if (tagCompletionRef.current) {
+      extraExtensions.push(
+        hashtagTagComplete({
+          getAvailableTags: () => tagCompletionRef.current?.getAvailableTags() ?? [],
+          getSelectedTags: () => tagCompletionRef.current?.getSelectedTags() ?? [],
+          onSelectTag: (tag) => tagCompletionRef.current?.onSelectTag(tag)
+        })
+      )
+    }
     const view = new EditorView({
       state: EditorState.create({
         doc: config.value,
@@ -294,7 +309,7 @@ export const SimpleMarkdownEditor = forwardRef<
           syncing,
           placeholderCompartment.current,
           config.placeholder,
-          musicEntityExtensions
+          extraExtensions
         )
       }),
       parent: host
