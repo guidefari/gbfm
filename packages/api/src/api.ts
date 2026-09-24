@@ -19,6 +19,7 @@ import { SearchGroup } from './search'
 import { SiteMetadataGroup } from './site-metadata'
 import { ShowsGroup } from './shows'
 import { SpotifyGroup } from './spotify'
+import { TelemetryGroup } from './telemetry'
 import { UploadGroup } from './upload'
 import { UserGroup } from './user'
 
@@ -42,6 +43,7 @@ export const Api = HttpApi.make('gbfm')
   .add(NewsletterGroup)
   .add(FileManagerGroup)
   .add(SpotifyGroup)
+  .add(TelemetryGroup)
   .add(ShowsGroup)
   .add(UserGroup)
   .add(UploadGroup)

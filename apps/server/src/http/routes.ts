@@ -29,6 +29,7 @@ import { SiteMetadataHandlersLive } from '@/http/site-metadata.handlers'
 import { ShowsHandlersLive } from '@/http/shows.handlers'
 import { SiteRoutesLive } from '@/http/site-routes'
 import { SpotifyHandlersLive } from '@/http/spotify.handlers'
+import { TelemetryHandlersLive } from '@/http/telemetry.handlers'
 import { UploadHandlersLive } from '@/http/upload.handlers'
 import { UserHandlersLive } from '@/http/user.handlers'
 import { Auth } from '@/lib/auth'
@@ -94,6 +95,7 @@ export const createWebHandler = (options: {
     ),
     Layer.provide(FileManagerHandlersLive),
     Layer.provide(SpotifyHandlersLive),
+    Layer.provide(TelemetryHandlersLive),
     Layer.provide(ShowsHandlersLive),
     Layer.provide(Layer.mergeAll(UserHandlersLive, UploadHandlersLive)),
     // These middleware services are also yielded directly by built handlers. Keep them in the

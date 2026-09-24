@@ -55,6 +55,11 @@ const scripts =
       ))
     }
     <ClientRouter />
+    <script>
+      import { installNavigationTelemetry } from '@/services/navigation-telemetry'
+
+      installNavigationTelemetry()
+    </script>
     <script is:inline>
       const storedTheme = localStorage.getItem('vite-ui-theme')
       document.documentElement.classList.toggle(
