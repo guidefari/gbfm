@@ -9,121 +9,81 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
-import { Route as TweetsRouteImport } from './routes/tweets'
-import { Route as TermsRouteImport } from './routes/terms'
-import { Route as SubscribeRouteImport } from './routes/subscribe'
-import { Route as RemindersRouteImport } from './routes/reminders'
-import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as MixUploadRouteImport } from './routes/mix-upload'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as ChangelogRouteImport } from './routes/changelog'
-import { Route as SlugRouteImport } from './routes/$slug'
-import { Route as TweetRouteRouteImport } from './routes/tweet/route'
-import { Route as TracksRouteRouteImport } from './routes/tracks/route'
-import { Route as MixesRouteRouteImport } from './routes/mixes/route'
-import { Route as LabelsRouteRouteImport } from './routes/labels/route'
-import { Route as EditorialRouteRouteImport } from './routes/editorial/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as TweetIndexRouteImport } from './routes/tweet/index'
-import { Route as TagsIndexRouteImport } from './routes/tags/index'
-import { Route as ShowsIndexRouteImport } from './routes/shows/index'
-import { Route as MixesIndexRouteImport } from './routes/mixes/index'
-import { Route as LabelsIndexRouteImport } from './routes/labels/index'
-import { Route as EditorialIndexRouteImport } from './routes/editorial/index'
-import { Route as DjsIndexRouteImport } from './routes/djs/index'
-import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
-import { Route as TweetNewRouteImport } from './routes/tweet/new'
-import { Route as TweetLatestRouteImport } from './routes/tweet/latest'
-import { Route as TweetSlugRouteImport } from './routes/tweet/$slug'
-import { Route as TracksTrackIdRouteImport } from './routes/tracks/$trackId'
-import { Route as TagsTagRouteImport } from './routes/tags/$tag'
-import { Route as SpotifyCallbackRouteImport } from './routes/spotify/callback'
-import { Route as ShowsShowSlugRouteImport } from './routes/shows/$showSlug'
-import { Route as ReleasesSlugRouteImport } from './routes/releases/$slug'
-import { Route as ProfileUsernameRouteImport } from './routes/profile/$username'
-import { Route as NewTweetRouteImport } from './routes/new/tweet'
-import { Route as NewEditorialRouteImport } from './routes/new/editorial'
-import { Route as MixesMixIdRouteImport } from './routes/mixes/$mixId'
-import { Route as LabelsLabelSlugRouteImport } from './routes/labels/$labelSlug'
-import { Route as InviteCharlie3000RouteImport } from './routes/invite/charlie3000'
-import { Route as EditorialSlugRouteImport } from './routes/editorial/$slug'
-import { Route as DashboardUsersRouteImport } from './routes/dashboard/users'
-import { Route as DashboardShowsRouteImport } from './routes/dashboard/shows'
-import { Route as DashboardSessionsRouteImport } from './routes/dashboard/sessions'
-import { Route as DashboardSearchRouteImport } from './routes/dashboard/search'
-import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
-import { Route as DashboardPlaylistsRouteImport } from './routes/dashboard/playlists'
-import { Route as DashboardPlayerRouteImport } from './routes/dashboard/player'
-import { Route as DashboardOverviewRouteImport } from './routes/dashboard/overview'
-import { Route as DashboardNewsletterRouteImport } from './routes/dashboard/newsletter'
-import { Route as DashboardMusicRouteImport } from './routes/dashboard/music'
-import { Route as DashboardIntegrationsRouteImport } from './routes/dashboard/integrations'
-import { Route as DashboardImportsRouteImport } from './routes/dashboard/imports'
-import { Route as DashboardFrontendErrorsRouteImport } from './routes/dashboard/frontend-errors'
-import { Route as DashboardEmailLogsRouteImport } from './routes/dashboard/email-logs'
-import { Route as DashboardEmailRouteImport } from './routes/dashboard/email'
-import { Route as DashboardContentRouteImport } from './routes/dashboard/content'
-import { Route as DashboardBlueskyRouteImport } from './routes/dashboard/bluesky'
-import { Route as DashboardAppearanceRouteImport } from './routes/dashboard/appearance'
-import { Route as DashboardAllRouteImport } from './routes/dashboard/all'
-import { Route as DashboardAdminRouteImport } from './routes/dashboard/admin'
-import { Route as AuthVerifyEmailRouteImport } from './routes/auth/verify-email'
-import { Route as AuthSignUpRouteImport } from './routes/auth/sign-up'
-import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
-import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
+import { Route as SlugRouteImport } from './routes/$slug'
+import { Route as ChangelogRouteImport } from './routes/changelog'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as EditorialRouteRouteImport } from './routes/editorial/route'
+import { Route as LabelsRouteRouteImport } from './routes/labels/route'
+import { Route as MixUploadRouteImport } from './routes/mix-upload'
+import { Route as MixesRouteRouteImport } from './routes/mixes/route'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as RemindersRouteImport } from './routes/reminders'
+import { Route as SubscribeRouteImport } from './routes/subscribe'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as TracksRouteRouteImport } from './routes/tracks/route'
+import { Route as TweetRouteRouteImport } from './routes/tweet/route'
+import { Route as TweetsRouteImport } from './routes/tweets'
+import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
-import { Route as DashboardContentTweetsRouteImport } from './routes/dashboard/content.tweets'
-import { Route as DashboardContentMixesRouteImport } from './routes/dashboard/content.mixes'
-import { Route as DashboardContentEditorialRouteImport } from './routes/dashboard/content.editorial'
-import { Route as DashboardAllTweetsRouteImport } from './routes/dashboard/all.tweets'
-import { Route as DashboardAllMixesRouteImport } from './routes/dashboard/all.mixes'
+import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
+import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
+import { Route as AuthSignUpRouteImport } from './routes/auth/sign-up'
+import { Route as AuthVerifyEmailRouteImport } from './routes/auth/verify-email'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as DashboardAdminRouteImport } from './routes/dashboard/admin'
+import { Route as DashboardAllRouteImport } from './routes/dashboard/all'
+import { Route as DashboardAppearanceRouteImport } from './routes/dashboard/appearance'
+import { Route as DashboardBlueskyRouteImport } from './routes/dashboard/bluesky'
+import { Route as DashboardContentRouteImport } from './routes/dashboard/content'
+import { Route as DashboardEmailRouteImport } from './routes/dashboard/email'
+import { Route as DashboardEmailLogsRouteImport } from './routes/dashboard/email-logs'
+import { Route as DashboardFrontendErrorsRouteImport } from './routes/dashboard/frontend-errors'
+import { Route as DashboardImportsRouteImport } from './routes/dashboard/imports'
+import { Route as DashboardIntegrationsRouteImport } from './routes/dashboard/integrations'
+import { Route as DashboardMusicRouteImport } from './routes/dashboard/music'
+import { Route as DashboardNewsletterRouteImport } from './routes/dashboard/newsletter'
+import { Route as DashboardOverviewRouteImport } from './routes/dashboard/overview'
+import { Route as DashboardPlayerRouteImport } from './routes/dashboard/player'
+import { Route as DashboardPlaylistsRouteImport } from './routes/dashboard/playlists'
+import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
+import { Route as DashboardSearchRouteImport } from './routes/dashboard/search'
+import { Route as DashboardSessionsRouteImport } from './routes/dashboard/sessions'
+import { Route as DashboardShowsRouteImport } from './routes/dashboard/shows'
+import { Route as DashboardUsersRouteImport } from './routes/dashboard/users'
+import { Route as DjsIndexRouteImport } from './routes/djs/index'
+import { Route as EditorialIndexRouteImport } from './routes/editorial/index'
+import { Route as EditorialSlugRouteImport } from './routes/editorial/$slug'
+import { Route as InviteCharlie3000RouteImport } from './routes/invite/charlie3000'
+import { Route as LabelsIndexRouteImport } from './routes/labels/index'
+import { Route as LabelsLabelSlugRouteImport } from './routes/labels/$labelSlug'
+import { Route as MixesIndexRouteImport } from './routes/mixes/index'
+import { Route as MixesMixIdRouteImport } from './routes/mixes/$mixId'
+import { Route as NewEditorialRouteImport } from './routes/new/editorial'
+import { Route as NewTweetRouteImport } from './routes/new/tweet'
+import { Route as ProfileUsernameRouteImport } from './routes/profile/$username'
+import { Route as ReleasesSlugRouteImport } from './routes/releases/$slug'
+import { Route as ShowsIndexRouteImport } from './routes/shows/index'
+import { Route as ShowsShowSlugRouteImport } from './routes/shows/$showSlug'
+import { Route as SpotifyCallbackRouteImport } from './routes/spotify/callback'
+import { Route as TagsIndexRouteImport } from './routes/tags/index'
+import { Route as TagsTagRouteImport } from './routes/tags/$tag'
+import { Route as TracksTrackIdRouteImport } from './routes/tracks/$trackId'
+import { Route as TweetIndexRouteImport } from './routes/tweet/index'
+import { Route as TweetSlugRouteImport } from './routes/tweet/$slug'
+import { Route as TweetLatestRouteImport } from './routes/tweet/latest'
+import { Route as TweetNewRouteImport } from './routes/tweet/new'
 import { Route as DashboardAllEditorialRouteImport } from './routes/dashboard/all.editorial'
+import { Route as DashboardAllMixesRouteImport } from './routes/dashboard/all.mixes'
+import { Route as DashboardAllTweetsRouteImport } from './routes/dashboard/all.tweets'
+import { Route as DashboardContentEditorialRouteImport } from './routes/dashboard/content.editorial'
+import { Route as DashboardContentMixesRouteImport } from './routes/dashboard/content.mixes'
+import { Route as DashboardContentTweetsRouteImport } from './routes/dashboard/content.tweets'
 import { Route as DashboardMusicEntityEntityTypeIdRouteImport } from './routes/dashboard/music-entity.$entityType.$id'
 
-const UnsubscribeRoute = UnsubscribeRouteImport.update({
-  id: '/unsubscribe',
-  path: '/unsubscribe',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TweetsRoute = TweetsRouteImport.update({
-  id: '/tweets',
-  path: '/tweets',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SubscribeRoute = SubscribeRouteImport.update({
-  id: '/subscribe',
-  path: '/subscribe',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RemindersRoute = RemindersRouteImport.update({
-  id: '/reminders',
-  path: '/reminders',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacyRoute = PrivacyRouteImport.update({
-  id: '/privacy',
-  path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MixUploadRoute = MixUploadRouteImport.update({
-  id: '/mix-upload',
-  path: '/mix-upload',
-  getParentRoute: () => rootRouteImport,
-} as any).lazy(() => import('./routes/mix-upload.lazy').then((d) => d.Route))
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ChangelogRoute = ChangelogRouteImport.update({
-  id: '/changelog',
-  path: '/changelog',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SlugRoute = SlugRouteImport.update({
@@ -131,24 +91,14 @@ const SlugRoute = SlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TweetRouteRoute = TweetRouteRouteImport.update({
-  id: '/tweet',
-  path: '/tweet',
+const ChangelogRoute = ChangelogRouteImport.update({
+  id: '/changelog',
+  path: '/changelog',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TracksRouteRoute = TracksRouteRouteImport.update({
-  id: '/tracks',
-  path: '/tracks',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MixesRouteRoute = MixesRouteRouteImport.update({
-  id: '/mixes',
-  path: '/mixes',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LabelsRouteRoute = LabelsRouteRouteImport.update({
-  id: '/labels',
-  path: '/labels',
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EditorialRouteRoute = EditorialRouteRouteImport.update({
@@ -156,244 +106,59 @@ const EditorialRouteRoute = EditorialRouteRouteImport.update({
   path: '/editorial',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const LabelsRouteRoute = LabelsRouteRouteImport.update({
+  id: '/labels',
+  path: '/labels',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TweetIndexRoute = TweetIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => TweetRouteRoute,
-} as any)
-const TagsIndexRoute = TagsIndexRouteImport.update({
-  id: '/tags/',
-  path: '/tags/',
+const MixUploadRoute = MixUploadRouteImport.update({
+  id: '/mix-upload',
+  path: '/mix-upload',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() => import('./routes/mix-upload.lazy').then((d) => d.Route))
+const MixesRouteRoute = MixesRouteRouteImport.update({
+  id: '/mixes',
+  path: '/mixes',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ShowsIndexRoute = ShowsIndexRouteImport.update({
-  id: '/shows/',
-  path: '/shows/',
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MixesIndexRoute = MixesIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => MixesRouteRoute,
-} as any)
-const LabelsIndexRoute = LabelsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => LabelsRouteRoute,
-} as any)
-const EditorialIndexRoute = EditorialIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => EditorialRouteRoute,
-} as any)
-const DjsIndexRoute = DjsIndexRouteImport.update({
-  id: '/djs/',
-  path: '/djs/',
+const RemindersRoute = RemindersRouteImport.update({
+  id: '/reminders',
+  path: '/reminders',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardIndexRoute = DashboardIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const TweetNewRoute = TweetNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => TweetRouteRoute,
-} as any)
-const TweetLatestRoute = TweetLatestRouteImport.update({
-  id: '/latest',
-  path: '/latest',
-  getParentRoute: () => TweetRouteRoute,
-} as any)
-const TweetSlugRoute = TweetSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => TweetRouteRoute,
-} as any)
-const TracksTrackIdRoute = TracksTrackIdRouteImport.update({
-  id: '/$trackId',
-  path: '/$trackId',
-  getParentRoute: () => TracksRouteRoute,
-} as any)
-const TagsTagRoute = TagsTagRouteImport.update({
-  id: '/tags/$tag',
-  path: '/tags/$tag',
+const SubscribeRoute = SubscribeRouteImport.update({
+  id: '/subscribe',
+  path: '/subscribe',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SpotifyCallbackRoute = SpotifyCallbackRouteImport.update({
-  id: '/spotify/callback',
-  path: '/spotify/callback',
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ShowsShowSlugRoute = ShowsShowSlugRouteImport.update({
-  id: '/shows/$showSlug',
-  path: '/shows/$showSlug',
+const TracksRouteRoute = TracksRouteRouteImport.update({
+  id: '/tracks',
+  path: '/tracks',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ReleasesSlugRoute = ReleasesSlugRouteImport.update({
-  id: '/releases/$slug',
-  path: '/releases/$slug',
+const TweetRouteRoute = TweetRouteRouteImport.update({
+  id: '/tweet',
+  path: '/tweet',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProfileUsernameRoute = ProfileUsernameRouteImport.update({
-  id: '/profile/$username',
-  path: '/profile/$username',
+const TweetsRoute = TweetsRouteImport.update({
+  id: '/tweets',
+  path: '/tweets',
   getParentRoute: () => rootRouteImport,
 } as any)
-const NewTweetRoute = NewTweetRouteImport.update({
-  id: '/new/tweet',
-  path: '/new/tweet',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NewEditorialRoute = NewEditorialRouteImport.update({
-  id: '/new/editorial',
-  path: '/new/editorial',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MixesMixIdRoute = MixesMixIdRouteImport.update({
-  id: '/$mixId',
-  path: '/$mixId',
-  getParentRoute: () => MixesRouteRoute,
-} as any)
-const LabelsLabelSlugRoute = LabelsLabelSlugRouteImport.update({
-  id: '/$labelSlug',
-  path: '/$labelSlug',
-  getParentRoute: () => LabelsRouteRoute,
-} as any)
-const InviteCharlie3000Route = InviteCharlie3000RouteImport.update({
-  id: '/invite/charlie3000',
-  path: '/invite/charlie3000',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EditorialSlugRoute = EditorialSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => EditorialRouteRoute,
-} as any)
-const DashboardUsersRoute = DashboardUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardShowsRoute = DashboardShowsRouteImport.update({
-  id: '/shows',
-  path: '/shows',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardSessionsRoute = DashboardSessionsRouteImport.update({
-  id: '/sessions',
-  path: '/sessions',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardSearchRoute = DashboardSearchRouteImport.update({
-  id: '/search',
-  path: '/search',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardProfileRoute = DashboardProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardPlaylistsRoute = DashboardPlaylistsRouteImport.update({
-  id: '/playlists',
-  path: '/playlists',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardPlayerRoute = DashboardPlayerRouteImport.update({
-  id: '/player',
-  path: '/player',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardOverviewRoute = DashboardOverviewRouteImport.update({
-  id: '/overview',
-  path: '/overview',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardNewsletterRoute = DashboardNewsletterRouteImport.update({
-  id: '/newsletter',
-  path: '/newsletter',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardMusicRoute = DashboardMusicRouteImport.update({
-  id: '/music',
-  path: '/music',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardIntegrationsRoute = DashboardIntegrationsRouteImport.update({
-  id: '/integrations',
-  path: '/integrations',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardImportsRoute = DashboardImportsRouteImport.update({
-  id: '/imports',
-  path: '/imports',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardFrontendErrorsRoute = DashboardFrontendErrorsRouteImport.update({
-  id: '/frontend-errors',
-  path: '/frontend-errors',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardEmailLogsRoute = DashboardEmailLogsRouteImport.update({
-  id: '/email-logs',
-  path: '/email-logs',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardEmailRoute = DashboardEmailRouteImport.update({
-  id: '/email',
-  path: '/email',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardContentRoute = DashboardContentRouteImport.update({
-  id: '/content',
-  path: '/content',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardBlueskyRoute = DashboardBlueskyRouteImport.update({
-  id: '/bluesky',
-  path: '/bluesky',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardAppearanceRoute = DashboardAppearanceRouteImport.update({
-  id: '/appearance',
-  path: '/appearance',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardAllRoute = DashboardAllRouteImport.update({
-  id: '/all',
-  path: '/all',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardAdminRoute = DashboardAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const AuthVerifyEmailRoute = AuthVerifyEmailRouteImport.update({
-  id: '/auth/verify-email',
-  path: '/auth/verify-email',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthSignUpRoute = AuthSignUpRouteImport.update({
-  id: '/auth/sign-up',
-  path: '/auth/sign-up',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthSignInRoute = AuthSignInRouteImport.update({
-  id: '/auth/sign-in',
-  path: '/auth/sign-in',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
-  id: '/auth/reset-password',
-  path: '/auth/reset-password',
+const UnsubscribeRoute = UnsubscribeRouteImport.update({
+  id: '/unsubscribe',
+  path: '/unsubscribe',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
@@ -401,25 +166,244 @@ const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
   path: '/auth/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardContentTweetsRoute = DashboardContentTweetsRouteImport.update({
-  id: '/tweets',
-  path: '/tweets',
-  getParentRoute: () => DashboardContentRoute,
+const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
+  id: '/auth/reset-password',
+  path: '/auth/reset-password',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardContentMixesRoute = DashboardContentMixesRouteImport.update({
-  id: '/mixes',
-  path: '/mixes',
-  getParentRoute: () => DashboardContentRoute,
+const AuthSignInRoute = AuthSignInRouteImport.update({
+  id: '/auth/sign-in',
+  path: '/auth/sign-in',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardContentEditorialRoute =
-  DashboardContentEditorialRouteImport.update({
-    id: '/editorial',
-    path: '/editorial',
-    getParentRoute: () => DashboardContentRoute,
-  } as any)
-const DashboardAllTweetsRoute = DashboardAllTweetsRouteImport.update({
-  id: '/tweets',
-  path: '/tweets',
+const AuthSignUpRoute = AuthSignUpRouteImport.update({
+  id: '/auth/sign-up',
+  path: '/auth/sign-up',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthVerifyEmailRoute = AuthVerifyEmailRouteImport.update({
+  id: '/auth/verify-email',
+  path: '/auth/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardAdminRoute = DashboardAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardAllRoute = DashboardAllRouteImport.update({
+  id: '/all',
+  path: '/all',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardAppearanceRoute = DashboardAppearanceRouteImport.update({
+  id: '/appearance',
+  path: '/appearance',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardBlueskyRoute = DashboardBlueskyRouteImport.update({
+  id: '/bluesky',
+  path: '/bluesky',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardContentRoute = DashboardContentRouteImport.update({
+  id: '/content',
+  path: '/content',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardEmailRoute = DashboardEmailRouteImport.update({
+  id: '/email',
+  path: '/email',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardEmailLogsRoute = DashboardEmailLogsRouteImport.update({
+  id: '/email-logs',
+  path: '/email-logs',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardFrontendErrorsRoute = DashboardFrontendErrorsRouteImport.update({
+  id: '/frontend-errors',
+  path: '/frontend-errors',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardImportsRoute = DashboardImportsRouteImport.update({
+  id: '/imports',
+  path: '/imports',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardIntegrationsRoute = DashboardIntegrationsRouteImport.update({
+  id: '/integrations',
+  path: '/integrations',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardMusicRoute = DashboardMusicRouteImport.update({
+  id: '/music',
+  path: '/music',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardNewsletterRoute = DashboardNewsletterRouteImport.update({
+  id: '/newsletter',
+  path: '/newsletter',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardOverviewRoute = DashboardOverviewRouteImport.update({
+  id: '/overview',
+  path: '/overview',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardPlayerRoute = DashboardPlayerRouteImport.update({
+  id: '/player',
+  path: '/player',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardPlaylistsRoute = DashboardPlaylistsRouteImport.update({
+  id: '/playlists',
+  path: '/playlists',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardProfileRoute = DashboardProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardSearchRoute = DashboardSearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardSessionsRoute = DashboardSessionsRouteImport.update({
+  id: '/sessions',
+  path: '/sessions',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardShowsRoute = DashboardShowsRouteImport.update({
+  id: '/shows',
+  path: '/shows',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardUsersRoute = DashboardUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DjsIndexRoute = DjsIndexRouteImport.update({
+  id: '/djs/',
+  path: '/djs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EditorialIndexRoute = EditorialIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => EditorialRouteRoute,
+} as any)
+const EditorialSlugRoute = EditorialSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => EditorialRouteRoute,
+} as any)
+const InviteCharlie3000Route = InviteCharlie3000RouteImport.update({
+  id: '/invite/charlie3000',
+  path: '/invite/charlie3000',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabelsIndexRoute = LabelsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LabelsRouteRoute,
+} as any)
+const LabelsLabelSlugRoute = LabelsLabelSlugRouteImport.update({
+  id: '/$labelSlug',
+  path: '/$labelSlug',
+  getParentRoute: () => LabelsRouteRoute,
+} as any)
+const MixesIndexRoute = MixesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MixesRouteRoute,
+} as any)
+const MixesMixIdRoute = MixesMixIdRouteImport.update({
+  id: '/$mixId',
+  path: '/$mixId',
+  getParentRoute: () => MixesRouteRoute,
+} as any)
+const NewEditorialRoute = NewEditorialRouteImport.update({
+  id: '/new/editorial',
+  path: '/new/editorial',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NewTweetRoute = NewTweetRouteImport.update({
+  id: '/new/tweet',
+  path: '/new/tweet',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileUsernameRoute = ProfileUsernameRouteImport.update({
+  id: '/profile/$username',
+  path: '/profile/$username',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReleasesSlugRoute = ReleasesSlugRouteImport.update({
+  id: '/releases/$slug',
+  path: '/releases/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShowsIndexRoute = ShowsIndexRouteImport.update({
+  id: '/shows/',
+  path: '/shows/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShowsShowSlugRoute = ShowsShowSlugRouteImport.update({
+  id: '/shows/$showSlug',
+  path: '/shows/$showSlug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SpotifyCallbackRoute = SpotifyCallbackRouteImport.update({
+  id: '/spotify/callback',
+  path: '/spotify/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TagsIndexRoute = TagsIndexRouteImport.update({
+  id: '/tags/',
+  path: '/tags/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TagsTagRoute = TagsTagRouteImport.update({
+  id: '/tags/$tag',
+  path: '/tags/$tag',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TracksTrackIdRoute = TracksTrackIdRouteImport.update({
+  id: '/$trackId',
+  path: '/$trackId',
+  getParentRoute: () => TracksRouteRoute,
+} as any)
+const TweetIndexRoute = TweetIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => TweetRouteRoute,
+} as any)
+const TweetSlugRoute = TweetSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => TweetRouteRoute,
+} as any)
+const TweetLatestRoute = TweetLatestRouteImport.update({
+  id: '/latest',
+  path: '/latest',
+  getParentRoute: () => TweetRouteRoute,
+} as any)
+const TweetNewRoute = TweetNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => TweetRouteRoute,
+} as any)
+const DashboardAllEditorialRoute = DashboardAllEditorialRouteImport.update({
+  id: '/editorial',
+  path: '/editorial',
   getParentRoute: () => DashboardAllRoute,
 } as any)
 const DashboardAllMixesRoute = DashboardAllMixesRouteImport.update({
@@ -427,10 +411,26 @@ const DashboardAllMixesRoute = DashboardAllMixesRouteImport.update({
   path: '/mixes',
   getParentRoute: () => DashboardAllRoute,
 } as any)
-const DashboardAllEditorialRoute = DashboardAllEditorialRouteImport.update({
-  id: '/editorial',
-  path: '/editorial',
+const DashboardAllTweetsRoute = DashboardAllTweetsRouteImport.update({
+  id: '/tweets',
+  path: '/tweets',
   getParentRoute: () => DashboardAllRoute,
+} as any)
+const DashboardContentEditorialRoute =
+  DashboardContentEditorialRouteImport.update({
+    id: '/editorial',
+    path: '/editorial',
+    getParentRoute: () => DashboardContentRoute,
+  } as any)
+const DashboardContentMixesRoute = DashboardContentMixesRouteImport.update({
+  id: '/mixes',
+  path: '/mixes',
+  getParentRoute: () => DashboardContentRoute,
+} as any)
+const DashboardContentTweetsRoute = DashboardContentTweetsRouteImport.update({
+  id: '/tweets',
+  path: '/tweets',
+  getParentRoute: () => DashboardContentRoute,
 } as any)
 const DashboardMusicEntityEntityTypeIdRoute =
   DashboardMusicEntityEntityTypeIdRouteImport.update({
@@ -908,67 +908,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/unsubscribe': {
-      id: '/unsubscribe'
-      path: '/unsubscribe'
-      fullPath: '/unsubscribe'
-      preLoaderRoute: typeof UnsubscribeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tweets': {
-      id: '/tweets'
-      path: '/tweets'
-      fullPath: '/tweets'
-      preLoaderRoute: typeof TweetsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/subscribe': {
-      id: '/subscribe'
-      path: '/subscribe'
-      fullPath: '/subscribe'
-      preLoaderRoute: typeof SubscribeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reminders': {
-      id: '/reminders'
-      path: '/reminders'
-      fullPath: '/reminders'
-      preLoaderRoute: typeof RemindersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy': {
-      id: '/privacy'
-      path: '/privacy'
-      fullPath: '/privacy'
-      preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mix-upload': {
-      id: '/mix-upload'
-      path: '/mix-upload'
-      fullPath: '/mix-upload'
-      preLoaderRoute: typeof MixUploadRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/changelog': {
-      id: '/changelog'
-      path: '/changelog'
-      fullPath: '/changelog'
-      preLoaderRoute: typeof ChangelogRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$slug': {
@@ -978,32 +922,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/tweet': {
-      id: '/tweet'
-      path: '/tweet'
-      fullPath: '/tweet'
-      preLoaderRoute: typeof TweetRouteRouteImport
+    '/changelog': {
+      id: '/changelog'
+      path: '/changelog'
+      fullPath: '/changelog'
+      preLoaderRoute: typeof ChangelogRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/tracks': {
-      id: '/tracks'
-      path: '/tracks'
-      fullPath: '/tracks'
-      preLoaderRoute: typeof TracksRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mixes': {
-      id: '/mixes'
-      path: '/mixes'
-      fullPath: '/mixes'
-      preLoaderRoute: typeof MixesRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/labels': {
-      id: '/labels'
-      path: '/labels'
-      fullPath: '/labels'
-      preLoaderRoute: typeof LabelsRouteRouteImport
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/editorial': {
@@ -1013,340 +943,81 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EditorialRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/labels': {
+      id: '/labels'
+      path: '/labels'
+      fullPath: '/labels'
+      preLoaderRoute: typeof LabelsRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/tweet/': {
-      id: '/tweet/'
-      path: '/'
-      fullPath: '/tweet/'
-      preLoaderRoute: typeof TweetIndexRouteImport
-      parentRoute: typeof TweetRouteRoute
-    }
-    '/tags/': {
-      id: '/tags/'
-      path: '/tags'
-      fullPath: '/tags/'
-      preLoaderRoute: typeof TagsIndexRouteImport
+    '/mix-upload': {
+      id: '/mix-upload'
+      path: '/mix-upload'
+      fullPath: '/mix-upload'
+      preLoaderRoute: typeof MixUploadRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/shows/': {
-      id: '/shows/'
-      path: '/shows'
-      fullPath: '/shows/'
-      preLoaderRoute: typeof ShowsIndexRouteImport
+    '/mixes': {
+      id: '/mixes'
+      path: '/mixes'
+      fullPath: '/mixes'
+      preLoaderRoute: typeof MixesRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/mixes/': {
-      id: '/mixes/'
-      path: '/'
-      fullPath: '/mixes/'
-      preLoaderRoute: typeof MixesIndexRouteImport
-      parentRoute: typeof MixesRouteRoute
-    }
-    '/labels/': {
-      id: '/labels/'
-      path: '/'
-      fullPath: '/labels/'
-      preLoaderRoute: typeof LabelsIndexRouteImport
-      parentRoute: typeof LabelsRouteRoute
-    }
-    '/editorial/': {
-      id: '/editorial/'
-      path: '/'
-      fullPath: '/editorial/'
-      preLoaderRoute: typeof EditorialIndexRouteImport
-      parentRoute: typeof EditorialRouteRoute
-    }
-    '/djs/': {
-      id: '/djs/'
-      path: '/djs'
-      fullPath: '/djs/'
-      preLoaderRoute: typeof DjsIndexRouteImport
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/': {
-      id: '/dashboard/'
-      path: '/'
-      fullPath: '/dashboard/'
-      preLoaderRoute: typeof DashboardIndexRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/tweet/new': {
-      id: '/tweet/new'
-      path: '/new'
-      fullPath: '/tweet/new'
-      preLoaderRoute: typeof TweetNewRouteImport
-      parentRoute: typeof TweetRouteRoute
-    }
-    '/tweet/latest': {
-      id: '/tweet/latest'
-      path: '/latest'
-      fullPath: '/tweet/latest'
-      preLoaderRoute: typeof TweetLatestRouteImport
-      parentRoute: typeof TweetRouteRoute
-    }
-    '/tweet/$slug': {
-      id: '/tweet/$slug'
-      path: '/$slug'
-      fullPath: '/tweet/$slug'
-      preLoaderRoute: typeof TweetSlugRouteImport
-      parentRoute: typeof TweetRouteRoute
-    }
-    '/tracks/$trackId': {
-      id: '/tracks/$trackId'
-      path: '/$trackId'
-      fullPath: '/tracks/$trackId'
-      preLoaderRoute: typeof TracksTrackIdRouteImport
-      parentRoute: typeof TracksRouteRoute
-    }
-    '/tags/$tag': {
-      id: '/tags/$tag'
-      path: '/tags/$tag'
-      fullPath: '/tags/$tag'
-      preLoaderRoute: typeof TagsTagRouteImport
+    '/reminders': {
+      id: '/reminders'
+      path: '/reminders'
+      fullPath: '/reminders'
+      preLoaderRoute: typeof RemindersRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/spotify/callback': {
-      id: '/spotify/callback'
-      path: '/spotify/callback'
-      fullPath: '/spotify/callback'
-      preLoaderRoute: typeof SpotifyCallbackRouteImport
+    '/subscribe': {
+      id: '/subscribe'
+      path: '/subscribe'
+      fullPath: '/subscribe'
+      preLoaderRoute: typeof SubscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/shows/$showSlug': {
-      id: '/shows/$showSlug'
-      path: '/shows/$showSlug'
-      fullPath: '/shows/$showSlug'
-      preLoaderRoute: typeof ShowsShowSlugRouteImport
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/releases/$slug': {
-      id: '/releases/$slug'
-      path: '/releases/$slug'
-      fullPath: '/releases/$slug'
-      preLoaderRoute: typeof ReleasesSlugRouteImport
+    '/tracks': {
+      id: '/tracks'
+      path: '/tracks'
+      fullPath: '/tracks'
+      preLoaderRoute: typeof TracksRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/profile/$username': {
-      id: '/profile/$username'
-      path: '/profile/$username'
-      fullPath: '/profile/$username'
-      preLoaderRoute: typeof ProfileUsernameRouteImport
+    '/tweet': {
+      id: '/tweet'
+      path: '/tweet'
+      fullPath: '/tweet'
+      preLoaderRoute: typeof TweetRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/new/tweet': {
-      id: '/new/tweet'
-      path: '/new/tweet'
-      fullPath: '/new/tweet'
-      preLoaderRoute: typeof NewTweetRouteImport
+    '/tweets': {
+      id: '/tweets'
+      path: '/tweets'
+      fullPath: '/tweets'
+      preLoaderRoute: typeof TweetsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/new/editorial': {
-      id: '/new/editorial'
-      path: '/new/editorial'
-      fullPath: '/new/editorial'
-      preLoaderRoute: typeof NewEditorialRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mixes/$mixId': {
-      id: '/mixes/$mixId'
-      path: '/$mixId'
-      fullPath: '/mixes/$mixId'
-      preLoaderRoute: typeof MixesMixIdRouteImport
-      parentRoute: typeof MixesRouteRoute
-    }
-    '/labels/$labelSlug': {
-      id: '/labels/$labelSlug'
-      path: '/$labelSlug'
-      fullPath: '/labels/$labelSlug'
-      preLoaderRoute: typeof LabelsLabelSlugRouteImport
-      parentRoute: typeof LabelsRouteRoute
-    }
-    '/invite/charlie3000': {
-      id: '/invite/charlie3000'
-      path: '/invite/charlie3000'
-      fullPath: '/invite/charlie3000'
-      preLoaderRoute: typeof InviteCharlie3000RouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/editorial/$slug': {
-      id: '/editorial/$slug'
-      path: '/$slug'
-      fullPath: '/editorial/$slug'
-      preLoaderRoute: typeof EditorialSlugRouteImport
-      parentRoute: typeof EditorialRouteRoute
-    }
-    '/dashboard/users': {
-      id: '/dashboard/users'
-      path: '/users'
-      fullPath: '/dashboard/users'
-      preLoaderRoute: typeof DashboardUsersRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/shows': {
-      id: '/dashboard/shows'
-      path: '/shows'
-      fullPath: '/dashboard/shows'
-      preLoaderRoute: typeof DashboardShowsRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/sessions': {
-      id: '/dashboard/sessions'
-      path: '/sessions'
-      fullPath: '/dashboard/sessions'
-      preLoaderRoute: typeof DashboardSessionsRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/search': {
-      id: '/dashboard/search'
-      path: '/search'
-      fullPath: '/dashboard/search'
-      preLoaderRoute: typeof DashboardSearchRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/profile': {
-      id: '/dashboard/profile'
-      path: '/profile'
-      fullPath: '/dashboard/profile'
-      preLoaderRoute: typeof DashboardProfileRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/playlists': {
-      id: '/dashboard/playlists'
-      path: '/playlists'
-      fullPath: '/dashboard/playlists'
-      preLoaderRoute: typeof DashboardPlaylistsRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/player': {
-      id: '/dashboard/player'
-      path: '/player'
-      fullPath: '/dashboard/player'
-      preLoaderRoute: typeof DashboardPlayerRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/overview': {
-      id: '/dashboard/overview'
-      path: '/overview'
-      fullPath: '/dashboard/overview'
-      preLoaderRoute: typeof DashboardOverviewRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/newsletter': {
-      id: '/dashboard/newsletter'
-      path: '/newsletter'
-      fullPath: '/dashboard/newsletter'
-      preLoaderRoute: typeof DashboardNewsletterRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/music': {
-      id: '/dashboard/music'
-      path: '/music'
-      fullPath: '/dashboard/music'
-      preLoaderRoute: typeof DashboardMusicRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/integrations': {
-      id: '/dashboard/integrations'
-      path: '/integrations'
-      fullPath: '/dashboard/integrations'
-      preLoaderRoute: typeof DashboardIntegrationsRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/imports': {
-      id: '/dashboard/imports'
-      path: '/imports'
-      fullPath: '/dashboard/imports'
-      preLoaderRoute: typeof DashboardImportsRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/frontend-errors': {
-      id: '/dashboard/frontend-errors'
-      path: '/frontend-errors'
-      fullPath: '/dashboard/frontend-errors'
-      preLoaderRoute: typeof DashboardFrontendErrorsRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/email-logs': {
-      id: '/dashboard/email-logs'
-      path: '/email-logs'
-      fullPath: '/dashboard/email-logs'
-      preLoaderRoute: typeof DashboardEmailLogsRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/email': {
-      id: '/dashboard/email'
-      path: '/email'
-      fullPath: '/dashboard/email'
-      preLoaderRoute: typeof DashboardEmailRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/content': {
-      id: '/dashboard/content'
-      path: '/content'
-      fullPath: '/dashboard/content'
-      preLoaderRoute: typeof DashboardContentRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/bluesky': {
-      id: '/dashboard/bluesky'
-      path: '/bluesky'
-      fullPath: '/dashboard/bluesky'
-      preLoaderRoute: typeof DashboardBlueskyRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/appearance': {
-      id: '/dashboard/appearance'
-      path: '/appearance'
-      fullPath: '/dashboard/appearance'
-      preLoaderRoute: typeof DashboardAppearanceRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/all': {
-      id: '/dashboard/all'
-      path: '/all'
-      fullPath: '/dashboard/all'
-      preLoaderRoute: typeof DashboardAllRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/admin': {
-      id: '/dashboard/admin'
-      path: '/admin'
-      fullPath: '/dashboard/admin'
-      preLoaderRoute: typeof DashboardAdminRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/auth/verify-email': {
-      id: '/auth/verify-email'
-      path: '/auth/verify-email'
-      fullPath: '/auth/verify-email'
-      preLoaderRoute: typeof AuthVerifyEmailRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/sign-up': {
-      id: '/auth/sign-up'
-      path: '/auth/sign-up'
-      fullPath: '/auth/sign-up'
-      preLoaderRoute: typeof AuthSignUpRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/sign-in': {
-      id: '/auth/sign-in'
-      path: '/auth/sign-in'
-      fullPath: '/auth/sign-in'
-      preLoaderRoute: typeof AuthSignInRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/reset-password': {
-      id: '/auth/reset-password'
-      path: '/auth/reset-password'
-      fullPath: '/auth/reset-password'
-      preLoaderRoute: typeof AuthResetPasswordRouteImport
+    '/unsubscribe': {
+      id: '/unsubscribe'
+      path: '/unsubscribe'
+      fullPath: '/unsubscribe'
+      preLoaderRoute: typeof UnsubscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/forgot-password': {
@@ -1356,32 +1027,340 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/content/tweets': {
-      id: '/dashboard/content/tweets'
-      path: '/tweets'
-      fullPath: '/dashboard/content/tweets'
-      preLoaderRoute: typeof DashboardContentTweetsRouteImport
-      parentRoute: typeof DashboardContentRoute
+    '/auth/reset-password': {
+      id: '/auth/reset-password'
+      path: '/auth/reset-password'
+      fullPath: '/auth/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/dashboard/content/mixes': {
-      id: '/dashboard/content/mixes'
-      path: '/mixes'
-      fullPath: '/dashboard/content/mixes'
-      preLoaderRoute: typeof DashboardContentMixesRouteImport
-      parentRoute: typeof DashboardContentRoute
+    '/auth/sign-in': {
+      id: '/auth/sign-in'
+      path: '/auth/sign-in'
+      fullPath: '/auth/sign-in'
+      preLoaderRoute: typeof AuthSignInRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/dashboard/content/editorial': {
-      id: '/dashboard/content/editorial'
+    '/auth/sign-up': {
+      id: '/auth/sign-up'
+      path: '/auth/sign-up'
+      fullPath: '/auth/sign-up'
+      preLoaderRoute: typeof AuthSignUpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/verify-email': {
+      id: '/auth/verify-email'
+      path: '/auth/verify-email'
+      fullPath: '/auth/verify-email'
+      preLoaderRoute: typeof AuthVerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/admin': {
+      id: '/dashboard/admin'
+      path: '/admin'
+      fullPath: '/dashboard/admin'
+      preLoaderRoute: typeof DashboardAdminRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/all': {
+      id: '/dashboard/all'
+      path: '/all'
+      fullPath: '/dashboard/all'
+      preLoaderRoute: typeof DashboardAllRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/appearance': {
+      id: '/dashboard/appearance'
+      path: '/appearance'
+      fullPath: '/dashboard/appearance'
+      preLoaderRoute: typeof DashboardAppearanceRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/bluesky': {
+      id: '/dashboard/bluesky'
+      path: '/bluesky'
+      fullPath: '/dashboard/bluesky'
+      preLoaderRoute: typeof DashboardBlueskyRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/content': {
+      id: '/dashboard/content'
+      path: '/content'
+      fullPath: '/dashboard/content'
+      preLoaderRoute: typeof DashboardContentRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/email': {
+      id: '/dashboard/email'
+      path: '/email'
+      fullPath: '/dashboard/email'
+      preLoaderRoute: typeof DashboardEmailRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/email-logs': {
+      id: '/dashboard/email-logs'
+      path: '/email-logs'
+      fullPath: '/dashboard/email-logs'
+      preLoaderRoute: typeof DashboardEmailLogsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/frontend-errors': {
+      id: '/dashboard/frontend-errors'
+      path: '/frontend-errors'
+      fullPath: '/dashboard/frontend-errors'
+      preLoaderRoute: typeof DashboardFrontendErrorsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/imports': {
+      id: '/dashboard/imports'
+      path: '/imports'
+      fullPath: '/dashboard/imports'
+      preLoaderRoute: typeof DashboardImportsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/integrations': {
+      id: '/dashboard/integrations'
+      path: '/integrations'
+      fullPath: '/dashboard/integrations'
+      preLoaderRoute: typeof DashboardIntegrationsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/music': {
+      id: '/dashboard/music'
+      path: '/music'
+      fullPath: '/dashboard/music'
+      preLoaderRoute: typeof DashboardMusicRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/newsletter': {
+      id: '/dashboard/newsletter'
+      path: '/newsletter'
+      fullPath: '/dashboard/newsletter'
+      preLoaderRoute: typeof DashboardNewsletterRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/overview': {
+      id: '/dashboard/overview'
+      path: '/overview'
+      fullPath: '/dashboard/overview'
+      preLoaderRoute: typeof DashboardOverviewRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/player': {
+      id: '/dashboard/player'
+      path: '/player'
+      fullPath: '/dashboard/player'
+      preLoaderRoute: typeof DashboardPlayerRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/playlists': {
+      id: '/dashboard/playlists'
+      path: '/playlists'
+      fullPath: '/dashboard/playlists'
+      preLoaderRoute: typeof DashboardPlaylistsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/profile': {
+      id: '/dashboard/profile'
+      path: '/profile'
+      fullPath: '/dashboard/profile'
+      preLoaderRoute: typeof DashboardProfileRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/search': {
+      id: '/dashboard/search'
+      path: '/search'
+      fullPath: '/dashboard/search'
+      preLoaderRoute: typeof DashboardSearchRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/sessions': {
+      id: '/dashboard/sessions'
+      path: '/sessions'
+      fullPath: '/dashboard/sessions'
+      preLoaderRoute: typeof DashboardSessionsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/shows': {
+      id: '/dashboard/shows'
+      path: '/shows'
+      fullPath: '/dashboard/shows'
+      preLoaderRoute: typeof DashboardShowsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/users': {
+      id: '/dashboard/users'
+      path: '/users'
+      fullPath: '/dashboard/users'
+      preLoaderRoute: typeof DashboardUsersRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/djs/': {
+      id: '/djs/'
+      path: '/djs'
+      fullPath: '/djs/'
+      preLoaderRoute: typeof DjsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/editorial/': {
+      id: '/editorial/'
+      path: '/'
+      fullPath: '/editorial/'
+      preLoaderRoute: typeof EditorialIndexRouteImport
+      parentRoute: typeof EditorialRouteRoute
+    }
+    '/editorial/$slug': {
+      id: '/editorial/$slug'
+      path: '/$slug'
+      fullPath: '/editorial/$slug'
+      preLoaderRoute: typeof EditorialSlugRouteImport
+      parentRoute: typeof EditorialRouteRoute
+    }
+    '/invite/charlie3000': {
+      id: '/invite/charlie3000'
+      path: '/invite/charlie3000'
+      fullPath: '/invite/charlie3000'
+      preLoaderRoute: typeof InviteCharlie3000RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/labels/': {
+      id: '/labels/'
+      path: '/'
+      fullPath: '/labels/'
+      preLoaderRoute: typeof LabelsIndexRouteImport
+      parentRoute: typeof LabelsRouteRoute
+    }
+    '/labels/$labelSlug': {
+      id: '/labels/$labelSlug'
+      path: '/$labelSlug'
+      fullPath: '/labels/$labelSlug'
+      preLoaderRoute: typeof LabelsLabelSlugRouteImport
+      parentRoute: typeof LabelsRouteRoute
+    }
+    '/mixes/': {
+      id: '/mixes/'
+      path: '/'
+      fullPath: '/mixes/'
+      preLoaderRoute: typeof MixesIndexRouteImport
+      parentRoute: typeof MixesRouteRoute
+    }
+    '/mixes/$mixId': {
+      id: '/mixes/$mixId'
+      path: '/$mixId'
+      fullPath: '/mixes/$mixId'
+      preLoaderRoute: typeof MixesMixIdRouteImport
+      parentRoute: typeof MixesRouteRoute
+    }
+    '/new/editorial': {
+      id: '/new/editorial'
+      path: '/new/editorial'
+      fullPath: '/new/editorial'
+      preLoaderRoute: typeof NewEditorialRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/new/tweet': {
+      id: '/new/tweet'
+      path: '/new/tweet'
+      fullPath: '/new/tweet'
+      preLoaderRoute: typeof NewTweetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile/$username': {
+      id: '/profile/$username'
+      path: '/profile/$username'
+      fullPath: '/profile/$username'
+      preLoaderRoute: typeof ProfileUsernameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/releases/$slug': {
+      id: '/releases/$slug'
+      path: '/releases/$slug'
+      fullPath: '/releases/$slug'
+      preLoaderRoute: typeof ReleasesSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shows/': {
+      id: '/shows/'
+      path: '/shows'
+      fullPath: '/shows/'
+      preLoaderRoute: typeof ShowsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shows/$showSlug': {
+      id: '/shows/$showSlug'
+      path: '/shows/$showSlug'
+      fullPath: '/shows/$showSlug'
+      preLoaderRoute: typeof ShowsShowSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/spotify/callback': {
+      id: '/spotify/callback'
+      path: '/spotify/callback'
+      fullPath: '/spotify/callback'
+      preLoaderRoute: typeof SpotifyCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tags/': {
+      id: '/tags/'
+      path: '/tags'
+      fullPath: '/tags/'
+      preLoaderRoute: typeof TagsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tags/$tag': {
+      id: '/tags/$tag'
+      path: '/tags/$tag'
+      fullPath: '/tags/$tag'
+      preLoaderRoute: typeof TagsTagRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tracks/$trackId': {
+      id: '/tracks/$trackId'
+      path: '/$trackId'
+      fullPath: '/tracks/$trackId'
+      preLoaderRoute: typeof TracksTrackIdRouteImport
+      parentRoute: typeof TracksRouteRoute
+    }
+    '/tweet/': {
+      id: '/tweet/'
+      path: '/'
+      fullPath: '/tweet/'
+      preLoaderRoute: typeof TweetIndexRouteImport
+      parentRoute: typeof TweetRouteRoute
+    }
+    '/tweet/$slug': {
+      id: '/tweet/$slug'
+      path: '/$slug'
+      fullPath: '/tweet/$slug'
+      preLoaderRoute: typeof TweetSlugRouteImport
+      parentRoute: typeof TweetRouteRoute
+    }
+    '/tweet/latest': {
+      id: '/tweet/latest'
+      path: '/latest'
+      fullPath: '/tweet/latest'
+      preLoaderRoute: typeof TweetLatestRouteImport
+      parentRoute: typeof TweetRouteRoute
+    }
+    '/tweet/new': {
+      id: '/tweet/new'
+      path: '/new'
+      fullPath: '/tweet/new'
+      preLoaderRoute: typeof TweetNewRouteImport
+      parentRoute: typeof TweetRouteRoute
+    }
+    '/dashboard/all/editorial': {
+      id: '/dashboard/all/editorial'
       path: '/editorial'
-      fullPath: '/dashboard/content/editorial'
-      preLoaderRoute: typeof DashboardContentEditorialRouteImport
-      parentRoute: typeof DashboardContentRoute
-    }
-    '/dashboard/all/tweets': {
-      id: '/dashboard/all/tweets'
-      path: '/tweets'
-      fullPath: '/dashboard/all/tweets'
-      preLoaderRoute: typeof DashboardAllTweetsRouteImport
+      fullPath: '/dashboard/all/editorial'
+      preLoaderRoute: typeof DashboardAllEditorialRouteImport
       parentRoute: typeof DashboardAllRoute
     }
     '/dashboard/all/mixes': {
@@ -1391,12 +1370,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAllMixesRouteImport
       parentRoute: typeof DashboardAllRoute
     }
-    '/dashboard/all/editorial': {
-      id: '/dashboard/all/editorial'
-      path: '/editorial'
-      fullPath: '/dashboard/all/editorial'
-      preLoaderRoute: typeof DashboardAllEditorialRouteImport
+    '/dashboard/all/tweets': {
+      id: '/dashboard/all/tweets'
+      path: '/tweets'
+      fullPath: '/dashboard/all/tweets'
+      preLoaderRoute: typeof DashboardAllTweetsRouteImport
       parentRoute: typeof DashboardAllRoute
+    }
+    '/dashboard/content/editorial': {
+      id: '/dashboard/content/editorial'
+      path: '/editorial'
+      fullPath: '/dashboard/content/editorial'
+      preLoaderRoute: typeof DashboardContentEditorialRouteImport
+      parentRoute: typeof DashboardContentRoute
+    }
+    '/dashboard/content/mixes': {
+      id: '/dashboard/content/mixes'
+      path: '/mixes'
+      fullPath: '/dashboard/content/mixes'
+      preLoaderRoute: typeof DashboardContentMixesRouteImport
+      parentRoute: typeof DashboardContentRoute
+    }
+    '/dashboard/content/tweets': {
+      id: '/dashboard/content/tweets'
+      path: '/tweets'
+      fullPath: '/dashboard/content/tweets'
+      preLoaderRoute: typeof DashboardContentTweetsRouteImport
+      parentRoute: typeof DashboardContentRoute
     }
     '/dashboard/music-entity/$entityType/$id': {
       id: '/dashboard/music-entity/$entityType/$id'
