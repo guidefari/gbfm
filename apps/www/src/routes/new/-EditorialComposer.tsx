@@ -29,11 +29,14 @@ import { MusicEntityPicker } from '@/components/editor/music-entity/MusicEntityP
 import { ExternalMediaPickerDialog } from '@/components/editorial/ExternalMediaPickerDialog'
 import { ComposerCanvas } from './-ComposerCanvas'
 import { ComposerHeader } from './-ComposerHeader'
+import { PublishDialog } from './-PublishDialog'
+import { useAutosave } from './-useAutosave'
 
 interface EditorialSaveRequest {
   formData: EditorialFormData
   artworkFile: File | null
   creatorIds: string[]
+  silent?: boolean
 }
 
 function createEmptyFormData(): EditorialFormData {
@@ -99,6 +102,7 @@ export function EditorialComposer({ editSlug }: { editSlug: string | undefined }
   const [slugIsManual, setSlugIsManual] = useState(Boolean(editSlug))
   const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null)
   const [externalMediaOpen, setExternalMediaOpen] = useState(false)
+  const [publishOpen, setPublishOpen] = useState(false)
 
   const {
     isEditMode,
@@ -230,10 +234,12 @@ export function EditorialComposer({ editSlug }: { editSlug: string | undefined }
         )
       )
       setUploadStep('idle')
-      toast({
-        title: savedRequest.formData.draft ? 'Draft saved' : 'Post published',
-        description: `${savedPost.title || savedPost.slug} saved successfully.`
-      })
+      if (!savedRequest.silent) {
+        toast({
+          title: savedRequest.formData.draft ? 'Draft saved' : 'Post published',
+          description: `${savedPost.title || savedPost.slug} saved successfully.`
+        })
+      }
 
       if (savedRequest.formData.draft) {
         if (!isEditMode) {
@@ -313,6 +319,13 @@ export function EditorialComposer({ editSlug }: { editSlug: string | undefined }
     })
   }
 
+  useAutosave({
+    enabled:
+      hasUnsavedChanges && canSave && !saveMutation.isPending && (formData.draft || !isEditMode),
+    dirtyKey: currentSnapshot,
+    onSave: () => handleSave(true)
+  })
+
   function handleDiscard() {
     if (hasUnsavedChanges && !window.confirm('Discard your unsaved editorial changes?')) return
 
@@ -377,6 +390,17 @@ export function EditorialComposer({ editSlug }: { editSlug: string | undefined }
     />
   )
 
+  const addEditorialTag = (tag: string) =>
+    setFormData((previous) => ({
+      ...previous,
+      tags: Array.from(new Set([...previous.tags, tag]))
+    }))
+  const removeEditorialTag = (tag: string) =>
+    setFormData((previous) => ({
+      ...previous,
+      tags: previous.tags.filter((existing) => existing !== tag)
+    }))
+
   return (
     <div className='text-foreground'>
       <ComposerHeader
@@ -384,10 +408,9 @@ export function EditorialComposer({ editSlug }: { editSlug: string | undefined }
         saveState={saveState}
         isSaving={saveMutation.isPending}
         canSave={canSave}
-        primaryLabel='Publish'
+        primaryLabel='Continue'
         onDiscard={handleDiscard}
-        onSaveDraft={() => handleSave(true)}
-        onPublish={() => handleSave(false)}
+        onPublish={() => setPublishOpen(true)}
       />
 
       <ComposerCanvas
@@ -400,23 +423,10 @@ export function EditorialComposer({ editSlug }: { editSlug: string | undefined }
         tags={formData.tags}
         availableTags={availableTags}
         contentPlaceholder='Start writing…'
-        contentTypeLabel='Editorial'
         resolutionScope='editorial'
-        metadataSlot={metadata}
         onTitleChange={(value) => handleTextInputChange('title', value)}
         onContentChange={(value) => handleTextInputChange('content', value)}
-        onAddTag={(tag) =>
-          setFormData((previous) => ({
-            ...previous,
-            tags: Array.from(new Set([...previous.tags, tag]))
-          }))
-        }
-        onRemoveTag={(tag) =>
-          setFormData((previous) => ({
-            ...previous,
-            tags: previous.tags.filter((existing) => existing !== tag)
-          }))
-        }
+        onAddTag={addEditorialTag}
         onPendingMusicChange={setPendingMusicCount}
         editorToolbarActions={(insertBlock) => (
           <>
@@ -438,6 +448,22 @@ export function EditorialComposer({ editSlug }: { editSlug: string | undefined }
             />
           </>
         )}
+      />
+
+      <PublishDialog
+        open={publishOpen}
+        onOpenChange={setPublishOpen}
+        title={isEditMode ? 'Update editorial' : 'Publish editorial'}
+        tags={formData.tags}
+        availableTags={availableTags}
+        contentTypeLabel='Editorial'
+        isSaving={saveMutation.isPending}
+        canPublish={canSave}
+        publishLabel={isEditMode ? 'Update' : 'Publish'}
+        metadataSlot={metadata}
+        onAddTag={addEditorialTag}
+        onRemoveTag={removeEditorialTag}
+        onPublish={() => handleSave(false)}
       />
     </div>
   )

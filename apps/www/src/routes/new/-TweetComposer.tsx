@@ -24,8 +24,10 @@ import {
 import { useResolveMusicEntity } from '@/lib/music-entity-resolution'
 import { ComposerCanvas } from './-ComposerCanvas'
 import { ComposerHeader } from './-ComposerHeader'
+import { PublishDialog } from './-PublishDialog'
 import type { EditorialSaveState } from './-editorial-types'
 import { TWEET_MAX_LENGTH } from './-tweet-hashtags'
+import { useAutosave } from './-useAutosave'
 import { useContentEdit } from './-useContentEdit'
 
 type PostType = 'post' | 'micro'
@@ -211,7 +213,17 @@ export function TweetComposer({ editSlug }: { editSlug: string | undefined }) {
   const [commentary, setCommentary] = useState('')
   const [tags, setTags] = useState<string[]>([])
   const [pendingMusicCount, setPendingMusicCount] = useState(0)
+  const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null)
+  const [publishOpen, setPublishOpen] = useState(false)
+  const savedSlugRef = useRef<string | null>(null)
+  const slugBaseRef = useRef<string | null>(null)
   const { data: availableTags } = usePostTags()
+
+  const currentSnapshot = useMemo(
+    () => JSON.stringify({ tweet, commentary, tags, musicUrl }),
+    [tweet, commentary, tags, musicUrl]
+  )
+  const hasUnsavedChanges = savedSnapshot !== null && savedSnapshot !== currentSnapshot
 
   const {
     isEditMode,
@@ -238,10 +250,26 @@ export function TweetComposer({ editSlug }: { editSlug: string | undefined }) {
   useEffect(() => {
     if (!existingPost || restoredRef.current) return
     restoredRef.current = true
+    savedSlugRef.current = existingPost.slug
     setTweet(existingPost.title ?? '')
     setCommentary(existingPost.content ?? '')
     setTags(existingPost.tags ?? [])
+    setSavedSnapshot(
+      JSON.stringify({
+        tweet: existingPost.title ?? '',
+        commentary: existingPost.content ?? '',
+        tags: existingPost.tags ?? [],
+        musicUrl: ''
+      })
+    )
   }, [existingPost])
+
+  const armedRef = useRef(false)
+  useEffect(() => {
+    if (armedRef.current || isEditMode) return
+    armedRef.current = true
+    setSavedSnapshot(JSON.stringify({ tweet: '', commentary: '', tags: [], musicUrl: '' }))
+  }, [isEditMode])
 
   const tweetCount = tweet.length
 
@@ -395,19 +423,18 @@ export function TweetComposer({ editSlug }: { editSlug: string | undefined }) {
   }
 
   const submitMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async ({ draft }: { draft: boolean; silent?: boolean }) => {
       if (!user) {
         throw new Error('Please sign in')
       }
 
-      if (isEditMode && !existingPost) {
-        throw new Error('Tweet is still loading')
-      }
-
+      const persistedSlug = savedSlugRef.current ?? existingPost?.slug ?? null
       const title = tweet.trim() || null
-      const slugBase = normalizeSlugBase(tweet.trim() || 'tweet') || 'tweet'
-      const slug = existingPost?.slug ?? `${slugBase}-${Date.now().toString(36)}`
-      const creatorIds = isEditMode
+      if (!slugBaseRef.current) {
+        slugBaseRef.current = `${normalizeSlugBase(tweet.trim() || 'tweet') || 'tweet'}-${Date.now().toString(36)}`
+      }
+      const slug = persistedSlug ?? slugBaseRef.current
+      const creatorIds = persistedSlug
         ? existingPost?.creators?.map((creator) => creator.id)
         : [user.id]
 
@@ -418,7 +445,7 @@ export function TweetComposer({ editSlug }: { editSlug: string | undefined }) {
         content: commentary.trim() ? commentary : null,
         thumbnailUrl: existingPost?.thumbnailUrl ?? undefined,
         tags,
-        draft: existingPost?.draft ?? false,
+        draft,
         type: 'micro' as const,
         musicEntityType: resolved.data?.entityType ?? existingPost?.musicEntityType ?? null,
         musicEntityId: resolved.data?.entity?.id ?? existingPost?.musicEntityId ?? null,
@@ -426,16 +453,18 @@ export function TweetComposer({ editSlug }: { editSlug: string | undefined }) {
         creatorIds: creatorIds || undefined
       }
 
-      const endpoint = isEditMode
-        ? apiUrl(`/content/posts/${existingPost?.slug}`)
+      const endpoint = persistedSlug
+        ? apiUrl(`/content/posts/${persistedSlug}`)
         : apiUrl('/content/post')
 
       return fetcher<PostItem>(endpoint, {
-        method: isEditMode ? 'PATCH' : 'POST',
+        method: persistedSlug ? 'PATCH' : 'POST',
         body: JSON.stringify(payload)
       })
     },
-    onSuccess: async (savedPost) => {
+    onSuccess: async (savedPost, variables) => {
+      savedSlugRef.current = savedPost.slug
+      setSavedSnapshot(currentSnapshot)
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['post', editSlug] }),
         queryClient.invalidateQueries({
@@ -446,6 +475,8 @@ export function TweetComposer({ editSlug }: { editSlug: string | undefined }) {
         queryClient.invalidateQueries({ queryKey: ['admin', 'posts', 'micro'] })
       ])
 
+      if (variables.draft) return
+
       toast({
         title: isEditMode ? 'Tweet updated' : 'Tweet captured',
         description: `Saved as ${savedPost.slug}`
@@ -453,7 +484,8 @@ export function TweetComposer({ editSlug }: { editSlug: string | undefined }) {
 
       void router.navigate({ to: '/tweet/$slug', params: { slug: savedPost.slug } })
     },
-    onError: (error) => {
+    onError: (error, variables) => {
+      if (variables.silent) return
       toast({
         variant: 'destructive',
         title: 'Failed to save tweet',
@@ -462,13 +494,19 @@ export function TweetComposer({ editSlug }: { editSlug: string | undefined }) {
     }
   })
 
+  useAutosave({
+    enabled: hasUnsavedChanges && canSubmit && !submitMutation.isPending,
+    dirtyKey: currentSnapshot,
+    onSave: () => submitMutation.mutate({ draft: true, silent: true })
+  })
+
   const saveState: EditorialSaveState = submitMutation.isPending
     ? 'saving'
     : submitMutation.isError
       ? 'error'
-      : submitMutation.isSuccess
-        ? 'saved'
-        : 'unsaved'
+      : hasUnsavedChanges
+        ? 'unsaved'
+        : 'saved'
 
   if (loadingPost && isEditMode) {
     return (
@@ -516,14 +554,14 @@ export function TweetComposer({ editSlug }: { editSlug: string | undefined }) {
         saveState={saveState}
         isSaving={submitMutation.isPending}
         canSave={canSubmit}
-        primaryLabel={isEditMode ? 'Update tweet' : 'Save tweet'}
+        primaryLabel='Continue'
         onDiscard={() => {
           setTweet('')
           setCommentary('')
           setTags([])
           setMusicUrl('')
         }}
-        onPublish={() => submitMutation.mutate()}
+        onPublish={() => setPublishOpen(true)}
       />
 
       <ComposerCanvas
@@ -545,12 +583,10 @@ export function TweetComposer({ editSlug }: { editSlug: string | undefined }) {
         tags={tags}
         availableTags={availableTags}
         contentPlaceholder='Why this one? Paste a tweet link here to quote it.'
-        contentTypeLabel='Tweet'
         resolutionScope='tweet'
         onTitleChange={handleTweetChange}
         onContentChange={setCommentary}
         onAddTag={addTag}
-        onRemoveTag={removeTag}
         onPendingMusicChange={setPendingMusicCount}
         musicSlot={
           <MusicSlot
@@ -587,6 +623,21 @@ export function TweetComposer({ editSlug }: { editSlug: string | undefined }) {
             content={resolvedQuote.data?.content}
           />
         }
+      />
+
+      <PublishDialog
+        open={publishOpen}
+        onOpenChange={setPublishOpen}
+        title={isEditMode ? 'Update tweet' : 'Publish tweet'}
+        tags={tags}
+        availableTags={availableTags}
+        contentTypeLabel='Tweet'
+        isSaving={submitMutation.isPending}
+        canPublish={canSubmit}
+        publishLabel={isEditMode ? 'Update' : 'Publish'}
+        onAddTag={addTag}
+        onRemoveTag={removeTag}
+        onPublish={() => submitMutation.mutate({ draft: false })}
       />
     </div>
   )

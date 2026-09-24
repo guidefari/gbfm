@@ -1,6 +1,6 @@
 'use client'
 
-import { Input, Label, TagsInput, Textarea } from '@gbfm/ui'
+import { Input, Label, Textarea } from '@gbfm/ui'
 import { type ReactNode, useCallback, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Effect } from 'effect'
@@ -25,16 +25,13 @@ export interface ComposerCanvasProps {
   tags: string[]
   availableTags: readonly string[]
   contentPlaceholder: string
-  contentTypeLabel: string
   resolutionScope: 'tweet' | 'editorial'
   musicSlot?: ReactNode
-  metadataSlot?: ReactNode
   belowEditorSlot?: ReactNode
   editorToolbarActions?: (insertBlock: (markdown: string) => void) => ReactNode
   onTitleChange: (value: string) => void
   onContentChange: (value: string) => void
   onAddTag: (tag: string) => void
-  onRemoveTag: (tag: string) => void
   onPendingMusicChange?: (count: number) => void
 }
 
@@ -49,16 +46,13 @@ export function ComposerCanvas({
   tags,
   availableTags,
   contentPlaceholder,
-  contentTypeLabel,
   resolutionScope,
   musicSlot,
-  metadataSlot,
   belowEditorSlot,
   editorToolbarActions,
   onTitleChange,
   onContentChange,
   onAddTag,
-  onRemoveTag,
   onPendingMusicChange
 }: ComposerCanvasProps) {
   const queryClient = useQueryClient()
@@ -132,21 +126,9 @@ export function ComposerCanvas({
             />
           </div>
         ) : null}
-        {metadataSlot}
       </div>
 
       {musicSlot ? <div className='pb-6'>{musicSlot}</div> : null}
-
-      <div className='pb-6'>
-        <TagsInput
-          tags={tags}
-          availableTags={availableTags}
-          label='Tags'
-          onAddTag={onAddTag}
-          onRemoveTag={onRemoveTag}
-          contentTypeLabel={contentTypeLabel}
-        />
-      </div>
 
       <section aria-label='Content'>
         <SimpleMarkdownEditor
