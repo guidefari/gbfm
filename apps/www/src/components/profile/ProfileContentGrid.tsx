@@ -1,5 +1,5 @@
 import { HorizontalScrollCards } from '@gbfm/ui'
-import { Link } from '@tanstack/react-router'
+import { Link } from '@/lib/navigation'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Artwork } from '@/components/common/Artwork'
 import { useHorizontalScroll } from '@/hooks/useHorizontalScroll'

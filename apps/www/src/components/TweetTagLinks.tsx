@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link } from '@/lib/navigation'
 
 type Props = {
   tags: readonly string[]

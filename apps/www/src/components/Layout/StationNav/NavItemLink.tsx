@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link } from '@/lib/navigation'
 import { cn } from '@/lib/utils'
 import type { NavItem } from '../NavLinks'
 
@@ -32,6 +32,8 @@ export function NavItemLink({ item, onNavigate }: { item: NavItem; onNavigate?: 
       </div>
     )
   }
+
+  if (item.slug === undefined) return null
 
   return (
     <Link to={item.slug} onClick={onNavigate} className={navRowClass}>

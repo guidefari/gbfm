@@ -1,0 +1,6 @@
+---
+import { buildHref } from '@/lib/navigation'
+
+const edit = Astro.url.searchParams.get('edit') ?? undefined
+return Astro.redirect(buildHref({ to: '/new', search: { mode: 'editorial', edit } }))
+---

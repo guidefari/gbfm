@@ -1,4 +1,4 @@
-import { redirect } from '@tanstack/react-router'
+import { redirect } from '@/lib/page'
 import { Effect } from 'effect'
 import { getApiClient } from '@/lib/api-client'
 import { redirectToLatestTweet } from './-latest'

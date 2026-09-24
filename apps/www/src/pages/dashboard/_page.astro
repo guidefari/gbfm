@@ -1,0 +1,31 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { buildHref } from '@/lib/navigation'
+import { PageRedirect } from '@/lib/page'
+import { preparePage } from '@/lib/prepare-page'
+
+interface Props {
+  readonly route: typeof import('@/routes/dashboard/index').Route
+  readonly page: typeof import('@/routes/dashboard/index').Page
+  readonly params?: Readonly<Record<string, string>>
+}
+
+const { route: Route, page: Page, params = {} } = Astro.props
+
+let prepared
+try {
+  prepared = await preparePage(Route, Astro.url, params, Astro.locals.auth)
+} catch (cause) {
+  if (cause instanceof PageRedirect) return Astro.redirect(buildHref(cause.options))
+  throw cause
+}
+---
+
+<BaseLayout head={prepared.head}>
+  <Page
+    client:load
+    params={prepared.params}
+    search={prepared.search}
+    loaderData={prepared.loaderData}
+  />
+</BaseLayout>

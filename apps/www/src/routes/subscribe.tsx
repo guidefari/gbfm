@@ -1,5 +1,6 @@
+import { createPageComponent } from '@/components/PageApp'
 import { Button, Input } from '@gbfm/ui'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from '@/lib/page'
 import { CheckCircle, Loader2, Mail } from 'lucide-react'
 import { useState } from 'react'
 import { useNewsletterSubscribe } from '@/lib/http'
@@ -107,3 +108,5 @@ function Subscribe() {
     </section>
   )
 }
+
+export const Page = createPageComponent(Route)

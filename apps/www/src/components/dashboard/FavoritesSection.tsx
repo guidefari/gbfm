@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link } from '@/lib/navigation'
 import { Heart } from 'lucide-react'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import type { Favorite } from '@/lib/http'

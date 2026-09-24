@@ -1,4 +1,6 @@
-import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
+import { createPageComponent } from '@/components/PageApp'
+import { createFileRoute } from '@/lib/page'
+import { Link, useRouter } from '@/lib/navigation'
 import { MessageCircle } from 'lucide-react'
 import type { MouseEvent } from 'react'
 import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
@@ -131,3 +133,5 @@ function TagPage() {
     </div>
   )
 }
+
+export const Page = createPageComponent(Route)

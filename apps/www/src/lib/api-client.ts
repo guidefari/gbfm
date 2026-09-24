@@ -3,7 +3,9 @@ import { Effect, Layer } from 'effect'
 import { FetchHttpClient } from 'effect/unstable/http'
 import { HttpApiClient } from 'effect/unstable/httpapi'
 
-const VPS_BASE_URL = import.meta.env.VITE_VPS_BASE_URL || window.location.origin
+const VPS_BASE_URL =
+  import.meta.env.VITE_VPS_BASE_URL ||
+  ('window' in globalThis ? window.location.origin : 'http://localhost:4321')
 
 const FetchLive = FetchHttpClient.layer.pipe(
   Layer.provide(Layer.succeed(FetchHttpClient.RequestInit, { credentials: 'include' }))

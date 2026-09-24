@@ -1,0 +1,70 @@
+---
+import { ClientRouter } from 'astro:transitions'
+import '@/styles/main.css'
+import type { PageHead } from '@/lib/page'
+
+interface Props {
+  readonly head?: PageHead
+}
+
+const { head } = Astro.props
+const title = head?.meta?.find((entry) => entry.title !== undefined)?.title
+const metadata = head?.meta?.filter((entry) => entry.title === undefined) ?? []
+const scripts =
+  head?.scripts?.map((entry) => ({
+    type: entry.type ?? 'application/ld+json',
+    children: entry.children?.replace(/</g, String.raw`\u003c`) ?? ''
+  })) ?? []
+---
+
+<!doctype html>
+<html lang='en'>
+  <head>
+    <meta charset='UTF-8' />
+    <link rel='icon' type='image/png' href='/fav.png' />
+    <link
+      rel='preload'
+      href='/fonts/JetBrainsMono-ExtraBold.woff2'
+      as='font'
+      type='font/woff2'
+      crossorigin='anonymous'
+    />
+    <meta name='viewport' content='width=device-width, initial-scale=1, viewport-fit=cover' />
+    <title>{title ?? 'goosebumps.fm'}</title>
+    {
+      metadata.map((entry) => (
+        <meta
+          name={entry.name}
+          property={entry.property}
+          content={entry.content}
+        />
+      ))
+    }
+    {
+      head?.links?.map((entry) => (
+        <link
+          rel={entry.rel}
+          href={entry.href}
+          type={entry.type}
+        />
+      ))
+    }
+    {
+      scripts.map((entry) => (
+        <script type={entry.type} set:html={entry.children} />
+      ))
+    }
+    <ClientRouter />
+    <script is:inline>
+      const storedTheme = localStorage.getItem('vite-ui-theme')
+      document.documentElement.classList.toggle(
+        'dark',
+        storedTheme === 'dark' ||
+          (storedTheme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
+      )
+    </script>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

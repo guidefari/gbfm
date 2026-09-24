@@ -13,7 +13,7 @@ import {
   toast
 } from '@gbfm/ui'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useRouter } from '@tanstack/react-router'
+import { useRouter } from '@/lib/navigation'
 import { Settings2 } from 'lucide-react'
 import { useState } from 'react'
 import { useSession } from '@/lib/auth-client'

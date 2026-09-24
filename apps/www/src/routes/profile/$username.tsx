@@ -1,22 +1,21 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createPageComponent } from '@/components/PageApp'
+import { createFileRoute } from '@/lib/page'
+import { Link } from '@/lib/navigation'
 import { Effect } from 'effect'
 import { PublicProfilePage } from '@/components/profile/PublicProfilePage'
 import { getApiClient } from '@/lib/api-client'
+import { nullOnNotFound } from '@/lib/http-errors'
 import { generateProfileSEO, generateSEOHead, notFoundHead } from '@/lib/seo'
 
 export const Route = createFileRoute('/profile/$username')({
   component: ProfilePage,
   loader: async ({ params }) => {
-    try {
-      const client = await getApiClient()
-      const profile = await Effect.runPromise(
-        client.profile.getPublicProfile({ params: { username: params.username } })
-      )
-      if (!profile?.id) return { profile: null }
-      return { profile }
-    } catch {
-      return { profile: null }
-    }
+    const client = await getApiClient()
+    const profile = await nullOnNotFound(
+      Effect.runPromise(client.profile.getPublicProfile({ params: { username: params.username } }))
+    )
+    if (!profile?.id) return { profile: null }
+    return { profile }
   },
   head: ({ loaderData, params }) => {
     if (!loaderData?.profile) {
@@ -59,3 +58,5 @@ function ProfilePage() {
 
   return <PublicProfilePage profile={profile} />
 }
+
+export const Page = createPageComponent(Route)

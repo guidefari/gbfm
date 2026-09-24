@@ -1,6 +1,6 @@
 import { GB } from '@gbfm/ui'
 import * as ScrollArea from '@radix-ui/react-scroll-area'
-import { Link } from '@tanstack/react-router'
+import { Link } from '@/lib/navigation'
 import clsx from 'clsx'
 import { cn } from '@/lib/utils'
 import type { Track } from '@/types'

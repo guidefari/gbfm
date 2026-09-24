@@ -1,7 +1,7 @@
 'use client'
 import { useFeatureFlag } from '@gbfm/core/feature-flags'
 import { Button, OverflowTitle } from '@gbfm/ui'
-import { Link } from '@tanstack/react-router'
+import { Link } from '@/lib/navigation'
 import {
   ChevronDown,
   List,

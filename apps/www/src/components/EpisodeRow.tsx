@@ -1,6 +1,6 @@
 import { Badge, PlayToggle } from '@gbfm/ui'
 import type { SelectAudio } from '@gbfm/server/schemas'
-import { Link } from '@tanstack/react-router'
+import { Link } from '@/lib/navigation'
 import { useSession } from '@/lib/auth-client'
 import { cn } from '@/lib/utils'
 import { useNowPlayingTrack, usePlayerActions, useTransport } from '@/services/player'

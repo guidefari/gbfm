@@ -1,11 +1,14 @@
+import { createPageComponent } from '@/components/PageApp'
 import { Button } from '@gbfm/ui'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute } from '@/lib/page'
+import { useNavigate } from '@/lib/navigation'
 import { Effect } from 'effect'
 import { Edit } from 'lucide-react'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { RouteError } from '@/components/RouteError'
 import { ShareButton } from '@/components/ShareButton'
 import { getApiClient } from '@/lib/api-client'
+import { nullOnNotFound } from '@/lib/http-errors'
 import { useSession } from '@/lib/auth-client'
 import { generateLabelSEO, generateSEOHead, notFoundHead } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
@@ -15,13 +18,18 @@ export const Route = createFileRoute('/labels/$labelSlug')({
   errorComponent: ({ error }) => <RouteError error={error} />,
   loader: async ({ params }) => {
     const client = await getApiClient()
-    const label = await Effect.runPromise(
-      client.music
-        .getLabelBySlug({ params: { slug: params.labelSlug } })
-        .pipe(
-          Effect.tapError((error) => captureException(error, { endpoint: 'music.getLabelBySlug' }))
-        )
+    const label = await nullOnNotFound(
+      Effect.runPromise(
+        client.music
+          .getLabelBySlug({ params: { slug: params.labelSlug } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'music.getLabelBySlug' })
+            )
+          )
+      )
     )
+    if (label === null) return { label: null, links: [] }
     const links = await Effect.runPromise(
       client.music.listEntityLinks({
         params: { entityType: 'label', entityId: label.id },
@@ -63,6 +71,8 @@ function LabelPage() {
   const { data: session } = useSession()
   const navigate = useNavigate()
   const isAdmin = session?.user?.role === 'admin'
+
+  if (!label) return null
 
   return (
     <div className='mx-auto max-w-6xl'>
@@ -224,3 +234,5 @@ function PublicLabelAffiliations({ artists, albums }: PublicLabelAffiliationsPro
     </div>
   )
 }
+
+export const Page = createPageComponent(Route)

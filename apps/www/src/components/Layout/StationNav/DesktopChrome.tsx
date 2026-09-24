@@ -6,7 +6,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@gbfm/ui'
-import { Link, useLocation, useNavigate } from '@tanstack/react-router'
+import { Link, useLocation, useNavigate } from '@/lib/navigation'
 import { LayoutDashboard, LogOut, Pause, Play, Search } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { GlobalSearchDialog } from '@/components/GlobalSearchDialog'

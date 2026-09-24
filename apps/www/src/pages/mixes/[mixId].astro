@@ -1,0 +1,26 @@
+---
+import { Schema } from 'effect'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { buildHref } from '@/lib/navigation'
+import { isPageRedirect, preparePage } from '@/lib/prepare-page'
+import { Page, Route } from '@/routes/mixes/$mixId'
+
+const mixId = Schema.decodeUnknownSync(Schema.NonEmptyString)(Astro.params.mixId)
+let prepared
+try {
+  prepared = await preparePage(Route, Astro.url, { mixId }, Astro.locals.auth)
+} catch (cause) {
+  if (isPageRedirect(cause)) return Astro.redirect(buildHref(cause.options))
+  throw cause
+}
+if (!prepared.loaderData.mix) Astro.response.status = 404
+---
+
+<BaseLayout head={prepared.head}>
+  <Page
+    params={prepared.params}
+    search={prepared.search}
+    loaderData={prepared.loaderData}
+    client:load
+  />
+</BaseLayout>

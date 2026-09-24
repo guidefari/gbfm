@@ -1,10 +1,12 @@
 import { getFormString } from '@gbfm/core/utils'
 import { GenericAuthForm, toast } from '@gbfm/ui'
-import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { Schema } from 'effect'
 import { useState } from 'react'
 import { AuthPageLayout, AuthStatusNotice } from '@/components/Auth/AuthPageLayout'
+import { createPageComponent } from '@/components/PageApp'
 import { signIn } from '@/lib/auth-client'
+import { Link, useNavigate } from '@/lib/navigation'
+import { createFileRoute, redirect } from '@/lib/page'
 import { privateHead } from '@/lib/seo'
 
 const searchSchema = Schema.Struct({
@@ -24,14 +26,19 @@ export const Route = createFileRoute('/auth/sign-in')({
       throw redirect({ href: safeRedirect(search.redirect) })
     }
   },
-  component: SignInPage
+  component: SignInRoutePage
 })
 
-function SignInPage() {
+export const Page = createPageComponent(Route)
+
+function SignInRoutePage() {
+  return <SignInPage search={Route.useSearch()} />
+}
+
+function SignInPage({ search }: { search: typeof searchSchema.Type }) {
   const [error, setError] = useState<string>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const navigate = Route.useNavigate()
-  const search = Route.useSearch()
+  const navigate = useNavigate()
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()

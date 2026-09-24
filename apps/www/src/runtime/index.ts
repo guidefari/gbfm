@@ -66,10 +66,16 @@ class AppEffectFailure extends Data.TaggedError('AppEffectFailure')<{
 }> {}
 
 const appScope = Scope.makeUnsafe()
-const appContextPromise = Effect.runPromise(Layer.buildWithScope(mainLayer, appScope))
+const buildAppContext = () => Effect.runPromise(Layer.buildWithScope(mainLayer, appScope))
+let appContextPromise: ReturnType<typeof buildAppContext> | undefined
+
+const getAppContext = () => {
+  appContextPromise ??= buildAppContext()
+  return appContextPromise
+}
 
 export const runAppEffect = <A, E>(effect: Effect.Effect<A, E, AppServices>) =>
-  appContextPromise
+  getAppContext()
     .then((context) => Effect.runPromiseWith(context)(effect))
     .catch((error) => {
       log('error', 'App effect failed', { error })

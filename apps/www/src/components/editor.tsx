@@ -3,7 +3,6 @@ import { SimpleMarkdownEditor } from './simple-markdown-editor'
 
 import { Button } from '@gbfm/ui'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { useSearch } from '@tanstack/react-router'
 import { Option, Schema } from 'effect'
 import { useForm } from 'react-hook-form'
 import { log } from '@/services/logger'
@@ -47,12 +46,13 @@ const searchSchema = Schema.Struct({
   token: Schema.optional(Schema.String)
 })
 
-export function Editor() {
+export function Editor({
+  searchParameters
+}: {
+  readonly searchParameters: Readonly<Record<string, string>>
+}) {
   const [value, setValue] = useState('')
-  const searchParams = useSearch({
-    strict: false
-  })
-  const parsed = Schema.decodeUnknownOption(searchSchema)(searchParams)
+  const parsed = Schema.decodeUnknownOption(searchSchema)(searchParameters)
   const { id } = Option.isSome(parsed) ? parsed.value : { id: undefined }
   const [type, setType] = useState<'micro' | 'post' | 'mix'>('post')
 

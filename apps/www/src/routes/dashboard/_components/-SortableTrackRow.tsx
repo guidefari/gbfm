@@ -1,7 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Button } from '@gbfm/ui'
-import { Link } from '@tanstack/react-router'
+import { Link } from '@/lib/navigation'
 import { ExternalLink, GripVertical, Pencil, Trash2 } from 'lucide-react'
 import type { ComponentType, SVGProps } from 'react'
 

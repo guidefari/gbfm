@@ -1,0 +1,23 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { buildHref } from '@/lib/navigation'
+import { isPageRedirect, preparePage } from '@/lib/prepare-page'
+import { Page, Route } from '@/routes/shows/index'
+
+let prepared
+try {
+  prepared = await preparePage(Route, Astro.url, {}, Astro.locals.auth)
+} catch (cause) {
+  if (isPageRedirect(cause)) return Astro.redirect(buildHref(cause.options))
+  throw cause
+}
+---
+
+<BaseLayout head={prepared.head}>
+  <Page
+    params={prepared.params}
+    search={prepared.search}
+    loaderData={prepared.loaderData}
+    client:load
+  />
+</BaseLayout>

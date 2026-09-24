@@ -7,9 +7,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@gbfm/ui'
-import { Link } from '@tanstack/react-router'
 import { MoreHorizontal } from 'lucide-react'
 import type { PaginatedResponse } from '@/lib/http'
+import { Link } from '@/lib/navigation'
 import { TablePagination } from './TablePagination'
 import { PAGE_SIZE, type ContentScope, type PostListItem } from './types'
 

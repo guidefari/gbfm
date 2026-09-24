@@ -21,25 +21,19 @@ const requireApiUrl = (url: string | undefined) => {
 
 export const website = ({ config, websiteConfig, api, socialImages, apiUrl }: WebsiteInput) =>
   Effect.gen(function* () {
-    return yield* Cloudflare.Website.StaticSite('Www', {
-      cwd: 'apps/www',
-      command: 'bun run build',
-      outdir: 'dist',
-      main: './apps/www/src/seo-worker.ts',
+    return yield* Cloudflare.Website.Astro('Www', {
+      rootDir: 'apps/www',
+      astro: { output: 'server' },
+      sessionKVBindingName: false,
       ...(config.isProduction
         ? { domain: { name: 'www.goosebumps.fm', aliases: ['goosebumps.fm'] } }
         : { url: true }),
       assets: {
-        notFoundHandling: 'single-page-application',
+        notFoundHandling: '404-page',
         runWorkerFirst: true
       },
       observability: workerObservability(config.isProduction),
-      dev: config.isLocalDev
-        ? {
-            command: 'bun run dev',
-            cwd: 'apps/www'
-          }
-        : undefined,
+      ...(config.isLocalDev ? { dev: {} } : undefined),
       env: {
         API: api,
         SOCIAL_IMAGES: socialImages,

@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link, type LinkProps } from '@/lib/navigation'
 import type { SearchResultItem } from '@gbfm/api/search'
 
 type Props = {
@@ -15,7 +15,7 @@ const typeLabel = new Map([
   ['post', 'editorial']
 ])
 
-function resultLinkProps(result: SearchResultItem) {
+function resultLinkProps(result: SearchResultItem): Pick<LinkProps, 'to' | 'params'> | null {
   if (result.type === 'show') {
     return { to: '/shows/$showSlug' as const, params: { showSlug: result.slug } }
   }

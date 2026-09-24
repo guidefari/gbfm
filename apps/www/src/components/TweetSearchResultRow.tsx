@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Link } from '@tanstack/react-router'
+import { Link } from '@/lib/navigation'
 import { MessageCircle, Music4 } from 'lucide-react'
 import { TweetSearchReplyContext } from '@/components/TweetSearchReplyContext'
 import { apiUrl, fetcher } from '@/lib/http'

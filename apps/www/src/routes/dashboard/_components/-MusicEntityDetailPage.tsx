@@ -11,7 +11,7 @@ import {
   type MusicEntityType,
   toast
 } from '@gbfm/ui'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate } from '@/lib/navigation'
 import {
   type MusicAlbum,
   type MusicArtist,

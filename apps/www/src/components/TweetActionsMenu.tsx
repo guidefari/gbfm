@@ -1,5 +1,5 @@
 import { canCreatePosts } from '@gbfm/core/roles'
-import { Link } from '@tanstack/react-router'
+import { Link } from '@/lib/navigation'
 import { PenSquare } from 'lucide-react'
 import { useSession } from '@/lib/auth-client'
 

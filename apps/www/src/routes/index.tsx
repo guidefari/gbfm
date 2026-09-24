@@ -1,4 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createPageComponent } from '@/components/PageApp'
+import { createFileRoute } from '@/lib/page'
 import { FeaturedMixHero } from '@/components/home/FeaturedMixHero'
 import { generateSEOHead, STATIC_PAGE_SEO } from '@/lib/seo'
 
@@ -24,3 +25,5 @@ function Index() {
     </div>
   )
 }
+
+export const Page = createPageComponent(Route)

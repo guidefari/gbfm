@@ -1,5 +1,5 @@
 import { Badge, Button } from '@gbfm/ui'
-import { Link } from '@tanstack/react-router'
+import { Link } from '@/lib/navigation'
 import { ArrowUpDown } from 'lucide-react'
 import type { PaginatedResponse } from '@/lib/http'
 import { TablePagination } from './TablePagination'

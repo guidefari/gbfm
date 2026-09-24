@@ -1,5 +1,5 @@
 import { Sheet, SheetClose, SheetContent, SheetTitle } from '@gbfm/ui'
-import { Link, useLocation } from '@tanstack/react-router'
+import { Link, useLocation } from '@/lib/navigation'
 import { BookOpen, Disc3, Menu, Pause, Play, Search, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { GlobalSearchDialog } from '@/components/GlobalSearchDialog'

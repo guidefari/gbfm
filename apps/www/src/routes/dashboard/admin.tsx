@@ -1,5 +1,7 @@
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@gbfm/ui'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createPageComponent } from '@/components/PageApp'
+import { Link } from '@/lib/navigation'
+import { createFileRoute } from '@/lib/page'
 import { ChartColumn, FileText, Mail, Radio, Shield, Users } from 'lucide-react'
 import { AdminPage } from './_components/-AdminLayout'
 import { useAdminOverview } from './-overview.data'
@@ -7,6 +9,8 @@ import { useAdminOverview } from './-overview.data'
 export const Route = createFileRoute('/dashboard/admin')({
   component: AdminDashboard
 })
+
+export const Page = createPageComponent(Route)
 
 function formatCount(value: number) {
   return new Intl.NumberFormat('en-US').format(value)

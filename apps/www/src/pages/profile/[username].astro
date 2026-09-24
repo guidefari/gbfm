@@ -1,0 +1,27 @@
+---
+import { Schema } from 'effect'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { buildHref } from '@/lib/navigation'
+import { isPageRedirect, preparePage } from '@/lib/prepare-page'
+import { Page, Route } from '@/routes/profile/$username'
+
+const username = Schema.decodeUnknownSync(Schema.NonEmptyString)(Astro.params.username)
+let prepared
+try {
+  prepared = await preparePage(Route, Astro.url, { username }, Astro.locals.auth)
+} catch (cause) {
+  if (isPageRedirect(cause)) return Astro.redirect(buildHref(cause.options))
+  throw cause
+}
+
+if (!prepared.loaderData.profile) Astro.response.status = 404
+---
+
+<BaseLayout head={prepared.head}>
+  <Page
+    params={prepared.params}
+    search={prepared.search}
+    loaderData={prepared.loaderData}
+    client:load
+  />
+</BaseLayout>

@@ -1,5 +1,6 @@
+import { createPageComponent } from '@/components/PageApp'
 import { Button, Input, Textarea, useToast } from '@gbfm/ui'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from '@/lib/page'
 import { CalendarClock, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useSession } from '@/lib/auth-client'
@@ -371,3 +372,5 @@ function MusicReminders() {
     </div>
   )
 }
+
+export const Page = createPageComponent(Route)

@@ -1,6 +1,8 @@
+import { createPageComponent } from '@/components/PageApp'
 import { Badge } from '@gbfm/ui'
 import type { SelectMdxCompiledEditorialPost } from '@gbfm/server/schemas'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@/lib/page'
+import { Link } from '@/lib/navigation'
 import { Effect } from 'effect'
 import { ArrowLeft, Tag } from 'lucide-react'
 import * as React from 'react'
@@ -9,6 +11,7 @@ import { RouteError } from '@/components/RouteError'
 import { ShareButton } from '@/components/ShareButton'
 import { getApiClient } from '@/lib/api-client'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
+import { nullOnNotFound } from '@/lib/http-errors'
 import { generatePostSEO, generateSEOHead, notFoundHead } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
 
@@ -29,15 +32,18 @@ export const Route = createFileRoute('/editorial/$slug')({
   ),
   loader: async ({ params }) => {
     const client = await getApiClient()
-    const post = await Effect.runPromise(
-      client.post
-        .getEditorialPostBySlug({ params: { slug: params.slug } })
-        .pipe(
-          Effect.tapError((error) =>
-            captureException(error, { endpoint: 'post.getEditorialPostBySlug' })
+    const post = await nullOnNotFound(
+      Effect.runPromise(
+        client.post
+          .getEditorialPostBySlug({ params: { slug: params.slug } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'post.getEditorialPostBySlug' })
+            )
           )
-        )
+      )
     )
+    if (post === null) return { post: null }
     return {
       post: {
         ...post,
@@ -162,3 +168,5 @@ function PostDetails({ post, slug }: { post: SelectMdxCompiledEditorialPost; slu
     </div>
   )
 }
+
+export const Page = createPageComponent(Route)
