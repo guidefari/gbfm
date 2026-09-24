@@ -26,7 +26,7 @@ function ShowsListPage() {
   useEffect(() => {
     if (data.length > 0 && !selectedSlug) {
       void navigate({
-        to: '.',
+        to: '/shows',
         search: { show: data[0].slug },
         replace: true
       })
@@ -42,7 +42,7 @@ function ShowsListPage() {
     <ShowsPageLayout>
       <ShowsBrowser
         selectedShow={selectedShow}
-        onSelectShow={(slug) => navigate({ to: '.', search: { show: slug } })}
+        onSelectShow={(slug) => navigate({ to: '/shows', search: { show: slug } })}
       />
     </ShowsPageLayout>
   )
