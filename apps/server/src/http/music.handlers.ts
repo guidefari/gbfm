@@ -32,7 +32,11 @@ import type {
   SelectMusicPlaylist,
   SelectMusicTrack
 } from '@/db/music-entity.schema'
-import { getErrorMessage, type MusicProviderError } from '@/errors'
+import {
+  getErrorMessage,
+  type MusicProviderError,
+  type PlaylistEnrichmentQueueUnavailable
+} from '@/errors'
 import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
 import {
   mapMusicIdentityErrors,
@@ -51,6 +55,7 @@ import {
   MusicEntityService,
   type ScrapedMusicEntity
 } from '@/services/music-entity'
+import { PlaylistEnrichmentQueue } from '@/services/playlist-enrichment-queue'
 import { getIdFromSpotifyUrl } from '@/services/url-utils'
 
 const decodeMusicEntityMetadata = Schema.decodeUnknownSync(Schema.JsonObject)
@@ -275,6 +280,19 @@ const requireAdmin = Effect.gen(function* () {
 
   return undefined
 })
+
+const enqueuePlaylistJob = <A, E, R>(
+  effect: Effect.Effect<A, E | PlaylistEnrichmentQueueUnavailable, R>
+) =>
+  effect.pipe(
+    Effect.catchTag(
+      'PlaylistEnrichmentQueueUnavailable',
+      () =>
+        new MusicServiceUnavailableResponse({
+          retryAfterSeconds: PROVIDER_UNAVAILABLE_RETRY_AFTER_SECONDS
+        })
+    )
+  )
 
 export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =>
   handlers
@@ -740,33 +758,59 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         yield* requireAdmin
         const { user } = yield* AuthSession
         const svc = yield* MusicEntityService
+        const queue = yield* PlaylistEnrichmentQueue
 
         const spotifyPlaylistId = getIdFromSpotifyUrl(payload.url)
         if (!spotifyPlaylistId) {
           return yield* new HttpApiError.BadRequest()
         }
 
-        const program = svc.importSpotifyPlaylist(payload.url, user.id).pipe(
-          Effect.asVoid,
-          Effect.catch((error) =>
-            Effect.logError('[music] Background Spotify playlist import failed', {
-              playlistId: spotifyPlaylistId,
-              error: getErrorMessage(error)
-            })
+        const result = yield* mapSpotifyTrackImportErrors(
+          mapMusicIdentityErrors(svc.importSpotifyPlaylist(payload.url, user.id))
+        ).pipe(dieOnDatabaseError)
+        const enrichmentStatus = yield* queue
+          .enqueue({
+            _tag: 'PlaylistEnrichmentJob',
+            playlistId: result.playlist.id,
+            reason: 'after_import'
+          })
+          .pipe(
+            Effect.as('Accepted' as const),
+            Effect.catchTag('PlaylistEnrichmentQueueUnavailable', () =>
+              Effect.logWarning('[music] Playlist imported without accepted enrichment', {
+                playlistId: result.playlist.id
+              }).pipe(Effect.as('Unavailable' as const))
+            )
           )
-        )
-        yield* Effect.forkDetach(program)
 
-        return { status: 'Queued' as const }
+        return {
+          status: 'Imported' as const,
+          playlistId: result.playlist.id,
+          trackCount: result.trackCount,
+          createdTrackCount: result.createdTrackCount,
+          reusedTrackCount: result.reusedTrackCount,
+          enrichmentStatus
+        }
       })
     )
     .handle('syncPlaylistLinks', ({ params }) =>
       Effect.gen(function* () {
         yield* requireAdmin
         const svc = yield* MusicEntityService
-        return yield* dieOnDatabaseError(
-          dieOnMusicProviderError(mapMusicIdentityErrors(svc.syncPlaylistLinks(params.id)))
+        const queue = yield* PlaylistEnrichmentQueue
+        yield* dieOnDatabaseError(
+          svc
+            .getPlaylistById(params.id)
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
         )
+        yield* enqueuePlaylistJob(
+          queue.enqueue({
+            _tag: 'PlaylistEnrichmentJob',
+            playlistId: params.id,
+            reason: 'manual'
+          })
+        )
+        return { playlistId: params.id, status: 'Accepted' as const }
       })
     )
     // -----------------------------------------------------------------

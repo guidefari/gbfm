@@ -10,6 +10,7 @@ import {
 } from '@/runtime/sentry-worker'
 import { MusicCoverImageFetcher } from '@/services/canonical-music-identity/artwork-delivery'
 import { NavigationLockLocalLayer } from '@/services/navigation-lock'
+import { PlaylistEnrichmentQueueTestLayer } from '@/services/playlist-enrichment-queue'
 import { SpotifyImportResolverLocalLayer } from '@/services/spotify-import-resolver.service'
 import {
   RecordingEmailTransportLayer,
@@ -63,6 +64,7 @@ export const createTestWebHandler = (
     sitemapCache: SitemapCacheLayer(inMemorySitemapKv()),
     navigationLock: NavigationLockLocalLayer,
     spotifyImportResolver: SpotifyImportResolverLocalLayer,
+    playlistEnrichmentQueue: PlaylistEnrichmentQueueTestLayer,
     sentry: testSentryServiceLive,
     tracing: WorkerTracingLive,
     emailTransport: emailTransportLive,

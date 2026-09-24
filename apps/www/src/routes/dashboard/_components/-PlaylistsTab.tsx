@@ -9,7 +9,12 @@ import { PlaylistEditor, type PlaylistSummary } from './-PlaylistEditor'
 import { SpotifyConnectionCard } from '@/components/spotify/SpotifyConnectionCard'
 
 interface ImportResult {
-  status: 'Queued'
+  status: 'Imported'
+  playlistId: string
+  trackCount: number
+  createdTrackCount: number
+  reusedTrackCount: number
+  enrichmentStatus: 'Accepted' | 'Unavailable'
 }
 
 export function PlaylistsTab() {
@@ -35,13 +40,17 @@ export function PlaylistsTab() {
         method: 'POST',
         body: JSON.stringify({ url: playlistUrl })
       }),
-    onSuccess: () => {
+    onSuccess: (result) => {
       setUrl('')
       setImportOpen(false)
       void queryClient.invalidateQueries({ queryKey: ['playlists'] })
       toast({
-        title: 'Import queued',
-        description: 'The playlist import is running in the background.'
+        title: 'Playlist imported',
+        description:
+          result.enrichmentStatus === 'Accepted'
+            ? `${result.trackCount} tracks imported. Link enrichment was accepted for background processing.`
+            : `${result.trackCount} tracks imported, but link enrichment could not be requested. Retry it from the playlist editor.`,
+        variant: result.enrichmentStatus === 'Unavailable' ? 'destructive' : undefined
       })
     },
     onError: (error: Error) => {

@@ -86,6 +86,12 @@ export class ReminderQueueUnavailable extends Data.TaggedError('ReminderQueueUna
   readonly reminderId: string
 }> {}
 
+export class PlaylistEnrichmentQueueUnavailable extends Data.TaggedError(
+  'PlaylistEnrichmentQueueUnavailable'
+)<{
+  readonly playlistId: string
+}> {}
+
 export class NotFoundError extends Data.TaggedError('NotFoundError')<{
   readonly message: string
   readonly resource?: string
