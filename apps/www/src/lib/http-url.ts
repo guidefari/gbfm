@@ -1,5 +1,6 @@
+import { API_ORIGIN } from './api-origin'
+
 const VPS_BASE_URL = import.meta.env.VITE_VPS_BASE_URL || ''
-const browserOrigin = () => window.location.origin
 
 export function makeApiUrl(path: string, baseUrl: string) {
   return `${baseUrl}/api${path}`
@@ -23,7 +24,7 @@ export function apiUrl(path: string): string {
 }
 
 export function apiUrlObj(path: string): URL {
-  return makeApiUrlObj(path, VPS_BASE_URL, browserOrigin())
+  return makeApiUrlObj(path, VPS_BASE_URL, API_ORIGIN)
 }
 
 export function publicUrl(path: string): string {
@@ -31,5 +32,5 @@ export function publicUrl(path: string): string {
 }
 
 export function publicUrlObj(path: string): URL {
-  return makePublicUrlObj(path, VPS_BASE_URL, browserOrigin())
+  return makePublicUrlObj(path, VPS_BASE_URL, API_ORIGIN)
 }
