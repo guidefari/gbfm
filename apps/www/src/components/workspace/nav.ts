@@ -1,8 +1,6 @@
 import {
   AlertTriangle,
-  AtSign,
   ChartColumn,
-  DownloadCloud,
   FileAudio,
   FileText,
   Home,
@@ -60,21 +58,8 @@ export const workspaceNav: WorkspaceNavGroup[] = [
       {
         to: '/dashboard/content/tweets',
         label: 'Tweets',
-        description: 'Short posts and imported drafts.',
+        description: 'Short posts and drafts.',
         icon: MessageSquare,
-        access: 'postCreate'
-      },
-      {
-        to: '/dashboard/bluesky',
-        label: 'Bluesky',
-        description: 'Sync your archive and review imported drafts.',
-        icon: AtSign,
-        access: 'postCreate'
-      },
-      {
-        to: '/dashboard/imports',
-        label: 'Imports',
-        icon: DownloadCloud,
         access: 'postCreate'
       },
       {

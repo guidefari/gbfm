@@ -18,7 +18,7 @@ function AdminTweetsPage() {
   return (
     <ContentPageShell
       title='Tweets'
-      description='Short posts, replies, and drafts imported from Bluesky.'
+      description='Short posts, replies, and drafts.'
       newLink='tweet'
       guard={(children) => <AdminAccessGuard>{children}</AdminAccessGuard>}>
       <ContentManager

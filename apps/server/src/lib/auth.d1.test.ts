@@ -24,7 +24,6 @@ const workerBindings = (): WorkerConfigBindings => ({
   OTEL_EXPORTER_OTLP_HEADERS: 'configured',
   BETTER_AUTH_SECRET: 'configured',
   BETTER_AUTH_URL: 'http://localhost',
-  GBFM_ENCRYPTION_ROOT_KEY: 'configured',
   StorageProvider: 'aws',
   StorageEndpoint: 'configured',
   StorageRegion: 'configured',

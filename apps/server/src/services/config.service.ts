@@ -9,7 +9,6 @@ const secretNames = [
   'OTEL_EXPORTER_OTLP_HEADERS',
   'BETTER_AUTH_SECRET',
   'BETTER_AUTH_URL',
-  'GBFM_ENCRYPTION_ROOT_KEY',
   'StorageProvider',
   'StorageEndpoint',
   'StorageRegion',
@@ -121,9 +120,6 @@ const ConfigSchema = Schema.Struct({
     betterAuthSecret: Schema.String,
     betterAuthUrl: Schema.String
   }),
-  encryption: Schema.Struct({
-    rootKey: Schema.String
-  }),
   spotify: Schema.Struct({
     clientId: Schema.String,
     clientSecret: Schema.String
@@ -184,11 +180,6 @@ export function createConfig(bindings?: WorkerConfigBindings): ConfigService {
     OTEL_EXPORTER_OTLP_HEADERS: secretString('OTEL_EXPORTER_OTLP_HEADERS', '', bindings),
     BETTER_AUTH_SECRET: secretString('BETTER_AUTH_SECRET', '', bindings),
     BETTER_AUTH_URL: secretString('BETTER_AUTH_URL', '', bindings),
-    GBFM_ENCRYPTION_ROOT_KEY: secretString(
-      'GBFM_ENCRYPTION_ROOT_KEY',
-      'local-development-encryption-key',
-      bindings
-    ),
     StorageProvider: secretString('StorageProvider', '', bindings),
     StorageEndpoint: secretString('StorageEndpoint', '', bindings),
     StorageRegion: secretString('StorageRegion', 'auto', bindings),
@@ -253,9 +244,6 @@ export function createConfig(bindings?: WorkerConfigBindings): ConfigService {
       refreshTokenSecret: 'secret',
       betterAuthSecret: secrets.BETTER_AUTH_SECRET,
       betterAuthUrl: secrets.BETTER_AUTH_URL
-    },
-    encryption: {
-      rootKey: secrets.GBFM_ENCRYPTION_ROOT_KEY
     },
     spotify: {
       clientId: secrets.SpotifyClientId,

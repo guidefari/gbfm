@@ -1,6 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
-import { BlueskyConnectionCard } from '@/components/integrations/BlueskyConnectionCard'
 import { SpotifyConnectionCard } from '@/components/spotify/SpotifyConnectionCard'
 
 export const Route = createFileRoute('/dashboard/integrations')({
@@ -11,10 +10,9 @@ function DashboardIntegrations() {
   return (
     <DashboardLayout
       title='Integrations'
-      description='Connect the services Goosebumps uses for music and archive workflows.'>
+      description='Connect the services Goosebumps uses for music.'>
       <div className='space-y-12'>
         <SpotifyConnectionCard />
-        <BlueskyConnectionCard />
       </div>
     </DashboardLayout>
   )

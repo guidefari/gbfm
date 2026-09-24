@@ -75,7 +75,6 @@ export type PostListItem = {
   tags?: string[] | null
   creators?: Array<{ id: string; name: string }>
   createdAt: string
-  blueskySource?: { publicUrl: string }
 }
 
 export interface AudioEditValues {

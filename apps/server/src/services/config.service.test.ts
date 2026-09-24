@@ -25,7 +25,6 @@ const workerBindings = (): WorkerConfigBindings => ({
   OTEL_EXPORTER_OTLP_HEADERS: 'configured',
   BETTER_AUTH_SECRET: 'configured',
   BETTER_AUTH_URL: 'configured',
-  GBFM_ENCRYPTION_ROOT_KEY: 'configured',
   StorageProvider: 'aws',
   StorageEndpoint: 'configured',
   StorageRegion: 'configured',
@@ -40,7 +39,6 @@ describe('StorageConfigSchema', () => {
 
     expect(config.spotify).toEqual({ clientId: 'configured', clientSecret: 'configured' })
     expect(config.auth.betterAuthSecret).toBe('configured')
-    expect(config.encryption.rootKey).toBe('configured')
   })
 
   test('serves production public urls rather than localhost', () => {

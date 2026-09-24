@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger
 } from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
-import { ExternalLink, MoreHorizontal } from 'lucide-react'
+import { MoreHorizontal } from 'lucide-react'
 import type { PaginatedResponse } from '@/lib/http'
 import { TablePagination } from './TablePagination'
 import { PAGE_SIZE, type ContentScope, type PostListItem } from './types'
@@ -150,7 +150,6 @@ export function PostsTable({
                 <th className='px-4 py-3 text-left font-medium'>Status</th>
                 <th className='px-4 py-3 text-left font-medium'>Media</th>
                 <th className='px-4 py-3 text-left font-medium'>Tags</th>
-                <th className='px-4 py-3 text-left font-medium'>Source</th>
                 {showCreators && <th className='px-4 py-3 text-left font-medium'>Created By</th>}
                 <th className='px-4 py-3 text-left font-medium'>Created</th>
                 <th className='whitespace-nowrap px-4 py-3 text-right font-medium'>Actions</th>
@@ -191,20 +190,6 @@ export function PostsTable({
                     className='max-w-[160px] truncate px-4 py-3 text-muted-foreground'
                     title={post.tags?.join(', ')}>
                     {post.tags?.join(', ') || '—'}
-                  </td>
-                  <td className='px-4 py-3 text-muted-foreground'>
-                    {post.blueskySource ? (
-                      <a
-                        href={post.blueskySource.publicUrl}
-                        target='_blank'
-                        rel='noreferrer'
-                        className='inline-flex items-center gap-1 underline underline-offset-4 hover:text-foreground'>
-                        Bluesky
-                        <ExternalLink className='size-3' />
-                      </a>
-                    ) : (
-                      'Native'
-                    )}
                   </td>
                   {showCreators && (
                     <td className='max-w-[140px] truncate px-4 py-3 text-muted-foreground'>
