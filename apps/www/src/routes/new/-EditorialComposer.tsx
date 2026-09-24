@@ -25,7 +25,7 @@ import type {
   EditorialPost,
   EditorialSaveState
 } from './-editorial-types'
-import { EditorialWorkspaceHeader } from './-EditorialWorkspaceHeader'
+import { ComposerHeader } from './-ComposerHeader'
 import { EditorialWritingCanvas } from './-EditorialWritingCanvas'
 
 interface EditorialSaveRequest {
@@ -387,12 +387,12 @@ export function EditorialComposer({ editSlug }: { editSlug: string | undefined }
 
   return (
     <div className='text-foreground'>
-      <EditorialWorkspaceHeader
-        title={isEditMode ? 'Edit editorial' : 'New editorial'}
+      <ComposerHeader
         navigation={navigation}
         saveState={saveState}
         isSaving={saveMutation.isPending}
         canSave={canSave}
+        primaryLabel='Publish'
         onDiscard={handleDiscard}
         onSaveDraft={() => handleSave(true)}
         onPublish={() => handleSave(false)}

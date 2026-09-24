@@ -17,29 +17,28 @@ function saveStateClassName(saveState: EditorialSaveState) {
   return 'text-muted-foreground'
 }
 
-export function EditorialWorkspaceHeader({
-  title,
+export function ComposerHeader({
   navigation,
   saveState,
   isSaving,
   canSave,
+  primaryLabel,
   onDiscard,
   onSaveDraft,
   onPublish
 }: {
-  title: string
   navigation: ReactNode
   saveState: EditorialSaveState
   isSaving: boolean
   canSave: boolean
+  primaryLabel: string
   onDiscard: () => void
-  onSaveDraft: () => void
+  onSaveDraft?: () => void
   onPublish: () => void
 }) {
   return (
     <header className='sticky top-0 z-20 -mx-4 min-h-16 border-b border-border/70 bg-background/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8'>
       <div className='mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4'>
-        <h1 className='sr-only'>{title}</h1>
         <div className='flex min-w-0 flex-wrap items-center gap-3'>
           {navigation}
           <span
@@ -62,16 +61,18 @@ export function EditorialWorkspaceHeader({
             aria-label='Discard unsaved changes'>
             Discard
           </Button>
-          <Button
-            type='button'
-            variant='outline'
-            size='sm'
-            onClick={onSaveDraft}
-            disabled={!canSave || isSaving}
-            className='h-9 gap-1.5 px-2.5 text-sm sm:gap-2 sm:px-4'>
-            <Save className='size-3.5' />
-            Save draft
-          </Button>
+          {onSaveDraft ? (
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              onClick={onSaveDraft}
+              disabled={!canSave || isSaving}
+              className='h-9 gap-1.5 px-2.5 text-sm sm:gap-2 sm:px-4'>
+              <Save className='size-3.5' />
+              Save draft
+            </Button>
+          ) : null}
           <Button
             type='button'
             size='sm'
@@ -79,7 +80,7 @@ export function EditorialWorkspaceHeader({
             disabled={!canSave || isSaving}
             className='h-9 gap-1.5 px-2.5 text-sm sm:gap-2 sm:px-4'>
             <Send className='size-3.5' />
-            Publish
+            {primaryLabel}
           </Button>
         </div>
       </div>
