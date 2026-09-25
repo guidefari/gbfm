@@ -20,21 +20,19 @@
     ),
   )
 
-  const platformLabel = (platform: string) => {
-    if (platform === 'spotify') return 'Spotify'
-
-    if (platform === 'youtube') return 'YouTube'
-
-    if (platform === 'youtube_music') return 'YT Music'
-
-    if (platform === 'apple_music') return 'Apple Music'
-
-    if (platform === 'bandcamp') return 'Bandcamp'
-
-    if (platform === 'soundcloud') return 'SoundCloud'
-
-    return platform || 'Link'
-  }
+  const platformLabel = (platform: string) =>
+    Match.value(platform).pipe(
+      Match.when('spotify', () => 'Spotify'),
+      Match.when('youtube', () => 'YouTube'),
+      Match.when('youtube_music', () => 'YouTube Music'),
+      Match.when('apple_music', () => 'Apple Music'),
+      Match.when('bandcamp', () => 'Bandcamp'),
+      Match.when('soundcloud', () => 'SoundCloud'),
+      Match.when('tidal', () => 'Tidal'),
+      Match.when('deezer', () => 'Deezer'),
+      Match.when('musicbrainz', () => 'MusicBrainz'),
+      Match.orElse(() => platform || 'Link'),
+    )
 </script>
 
 <article class="not-prose min-w-0 overflow-hidden rounded-md border border-border/50 bg-muted/20">
@@ -49,7 +47,7 @@
       {/if}
     </div>
     <div class="min-w-0 flex-1 space-y-2">
-      <p class="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground/70">
+      <p class="text-xs font-medium text-muted-foreground">
         {musicLabel}
       </p>
       <h2
