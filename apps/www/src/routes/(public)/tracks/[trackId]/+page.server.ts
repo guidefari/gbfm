@@ -1,0 +1,7 @@
+import { publicDetail } from '@/lib/server/public/content'
+import type { PageServerLoad } from './$types'
+export const load = ((event) =>
+  publicDetail(
+    event,
+    `/api/content/audio/track/${encodeURIComponent(event.params.trackId)}`
+  )) satisfies PageServerLoad

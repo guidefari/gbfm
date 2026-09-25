@@ -72,6 +72,7 @@ export const apiWorker = ({
           }
         ),
         APP_STAGE: config.stage,
+        ...(config.isLocalDev ? { LOCAL_DEV: 'true' } : undefined),
         CDN_ROUTER_URL: Output.map(cdn.url, (url) => url ?? ''),
         USER_CONTENT_BUCKET_NAME: store.userContent.bucketName,
         MIXES_BUCKET_NAME: store.mixes.bucketName,

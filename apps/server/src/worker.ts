@@ -16,7 +16,8 @@ import { traceSampleRate } from '@gbfm/core/observability/trace-sampling'
 import { Effect, Layer, Schema } from 'effect'
 import type { NavigationLockDurableObject } from '@/durable-objects/navigation-lock.do'
 import type { SpotifyImportResolverDurableObject } from '@/durable-objects/spotify-import-resolver.do'
-import { DatabaseLayer } from '@/db/layer'
+import { DatabaseLayer, makeDatabaseClient } from '@/db/layer'
+import { seedLocalUsers } from '@/db/seed-local-users'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { sanitizeDatabaseSpan } from '@/lib/database-telemetry'
 import { hasLocalSentryContext, shouldEnableSentry } from '@/lib/sentry'
@@ -341,7 +342,14 @@ export default Sentry.withSentry<ApiEnv, ApiQueueJob>(sentryOptions, {
   async fetch(request: Request, env: ApiEnv, ctx: ExecutionContext): Promise<Response> {
     return ctx.tracing.enterSpan('gbfm.api.request', async (span): Promise<Response> => {
       span.setAttribute('http.request.method', request.method)
-      span.setAttribute('url.path', new URL(request.url).pathname)
+      const url = new URL(request.url)
+      span.setAttribute('url.path', url.pathname)
+
+      if (request.method === 'POST' && url.pathname === '/api/dev/seed') {
+        if (env.LOCAL_DEV !== 'true') return new Response('Not Found', { status: 404 })
+        const result = await seedLocalUsers(makeDatabaseClient(env.DB))
+        return Response.json(result)
+      }
 
       const webHandler = createWebHandler({ appServicesLive: appServicesLive(env) })
       try {

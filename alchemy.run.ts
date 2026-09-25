@@ -52,8 +52,7 @@ export default Alchemy.Stack(
       config,
       websiteConfig: deployment.website,
       api,
-      socialImages,
-      apiUrl: api.url
+      socialImages
     })
 
     return {

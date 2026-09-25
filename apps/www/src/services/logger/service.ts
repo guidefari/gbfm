@@ -1,6 +1,5 @@
 import * as Context from 'effect/Context'
 import type * as Effect from 'effect/Effect'
-import type * as Sentry from '@sentry/react'
 
 export type LogValue =
   | string
@@ -12,9 +11,7 @@ export type LogValue =
   | Error
   | readonly LogValue[]
   | { readonly [key: string]: LogValue }
-export type LogAttributes =
-  | Readonly<Record<string, LogValue>>
-  | Readonly<{ error: Parameters<typeof Sentry.captureException>[0] }>
+export type LogAttributes = Readonly<Record<string, LogValue>> | Readonly<{ error: unknown }>
 export type LogSeverity = 'debug' | 'info' | 'warn' | 'error'
 
 export interface LoggerService {

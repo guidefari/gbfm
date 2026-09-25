@@ -1,0 +1,3 @@
+<script lang="ts">import PublicHead from '@/lib/components/public/PublicHead.svelte'</script>
+<PublicHead title="Privacy Policy" description="How goosebumps.fm handles account, listening and analytics data." canonical="/privacy" />
+<article class="mx-auto max-w-2xl space-y-4 px-6 py-12"><h1 class="text-3xl font-black">Privacy Policy</h1><p>We store the minimum information needed to run goosebumps.fm: account information, activity you choose to create, and basic service analytics.</p><p>We do not sell your personal information. Authentication cookies are used to keep you signed in, and operational analytics help us keep the service reliable.</p><p>Contact us if you want to ask about, correct, or remove your account information.</p></article>

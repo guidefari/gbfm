@@ -1,0 +1,2 @@
+<script lang="ts">import ListPage from '@/lib/components/public/ListPage.svelte'; import type { PublicRecord } from '@/lib/server/public/content'; import type { PageProps } from './$types'; let { data }: PageProps = $props(); const href = (item: PublicRecord) => `/profile/${item.username ?? item.id}`</script>
+<ListPage {data} title="DJs & Residents" description="Meet the DJs and residents of goosebumps.fm." canonical="/djs" intro="Everyone who has a mix on goosebumps.fm." {href} empty="No DJs found yet." />

@@ -12,6 +12,7 @@ import { MusicCoverImageFetcher } from '@/services/canonical-music-identity/artw
 import { NavigationLockLocalLayer } from '@/services/navigation-lock'
 import { PlaylistEnrichmentQueueTestLayer } from '@/services/playlist-enrichment-queue'
 import { SpotifyImportResolverLocalLayer } from '@/services/spotify-import-resolver.service'
+import type { ConfigService } from '@/services/config.service'
 import {
   RecordingEmailTransportLayer,
   type EmailTransportService
@@ -57,9 +58,10 @@ export const createTestWebHandler = (
   d1: D1Database,
   emailTransportLive: Layer.Layer<EmailTransportService> = RecordingEmailTransportLayer,
   objectStoreLive?: Layer.Layer<ObjectStoreClient>,
-  musicCoverImageFetcherLive: Layer.Layer<never> = Layer.succeed(MusicCoverImageFetcher, fetch)
+  musicCoverImageFetcherLive: Layer.Layer<never> = Layer.succeed(MusicCoverImageFetcher, fetch),
+  configLive?: Layer.Layer<ConfigService>
 ) => {
-  const services = {
+  const baseServices = {
     database: DatabaseLayer(d1),
     sitemapCache: SitemapCacheLayer(inMemorySitemapKv()),
     navigationLock: NavigationLockLocalLayer,
@@ -70,6 +72,7 @@ export const createTestWebHandler = (
     emailTransport: emailTransportLive,
     musicCoverImageFetcher: musicCoverImageFetcherLive
   }
+  const services = configLive === undefined ? baseServices : { ...baseServices, config: configLive }
   const appLayerOptions: AppLayerOptions =
     objectStoreLive === undefined ? services : { ...services, objectStore: objectStoreLive }
   const appServicesLive = AppLayer(appLayerOptions)

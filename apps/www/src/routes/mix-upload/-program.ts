@@ -1,7 +1,6 @@
 import * as Effect from 'effect/Effect'
 import * as Schedule from 'effect/Schedule'
 import type { TrackEntry } from '@gbfm/ui'
-import { apiUrl, fetcher } from '@/lib/http'
 import { HttpStatusError, uploadImageDirectToS3 } from '@/lib/upload/image-upload'
 import { ImageUploadError, NotSignedInError, RecordSaveError, isPageRetryable } from './-errors'
 import { buildRecordPayload } from './-payload'
@@ -64,14 +63,25 @@ export const saveRecord = (
     }
 
     const endpoint = input.isEditMode
-      ? apiUrl(`/content/audio/${input.editType}/${input.editSlug}`)
-      : apiUrl('/content/audio')
+      ? `/api/content/audio/${input.editType}/${input.editSlug}`
+      : '/api/content/audio'
     const method = input.isEditMode ? 'PATCH' : 'POST'
     const payload = buildRecordPayload(input)
     const body = JSON.stringify(idempotencyKey ? { ...payload, idempotencyKey } : payload)
 
     return yield* Effect.tryPromise<unknown, RecordSaveError>({
-      try: () => fetcher(endpoint, { method, body, signal }),
+      try: async () => {
+        const response = await fetch(endpoint, {
+          method,
+          body,
+          signal,
+          credentials: 'include',
+          headers: { 'content-type': 'application/json' }
+        })
+        if (!response.ok) throw new Error(`Record save failed (${response.status})`)
+        const text = await response.text()
+        return text ? JSON.parse(text) : undefined
+      },
       catch: (cause) =>
         new RecordSaveError({
           message: cause instanceof Error ? cause.message : 'Network error'

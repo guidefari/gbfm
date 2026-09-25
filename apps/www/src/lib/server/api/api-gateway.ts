@@ -1,0 +1,89 @@
+import { VPS_PROXY_TARGET } from '$app/env/private'
+import type { RequestEvent } from '@sveltejs/kit'
+
+const localApiOrigin = () => VPS_PROXY_TARGET ?? 'http://127.0.0.1:3003'
+
+const bindingRequest = async (request: Request, requestId: string) => {
+  const url = new URL(request.url)
+  url.protocol = 'https:'
+  url.host = 'api.internal'
+  const headers = new Headers(request.headers)
+  headers.set('x-request-id', requestId)
+  const body = request.body === null ? undefined : await request.arrayBuffer()
+  return new Request(url, {
+    method: request.method,
+    headers,
+    body,
+    redirect: request.redirect,
+    signal: request.signal
+  })
+}
+
+const normalizeBindingResponse = async (
+  response: Awaited<ReturnType<NonNullable<App.Platform['env']['API']>['fetch']>>
+): Promise<Response> => {
+  const headers = new Headers()
+  response.headers.forEach((value, key) => headers.append(key, value))
+  return new Response(await response.arrayBuffer(), {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  })
+}
+
+const fetchBinding = async (
+  event: Pick<RequestEvent, 'platform'>,
+  request: Request
+): Promise<Response | null> => {
+  const api = event.platform?.env.API
+  if (!api) return null
+
+  const headers: Record<string, string> = {}
+  request.headers.forEach((value, key) => {
+    headers[key] = value
+  })
+  const body = request.body === null ? undefined : await request.arrayBuffer()
+  const response = await api.fetch(request.url, {
+    method: request.method,
+    headers,
+    body,
+    redirect: request.redirect
+  })
+  return normalizeBindingResponse(response)
+}
+
+/** Forwards a SvelteKit request to the API Worker binding or local API server. */
+export async function forwardApiRequest(event: RequestEvent): Promise<Response> {
+  const request = await bindingRequest(event.request, event.locals.requestId)
+  const bindingResponse = await fetchBinding(event, request)
+  if (bindingResponse) return bindingResponse
+
+  const url = new URL(event.request.url)
+  const target = new URL(`${url.pathname}${url.search}`, localApiOrigin())
+  return fetch(new Request(target, request))
+}
+
+/** Performs a server-side request through the same API boundary as browser traffic. */
+export async function apiRequest(
+  event: Pick<RequestEvent, 'platform' | 'request' | 'locals'>,
+  path: string,
+  init: RequestInit = {}
+): Promise<Response> {
+  const url = new URL(path, event.request.url)
+  const headers = new Headers(init.headers)
+  const cookie = event.request.headers.get('cookie')
+  if (cookie) headers.set('cookie', cookie)
+  headers.set('x-request-id', event.locals.requestId)
+
+  const request = new Request(url, { ...init, headers })
+  if (event.platform?.env.API) {
+    const internal = new URL(request.url)
+    internal.protocol = 'https:'
+    internal.host = 'api.internal'
+    const bindingResponse = await fetchBinding(event, new Request(internal, request))
+    if (bindingResponse) return bindingResponse
+  }
+
+  const target = new URL(`${url.pathname}${url.search}`, localApiOrigin())
+  return fetch(new Request(target, request))
+}

@@ -7,5 +7,8 @@ export type DatabaseClient = ReturnType<typeof drizzle<typeof schema, D1Database
 
 export class Database extends Context.Service<Database, DatabaseClient>()('Database') {}
 
+export const makeDatabaseClient = (database: D1Database): DatabaseClient =>
+  drizzle(database, { schema })
+
 export const DatabaseLayer = (database: D1Database) =>
-  Layer.sync(Database, () => drizzle(database, { schema }))
+  Layer.sync(Database, () => makeDatabaseClient(database))

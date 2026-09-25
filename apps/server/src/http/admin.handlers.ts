@@ -255,7 +255,10 @@ async function loadAdminOverview(db: Database['Service']) {
         title: musicLabelsTable.name,
         slug: musicLabelsTable.slug,
         createdAt: musicLabelsTable.createdAt,
-        draft: sql<boolean>`${musicLabelsTable.publishedAt} is null or ${musicLabelsTable.publishedAt} > now()`
+        draft:
+          sql<number>`${musicLabelsTable.publishedAt} is null or ${gt(musicLabelsTable.publishedAt, now)}`.mapWith(
+            Boolean
+          )
       })
       .from(musicLabelsTable)
       .orderBy(desc(musicLabelsTable.createdAt))

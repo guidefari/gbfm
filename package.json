@@ -13,6 +13,7 @@
     "dev:email": "bun run email:preview",
     "dev:otel": "bun run otel",
     "dev:d1": "bun --filter @gbfm/www dev:d1",
+    "seed:local-users": "bun run scripts/seed-local-users.ts",
     "deploy": "bunx alchemy deploy --stage=dev",
     "deploy:prod": "bunx alchemy deploy --stage=prod --profile env-token --yes",
     "email:preview": "bun --filter @gbfm/email dev",

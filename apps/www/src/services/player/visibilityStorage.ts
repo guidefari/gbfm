@@ -12,9 +12,8 @@ const browserStorage = (): VisibilityStorage | undefined => {
   }
 }
 
-/** Reads fullscreen visibility synchronously so the initial atom state is
- * available before React's first render. Invalid or unavailable storage falls
- * back to the normal collapsed player. */
+/** Reads fullscreen visibility synchronously before the first render. Invalid or unavailable
+ * storage falls back to the normal collapsed player. */
 export const readStoredFullscreenVisibility = (
   storage: VisibilityStorage | undefined = browserStorage()
 ): boolean => {

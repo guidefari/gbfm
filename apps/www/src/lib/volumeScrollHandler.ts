@@ -1,6 +1,6 @@
 /**
  * Vanilla JS utility for handling volume scroll events
- * No React dependencies - just pure DOM event handling
+ * Uses only DOM event handling.
  */
 
 type VolumeScrollConfig = {

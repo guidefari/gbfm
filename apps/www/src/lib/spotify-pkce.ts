@@ -28,7 +28,9 @@ export {
   type SpotifyWebScope
 } from '@gbfm/spotify'
 
-export const clearAuthorizationCallback = (url: URL) => {
+type AuthorizationCallbackUrl = Pick<URL, 'origin' | 'pathname'>
+
+export const clearAuthorizationCallback = (url: AuthorizationCallbackUrl) => {
   window.history.replaceState({}, '', `${url.origin}${url.pathname}`)
 }
 

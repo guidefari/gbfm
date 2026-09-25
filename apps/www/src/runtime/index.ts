@@ -1,27 +1,24 @@
 import { SpotifyBrowser } from '@spotify-effect/browser'
 import { Data, Effect, Layer, Scope } from 'effect'
-import { env } from '@/env'
+import { VITE_SPOTIFY_CLIENT_ID } from '$app/env/public'
 import { getSpotifyRedirectUri } from '@/lib/spotify-pkce'
-import { type Analytics, SentryAnalyticsLayer, NoopAnalyticsLayer } from '@/services/analytics'
+import { NoopAnalyticsLayer } from '@/services/analytics/noop'
+import { type Analytics } from '@/services/analytics/service'
 import { ImageExport, ImageExportLive } from '@/services/image-export'
 import { type MediaSessionService, MediaSessionServiceLayer } from '@/services/media-session'
 import { PlayerStorage, type PersistedQueueType } from '@gbfm/player'
 import { PlayerStorageLive } from '@/services/player/storage'
-import { log, type Logger, LoggerLive, NoopLogger } from '@/services/logger'
-import { SentryTracerLive } from '@/services/sentry-tracer'
+import { NoopLogger } from '@/services/logger/noop'
+import { type Logger } from '@/services/logger/service'
 import { type MixUploadDraftStorage, MixUploadDraftStorageLive } from '@/services/mix-upload-draft'
 import {
   type ResumableUploadStorage,
   ResumableUploadStorageLive
 } from '@/services/resumable-upload'
 
-const enableSentry = Boolean(env.sentryDsn) && (!env.isDev || env.sentryEnableLocal)
-
-const analyticsLayer = enableSentry ? SentryAnalyticsLayer : NoopAnalyticsLayer
-
 const spotifyLayer = Layer.suspend(() =>
   SpotifyBrowser.layer({
-    clientId: env.spotifyClientId,
+    clientId: VITE_SPOTIFY_CLIENT_ID ?? '',
     redirectUri: getSpotifyRedirectUri(),
     session: {
       sessionStorage: window.sessionStorage,
@@ -36,19 +33,16 @@ const mediaSessionLayer = MediaSessionServiceLayer
 const imageExportLayer = ImageExportLive
 const resumableUploadStorageLayer = ResumableUploadStorageLive
 const mixUploadDraftStorageLayer = MixUploadDraftStorageLive
-const loggerLayer = enableSentry ? LoggerLive : NoopLogger
-const tracerLayer = enableSentry ? SentryTracerLive : Layer.empty
 
 const mainLayer = Layer.mergeAll(
-  analyticsLayer,
+  NoopAnalyticsLayer,
   spotifyLayer,
   playerStorageLayer,
   mediaSessionLayer,
   imageExportLayer,
   resumableUploadStorageLayer,
   mixUploadDraftStorageLayer,
-  loggerLayer,
-  tracerLayer
+  NoopLogger
 )
 
 type AppServices =
@@ -66,13 +60,15 @@ class AppEffectFailure extends Data.TaggedError('AppEffectFailure')<{
 }> {}
 
 const appScope = Scope.makeUnsafe()
-const appContextPromise = Effect.runPromise(Layer.buildWithScope(mainLayer, appScope))
+const makeAppContext = () => Effect.runPromise(Layer.buildWithScope(mainLayer, appScope))
+let appContextPromise: ReturnType<typeof makeAppContext> | undefined
+const getAppContext = () => (appContextPromise ??= makeAppContext())
 
 export const runAppEffect = <A, E>(effect: Effect.Effect<A, E, AppServices>) =>
-  appContextPromise
+  getAppContext()
     .then((context) => Effect.runPromiseWith(context)(effect))
     .catch((error) => {
-      log('error', 'App effect failed', { error })
+      console.error('App effect failed', error)
       throw error
     })
 
@@ -88,8 +84,7 @@ const useStorage = <A, E>(
     catch: (cause) => new AppEffectFailure({ cause })
   })
 
-/** Queue persistence bound to the app context, for the queue atom, which runs
- *  outside React and so cannot use the player's per-mount runtime. */
+/** Queue persistence bound to the app context for consumers outside a component runtime. */
 export const queuePersistence = {
   loadQueue: () => useStorage((storage) => storage.loadQueue),
   saveQueue: (queue: PersistedQueueType) => useStorage((storage) => storage.saveQueue(queue))
