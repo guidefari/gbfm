@@ -3,7 +3,9 @@
   import { page } from '$app/state'
   import type { Principal } from '@/lib/auth/principal'
   import { Option, Schema } from 'effect'
+  import { BookOpen, Disc3, Menu, Search } from 'lucide-svelte'
   import { onMount } from 'svelte'
+  import GoosebumpsLogo from './GoosebumpsLogo.svelte'
 
   const PlayerChrome = Schema.Struct({
     id: Schema.String,
@@ -63,17 +65,17 @@
           <span class="absolute inset-0 grid place-items-center bg-black/35 text-xs text-white">{player.playing ? 'Ⅱ' : '▶'}</span>
         </span>
       </button>
-    {:else}<a href="/tweets" aria-label="Tweets" class="grid place-items-center no-underline">♪</a>{/if}
-    <a href="/shows" aria-label="Radio Shows" aria-current={isActive('/shows') ? 'page' : undefined} class="grid place-items-center text-lg no-underline aria-[current=page]:text-highlight">◉</a>
-    <a href="/editorial" aria-label="Editorial" aria-current={isActive('/editorial') ? 'page' : undefined} class="grid place-items-center text-lg no-underline aria-[current=page]:text-highlight">▤</a>
-    <button type="button" aria-label="Search" class="text-lg" onclick={() => (searchOpen = true)}>⌕</button>
-    <button type="button" aria-label="Menu" aria-haspopup="dialog" popovertarget="mobile-menu" class="text-lg">☰</button>
+    {:else}<a href="/shows" aria-label="Now playing" class="grid place-items-center no-underline"><Disc3 size={20} strokeWidth={1.75} /></a>{/if}
+    <a href="/shows" aria-label="Radio Shows" aria-current={isActive('/shows') ? 'page' : undefined} class="grid place-items-center no-underline aria-[current=page]:text-highlight"><Disc3 size={20} strokeWidth={1.75} /></a>
+    <a href="/editorial" aria-label="Editorial" aria-current={isActive('/editorial') ? 'page' : undefined} class="grid place-items-center no-underline aria-[current=page]:text-highlight"><BookOpen size={20} strokeWidth={1.75} /></a>
+    <button type="button" aria-label="Search" onclick={() => (searchOpen = true)}><Search size={20} strokeWidth={1.75} /></button>
+    <button type="button" aria-label="Menu" aria-haspopup="dialog" popovertarget="mobile-menu"><Menu size={20} strokeWidth={1.75} /></button>
   </div>
 
   <div class="hidden h-full items-center gap-4 px-4 lg:flex lg:pr-6">
-    <a href="/" aria-label="goosebumps.fm home" class="shrink-0 font-black no-underline">gb<span class="text-highlight">fm</span></a>
+    <a href="/" aria-label="goosebumps.fm home" class="group flex shrink-0 items-center text-foreground no-underline transition-colors hover:text-highlight"><GoosebumpsLogo class="h-5 w-auto shrink-0" /></a>
     <div class="flex shrink-0 items-center gap-1">{#each desktopLinks as link}<a href={link.href} aria-current={isActive(link.href) ? 'page' : undefined} class="rounded-sm px-2 py-1 text-xs font-semibold tracking-wide text-muted-foreground no-underline hover:text-foreground aria-[current=page]:text-highlight">{link.label}</a>{/each}</div>
-    <button type="button" aria-label="Search" class="grid size-7 place-items-center text-muted-foreground hover:text-foreground" onclick={() => (searchOpen = true)}>⌕</button>
+    <button type="button" aria-label="Search" class="grid size-7 place-items-center text-muted-foreground hover:text-foreground" onclick={() => (searchOpen = true)}><Search size={12} /></button>
     <span class="min-w-0 flex-1"></span>
     {#if player}<div class="flex min-w-0 max-w-56 items-center gap-2 border-r border-border pr-3"><button type="button" aria-label={player.playing ? 'Pause' : 'Play'} class="size-7 shrink-0 rounded-sm border border-border text-xs" onclick={() => dispatchPlayerAction('toggle')}>{player.playing ? 'Ⅱ' : '▶'}</button><button type="button" class="truncate text-left text-xs font-medium text-muted-foreground hover:text-foreground" onclick={() => dispatchPlayerAction('fullscreen')}>{player.title}</button></div>{/if}
     {#if principal._tag === 'Authenticated'}<a href="/dashboard" aria-label="Dashboard" class="flex size-7 items-center justify-center overflow-hidden rounded-sm border border-border bg-muted text-xs font-bold no-underline">{#if principal.imageUrl}<img src={principal.imageUrl} alt="" class="size-full object-cover" />{:else}{principal.name[0] ?? '?'}{/if}</a>{:else}<a href={`/auth/sign-in?redirect=${encodeURIComponent(page.url.pathname)}`} class="text-xs font-semibold text-highlight no-underline">Log in</a>{/if}

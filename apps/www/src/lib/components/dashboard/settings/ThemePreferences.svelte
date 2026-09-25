@@ -9,16 +9,37 @@
   ]
   let theme = $state<Theme>('system')
 
+  function applyTheme(value: Theme) {
+    const resolved =
+      value === 'system'
+        ? matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark'
+          : 'light'
+        : value
+    document.documentElement.classList.remove('light', 'dark')
+    document.documentElement.classList.add(resolved)
+    document.documentElement.dataset.theme = resolved
+    document.querySelector('meta[name="theme-color"]')?.setAttribute(
+      'content',
+      resolved === 'dark' ? '#16415a' : '#e8eef7'
+    )
+  }
+
   function setTheme(value: Theme) {
     theme = value
-    localStorage.setItem('theme', value)
-    const dark = value === 'dark' || (value === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
-    document.documentElement.classList.toggle('dark', dark)
+    localStorage.setItem('vite-ui-theme', value)
+    applyTheme(value)
   }
 
   onMount(() => {
-    const saved = localStorage.getItem('theme')
-    setTheme(saved === 'light' || saved === 'dark' ? saved : 'system')
+    const media = matchMedia('(prefers-color-scheme: dark)')
+    const saved = localStorage.getItem('vite-ui-theme')
+    setTheme(saved === 'light' || saved === 'dark' || saved === 'system' ? saved : 'system')
+    const handleChange = () => {
+      if (theme === 'system') applyTheme('system')
+    }
+    media.addEventListener('change', handleChange)
+    return () => media.removeEventListener('change', handleChange)
   })
 </script>
 

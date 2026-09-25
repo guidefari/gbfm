@@ -10,6 +10,21 @@
       as="font"
       type="font/woff2"
       crossorigin="anonymous" />
+    <script>
+      ;(() => {
+        const saved = localStorage.getItem('vite-ui-theme')
+        const theme = saved === 'light' || saved === 'dark' ? saved : 'system'
+        const resolved =
+          theme === 'system'
+            ? matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light'
+            : theme
+        document.documentElement.classList.remove('light', 'dark')
+        document.documentElement.classList.add(resolved)
+        document.documentElement.dataset.theme = resolved
+      })()
+    </script>
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">
