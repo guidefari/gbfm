@@ -83,9 +83,6 @@ export const NavigationServiceLayer = Layer.effect(
     const feed = (condition: ReturnType<typeof and>) =>
       db.select(slugColumn).from(postsTable).where(and(feedPost, condition))
 
-    const feedCount = (condition: ReturnType<typeof and>) =>
-      db.select(countColumn).from(postsTable).where(and(feedPost, condition))
-
     const unreadFeed = (identity: NavigationIdentity, condition: ReturnType<typeof and>) =>
       db
         .select(slugColumn)
@@ -141,28 +138,22 @@ export const NavigationServiceLayer = Layer.effect(
               .orderBy(desc(postsTable.createdAt), desc(postsTable.slug))
               .limit(1),
             feed(older).orderBy(desc(postsTable.createdAt), desc(postsTable.slug)).limit(1),
-            feedCount(newer),
-            feedCount(undefined),
             unreadCount(identity, ne(postsTable.slug, slug)),
             timeline(identity),
           ]),
         catch: (error) => databaseError('read', error),
       }).pipe(
-        Effect.flatMap(
-          ([current, back, olderUnread, olderAny, newerRows, totalRows, unreadRows, months]) => {
-            if (!current[0]) return Effect.fail(new MicroPostMissing({ slug }))
-            const forward = olderUnread[0] ?? olderAny[0]
+        Effect.flatMap(([current, back, olderUnread, olderAny, unreadRows, months]) => {
+          if (!current[0]) return Effect.fail(new MicroPostMissing({ slug }))
+          const forward = olderUnread[0] ?? olderAny[0]
 
-            return Effect.succeed({
-              back: back[0] ? asSlug(back[0].slug) : null,
-              forward: forward ? asSlug(forward.slug) : null,
-              position: newerRows[0]?.count ?? 0,
-              total: totalRows[0]?.count ?? 0,
-              unreadCount: unreadRows[0]?.count ?? 0,
-              timeline: months,
-            })
-          },
-        ),
+          return Effect.succeed({
+            back: back[0] ? asSlug(back[0].slug) : null,
+            forward: forward ? asSlug(forward.slug) : null,
+            unreadCount: unreadRows[0]?.count ?? 0,
+            timeline: months,
+          })
+        }),
         Effect.withSpan('navigation.neighbours', { attributes: { slug } }),
       )
     }

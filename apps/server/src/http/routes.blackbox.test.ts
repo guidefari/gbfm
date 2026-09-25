@@ -4187,16 +4187,14 @@ describe('micro post navigation', () => {
       expect(middle).toMatchObject({
         back: feed.newest.slug,
         forward: feed.older.slug,
-        position: 1,
-        unreadCount: middle.total - 1,
       })
+      const totalFeed = middle.timeline.reduce((sum, month) => sum + month.total, 0)
+      expect(middle.unreadCount).toBe(totalFeed - 1)
       expect(middle.timeline.at(-1)).toEqual({ month: '2100-01', total: 4, unread: 4 })
       const newest = await neighbours(feed.newest.slug, deviceCookie())
       expect(newest).toMatchObject({
         back: null,
         forward: feed.middle.slug,
-        position: 0,
-        total: middle.total,
       })
     } finally {
       await feed.cleanup()
@@ -4216,8 +4214,9 @@ describe('micro post navigation', () => {
       expect(middle).toMatchObject({
         back: feed.newest.slug,
         forward: feed.oldest.slug,
-        unreadCount: middle.total - 3,
       })
+      const totalFeed = middle.timeline.reduce((sum, month) => sum + month.total, 0)
+      expect(middle.unreadCount).toBe(totalFeed - 3)
       expect(middle.timeline.at(-1)).toEqual({ month: '2100-01', total: 4, unread: 2 })
       await expect(neighbours(feed.middle.slug, deviceCookie())).resolves.toMatchObject({
         forward: feed.older.slug,

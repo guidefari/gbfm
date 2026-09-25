@@ -12,8 +12,6 @@ test('decodes a successful response with the published schema', async () => {
     Response.json({
       back: null,
       forward: 'next-tweet',
-      position: 3,
-      total: 9,
       unreadCount: 4,
       timeline: [],
     }),
@@ -23,8 +21,6 @@ test('decodes a successful response with the published schema', async () => {
     Result.succeed({
       back: null,
       forward: 'next-tweet',
-      position: 3,
-      total: 9,
       unreadCount: 4,
       timeline: [],
     }),

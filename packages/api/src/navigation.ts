@@ -18,8 +18,6 @@ export type MicroPostTimelineMonth = typeof MicroPostTimelineMonth.Type
 export const MicroPostNeighboursResponse = Schema.Struct({
   back: Schema.NullOr(Slug),
   forward: Schema.NullOr(Slug),
-  position: Schema.Number,
-  total: Schema.Number,
   unreadCount: Schema.Number,
   timeline: Schema.Array(MicroPostTimelineMonth),
 })
