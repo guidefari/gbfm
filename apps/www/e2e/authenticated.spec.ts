@@ -175,7 +175,7 @@ test('tweet detail preserves the content hierarchy, navigates by link, and posts
   })
   await older.click()
   await expect.poll(() => new URL(page.url()).pathname).not.toBe(`/tweet/${secondSlug}`)
-  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  await expect(page.getByRole('article').first()).toBeVisible()
   const result = await page.evaluate(() => ({
     marker: sessionStorage.getItem('tweet-navigation-marker'),
     elapsed:
