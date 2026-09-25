@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { HttpApiError } from 'effect/unstable/httpapi'
+import * as HttpClientError from 'effect/unstable/http/HttpClientError'
+import * as HttpClientRequest from 'effect/unstable/http/HttpClientRequest'
+import * as HttpClientResponse from 'effect/unstable/http/HttpClientResponse'
 import { isNotFoundError, nullOnNotFound } from './http-errors'
 
 describe('isNotFoundError', () => {
@@ -13,5 +16,15 @@ describe('isNotFoundError', () => {
     await expect(nullOnNotFound(Promise.reject(new Error('network failed')))).rejects.toThrow(
       'network failed'
     )
+  })
+
+  it('maps a remote API 404 response to null', async () => {
+    const request = HttpClientRequest.get('https://api.example.test/missing')
+    const response = HttpClientResponse.fromWeb(request, new Response(null, { status: 404 }))
+    const cause = new HttpClientError.HttpClientError({
+      reason: new HttpClientError.StatusCodeError({ request, response })
+    })
+
+    await expect(nullOnNotFound(Promise.reject(cause))).resolves.toBeNull()
   })
 })
