@@ -61,6 +61,11 @@ export const RequestLoggerLive = HttpRouter.middleware(
     Effect.gen(function* () {
       const request = yield* HttpServerRequest.HttpServerRequest
       const path = requestPath(request.url)
+      const incomingRequestId = request.headers['x-request-id']
+      const requestId =
+        incomingRequestId && /^[a-zA-Z0-9_-]{1,128}$/.test(incomingRequestId)
+          ? incomingRequestId
+          : undefined
       const start = Date.now()
       const result = yield* Effect.exit(httpEffect)
       const duration = Date.now() - start
@@ -71,6 +76,7 @@ export const RequestLoggerLive = HttpRouter.middleware(
           ? Effect.logInfo('[HTTP] client aborted request', {
               method: request.method,
               path,
+              requestId,
               status: 499,
               duration,
               outcome: 'client_abort'
@@ -78,6 +84,7 @@ export const RequestLoggerLive = HttpRouter.middleware(
           : Effect.logError('[HTTP] request failed', {
               method: request.method,
               path,
+              requestId,
               duration,
               cause: result.cause
             })
@@ -89,6 +96,7 @@ export const RequestLoggerLive = HttpRouter.middleware(
       yield* Effect.logInfo('[HTTP] request completed', {
         method: request.method,
         path,
+        requestId,
         status: response.status,
         duration
       })

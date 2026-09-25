@@ -21,6 +21,7 @@ import { seedLocalUsers } from '@/db/seed-local-users'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { sanitizeDatabaseSpan } from '@/lib/database-telemetry'
 import { hasLocalSentryContext, shouldEnableSentry } from '@/lib/sentry'
+import { traceLocalRequest } from '@/lib/local-request-tracing'
 import { createWebHandler } from '@/http/routes'
 import { regenerateSitemap } from '@/routes/redirect/seo/sitemap.service'
 import { AppLayer } from '@/runtime/services'
@@ -344,6 +345,10 @@ export default Sentry.withSentry<ApiEnv, ApiQueueJob>(sentryOptions, {
       span.setAttribute('http.request.method', request.method)
       const url = new URL(request.url)
       span.setAttribute('url.path', url.pathname)
+      const requestId = request.headers.get('x-request-id')
+      if (env.LOCAL_DEV === 'true' && requestId && /^[a-zA-Z0-9_-]{1,128}$/.test(requestId)) {
+        span.setAttribute('gbfm.request_id', requestId)
+      }
 
       if (request.method === 'POST' && url.pathname === '/api/dev/seed') {
         if (env.LOCAL_DEV !== 'true') return new Response('Not Found', { status: 404 })
@@ -353,7 +358,9 @@ export default Sentry.withSentry<ApiEnv, ApiQueueJob>(sentryOptions, {
 
       const webHandler = createWebHandler({ appServicesLive: appServicesLive(env) })
       try {
-        return await webHandler.handler(request)
+        return await (env.LOCAL_DEV === 'true'
+          ? traceLocalRequest(request, () => webHandler.handler(request))
+          : webHandler.handler(request))
       } finally {
         await webHandler.dispose()
       }
