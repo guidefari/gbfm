@@ -10,6 +10,18 @@ async function signIn(page: Page, email: string, redirect = '/dashboard') {
   await expect(page).toHaveURL((url) => `${url.pathname}${url.search}` === redirect)
 }
 
+async function publishTweet(page: Page, slug: string, title: string, body: string) {
+  await page.goto('/new/tweet')
+  await page.getByLabel('Title / tweet').fill(title)
+  await page.getByLabel('Slug').fill(slug)
+  await page.getByLabel('Body (Markdown)').fill(body)
+  await page.getByLabel('Tags').fill('radio, e2e')
+  await page.getByRole('button', { name: 'Review & publish' }).click()
+  page.once('dialog', (dialog) => dialog.accept())
+  await page.getByRole('button', { name: 'Publish now' }).click()
+  await expect(page).toHaveURL(`/tweet/${slug}`)
+}
+
 test('listener can use member settings but cannot access creator or admin tools', async ({
   page
 }) => {
@@ -47,6 +59,52 @@ test('creator can save and reopen a draft but cannot access admin tools', async 
 
   const response = await page.goto('/dashboard/users')
   expect(response?.status()).toBe(403)
+})
+
+test('tweet detail preserves the production content hierarchy and preloads navigation', async ({
+  page,
+  context
+}) => {
+  await signIn(page, 'creator@gbfm.local', '/new')
+  const suffix = `${Date.now()}-${test.info().workerIndex}`
+  const firstSlug = `e2e-tweet-first-${suffix}`
+  const secondSlug = `e2e-tweet-second-${suffix}`
+
+  await publishTweet(page, firstSlug, 'First E2E transmission', 'The first transmission is live.')
+  await publishTweet(
+    page,
+    secondSlug,
+    'Second E2E transmission',
+    'The second transmission is live.'
+  )
+
+  await expect(page.getByRole('heading', { name: 'Second E2E transmission' })).toBeVisible()
+  await expect(page.getByText('The second transmission is live.')).toBeVisible()
+  await expect(page.getByRole('link', { name: '#radio' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Copy link' })).toBeVisible()
+  await expect(page.getByText('"use strict"')).toHaveCount(0)
+
+  const previous = page.getByRole('button', { name: 'Previous tweet' })
+  await expect(previous).toBeEnabled()
+  await page.evaluate(() => {
+    sessionStorage.setItem('tweet-navigation-marker', 'preserved')
+    performance.mark('tweet-navigation-started')
+  })
+  await previous.click()
+  await expect.poll(() => new URL(page.url()).pathname).not.toBe(`/tweet/${secondSlug}`)
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  const result = await page.evaluate(() => ({
+    marker: sessionStorage.getItem('tweet-navigation-marker'),
+    elapsed:
+      performance.now() -
+      (performance.getEntriesByName('tweet-navigation-started')[0]?.startTime ?? 0)
+  }))
+  expect(result.marker).toBe('preserved')
+  expect(result.elapsed).toBeLessThan(1_000)
+
+  await context.clearCookies()
+  await page.reload()
+  await expect(page.getByRole('link', { name: 'Sign in' })).toBeVisible()
 })
 
 test('editor has publishing access without administrator access', async ({ page }) => {
