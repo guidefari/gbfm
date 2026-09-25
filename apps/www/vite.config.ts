@@ -5,7 +5,11 @@ import { defineConfig } from 'vite'
 import { repoChangelogPlugin } from './plugins/repo-changelog.ts'
 
 export default defineConfig({
-  plugins: [tailwindcss(), repoChangelogPlugin(), sveltekit()],
+  plugins: [
+    tailwindcss(),
+    repoChangelogPlugin(),
+    sveltekit({ tracing: { server: process.env.NODE_ENV !== 'production' } })
+  ],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))

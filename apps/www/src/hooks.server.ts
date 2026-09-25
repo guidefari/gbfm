@@ -3,10 +3,15 @@ import { resolvePrincipal } from '@/lib/server/auth/session'
 
 export const handle: Handle = async ({ event, resolve }) => {
   const incomingRequestId = event.request.headers.get('x-request-id')
-  event.locals.requestId = incomingRequestId ?? crypto.randomUUID()
+  const startedAt = performance.now()
+  event.locals.requestId =
+    incomingRequestId && /^[a-zA-Z0-9_-]{1,128}$/.test(incomingRequestId)
+      ? incomingRequestId
+      : crypto.randomUUID()
+  if (event.tracing.enabled)
+    event.tracing.root.setAttribute('gbfm.request_id', event.locals.requestId)
   event.locals.principal = await resolvePrincipal(event)
 
-  const startedAt = performance.now()
   const resolved = await resolve(event)
   const response = new Response(resolved.body, resolved)
   response.headers.set('x-request-id', event.locals.requestId)
@@ -14,6 +19,15 @@ export const handle: Handle = async ({ event, resolve }) => {
     'server-timing',
     `sveltekit;dur=${(performance.now() - startedAt).toFixed(1)}`
   )
+  if (import.meta.env.DEV) {
+    console.info('www request completed', {
+      requestId: event.locals.requestId,
+      route: event.route.id,
+      method: event.request.method,
+      status: response.status,
+      durationMs: Math.round(performance.now() - startedAt)
+    })
+  }
   return response
 }
 

@@ -1,7 +1,55 @@
 import { VPS_PROXY_TARGET } from '$app/env/private'
+import { context, propagation, SpanStatusCode, trace } from '@opentelemetry/api'
 import type { RequestEvent } from '@sveltejs/kit'
 
 const localApiOrigin = () => VPS_PROXY_TARGET ?? 'http://127.0.0.1:3003'
+const tracer = trace.getTracer('gbfm-www-api')
+
+const traceHeaders = (headers: Headers) => {
+  if (import.meta.env.DEV) {
+    propagation.inject(context.active(), headers, {
+      set: (carrier, key, value) => carrier.set(key, value)
+    })
+  }
+  return headers
+}
+
+const profileApiRequest = async (
+  event: Pick<RequestEvent, 'locals'> & { route?: RequestEvent['route'] },
+  operation: string,
+  run: () => Promise<Response>
+): Promise<Response> => {
+  if (!import.meta.env.DEV) return run()
+
+  return tracer.startActiveSpan(operation, async (span) => {
+    const startedAt = performance.now()
+    span.setAttribute('gbfm.request_id', event.locals.requestId)
+    span.setAttribute('gbfm.www.route', event.route?.id ?? 'unknown')
+    try {
+      const response = await run()
+      span.setAttribute('http.response.status_code', response.status)
+      console.info('www api request completed', {
+        requestId: event.locals.requestId,
+        route: event.route?.id,
+        operation,
+        status: response.status,
+        durationMs: Math.round(performance.now() - startedAt)
+      })
+      return response
+    } catch (error) {
+      span.setStatus({ code: SpanStatusCode.ERROR, message: 'API request failed' })
+      console.error('www api request failed', {
+        requestId: event.locals.requestId,
+        route: event.route?.id,
+        operation,
+        durationMs: Math.round(performance.now() - startedAt)
+      })
+      throw error
+    } finally {
+      span.end()
+    }
+  })
+}
 
 const bindingRequest = async (request: Request, requestId: string) => {
   const url = new URL(request.url)
@@ -9,6 +57,7 @@ const bindingRequest = async (request: Request, requestId: string) => {
   url.host = 'api.internal'
   const headers = new Headers(request.headers)
   headers.set('x-request-id', requestId)
+  traceHeaders(headers)
   const body = request.body === null ? undefined : await request.arrayBuffer()
   return new Request(url, {
     method: request.method,
@@ -54,13 +103,15 @@ const fetchBinding = async (
 
 /** Forwards a SvelteKit request to the API Worker binding or local API server. */
 export async function forwardApiRequest(event: RequestEvent): Promise<Response> {
-  const request = await bindingRequest(event.request, event.locals.requestId)
-  const bindingResponse = await fetchBinding(event, request)
-  if (bindingResponse) return bindingResponse
+  return profileApiRequest(event, 'www.api.forward', async () => {
+    const request = await bindingRequest(event.request, event.locals.requestId)
+    const bindingResponse = await fetchBinding(event, request)
+    if (bindingResponse) return bindingResponse
 
-  const url = new URL(event.request.url)
-  const target = new URL(`${url.pathname}${url.search}`, localApiOrigin())
-  return fetch(new Request(target, request))
+    const url = new URL(event.request.url)
+    const target = new URL(`${url.pathname}${url.search}`, localApiOrigin())
+    return fetch(new Request(target, request))
+  })
 }
 
 /** Performs a server-side request through the same API boundary as browser traffic. */
@@ -69,21 +120,24 @@ export async function apiRequest(
   path: string,
   init: RequestInit = {}
 ): Promise<Response> {
-  const url = new URL(path, event.request.url)
-  const headers = new Headers(init.headers)
-  const cookie = event.request.headers.get('cookie')
-  if (cookie) headers.set('cookie', cookie)
-  headers.set('x-request-id', event.locals.requestId)
+  return profileApiRequest(event, 'www.api.request', async () => {
+    const url = new URL(path, event.request.url)
+    const headers = new Headers(init.headers)
+    const cookie = event.request.headers.get('cookie')
+    if (cookie) headers.set('cookie', cookie)
+    headers.set('x-request-id', event.locals.requestId)
+    traceHeaders(headers)
 
-  const request = new Request(url, { ...init, headers })
-  if (event.platform?.env.API) {
-    const internal = new URL(request.url)
-    internal.protocol = 'https:'
-    internal.host = 'api.internal'
-    const bindingResponse = await fetchBinding(event, new Request(internal, request))
-    if (bindingResponse) return bindingResponse
-  }
+    const request = new Request(url, { ...init, headers })
+    if (event.platform?.env.API) {
+      const internal = new URL(request.url)
+      internal.protocol = 'https:'
+      internal.host = 'api.internal'
+      const bindingResponse = await fetchBinding(event, new Request(internal, request))
+      if (bindingResponse) return bindingResponse
+    }
 
-  const target = new URL(`${url.pathname}${url.search}`, localApiOrigin())
-  return fetch(new Request(target, request))
+    const target = new URL(`${url.pathname}${url.search}`, localApiOrigin())
+    return fetch(new Request(target, request))
+  })
 }
