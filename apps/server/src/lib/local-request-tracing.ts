@@ -1,6 +1,6 @@
 import { Effect, Layer, ManagedRuntime, Tracer } from 'effect'
 import { FetchHttpClient } from 'effect/unstable/http'
-import { OtlpSerialization, OtlpTracer } from 'effect/unstable/observability'
+import { OtlpExporter, OtlpSerialization, OtlpTracer } from 'effect/unstable/observability'
 
 const LocalTracer = OtlpTracer.layer({
   url: 'http://127.0.0.1:4318/v1/traces',
@@ -22,11 +22,15 @@ const remoteParent = (header: string | null) => {
   })
 }
 
-export const traceLocalRequest = (request: Request, run: () => Promise<Response>) => {
+export const traceLocalRequest = (
+  request: Request,
+  run: () => Promise<Response>,
+  waitUntil: (promise: Promise<unknown>) => void
+) => {
   const requestId = request.headers.get('x-request-id')
   const parent = remoteParent(request.headers.get('traceparent'))
 
-  return runtime.runPromise(
+  const response = runtime.runPromise(
     Effect.promise(run).pipe(
       Effect.tap((response) =>
         Effect.annotateCurrentSpan('http.response.status_code', response.status)
@@ -42,4 +46,14 @@ export const traceLocalRequest = (request: Request, run: () => Promise<Response>
       })
     )
   )
+
+  return response.finally(() => {
+    waitUntil(
+      runtime.runPromise(
+        Effect.flatMap(OtlpExporter.Flusher, (flusher) =>
+          Effect.timeoutOption(flusher.flush, '2 seconds')
+        )
+      )
+    )
+  })
 }

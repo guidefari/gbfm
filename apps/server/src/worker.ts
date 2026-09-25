@@ -359,7 +359,11 @@ export default Sentry.withSentry<ApiEnv, ApiQueueJob>(sentryOptions, {
       const webHandler = createWebHandler({ appServicesLive: appServicesLive(env) })
       try {
         return await (env.LOCAL_DEV === 'true'
-          ? traceLocalRequest(request, () => webHandler.handler(request))
+          ? traceLocalRequest(
+              request,
+              () => webHandler.handler(request),
+              (promise) => ctx.waitUntil(promise)
+            )
           : webHandler.handler(request))
       } finally {
         await webHandler.dispose()
