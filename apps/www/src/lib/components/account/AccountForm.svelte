@@ -19,7 +19,7 @@
     submitLabel,
     endpoint,
     transform = (values) => values,
-    onSuccess = () => undefined
+    onSuccess = () => undefined,
   }: {
     title: string
     description: string
@@ -48,7 +48,10 @@
 
     if (!(formElement instanceof HTMLFormElement)) return
     const form = new FormData(formElement)
-    const values = Object.fromEntries([...form.entries()].map(([key, value]) => [key, String(value)]))
+
+    const values = Object.fromEntries(
+      [...form.entries()].map(([key, value]) => [key, String(value)]),
+    )
 
     try {
       const target = Schema.is(Schema.String)(endpoint) ? endpoint : endpoint(values)
@@ -57,7 +60,7 @@
         method: 'POST',
         credentials: 'include',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(transform(values))
+        body: JSON.stringify(transform(values)),
       })
 
       if (!response.ok) {
@@ -80,18 +83,39 @@
   <p class="text-xs font-bold uppercase tracking-[.25em] text-highlight">Account</p>
   <h1 class="mt-2 text-4xl font-black">{title}</h1>
   <p class="mt-3 text-muted-foreground">{description}</p>
-  {#if error}<p role="alert" class="mt-6 border border-destructive p-3 text-destructive">{error}</p>{/if}
+  {#if error}<p role="alert" class="mt-6 border border-destructive p-3 text-destructive">
+      {error}
+    </p>{/if}
   {#if success}<p role="status" class="mt-6 border border-highlight p-3">{success}</p>{/if}
-  <form class="mt-8 grid gap-5" onsubmit={(event) => { event.preventDefault(); void submit(event) }}>
+  <form
+    class="mt-8 grid gap-5"
+    onsubmit={(event) => {
+      event.preventDefault()
+      void submit(event)
+    }}
+  >
     {#each fields as field}
       <label class="grid gap-2 font-semibold">
         {field.label}
-        <input class="border border-border bg-background px-3 py-2" name={field.name} type={field.type ?? 'text'} autocomplete={field.autocomplete} required />
+        <input
+          class="border border-border bg-background px-3 py-2"
+          name={field.name}
+          type={field.type ?? 'text'}
+          autocomplete={field.autocomplete}
+          required
+        />
       </label>
     {/each}
-    <button class="bg-primary px-4 py-3 font-bold text-primary-foreground disabled:opacity-50" disabled={!hydrated || pending}>
+    <button
+      class="bg-primary px-4 py-3 font-bold text-primary-foreground disabled:opacity-50"
+      disabled={!hydrated || pending}
+    >
       {pending ? 'Working…' : submitLabel}
     </button>
   </form>
-  <div class="mt-6 flex gap-4 text-sm"><a href="/auth/sign-in">Sign in</a><a href="/auth/sign-up">Create account</a><a href="/auth/forgot-password">Forgot password?</a></div>
+  <div class="mt-6 flex gap-4 text-sm">
+    <a href="/auth/sign-in">Sign in</a><a href="/auth/sign-up">Create account</a><a
+      href="/auth/forgot-password">Forgot password?</a
+    >
+  </div>
 </section>

@@ -3,4 +3,6 @@
   import PlayerPreferences from '@/lib/components/dashboard/settings/PlayerPreferences.svelte'
 </script>
 
-<Page title="Player Settings" description="Tune playback behavior to your taste."><PlayerPreferences /></Page>
+<Page title="Player Settings" description="Tune playback behavior to your taste."
+  ><PlayerPreferences /></Page
+>

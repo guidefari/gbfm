@@ -7,5 +7,7 @@
 </div>
 
 <style>
-  .error { color: var(--destructive, #c33); }
+  .error {
+    color: var(--destructive, #c33);
+  }
 </style>

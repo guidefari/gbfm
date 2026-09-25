@@ -6,4 +6,6 @@
   let { data }: PageProps = $props()
 </script>
 
-<Page title="Account Profile" description="Manage your account details and password."><ProfileSettings initialProfile={data.profile} initialError={data.failure} /></Page>
+<Page title="Account Profile" description="Manage your account details and password."
+  ><ProfileSettings initialProfile={data.profile} initialError={data.failure} /></Page
+>

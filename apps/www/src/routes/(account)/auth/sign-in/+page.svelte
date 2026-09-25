@@ -17,15 +17,20 @@
     return { username: identifier, password }
   }
 
-  const signInEndpoint = (values: Record<string, string>) => (values.identifier ?? '').includes('@') ? '/auth/sign-in/email' : '/auth/sign-in/username'
+  const signInEndpoint = (values: Record<string, string>) =>
+    (values.identifier ?? '').includes('@') ? '/auth/sign-in/email' : '/auth/sign-in/username'
 </script>
+
 <svelte:head><title>Sign in</title></svelte:head>
 <AccountForm
   title="Welcome back."
   description="Sign in to pick up where you left off."
   submitLabel="Sign in"
   endpoint={signInEndpoint}
-  fields={[{name:'identifier',label:'Email or username',autocomplete:'username'},{name:'password',label:'Password',type:'password',autocomplete:'current-password'}]}
+  fields={[
+    { name: 'identifier', label: 'Email or username', autocomplete: 'username' },
+    { name: 'password', label: 'Password', type: 'password', autocomplete: 'current-password' },
+  ]}
   transform={signInPayload}
   onSuccess={() => void goto(redirect, { invalidateAll: true })}
 />

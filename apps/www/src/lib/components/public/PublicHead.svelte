@@ -3,7 +3,7 @@
     title,
     description,
     canonical,
-    image
+    image,
   }: { title: string; description: string; canonical: string; image?: string } = $props()
 
   const fullTitle = $derived(title.includes('goosebumps.fm') ? title : `${title} | goosebumps.fm`)

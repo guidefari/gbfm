@@ -11,7 +11,7 @@
     canonical,
     href,
     intro,
-    empty
+    empty,
   }: {
     data: { items: ReadonlyArray<PublicRecord>; failure: string | null }
     title: string
@@ -30,6 +30,6 @@
   {#if data.failure}
     <PublicState message={data.failure} error />
   {:else}
-    <ContentGrid items={data.items} {href} {...(empty === undefined ? {} : { empty })} />
+    <ContentGrid items={data.items} {href} {...empty === undefined ? {} : { empty }} />
   {/if}
 </section>

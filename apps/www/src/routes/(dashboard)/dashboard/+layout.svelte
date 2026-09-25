@@ -4,4 +4,5 @@
 
   let { data, children }: LayoutProps = $props()
 </script>
+
 <DashboardShell principal={data.principal}>{@render children()}</DashboardShell>

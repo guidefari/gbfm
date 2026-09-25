@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     NavigationResultResponse as NavigationResultSchema,
-    type NavigationResultResponse
+    type NavigationResultResponse,
   } from '@gbfm/api/navigation'
   import { goto, preloadData } from '$app/navigation'
   import { ChevronLeft, ChevronRight } from 'lucide-svelte'
@@ -15,7 +15,10 @@
 
   const Command = Data.taggedEnum<Command>()
 
-  let { slug, initialResult = null }: { slug: string; initialResult?: NavigationResultResponse | null } = $props()
+  let {
+    slug,
+    initialResult = null,
+  }: { slug: string; initialResult?: NavigationResultResponse | null } = $props()
 
   let result = $derived(initialResult)
 
@@ -47,8 +50,8 @@
       body: JSON.stringify({
         command,
         from: slug,
-        intentToken: path === 'visit' ? crypto.randomUUID() : undefined
-      })
+        intentToken: path === 'visit' ? crypto.randomUUID() : undefined,
+      }),
     })
 
     if (!response.ok) throw new Error('Navigation unavailable')
@@ -76,12 +79,11 @@
     if (busy) return
     const currentIntent = ++intent
 
-    const expected =
-      Predicate.isTagged(command, 'Step')
-        ? command.direction === 'Back'
-          ? result?.neighbours.back
-          : result?.neighbours.forward
-        : undefined
+    const expected = Predicate.isTagged(command, 'Step')
+      ? command.direction === 'Back'
+        ? result?.neighbours.back
+        : result?.neighbours.forward
+      : undefined
 
     busy = true
     message = ''
@@ -134,7 +136,9 @@
     if (serverResult) accept(serverResult)
     else {
       result = null
-      void request('peek', Command.Open({ slug: currentSlug })).then(accept).catch(() => undefined)
+      void request('peek', Command.Open({ slug: currentSlug }))
+        .then(accept)
+        .catch(() => undefined)
     }
 
     void request('visit', Command.Open({ slug: currentSlug })).catch(() => undefined)
@@ -178,14 +182,58 @@
 
 <nav aria-label="Tweet navigation" aria-busy={busy}>
   <div class="flex items-center gap-1 lg:hidden">
-    <button type="button" aria-label="Previous tweet" disabled={!canBack || busy} class="inline-flex size-8 items-center justify-center text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-25" onclick={() => void navigate(Command.Step({ direction: 'Back' }))}><ChevronLeft size={16} /></button>
-    <button type="button" aria-label={hasUnread ? 'Next tweet (hold for random)' : 'Next tweet'} disabled={!canForward || busy} class="inline-flex size-8 touch-none items-center justify-center text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-25" onpointerdown={startHold} onpointerup={() => cancelHold(true)} onpointerleave={() => cancelHold(false)} onpointercancel={() => cancelHold(false)} onclick={(event) => { if (event.detail === 0) void navigate(Command.Step({ direction: 'Forward' })) }}><ChevronRight size={16} /></button>
+    <button
+      type="button"
+      aria-label="Previous tweet"
+      disabled={!canBack || busy}
+      class="inline-flex size-8 items-center justify-center text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-25"
+      onclick={() => void navigate(Command.Step({ direction: 'Back' }))}
+      ><ChevronLeft size={16} /></button
+    >
+    <button
+      type="button"
+      aria-label={hasUnread ? 'Next tweet (hold for random)' : 'Next tweet'}
+      disabled={!canForward || busy}
+      class="inline-flex size-8 touch-none items-center justify-center text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-25"
+      onpointerdown={startHold}
+      onpointerup={() => cancelHold(true)}
+      onpointerleave={() => cancelHold(false)}
+      onpointercancel={() => cancelHold(false)}
+      onclick={(event) => {
+        if (event.detail === 0) void navigate(Command.Step({ direction: 'Forward' }))
+      }}><ChevronRight size={16} /></button
+    >
   </div>
 
-  <button type="button" aria-label="Previous tweet" disabled={!canBack || busy} class="fixed left-[max(1rem,calc(50%-30rem))] top-1/2 z-30 hidden size-11 -translate-y-1/2 items-center justify-center text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-20 lg:flex" onclick={() => void navigate(Command.Step({ direction: 'Back' }))}><ChevronLeft size={24} /></button>
-  <button type="button" aria-label={hasUnread ? 'Next tweet (hold for random)' : 'Next tweet'} disabled={!canForward || busy} class="fixed right-[max(1rem,calc(50%-30rem))] top-1/2 z-30 hidden size-11 -translate-y-1/2 touch-none items-center justify-center text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-20 lg:flex" onpointerdown={startHold} onpointerup={() => cancelHold(true)} onpointerleave={() => cancelHold(false)} onpointercancel={() => cancelHold(false)} onclick={(event) => { if (event.detail === 0) void navigate(Command.Step({ direction: 'Forward' })) }}><ChevronRight size={24} /></button>
+  <button
+    type="button"
+    aria-label="Previous tweet"
+    disabled={!canBack || busy}
+    class="fixed left-[max(1rem,calc(50%-30rem))] top-1/2 z-30 hidden size-11 -translate-y-1/2 items-center justify-center text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-20 lg:flex"
+    onclick={() => void navigate(Command.Step({ direction: 'Back' }))}
+    ><ChevronLeft size={24} /></button
+  >
+  <button
+    type="button"
+    aria-label={hasUnread ? 'Next tweet (hold for random)' : 'Next tweet'}
+    disabled={!canForward || busy}
+    class="fixed right-[max(1rem,calc(50%-30rem))] top-1/2 z-30 hidden size-11 -translate-y-1/2 touch-none items-center justify-center text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-20 lg:flex"
+    onpointerdown={startHold}
+    onpointerup={() => cancelHold(true)}
+    onpointerleave={() => cancelHold(false)}
+    onpointercancel={() => cancelHold(false)}
+    onclick={(event) => {
+      if (event.detail === 0) void navigate(Command.Step({ direction: 'Forward' }))
+    }}><ChevronRight size={24} /></button
+  >
 
   <div class="pointer-events-none fixed inset-x-0 top-4 z-50 flex justify-center">
-    {#if showStatus}<span role="status" class="bg-card px-3 py-1 text-xs text-muted-foreground shadow-sm">Loading tweet…</span>{:else if message}<span role="alert" class="bg-card px-3 py-1 text-xs text-destructive shadow-sm">{message}</span>{/if}
+    {#if showStatus}<span
+        role="status"
+        class="bg-card px-3 py-1 text-xs text-muted-foreground shadow-sm">Loading tweet…</span
+      >{:else if message}<span
+        role="alert"
+        class="bg-card px-3 py-1 text-xs text-destructive shadow-sm">{message}</span
+      >{/if}
   </div>
 </nav>

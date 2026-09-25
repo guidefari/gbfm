@@ -23,4 +23,9 @@
   })
 </script>
 
-{#each parts as part}{#if part.href}<a href={part.href} target={part.href.startsWith('http') ? '_blank' : undefined} rel={part.href.startsWith('http') ? 'noopener noreferrer' : undefined} class="underline decoration-highlight underline-offset-2">{part.text}</a>{:else}{part.text.replace(/(\*\*|__|\*|_)/g, '')}{/if}{/each}
+{#each parts as part}{#if part.href}<a
+      href={part.href}
+      target={part.href.startsWith('http') ? '_blank' : undefined}
+      rel={part.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+      class="underline decoration-highlight underline-offset-2">{part.text}</a
+    >{:else}{part.text.replace(/(\*\*|__|\*|_)/g, '')}{/if}{/each}

@@ -1,4 +1,8 @@
-<script lang="ts">import DetailPage from '@/lib/components/public/DetailPage.svelte'; import type { PageProps } from './$types';
+<script lang="ts">
+  import DetailPage from '@/lib/components/public/DetailPage.svelte'
+  import type { PageProps } from './$types'
 
- let { data, params }: PageProps = $props()</script>
+  let { data, params }: PageProps = $props()
+</script>
+
 <DetailPage {data} kind="Release" canonical={`/releases/${params.slug}`} fallbackTitle="Release" />

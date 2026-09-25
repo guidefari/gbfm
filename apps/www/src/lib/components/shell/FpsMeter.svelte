@@ -71,7 +71,10 @@
       }
 
       const averageFrameCount = Math.min(2 * systemFps, visibleFrameCount)
-      const sample = frames.slice(-averageFrameCount).filter((value) => value !== frameUninitialized)
+
+      const sample = frames
+        .slice(-averageFrameCount)
+        .filter((value) => value !== frameUninitialized)
 
       if (sample.length >= averageFrameCount) {
         const hits = sample.filter((value) => value === frameHit).length
@@ -80,7 +83,7 @@
         context.fillText(
           `${Math.round((systemFps * hits) / sample.length)} FPS`,
           2 * pixelRatio,
-          adjustedHeight - 3 * pixelRatio
+          adjustedHeight - 3 * pixelRatio,
         )
       }
     }
@@ -115,4 +118,8 @@
   })
 </script>
 
-<canvas data-fps-meter class="fixed right-0 top-0 z-[70] hidden sm:block" aria-label="Frames per second"></canvas>
+<canvas
+  data-fps-meter
+  class="fixed right-0 top-0 z-[70] hidden sm:block"
+  aria-label="Frames per second"
+></canvas>

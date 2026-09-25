@@ -17,7 +17,7 @@
         method: 'POST',
         body,
         keepalive: true,
-        headers: { 'content-type': 'application/json' }
+        headers: { 'content-type': 'application/json' },
       })
     }
   }
@@ -29,7 +29,7 @@
       kind: 'navigation',
       name: 'route-complete',
       route: to?.url.pathname ?? location.pathname,
-      value: Math.round(performance.now() - startedAt)
+      value: Math.round(performance.now() - startedAt),
     })
     startedAt = performance.now()
   })
@@ -41,7 +41,7 @@
           kind: 'web-vital',
           name: entry.entryType,
           route: location.pathname,
-          value: Math.round(entry.startTime)
+          value: Math.round(entry.startTime),
         })
       }
     })

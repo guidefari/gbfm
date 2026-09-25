@@ -6,4 +6,6 @@
   let { data }: PageProps = $props()
 </script>
 
-<Page title="Email Notifications" description="Choose which emails you want to receive."><EmailPreferences initialPreferences={data.preferences} initialError={data.failure} /></Page>
+<Page title="Email Notifications" description="Choose which emails you want to receive."
+  ><EmailPreferences initialPreferences={data.preferences} initialError={data.failure} /></Page
+>

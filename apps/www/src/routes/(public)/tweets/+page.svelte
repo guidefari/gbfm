@@ -16,4 +16,5 @@
   description="Short-form music notes and conversations from goosebumps.fm."
   canonical="/tweets"
   {href}
-  empty="No tweets yet." />
+  empty="No tweets yet."
+/>

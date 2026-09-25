@@ -15,7 +15,10 @@
   createPlayerContext()
 
   onNavigate((navigation) => {
-    if (!document.startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+    if (
+      !document.startViewTransition ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    )
       return
 
     return new Promise<void>((resolve) => {
@@ -38,7 +41,8 @@
       id="main-scroll-container"
       tabindex="-1"
       style="overflow-anchor: none"
-      class="h-full min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-background pb-[calc(3.5rem+env(safe-area-inset-bottom))] focus:outline-none lg:pb-12 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
+      class="h-full min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-background pb-[calc(3.5rem+env(safe-area-inset-bottom))] focus:outline-none lg:pb-12 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
+    >
       {@render children()}
     </main>
 

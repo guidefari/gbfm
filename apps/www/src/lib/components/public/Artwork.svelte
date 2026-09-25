@@ -9,4 +9,5 @@
   {alt}
   loading="lazy"
   class:aspect-square={square}
-  class="w-full border border-border object-cover" />
+  class="w-full border border-border object-cover"
+/>

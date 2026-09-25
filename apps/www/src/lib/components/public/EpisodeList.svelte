@@ -9,13 +9,23 @@
 
   const snapshot = player.snapshot
 
-  const currentId = $derived($snapshot ? ($snapshot.queue.tracks[$snapshot.queue.currentIndex]?.id ?? '') : '')
+  const currentId = $derived(
+    $snapshot ? ($snapshot.queue.tracks[$snapshot.queue.currentIndex]?.id ?? '') : '',
+  )
 
   const trackId = (episode: PublicRecord) => text(episode.id, text(episode.url))
 
   const play = (episode: PublicRecord) => {
     if (trackId(episode) === currentId) player.toggle()
-    else player.play({ id: trackId(episode), slug: text(episode.slug), type: 'mix', url: text(episode.url), title: text(episode.title, 'Episode'), thumbnailUrl: text(episode.thumbnailUrl) || null })
+    else
+      player.play({
+        id: trackId(episode),
+        slug: text(episode.slug),
+        type: 'mix',
+        url: text(episode.url),
+        title: text(episode.title, 'Episode'),
+        thumbnailUrl: text(episode.thumbnailUrl) || null,
+      })
   }
 </script>
 
@@ -24,7 +34,12 @@
 {:else}
   <div class="font-mono">
     {#each episodes as episode (trackId(episode))}
-      <EpisodeRow {episode} active={trackId(episode) === currentId} playing={$snapshot?.playing ?? false} onPlay={() => play(episode)} />
+      <EpisodeRow
+        {episode}
+        active={trackId(episode) === currentId}
+        playing={$snapshot?.playing ?? false}
+        onPlay={() => play(episode)}
+      />
     {/each}
   </div>
 {/if}
