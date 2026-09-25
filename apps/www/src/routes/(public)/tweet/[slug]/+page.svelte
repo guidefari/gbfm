@@ -98,7 +98,7 @@
 {:else}
   {@const itemMusic = record(data.item.music)}
   <div class="mx-auto max-w-3xl px-4 py-8">
-    <div class="mb-6 lg:mb-0"><TweetNav slug={params.slug} /></div>
+    <div class="mb-6 lg:mb-0"><TweetNav slug={params.slug} initialResult={data.navigation} /></div>
 
     {#if data.parent && !rootIsCurrent}
       {@const parentMusic = record(data.parent.music)}

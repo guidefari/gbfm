@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { Schema } from 'effect'
 
 const password = 'LocalTest123!'
 
@@ -38,6 +39,75 @@ test('listener can use member settings but cannot access creator or admin tools'
   expect(response?.status()).toBe(403)
 })
 
+test('member data is present in dashboard and reminders server responses', async ({ page }) => {
+  await signIn(page, 'listener@gbfm.local')
+
+  let response = await page.goto('/dashboard')
+  let html = await response?.text()
+  expect(html).toContain('No favorites yet')
+  expect(html).toContain('No reminders yet')
+  expect(html).not.toContain('Loading favorites')
+  expect(html).not.toContain('Loading reminders')
+
+  response = await page.goto('/reminders')
+  html = await response?.text()
+  expect(html).toContain('No reminders yet.')
+  expect(html).not.toContain('>Loading…</p>')
+})
+
+test('member settings are populated in server responses', async ({ page }) => {
+  await signIn(page, 'listener@gbfm.local')
+
+  let response = await page.goto('/dashboard/profile')
+  let html = await response?.text()
+  expect(html).toContain('value="local-listener"')
+  expect(html).toContain('value="listener@gbfm.local"')
+  expect(html).toContain(
+    'reset link to <strong class="text-foreground">listener@gbfm.local</strong>'
+  )
+  expect(html).not.toContain('Loading social links')
+
+  response = await page.goto('/dashboard/email')
+  html = await response?.text()
+  expect(html).not.toContain('Loading email preferences')
+  expect(html).toContain('New Mix &amp; Show Updates')
+})
+
+test('show subscription state is present in the server-rendered response', async ({ page }) => {
+  await signIn(page, 'admin@gbfm.local')
+  const suffix = `${Date.now()}-${test.info().workerIndex}`
+  const slug = `ssr-subscription-${suffix}`
+  const createResponse = await page.context().request.post('/api/shows', {
+    data: {
+      title: 'SSR subscription test',
+      slug,
+      content: 'Server-rendered subscription state.',
+      draft: false
+    }
+  })
+  expect(createResponse.ok()).toBe(true)
+  const show = Schema.decodeUnknownSync(Schema.Struct({ id: Schema.String }))(
+    await createResponse.json()
+  )
+  const subscribeResponse = await page.context().request.post(`/api/shows/${show.id}/subscribe`)
+  expect(subscribeResponse.ok()).toBe(true)
+
+  const browserSubscriptionRequests: Array<string> = []
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === '/api/user/subscriptions') {
+      browserSubscriptionRequests.push(request.url())
+    }
+  })
+
+  const response = await page.goto(`/shows/${slug}`)
+  expect(await response?.text()).toContain('>Subscribed</button>')
+  await expect(page.getByRole('button', { name: 'Subscribed' })).toBeVisible()
+  expect(browserSubscriptionRequests).toEqual([])
+
+  await page.getByRole('button', { name: 'Subscribed' }).click()
+  await expect(page.getByRole('button', { name: 'Subscribe' })).toBeVisible()
+})
+
 test('creator can save and reopen a draft but cannot access admin tools', async ({ page }) => {
   await signIn(page, 'creator@gbfm.local', '/new')
   await expect(page.getByRole('heading', { name: 'New content' })).toBeVisible()
@@ -71,6 +141,12 @@ test('tweet detail preserves the production content hierarchy and preloads navig
   const secondSlug = `e2e-tweet-second-${suffix}`
 
   await publishTweet(page, firstSlug, 'First E2E transmission', 'The first transmission is live.')
+  const browserPeekRequests: Array<string> = []
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === '/api/content/posts/micro/navigate/peek') {
+      browserPeekRequests.push(request.url())
+    }
+  })
   await publishTweet(
     page,
     secondSlug,
@@ -83,6 +159,7 @@ test('tweet detail preserves the production content hierarchy and preloads navig
   await expect(page.getByRole('link', { name: '#radio' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Copy link' })).toBeVisible()
   await expect(page.getByText('"use strict"')).toHaveCount(0)
+  expect(browserPeekRequests).toEqual([])
 
   const previous = page.getByRole('button', { name: 'Previous tweet' })
   await expect(previous).toBeEnabled()

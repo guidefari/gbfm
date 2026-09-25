@@ -1,4 +1,5 @@
-import { getPublicJson, record, records } from '@/lib/server/public/content'
+import { getPublicJson, record, records, text } from '@/lib/server/public/content'
+import { loadPublicActionState } from '@/lib/server/public/action-state'
 import type { PageServerLoad } from './$types'
 export const load = (async (event) => {
   const slug = encodeURIComponent(event.params.showSlug)
@@ -7,10 +8,13 @@ export const load = (async (event) => {
     getPublicJson(event, `/api/shows/${slug}/episodes`),
     getPublicJson(event, '/api/shows?limit=100&offset=0')
   ])
+  const item = show.ok ? record(show.value) : null
+  const actionActive = item ? await loadPublicActionState(event, 'show', text(item.id)) : false
   return {
-    item: show.ok ? record(show.value) : null,
+    item,
     episodes: episodes.ok ? records(episodes.value) : [],
     shows: allShows.ok ? records(allShows.value) : [],
+    actionActive,
     failure: show.ok ? null : show.message
   }
 }) satisfies PageServerLoad

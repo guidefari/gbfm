@@ -11,7 +11,7 @@
     fallbackTitle,
     relatedShow = null
   }: {
-    data: { item: PublicRecord | null; failure: string | null }
+    data: { item: PublicRecord | null; failure: string | null; actionActive?: boolean }
     kind: string
     canonical: string
     fallbackTitle: string
@@ -29,5 +29,5 @@
 {#if data.failure || !data.item}
   <PublicState message={data.failure ?? 'This page could not be found.'} error />
 {:else}
-  <ContentDetail item={data.item} {kind} {canonical} {relatedShow} />
+  <ContentDetail item={data.item} {kind} {canonical} {relatedShow} actionActive={data.actionActive} />
 {/if}

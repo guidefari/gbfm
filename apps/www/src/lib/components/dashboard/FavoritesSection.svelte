@@ -1,33 +1,17 @@
 <script lang="ts">
   import { GetFavoritesResponse } from '@gbfm/api/favorites'
   import { Heart, Play } from 'lucide-svelte'
-  import { onMount } from 'svelte'
   import { DEFAULT_IMAGE_URL } from '@/lib/constants'
-  import { dashboardJson } from './api'
 
-  let favorites = $state<typeof GetFavoritesResponse.Type.favorites>([])
-  let loading = $state(true)
-  let error = $state('')
+  let { favorites, error = null }: { favorites: typeof GetFavoritesResponse.Type.favorites; error?: string | null } = $props()
   const audioFavorites = $derived(favorites.filter((favorite) => favorite.audio !== null).slice(0, 6))
-
-  onMount(async () => {
-    try {
-      favorites = (await dashboardJson(GetFavoritesResponse, '/api/favorites?limit=6')).favorites
-    } catch {
-      error = 'Could not load favorites.'
-    } finally {
-      loading = false
-    }
-  })
 </script>
 
 <section aria-labelledby="favorites-heading">
   <h2 id="favorites-heading" class="mb-6 flex items-center gap-2 text-xs font-bold tracking-widest">
     <Heart class="size-3.5 text-red-500" /> Favorites
   </h2>
-  {#if loading}
-    <div class="space-y-3" aria-label="Loading favorites">{#each Array(4) as _}<div class="h-16 animate-pulse rounded bg-muted"></div>{/each}</div>
-  {:else if error}
+  {#if error}
     <p class="rounded border border-destructive/50 p-4 text-sm text-destructive">{error}</p>
   {:else if audioFavorites.length === 0}
     <div class="rounded border border-dashed p-8 text-center"><Heart class="mx-auto mb-3 size-6 text-muted-foreground" /><p class="font-semibold">No favorites yet</p><a class="mt-2 inline-block text-sm underline" href="/mixes">Discover mixes</a></div>
