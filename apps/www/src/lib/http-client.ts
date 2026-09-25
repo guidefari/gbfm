@@ -22,11 +22,10 @@ type FetcherOptions = {
 }
 
 export function getRequestUrl(input: HttpRequestInput) {
-  if (input instanceof URL) return input.toString()
+  const value =
+    input instanceof URL ? input.toString() : input instanceof Request ? input.url : input
 
-  if (input instanceof Request) return input.url
-
-  return input
+  return new URL(value, 'https://www.goosebumps.fm').pathname
 }
 
 export function getRequestMethod(input: HttpRequestInput, init: RequestInit) {
@@ -103,7 +102,10 @@ export function createFetcher({
         runFailureReport(error, input, init, { failureType: 'network' })
       }
 
-      logError(error, { url: getRequestUrl(input), method: getRequestMethod(input, init) })
+      logError(error instanceof Error ? error.name : 'UnknownError', {
+        url: getRequestUrl(input),
+        method: getRequestMethod(input, init),
+      })
       throw error
     }
   }

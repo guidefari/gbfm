@@ -81,8 +81,6 @@ export interface S3Service {
 
 export const S3Service = Context.Service<S3Service>('S3Service')
 
-const getKeyPrefix = (key: string): string => key.split('/')[0] ?? 'root'
-
 const storageError = (operation: string, key: string, cause: unknown) =>
   new S3Error({
     message: `Failed to ${operation}: ${getErrorMessage(cause)}`,
@@ -109,7 +107,6 @@ const uploadFileEffect = (
       attributes: {
         'storage.provider': store.provider,
         'storage.bucket': bucketName,
-        'storage.key_prefix': getKeyPrefix(key),
         'content.type': contentType,
       },
     }),
@@ -130,7 +127,6 @@ const presignPutObjectEffect = (
       attributes: {
         'storage.provider': store.provider,
         'storage.bucket': bucketName,
-        'storage.key_prefix': getKeyPrefix(key),
         'content.type': contentType,
       },
     }),
@@ -145,7 +141,6 @@ const deleteFileEffect = (store: ObjectStoreClientType, key: string, bucketName:
       attributes: {
         'storage.provider': store.provider,
         'storage.bucket': bucketName,
-        'storage.key_prefix': getKeyPrefix(key),
       },
     }),
   )
@@ -158,7 +153,6 @@ const checkExistsEffect = (store: ObjectStoreClientType, key: string, bucketName
       attributes: {
         'storage.provider': store.provider,
         'storage.bucket': bucketName,
-        'storage.key_prefix': getKeyPrefix(key),
       },
     }),
   )
@@ -172,7 +166,6 @@ const listObjectsEffect = (store: ObjectStoreClientType, prefix: string, bucketN
       attributes: {
         'storage.provider': store.provider,
         'storage.bucket': bucketName,
-        'storage.prefix': prefix,
       },
     }),
   )
@@ -209,7 +202,6 @@ const createMultipartUploadEffect = (
       attributes: {
         'storage.provider': store.provider,
         'storage.bucket': bucketName,
-        'storage.key_prefix': getKeyPrefix(key),
         'content.type': contentType,
       },
     }),
@@ -224,7 +216,6 @@ const getObjectMetadataEffect = (store: ObjectStoreClientType, key: string, buck
       attributes: {
         'storage.provider': store.provider,
         'storage.bucket': bucketName,
-        'storage.key_prefix': getKeyPrefix(key),
       },
     }),
   )
@@ -245,7 +236,6 @@ const presignUploadPartEffect = (
       attributes: {
         'storage.provider': store.provider,
         'storage.bucket': bucketName,
-        'storage.key_prefix': getKeyPrefix(key),
         'storage.part_number': partNumber,
       },
     }),
@@ -270,7 +260,6 @@ const completeMultipartUploadEffect = (
       attributes: {
         'storage.provider': store.provider,
         'storage.bucket': bucketName,
-        'storage.key_prefix': getKeyPrefix(key),
         'storage.part_count': parts.length,
       },
     }),
@@ -290,7 +279,6 @@ const abortMultipartUploadEffect = (
       attributes: {
         'storage.provider': store.provider,
         'storage.bucket': bucketName,
-        'storage.key_prefix': getKeyPrefix(key),
       },
     }),
   )
@@ -309,7 +297,6 @@ const listMultipartPartsEffect = (
       attributes: {
         'storage.provider': store.provider,
         'storage.bucket': bucketName,
-        'storage.key_prefix': getKeyPrefix(key),
       },
     }),
   )

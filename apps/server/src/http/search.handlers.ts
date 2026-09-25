@@ -13,6 +13,10 @@ export const SearchHandlersLive = HttpApiBuilder.group(Api, 'search', (handlers)
       const svc = yield* SearchService
 
       return yield* dieOnDatabaseError(svc.search(query.q, query.limit))
-    }).pipe(Effect.withSpan('api.search.searchContent', { attributes: { q: query.q } })),
+    }).pipe(
+      Effect.withSpan('api.search.searchContent', {
+        attributes: { queryLength: query.q.length },
+      }),
+    ),
   ),
 )

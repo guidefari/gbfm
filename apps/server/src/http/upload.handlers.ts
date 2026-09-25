@@ -370,7 +370,7 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
         return { url: `${config.urls.bucketRouter}/user-content/${key}`, key }
       }).pipe(
         Effect.withSpan('api.upload.multipart.complete', {
-          attributes: { key: payload.key, partCount: payload.parts.length },
+          attributes: { partCount: payload.parts.length },
         }),
       ),
     )
@@ -389,7 +389,7 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
         )
 
         return { ok: true as const }
-      }).pipe(Effect.withSpan('api.upload.multipart.abort', { attributes: { key: payload.key } })),
+      }).pipe(Effect.withSpan('api.upload.multipart.abort')),
     )
     .handle('multipartUploadStatus', ({ query }) =>
       Effect.gen(function* () {
@@ -407,6 +407,6 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
         )
 
         return { parts }
-      }).pipe(Effect.withSpan('api.upload.multipart.status', { attributes: { key: query.key } })),
+      }).pipe(Effect.withSpan('api.upload.multipart.status')),
     ),
 )

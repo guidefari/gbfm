@@ -101,15 +101,15 @@ describe('createFetcher', () => {
       failureType: 'server_response',
     })
     expect(failures[1]?.context).toEqual({ failureType: 'network' })
-    expect(logError).toHaveBeenNthCalledWith(1, expect.any(Error), {
+    expect(logError).toHaveBeenNthCalledWith(1, 'Error', {
       url: '/api/broken',
       method: 'PATCH',
     })
-    expect(logError).toHaveBeenNthCalledWith(2, expect.any(TypeError), {
+    expect(logError).toHaveBeenNthCalledWith(2, 'TypeError', {
       url: '/api/network',
       method: 'GET',
     })
-    expect(logError).toHaveBeenNthCalledWith(3, expect.any(Error), {
+    expect(logError).toHaveBeenNthCalledWith(3, 'Error', {
       url: '/api/boom',
       method: 'GET',
     })
@@ -118,12 +118,14 @@ describe('createFetcher', () => {
 
 describe('request metadata helpers', () => {
   test('derives effective URLs and methods from strings, URLs, requests, and overrides', () => {
-    const url = new URL('https://www.goosebumps.fm/api/url')
-    const request = new Request('https://www.goosebumps.fm/api/test', { method: 'DELETE' })
+    const url = new URL('https://www.goosebumps.fm/api/url?token=secret')
+    const request = new Request('https://www.goosebumps.fm/api/test?email=user@example.com', {
+      method: 'DELETE',
+    })
 
     expect(getRequestUrl('/api/test')).toBe('/api/test')
-    expect(getRequestUrl(url)).toBe('https://www.goosebumps.fm/api/url')
-    expect(getRequestUrl(request)).toBe('https://www.goosebumps.fm/api/test')
+    expect(getRequestUrl(url)).toBe('/api/url')
+    expect(getRequestUrl(request)).toBe('/api/test')
     expect(getRequestMethod('/api/test', {})).toBe('GET')
     expect(getRequestMethod('/api/test', { method: 'POST' })).toBe('POST')
     expect(getRequestMethod(request, {})).toBe('DELETE')

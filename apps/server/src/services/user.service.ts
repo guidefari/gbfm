@@ -399,33 +399,29 @@ export const UserServiceLayer = Layer.effect(
 
     return {
       getUserById: (userId) =>
-        provideDb(getUserByIdEffect(userId)).pipe(
-          Effect.withSpan('user.getById', { attributes: { userId } }),
-        ),
+        provideDb(getUserByIdEffect(userId)).pipe(Effect.withSpan('user.getById')),
       searchUsers: (query) =>
         provideDb(searchUsersEffect(query)).pipe(
-          Effect.withSpan('user.searchUsers', { attributes: { query } }),
+          Effect.withSpan('user.searchUsers', { attributes: { queryLength: query.length } }),
         ),
       updateUserProfile: (userId, data) =>
         provideDb(updateUserProfileEffect(userId, data)).pipe(
-          Effect.withSpan('user.updateProfile', { attributes: { userId } }),
+          Effect.withSpan('user.updateProfile'),
         ),
       getUserSocialLinks: (userId) =>
-        provideDb(getUserSocialLinksEffect(userId)).pipe(
-          Effect.withSpan('user.getSocialLinks', { attributes: { userId } }),
-        ),
+        provideDb(getUserSocialLinksEffect(userId)).pipe(Effect.withSpan('user.getSocialLinks')),
       replaceUserSocialLinks: (userId, links) =>
         provideDb(replaceUserSocialLinksEffect(userId, links)).pipe(
-          Effect.withSpan('user.replaceSocialLinks', { attributes: { userId } }),
+          Effect.withSpan('user.replaceSocialLinks'),
         ),
       listDjs: () => provideDb(listDjsEffect()).pipe(Effect.withSpan('user.listDjs')),
       getUserEmailPreferences: (userId) =>
         provideDb(getUserEmailPreferencesEffect(userId)).pipe(
-          Effect.withSpan('user.getEmailPreferences', { attributes: { userId } }),
+          Effect.withSpan('user.getEmailPreferences'),
         ),
       updateUserEmailPreferences: (userId, preferences) =>
         provideDb(updateUserEmailPreferencesEffect(userId, preferences)).pipe(
-          Effect.withSpan('user.updateEmailPreferences', { attributes: { userId } }),
+          Effect.withSpan('user.updateEmailPreferences'),
         ),
     }
   }),

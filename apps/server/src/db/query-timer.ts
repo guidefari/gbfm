@@ -41,7 +41,7 @@ export async function timeQuery<T>(queryFn: () => Promise<T>, context: string): 
     Effect.tapError((failure) =>
       Effect.logError('[DB] Query failed', {
         context,
-        error: failure.cause instanceof Error ? failure.cause.message : String(failure.cause),
+        errorType: failure.cause instanceof Error ? failure.cause.name : 'UnknownError',
       }),
     ),
     Effect.withSpan('db.query', { attributes: { 'db.context': context } }),

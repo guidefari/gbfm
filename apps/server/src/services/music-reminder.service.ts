@@ -26,13 +26,7 @@ export interface MusicReminderService {
 export const MusicReminderService = Context.Service<MusicReminderService>('MusicReminderService')
 
 const createEffect = (data: NewMusicReminder) =>
-  Effect.withSpan('music-reminder.create', {
-    attributes: {
-      userId: data.userId,
-      musicTitle: data.musicTitle,
-      artistName: data.artistName,
-    },
-  })(
+  Effect.withSpan('music-reminder.create')(
     Effect.gen(function* () {
       const db = yield* Database
 
@@ -57,10 +51,7 @@ const createEffect = (data: NewMusicReminder) =>
       }
 
       yield* Effect.logInfo('[MusicReminder] Reminder created', {
-        userId: record.userId,
         reminderId: record.id,
-        musicTitle: record.musicTitle,
-        artistName: record.artistName,
         reminderDate: record.reminderDate.toISOString(),
       })
 
@@ -88,7 +79,6 @@ const getByUserIdEffect = (userId: string) =>
     })
 
     yield* Effect.logInfo('[MusicReminder] Reminders retrieved', {
-      userId,
       count: reminders.length,
     })
 
@@ -162,10 +152,7 @@ const updateEffect = (id: string, userId: string, data: Partial<NewMusicReminder
     }
 
     yield* Effect.logInfo('[MusicReminder] Reminder updated', {
-      userId,
       reminderId: updated.id,
-      musicTitle: updated.musicTitle,
-      artistName: updated.artistName,
     })
 
     return updated
@@ -213,7 +200,6 @@ const deleteEffect = (id: string, userId: string) =>
     })
 
     yield* Effect.logInfo('[MusicReminder] Reminder deleted', {
-      userId,
       reminderId: id,
     })
 

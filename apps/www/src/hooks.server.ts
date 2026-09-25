@@ -47,7 +47,6 @@ export const handleError: HandleServerError = ({ error, event, kind }) => {
   log('error', 'sveltekit request failed', {
     operation: 'render-request',
     errorType: error instanceof Error ? error.name : 'UnknownError',
-    errorMessage: error instanceof Error ? error.message : 'Unknown error',
     requestId: event.locals.requestId,
     routeId: event.route.id,
     status: kind === 'unknown' ? 500 : error.status,

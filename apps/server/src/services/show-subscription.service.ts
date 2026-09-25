@@ -272,9 +272,7 @@ export const ShowSubscriptionServiceLayer = Layer.effect(
         ),
       getUserSubscriptions: (userId, options) =>
         provideDb(getUserSubscriptionsEffect(userId, options)).pipe(
-          Effect.withSpan('showSubscription.getUserSubscriptions', {
-            attributes: { userId },
-          }),
+          Effect.withSpan('showSubscription.getUserSubscriptions'),
         ),
       getSubscribers: (showId) =>
         provideDb(getSubscribersEffect(showId)).pipe(

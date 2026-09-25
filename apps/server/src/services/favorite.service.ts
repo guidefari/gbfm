@@ -64,7 +64,7 @@ export const FavoriteService = Context.Service<FavoriteService>('FavoriteService
 // Core service logic - pure Effects with no service dependencies
 const addFavoriteEffect = (userId: string, audioId: string) =>
   Effect.withSpan('favorite.add', {
-    attributes: { userId, audioId },
+    attributes: { audioId },
   })(
     Effect.gen(function* () {
       const db = yield* Database
@@ -127,7 +127,6 @@ const addFavoriteEffect = (userId: string, audioId: string) =>
       }
 
       yield* Effect.logInfo('[Favorites] Favorite added', {
-        userId,
         audioId,
         favoriteId: favorite.id,
       })
@@ -140,7 +139,7 @@ const addFavoriteEffect = (userId: string, audioId: string) =>
 
 const removeFavoriteEffect = (userId: string, audioId: string) =>
   Effect.withSpan('favorite.remove', {
-    attributes: { userId, audioId },
+    attributes: { audioId },
   })(
     Effect.gen(function* () {
       const db = yield* Database
@@ -186,7 +185,6 @@ const removeFavoriteEffect = (userId: string, audioId: string) =>
       yield* recordFavoriteRemove
 
       yield* Effect.logInfo('[Favorites] Favorite removed', {
-        userId,
         audioId,
       })
 
@@ -196,7 +194,7 @@ const removeFavoriteEffect = (userId: string, audioId: string) =>
 
 const addShowFavoriteEffect = (userId: string, showId: string) =>
   Effect.withSpan('favorite.addShow', {
-    attributes: { userId, showId },
+    attributes: { showId },
   })(
     Effect.gen(function* () {
       const db = yield* Database
@@ -274,7 +272,6 @@ const addShowFavoriteEffect = (userId: string, showId: string) =>
 
       if (subscribed.length > 0) {
         yield* Effect.logInfo('[Favorites] Auto-subscribed to show', {
-          userId,
           showId,
         })
       }
@@ -282,7 +279,6 @@ const addShowFavoriteEffect = (userId: string, showId: string) =>
       yield* recordFavoriteAdd
       yield* Effect.logInfo('[Favorites] Show favorite added', {
         favoriteId: favorite.id,
-        userId,
         showId,
       })
 
@@ -292,7 +288,7 @@ const addShowFavoriteEffect = (userId: string, showId: string) =>
 
 const removeShowFavoriteEffect = (userId: string, showId: string) =>
   Effect.withSpan('favorite.removeShow', {
-    attributes: { userId, showId },
+    attributes: { showId },
   })(
     Effect.gen(function* () {
       const db = yield* Database
@@ -352,13 +348,11 @@ const removeShowFavoriteEffect = (userId: string, showId: string) =>
           }),
       })
       yield* Effect.logInfo('[Favorites] Auto-unsubscribed from show', {
-        userId,
         showId,
       })
 
       yield* recordFavoriteRemove
       yield* Effect.logInfo('[Favorites] Show favorite removed', {
-        userId,
         showId,
       })
 
@@ -372,7 +366,7 @@ const getFavoritesEffect = (
   offset = 0,
 ): Effect.Effect<Array<FavoriteWithContent>, DatabaseError, Database> =>
   Effect.withSpan('favorite.get', {
-    attributes: { userId, limit, offset },
+    attributes: { limit, offset },
   })(
     Effect.gen(function* () {
       const db = yield* Database
@@ -427,7 +421,6 @@ const getFavoritesEffect = (
       })
 
       yield* Effect.logInfo('[Favorites] Favorites retrieved', {
-        userId,
         count: favorites.length,
         limit,
         offset,

@@ -5,9 +5,6 @@ import { HttpApiError } from 'effect/unstable/httpapi'
 
 import { Auth } from '@/lib/auth'
 
-const clientIp = (headers: Readonly<Record<string, string>>) =>
-  headers['x-forwarded-for'] ?? headers['x-real-ip'] ?? 'unknown'
-
 export const AuthMiddlewareLive = Layer.effect(
   AuthMiddleware,
   Effect.gen(function* () {
@@ -33,9 +30,8 @@ export const AuthMiddlewareLive = Layer.effect(
 
         if (!session) {
           yield* Effect.logWarning('[auth] unauthorized access attempt', {
-            path: request.url,
+            route: new URL(request.url, 'http://localhost').pathname,
             method: request.method,
-            ip: clientIp(request.headers),
           })
 
           return yield* new HttpApiError.Unauthorized()

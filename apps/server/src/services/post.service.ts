@@ -1082,7 +1082,11 @@ const searchMicroPostsEffect = (
       data: filteredData,
       pagination: createPaginationMetadata(total, limit, offset),
     }
-  }).pipe(Effect.withSpan('post.searchMicroPosts', { attributes: { q: options.q } }))
+  }).pipe(
+    Effect.withSpan('post.searchMicroPosts', {
+      attributes: { queryLength: options.q.length },
+    }),
+  )
 
 const getEditorialsEffect = (
   options: { limit: number; offset: number; tag?: string },

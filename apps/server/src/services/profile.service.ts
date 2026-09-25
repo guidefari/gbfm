@@ -95,7 +95,7 @@ export const getPublicProfileEffect = (username: string) =>
           operation: 'select',
           table: 'user',
         }),
-    }).pipe(Effect.withSpan('profile.getPublic.user', { attributes: { username } }))
+    }).pipe(Effect.withSpan('profile.getPublic.user'))
 
     const foundUser = userRecords[0]
 
@@ -124,9 +124,7 @@ export const getPublicProfileEffect = (username: string) =>
           operation: 'select',
           table: 'user_social_links',
         }),
-    }).pipe(
-      Effect.withSpan('profile.getPublic.socialLinks', { attributes: { userId: foundUser.id } }),
-    )
+    }).pipe(Effect.withSpan('profile.getPublic.socialLinks'))
 
     const userMixes = yield* Effect.tryPromise({
       try: () =>
@@ -160,7 +158,7 @@ export const getPublicProfileEffect = (username: string) =>
           thumbnailUrl: row.thumbnailUrl ?? show?.thumbnailUrl ?? null,
         })),
       ),
-      Effect.withSpan('profile.getPublic.mixes', { attributes: { userId: foundUser.id } }),
+      Effect.withSpan('profile.getPublic.mixes'),
     )
 
     const userShows = yield* Effect.tryPromise({
@@ -182,7 +180,7 @@ export const getPublicProfileEffect = (username: string) =>
           operation: 'select',
           table: 'shows',
         }),
-    }).pipe(Effect.withSpan('profile.getPublic.shows', { attributes: { userId: foundUser.id } }))
+    }).pipe(Effect.withSpan('profile.getPublic.shows'))
 
     const userPosts = yield* Effect.tryPromise({
       try: () =>
@@ -206,7 +204,7 @@ export const getPublicProfileEffect = (username: string) =>
           operation: 'select',
           table: 'posts',
         }),
-    }).pipe(Effect.withSpan('profile.getPublic.posts', { attributes: { userId: foundUser.id } }))
+    }).pipe(Effect.withSpan('profile.getPublic.posts'))
 
     const editorials = userPosts
       .filter((p): p is typeof p & { title: string } => Boolean(p.type === 'post' && p.title))
@@ -248,7 +246,7 @@ export const ProfileServiceLayer = Layer.effect(
       getPublicProfile: (username) =>
         getPublicProfileEffect(username).pipe(
           Effect.provideService(Database, db),
-          Effect.withSpan('profile.getPublic', { attributes: { username } }),
+          Effect.withSpan('profile.getPublic'),
         ),
     }
   }),

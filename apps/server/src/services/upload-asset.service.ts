@@ -80,7 +80,7 @@ const createPendingEffect = (input: CreatePendingAssetInput) =>
     }
 
     return asset
-  }).pipe(Effect.withSpan('uploadAsset.createPending', { attributes: { key: input.key } }))
+  }).pipe(Effect.withSpan('uploadAsset.createPending'))
 
 const markUploadedEffect = (key: string) =>
   Effect.gen(function* () {
@@ -98,7 +98,7 @@ const markUploadedEffect = (key: string) =>
           table: 'upload_assets',
         }),
     })
-  }).pipe(Effect.withSpan('uploadAsset.markUploaded', { attributes: { key } }))
+  }).pipe(Effect.withSpan('uploadAsset.markUploaded'))
 
 // Guards the transition the same way markUploadedEffect does: WHERE
 // status='uploaded' only. This makes a repeat markAttached call on an
@@ -123,7 +123,7 @@ const markAttachedEffect = (key: string, attachedToTable: string, attachedToId: 
           table: 'upload_assets',
         }),
     })
-  }).pipe(Effect.withSpan('uploadAsset.markAttached', { attributes: { key, attachedToTable } }))
+  }).pipe(Effect.withSpan('uploadAsset.markAttached', { attributes: { attachedToTable } }))
 
 export const UploadAssetServiceLayer = Layer.effect(
   UploadAssetService,
