@@ -1,4 +1,5 @@
 import { FolderOpen, Music, Trash2 } from 'lucide-react'
+
 import { Button } from './button'
 
 interface AudioFileCardProps {
@@ -14,7 +15,7 @@ export function AudioFileCard({
   fileSize,
   existingUrl,
   onRemove,
-  onPickFromS3
+  onPickFromS3,
 }: AudioFileCardProps) {
   const displayName = fileName || (existingUrl ? existingUrl.split('/').pop() : 'Unknown file')
 

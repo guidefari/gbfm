@@ -2,17 +2,20 @@ import { REMINDER_STATUS } from '@gbfm/core/status'
 import { buildMusicReminderEmail } from '@gbfm/email/index'
 import { and, asc, eq, lte, or } from 'drizzle-orm'
 import { Chunk, Effect } from 'effect'
+
 import { user } from '@/db/auth.schema'
-import { Database } from '@/db/layer'
 import { EMAIL_NOTIFICATION_TYPES } from '@/db/email.schema'
+import { Database } from '@/db/layer'
 import { musicReminder } from '@/db/music-reminder.schema'
 import { getErrorMessage, ReminderProcessingError } from '@/errors'
+
 import { EmailDelivery } from './email-delivery.service'
 
 const deliverReminderEmail = (reminder: typeof musicReminder.$inferSelect) =>
   Effect.gen(function* () {
     const db = yield* Database
     const delivery = yield* EmailDelivery
+
     const rows = yield* Effect.tryPromise({
       try: () =>
         db
@@ -24,15 +27,17 @@ const deliverReminderEmail = (reminder: typeof musicReminder.$inferSelect) =>
         new ReminderProcessingError({
           message: `Failed to load reminder recipient: ${getErrorMessage(cause)}`,
           reminderId: reminder.id,
-          stage: 'query'
-        })
+          stage: 'query',
+        }),
     })
+
     const recipient = rows[0]
+
     if (!recipient?.email) {
       return yield* new ReminderProcessingError({
         message: 'Reminder recipient has no email address',
         reminderId: reminder.id,
-        stage: 'email'
+        stage: 'email',
       })
     }
 
@@ -44,24 +49,25 @@ const deliverReminderEmail = (reminder: typeof musicReminder.$inferSelect) =>
       musicUrl: reminder.musicUrl,
       reminderDate: reminder.reminderDate.toISOString(),
       notes: reminder.notes,
-      albumCoverUrl: reminder.albumCoverUrl
+      albumCoverUrl: reminder.albumCoverUrl,
     }).pipe(
       Effect.mapError(
         () =>
           new ReminderProcessingError({
             message: 'Failed to render reminder email',
             reminderId: reminder.id,
-            stage: 'email'
-          })
-      )
+            stage: 'email',
+          }),
+      ),
     )
+
     yield* delivery
       .deliver({
         message,
         emailType: EMAIL_NOTIFICATION_TYPES.MIX_RELEASE,
         userId: reminder.userId,
         recipientName: recipient.name || undefined,
-        safeMetadata: { kind: 'music-reminder', reminderId: reminder.id }
+        safeMetadata: { kind: 'music-reminder', reminderId: reminder.id },
       })
       .pipe(
         Effect.mapError(
@@ -69,9 +75,9 @@ const deliverReminderEmail = (reminder: typeof musicReminder.$inferSelect) =>
             new ReminderProcessingError({
               message: 'Failed to deliver reminder email',
               reminderId: reminder.id,
-              stage: 'email'
-            })
-        )
+              stage: 'email',
+            }),
+        ),
       )
 
     return undefined
@@ -90,7 +96,7 @@ export const processPendingReminders = Effect.gen(function* () {
         .update(musicReminder)
         .set({
           status: REMINDER_STATUS.PROCESSING,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
         .where(
           and(
@@ -99,23 +105,24 @@ export const processPendingReminders = Effect.gen(function* () {
               eq(musicReminder.status, REMINDER_STATUS.PENDING),
               and(
                 eq(musicReminder.status, REMINDER_STATUS.PROCESSING),
-                lte(musicReminder.updatedAt, fiveMinutesAgo)
+                lte(musicReminder.updatedAt, fiveMinutesAgo),
               ),
-              eq(musicReminder.status, REMINDER_STATUS.FAILED)
-            )
-          )
+              eq(musicReminder.status, REMINDER_STATUS.FAILED),
+            ),
+          ),
         )
         .returning(),
     catch: (error) =>
       new ReminderProcessingError({
         message: `Failed to claim pending reminders: ${getErrorMessage(error)}`,
         reminderId: 'batch',
-        stage: 'query'
-      })
+        stage: 'query',
+      }),
   })
 
   if (claimedReminders.length === 0) {
     yield* Effect.logInfo('No pending reminders to process')
+
     return
   }
 
@@ -127,10 +134,10 @@ export const processPendingReminders = Effect.gen(function* () {
     (reminder) =>
       processSingleReminder(reminder).pipe(
         Effect.catchTag('ReminderProcessingError', (error) =>
-          Effect.logError('Failed to process reminder email', { stage: error.stage })
-        )
+          Effect.logError('Failed to process reminder email', { stage: error.stage }),
+        ),
       ),
-    { concurrency: 3 }
+    { concurrency: 3 },
   )
 })
 
@@ -147,21 +154,21 @@ const processSingleReminder = (reminder: typeof musicReminder.$inferSelect) =>
           .set({
             status: REMINDER_STATUS.SENT,
             isSent: true,
-            updatedAt: new Date()
+            updatedAt: new Date(),
           })
           .where(eq(musicReminder.id, reminder.id)),
       catch: (error) =>
         new ReminderProcessingError({
           message: `Failed to update reminder status to sent: ${getErrorMessage(error)}`,
           reminderId: reminder.id,
-          stage: 'update'
-        })
+          stage: 'update',
+        }),
     })
 
     yield* Effect.logInfo(`Successfully processed reminder`, {
       reminderId: reminder.id,
       musicTitle: reminder.musicTitle,
-      artistName: reminder.artistName
+      artistName: reminder.artistName,
     })
   }).pipe(
     Effect.catch((error) =>
@@ -171,7 +178,7 @@ const processSingleReminder = (reminder: typeof musicReminder.$inferSelect) =>
         yield* Effect.logError(`Failed to send reminder ${reminder.id}`, {
           error: error instanceof Error ? error.message : 'Unknown error',
           reminderId: reminder.id,
-          musicTitle: reminder.musicTitle
+          musicTitle: reminder.musicTitle,
         })
 
         // Mark as failed so it can be picked up later
@@ -181,20 +188,21 @@ const processSingleReminder = (reminder: typeof musicReminder.$inferSelect) =>
               .update(musicReminder)
               .set({
                 status: REMINDER_STATUS.FAILED,
-                updatedAt: new Date()
+                updatedAt: new Date(),
               })
               .where(eq(musicReminder.id, reminder.id)),
-          catch: () => undefined // ignore update failure in error handler
+          catch: () => undefined, // ignore update failure in error handler
         }).pipe(Effect.ignore)
 
         return yield* error
-      })
-    )
+      }),
+    ),
   )
 
 // Returns the soonest reminderDate among pending/failed reminders (past or future)
 export const queryNextDueReminder = Effect.gen(function* () {
   const db = yield* Database
+
   const results = yield* Effect.tryPromise({
     try: () =>
       db
@@ -203,8 +211,8 @@ export const queryNextDueReminder = Effect.gen(function* () {
         .where(
           or(
             eq(musicReminder.status, REMINDER_STATUS.PENDING),
-            eq(musicReminder.status, REMINDER_STATUS.FAILED)
-          )
+            eq(musicReminder.status, REMINDER_STATUS.FAILED),
+          ),
         )
         .orderBy(asc(musicReminder.reminderDate))
         .limit(1),
@@ -212,8 +220,8 @@ export const queryNextDueReminder = Effect.gen(function* () {
       new ReminderProcessingError({
         message: `Failed to query next due reminder: ${getErrorMessage(error)}`,
         reminderId: 'next-query',
-        stage: 'query'
-      })
+        stage: 'query',
+      }),
   })
 
   return results[0]?.reminderDate ?? null
@@ -233,8 +241,8 @@ export const getReminderStats = Effect.gen(function* () {
             musicReminder,
             or(
               eq(musicReminder.status, REMINDER_STATUS.PENDING),
-              eq(musicReminder.status, REMINDER_STATUS.FAILED)
-            )
+              eq(musicReminder.status, REMINDER_STATUS.FAILED),
+            ),
           ),
           dueNow: db.$count(
             musicReminder,
@@ -242,25 +250,28 @@ export const getReminderStats = Effect.gen(function* () {
               lte(musicReminder.reminderDate, now),
               or(
                 eq(musicReminder.status, REMINDER_STATUS.PENDING),
-                eq(musicReminder.status, REMINDER_STATUS.FAILED)
-              )
-            )
+                eq(musicReminder.status, REMINDER_STATUS.FAILED),
+              ),
+            ),
           ),
-          processing: db.$count(musicReminder, eq(musicReminder.status, REMINDER_STATUS.PROCESSING))
+          processing: db.$count(
+            musicReminder,
+            eq(musicReminder.status, REMINDER_STATUS.PROCESSING),
+          ),
         })
         .from(musicReminder),
     catch: (error) =>
       new ReminderProcessingError({
         message: `Failed to get reminder stats: ${getErrorMessage(error)}`,
         reminderId: 'stats',
-        stage: 'query'
-      })
+        stage: 'query',
+      }),
   })
 
   return {
     totalPending: stats?.totalPending || 0,
     dueNow: stats?.dueNow || 0,
-    timestamp: now.toISOString()
+    timestamp: now.toISOString(),
   }
 })
 
@@ -282,8 +293,8 @@ export const queryDueReminders = Effect.gen(function* () {
         .where(
           and(
             lte(musicReminder.reminderDate, now),
-            eq(musicReminder.status, REMINDER_STATUS.PENDING)
-          )
+            eq(musicReminder.status, REMINDER_STATUS.PENDING),
+          ),
         )
         .orderBy(asc(musicReminder.reminderDate))
         .limit(DUE_REMINDERS_LIMIT),
@@ -291,8 +302,8 @@ export const queryDueReminders = Effect.gen(function* () {
       new ReminderProcessingError({
         message: `Failed to query due reminders: ${getErrorMessage(error)}`,
         reminderId: 'due-query',
-        stage: 'query'
-      })
+        stage: 'query',
+      }),
   })
 })
 
@@ -315,20 +326,21 @@ export const claimReminder = (reminderId: string) =>
               eq(musicReminder.id, reminderId),
               or(
                 eq(musicReminder.status, REMINDER_STATUS.PENDING),
-                eq(musicReminder.status, REMINDER_STATUS.FAILED)
-              )
-            )
+                eq(musicReminder.status, REMINDER_STATUS.FAILED),
+              ),
+            ),
           )
           .returning({ id: musicReminder.id }),
       catch: (error) =>
         new ReminderProcessingError({
           message: `Failed to claim reminder: ${getErrorMessage(error)}`,
           reminderId,
-          stage: 'query'
-        })
+          stage: 'query',
+        }),
     })
 
     const result: ReminderClaimResult = { claimed: claimed.length > 0 }
+
     return result
   })
 
@@ -352,8 +364,8 @@ export const sendClaimedReminder = (reminder: typeof musicReminder.$inferSelect)
         new ReminderProcessingError({
           message: `Failed to update reminder status to sent: ${getErrorMessage(error)}`,
           reminderId: reminder.id,
-          stage: 'update'
-        })
+          stage: 'update',
+        }),
     })
   }).pipe(
     Effect.catch((error) =>
@@ -361,7 +373,7 @@ export const sendClaimedReminder = (reminder: typeof musicReminder.$inferSelect)
         yield* Effect.logError(`Failed to send reminder ${reminder.id}`, {
           error: error instanceof Error ? error.message : 'Unknown error',
           reminderId: reminder.id,
-          musicTitle: reminder.musicTitle
+          musicTitle: reminder.musicTitle,
         })
 
         const db = yield* Database
@@ -371,12 +383,12 @@ export const sendClaimedReminder = (reminder: typeof musicReminder.$inferSelect)
               .update(musicReminder)
               .set({ status: REMINDER_STATUS.FAILED, updatedAt: new Date() })
               .where(eq(musicReminder.id, reminder.id)),
-          catch: () => undefined
+          catch: () => undefined,
         }).pipe(Effect.ignore)
 
         return yield* error
-      })
-    )
+      }),
+    ),
   )
 
 // Loads one reminder row by id, for the queue consumer to hand to
@@ -384,14 +396,16 @@ export const sendClaimedReminder = (reminder: typeof musicReminder.$inferSelect)
 export const findReminderById = (reminderId: string) =>
   Effect.gen(function* () {
     const db = yield* Database
+
     const rows = yield* Effect.tryPromise({
       try: () => db.select().from(musicReminder).where(eq(musicReminder.id, reminderId)).limit(1),
       catch: (error) =>
         new ReminderProcessingError({
           message: `Failed to load reminder: ${getErrorMessage(error)}`,
           reminderId,
-          stage: 'query'
-        })
+          stage: 'query',
+        }),
     })
+
     return rows[0] ?? null
   })

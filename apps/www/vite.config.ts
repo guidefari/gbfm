@@ -1,7 +1,9 @@
+import { fileURLToPath } from 'node:url'
+
 import { sveltekit } from '@sveltejs/kit/vite'
 import tailwindcss from '@tailwindcss/vite'
-import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
+
 import { repoChangelogPlugin } from './plugins/repo-changelog.ts'
 
 export default defineConfig({
@@ -12,11 +14,11 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
-    }
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
   },
   server: {
     host: '0.0.0.0',
-    allowedHosts: true
-  }
+    allowedHosts: true,
+  },
 })

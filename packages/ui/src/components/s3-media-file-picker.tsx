@@ -1,5 +1,6 @@
 import { Check, ImageIcon, Loader2, Music, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
+
 import { Button } from './button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select'
@@ -17,7 +18,7 @@ export interface BucketConfig {
     userContent: string
     mixes: string
   }
-  availableBuckets: string[]
+  availableBuckets: Array<string>
 }
 
 export interface S3MediaFilePickerProps {
@@ -26,7 +27,7 @@ export interface S3MediaFilePickerProps {
   onSelect: (url: string, filename: string) => void
   mediaType: 'audio' | 'image'
   config?: BucketConfig
-  objects: S3Object[]
+  objects: Array<S3Object>
   isLoading: boolean
   selectedBucket: string
   onBucketChange: (bucket: string) => void
@@ -39,11 +40,13 @@ const IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif'])
 
 function isAudioFile(key: string) {
   const ext = key.split('.').pop()?.toLowerCase()
+
   return ext ? AUDIO_EXTENSIONS.has(ext) : false
 }
 
 function isImageFile(key: string) {
   const ext = key.split('.').pop()?.toLowerCase()
+
   return ext ? IMAGE_EXTENSIONS.has(ext) : false
 }
 
@@ -52,20 +55,23 @@ function formatBytes(bytes: number) {
   const k = 1024
   const sizes = ['B', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
+
   return `${parseFloat((bytes / k ** i).toFixed(1))} ${sizes[i]}`
 }
 
 export function getS3PublicUrl(
   config: BucketConfig,
   bucketName: string,
-  key: string
+  key: string,
 ): string | null {
   if (bucketName === config.buckets.userContent) {
     return `${config.bucketRouterUrl}/user-content/${key}`
   }
+
   if (bucketName === config.buckets.mixes) {
     return `${config.bucketRouterUrl}/mixes/${key}`
   }
+
   return null
 }
 
@@ -79,15 +85,16 @@ export function S3MediaFilePicker({
   isLoading,
   selectedBucket,
   onBucketChange,
-  onRefresh
+  onRefresh,
 }: S3MediaFilePickerProps) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
 
   const mediaFiles = objects.filter((obj) =>
-    mediaType === 'audio' ? isAudioFile(obj.key) : isImageFile(obj.key)
+    mediaType === 'audio' ? isAudioFile(obj.key) : isImageFile(obj.key),
   )
 
   const title = mediaType === 'audio' ? 'Pick audio file from S3' : 'Pick image from S3'
+
   const emptyMessage = selectedBucket
     ? `No ${mediaType} files found in this bucket`
     : 'Select a bucket to browse files'
@@ -95,6 +102,7 @@ export function S3MediaFilePicker({
   const handleConfirm = () => {
     if (!selectedKey || !config) return
     const url = getS3PublicUrl(config, selectedBucket, selectedKey)
+
     if (!url) return
     const filename = selectedKey.split('/').pop() ?? selectedKey
     onSelect(url, filename)
@@ -104,14 +112,17 @@ export function S3MediaFilePicker({
 
   const bucketOptions = config
     ? Array.from(
-        new Set([config.buckets.userContent, config.buckets.mixes, ...config.availableBuckets])
+        new Set([config.buckets.userContent, config.buckets.mixes, ...config.availableBuckets]),
       ).filter(Boolean)
     : []
 
   const getBucketLabel = (bucket: string) => {
     if (!config) return bucket
+
     if (bucket === config.buckets.userContent) return `uploads · ${bucket}`
+
     if (bucket === config.buckets.mixes) return `mixes · ${bucket}`
+
     return bucket
   }
 
@@ -160,6 +171,7 @@ export function S3MediaFilePicker({
                 {mediaFiles.map((obj) => {
                   const isSelected = selectedKey === obj.key
                   const publicUrl = config ? getS3PublicUrl(config, selectedBucket, obj.key) : null
+
                   return (
                     <button
                       key={obj.key}

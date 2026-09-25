@@ -2,6 +2,7 @@
   import type { PageProps } from './$types'
   import Page from '@/lib/components/dashboard/Page.svelte'
   import ProfileSettings from '@/lib/components/dashboard/settings/ProfileSettings.svelte'
+
   let { data }: PageProps = $props()
 </script>
 

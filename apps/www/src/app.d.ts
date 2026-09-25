@@ -1,4 +1,5 @@
 import type { AnalyticsEngineDataset, Fetcher } from '@cloudflare/workers-types'
+
 import type { Principal } from './lib/auth/principal'
 
 declare global {

@@ -1,25 +1,22 @@
 import { Effect, Layer, ManagedRuntime, PubSub, Stream } from 'effect'
 import { describe, expect, it } from 'vitest'
+
 import {
   makeAudioPlayback,
   type AudioPlaybackReporter,
-  type PlaybackSnapshot
+  type PlaybackSnapshot,
 } from './audioPlayback'
+import type { VolumeRecordType } from './audioStorage'
 import {
   AudioEngine,
   PlaybackRejected,
   type AudioEngineContract,
   type EngineStatus,
-  type PlaybackCommandHandlers
+  type PlaybackCommandHandlers,
 } from './engine'
+import type { AudioStorageError, QueueTrackType, PersistedQueueType } from './persistedQueue'
+import { PlayerStorage, type PositionRecord } from './playerStorage'
 import { PlayReporter } from './playReporter'
-import { PlayerStorage, type PlayerStorageContract, type PositionRecord } from './playerStorage'
-import type { VolumeRecordType } from './audioStorage'
-import {
-  type AudioStorageError,
-  type QueueTrackType,
-  type PersistedQueueType
-} from './persistedQueue'
 
 const track = (id: string): QueueTrackType => ({
   id,
@@ -27,7 +24,7 @@ const track = (id: string): QueueTrackType => ({
   slug: id,
   url: `https://cdn.example/${id}.mp3`,
   thumbnailUrl: null,
-  type: 'mix'
+  type: 'mix',
 })
 
 const idleStatus: EngineStatus = {
@@ -37,18 +34,20 @@ const idleStatus: EngineStatus = {
   didJustFinish: false,
   currentTime: 0,
   duration: 0,
-  isBuffering: false
+  isBuffering: false,
 }
 
 const makeRecordingEngine = (options: { readonly rejectPlay?: boolean } = {}) =>
   Effect.gen(function* () {
     const pubsub = yield* PubSub.unbounded<EngineStatus>()
-    const calls: string[] = []
+    const calls: Array<string> = []
     const positionStates: Array<{ readonly duration: number; readonly position: number }> = []
+
     const volumeStates: Array<
       | { readonly kind: 'volume'; readonly value: number }
       | { readonly kind: 'muted'; readonly value: boolean }
     > = []
+
     let status = idleStatus
     let handlers: PlaybackCommandHandlers | null = null
 
@@ -64,7 +63,7 @@ const makeRecordingEngine = (options: { readonly rejectPlay?: boolean } = {}) =>
       }),
       play: options.rejectPlay
         ? Effect.suspend(() =>
-            Effect.fail(new PlaybackRejected({ cause: new Error('play rejected in test engine') }))
+            Effect.fail(new PlaybackRejected({ cause: new Error('play rejected in test engine') })),
           )
         : Effect.sync(() => {
             calls.push('play')
@@ -100,12 +99,13 @@ const makeRecordingEngine = (options: { readonly rejectPlay?: boolean } = {}) =>
         Effect.sync(() => {
           handlers = next
           calls.push(next ? 'handlers:set' : 'handlers:clear')
-        })
+        }),
     }
 
     const emit = (next: Partial<EngineStatus>) =>
       Effect.suspend(() => {
         status = { ...status, ...next }
+
         return PubSub.publish(pubsub, status)
       })
 
@@ -121,22 +121,18 @@ const makeRecordingEngine = (options: { readonly rejectPlay?: boolean } = {}) =>
       volumeStates,
       emit,
       setStatus,
-      getHandlers: () => handlers
+      getHandlers: () => handlers,
     }
   })
 
 const makeRecordingStorage = (
   options: {
-    readonly loadQueue?: Effect.Effect<PersistedQueueType | null, AudioStorageError, never>
-    readonly loadVolume?: Effect.Effect<VolumeRecordType | null, AudioStorageError, never>
-    readonly saveQueue?: (
-      queue: PersistedQueueType
-    ) => Effect.Effect<void, AudioStorageError, never>
-    readonly saveVolume?: (
-      volume: VolumeRecordType
-    ) => Effect.Effect<void, AudioStorageError, never>
+    readonly loadQueue?: Effect.Effect<PersistedQueueType | null, AudioStorageError>
+    readonly loadVolume?: Effect.Effect<VolumeRecordType | null, AudioStorageError>
+    readonly saveQueue?: (queue: PersistedQueueType) => Effect.Effect<void, AudioStorageError>
+    readonly saveVolume?: (volume: VolumeRecordType) => Effect.Effect<void, AudioStorageError>
     readonly positions?: ReadonlyMap<string, PositionRecord>
-  } = {}
+  } = {},
 ) => {
   const savedQueues: Array<PersistedQueueType> = []
   const savedVolumes: Array<VolumeRecordType> = []
@@ -151,6 +147,7 @@ const makeRecordingStorage = (
     saveQueue: (queue) =>
       Effect.gen(function* () {
         savedQueues.push(queue)
+
         if (options.saveQueue) {
           yield* options.saveQueue(queue)
         }
@@ -159,6 +156,7 @@ const makeRecordingStorage = (
     saveVolume: (volume) =>
       Effect.gen(function* () {
         savedVolumes.push(volume)
+
         if (options.saveVolume) {
           yield* options.saveVolume(volume)
         }
@@ -173,19 +171,20 @@ const makeRecordingStorage = (
         clearedPositions.push(trackId)
       }),
     recordPlay: () => Effect.void,
-    isWithinDedupWindow: () => Effect.succeed(false)
+    isWithinDedupWindow: () => Effect.succeed(false),
   })
 
   return { layer, savedQueues, savedVolumes, savedPositions, clearedPositions }
 }
 
 const makeRecordingPlayReporter = () => {
-  const reported: string[] = []
+  const reported: Array<string> = []
+
   const layer = Layer.succeed(PlayReporter, {
     recordPlay: (trackId: string) =>
       Effect.sync(() => {
         reported.push(trackId)
-      })
+      }),
   })
 
   return { layer, reported }
@@ -194,31 +193,36 @@ const makeRecordingPlayReporter = () => {
 const makeRuntime = (
   engine: AudioEngineContract,
   storage: ReturnType<typeof makeRecordingStorage>,
-  playReporter: ReturnType<typeof makeRecordingPlayReporter>
+  playReporter: ReturnType<typeof makeRecordingPlayReporter>,
 ) =>
   ManagedRuntime.make(
-    Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, playReporter.layer)
+    Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, playReporter.layer),
   )
 
 const makeReporter = () => {
-  const played: string[] = []
+  const played: Array<string> = []
+
   const paused: Array<{
     readonly trackId: string | null
     readonly currentTime: number
     readonly duration: number
   }> = []
+
   const completed: Array<{ readonly trackId: string | null; readonly duration: number }> = []
+
   const seeks: Array<{
     readonly trackId: string | null
     readonly fromTime: number
     readonly toTime: number
     readonly method: 'scrub' | 'keyboard' | 'mediasession'
   }> = []
+
   const queueActions: Array<{
     readonly action: 'add' | 'remove' | 'reorder' | 'clear' | 'play_from'
     readonly trackId?: string
     readonly queueLength: number
   }> = []
+
   const errors: Array<{ readonly message: string; readonly error: unknown }> = []
 
   const reporter: AudioPlaybackReporter = {
@@ -245,7 +249,7 @@ const makeReporter = () => {
     onError: (message, error) =>
       Effect.sync(() => {
         errors.push({ message, error })
-      })
+      }),
   }
 
   return { reporter, played, paused, completed, seeks, queueActions, errors }
@@ -254,6 +258,7 @@ const makeReporter = () => {
 describe('makeAudioPlayback', () => {
   it('replays early queue changes after hydration without losing them', async () => {
     let resolveQueue!: (queue: PersistedQueueType | null) => void
+
     const queuePromise = new Promise<PersistedQueueType | null>((resolve) => {
       resolveQueue = resolve
     })
@@ -268,7 +273,7 @@ describe('makeAudioPlayback', () => {
       const result = await runtime.runPromise(
         Effect.gen(function* () {
           const playback = yield* makeAudioPlayback(runtime, reporter)
-          const snapshots: PlaybackSnapshot[] = []
+          const snapshots: Array<PlaybackSnapshot> = []
           const unsubscribe = playback.subscribeSnapshot((snapshot) => snapshots.push(snapshot))
           yield* playback.enqueue(track('early'))
           yield* Effect.yieldNow
@@ -276,8 +281,9 @@ describe('makeAudioPlayback', () => {
           yield* Effect.promise(() => Promise.resolve())
           yield* Effect.promise(() => Promise.resolve())
           unsubscribe()
+
           return { snapshots, current: playback.getSnapshot() }
-        }).pipe(Effect.scoped)
+        }).pipe(Effect.scoped),
       )
 
       expect(result.snapshots.at(-1)?.queue.tracks.map(({ id }) => id)).toEqual(['stored', 'early'])
@@ -290,11 +296,14 @@ describe('makeAudioPlayback', () => {
 
   it('restores a stored position before starting playback', async () => {
     const storage = makeRecordingStorage({
-      positions: new Map([[track('mix-1').id, { position: 42, updatedAt: 0 }]])
+      positions: new Map([[track('mix-1').id, { position: 42, updatedAt: 0 }]]),
     })
+
     const { reporter, played } = makeReporter()
+
     const { engine, calls, positionStates, setStatus } =
       await Effect.runPromise(makeRecordingEngine())
+
     const playReporter = makeRecordingPlayReporter()
     const runtime = makeRuntime(engine, storage, playReporter)
 
@@ -302,15 +311,16 @@ describe('makeAudioPlayback', () => {
       const result = await runtime.runPromise(
         Effect.gen(function* () {
           const playback = yield* makeAudioPlayback(runtime, reporter)
-          const snapshots: PlaybackSnapshot[] = []
+          const snapshots: Array<PlaybackSnapshot> = []
           const unsubscribe = playback.subscribeSnapshot((snapshot) => snapshots.push(snapshot))
           yield* setStatus({ isLoaded: true, duration: 300 })
           yield* playback.playTrack(track('mix-1'))
           yield* Effect.yieldNow
           yield* Effect.yieldNow
           unsubscribe()
+
           return { playback, snapshots }
-        }).pipe(Effect.scoped)
+        }).pipe(Effect.scoped),
       )
 
       expect(calls).toContain('seek:42')
@@ -340,11 +350,11 @@ describe('makeAudioPlayback', () => {
           yield* Effect.yieldNow
           yield* playback.setVolume(40)
           yield* playback.toggleMute
-        }).pipe(Effect.scoped)
+        }).pipe(Effect.scoped),
       )
 
       expect(volumeStates.some((entry) => entry.kind === 'volume' && entry.value === 0.4)).toBe(
-        true
+        true,
       )
       expect(volumeStates.at(-1)).toEqual({ kind: 'muted', value: true })
     } finally {
@@ -368,13 +378,13 @@ describe('makeAudioPlayback', () => {
           yield* playback.playTrack(track('one'))
           yield* Effect.yieldNow
           yield* Effect.yieldNow
-        }).pipe(Effect.scoped)
+        }).pipe(Effect.scoped),
       )
 
       expect(played).toEqual([])
       expect(playReporter.reported).toEqual([])
       expect(errors.some((entry) => entry.message === 'Playback was refused by the platform')).toBe(
-        true
+        true,
       )
     } finally {
       await runtime.dispose()
@@ -383,8 +393,9 @@ describe('makeAudioPlayback', () => {
 
   it('no-ops playPrevious when no queue item is selected', async () => {
     const storage = makeRecordingStorage({
-      loadQueue: Effect.succeed({ tracks: [track('one'), track('two')], currentIndex: -1 })
+      loadQueue: Effect.succeed({ tracks: [track('one'), track('two')], currentIndex: -1 }),
     })
+
     const { reporter } = makeReporter()
     const { engine, calls } = await Effect.runPromise(makeRecordingEngine())
     const playReporter = makeRecordingPlayReporter()
@@ -399,8 +410,9 @@ describe('makeAudioPlayback', () => {
           const before = calls.length
           yield* playback.playPrevious
           yield* Effect.yieldNow
+
           return { before, after: calls.length }
-        }).pipe(Effect.scoped)
+        }).pipe(Effect.scoped),
       )
 
       expect(result.after).toBe(result.before)
@@ -412,17 +424,20 @@ describe('makeAudioPlayback', () => {
   it('flushes queued queue and volume saves before teardown finishes', async () => {
     let resolveQueue!: () => void
     let resolveVolume!: () => void
+
     const queueTail = new Promise<void>((resolve) => {
       resolveQueue = resolve
     })
+
     const volumeTail = new Promise<void>((resolve) => {
       resolveVolume = resolve
     })
 
     const storage = makeRecordingStorage({
       saveQueue: () => Effect.promise(() => queueTail),
-      saveVolume: () => Effect.promise(() => volumeTail)
+      saveVolume: () => Effect.promise(() => volumeTail),
     })
+
     const { reporter } = makeReporter()
     const { engine } = await Effect.runPromise(makeRecordingEngine())
     const playReporter = makeRecordingPlayReporter()
@@ -430,6 +445,7 @@ describe('makeAudioPlayback', () => {
 
     try {
       let settled = false
+
       const program = runtime
         .runPromise(
           Effect.gen(function* () {
@@ -438,7 +454,7 @@ describe('makeAudioPlayback', () => {
             yield* Effect.yieldNow
             yield* playback.enqueue(track('one'))
             yield* playback.setVolume(55)
-          }).pipe(Effect.scoped)
+          }).pipe(Effect.scoped),
         )
         .then(() => {
           settled = true
@@ -472,14 +488,16 @@ describe('makeAudioPlayback', () => {
           const playback = yield* makeAudioPlayback(runtime, reporter)
           yield* setStatus({ isLoaded: true, duration: 300 })
           yield* playback.playTrack(track('one'))
+
           for (let i = 0; i < 5 && playReporter.reported.length === 0; i += 1) {
             yield* Effect.promise(() => Promise.resolve())
           }
+
           yield* playback.seekTo(12)
           yield* Effect.yieldNow
           yield* playback.pause
           yield* Effect.yieldNow
-        }).pipe(Effect.scoped)
+        }).pipe(Effect.scoped),
       )
 
       expect(calls).toContain('seek:12')
@@ -510,8 +528,9 @@ describe('makeAudioPlayback', () => {
           expect(handlers).not.toBeNull()
           handlers?.onNextTrack()
           yield* Effect.yieldNow
+
           return playback.getSnapshot()
-        }).pipe(Effect.scoped)
+        }).pipe(Effect.scoped),
       )
 
       expect(result.queue.current?.id).toBe('two')
@@ -537,8 +556,9 @@ describe('makeAudioPlayback', () => {
           yield* Effect.yieldNow
           yield* playback.removeFromQueue(0)
           yield* Effect.yieldNow
+
           return playback.getSnapshot()
-        }).pipe(Effect.scoped)
+        }).pipe(Effect.scoped),
       )
 
       expect(result.queue.current?.id).toBe('two')
@@ -551,9 +571,11 @@ describe('makeAudioPlayback', () => {
 
   it('does not restart the active source when queue hydration catches up', async () => {
     let resolveQueue!: (queue: PersistedQueueType | null) => void
+
     const queuePromise = new Promise<PersistedQueueType | null>((resolve) => {
       resolveQueue = resolve
     })
+
     const storage = makeRecordingStorage({ loadQueue: Effect.promise(() => queuePromise) })
     const { reporter } = makeReporter()
     const { engine, calls, setStatus } = await Effect.runPromise(makeRecordingEngine())
@@ -570,11 +592,11 @@ describe('makeAudioPlayback', () => {
           resolveQueue({ tracks: [track('stored')], currentIndex: 0 })
           yield* Effect.promise(() => Promise.resolve())
           yield* Effect.promise(() => Promise.resolve())
-        }).pipe(Effect.scoped)
+        }).pipe(Effect.scoped),
       )
 
       expect(calls.filter((call) => call === 'replace:https://cdn.example/early.mp3')).toHaveLength(
-        1
+        1,
       )
     } finally {
       await runtime.dispose()
@@ -598,7 +620,7 @@ describe('makeAudioPlayback', () => {
           yield* playback.playNext
           yield* playback.seekByPercentage(50)
           expect(calls).toHaveLength(before)
-        }).pipe(Effect.scoped)
+        }).pipe(Effect.scoped),
       )
     } finally {
       await runtime.dispose()

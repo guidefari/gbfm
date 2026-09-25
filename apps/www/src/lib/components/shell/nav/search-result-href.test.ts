@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+
 import { searchResultHref } from './search-result-href'
 
 const result = (type: string, showSlug?: string | null) => ({
@@ -8,7 +9,7 @@ const result = (type: string, showSlug?: string | null) => ({
   type,
   thumbnailUrl: null,
   description: null,
-  showSlug
+  showSlug,
 })
 
 describe('searchResultHref', () => {

@@ -33,5 +33,5 @@ export class AuthMiddleware extends HttpApiMiddleware.Service<
   AuthMiddleware,
   { provides: AuthSession }
 >()('api/AuthMiddleware', {
-  error: HttpApiError.Unauthorized
+  error: HttpApiError.Unauthorized,
 }) {}

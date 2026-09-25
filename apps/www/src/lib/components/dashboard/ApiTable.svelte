@@ -3,9 +3,13 @@
   import { onMount } from 'svelte'
 
   const Cell = Schema.Union([Schema.String, Schema.Number, Schema.Boolean, Schema.Null])
+
   const Row = Schema.Record(Schema.String, Cell)
+
   const Rows = Schema.Array(Row)
+
   const Pagination = Schema.Struct({ total: Schema.Number })
+
   const RowEnvelope = Schema.Struct({
     items: Schema.optional(Rows),
     data: Schema.optional(Rows),
@@ -18,27 +22,43 @@
   })
 
   let { endpoint, empty = 'Nothing to show.', refresh = 0, actionBase, idKey = 'slug' }: { endpoint: string; empty?: string; refresh?: number; actionBase?: string; idKey?: string } = $props()
+
   type CellValue = typeof Cell.Type
+
   type RowValue = typeof Row.Type
+
   let rows = $state<ReadonlyArray<RowValue>>([]), loading = $state(true), message = $state('')
+
   let offset = $state(0), total = $state(0), pendingId = $state('')
+
   const pageSize = 50
+
   const display = (value: CellValue | undefined) => value == null ? '—' : String(value)
-  const requestUrl = () => { const url = new URL(endpoint, location.origin); url.searchParams.set('offset', String(offset)); return url.pathname + url.search }
+
+  const requestUrl = () => { const url = new URL(endpoint, location.origin); url.searchParams.set('offset', String(offset));
+
+ return url.pathname + url.search }
+
   function parseResponse(input: Schema.Json) {
     const direct = Option.getOrNull(Schema.decodeUnknownOption(Rows)(input))
+
     if (direct) return { rows: direct, total: undefined }
     const envelope = Option.getOrNull(Schema.decodeUnknownOption(RowEnvelope)(input))
+
     if (!envelope) return { rows: [], total: undefined }
+
     return {
       rows: envelope.items ?? envelope.data ?? envelope.users ?? envelope.sessions ?? envelope.shows ?? envelope.subscribers ?? envelope.playlists ?? [],
       total: envelope.pagination?.total
     }
   }
+
   async function load() {
     loading = true; message = ''
+
     try {
       const response = await fetch(requestUrl())
+
       if (!response.ok) throw new Error(`Request failed (${response.status})`)
       const body: Schema.Json = await response.json()
       const parsed = parseResponse(body)
@@ -47,18 +67,27 @@
     } catch (cause) { message = cause instanceof Error ? cause.message : 'Request failed' }
     finally { loading = false }
   }
+
   async function act(row: RowValue, method: 'PATCH' | 'DELETE', body?: { readonly draft: boolean }) {
     if (!actionBase) return
     const id = row[idKey]
+
     if (!Schema.is(Schema.String)(id)) return
+
     if (method === 'DELETE' && !confirm(`Delete ${display(row.title ?? row.name ?? id)}?`)) return
     pendingId = id; message = ''
     const response = await fetch(`${actionBase}/${encodeURIComponent(id)}`, { method, headers: body ? { 'content-type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined })
     pendingId = ''
-    if (!response.ok) { message = `Action failed (${response.status}).`; return }
+
+    if (!response.ok) { message = `Action failed (${response.status}).`;
+
+ return }
+
     await load()
   }
+
   onMount(load)
+
   $effect(() => { if (refresh > 0) void load() })
 </script>
 {#if loading}<p aria-live="polite">Loading…</p>

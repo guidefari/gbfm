@@ -3,10 +3,15 @@
   import { getPlayerContext } from '@/lib/player/context'
 
   const player = getPlayerContext()
+
   const snapshot = player.snapshot
+
   const fullscreen = player.fullscreen
+
   let queueOpen = $state(false)
+
   let draggedIndex = $state<number | null>(null)
+
   const current = $derived($snapshot ? ($snapshot.queue.tracks[$snapshot.queue.currentIndex] ?? null) : null)
 
   const formatTime = (seconds: number) => Number.isFinite(seconds) ? `${Math.floor(seconds / 60)}:${Math.floor(seconds % 60).toString().padStart(2, '0')}` : '0:00'
@@ -14,8 +19,10 @@
   onMount(() => {
     const hotkeys = (event: KeyboardEvent) => {
       const target = event.target
+
       if (!player || !current || target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement || (target instanceof HTMLElement && target.isContentEditable)) return
       const key = event.key.toLowerCase()
+
       if (event.code === 'Space') { event.preventDefault(); player.toggle() }
       else if (event.altKey && event.key === 'ArrowLeft') player.previous()
       else if (event.altKey && event.key === 'ArrowRight') player.next()
@@ -28,8 +35,10 @@
       else if (key === 'f') $fullscreen = !$fullscreen
       else if (event.key === 'Escape') { if (queueOpen) queueOpen = false; else $fullscreen = false }
     }
+
     window.addEventListener('keydown', hotkeys)
     const destroy = player.initialize()
+
     return () => { destroy(); window.removeEventListener('keydown', hotkeys) }
   })
 </script>

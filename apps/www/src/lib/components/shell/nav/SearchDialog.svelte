@@ -6,10 +6,15 @@
   import { searchResultHref, searchResultLabel } from './search-result-href'
 
   let dialog = $state<HTMLDialogElement>()
+
   let input = $state<HTMLInputElement>()
+
   let query = $state('')
+
   let results = $state<SearchResults | null>(null)
+
   let pending = $state(false)
+
   let failed = $state(false)
 
   const groups = [
@@ -20,10 +25,13 @@
 
   const linkable = $derived.by(() => {
     const current = results
+
     if (!current) return []
+
     return groups.flatMap((group) =>
           current[group.key].flatMap((result) => {
             const href = searchResultHref(result)
+
             return href ? [{ group: group.key, result, href }] : []
           })
         )
@@ -33,26 +41,33 @@
     dialog?.showModal()
     input?.focus()
   }
+
   export const close = () => dialog?.close()
 
   $effect(() => {
     const value = query.trim()
+
     if (!value) {
       results = null
       pending = false
+
       return
     }
+
     pending = true
     failed = false
     const controller = new AbortController()
+
     const timer = setTimeout(async () => {
       const response = await fetch(`/api/search?q=${encodeURIComponent(value)}&limit=8`, { signal: controller.signal }).catch(() => null)
+
       if (controller.signal.aborted) return
       const json: unknown = response?.ok ? await response.json().catch(() => null) : null
       results = Option.getOrNull(Schema.decodeUnknownOption(SearchResults)(json))
       failed = results === null
       pending = false
     }, 200)
+
     return () => {
       clearTimeout(timer)
       controller.abort()
@@ -61,8 +76,10 @@
 
   const submit = () => {
     const first = linkable[0]
+
     if (first) void goto(first.href)
   }
+
   const reset = () => {
     query = ''
     results = null

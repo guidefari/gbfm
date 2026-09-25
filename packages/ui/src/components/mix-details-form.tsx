@@ -1,5 +1,6 @@
 import { FolderOpen, ImageIcon, Loader2, Tag, Upload, X } from 'lucide-react'
 import { useId } from 'react'
+
 import { generateSlug } from '../lib/format'
 import { Badge } from './badge'
 import { Button } from './button'
@@ -23,14 +24,14 @@ interface MixDetailsFormProps {
   title: string
   description: string
   slug: string
-  tags: string[]
+  tags: Array<string>
   creatorId?: string
   showId?: string
   episodeNumber?: string
   artworkPreview: string | null
-  availableTags: string[]
-  allShows?: Show[]
-  usersList?: User[]
+  availableTags: Array<string>
+  allShows?: Array<Show>
+  usersList?: Array<User>
   currentUser?: User | null
   isAdmin: boolean
   isEditMode: boolean
@@ -78,7 +79,7 @@ export function MixDetailsForm({
   onAddNewTag,
   onArtworkChange,
   onRemoveArtwork,
-  onPickArtworkFromS3
+  onPickArtworkFromS3,
 }: MixDetailsFormProps) {
   const artworkUploadId = useId()
 

@@ -1,18 +1,19 @@
 import { and, eq, isNull } from 'drizzle-orm'
-import type { DatabaseClient } from '@/db/layer'
+
 import { user as userTable } from '@/db/auth.schema'
 import {
   EMAIL_NOTIFICATION_TYPES,
   type EmailNotificationType,
   type InsertAuthorEmailPreferences,
   type SelectAuthorEmailPreferences,
-  userEmailPreferencesTable
+  userEmailPreferencesTable,
 } from '@/db/email.schema'
+import type { DatabaseClient } from '@/db/layer'
 import { newsletterSubscribersTable } from '@/db/newsletter.schema'
 
 export async function getOrCreateEmailPreferencesByUserId(
   userId: string,
-  database: DatabaseClient
+  database: DatabaseClient,
 ): Promise<SelectAuthorEmailPreferences> {
   const [existing] = await database
     .select()
@@ -32,7 +33,7 @@ export async function getOrCreateEmailPreferencesByUserId(
       promotionalEnabled: true,
       systemEnabled: true,
       globalUnsubscribe: false,
-      unsubscribeToken: crypto.randomUUID()
+      unsubscribeToken: crypto.randomUUID(),
     })
     .returning()
 
@@ -46,20 +47,21 @@ export async function getOrCreateEmailPreferencesByUserId(
 export async function updateEmailPreferences(
   userId: string,
   updates: Partial<InsertAuthorEmailPreferences>,
-  database: DatabaseClient
+  database: DatabaseClient,
 ) {
   const [result] = await database
     .update(userEmailPreferencesTable)
     .set({ ...updates, updatedAt: new Date() })
     .where(eq(userEmailPreferencesTable.userId, userId))
     .returning()
+
   return result
 }
 
 export async function canReceiveEmail(
   userId: string,
   emailType: EmailNotificationType,
-  database: DatabaseClient
+  database: DatabaseClient,
 ): Promise<boolean> {
   if (emailType === EMAIL_NOTIFICATION_TYPES.TRANSACTIONAL) {
     return true
@@ -90,21 +92,22 @@ export async function globalUnsubscribe(userId: string, database: DatabaseClient
       globalUnsubscribe: true,
       mixReleaseEnabled: false,
       promotionalEnabled: false,
-      systemEnabled: false
+      systemEnabled: false,
     },
-    database
+    database,
   )
 }
 
 export async function getEmailPreferencesByUnsubscribeToken(
   token: string,
-  database: DatabaseClient
+  database: DatabaseClient,
 ) {
   const [preferences] = await database
     .select()
     .from(userEmailPreferencesTable)
     .where(eq(userEmailPreferencesTable.unsubscribeToken, token))
     .limit(1)
+
   return preferences
 }
 
@@ -116,7 +119,7 @@ export async function getEmailPreferencesByUnsubscribeToken(
 export async function canEmailReceive(
   email: string,
   emailType: EmailNotificationType,
-  database: DatabaseClient
+  database: DatabaseClient,
 ): Promise<boolean> {
   const normalizedEmail = email.trim().toLowerCase()
 
@@ -148,7 +151,7 @@ export async function canEmailReceive(
  * blast: active newsletter subscribers plus users whose preferences allow it.
  * Each address is opt-out filtered through the SSOT.
  */
-export async function getActiveMixRecipients(database: DatabaseClient): Promise<string[]> {
+export async function getActiveMixRecipients(database: DatabaseClient): Promise<Array<string>> {
   const subscribers = await database
     .select({ email: newsletterSubscribersTable.email })
     .from(newsletterSubscribersTable)
@@ -161,19 +164,23 @@ export async function getActiveMixRecipients(database: DatabaseClient): Promise<
     .where(
       and(
         eq(userEmailPreferencesTable.globalUnsubscribe, false),
-        eq(userEmailPreferencesTable.mixReleaseEnabled, true)
-      )
+        eq(userEmailPreferencesTable.mixReleaseEnabled, true),
+      ),
     )
 
   const emails = new Set<string>()
+
   for (const row of subscribers) emails.add(row.email.toLowerCase())
+
   for (const row of optedInUsers) emails.add(row.email.toLowerCase())
 
-  const result: string[] = []
+  const result: Array<string> = []
+
   for (const email of emails) {
     if (await canEmailReceive(email, EMAIL_NOTIFICATION_TYPES.MIX_RELEASE, database)) {
       result.push(email)
     }
   }
+
   return result
 }

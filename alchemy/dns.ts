@@ -1,6 +1,7 @@
 import { adopt } from 'alchemy/AdoptPolicy'
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as Effect from 'effect/Effect'
+
 import type { StageConfig } from './stage'
 
 export const dnsRedirects = (config: StageConfig) =>
@@ -22,16 +23,16 @@ export const dnsRedirects = (config: StageConfig) =>
           description: 'Redirect RSS feeds to the API',
           expression: `((http.request.uri.path eq "/rss.xml") or (http.request.uri.path eq "/rss")) and (http.host eq "goosebumps.fm")`,
           actionParameters: {
-            fromValue: { statusCode: 301, targetUrl: { value: `${config.apiUrl}/rss.xml` } }
-          }
+            fromValue: { statusCode: 301, targetUrl: { value: `${config.apiUrl}/rss.xml` } },
+          },
         },
         {
           action: 'redirect',
           description: 'Redirect sitemap to the API',
           expression: `(http.request.uri.path eq "/sitemap.xml") and (http.host eq "goosebumps.fm")`,
           actionParameters: {
-            fromValue: { statusCode: 301, targetUrl: { value: `${config.apiUrl}/sitemap.xml` } }
-          }
+            fromValue: { statusCode: 301, targetUrl: { value: `${config.apiUrl}/sitemap.xml` } },
+          },
         },
         {
           action: 'redirect',
@@ -41,10 +42,10 @@ export const dnsRedirects = (config: StageConfig) =>
             fromValue: {
               statusCode: 301,
               targetUrl: { expression: `concat("${config.apiUrl}", http.request.uri.path)` },
-              preserveQueryString: true
-            }
-          }
-        }
-      ]
+              preserveQueryString: true,
+            },
+          },
+        },
+      ],
     })
   })

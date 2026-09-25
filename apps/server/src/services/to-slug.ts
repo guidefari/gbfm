@@ -9,6 +9,7 @@ import { normalizeSlugBase } from '@gbfm/core/utils/slug'
  */
 export const toSlug = (text: string) => {
   const slugBase = normalizeSlugBase(text) || 'item'
+
   return `${slugBase}-${crypto.randomUUID().slice(0, 8)}`
 }
 

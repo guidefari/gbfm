@@ -10,10 +10,12 @@
     ['/dashboard', 'Home'], ['/dashboard/profile', 'Profile'], ['/dashboard/appearance', 'Appearance'],
     ['/dashboard/player', 'Player'], ['/dashboard/integrations', 'Integrations'], ['/dashboard/email', 'Email']
   ]
+
   const creator = [
     ['/dashboard/content/mixes', 'My mixes'], ['/dashboard/content/tweets', 'My tweets'],
     ['/dashboard/content/editorial', 'My editorial']
   ]
+
   const admin = [
     ['/dashboard/admin', 'Admin'], ['/dashboard/overview', 'Overview'], ['/dashboard/users', 'Users'],
     ['/dashboard/sessions', 'Sessions'], ['/dashboard/shows', 'Shows'], ['/dashboard/music', 'Music'],

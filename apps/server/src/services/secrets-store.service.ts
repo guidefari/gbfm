@@ -1,5 +1,6 @@
-import * as Effect from 'effect/Effect'
 import type { SecretsStoreSecret } from '@cloudflare/workers-types'
+import * as Effect from 'effect/Effect'
+
 import { ConfigServiceError, getErrorMessage } from '@/errors'
 import { secretBindingNames, type WorkerConfigBindings } from '@/services/config.service'
 
@@ -23,8 +24,8 @@ const readOne = (name: SecretName, binding: SecretsStoreSecret) =>
       new ConfigServiceError({
         message: `Failed to read secret ${name} from the Secrets Store: ${getErrorMessage(cause)}`,
         operation: 'readSecret',
-        configKey: name
-      })
+        configKey: name,
+      }),
   })
 
 /**
@@ -34,15 +35,16 @@ const readOne = (name: SecretName, binding: SecretsStoreSecret) =>
  * runs once per isolate when the config layer is built.
  */
 export const resolveSecretBindings = (
-  env: SecretsStoreBindings
+  env: SecretsStoreBindings,
 ): Effect.Effect<Partial<WorkerConfigBindings>, ConfigServiceError> =>
   Effect.forEach(
     secretBindingNames,
     (name) => {
       const binding = env[name]
+
       return isStoreHandle(binding)
         ? readOne(name, binding).pipe(Effect.map((value) => [name, value] as const))
         : Effect.succeed([name, binding] as const)
     },
-    { concurrency: 'unbounded' }
+    { concurrency: 'unbounded' },
   ).pipe(Effect.map(Object.fromEntries))

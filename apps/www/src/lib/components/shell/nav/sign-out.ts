@@ -5,7 +5,7 @@ export const signOut = async () => {
     method: 'POST',
     credentials: 'include',
     headers: { 'content-type': 'application/json' },
-    body: '{}'
+    body: '{}',
   }).catch(() => null)
   await goto('/', { invalidateAll: true })
 }

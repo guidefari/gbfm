@@ -1,4 +1,5 @@
 import { Stack } from 'expo-router'
+
 import { useStackScreenOptions } from '@/theme/navigation'
 
 export default function HomeStackLayout() {

@@ -1,7 +1,7 @@
 import { Schema } from 'effect'
 
 const ErrorResponseSchema = Schema.Struct({
-  error: Schema.optional(Schema.String)
+  error: Schema.optional(Schema.String),
 })
 
 export async function readResponseErrorMessage(res: Response, fallback: string): Promise<string> {
@@ -9,6 +9,7 @@ export async function readResponseErrorMessage(res: Response, fallback: string):
 
   try {
     const decoded = Schema.decodeUnknownSync(ErrorResponseSchema)(raw)
+
     return decoded.error || fallback
   } catch {
     return fallback

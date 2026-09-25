@@ -7,6 +7,7 @@
   import { signOut } from './sign-out'
 
   let { principal }: { principal: Principal } = $props()
+
   const create = $derived(navSections(principal).create)
 </script>
 

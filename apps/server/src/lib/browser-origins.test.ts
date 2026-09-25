@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+
 import { browserOrigins } from './browser-origins'
 
 describe('browserOrigins', () => {
@@ -12,7 +13,7 @@ describe('browserOrigins', () => {
       'http://localhost:3003',
       'https://gbfm.localhost',
       'https://gbfm.test',
-      'https://www.goosebumps.fm'
+      'https://www.goosebumps.fm',
     ])
   })
 })

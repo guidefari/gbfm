@@ -4,13 +4,22 @@
   import { records, text, type PublicRecord } from '@/lib/public-content'
 
   let { mix }: { mix: PublicRecord | undefined } = $props()
+
   const player = getPlayerContext()
+
   let error = $state('')
+
   const title = $derived(text(mix?.title, 'Featured mix'))
+
   const creators = $derived(records(mix?.creators).map((creator) => text(creator.name)).filter(Boolean).join(', '))
+
   const play = () => {
     const url = text(mix?.url)
-    if (!url) { error = 'No audio available for this mix'; return }
+
+    if (!url) { error = 'No audio available for this mix';
+
+ return }
+
     error = ''
     player.play({
       id: text(mix?.id, url), slug: text(mix?.slug), type: 'mix', url, title,

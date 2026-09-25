@@ -1,14 +1,15 @@
 import { and, count, desc, eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
+
 import { user as usersTable } from '@/db/auth.schema'
 import { favoritesTable } from '@/db/favorites.schema'
-import { Database } from '@/db/layer'
 import { projectEntityLabelsForRows } from '@/db/labels'
+import { Database } from '@/db/layer'
 import {
   type SelectShow,
   type SelectShowSubscription,
   showSubscriptionsTable,
-  showsTable
+  showsTable,
 } from '@/db/show.schema'
 import { ConflictError, DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
 import { createPaginationMetadata, type PaginationMetadata } from '@/lib/pagination'
@@ -21,21 +22,21 @@ type SubscriptionWithShow = SelectShowSubscription & {
 export interface ShowSubscriptionService {
   readonly subscribe: (
     userId: string,
-    showId: string
+    showId: string,
   ) => Effect.Effect<SelectShowSubscription, DatabaseError | ConflictError>
   readonly unsubscribe: (
     userId: string,
-    showId: string
+    showId: string,
   ) => Effect.Effect<void, DatabaseError | NotFoundError>
   readonly getUserSubscriptions: (
     userId: string,
-    options: { limit: number; offset: number }
+    options: { limit: number; offset: number },
   ) => Effect.Effect<
-    { data: SubscriptionWithShow[]; pagination: PaginationMetadata },
+    { data: Array<SubscriptionWithShow>; pagination: PaginationMetadata },
     DatabaseError
   >
   readonly getSubscribers: (
-    showId: string
+    showId: string,
   ) => Effect.Effect<Array<{ userId: string; email: string; name: string }>, DatabaseError>
 }
 
@@ -45,6 +46,7 @@ export const ShowSubscriptionService =
 const subscribeEffect = (userId: string, showId: string) =>
   Effect.gen(function* () {
     const db = yield* Database
+
     const showRecords = yield* Effect.tryPromise({
       try: () =>
         db
@@ -56,13 +58,14 @@ const subscribeEffect = (userId: string, showId: string) =>
         new DatabaseError({
           message: `Failed to check show existence: ${getErrorMessage(error)}`,
           operation: 'select',
-          table: 'shows'
-        })
+          table: 'shows',
+        }),
     })
+
     if (!showRecords[0]) {
       return yield* new ConflictError({
         message: 'Show not found',
-        resource: 'show_subscription'
+        resource: 'show_subscription',
       })
     }
 
@@ -70,39 +73,43 @@ const subscribeEffect = (userId: string, showId: string) =>
       try: () => db.insert(showSubscriptionsTable).values({ userId, showId }).returning(),
       catch: (error) => {
         const errorMessage = getErrorMessage(error)
+
         if (errorMessage.includes('unique constraint')) {
           return new ConflictError({
             message: 'Already subscribed to this show',
-            resource: 'show_subscription'
+            resource: 'show_subscription',
           })
         }
+
         if (errorMessage.includes('foreign key constraint')) {
           return new ConflictError({
             message: 'Show not found',
-            resource: 'show_subscription'
+            resource: 'show_subscription',
           })
         }
+
         return new DatabaseError({
           message: `Failed to subscribe: ${errorMessage}`,
           operation: 'insert',
-          table: 'show_subscriptions'
+          table: 'show_subscriptions',
         })
-      }
+      },
     })
 
     const subscription = result[0]
+
     if (!subscription) {
       return yield* new DatabaseError({
         message: 'Failed to create subscription',
         operation: 'insert',
-        table: 'show_subscriptions'
+        table: 'show_subscriptions',
       })
     }
 
     yield* recordShowSubscribe
 
     yield* Effect.tryPromise(() =>
-      db.insert(favoritesTable).values({ userId, showId }).onConflictDoNothing()
+      db.insert(favoritesTable).values({ userId, showId }).onConflictDoNothing(),
     ).pipe(Effect.catch(() => Effect.void))
 
     return subscription
@@ -111,6 +118,7 @@ const subscribeEffect = (userId: string, showId: string) =>
 const unsubscribeEffect = (userId: string, showId: string) =>
   Effect.gen(function* () {
     const db = yield* Database
+
     const result = yield* Effect.tryPromise({
       try: () =>
         db
@@ -118,26 +126,27 @@ const unsubscribeEffect = (userId: string, showId: string) =>
           .where(
             and(
               eq(showSubscriptionsTable.userId, userId),
-              eq(showSubscriptionsTable.showId, showId)
-            )
+              eq(showSubscriptionsTable.showId, showId),
+            ),
           )
           .returning(),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to unsubscribe: ${getErrorMessage(error)}`,
           operation: 'delete',
-          table: 'show_subscriptions'
-        })
+          table: 'show_subscriptions',
+        }),
     })
 
     if (result.length === 0) {
       return yield* new NotFoundError({
         message: 'Subscription not found',
-        resource: 'show_subscription'
+        resource: 'show_subscription',
       })
     }
 
     yield* recordShowUnsubscribe
+
     return undefined
   })
 
@@ -148,7 +157,7 @@ const getUserSubscriptionsEffect = (userId: string, options: { limit: number; of
 
     const whereCondition = and(
       eq(showSubscriptionsTable.userId, userId),
-      eq(showsTable.draft, false)
+      eq(showsTable.draft, false),
     )
 
     const countResult = yield* Effect.tryPromise({
@@ -162,8 +171,8 @@ const getUserSubscriptionsEffect = (userId: string, options: { limit: number; of
         new DatabaseError({
           message: `Failed to count subscriptions: ${getErrorMessage(error)}`,
           operation: 'select',
-          table: 'show_subscriptions'
-        })
+          table: 'show_subscriptions',
+        }),
     })
 
     const total = countResult[0]?.total ?? 0
@@ -176,7 +185,7 @@ const getUserSubscriptionsEffect = (userId: string, options: { limit: number; of
             userId: showSubscriptionsTable.userId,
             showId: showSubscriptionsTable.showId,
             createdAt: showSubscriptionsTable.createdAt,
-            show: showsTable
+            show: showsTable,
           })
           .from(showSubscriptionsTable)
           .innerJoin(showsTable, eq(showSubscriptionsTable.showId, showsTable.id))
@@ -188,8 +197,8 @@ const getUserSubscriptionsEffect = (userId: string, options: { limit: number; of
         new DatabaseError({
           message: `Failed to fetch subscriptions: ${getErrorMessage(error)}`,
           operation: 'select',
-          table: 'show_subscriptions'
-        })
+          table: 'show_subscriptions',
+        }),
     })
 
     const shows = yield* Effect.tryPromise({
@@ -197,31 +206,36 @@ const getUserSubscriptionsEffect = (userId: string, options: { limit: number; of
         projectEntityLabelsForRows(
           db,
           'show',
-          subscriptions.map((subscription) => subscription.show)
+          subscriptions.map((subscription) => subscription.show),
         ),
       catch: (error) =>
-        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+        new DatabaseError({
+          message: getErrorMessage(error),
+          operation: 'select',
+          table: 'labels',
+        }),
     })
 
     return {
       data: subscriptions.map((subscription, index) => ({
         ...subscription,
-        show: shows[index] ?? { ...subscription.show, tags: [] }
+        show: shows[index] ?? { ...subscription.show, tags: [] },
       })),
-      pagination: createPaginationMetadata(total, limit, offset)
+      pagination: createPaginationMetadata(total, limit, offset),
     }
   })
 
 const getSubscribersEffect = (showId: string) =>
   Effect.gen(function* () {
     const db = yield* Database
+
     const subscribers = yield* Effect.tryPromise({
       try: () =>
         db
           .select({
             userId: usersTable.id,
             email: usersTable.email,
-            name: usersTable.name
+            name: usersTable.name,
           })
           .from(showSubscriptionsTable)
           .innerJoin(usersTable, eq(showSubscriptionsTable.userId, usersTable.id))
@@ -230,8 +244,8 @@ const getSubscribersEffect = (showId: string) =>
         new DatabaseError({
           message: `Failed to fetch subscribers: ${getErrorMessage(error)}`,
           operation: 'select',
-          table: 'show_subscriptions'
-        })
+          table: 'show_subscriptions',
+        }),
     })
 
     return subscribers
@@ -242,31 +256,32 @@ export const ShowSubscriptionServiceLayer = Layer.effect(
   Effect.gen(function* () {
     const db = yield* Database
     const provideDb = Effect.provideService(Database, db)
+
     return {
       subscribe: (userId, showId) =>
         provideDb(subscribeEffect(userId, showId)).pipe(
           Effect.withSpan('showSubscription.subscribe', {
-            attributes: { showId }
-          })
+            attributes: { showId },
+          }),
         ),
       unsubscribe: (userId, showId) =>
         provideDb(unsubscribeEffect(userId, showId)).pipe(
           Effect.withSpan('showSubscription.unsubscribe', {
-            attributes: { showId }
-          })
+            attributes: { showId },
+          }),
         ),
       getUserSubscriptions: (userId, options) =>
         provideDb(getUserSubscriptionsEffect(userId, options)).pipe(
           Effect.withSpan('showSubscription.getUserSubscriptions', {
-            attributes: { userId }
-          })
+            attributes: { userId },
+          }),
         ),
       getSubscribers: (showId) =>
         provideDb(getSubscribersEffect(showId)).pipe(
           Effect.withSpan('showSubscription.getSubscribers', {
-            attributes: { showId }
-          })
-        )
+            attributes: { showId },
+          }),
+        ),
     }
-  })
+  }),
 )

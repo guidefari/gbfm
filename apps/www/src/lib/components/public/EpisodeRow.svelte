@@ -3,9 +3,13 @@
   import { records, text, type PublicRecord } from '@/lib/public-content'
 
   let { episode, active, playing, onPlay }: { episode: PublicRecord; active: boolean; playing: boolean; onPlay: () => void } = $props()
+
   const title = $derived(text(episode.title, 'Untitled episode'))
+
   const creators = $derived(records(episode.creators))
+
   const createdAt = $derived(text(episode.createdAt))
+
   const dateLabel = $derived(createdAt ? new Date(createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '')
 </script>
 

@@ -7,7 +7,9 @@
   import { uploadImageDirectToS3 } from '@/lib/upload/image-upload'
 
   const ErrorResponse = Schema.Struct({ message: Schema.optional(Schema.String) })
+
   const Creator = Schema.Struct({ id: Schema.String })
+
   const EditablePost = Schema.Struct({
     title: Schema.NullOr(Schema.String),
     slug: Schema.String,
@@ -21,10 +23,12 @@
     quotedPostId: Schema.NullOr(Schema.String),
     creators: Schema.optional(Schema.Array(Creator))
   })
+
   const ResolvedMusic = Schema.Struct({
     entityType: Schema.Literals(['album', 'track', 'playlist', 'artist']),
     entity: Schema.Struct({ id: Schema.String })
   })
+
   const SavedPost = Schema.Struct({ slug: Schema.String })
 
   type PostPayload = {
@@ -33,37 +37,51 @@
     content: string | null
     slug: string
     thumbnailUrl: string | undefined
-    tags: string[]
+    tags: Array<string>
     draft: boolean
     type: ComposerDraft['type']
-    creatorIds: string[]
+    creatorIds: Array<string>
     musicEntityType: ComposerDraft['musicEntityType'] | null
     musicEntityId: string | null
     quotedPostId?: string | null
   }
 
   let { userId }: { userId: string } = $props()
+
   const editSlug = page.url.searchParams.get('edit')
+
   const draftKey = `gbfm:composer:${editSlug ?? 'new'}`
+
   const makeInitial = (): ComposerDraft => ({ type: page.url.searchParams.get('mode') === 'editorial' ? 'post' : 'micro', title: '', slug: '', content: '', description: '', tags: '', thumbnailUrl: '', creatorIds: userId, musicUrl: '', musicEntityType: '', musicEntityId: '', quotedPostId: '', externalMediaUrl: '' })
+
   const initial = makeInitial()
+
   let form = $state<ComposerDraft>({ ...initial })
+
   let artworkFile = $state<File | null>(null)
+
   let artworkPreview = $state('')
+
   let pending = $state(false), loading = $state(Boolean(editSlug)), error = $state(''), status = $state('Saved')
+
   let hydrated = $state(false), savedSnapshot = $state(JSON.stringify(initial))
+
   let reviewing = $state(false)
 
   const slugify = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+
   const messageFrom = async (response: Response) => {
     const text = await response.text()
+
     try {
       const parsed = Option.getOrNull(Schema.decodeUnknownOption(ErrorResponse)(JSON.parse(text)))
+
       return parsed?.message ?? text
     } catch {
       return text
     }
   }
+
   const apply = (value: Partial<ComposerDraft>) => { form = { ...form, ...value }; artworkPreview = form.thumbnailUrl }
 
   onMount(() => {
@@ -71,12 +89,14 @@
       try {
         if (editSlug) {
           const response = await fetch(`/api/content/posts/${encodeURIComponent(editSlug)}/edit`)
+
           if (!response.ok) throw new Error((await messageFrom(response)) || 'Could not load this post.')
           const post = Schema.decodeUnknownSync(EditablePost)(await response.json())
           apply({ type: post.type === 'post' ? 'post' : 'micro', title: post.title ?? '', slug: post.slug, content: post.content ?? '', description: post.description ?? '', tags: (post.tags ?? []).join(', '), thumbnailUrl: post.thumbnailUrl ?? '', creatorIds: (post.creators ?? []).map(({ id }) => id).join(', ') || userId, musicEntityType: post.musicEntityType ?? '', musicEntityId: post.musicEntityId ?? '', quotedPostId: post.quotedPostId ?? '' })
           savedSnapshot = JSON.stringify(form)
         } else {
           const recovered = readComposerDraft(draftKey)
+
           if (recovered && JSON.stringify(recovered) !== JSON.stringify(initial)) { apply(recovered); status = 'Local draft recovered' }
         }
       } catch (cause) { error = cause instanceof Error ? cause.message : 'Could not load this post.' }
@@ -86,9 +106,11 @@
 
   $effect(() => {
     const snapshot = JSON.stringify(form)
+
     if (!hydrated || snapshot === savedSnapshot) return
     status = 'Unsaved changes'
     const timer = window.setTimeout(() => { writeLocalDraft(draftKey, form); status = 'Saved locally' }, 2000)
+
     return () => window.clearTimeout(timer)
   })
 
@@ -96,29 +118,47 @@
     if (!form.musicUrl.trim()) return
     error = ''; status = 'Resolving music…'
     const response = await fetch('/api/music/resolve', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ url: form.musicUrl.trim(), origin: form.type === 'post' ? 'editorial' : 'tweet' }) })
-    if (!response.ok) { error = (await messageFrom(response)) || 'Could not resolve music link.'; status = 'Unsaved changes'; return }
+
+    if (!response.ok) { error = (await messageFrom(response)) || 'Could not resolve music link.'; status = 'Unsaved changes';
+
+ return }
+
     const resolved = Schema.decodeUnknownSync(ResolvedMusic)(await response.json())
-    if (resolved.entityType === 'artist') { error = 'Artist links cannot be attached to a post.'; return }
+
+    if (resolved.entityType === 'artist') { error = 'Artist links cannot be attached to a post.';
+
+ return }
+
     form = { ...form, musicEntityType: resolved.entityType, musicEntityId: resolved.entity.id }; status = 'Music attached'
   }
 
-  function chooseArtwork(input: HTMLInputElement) { const file = input.files?.[0] ?? null; artworkFile = file; if (file) artworkPreview = URL.createObjectURL(file) }
-  function insertExternalMedia() { const url = form.externalMediaUrl.trim(); if (url) form = { ...form, content: `${form.content}${form.content ? '\n\n' : ''}${url}`, externalMediaUrl: '' } }
+  function chooseArtwork(input: HTMLInputElement) { const file = input.files?.[0] ?? null; artworkFile = file;
+
+ if (file) artworkPreview = URL.createObjectURL(file) }
+
+  function insertExternalMedia() { const url = form.externalMediaUrl.trim();
+
+ if (url) form = { ...form, content: `${form.content}${form.content ? '\n\n' : ''}${url}`, externalMediaUrl: '' } }
 
   async function submit(draft: boolean) {
     if (!draft && !confirm(`Publish this ${form.type === 'post' ? 'editorial' : 'tweet'} now?`)) return
     pending = true; error = ''; status = draft ? 'Saving draft…' : 'Publishing…'
+
     try {
       let thumbnailUrl = form.thumbnailUrl.trim()
+
       if (artworkFile) thumbnailUrl = (await uploadImageDirectToS3(artworkFile)).url
       const finalSlug = form.slug.trim() || `${slugify(form.title || form.type)}-${Date.now().toString(36)}`
       const creatorIds = splitCommaList(form.creatorIds)
       const payload: PostPayload = { title: form.title.trim() || null, description: form.type === 'post' ? form.description : undefined, content: form.content.trim() || null, slug: finalSlug, thumbnailUrl: form.type === 'post' ? thumbnailUrl || undefined : undefined, tags: splitCommaList(form.tags), draft, type: form.type, creatorIds: creatorIds.length ? creatorIds : [userId], musicEntityType: form.musicEntityType || null, musicEntityId: form.musicEntityId.trim() || null }
+
       if (!editSlug) payload.quotedPostId = form.quotedPostId.trim() || null
       const response = await fetch(editSlug ? `/api/content/posts/${encodeURIComponent(editSlug)}` : '/api/content/post', { method: editSlug ? 'PATCH' : 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
+
       if (!response.ok) throw new Error((await messageFrom(response)) || 'Could not save content.')
       const saved = Schema.decodeUnknownSync(SavedPost)(await response.json())
       form = { ...form, slug: saved.slug, thumbnailUrl }; savedSnapshot = JSON.stringify(form); clearLocalDraft(draftKey); status = draft ? 'Draft saved' : 'Published'
+
       if (!draft) await goto(form.type === 'post' ? `/editorial/${saved.slug}` : `/tweet/${saved.slug}`)
     } catch (cause) { error = cause instanceof Error ? cause.message : 'Could not save content.'; status = 'Save failed' }
     finally { pending = false }

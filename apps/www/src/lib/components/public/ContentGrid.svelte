@@ -7,11 +7,14 @@
     href,
     empty = 'Nothing here yet.'
   }: { items: ReadonlyArray<PublicRecord>; href: (item: PublicRecord) => string; empty?: string } = $props()
-  const value = (item: PublicRecord, ...keys: string[]) => {
+
+  const value = (item: PublicRecord, ...keys: Array<string>) => {
     for (const key of keys) {
       const candidate = text(item[key])
+
       if (candidate) return candidate
     }
+
     return ''
   }
 </script>

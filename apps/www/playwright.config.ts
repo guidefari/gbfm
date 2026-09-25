@@ -10,7 +10,7 @@ export default defineConfig({
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:5173',
     trace: 'on-first-retry',
-    colorScheme: 'dark'
+    colorScheme: 'dark',
   },
   projects: [
     {
@@ -19,10 +19,10 @@ export default defineConfig({
         ...devices['Pixel 5'],
         colorScheme: 'dark',
         launchOptions: {
-          executablePath: process.env.CHROMIUM_PATH || undefined
-        }
-      }
-    }
+          executablePath: process.env.CHROMIUM_PATH || undefined,
+        },
+      },
+    },
   ],
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined
@@ -31,12 +31,12 @@ export default defineConfig({
           command:
             'BETTER_AUTH_SECRET=local-e2e-secret-at-least-32-characters BETTER_AUTH_URL=http://127.0.0.1:3003 bun --filter @gbfm/server dev:e2e',
           url: 'http://127.0.0.1:3003/health/live',
-          reuseExistingServer: !process.env.CI
+          reuseExistingServer: !process.env.CI,
         },
         {
           command: 'bunx vite --host 127.0.0.1',
           url: 'http://127.0.0.1:5173',
-          reuseExistingServer: !process.env.CI
-        }
-      ]
+          reuseExistingServer: !process.env.CI,
+        },
+      ],
 })

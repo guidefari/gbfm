@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { LayoutProps } from './$types'
-  import '@/styles/main.css'
+  import mainStylesheet from '@/styles/main.css?url'
   import { dev } from '$app/env'
   import { onNavigate } from '$app/navigation'
   import BrowserTelemetry from '@/lib/components/shell/BrowserTelemetry.svelte'
@@ -11,6 +11,7 @@
   import { createPlayerContext } from '@/lib/player/context'
 
   let { data, children }: LayoutProps = $props()
+
   createPlayerContext()
 
   onNavigate((navigation) => {
@@ -27,6 +28,7 @@
 </script>
 
 <svelte:head>
+  <link rel="stylesheet" href={mainStylesheet} />
   <meta name="theme-color" content="#080d0b" />
 </svelte:head>
 

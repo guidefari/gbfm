@@ -1,11 +1,4 @@
 import type { SiteMetadataRouteKind } from '@gbfm/api/site-metadata'
-import { Effect } from 'effect'
-import {
-  buildSocialCardPresentation,
-  buildTweetCardPresentation,
-  type SocialCardInput,
-  type SocialCardPresentation
-} from '@gbfm/social-card'
 import {
   makeAudioSiteMetadata,
   makeLabelSiteMetadata,
@@ -14,8 +7,16 @@ import {
   makeReleaseSiteMetadata,
   makeShowSiteMetadata,
   SITE_URL,
-  type SiteMetadata
+  type SiteMetadata,
 } from '@gbfm/site-metadata'
+import {
+  buildSocialCardPresentation,
+  buildTweetCardPresentation,
+  type SocialCardInput,
+  type SocialCardPresentation,
+} from '@gbfm/social-card'
+import { Effect, Match } from 'effect'
+
 import { AudioService } from '@/services/audio.service'
 import { ConfigService } from '@/services/config.service'
 import { MusicEntityService } from '@/services/music-entity'
@@ -35,7 +36,7 @@ const iso = (date: Date | null | undefined) => date?.toISOString() ?? null
 
 const withGeneratedImage = (
   metadata: SiteMetadata,
-  socialCard: SocialCardPresentation
+  socialCard: SocialCardPresentation,
 ): SitePresentation => ({
   metadata: {
     ...metadata,
@@ -43,15 +44,15 @@ const withGeneratedImage = (
       url: socialCard.images.openGraph,
       alt: metadata.image.alt,
       width: 1200,
-      height: 630
-    }
+      height: 630,
+    },
   },
-  socialCard
+  socialCard,
 })
 
 const present = (metadata: SiteMetadata, input: SocialCardInput) =>
   Effect.promise(() => buildSocialCardPresentation(input)).pipe(
-    Effect.map((socialCard) => withGeneratedImage(metadata, socialCard))
+    Effect.map((socialCard) => withGeneratedImage(metadata, socialCard)),
   )
 
 const presentationFromProfile = (profile: PublicProfile, slug: string, siteUrl: string) => {
@@ -60,21 +61,23 @@ const presentationFromProfile = (profile: PublicProfile, slug: string, siteUrl: 
     profile.content.shows.length +
     profile.content.editorials.length +
     profile.content.tweets.length
+
   const metadata = makeProfileSiteMetadata({
     slug,
     title: profile.name,
     imageUrl: profile.image,
     publishedAt: iso(profile.createdAt),
     contributionCount,
-    siteUrl
+    siteUrl,
   })
+
   return present(metadata, {
     kind: 'profile',
     slug,
     title: metadata.title,
     description: metadata.description,
     detail: `${contributionCount} ${contributionCount === 1 ? 'contribution' : 'contributions'}`,
-    imageUrl: profile.image
+    imageUrl: profile.image,
   })
 }
 
@@ -83,6 +86,7 @@ const presentationForAudio = (kind: 'mix' | 'track', slug: string, siteUrl: stri
     const service = yield* AudioService
     const audio = yield* service.getBySlug(kind, slug)
     const creators = audio.creators?.map((creator) => creator.name) ?? []
+
     const metadata = makeAudioSiteMetadata({
       kind,
       slug,
@@ -93,14 +97,15 @@ const presentationForAudio = (kind: 'mix' | 'track', slug: string, siteUrl: stri
       publishedAt: iso(audio.createdAt),
       modifiedAt: iso(audio.updatedAt),
       audioUrl: audio.url,
-      siteUrl
+      siteUrl,
     })
+
     return yield* present(metadata, {
       kind,
       slug,
       title: metadata.title,
       creators,
-      imageUrl: audio.thumbnailUrl
+      imageUrl: audio.thumbnailUrl,
     })
   })
 
@@ -110,6 +115,7 @@ const presentationForShow = (slug: string, siteUrl: string) =>
     const show = yield* service.getBySlug(slug)
     const creators = show.hosts?.map((host) => host.name) ?? []
     const imageUrl = show.bannerImageUrl ?? show.thumbnailUrl
+
     const metadata = makeShowSiteMetadata({
       slug,
       title: show.title,
@@ -118,15 +124,16 @@ const presentationForShow = (slug: string, siteUrl: string) =>
       creators,
       publishedAt: iso(show.createdAt),
       modifiedAt: iso(show.updatedAt),
-      siteUrl
+      siteUrl,
     })
+
     return yield* present(metadata, {
       kind: 'show',
       slug,
       title: metadata.title,
       description: metadata.description,
       detail: creators.length > 0 ? `Hosted by ${creators.join(', ')}` : null,
-      imageUrl
+      imageUrl,
     })
   })
 
@@ -137,6 +144,7 @@ const presentationForRelease = (slug: string, siteUrl: string) =>
     const release = yield* releases.getBySlug(slug)
     const label = yield* labels.getLabelById(release.labelId)
     const creators = [label.name]
+
     const metadata = makeReleaseSiteMetadata({
       slug,
       title: release.title,
@@ -145,14 +153,15 @@ const presentationForRelease = (slug: string, siteUrl: string) =>
       creators,
       publishedAt: iso(release.releaseDate ?? release.createdAt),
       modifiedAt: iso(release.updatedAt),
-      siteUrl
+      siteUrl,
     })
+
     return yield* present(metadata, {
       kind: 'release',
       slug,
       title: metadata.title,
       creators,
-      imageUrl: release.thumbnailUrl
+      imageUrl: release.thumbnailUrl,
     })
   })
 
@@ -161,6 +170,7 @@ const presentationForLabel = (slug: string, siteUrl: string) =>
     const service = yield* MusicEntityService
     const label = yield* service.getLabelBySlug(slug)
     const creators = label.creators.map((creator) => creator.name)
+
     const metadata = makeLabelSiteMetadata({
       slug,
       title: label.name,
@@ -169,15 +179,16 @@ const presentationForLabel = (slug: string, siteUrl: string) =>
       creators,
       publishedAt: iso(label.publishedAt ?? label.createdAt),
       modifiedAt: iso(label.updatedAt),
-      siteUrl
+      siteUrl,
     })
+
     return yield* present(metadata, {
       kind: 'label',
       slug,
       title: metadata.title,
       description: metadata.description,
       detail: creators.length > 0 ? `Curated by ${creators.join(', ')}` : null,
-      imageUrl: label.imageUrl
+      imageUrl: label.imageUrl,
     })
   })
 
@@ -185,19 +196,24 @@ const presentationForProfile = (username: string, siteUrl: string) =>
   Effect.gen(function* () {
     const service = yield* ProfileService
     const profile = yield* service.getPublicProfile(username)
+
     return yield* presentationFromProfile(profile, username, siteUrl)
   })
 
 const presentationForPost = (kind: 'editorial' | 'tweet' | 'post', slug: string, siteUrl: string) =>
   Effect.gen(function* () {
     const service = yield* PostService
-    const post = yield* kind === 'tweet'
-      ? service.getMicroPostBySlug(slug)
-      : kind === 'editorial'
-        ? service.getEditorialBySlug(slug)
-        : service.getBySlug(slug)
+
+    const post = yield* Match.value(kind).pipe(
+      Match.when('tweet', () => service.getMicroPostBySlug(slug)),
+      Match.when('editorial', () => service.getEditorialBySlug(slug)),
+      Match.when('post', () => service.getBySlug(slug)),
+      Match.exhaustive,
+    )
+
     const metadataKind = post.type === 'micro' ? 'tweet' : 'editorial'
     const creators = post.creators?.map((creator) => creator.name) ?? []
+
     const metadata = makePostSiteMetadata({
       kind: metadataKind,
       slug,
@@ -207,12 +223,13 @@ const presentationForPost = (kind: 'editorial' | 'tweet' | 'post', slug: string,
       creators,
       publishedAt: iso(post.createdAt),
       modifiedAt: iso(post.updatedAt),
-      siteUrl
+      siteUrl,
     })
 
     if (metadataKind === 'tweet') {
       const input = yield* service.getTweetCardInput(slug)
       const socialCard = yield* Effect.promise(() => buildTweetCardPresentation(input))
+
       return withGeneratedImage(metadata, socialCard)
     }
 
@@ -223,7 +240,7 @@ const presentationForPost = (kind: 'editorial' | 'tweet' | 'post', slug: string,
       description: metadata.description,
       authors: creators,
       imageUrl: post.thumbnailUrl,
-      publishedAt: metadata.publishedAt
+      publishedAt: metadata.publishedAt,
     })
   })
 
@@ -231,6 +248,7 @@ const presentationForResolvedSlug = (slug: string, siteUrl: string) =>
   Effect.gen(function* () {
     const service = yield* ResolveService
     const resolved = yield* service.resolve(slug)
+
     return resolved.type === 'profile'
       ? yield* presentationFromProfile(resolved.data, slug, siteUrl)
       : yield* presentationForShow(resolved.data.slug, siteUrl)
@@ -241,6 +259,7 @@ export const resolveSitePresentation = (kind: SiteMetadataRouteKind, slug: strin
   Effect.gen(function* () {
     const config = yield* ConfigService
     const siteUrl = config.urls.frontend || SITE_URL
+
     switch (kind) {
       case 'mix':
       case 'track':

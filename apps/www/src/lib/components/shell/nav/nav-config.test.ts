@@ -1,23 +1,25 @@
 import { describe, expect, it } from 'vitest'
-import type { Principal } from '@/lib/auth/principal'
+
+import { Principal, type Principal as PrincipalType } from '@/lib/auth/principal'
+
 import { isPathActive, navSections } from './nav-config'
 
-const principalWithRole = (role: 'user' | 'creator' | 'editor' | 'admin'): Principal => ({
-  _tag: 'Authenticated',
-  userId: 'user-1',
-  name: 'Test',
-  email: 'test@example.com',
-  role,
-  imageUrl: undefined,
-  username: undefined,
-  emailVerified: true
-})
+const principalWithRole = (role: 'user' | 'creator' | 'editor' | 'admin'): PrincipalType =>
+  Principal.Authenticated({
+    userId: 'user-1',
+    name: 'Test',
+    email: 'test@example.com',
+    role,
+    imageUrl: undefined,
+    username: undefined,
+    emailVerified: true,
+  })
 
-const createIds = (principal: Principal) => navSections(principal).create.map((item) => item.id)
+const createIds = (principal: PrincipalType) => navSections(principal).create.map((item) => item.id)
 
 describe('navSections', () => {
   it('hides create items from anonymous visitors', () => {
-    expect(createIds({ _tag: 'Anonymous' })).toEqual([])
+    expect(createIds(Principal.Anonymous())).toEqual([])
   })
 
   it('shows only my content to creators', () => {
@@ -33,7 +35,7 @@ describe('navSections', () => {
       'my-content',
       'new-mix',
       'new-post',
-      'manage-labels'
+      'manage-labels',
     ])
   })
 })

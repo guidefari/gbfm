@@ -9,8 +9,9 @@ import {
   Newspaper,
   Radio,
   Tag,
-  Upload
+  Upload,
 } from 'lucide-svelte'
+
 import type { NavIcon } from './nav-config'
 
 export const navIcons = {
@@ -24,5 +25,5 @@ export const navIcons = {
   dashboard: LayoutDashboard,
   upload: Upload,
   mail: Mail,
-  youtube: MonitorPlay
+  youtube: MonitorPlay,
 } satisfies Record<NavIcon, typeof House>

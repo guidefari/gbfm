@@ -1,12 +1,13 @@
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import { Effect, Exit, Result } from 'effect'
+
 import { Database } from '@/db/layer'
 import {
   musicEntityLinksTable,
   musicPlaylistsTable,
   musicPlaylistTracksTable,
   musicTracksTable,
-  type SelectMusicEntityLink
+  type SelectMusicEntityLink,
 } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage, MusicProviderInvalidInput } from '@/errors'
 import type { CanonicalMusicIdentityService } from '@/services/canonical-music-identity'
@@ -15,19 +16,22 @@ import {
   getIdFromSpotifyUrl,
   type SpotifyImportPlaylist,
   type SpotifyImportTrack,
-  type SpotifyService
+  type SpotifyService,
 } from '@/services/spotify.service'
+
 import { type ImportedTrackTarget, requireInserted } from './shared'
+
 export const getPlaylistTracksEffect = (playlistId: string) =>
   Effect.gen(function* () {
     const db = yield* Database
+
     return yield* Effect.tryPromise({
       try: async () => {
         const rows = await db
           .select({
             track: musicTracksTable,
             position: musicPlaylistTracksTable.position,
-            addedAt: musicPlaylistTracksTable.addedAt
+            addedAt: musicPlaylistTracksTable.addedAt,
           })
           .from(musicPlaylistTracksTable)
           .innerJoin(musicTracksTable, eq(musicPlaylistTracksTable.trackId, musicTracksTable.id))
@@ -35,6 +39,7 @@ export const getPlaylistTracksEffect = (playlistId: string) =>
           .orderBy(musicPlaylistTracksTable.position)
 
         const trackIds = rows.map((r) => r.track.id)
+
         const linkRows =
           trackIds.length === 0
             ? []
@@ -44,11 +49,12 @@ export const getPlaylistTracksEffect = (playlistId: string) =>
                 .where(
                   and(
                     eq(musicEntityLinksTable.entityType, 'track'),
-                    inArray(musicEntityLinksTable.entityId, trackIds)
-                  )
+                    inArray(musicEntityLinksTable.entityId, trackIds),
+                  ),
                 )
 
-        const linksByTrackId = new Map<string, SelectMusicEntityLink[]>()
+        const linksByTrackId = new Map<string, Array<SelectMusicEntityLink>>()
+
         for (const link of linkRows) {
           const list = linksByTrackId.get(link.entityId) ?? []
           list.push(link)
@@ -57,28 +63,29 @@ export const getPlaylistTracksEffect = (playlistId: string) =>
 
         return rows.map((r) => ({
           ...r,
-          links: linksByTrackId.get(r.track.id) ?? []
+          links: linksByTrackId.get(r.track.id) ?? [],
         }))
       },
       catch: (e) =>
         new DatabaseError({
           message: `Failed to get playlist tracks: ${getErrorMessage(e)}`,
           operation: 'select',
-          table: 'music_playlist_tracks'
-        })
+          table: 'music_playlist_tracks',
+        }),
     })
   }).pipe(
     Effect.withSpan('musicEntity.getPlaylistTracks', {
-      attributes: { playlistId }
-    })
+      attributes: { playlistId },
+    }),
   )
 
 export const addTrackToPlaylistEffect = Effect.fn('musicEntity.addTrackToPlaylist')(function* (
   playlistId: string,
   trackId: string,
-  position: number
+  position: number,
 ) {
   const db = yield* Database
+
   const rows = yield* Effect.tryPromise({
     try: () =>
       db
@@ -86,16 +93,17 @@ export const addTrackToPlaylistEffect = Effect.fn('musicEntity.addTrackToPlaylis
         .values({ playlistId, trackId, position })
         .onConflictDoUpdate({
           target: [musicPlaylistTracksTable.playlistId, musicPlaylistTracksTable.trackId],
-          set: { position }
+          set: { position },
         })
         .returning(),
     catch: (e) =>
       new DatabaseError({
         message: `Failed to add track to playlist: ${getErrorMessage(e)}`,
         operation: 'insert',
-        table: 'music_playlist_tracks'
-      })
+        table: 'music_playlist_tracks',
+      }),
   })
+
   return yield* requireInserted(rows, 'music_playlist_tracks')
 })
 
@@ -109,23 +117,23 @@ export const removeTrackFromPlaylistEffect = (playlistId: string, trackId: strin
           .where(
             and(
               eq(musicPlaylistTracksTable.playlistId, playlistId),
-              eq(musicPlaylistTracksTable.trackId, trackId)
-            )
+              eq(musicPlaylistTracksTable.trackId, trackId),
+            ),
           ),
       catch: (e) =>
         new DatabaseError({
           message: `Failed to remove track from playlist: ${getErrorMessage(e)}`,
           operation: 'delete',
-          table: 'music_playlist_tracks'
-        })
+          table: 'music_playlist_tracks',
+        }),
     })
   }).pipe(
     Effect.withSpan('musicEntity.removeTrackFromPlaylist', {
-      attributes: { playlistId, trackId }
-    })
+      attributes: { playlistId, trackId },
+    }),
   )
 
-export const reorderPlaylistTracksEffect = (playlistId: string, trackIds: string[]) =>
+export const reorderPlaylistTracksEffect = (playlistId: string, trackIds: Array<string>) =>
   Effect.gen(function* () {
     const db = yield* Database
     yield* Effect.tryPromise({
@@ -136,12 +144,14 @@ export const reorderPlaylistTracksEffect = (playlistId: string, trackIds: string
             .from(musicPlaylistsTable)
             .where(eq(musicPlaylistsTable.id, playlistId))
             .limit(1)
+
           const playlist = playlistRows[0]
+
           if (!playlist) {
             throw new DatabaseError({
               message: 'Playlist not found',
               operation: 'update',
-              table: 'music_playlists'
+              table: 'music_playlists',
             })
           }
 
@@ -152,6 +162,7 @@ export const reorderPlaylistTracksEffect = (playlistId: string, trackIds: string
 
           const existingSet = new Set(existing.map((row) => row.trackId))
           const incomingSet = new Set(trackIds)
+
           if (
             existingSet.size !== incomingSet.size ||
             [...existingSet].some((trackId) => !incomingSet.has(trackId))
@@ -159,11 +170,12 @@ export const reorderPlaylistTracksEffect = (playlistId: string, trackIds: string
             throw new DatabaseError({
               message: 'Reorder track set must match current playlist tracks exactly',
               operation: 'update',
-              table: 'music_playlist_tracks'
+              table: 'music_playlist_tracks',
             })
           }
 
           const revision = playlist.revision + 1
+
           const [advanced] = await db.batch([
             db
               .update(musicPlaylistsTable)
@@ -171,8 +183,8 @@ export const reorderPlaylistTracksEffect = (playlistId: string, trackIds: string
               .where(
                 and(
                   eq(musicPlaylistsTable.id, playlistId),
-                  eq(musicPlaylistsTable.revision, playlist.revision)
-                )
+                  eq(musicPlaylistsTable.revision, playlist.revision),
+                ),
               )
               .returning({ id: musicPlaylistsTable.id }),
             ...trackIds.map((trackId, position) =>
@@ -188,18 +200,19 @@ export const reorderPlaylistTracksEffect = (playlistId: string, trackIds: string
                       from ${musicPlaylistsTable}
                       where ${musicPlaylistsTable.id} = ${playlistId}
                         and ${musicPlaylistsTable.revision} = ${revision}
-                    )`
-                  )
-                )
-            )
+                    )`,
+                  ),
+                ),
+            ),
           ])
+
           if (advanced.length > 0) return
         }
 
         throw new DatabaseError({
           message: 'Playlist changed while reordering tracks',
           operation: 'update',
-          table: 'music_playlist_tracks'
+          table: 'music_playlist_tracks',
         })
       },
       catch: (e) =>
@@ -208,13 +221,13 @@ export const reorderPlaylistTracksEffect = (playlistId: string, trackIds: string
           : new DatabaseError({
               message: `Failed to reorder tracks: ${getErrorMessage(e)}`,
               operation: 'update',
-              table: 'music_playlist_tracks'
-            })
+              table: 'music_playlist_tracks',
+            }),
     })
   }).pipe(
     Effect.withSpan('musicEntity.reorderPlaylistTracks', {
-      attributes: { playlistId }
-    })
+      attributes: { playlistId },
+    }),
   )
 
 const spotifyTrackSnapshot = (track: SpotifyImportTrack) => ({
@@ -229,14 +242,14 @@ const spotifyTrackSnapshot = (track: SpotifyImportTrack) => ({
     durationMs: track.durationMs,
     previewUrl: track.previewUrl,
     albumName: track.albumName,
-    albumSpotifyId: track.albumSpotifyId
-  }
+    albumSpotifyId: track.albumSpotifyId,
+  },
 })
 
 const enrichTrackLinksEffect = (
   identity: CanonicalMusicIdentityService,
   playlistId: string,
-  track: ImportedTrackTarget
+  track: ImportedTrackTarget,
 ) =>
   Effect.gen(function* () {
     const refreshed = yield* identity.enrichEntity({
@@ -244,28 +257,31 @@ const enrichTrackLinksEffect = (
       entityId: track.trackId,
       actorId: 'playlist_enrichment',
       origin: 'playlist_enrichment',
-      artworkDelivery: 'best_effort'
+      artworkDelivery: 'best_effort',
     })
+
     return { insertedCount: refreshed.links.filter((link) => link.platform !== 'spotify').length }
   }).pipe(
     Effect.withSpan('musicEntity.enrichTrackLinks', {
-      attributes: { playlistId, trackId: track.trackId, artistCount: track.artistNames.length }
-    })
+      attributes: { playlistId, trackId: track.trackId, artistCount: track.artistNames.length },
+    }),
   )
 
 const getExitErrorTag = <A, E>(exit: Exit.Exit<A, E>) => {
   if (Exit.isSuccess(exit)) return undefined
   const error = Exit.findError(exit)
+
   return Result.isSuccess(error) ? getSafeErrorTag(error.success) : undefined
 }
 
 const enrichImportedPlaylistLinksEffect = (
   identity: CanonicalMusicIdentityService,
   playlistId: string,
-  tracks: ImportedTrackTarget[]
+  tracks: Array<ImportedTrackTarget>,
 ) =>
   Effect.gen(function* () {
     const uniqueTracks = [...new Map(tracks.map((track) => [track.trackId, track])).values()]
+
     const exits = yield* Effect.forEach(
       uniqueTracks,
       (track) =>
@@ -275,63 +291,69 @@ const enrichImportedPlaylistLinksEffect = (
               ? Effect.logWarning('[MusicEntity] Playlist track link enrichment failed', {
                   playlistId,
                   trackId: track.trackId,
-                  errorTag: getExitErrorTag(exit)
+                  errorTag: getExitErrorTag(exit),
                 })
-              : Effect.void
-          )
+              : Effect.void,
+          ),
         ),
-      { concurrency: 1 }
+      { concurrency: 1 },
     )
+
     const failure = exits.find(Exit.isFailure)
+
     if (failure) return yield* Effect.failCause(failure.cause)
 
     return {
       insertedCount: exits.reduce(
         (sum, exit) => sum + (Exit.isSuccess(exit) ? exit.value.insertedCount : 0),
-        0
-      )
+        0,
+      ),
     }
   }).pipe(
     Effect.withSpan('musicEntity.enrichImportedPlaylistLinks', {
-      attributes: { playlistId, trackCount: tracks.length }
-    })
+      attributes: { playlistId, trackCount: tracks.length },
+    }),
   )
 
 const getPlaylistLinkSyncTargetsEffect = (playlistId: string) =>
   Effect.gen(function* () {
     const rows = yield* getPlaylistTracksEffect(playlistId)
+
     return rows.flatMap((row) => {
       const spotifyLink = row.links.find((link) => link.platform === 'spotify')
+
       if (!spotifyLink) return []
+
       return [
         {
           trackId: row.track.id,
           trackUrl: spotifyLink.url,
           title: row.track.title,
-          artistNames: row.track.artistNames ?? []
-        } satisfies ImportedTrackTarget
+          artistNames: row.track.artistNames ?? [],
+        } satisfies ImportedTrackTarget,
       ]
     })
   }).pipe(
     Effect.withSpan('musicEntity.getPlaylistLinkSyncTargets', {
-      attributes: { playlistId }
-    })
+      attributes: { playlistId },
+    }),
   )
 
 export const addSpotifyTrackToPlaylistEffect = (
   spotify: Pick<SpotifyService, 'getTrackForImport'>,
-  identity: CanonicalMusicIdentityService
+  identity: CanonicalMusicIdentityService,
 ) =>
   Effect.fn('musicEntity.addSpotifyTrackToPlaylist')(function* (
     playlistId: string,
-    spotifyUrl: string
+    spotifyUrl: string,
   ) {
     const db = yield* Database
     const id = getIdFromSpotifyUrl(spotifyUrl)
+
     if (!id) {
       return yield* new MusicProviderInvalidInput({
         message: 'Could not extract Spotify track ID from URL',
-        operation: 'addSpotifyTrackToPlaylist'
+        operation: 'addSpotifyTrackToPlaylist',
       })
     }
 
@@ -341,9 +363,10 @@ export const addSpotifyTrackToPlaylistEffect = (
       origin: 'spotify_import',
       artworkDelivery: 'preserve',
       loadSnapshot: Effect.suspend(() => spotify.getTrackForImport(id)).pipe(
-        Effect.map(spotifyTrackSnapshot)
-      )
+        Effect.map(spotifyTrackSnapshot),
+      ),
     })
+
     const track = { trackId: resolved.entity.id, created: resolved.created }
 
     return yield* Effect.tryPromise({
@@ -358,21 +381,21 @@ export const addSpotifyTrackToPlaylistEffect = (
                   trackId: sql<string>`${track.trackId}`.as('trackId'),
                   position:
                     sql<number>`coalesce(max(${musicPlaylistTracksTable.position}), -1) + 1`.as(
-                      'position'
+                      'position',
                     ),
-                  addedAt: sql<Date>`${Date.now()}`.as('addedAt')
+                  addedAt: sql<Date>`${Date.now()}`.as('addedAt'),
                 })
                 .from(musicPlaylistsTable)
                 .leftJoin(
                   musicPlaylistTracksTable,
-                  eq(musicPlaylistTracksTable.playlistId, musicPlaylistsTable.id)
+                  eq(musicPlaylistTracksTable.playlistId, musicPlaylistsTable.id),
                 )
                 .where(eq(musicPlaylistsTable.id, playlistId))
-                .groupBy(musicPlaylistsTable.id)
+                .groupBy(musicPlaylistsTable.id),
             )
             .onConflictDoNothing({
-              target: [musicPlaylistTracksTable.playlistId, musicPlaylistTracksTable.trackId]
-            })
+              target: [musicPlaylistTracksTable.playlistId, musicPlaylistTracksTable.trackId],
+            }),
         ])
 
         const finalRows = await db
@@ -381,11 +404,13 @@ export const addSpotifyTrackToPlaylistEffect = (
           .where(
             and(
               eq(musicPlaylistTracksTable.playlistId, playlistId),
-              eq(musicPlaylistTracksTable.trackId, track.trackId)
-            )
+              eq(musicPlaylistTracksTable.trackId, track.trackId),
+            ),
           )
           .limit(1)
+
         const final = finalRows[0]
+
         if (!final) throw new Error('Failed to add Spotify track to playlist')
 
         return { trackId: track.trackId, position: final.position, created: track.created }
@@ -394,29 +419,31 @@ export const addSpotifyTrackToPlaylistEffect = (
         new DatabaseError({
           message: `Failed to add Spotify track: ${getErrorMessage(e)}`,
           operation: 'insert',
-          table: 'music_playlist_tracks'
-        })
+          table: 'music_playlist_tracks',
+        }),
     })
   })
 
 export const importSpotifyPlaylistEffect = (
   spotify: Pick<SpotifyService, 'getPlaylistForImport'>,
-  identity: CanonicalMusicIdentityService
+  identity: CanonicalMusicIdentityService,
 ) =>
   Effect.fn('musicEntity.importSpotifyPlaylist')(function* (
     url: string,
-    curatorId?: string | null
+    curatorId?: string | null,
   ) {
     const db = yield* Database
     const id = getIdFromSpotifyUrl(url)
+
     if (!id) {
       return yield* new MusicProviderInvalidInput({
         message: 'Could not extract Spotify playlist ID from URL',
-        operation: 'importSpotifyPlaylist'
+        operation: 'importSpotifyPlaylist',
       })
     }
 
     const data: SpotifyImportPlaylist = yield* spotify.getPlaylistForImport(id)
+
     const resolvedPlaylist = yield* identity.importProviderEntity({
       snapshot: {
         entityType: 'playlist',
@@ -425,26 +452,30 @@ export const importSpotifyPlaylistEffect = (
         imageUrl: data.coverImageUrl ?? undefined,
         description: data.description ?? undefined,
         curatorId,
-        sourceMetadata: { spotifyPlaylistId: data.spotifyPlaylistId }
+        sourceMetadata: { spotifyPlaylistId: data.spotifyPlaylistId },
       },
       origin: 'spotify_import',
-      artworkDelivery: 'best_effort'
+      artworkDelivery: 'best_effort',
     })
+
     if (resolvedPlaylist.entityType !== 'playlist') {
       return yield* Effect.die('Spotify playlist import resolved to a non-playlist entity')
     }
+
     const playlist = resolvedPlaylist.entity
+
     const tracks = yield* Effect.forEach(data.tracks, (track) =>
       identity
         .importProviderEntity({
           snapshot: spotifyTrackSnapshot(track),
           origin: 'spotify_import',
-          artworkDelivery: 'preserve'
+          artworkDelivery: 'preserve',
         })
         .pipe(
-          Effect.map((resolved) => ({ trackId: resolved.entity.id, created: resolved.created }))
-        )
+          Effect.map((resolved) => ({ trackId: resolved.entity.id, created: resolved.created })),
+        ),
     )
+
     const result = yield* Effect.tryPromise({
       try: async () => {
         for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -453,9 +484,12 @@ export const importSpotifyPlaylistEffect = (
             .from(musicPlaylistsTable)
             .where(eq(musicPlaylistsTable.id, playlist.id))
             .limit(1)
+
           const current = playlistRows[0]
+
           if (!current) throw new Error('Spotify playlist no longer exists')
           const revision = current.revision + 1
+
           const [advanced] = await db.batch([
             db
               .update(musicPlaylistsTable)
@@ -465,13 +499,13 @@ export const importSpotifyPlaylistEffect = (
                 coverImageUrl: current.coverImageUrl,
                 curatorId: current.curatorId ?? curatorId ?? null,
                 revision,
-                updatedAt: new Date()
+                updatedAt: new Date(),
               })
               .where(
                 and(
                   eq(musicPlaylistsTable.id, current.id),
-                  eq(musicPlaylistsTable.revision, current.revision)
-                )
+                  eq(musicPlaylistsTable.revision, current.revision),
+                ),
               )
               .returning({ id: musicPlaylistsTable.id }),
             db.delete(musicPlaylistTracksTable).where(
@@ -482,8 +516,8 @@ export const importSpotifyPlaylistEffect = (
                     from ${musicPlaylistsTable}
                     where ${musicPlaylistsTable.id} = ${current.id}
                       and ${musicPlaylistsTable.revision} = ${revision}
-                  )`
-              )
+                  )`,
+              ),
             ),
             ...tracks.map((track, position) =>
               db
@@ -494,22 +528,23 @@ export const importSpotifyPlaylistEffect = (
                       playlistId: sql<string>`${current.id}`.as('playlistId'),
                       trackId: sql<string>`${track.trackId}`.as('trackId'),
                       position: sql<number>`${position}`.as('position'),
-                      addedAt: sql<Date>`${Date.now()}`.as('addedAt')
+                      addedAt: sql<Date>`${Date.now()}`.as('addedAt'),
                     })
                     .from(musicPlaylistsTable)
                     .where(
                       and(
                         eq(musicPlaylistsTable.id, current.id),
-                        eq(musicPlaylistsTable.revision, revision)
-                      )
-                    )
+                        eq(musicPlaylistsTable.revision, revision),
+                      ),
+                    ),
                 )
                 .onConflictDoUpdate({
                   target: [musicPlaylistTracksTable.playlistId, musicPlaylistTracksTable.trackId],
-                  set: { position }
-                })
-            )
+                  set: { position },
+                }),
+            ),
           ])
+
           if (advanced.length === 0) continue
 
           const resultRows = await db
@@ -517,14 +552,16 @@ export const importSpotifyPlaylistEffect = (
             .from(musicPlaylistsTable)
             .where(eq(musicPlaylistsTable.id, current.id))
             .limit(1)
+
           const updated = resultRows[0]
+
           if (!updated) throw new Error('Spotify playlist no longer exists')
 
           return {
             playlist: updated,
             trackCount: data.tracks.length,
             createdTrackCount: tracks.filter((track) => track.created).length,
-            reusedTrackCount: tracks.filter((track) => !track.created).length
+            reusedTrackCount: tracks.filter((track) => !track.created).length,
           }
         }
 
@@ -534,8 +571,8 @@ export const importSpotifyPlaylistEffect = (
         new DatabaseError({
           message: `Failed to import Spotify playlist: ${getErrorMessage(e)}`,
           operation: 'insert',
-          table: 'music_playlists'
-        })
+          table: 'music_playlists',
+        }),
     })
 
     return result
@@ -557,7 +594,7 @@ export const syncPlaylistLinksEffect = (identity: CanonicalMusicIdentityService)
         entityId: playlistId,
         actorId: 'playlist_sync',
         origin: 'playlist_enrichment',
-        artworkDelivery: 'best_effort'
+        artworkDelivery: 'best_effort',
       })
       .pipe(
         Effect.catchTag('MusicIdentitySourceLinkNotFound', (error) =>
@@ -567,12 +604,13 @@ export const syncPlaylistLinksEffect = (identity: CanonicalMusicIdentityService)
               {
                 playlistId,
                 entityType: error.entityType,
-                entityId: error.entityId
-              }
+                entityId: error.entityId,
+              },
             ),
-            Effect.succeed(undefined)
-          )
-        )
+            Effect.succeed(undefined),
+          ),
+        ),
       )
+
     return yield* enrichPlaylistLinksEffect(identity)(playlistId)
   })

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+
 import { Badge } from './badge'
 import { Button } from './button'
 import { Card, CardContent, CardHeader, CardTitle } from './card'
@@ -13,17 +14,17 @@ export interface ArtistMetadata {
   name: string
   bio?: string | null
   imageUrl?: string | null
-  genres?: string[] | null
+  genres?: Array<string> | null
   slug: string
   publishedAt?: Date | string | null
 }
 
 export interface AlbumMetadata {
   title: string
-  artistNames?: string[] | null
+  artistNames?: Array<string> | null
   releaseDate?: Date | string | null
   coverImageUrl?: string | null
-  genres?: string[] | null
+  genres?: Array<string> | null
   albumType?: string | null
   slug: string
   publishedAt?: Date | string | null
@@ -31,7 +32,7 @@ export interface AlbumMetadata {
 
 export interface TrackMetadata {
   title: string
-  artistNames?: string[] | null
+  artistNames?: Array<string> | null
   coverImageUrl?: string | null
   trackNumber?: number | null
   slug: string
@@ -53,8 +54,8 @@ export interface LabelMetadata {
   bannerImageUrl?: string | null
   slug: string
   content: string
-  tags?: string[] | null
-  genres?: string[] | null
+  tags?: Array<string> | null
+  genres?: Array<string> | null
   publishedAt?: Date | string | null
 }
 
@@ -94,7 +95,7 @@ function MetadataForm<T>({
   initialData,
   onSubmit,
   isSaving = false,
-  children
+  children,
 }: {
   initialData: T
   onSubmit: (data: T) => void
@@ -127,21 +128,23 @@ function MetadataForm<T>({
 
 function toDateInputValue(d: Date | string | null | undefined): string {
   if (!d) return ''
+
   return new Date(d).toISOString().split('T')[0]
 }
 
 function GenreTagInput({
   value,
-  onChange
+  onChange,
 }: {
-  value: string[] | null | undefined
-  onChange: (v: string[]) => void
+  value: Array<string> | null | undefined
+  onChange: (v: Array<string>) => void
 }) {
   const tags = value ?? []
   const [input, setInput] = useState('')
 
   function addTag(raw: string) {
     const trimmed = raw.trim().toLowerCase()
+
     if (!trimmed || tags.includes(trimmed)) return
     onChange([...tags, trimmed])
     setInput('')
@@ -188,7 +191,7 @@ function GenreTagInput({
 
 function ImageField({
   value,
-  onChange
+  onChange,
 }: {
   value: string | null | undefined
   onChange: (v: string) => void
@@ -219,7 +222,7 @@ export function MusicEntityMetadataForm({
   entityType,
   initialData,
   onSubmit,
-  isSaving = false
+  isSaving = false,
 }: MusicEntityMetadataFormProps) {
   if (entityType === 'artist') {
     return (
@@ -515,7 +518,7 @@ function Row({ children }: { children: React.ReactNode }) {
 function Field({
   label,
   children,
-  className
+  className,
 }: {
   label: string
   children: React.ReactNode

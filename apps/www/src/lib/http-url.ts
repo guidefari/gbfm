@@ -1,4 +1,5 @@
 const VPS_BASE_URL = import.meta.env.VITE_VPS_BASE_URL || ''
+
 const browserOrigin = () => window.location.origin
 
 export function makeApiUrl(path: string, baseUrl: string) {
@@ -7,6 +8,7 @@ export function makeApiUrl(path: string, baseUrl: string) {
 
 export function makeApiUrlObj(path: string, baseUrl: string, origin: string) {
   const withApi = `/api${path}`
+
   return baseUrl ? new URL(`${baseUrl}${withApi}`) : new URL(withApi, origin)
 }
 

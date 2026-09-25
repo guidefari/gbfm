@@ -1,4 +1,5 @@
 import { expect, test } from 'vitest'
+
 import { canCreatePosts, hasMinRole } from './index'
 
 test('enforces the role hierarchy and denies post creation to missing or unrecognized roles', () => {
@@ -6,14 +7,14 @@ test('enforces the role hierarchy and denies post creation to missing or unrecog
     hasMinRole('admin', 'editor'),
     hasMinRole('editor', 'editor'),
     hasMinRole('creator', 'editor'),
-    hasMinRole('user', 'creator')
+    hasMinRole('user', 'creator'),
   ]).toEqual([true, true, false, false])
 
   expect([null, undefined, '', 'superuser'].map((role) => hasMinRole(role, 'creator'))).toEqual([
     false,
     false,
     false,
-    false
+    false,
   ])
 
   expect(['creator', 'editor', 'admin', 'user', null].map(canCreatePosts)).toEqual([
@@ -21,6 +22,6 @@ test('enforces the role hierarchy and denies post creation to missing or unrecog
     true,
     true,
     false,
-    false
+    false,
   ])
 })

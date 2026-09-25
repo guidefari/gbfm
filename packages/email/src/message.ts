@@ -9,7 +9,7 @@ export const emailTemplateNames = [
   'new-user-notification',
   'newsletter-admin-notification',
   'newsletter-unsubscribe-link',
-  'newsletter-welcome'
+  'newsletter-welcome',
 ] as const
 
 /** The name of an email template supported by this package. */

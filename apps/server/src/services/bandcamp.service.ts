@@ -1,4 +1,5 @@
-import { Effect, Schema } from 'effect'
+import { Effect, Option, Schema } from 'effect'
+
 import { getErrorMessage, MusicProviderRequestFailed, MusicProviderResponseInvalid } from '@/errors'
 
 export interface BandcampAlbum {
@@ -21,9 +22,10 @@ export interface BandcampAlbum {
 }
 
 const BandcampArtistSchema = Schema.Struct({ name: Schema.String })
+
 const BandcampArtistOrArraySchema = Schema.Union([
   BandcampArtistSchema,
-  Schema.Array(BandcampArtistSchema)
+  Schema.Array(BandcampArtistSchema),
 ])
 
 const BandcampTrackListSchema = Schema.Struct({
@@ -32,10 +34,10 @@ const BandcampTrackListSchema = Schema.Struct({
       item: Schema.Struct({
         name: Schema.String,
         duration: Schema.String,
-        '@id': Schema.String
-      })
-    })
-  )
+        '@id': Schema.String,
+      }),
+    }),
+  ),
 })
 
 const BandcampJsonLdSchema = Schema.Struct({
@@ -47,16 +49,17 @@ const BandcampJsonLdSchema = Schema.Struct({
   byArtist: Schema.optional(BandcampArtistOrArraySchema),
   inAlbum: Schema.optional(
     Schema.Struct({
-      byArtist: Schema.optional(BandcampArtistOrArraySchema)
-    })
+      byArtist: Schema.optional(BandcampArtistOrArraySchema),
+    }),
   ),
   track: Schema.optional(BandcampTrackListSchema),
-  description: Schema.optional(Schema.String)
+  description: Schema.optional(Schema.String),
 })
 
 const decodeBandcampJsonLd = Schema.decodeUnknownOption(BandcampJsonLdSchema)
 
 const bandcampCache = new Map<string, { data: BandcampAlbum; timestamp: number }>()
+
 const CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 hours
 
 // A track page's top-level byArtist is the label, not the performer — the
@@ -66,6 +69,7 @@ const artistForJsonLd = (raw: typeof BandcampJsonLdSchema.Type): BandcampAlbum['
 
 const parseBandcampJsonLd = (json: string): BandcampAlbum | undefined => {
   let parsed: unknown
+
   try {
     parsed = JSON.parse(json)
   } catch {
@@ -73,10 +77,12 @@ const parseBandcampJsonLd = (json: string): BandcampAlbum | undefined => {
   }
 
   const decoded = decodeBandcampJsonLd(parsed)
-  if (decoded._tag === 'None') return undefined
+
+  if (Option.isNone(decoded)) return undefined
   const raw = decoded.value
 
   const image = Array.isArray(raw.image) ? raw.image[0] : raw.image
+
   return {
     '@type': raw['@type'] === 'MusicRecording' ? 'MusicRecording' : 'MusicAlbum',
     name: raw.name ?? '',
@@ -85,7 +91,7 @@ const parseBandcampJsonLd = (json: string): BandcampAlbum | undefined => {
     datePublished: raw.datePublished ?? new Date().toISOString(),
     isrcCode: raw.isrcCode,
     track: raw.track,
-    description: raw.description
+    description: raw.description,
   }
 }
 
@@ -96,42 +102,48 @@ const parseBandcampHtml = (html: string) =>
       name: '',
       byArtist: { name: '' },
       image: '',
-      datePublished: new Date().toISOString()
+      datePublished: new Date().toISOString(),
     }
 
     const titleMatch = html.match(
-      /<div[^>]*id="name-section"[^>]*>[\s\S]*?<h2[^>]*class="trackTitle"[^>]*>([^<]+)<\/h2>/
+      /<div[^>]*id="name-section"[^>]*>[\s\S]*?<h2[^>]*class="trackTitle"[^>]*>([^<]+)<\/h2>/,
     )
+
     if (titleMatch?.[1]) {
       metadata.name = titleMatch[1].trim()
     } else {
       return yield* new MusicProviderResponseInvalid({
         message: 'Could not extract title from Bandcamp page',
-        operation: 'parseBandcampHtml'
+        operation: 'parseBandcampHtml',
       })
     }
 
     const artistMatch = html.match(
-      /<div[^>]*id="name-section"[^>]*>[\s\S]*?<h3[^>]*>([\s\S]*?)<\/h3>/
+      /<div[^>]*id="name-section"[^>]*>[\s\S]*?<h3[^>]*>([\s\S]*?)<\/h3>/,
     )
+
     if (artistMatch?.[1]) {
       const artistText = artistMatch[1].replace(/<[^>]+>/g, '').trim()
       const byMatch = artistText.match(/by\s+(.+)/i)
+
       if (byMatch?.[1]) {
         metadata.byArtist = { name: byMatch[1].trim() }
       }
     }
 
     const imageMatch = html.match(/<a[^>]*class="popupImage"[^>]*href="([^"]+)"/)
+
     if (imageMatch?.[1]) {
       metadata.image = imageMatch[1]
     }
 
     const dateMatch = html.match(
-      /(?:released|release date)[^>]*(\d{1,2}\s+\w+\s+\d{4}|\w+\s+\d{1,2},?\s+\d{4}|\d{4}-\d{2}-\d{2})/i
+      /(?:released|release date)[^>]*(\d{1,2}\s+\w+\s+\d{4}|\w+\s+\d{1,2},?\s+\d{4}|\d{4}-\d{2}-\d{2})/i,
     )
+
     if (dateMatch?.[1]) {
       const parsedDate = new Date(dateMatch[1])
+
       if (!Number.isNaN(parsedDate.getTime())) {
         metadata.datePublished = parsedDate.toISOString()
       }
@@ -144,24 +156,27 @@ export const getBandcampMetadata = (url: string) =>
   Effect.gen(function* () {
     const cacheKey = url
     const cached = bandcampCache.get(cacheKey)
+
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
       yield* Effect.annotateCurrentSpan('cache.hit', true)
+
       return cached.data
     }
+
     yield* Effect.annotateCurrentSpan('cache.hit', false)
 
     const response = yield* Effect.tryPromise({
       try: () =>
         fetch(url, {
           headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; MusicMetadataBot/1.0)'
-          }
+            'User-Agent': 'Mozilla/5.0 (compatible; MusicMetadataBot/1.0)',
+          },
         }),
       catch: (error) =>
         new MusicProviderRequestFailed({
           message: `Failed to fetch Bandcamp page: ${getErrorMessage(error)}`,
-          operation: 'getBandcampMetadata'
-        })
+          operation: 'getBandcampMetadata',
+        }),
     })
 
     yield* Effect.annotateCurrentSpan('http.status_code', response.status)
@@ -170,7 +185,7 @@ export const getBandcampMetadata = (url: string) =>
       return yield* new MusicProviderRequestFailed({
         message: `Bandcamp page returned ${response.status}`,
         operation: 'getBandcampMetadata',
-        statusCode: response.status
+        statusCode: response.status,
       })
     }
 
@@ -179,13 +194,14 @@ export const getBandcampMetadata = (url: string) =>
       catch: (error) =>
         new MusicProviderRequestFailed({
           message: `Failed to read Bandcamp page content: ${getErrorMessage(error)}`,
-          operation: 'getBandcampMetadata'
-        })
+          operation: 'getBandcampMetadata',
+        }),
     })
 
     let metadata: BandcampAlbum | undefined
 
     const jsonLdMatch = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)
+
     if (jsonLdMatch?.[1]) {
       metadata = parseBandcampJsonLd(jsonLdMatch[1] || '') || metadata
     }
@@ -202,18 +218,21 @@ export const getBandcampMetadata = (url: string) =>
 export const getBandcampMetadataWithSpan = (url: string) =>
   getBandcampMetadata(url).pipe(
     Effect.withSpan('bandcamp.getMetadata', {
-      attributes: { 'external.system': 'bandcamp' }
-    })
+      attributes: { 'external.system': 'bandcamp' },
+    }),
   )
 
 export const parseBandcampDuration = (duration: string): number => {
   const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/)
+
   if (match) {
     const hours = parseInt(match[1] || '0', 10)
     const minutes = parseInt(match[2] || '0', 10)
     const seconds = parseInt(match[3] || '0', 10)
+
     return hours * 3600 + minutes * 60 + seconds
   }
+
   return 0
 }
 
@@ -223,15 +242,16 @@ export const calculateBandcampTotalDuration = (metadata: BandcampAlbum): number 
   return metadata.track.itemListElement.reduce(
     (total, track) =>
       total + (track.item.duration ? parseBandcampDuration(track.item.duration) : 0),
-    0
+    0,
   )
 }
 
 const isArtistList = (
-  value: BandcampAlbum['byArtist']
+  value: BandcampAlbum['byArtist'],
 ): value is ReadonlyArray<{ readonly name: string }> => Array.isArray(value)
 
 export const extractBandcampArtist = (metadata: BandcampAlbum): string => {
   const byArtist = metadata.byArtist
+
   return isArtistList(byArtist) ? byArtist.map((a) => a.name).join(', ') : byArtist.name
 }

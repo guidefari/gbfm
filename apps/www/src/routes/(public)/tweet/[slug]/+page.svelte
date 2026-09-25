@@ -11,19 +11,27 @@
   import type { PageProps } from './$types'
 
   let { data, params }: PageProps = $props()
+
   let draft = $state('')
+
   let replyOpen = $state(false)
+
   let posting = $state(false)
+
   let status = $state('')
+
   let copied = $state(false)
 
   const title = $derived(text(data.item?.title, text(data.item?.content, 'Tweet')).slice(0, 120))
+
   const author = $derived(records(data.item?.creators)[0] ?? null)
+
   const rootIsCurrent = $derived(text(data.parent?.slug) === params.slug)
 
   const postReply = async () => {
     if (!draft.trim() || posting) return
     posting = true
+
     const response = await fetch(
       `/api/content/posts/micro/${encodeURIComponent(params.slug)}/replies`,
       {
@@ -33,6 +41,7 @@
         body: JSON.stringify({ content: draft.trim() })
       }
     ).catch(() => null)
+
     if (response?.ok) {
       draft = ''
       replyOpen = false
@@ -54,6 +63,7 @@
     canvas.width = 1200
     canvas.height = 630
     const context = canvas.getContext('2d')
+
     if (!context) return
     context.fillStyle = '#16415a'
     context.fillRect(0, 0, canvas.width, canvas.height)
@@ -62,21 +72,26 @@
     const words = text(data.item.content, title).split(/\s+/)
     let line = ''
     let y = 120
+
     for (const word of words) {
       const next = `${line}${word} `
+
       if (context.measureText(next).width > 1000) {
         context.fillText(line, 100, y)
         line = `${word} `
         y += 62
       } else line = next
     }
+
     context.fillText(line, 100, y)
     context.fillStyle = '#55cef6'
     context.font = 'bold 30px JetBrainsMono, monospace'
     context.fillText('goosebumps.fm', 100, 560)
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
+
     if (!blob) return
     const file = new File([blob], `${params.slug}.png`, { type: 'image/png' })
+
     if (navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], title })
     else {
       const link = document.createElement('a')

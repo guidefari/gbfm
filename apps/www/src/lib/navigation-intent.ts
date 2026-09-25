@@ -9,6 +9,6 @@ let currentIntent: Fiber.Fiber<void, NavigationIntentFailure> | null = null
 export const runNavigationIntent = <E>(intent: Effect.Effect<void, E>) => {
   if (currentIntent) Effect.runFork(Fiber.interrupt(currentIntent))
   currentIntent = Effect.runFork(
-    intent.pipe(Effect.mapError((cause) => new NavigationIntentFailure({ cause })))
+    intent.pipe(Effect.mapError((cause) => new NavigationIntentFailure({ cause }))),
   )
 }

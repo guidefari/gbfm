@@ -1,1 +1,3 @@
-<script lang="ts">import { page } from '$app/state'; import NewsletterForm from '@/lib/components/account/NewsletterForm.svelte'; const token=page.url.searchParams.get('token') ?? undefined</script><svelte:head><title>Unsubscribe</title></svelte:head><NewsletterForm mode="unsubscribe" {token} />
+<script lang="ts">import { page } from '$app/state'; import NewsletterForm from '@/lib/components/account/NewsletterForm.svelte';
+
+ const token=page.url.searchParams.get('token') ?? undefined</script><svelte:head><title>Unsubscribe</title></svelte:head><NewsletterForm mode="unsubscribe" {token} />

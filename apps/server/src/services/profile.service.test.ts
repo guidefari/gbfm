@@ -1,15 +1,20 @@
 import { randomUUID } from 'node:crypto'
+
 import { Effect, Layer } from 'effect'
 import { beforeAll, describe, expect, test } from 'vitest'
-import { DatabaseTestLayer, db } from '@/test/database'
-import { withTestLayer } from '@/test/effect'
+
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { user } from '@/db/auth.schema'
 import { showCreators, showsTable } from '@/db/show.schema'
+import { DatabaseTestLayer, db } from '@/test/database'
+import { withTestLayer } from '@/test/effect'
+
 import { ProfileService, ProfileServiceLayer } from './profile.service'
 
 const username = `profile-${randomUUID().slice(0, 8)}`
+
 const ownerId = `profile-owner-${randomUUID()}`
+
 const otherId = `profile-other-${randomUUID()}`
 
 const getService = () =>
@@ -18,8 +23,8 @@ const getService = () =>
       Effect.gen(function* () {
         return yield* ProfileService
       }),
-      ProfileServiceLayer.pipe(Layer.provide(DatabaseTestLayer))
-    )
+      ProfileServiceLayer.pipe(Layer.provide(DatabaseTestLayer)),
+    ),
   )
 
 const insertAudio = async (values: {
@@ -39,7 +44,7 @@ const insertAudio = async (values: {
       url: 'https://example.com/audio.mp3',
       showId: values.showId ?? null,
       thumbnailUrl: values.thumbnailUrl ?? null,
-      draft: values.draft ?? false
+      draft: values.draft ?? false,
     })
     .returning()
 
@@ -48,6 +53,7 @@ const insertAudio = async (values: {
   }
 
   await db.insert(audioCreators).values({ audioId: audio.id, creatorId: values.creatorId })
+
   return audio
 }
 
@@ -57,14 +63,14 @@ beforeAll(async () => {
       id: ownerId,
       name: 'Profile owner',
       email: `${ownerId}@example.com`,
-      username
+      username,
     },
     {
       id: otherId,
       name: 'Profile other',
       email: `${otherId}@example.com`,
-      username: `${username}-other`
-    }
+      username: `${username}-other`,
+    },
   ])
 })
 
@@ -88,7 +94,7 @@ describe('getPublicProfile mixes', () => {
     const draft = await insertAudio({
       slug: `draft-${randomUUID()}`,
       creatorId: ownerId,
-      draft: true
+      draft: true,
     })
 
     const profile = await Effect.runPromise(service.getPublicProfile(username))
@@ -106,7 +112,7 @@ describe('getPublicProfile mixes', () => {
         title: `Show ${showSlug}`,
         slug: showSlug,
         content: '',
-        thumbnailUrl: 'https://example.com/show-art.png'
+        thumbnailUrl: 'https://example.com/show-art.png',
       })
       .returning()
 
@@ -119,22 +125,23 @@ describe('getPublicProfile mixes', () => {
     const episode = await insertAudio({
       slug: `episode-${randomUUID()}`,
       creatorId: ownerId,
-      showId: show.id
+      showId: show.id,
     })
+
     const standalone = await insertAudio({
       slug: `standalone-${randomUUID()}`,
       creatorId: ownerId,
-      thumbnailUrl: 'https://example.com/own-art.png'
+      thumbnailUrl: 'https://example.com/own-art.png',
     })
 
     const profile = await Effect.runPromise(service.getPublicProfile(username))
     const mixes = profile.content.mixes
 
     expect(mixes.find((mix) => mix.id === episode.id)?.thumbnailUrl).toBe(
-      'https://example.com/show-art.png'
+      'https://example.com/show-art.png',
     )
     expect(mixes.find((mix) => mix.id === standalone.id)?.thumbnailUrl).toBe(
-      'https://example.com/own-art.png'
+      'https://example.com/own-art.png',
     )
   })
 })

@@ -17,13 +17,13 @@ export interface PostEntry {
 }
 
 export interface SitemapData {
-  mixes: SitemapEntry[]
-  tracks: SitemapEntry[]
-  shows: SitemapEntry[]
-  releases: SitemapEntry[]
-  labels: SitemapEntry[]
-  profiles: ProfileEntry[]
-  posts: PostEntry[]
+  mixes: Array<SitemapEntry>
+  tracks: Array<SitemapEntry>
+  shows: Array<SitemapEntry>
+  releases: Array<SitemapEntry>
+  labels: Array<SitemapEntry>
+  profiles: Array<ProfileEntry>
+  posts: Array<PostEntry>
 }
 
 export const formatDate = (date: Date): string => {
@@ -48,7 +48,7 @@ export const buildUrlEntry = (
   loc: string,
   lastmod: Date,
   changefreq: string = 'weekly',
-  priority: string = '0.8'
+  priority: string = '0.8',
 ): string => {
   return `  <url>
     <loc>${escapeXmlText(loc)}</loc>
@@ -60,7 +60,7 @@ export const buildUrlEntry = (
 
 export const buildSitemapXml = (data: SitemapData, siteUrl: string): string => {
   const now = new Date()
-  const urls: string[] = []
+  const urls: Array<string> = []
 
   // Homepage
   urls.push(buildUrlEntry(siteUrl, now, 'daily', '1.0'))
@@ -89,7 +89,7 @@ export const buildSitemapXml = (data: SitemapData, siteUrl: string): string => {
   // Releases
   for (const release of data.releases) {
     urls.push(
-      buildUrlEntry(`${siteUrl}/releases/${release.slug}`, release.updatedAt, 'monthly', '0.6')
+      buildUrlEntry(`${siteUrl}/releases/${release.slug}`, release.updatedAt, 'monthly', '0.6'),
     )
   }
 
@@ -109,6 +109,7 @@ export const buildSitemapXml = (data: SitemapData, siteUrl: string): string => {
   for (const post of data.posts) {
     const loc =
       post.type === 'micro' ? `${siteUrl}/tweet/${post.slug}` : `${siteUrl}/editorial/${post.slug}`
+
     urls.push(buildUrlEntry(loc, post.updatedAt, 'weekly', '0.7'))
   }
 

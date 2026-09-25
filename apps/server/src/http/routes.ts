@@ -1,22 +1,23 @@
 import { Api } from '@gbfm/api/api'
 import type { ReadinessCheckFailedError } from '@gbfm/api/errors'
+import { Effect, Layer } from 'effect'
 import * as FileSystem from 'effect/FileSystem'
 import * as Path from 'effect/Path'
-import { Effect, Layer } from 'effect'
 import { HttpRouter, HttpServer, HttpServerRequest, HttpServerResponse } from 'effect/unstable/http'
 import { HttpApiBuilder } from 'effect/unstable/httpapi'
+
 import { AdminHandlersLive } from '@/http/admin.handlers'
 import { AudioHandlersLive } from '@/http/audio.handlers'
+import { DocsLive } from '@/http/docs'
 import { EmailHandlersLive } from '@/http/email.handlers'
 import { FavoritesHandlersLive } from '@/http/favorites.handlers'
 import { FileManagerHandlersLive } from '@/http/file-manager.handlers'
 import { CorsLive, RequestLoggerLive, SentryDefectLive } from '@/http/global-middleware'
 import { checkDatabase, makeHealthHandlers } from '@/http/health.handlers'
-import { DocsLive } from '@/http/docs'
-import { InviteHandlersLive } from '@/http/invite.handlers'
 import { InternalHandlersLive } from '@/http/internal.handlers'
-import { MusicHandlersLive } from '@/http/music.handlers'
+import { InviteHandlersLive } from '@/http/invite.handlers'
 import { MusicRemindersHandlersLive } from '@/http/music-reminders.handlers'
+import { MusicHandlersLive } from '@/http/music.handlers'
 import { NavigationHandlersLive } from '@/http/navigation.handlers'
 import { NewsletterHandlersLive } from '@/http/newsletter.handlers'
 import { PostHandlersLive } from '@/http/post.handlers'
@@ -25,8 +26,8 @@ import { ReleaseHandlersLive } from '@/http/release.handlers'
 import { ResolveHandlersLive } from '@/http/resolve.handlers'
 import { SearchHandlersLive } from '@/http/search.handlers'
 import { SearchCacheHeaderLive } from '@/http/search.middleware'
-import { SiteMetadataHandlersLive } from '@/http/site-metadata.handlers'
 import { ShowsHandlersLive } from '@/http/shows.handlers'
+import { SiteMetadataHandlersLive } from '@/http/site-metadata.handlers'
 import { SiteRoutesLive } from '@/http/site-routes'
 import { SpotifyHandlersLive } from '@/http/spotify.handlers'
 import { UploadHandlersLive } from '@/http/upload.handlers'
@@ -36,8 +37,8 @@ import { localRequestMiddleware } from '@/lib/local-request-tracing'
 import { AuthMiddlewareLive } from '@/middleware/auth.impl'
 import { IdentityResolverLive } from '@/middleware/optional-auth.impl'
 import { prepareAuthRequest } from '@/routes/user/better-auth.routes'
-import { AppLoggerLive } from '@/services/logger.service'
 import type { AppLayer } from '@/runtime/services'
+import { AppLoggerLive } from '@/services/logger.service'
 
 type AppServicesLive = Layer.Layer<Layer.Success<ReturnType<typeof AppLayer>>>
 
@@ -47,11 +48,13 @@ const betterAuthRoute = HttpRouter.add('*', '/auth/*', (request) =>
   Effect.gen(function* () {
     const auth = yield* Auth
     const webRequest = yield* HttpServerRequest.toWeb(request)
+
     const webResponse = yield* Effect.promise(() =>
-      Promise.resolve(auth.handler(prepareAuthRequest(webRequest)))
+      Promise.resolve(auth.handler(prepareAuthRequest(webRequest))),
     )
+
     return HttpServerResponse.fromWeb(webResponse)
-  })
+  }),
 )
 
 // Step 3a/3b (docs/migration-effect-http-api.md): real HttpApi groups taking
@@ -72,6 +75,7 @@ export const createWebHandler = (options: {
   readonly localTracing?: boolean
 }) => {
   const appServices = options.appServicesLive
+
   const ApiLive = HttpApiBuilder.layer(Api).pipe(
     Layer.provide(makeHealthHandlers(options?.healthDatabaseCheck ?? checkDatabase)),
     Layer.provide(InternalHandlersLive),
@@ -91,8 +95,8 @@ export const createWebHandler = (options: {
         FavoritesHandlersLive,
         MusicRemindersHandlersLive,
         NavigationHandlersLive,
-        NewsletterHandlersLive
-      )
+        NewsletterHandlersLive,
+      ),
     ),
     Layer.provide(FileManagerHandlersLive),
     Layer.provide(SpotifyHandlersLive),
@@ -100,7 +104,7 @@ export const createWebHandler = (options: {
     Layer.provide(Layer.mergeAll(UserHandlersLive, UploadHandlersLive)),
     // These middleware services are also yielded directly by built handlers. Keep them in the
     // layer output so toWebHandler can prove no request-time context remains.
-    Layer.provideMerge(Layer.mergeAll(AuthMiddlewareLive, IdentityResolverLive))
+    Layer.provideMerge(Layer.mergeAll(AuthMiddlewareLive, IdentityResolverLive)),
   )
 
   return HttpRouter.toWebHandler(
@@ -121,7 +125,7 @@ export const createWebHandler = (options: {
       DocsLive,
       CorsLive.pipe(Layer.provide(appServices)),
       RequestLoggerLive,
-      SentryDefectLive
+      SentryDefectLive,
     ).pipe(
       Layer.provideMerge(appServices),
       // RequestLoggerLive is the single structured request event; disable
@@ -129,14 +133,17 @@ export const createWebHandler = (options: {
       Layer.provide(HttpRouter.disableLogger),
       Layer.provideMerge(
         Layer.mergeAll(FileSystem.layerNoop({}), Path.layer).pipe(
-          Layer.provideMerge(HttpServer.layerServices)
-        )
+          Layer.provideMerge(HttpServer.layerServices),
+        ),
       ),
       // Effect.logError inside health handlers must reach the app's real
       // Pino + Sentry logger, not Effect's bare default console logger --
       // otherwise a DB outage's cause is logged nowhere on-call looks.
-      Layer.provideMerge(AppLoggerLive.pipe(Layer.provide(appServices)))
+      Layer.provideMerge(AppLoggerLive.pipe(Layer.provide(appServices))),
     ),
-    { disableLogger: true, middleware: options.localTracing ? localRequestMiddleware : undefined }
+    {
+      disableLogger: true,
+      middleware: options.localTracing ? localRequestMiddleware : undefined,
+    },
   )
 }

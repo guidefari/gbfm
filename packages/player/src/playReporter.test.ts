@@ -5,11 +5,12 @@ import { describe, expect, it } from 'vitest'
 
 describe('makePlayReporterLayer', () => {
   it('delivers a fresh play once and dedups within the window', async () => {
-    const recorded: string[] = []
+    const recorded: Array<string> = []
+
     const layer = makePlayReporterLayer((trackId) =>
       Effect.sync(() => {
         recorded.push(trackId)
-      })
+      }),
     ).pipe(Layer.provideMerge(PlayerStorageInMemory))
 
     await Effect.gen(function* () {
@@ -23,8 +24,10 @@ describe('makePlayReporterLayer', () => {
 
   it('swallows deliver failures so playback is not interrupted', async () => {
     let delivered = false
+
     const layer = makePlayReporterLayer(() => {
       delivered = true
+
       return Effect.fail('network')
     }).pipe(Layer.provideMerge(PlayerStorageInMemory))
 

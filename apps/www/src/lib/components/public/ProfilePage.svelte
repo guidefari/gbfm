@@ -6,8 +6,11 @@
   import { record, records, text, type PublicRecord } from '@/lib/public-content'
 
   let { item, failure, canonical }: { item: PublicRecord | null; failure: string | null; canonical: string } = $props()
+
   const content = $derived(record(item?.content))
+
   const socialLinks = $derived(records(item?.socialLinks))
+
   const sections = $derived([
     { title: 'Mixes', items: records(content?.mixes), href: (entry: PublicRecord) => `/mixes/${entry.slug}` },
     { title: 'Shows', items: records(content?.shows), href: (entry: PublicRecord) => `/shows/${entry.slug}` },

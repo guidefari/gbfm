@@ -4,6 +4,7 @@
 // non-browser test environment. http-url.ts only touches `window` lazily
 // inside functions this module never calls.
 import { apiUrl } from '@/lib/http-url'
+
 import { parsePresignImageResponse } from './image-upload-response'
 
 export interface ImageUploadResult {
@@ -36,7 +37,7 @@ export class HttpStatusError extends Error {
 // httpRequest.
 export async function uploadImageDirectToS3(
   file: File,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<ImageUploadResult> {
   const presignResponse = await fetch(apiUrl('/upload/image/presign'), {
     method: 'POST',
@@ -45,16 +46,16 @@ export async function uploadImageDirectToS3(
     body: JSON.stringify({
       fileName: file.name,
       contentType: file.type,
-      fileSize: file.size
+      fileSize: file.size,
     }),
-    signal
+    signal,
   })
 
   if (!presignResponse.ok) {
     const errorText = await presignResponse.text()
     throw new HttpStatusError(
       presignResponse.status,
-      `Image presign failed (${presignResponse.status}): ${errorText || presignResponse.statusText}`
+      `Image presign failed (${presignResponse.status}): ${errorText || presignResponse.statusText}`,
     )
   }
 
@@ -65,13 +66,13 @@ export async function uploadImageDirectToS3(
     method: 'PUT',
     body: file,
     headers: { 'Content-Type': file.type },
-    signal
+    signal,
   })
 
   if (!putResponse.ok) {
     throw new HttpStatusError(
       putResponse.status,
-      `Image upload to S3 failed (${putResponse.status})`
+      `Image upload to S3 failed (${putResponse.status})`,
     )
   }
 

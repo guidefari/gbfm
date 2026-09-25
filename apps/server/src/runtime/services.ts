@@ -1,30 +1,30 @@
 import { Layer } from 'effect'
-import { Database } from '@/db/layer'
+
+import type { Database } from '@/db/layer'
 import { AuthLive } from '@/lib/auth'
 import { MdxServiceLayer } from '@/lib/mdx'
 import type { SentryService } from '@/services/sentry.service'
-import { SitemapCache } from '@/services/sitemap-cache'
+import type { SitemapCache } from '@/services/sitemap-cache'
 
 export { Database, DatabaseLayer } from '@/db/layer'
 
 import { AudioServiceLayer } from '@/services/audio.service'
+import { CanonicalMusicIdentityLayer } from '@/services/canonical-music-identity'
+import { MusicCoverImageFetcher } from '@/services/canonical-music-identity/artwork-delivery'
 import { ConfigServiceLayer, type ConfigService } from '@/services/config.service'
 import { DeezerServiceLayer } from '@/services/deezer.service'
 import { EmailDeliveryLive } from '@/services/email-delivery.service'
 import type { EmailTransportService } from '@/services/email-transport.service'
 import { FavoriteServiceLayer } from '@/services/favorite.service'
 import { AppLoggerLive } from '@/services/logger.service'
-import { CanonicalMusicIdentityLayer } from '@/services/canonical-music-identity'
-import { MusicCoverImageFetcher } from '@/services/canonical-music-identity/artwork-delivery'
 import { MusicEntityServiceLayer } from '@/services/music-entity'
-import { MusicBrainzIdentityLive } from '@/services/musicbrainz-identity.service'
 import { MusicLinkScraperServiceLayer } from '@/services/music-link-scraper.service'
 import { MusicReminderServiceLayer } from '@/services/music-reminder.service'
-import { type PlaylistEnrichmentQueue } from '@/services/playlist-enrichment-queue'
+import { MusicBrainzIdentityLive } from '@/services/musicbrainz-identity.service'
+import type { NavigationLock } from '@/services/navigation-lock'
 import { NavigationRetentionServiceLayer } from '@/services/navigation-retention.service'
-import { type NavigationLock } from '@/services/navigation-lock'
-import { type SpotifyImportResolver } from '@/services/spotify-import-resolver.service'
 import { NavigationSessionServiceLayer } from '@/services/navigation.service'
+import type { PlaylistEnrichmentQueue } from '@/services/playlist-enrichment-queue'
 import { PostServiceLayer } from '@/services/post.service'
 import { ProfileServiceLayer } from '@/services/profile.service'
 import { type QRCodeService, QRCodeServiceUnavailableLayer } from '@/services/qrcode.service'
@@ -34,13 +34,14 @@ import { ResolveServiceLayer } from '@/services/resolve.service'
 import { S3ServiceLayer } from '@/services/s3.service'
 import { SearchServiceLayer } from '@/services/search.service'
 import { ShowServiceLayer, ShowSubscriptionServiceLayer } from '@/services/show.service'
+import type { SpotifyImportResolver } from '@/services/spotify-import-resolver.service'
 import { SpotifyServiceLayer } from '@/services/spotify.service'
-import { UploadAssetServiceLayer } from '@/services/upload-asset.service'
-import { UserServiceLayer } from '@/services/user.service'
 import {
   type ObjectStoreClient,
-  UnavailableObjectStoreClientLayer
+  UnavailableObjectStoreClientLayer,
 } from '@/services/storage/object-store-client'
+import { UploadAssetServiceLayer } from '@/services/upload-asset.service'
+import { UserServiceLayer } from '@/services/user.service'
 
 const DevToolsLive: Layer.Layer<never> = Layer.empty
 
@@ -77,12 +78,14 @@ export const AppLayer = ({
   config: configLive = ConfigServiceLayer,
   objectStore: objectStoreLive = UnavailableObjectStoreClientLayer,
   qrCode: qrCodeLive = QRCodeServiceUnavailableLayer,
-  musicCoverImageFetcher: musicCoverImageFetcherLive = Layer.succeed(MusicCoverImageFetcher, fetch)
+  musicCoverImageFetcher: musicCoverImageFetcherLive = Layer.succeed(MusicCoverImageFetcher, fetch),
 }: AppLayerOptions) => {
   const EmailDeliveryWithDependencies = EmailDeliveryLive.pipe(
-    Layer.provide(Layer.mergeAll(databaseLive, configLive, emailTransportLive))
+    Layer.provide(Layer.mergeAll(databaseLive, configLive, emailTransportLive)),
   )
+
   const UploadAssetDepsLive = Layer.mergeAll(configLive, UploadAssetServiceLayer)
+
   const BaseServicesLayer = Layer.mergeAll(
     EmailDeliveryWithDependencies,
     FavoriteServiceLayer,
@@ -96,15 +99,15 @@ export const AppLayer = ({
     spotifyImportResolverLive,
     NavigationSessionServiceLayer.pipe(
       Layer.provide(
-        PostServiceLayer.pipe(Layer.provide(MdxServiceLayer), Layer.provide(UploadAssetDepsLive))
+        PostServiceLayer.pipe(Layer.provide(MdxServiceLayer), Layer.provide(UploadAssetDepsLive)),
       ),
-      Layer.provide(navigationLockLive)
+      Layer.provide(navigationLockLive),
     ),
     ReminderSignalServiceLayer,
     MusicLinkScraperServiceLayer.pipe(
       Layer.provide(
-        Layer.mergeAll(SpotifyServiceLayer, DeezerServiceLayer, MusicBrainzIdentityLive)
-      )
+        Layer.mergeAll(SpotifyServiceLayer, DeezerServiceLayer, MusicBrainzIdentityLive),
+      ),
     ),
     AudioServiceLayer.pipe(Layer.provide(MdxServiceLayer), Layer.provide(UploadAssetDepsLive)),
     PostServiceLayer.pipe(Layer.provide(MdxServiceLayer), Layer.provide(UploadAssetDepsLive)),
@@ -119,20 +122,22 @@ export const AppLayer = ({
     ShowSubscriptionServiceLayer,
     UploadAssetServiceLayer,
     UserServiceLayer,
-    DevToolsLive
+    DevToolsLive,
   ).pipe(Layer.provideMerge(configLive), Layer.provide(databaseLive))
 
   const CanonicalMusicIdentityLive = CanonicalMusicIdentityLayer.pipe(
-    Layer.provide(BaseServicesLayer)
+    Layer.provide(BaseServicesLayer),
   )
+
   const MusicEntityLive = MusicEntityServiceLayer.pipe(
-    Layer.provide(Layer.mergeAll(BaseServicesLayer, CanonicalMusicIdentityLive))
+    Layer.provide(Layer.mergeAll(BaseServicesLayer, CanonicalMusicIdentityLive)),
   )
+
   const ServicesLayer = Layer.mergeAll(
     BaseServicesLayer,
     qrCodeLive,
     CanonicalMusicIdentityLive,
-    MusicEntityLive
+    MusicEntityLive,
   ).pipe(Layer.provide(databaseLive))
 
   return Layer.mergeAll(
@@ -140,8 +145,8 @@ export const AppLayer = ({
     databaseLive,
     sitemapCacheLive,
     AuthLive.pipe(
-      Layer.provide(Layer.mergeAll(databaseLive, configLive, EmailDeliveryWithDependencies))
+      Layer.provide(Layer.mergeAll(databaseLive, configLive, EmailDeliveryWithDependencies)),
     ),
-    AppLoggerLive.pipe(Layer.provide(configLive))
+    AppLoggerLive.pipe(Layer.provide(configLive)),
   ).pipe(Layer.provide(configLive))
 }

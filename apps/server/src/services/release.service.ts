@@ -1,38 +1,39 @@
 import { and, eq, exists, lte } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
-import { Database } from '@/db/layer'
+
 import { projectEntityLabels, replaceEntityLabels } from '@/db/labels'
-import { entityLabelsTable } from '@/db/tags.schema'
+import { Database } from '@/db/layer'
 import { musicLabelsTable } from '@/db/music-entity.schema'
 import {
   type InsertRelease,
   releasesTable,
   type SelectMdxCompiledRelease,
-  type SelectRelease
+  type SelectRelease,
 } from '@/db/release.schema'
+import { entityLabelsTable } from '@/db/tags.schema'
 import {
   ConflictError,
   DatabaseError,
   getErrorMessage,
   NotFoundError,
-  type UnauthorizedError
+  type UnauthorizedError,
 } from '@/errors'
 import { requireCreatorOrAdmin } from '@/lib/authorization'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
 
 export interface ReleaseService {
   readonly getBySlug: (
-    slug: string
+    slug: string,
   ) => Effect.Effect<SelectMdxCompiledRelease, DatabaseError | NotFoundError>
   readonly getBySlugForEdit: (
     slug: string,
     userId: string,
-    userRole: string
+    userRole: string,
   ) => Effect.Effect<SelectMdxCompiledRelease, DatabaseError | NotFoundError | UnauthorizedError>
   readonly create: (
     data: InsertRelease & { releaseDate: Date },
     userId: string,
-    userRole: string
+    userRole: string,
   ) => Effect.Effect<
     SelectRelease,
     DatabaseError | NotFoundError | ConflictError | UnauthorizedError
@@ -41,12 +42,12 @@ export interface ReleaseService {
     slug: string,
     userId: string,
     userRole: string,
-    data: Partial<InsertRelease> & { releaseDate?: Date }
+    data: Partial<InsertRelease> & { releaseDate?: Date },
   ) => Effect.Effect<SelectMdxCompiledRelease, DatabaseError | NotFoundError | UnauthorizedError>
   readonly delete: (
     slug: string,
     userId: string,
-    userRole: string
+    userRole: string,
   ) => Effect.Effect<void, DatabaseError | NotFoundError | UnauthorizedError>
 }
 
@@ -55,6 +56,7 @@ export const ReleaseService = Context.Service<ReleaseService>('ReleaseService')
 const getBySlugEffect = (slug: string, includeDrafts = false) =>
   Effect.gen(function* () {
     const db = yield* Database
+
     const releaseRecords = yield* Effect.tryPromise({
       try: () =>
         db
@@ -73,39 +75,45 @@ const getBySlugEffect = (slug: string, includeDrafts = false) =>
                       .where(
                         and(
                           eq(musicLabelsTable.id, releasesTable.labelId),
-                          lte(musicLabelsTable.publishedAt, new Date())
-                        )
-                      )
-                  )
-                )
+                          lte(musicLabelsTable.publishedAt, new Date()),
+                        ),
+                      ),
+                  ),
+                ),
           )
           .limit(1),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to fetch release: ${getErrorMessage(error)}`,
           operation: 'select',
-          table: 'releases'
-        })
+          table: 'releases',
+        }),
     })
 
     const release = releaseRecords[0]
+
     if (!release) {
       return yield* new NotFoundError({
         message: 'Release not found',
         resource: 'release',
-        id: slug
+        id: slug,
       })
     }
 
     const { tags } = yield* Effect.tryPromise({
       try: () => projectEntityLabels(db, 'release', release),
       catch: (error) =>
-        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+        new DatabaseError({
+          message: getErrorMessage(error),
+          operation: 'select',
+          table: 'labels',
+        }),
     })
+
     let processedRelease: SelectMdxCompiledRelease = {
       ...release,
       tags,
-      compiledContent: ''
+      compiledContent: '',
     }
 
     if (release.content) {
@@ -115,14 +123,14 @@ const getBySlugEffect = (slug: string, includeDrafts = false) =>
           new DatabaseError({
             message: `Failed to compile MDX: ${getErrorMessage(error)}`,
             operation: 'mdx_compile',
-            table: 'releases'
-          })
+            table: 'releases',
+          }),
       })
 
       if (isMDXCompilationResult(mdxResult)) {
         processedRelease = {
           ...processedRelease,
-          compiledContent: mdxResult.compiled
+          compiledContent: mdxResult.compiled,
         }
       }
     }
@@ -133,11 +141,12 @@ const getBySlugEffect = (slug: string, includeDrafts = false) =>
 const createEffect = (
   data: InsertRelease & { releaseDate: Date },
   userId: string,
-  userRole: string
+  userRole: string,
 ) =>
   Effect.gen(function* () {
     const db = yield* Database
     const { tags, ...releaseData } = data
+
     const labelRecords = yield* Effect.tryPromise({
       try: () =>
         db.select().from(musicLabelsTable).where(eq(musicLabelsTable.id, data.labelId)).limit(1),
@@ -145,16 +154,17 @@ const createEffect = (
         new DatabaseError({
           message: `Failed to fetch label: ${getErrorMessage(error)}`,
           operation: 'select',
-          table: 'music_labels'
-        })
+          table: 'music_labels',
+        }),
     })
 
     const label = labelRecords[0]
+
     if (!label) {
       return yield* new NotFoundError({
         message: 'Label not found',
         resource: 'label',
-        id: data.labelId
+        id: data.labelId,
       })
     }
 
@@ -166,31 +176,34 @@ const createEffect = (
           .insert(releasesTable)
           .values({
             ...releaseData,
-            releaseDate: data.releaseDate
+            releaseDate: data.releaseDate,
           })
           .returning(),
       catch: (error) => {
         const errorMessage = getErrorMessage(error)
+
         if (errorMessage.includes('unique constraint')) {
           return new ConflictError({
             message: 'Release with this slug already exists',
-            resource: 'release'
+            resource: 'release',
           })
         }
+
         return new DatabaseError({
           message: `Failed to create release: ${errorMessage}`,
           operation: 'insert',
-          table: 'releases'
+          table: 'releases',
         })
-      }
+      },
     })
 
     const newRelease = insertedRecords[0]
+
     if (!newRelease) {
       return yield* new DatabaseError({
         message: 'Failed to create release',
         operation: 'insert',
-        table: 'releases'
+        table: 'releases',
       })
     }
 
@@ -201,14 +214,19 @@ const createEffect = (
           new DatabaseError({
             message: getErrorMessage(error),
             operation: 'insert',
-            table: 'labels'
-          })
+            table: 'labels',
+          }),
       })
     }
+
     return yield* Effect.tryPromise({
       try: () => projectEntityLabels(db, 'release', newRelease),
       catch: (error) =>
-        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+        new DatabaseError({
+          message: getErrorMessage(error),
+          operation: 'select',
+          table: 'labels',
+        }),
     })
   })
 
@@ -216,27 +234,29 @@ const updateEffect = (
   slug: string,
   userId: string,
   userRole: string,
-  data: Partial<InsertRelease> & { releaseDate?: Date }
+  data: Partial<InsertRelease> & { releaseDate?: Date },
 ) =>
   Effect.gen(function* () {
     const db = yield* Database
     const { tags, ...releaseData } = data
+
     const existingRecords = yield* Effect.tryPromise({
       try: () => db.select().from(releasesTable).where(eq(releasesTable.slug, slug)).limit(1),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to check release existence: ${getErrorMessage(error)}`,
           operation: 'select',
-          table: 'releases'
-        })
+          table: 'releases',
+        }),
     })
 
     const existingRelease = existingRecords[0]
+
     if (!existingRelease) {
       return yield* new NotFoundError({
         message: 'Release not found',
         resource: 'release',
-        id: slug
+        id: slug,
       })
     }
 
@@ -244,6 +264,7 @@ const updateEffect = (
 
     if (data.labelId && data.labelId !== existingRelease.labelId) {
       const destinationLabelId = data.labelId
+
       const destinationLabels = yield* Effect.tryPromise({
         try: () =>
           db
@@ -255,17 +276,20 @@ const updateEffect = (
           new DatabaseError({
             message: `Failed to fetch destination label: ${getErrorMessage(error)}`,
             operation: 'select',
-            table: 'music_labels'
-          })
+            table: 'music_labels',
+          }),
       })
+
       const destinationLabel = destinationLabels[0]
+
       if (!destinationLabel) {
         return yield* new NotFoundError({
           message: 'Label not found',
           resource: 'label',
-          id: data.labelId
+          id: data.labelId,
         })
       }
+
       yield* requireCreatorOrAdmin('label', destinationLabel.id, userId, userRole)
     }
 
@@ -276,7 +300,7 @@ const updateEffect = (
           .set({
             ...releaseData,
             updatedAt: new Date(),
-            releaseDate: data.releaseDate ?? existingRelease.releaseDate
+            releaseDate: data.releaseDate ?? existingRelease.releaseDate,
           })
           .where(eq(releasesTable.id, existingRelease.id))
           .returning(),
@@ -284,16 +308,17 @@ const updateEffect = (
         new DatabaseError({
           message: `Failed to update release: ${getErrorMessage(error)}`,
           operation: 'update',
-          table: 'releases'
-        })
+          table: 'releases',
+        }),
     })
 
     const updatedRelease = updatedRecords[0]
+
     if (!updatedRelease) {
       return yield* new DatabaseError({
         message: 'Failed to update release',
         operation: 'update',
-        table: 'releases'
+        table: 'releases',
       })
     }
 
@@ -304,21 +329,25 @@ const updateEffect = (
           new DatabaseError({
             message: getErrorMessage(error),
             operation: 'update',
-            table: 'labels'
-          })
+            table: 'labels',
+          }),
       })
     }
 
     const { tags: projectedTags } = yield* Effect.tryPromise({
       try: () => projectEntityLabels(db, 'release', updatedRelease),
       catch: (error) =>
-        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+        new DatabaseError({
+          message: getErrorMessage(error),
+          operation: 'select',
+          table: 'labels',
+        }),
     })
 
     const baseProcessedRelease: SelectMdxCompiledRelease = {
       ...updatedRelease,
       tags: projectedTags,
-      compiledContent: ''
+      compiledContent: '',
     }
 
     if (updatedRelease.content) {
@@ -328,14 +357,14 @@ const updateEffect = (
           new DatabaseError({
             message: `Failed to compile MDX: ${getErrorMessage(error)}`,
             operation: 'mdx_compile',
-            table: 'releases'
-          })
+            table: 'releases',
+          }),
       })
 
       if (isMDXCompilationResult(mdxResult)) {
         return {
           ...baseProcessedRelease,
-          compiledContent: mdxResult.compiled
+          compiledContent: mdxResult.compiled,
         }
       }
     }
@@ -346,22 +375,24 @@ const updateEffect = (
 const deleteEffect = (slug: string, userId: string, userRole: string) =>
   Effect.gen(function* () {
     const db = yield* Database
+
     const existingRecords = yield* Effect.tryPromise({
       try: () => db.select().from(releasesTable).where(eq(releasesTable.slug, slug)).limit(1),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to check release existence: ${getErrorMessage(error)}`,
           operation: 'select',
-          table: 'releases'
-        })
+          table: 'releases',
+        }),
     })
 
     const existingRelease = existingRecords[0]
+
     if (!existingRelease) {
       return yield* new NotFoundError({
         message: 'Release not found',
         resource: 'release',
-        id: slug
+        id: slug,
       })
     }
 
@@ -375,17 +406,17 @@ const deleteEffect = (slug: string, userId: string, userRole: string) =>
             .where(
               and(
                 eq(entityLabelsTable.entityType, 'release'),
-                eq(entityLabelsTable.entityId, existingRelease.id)
-              )
+                eq(entityLabelsTable.entityId, existingRelease.id),
+              ),
             ),
-          db.delete(releasesTable).where(eq(releasesTable.id, existingRelease.id))
+          db.delete(releasesTable).where(eq(releasesTable.id, existingRelease.id)),
         ]),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to delete release: ${getErrorMessage(error)}`,
           operation: 'delete',
-          table: 'releases'
-        })
+          table: 'releases',
+        }),
     })
 
     return undefined
@@ -396,29 +427,31 @@ export const ReleaseServiceLayer = Layer.effect(
   Effect.gen(function* () {
     const db = yield* Database
     const provideDb = Effect.provideService(Database, db)
+
     return {
       getBySlug: (slug) =>
         provideDb(getBySlugEffect(slug)).pipe(
-          Effect.withSpan('release.getBySlug', { attributes: { slug } })
+          Effect.withSpan('release.getBySlug', { attributes: { slug } }),
         ),
       getBySlugForEdit: (slug, userId, userRole) =>
         provideDb(
           Effect.gen(function* () {
             const release = yield* getBySlugEffect(slug, true)
             yield* requireCreatorOrAdmin('label', release.labelId, userId, userRole)
+
             return release
-          })
+          }),
         ).pipe(Effect.withSpan('release.getBySlugForEdit', { attributes: { slug } })),
       create: (data, userId, userRole) =>
         provideDb(createEffect(data, userId, userRole)).pipe(Effect.withSpan('release.create')),
       update: (slug, userId, userRole, data) =>
         provideDb(updateEffect(slug, userId, userRole, data)).pipe(
-          Effect.withSpan('release.update', { attributes: { slug } })
+          Effect.withSpan('release.update', { attributes: { slug } }),
         ),
       delete: (slug, userId, userRole) =>
         provideDb(deleteEffect(slug, userId, userRole)).pipe(
-          Effect.withSpan('release.delete', { attributes: { slug } })
-        )
+          Effect.withSpan('release.delete', { attributes: { slug } }),
+        ),
     }
-  })
+  }),
 )

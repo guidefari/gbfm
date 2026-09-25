@@ -4,27 +4,42 @@
   import type { PageProps } from './$types'
 
   let { data }: PageProps = $props()
+
   const token = page.url.searchParams.get('token')
+
   const linkError = page.url.searchParams.get('error')
+
   let password = $state('')
+
   let confirmation = $state('')
+
   let pending = $state(false)
+
   let error = $state('')
+
   const checks = $derived([
     ['At least 8 characters', password.length >= 8],
     ['An uppercase and lowercase letter', /[a-z]/.test(password) && /[A-Z]/.test(password)],
     ['A number', /\d/.test(password)]
   ] as const)
+
   const valid = $derived(checks.every(([, passed]) => passed))
 
   async function submit() {
     error = ''
+
     if (!valid) return
-    if (password !== confirmation) { error = 'Passwords do not match.'; return }
+
+    if (password !== confirmation) { error = 'Passwords do not match.';
+
+ return }
+
     if (!token) return
     pending = true
+
     try {
       const response = await fetch('/api/invite/confirm', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token, password }) })
+
       if (!response.ok) throw new Error('Failed to reset password. The link may have expired.')
       await goto('/', { invalidateAll: true })
     } catch (cause) { error = cause instanceof Error ? cause.message : 'Failed to reset password.' }

@@ -3,17 +3,29 @@
   import { onMount } from 'svelte'
   import Page from '../Page.svelte'
   import { dashboardJson, jsonRequest } from '../api'
+
   type Tab = 'artists' | 'albums' | 'tracks' | 'playlists' | 'labels'
+
   type Row = { id: string; name: string; detail: string; image: string | null; publishedAt: string | null }
-  let tab = $state<Tab>('artists'), rows = $state<Row[]>([]), pending = $state(false), message = $state('')
-  async function load() { pending = true; message = ''; try {
+
+  let tab = $state<Tab>('artists'), rows = $state<Array<Row>>([]), pending = $state(false), message = $state('')
+
+  async function load() { pending = true; message = '';
+
+ try {
     if (tab === 'artists') rows = (await dashboardJson(ArtistListResponse, '/api/music/artists')).map((x) => ({ id: x.id, name: x.name, detail: x.slug, image: x.imageUrl, publishedAt: x.publishedAt }))
+
     if (tab === 'albums') rows = (await dashboardJson(AlbumListResponse, '/api/music/albums')).map((x) => ({ id: x.id, name: x.title, detail: x.artistNames?.join(', ') ?? x.slug, image: x.coverImageUrl, publishedAt: x.publishedAt }))
+
     if (tab === 'tracks') rows = (await dashboardJson(TrackListResponse, '/api/music/tracks')).map((x) => ({ id: x.id, name: x.title, detail: x.artistNames?.join(', ') ?? x.slug, image: x.coverImageUrl, publishedAt: x.publishedAt }))
+
     if (tab === 'playlists') rows = (await dashboardJson(PlaylistListResponse, '/api/music/playlists')).map((x) => ({ id: x.id, name: x.title, detail: x.slug, image: x.coverImageUrl, publishedAt: x.publishedAt }))
+
     if (tab === 'labels') rows = (await dashboardJson(LabelListResponse, '/api/music/labels/manage')).map((x) => ({ id: x.id, name: x.name, detail: x.slug, image: x.imageUrl, publishedAt: x.publishedAt }))
   } catch { message = 'Could not load catalog.' } finally { pending = false } }
+
   async function createLabel() { try { const label = await dashboardJson(LabelResponse, '/api/music/labels', jsonRequest('POST', { name: 'Untitled label', slug: `untitled-label-${Date.now()}`, content: '' })); location.href = `/dashboard/music-entity/label/${label.id}` } catch { message = 'Could not create label.' } }
+
   onMount(load)
 </script>
 <Page title="Music Catalog" description="Artists, albums, tracks, playlists, and record labels.">

@@ -1,9 +1,11 @@
 import { Effect, Layer, Redacted } from 'effect'
+
 import { ConfigService } from '@/services/config.service'
+
 import {
   ObjectStoreClient,
   type MultipartPart,
-  type ObjectStoreClient as ObjectStoreClientType
+  type ObjectStoreClient as ObjectStoreClientType,
 } from './object-store-client'
 import { StorageProvider } from './provider'
 import { ensureOk, presignedUrl, signedRequest, type R2SigningConfig } from './r2-signing'
@@ -17,7 +19,9 @@ interface R2Object {
 
 interface R2MultipartUpload {
   readonly uploadId: string
-  complete(parts: Array<{ readonly partNumber: number; readonly etag: string }>): Promise<unknown>
+  complete(
+    parts: Array<{ readonly partNumber: number; readonly etag: string }>,
+  ): Promise<object | void>
   abort(): Promise<void>
 }
 
@@ -25,8 +29,8 @@ export interface R2BucketCapability {
   put(
     key: string,
     body: Uint8Array | string,
-    options: { readonly httpMetadata: { readonly contentType: string } }
-  ): Promise<unknown>
+    options: { readonly httpMetadata: { readonly contentType: string } },
+  ): Promise<object | null | void>
   head(key: string): Promise<R2Object | null>
   delete(key: string): Promise<void>
   list(options?: { readonly prefix?: string; readonly cursor?: string }): Promise<{
@@ -39,7 +43,7 @@ export interface R2BucketCapability {
     options: {
       readonly httpMetadata: { readonly contentType: string }
       readonly customMetadata: Readonly<Record<string, string>>
-    }
+    },
   ): Promise<{ readonly uploadId: string }>
   resumeMultipartUpload(key: string, uploadId: string): R2MultipartUpload
 }
@@ -52,16 +56,18 @@ export interface R2ObjectStoreBuckets {
 const extractTag = (body: string, name: string) =>
   new RegExp(`<${name}>([^<]+)</${name}>`).exec(body)?.[1]
 
-const parseMultipartParts = (body: string): MultipartPart[] => {
-  const parts: MultipartPart[] = []
+const parseMultipartParts = (body: string): Array<MultipartPart> => {
+  const parts: Array<MultipartPart> = []
 
   for (const match of body.matchAll(/<Part>([\s\S]*?)<\/Part>/g)) {
     const part = match[1]
+
     if (!part) continue
 
     const partNumber = Number(extractTag(part, 'PartNumber'))
     const etag = extractTag(part, 'ETag')
     const size = Number(extractTag(part, 'Size'))
+
     if (
       !Number.isInteger(partNumber) ||
       partNumber < 1 ||
@@ -70,6 +76,7 @@ const parseMultipartParts = (body: string): MultipartPart[] => {
     ) {
       throw new Error('R2 returned an invalid multipart part')
     }
+
     parts.push({ partNumber, etag, size })
   }
 
@@ -80,10 +87,10 @@ const createSigningConfig = (
   storage: {
     readonly provider: string
     readonly accountId?: string
-    readonly accessKeyId?: Redacted.Redacted<string>
-    readonly secretAccessKey?: Redacted.Redacted<string>
+    readonly accessKeyId?: Redacted.Redacted
+    readonly secretAccessKey?: Redacted.Redacted
   },
-  bucketName: string
+  bucketName: string,
 ): R2SigningConfig => {
   if (
     storage.provider !== StorageProvider.r2 ||
@@ -98,16 +105,17 @@ const createSigningConfig = (
     accountId: storage.accountId,
     accessKeyId: Redacted.value(storage.accessKeyId),
     secretAccessKey: Redacted.value(storage.secretAccessKey),
-    bucketName
+    bucketName,
   }
 }
 
 const selectBucket = (
   buckets: R2ObjectStoreBuckets,
   names: { readonly userContent: string; readonly mixes: string },
-  bucketName: string
+  bucketName: string,
 ) => {
   if (bucketName === names.userContent) return buckets.userContent
+
   if (bucketName === names.mixes) return buckets.mixes
   throw new Error(`R2 bucket is not configured: ${bucketName}`)
 }
@@ -134,12 +142,14 @@ export const R2ObjectStoreClientLayer = (buckets: R2ObjectStoreBuckets) =>
             method: 'PUT',
             key,
             query: [],
-            expiresSeconds: expiresInSeconds
+            expiresSeconds: expiresInSeconds,
           }),
         deleteObject: (bucketName, key) => bucket(bucketName).delete(key),
         headObject: async (bucketName, key) => {
           const object = await bucket(bucketName).head(key)
+
           if (!object) return null
+
           return { size: object.size, metadata: object.customMetadata ?? {} }
         },
         listObjects: async (bucketName, prefix) => {
@@ -153,8 +163,8 @@ export const R2ObjectStoreClientLayer = (buckets: R2ObjectStoreBuckets) =>
               ...page.objects.map((object) => ({
                 key: object.key,
                 lastModified: object.uploaded,
-                size: object.size
-              }))
+                size: object.size,
+              })),
             )
             cursor = page.truncated ? page.cursor : undefined
           } while (cursor)
@@ -165,8 +175,9 @@ export const R2ObjectStoreClientLayer = (buckets: R2ObjectStoreBuckets) =>
         createMultipartUpload: async ({ bucketName, key, contentType, expectedSize }) => {
           const upload = await bucket(bucketName).createMultipartUpload(key, {
             httpMetadata: { contentType },
-            customMetadata: { 'expected-size': String(expectedSize) }
+            customMetadata: { 'expected-size': String(expectedSize) },
           })
+
           return upload.uploadId
         },
         presignUploadPart: ({ bucketName, key, uploadId, partNumber, expiresInSeconds }) =>
@@ -176,9 +187,9 @@ export const R2ObjectStoreClientLayer = (buckets: R2ObjectStoreBuckets) =>
             key,
             query: [
               ['partNumber', String(partNumber)],
-              ['uploadId', uploadId]
+              ['uploadId', uploadId],
             ],
-            expiresSeconds: expiresInSeconds
+            expiresSeconds: expiresInSeconds,
           }),
         completeMultipartUpload: async ({ bucketName, key, uploadId, parts }) => {
           await bucket(bucketName)
@@ -193,11 +204,13 @@ export const R2ObjectStoreClientLayer = (buckets: R2ObjectStoreBuckets) =>
             config: signingConfig(bucketName),
             method: 'GET',
             key,
-            query: [['uploadId', uploadId]]
+            query: [['uploadId', uploadId]],
           })
+
           await ensureOk(response)
+
           return parseMultipartParts(await response.text())
-        }
+        },
       } satisfies ObjectStoreClientType
-    })
+    }),
   )

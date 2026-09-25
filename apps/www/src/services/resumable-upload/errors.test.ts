@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'vitest'
+
 import type { PersistedResumableUpload } from '@/lib/upload/resumable-upload'
+
 import {
   AlreadyInProgressError,
   FileTooLargeError,
@@ -11,7 +13,7 @@ import {
   UploadAborted,
   UploadPaused,
   isFatalError,
-  isRetryableError
+  isRetryableError,
 } from './errors'
 
 const pausedCheckpoint: PersistedResumableUpload = {
@@ -25,7 +27,7 @@ const pausedCheckpoint: PersistedResumableUpload = {
   fileName: 'f',
   completedParts: [],
   createdAt: 0,
-  updatedAt: 0
+  updatedAt: 0,
 }
 
 describe('isRetryableError', () => {
@@ -35,8 +37,9 @@ describe('isRetryableError', () => {
       new HttpError({ status: 408, message: 'timeout' }),
       new HttpError({ status: 429, message: 'rate limited' }),
       new HttpError({ status: 500, message: 'server error' }),
-      new HttpError({ status: 599, message: 'server error' })
+      new HttpError({ status: 599, message: 'server error' }),
     ]
+
     const permanent = [
       new HttpError({ status: 400, message: 'bad request' }),
       new HttpError({ status: 401, message: 'unauthorized' }),
@@ -46,10 +49,11 @@ describe('isRetryableError', () => {
       new FileTooLargeError({ maxBytes: 1, actualBytes: 2 }),
       new StorageQuotaError({ message: 'full' }),
       new AlreadyInProgressError({ message: 'busy' }),
-      new UnknownError({ message: 'oops' })
+      new UnknownError({ message: 'oops' }),
     ]
 
     for (const error of retryable) expect(isRetryableError(error)).toBe(true)
+
     for (const error of permanent) expect(isRetryableError(error)).toBe(false)
   })
 })
@@ -62,16 +66,18 @@ describe('isFatalError', () => {
       new HttpError({ status: 401, message: 'unauthorized' }),
       new HttpError({ status: 403, message: 'forbidden' }),
       new HttpError({ status: 413, message: 'too large' }),
-      new HttpError({ status: 415, message: 'unsupported type' })
+      new HttpError({ status: 415, message: 'unsupported type' }),
     ]
+
     const recoverable = [
       new NetworkError({ message: 'down' }),
       new HttpError({ status: 408, message: 'timeout' }),
       new HttpError({ status: 429, message: 'rate limited' }),
-      new HttpError({ status: 500, message: 'server error' })
+      new HttpError({ status: 500, message: 'server error' }),
     ]
 
     for (const error of fatal) expect(isFatalError(error)).toBe(true)
+
     for (const error of recoverable) expect(isFatalError(error)).toBe(false)
   })
 })

@@ -1,9 +1,10 @@
 import {
   decodeQrPdfResponse,
   type QrPdfRequest,
-  type QrPdfResponse
+  type QrPdfResponse,
 } from '@gbfm/pdf-generator/contract'
 import { Context, Effect, Layer } from 'effect'
+
 import { DatabaseError, getErrorMessage } from '@/errors'
 
 interface MixData {
@@ -20,12 +21,14 @@ interface ShowData {
   hosts?: Array<{ name: string }>
 }
 
+type JsonValue = string | number | boolean | null | Array<JsonValue> | { [key: string]: JsonValue }
+
 export interface QRCodeService {
   readonly generateMixQRPdf: (
-    mix: MixData
+    mix: MixData,
   ) => Effect.Effect<{ url: string; cached: boolean }, DatabaseError>
   readonly generateShowQRPdf: (
-    show: ShowData
+    show: ShowData,
   ) => Effect.Effect<{ url: string; cached: boolean }, DatabaseError>
 }
 
@@ -35,7 +38,7 @@ export interface QrPdfFetcher {
   readonly fetch: (request: Request) => PromiseLike<{
     readonly ok: boolean
     readonly status: number
-    readonly json: () => Promise<unknown>
+    readonly json: () => Promise<JsonValue>
   }>
 }
 
@@ -46,26 +49,28 @@ const requestQrPdf = (fetcher: QrPdfFetcher, input: QrPdfRequest) =>
         new Request('https://qr-pdf.internal/generate', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(input)
-        })
+          body: JSON.stringify(input),
+        }),
       )
+
       if (!response.ok) throw new Error(`QR PDF Worker returned ${response.status}`)
-      const body: unknown = await response.json()
+      const body = await response.json()
+
       return await Effect.runPromise(decodeQrPdfResponse(body))
     },
     catch: (error) =>
       new DatabaseError({
         message: `Failed to generate QR PDF: ${getErrorMessage(error)}`,
         operation: 'generate',
-        table: 'pdf'
-      })
+        table: 'pdf',
+      }),
   })
 
 const withGenerationSpan = (slug: string, effect: Effect.Effect<QrPdfResponse, DatabaseError>) =>
   effect.pipe(
     Effect.withSpan('qrcode.generatePdf', {
-      attributes: { slug }
-    })
+      attributes: { slug },
+    }),
   )
 
 export const QRCodeServiceLayer = (fetcher: QrPdfFetcher) =>
@@ -77,8 +82,8 @@ export const QRCodeServiceLayer = (fetcher: QrPdfFetcher) =>
           kind: 'mix',
           slug: mix.slug,
           title: mix.title,
-          people: (mix.creators ?? []).map(({ name }) => name)
-        })
+          people: (mix.creators ?? []).map(({ name }) => name),
+        }),
       ),
     generateShowQRPdf: (show) =>
       withGenerationSpan(
@@ -87,9 +92,9 @@ export const QRCodeServiceLayer = (fetcher: QrPdfFetcher) =>
           kind: 'show',
           slug: show.slug,
           title: show.title,
-          people: (show.hosts ?? []).map(({ name }) => name)
-        })
-      )
+          people: (show.hosts ?? []).map(({ name }) => name),
+        }),
+      ),
   })
 
 const unavailable = (kind: 'mix' | 'show') =>
@@ -97,11 +102,11 @@ const unavailable = (kind: 'mix' | 'show') =>
     new DatabaseError({
       message: `QR PDF generation is unavailable for ${kind}`,
       operation: 'generate',
-      table: 'pdf'
-    })
+      table: 'pdf',
+    }),
   )
 
 export const QRCodeServiceUnavailableLayer = Layer.succeed(QRCodeService, {
   generateMixQRPdf: () => unavailable('mix'),
-  generateShowQRPdf: () => unavailable('show')
+  generateShowQRPdf: () => unavailable('show'),
 })

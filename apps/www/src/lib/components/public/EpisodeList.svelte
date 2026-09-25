@@ -4,9 +4,13 @@
   import { text, type PublicRecord } from '@/lib/public-content'
 
   let { episodes }: { episodes: ReadonlyArray<PublicRecord> } = $props()
+
   const player = getPlayerContext()
+
   const snapshot = player.snapshot
+
   const currentId = $derived($snapshot ? ($snapshot.queue.tracks[$snapshot.queue.currentIndex]?.id ?? '') : '')
+
   const trackId = (episode: PublicRecord) => text(episode.id, text(episode.url))
 
   const play = (episode: PublicRecord) => {

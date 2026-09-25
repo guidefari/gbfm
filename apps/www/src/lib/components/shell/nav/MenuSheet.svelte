@@ -7,7 +7,9 @@
   import { signOut } from './sign-out'
 
   let { principal }: { principal: Principal } = $props()
+
   const sections = $derived(navSections(principal))
+
   const row = 'flex w-full items-center gap-3 rounded-sm px-3 py-2 text-base font-medium no-underline transition-colors hover:bg-muted/60'
 </script>
 

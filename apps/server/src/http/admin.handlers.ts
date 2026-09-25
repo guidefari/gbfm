@@ -1,19 +1,20 @@
-import { Api } from '@gbfm/api/api'
 import { SimulatedRateLimitError } from '@gbfm/api/admin'
+import { Api } from '@gbfm/api/api'
 import { AuthSession } from '@gbfm/api/middleware/auth'
 import {
   EMAIL_DELIVERY_STATUSES,
   REMINDER_STATUS,
-  type EmailDeliveryStatus
+  type EmailDeliveryStatus,
 } from '@gbfm/core/status'
 import { and, desc, eq, gt, gte, inArray, lte, or, type SQL, sql } from 'drizzle-orm'
-import { Effect } from 'effect'
+import { Effect, Match } from 'effect'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
-import { Database } from '@/db/layer'
+
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { session, user } from '@/db/auth.schema'
 import { emailDeliveryLogsTable } from '@/db/email.schema'
 import { favoritesTable } from '@/db/favorites.schema'
+import { Database } from '@/db/layer'
 import { musicLabelsTable } from '@/db/music-entity.schema'
 import { musicReminder } from '@/db/music-reminder.schema'
 import { newsletterSubscribersTable } from '@/db/newsletter.schema'
@@ -50,7 +51,7 @@ type RecentContentItem = {
 
 function isEmailStatusCountKey(
   value: string,
-  counts: Record<EmailDeliveryStatus, number>
+  counts: Record<EmailDeliveryStatus, number>,
 ): value is keyof typeof counts {
   return value in counts
 }
@@ -58,6 +59,7 @@ function isEmailStatusCountKey(
 function daysAgo(days: number) {
   const date = new Date()
   date.setDate(date.getDate() - days)
+
   return date
 }
 
@@ -70,25 +72,25 @@ async function getContentBreakdown(
   table: ContentTable,
   draftColumn: DraftColumn,
   createdAtColumn: CreatedAtColumn,
-  extraCondition?: SQL<unknown>
+  extraCondition?: SQL,
 ) {
   const sevenDaysAgo = daysAgo(7)
 
   const [published, drafts, newLast7Days] = await Promise.all([
     db.$count(
       table,
-      extraCondition ? and(eq(draftColumn, false), extraCondition) : eq(draftColumn, false)
+      extraCondition ? and(eq(draftColumn, false), extraCondition) : eq(draftColumn, false),
     ),
     db.$count(
       table,
-      extraCondition ? and(eq(draftColumn, true), extraCondition) : eq(draftColumn, true)
+      extraCondition ? and(eq(draftColumn, true), extraCondition) : eq(draftColumn, true),
     ),
     db.$count(
       table,
       extraCondition
         ? and(gte(createdAtColumn, sevenDaysAgo), extraCondition)
-        : gte(createdAtColumn, sevenDaysAgo)
-    )
+        : gte(createdAtColumn, sevenDaysAgo),
+    ),
   ])
 
   return { published, drafts, newLast7Days }
@@ -97,14 +99,16 @@ async function getContentBreakdown(
 async function getMusicLabelBreakdown(db: Database['Service']) {
   const sevenDaysAgo = daysAgo(7)
   const now = new Date()
+
   const [published, drafts, newLast7Days] = await Promise.all([
     db.$count(musicLabelsTable, lte(musicLabelsTable.publishedAt, now)),
     db.$count(
       musicLabelsTable,
-      or(sql`${musicLabelsTable.publishedAt} is null`, gt(musicLabelsTable.publishedAt, now))
+      or(sql`${musicLabelsTable.publishedAt} is null`, gt(musicLabelsTable.publishedAt, now)),
     ),
-    db.$count(musicLabelsTable, gte(musicLabelsTable.createdAt, sevenDaysAgo))
+    db.$count(musicLabelsTable, gte(musicLabelsTable.createdAt, sevenDaysAgo)),
   ])
+
   return { published, drafts, newLast7Days }
 }
 
@@ -153,7 +157,7 @@ async function loadAdminOverview(db: Database['Service']) {
     emailStatusRows,
     failedLast7Days,
     recentEmailFailures,
-    reminderRows
+    reminderRows,
   ] = await Promise.all([
     db.$count(user),
     db.$count(user, eq(user.emailVerified, true)),
@@ -174,21 +178,21 @@ async function loadAdminOverview(db: Database['Service']) {
       audioTable,
       audioTable.draft,
       audioTable.createdAt,
-      eq(audioTable.type, 'mix')
+      eq(audioTable.type, 'mix'),
     ),
     getContentBreakdown(
       db,
       audioTable,
       audioTable.draft,
       audioTable.createdAt,
-      eq(audioTable.type, 'track')
+      eq(audioTable.type, 'track'),
     ),
     getContentBreakdown(
       db,
       audioTable,
       audioTable.draft,
       audioTable.createdAt,
-      eq(audioTable.type, 'misc')
+      eq(audioTable.type, 'misc'),
     ),
     getContentBreakdown(db, showsTable, showsTable.draft, showsTable.createdAt),
     getContentBreakdown(
@@ -196,14 +200,14 @@ async function loadAdminOverview(db: Database['Service']) {
       postsTable,
       postsTable.draft,
       postsTable.createdAt,
-      eq(postsTable.type, 'post')
+      eq(postsTable.type, 'post'),
     ),
     getContentBreakdown(
       db,
       postsTable,
       postsTable.draft,
       postsTable.createdAt,
-      eq(postsTable.type, 'micro')
+      eq(postsTable.type, 'micro'),
     ),
     getMusicLabelBreakdown(db),
     getContentBreakdown(db, releasesTable, releasesTable.draft, releasesTable.createdAt),
@@ -212,7 +216,7 @@ async function loadAdminOverview(db: Database['Service']) {
       .from(audioTable),
     db.$count(
       audioTable,
-      and(eq(audioTable.type, 'mix'), gte(audioTable.createdAt, thirtyDaysAgo))
+      and(eq(audioTable.type, 'mix'), gte(audioTable.createdAt, thirtyDaysAgo)),
     ),
     db
       .select({
@@ -221,7 +225,7 @@ async function loadAdminOverview(db: Database['Service']) {
         slug: audioTable.slug,
         type: audioTable.type,
         createdAt: audioTable.createdAt,
-        draft: audioTable.draft
+        draft: audioTable.draft,
       })
       .from(audioTable)
       .orderBy(desc(audioTable.createdAt))
@@ -232,7 +236,7 @@ async function loadAdminOverview(db: Database['Service']) {
         title: showsTable.title,
         slug: showsTable.slug,
         createdAt: showsTable.createdAt,
-        draft: showsTable.draft
+        draft: showsTable.draft,
       })
       .from(showsTable)
       .orderBy(desc(showsTable.createdAt))
@@ -244,7 +248,7 @@ async function loadAdminOverview(db: Database['Service']) {
         slug: postsTable.slug,
         type: postsTable.type,
         createdAt: postsTable.createdAt,
-        draft: postsTable.draft
+        draft: postsTable.draft,
       })
       .from(postsTable)
       .orderBy(desc(postsTable.createdAt))
@@ -257,8 +261,8 @@ async function loadAdminOverview(db: Database['Service']) {
         createdAt: musicLabelsTable.createdAt,
         draft:
           sql<number>`${musicLabelsTable.publishedAt} is null or ${gt(musicLabelsTable.publishedAt, now)}`.mapWith(
-            Boolean
-          )
+            Boolean,
+          ),
       })
       .from(musicLabelsTable)
       .orderBy(desc(musicLabelsTable.createdAt))
@@ -269,7 +273,7 @@ async function loadAdminOverview(db: Database['Service']) {
         title: releasesTable.title,
         slug: releasesTable.slug,
         createdAt: releasesTable.createdAt,
-        draft: releasesTable.draft
+        draft: releasesTable.draft,
       })
       .from(releasesTable)
       .orderBy(desc(releasesTable.createdAt))
@@ -280,7 +284,7 @@ async function loadAdminOverview(db: Database['Service']) {
         title: audioTable.title,
         slug: audioTable.slug,
         playCount: audioTable.playCount,
-        createdAt: audioTable.createdAt
+        createdAt: audioTable.createdAt,
       })
       .from(audioTable)
       .where(eq(audioTable.type, 'mix'))
@@ -293,7 +297,7 @@ async function loadAdminOverview(db: Database['Service']) {
         email: user.email,
         role: user.role,
         createdAt: user.createdAt,
-        emailVerified: user.emailVerified
+        emailVerified: user.emailVerified,
       })
       .from(user)
       .orderBy(desc(user.createdAt))
@@ -303,7 +307,7 @@ async function loadAdminOverview(db: Database['Service']) {
         id: newsletterSubscribersTable.id,
         email: newsletterSubscribersTable.email,
         source: newsletterSubscribersTable.source,
-        createdAt: newsletterSubscribersTable.createdAt
+        createdAt: newsletterSubscribersTable.createdAt,
       })
       .from(newsletterSubscribersTable)
       .orderBy(desc(newsletterSubscribersTable.createdAt))
@@ -311,7 +315,7 @@ async function loadAdminOverview(db: Database['Service']) {
     db
       .select({
         status: emailDeliveryLogsTable.status,
-        total: sql<number>`count(*)`.mapWith(Number)
+        total: sql<number>`count(*)`.mapWith(Number),
       })
       .from(emailDeliveryLogsTable)
       .groupBy(emailDeliveryLogsTable.status),
@@ -319,8 +323,8 @@ async function loadAdminOverview(db: Database['Service']) {
       emailDeliveryLogsTable,
       and(
         eq(emailDeliveryLogsTable.status, EMAIL_DELIVERY_STATUSES.FAILED),
-        gte(emailDeliveryLogsTable.createdAt, sevenDaysAgo)
-      )
+        gte(emailDeliveryLogsTable.createdAt, sevenDaysAgo),
+      ),
     ),
     db
       .select({
@@ -329,15 +333,15 @@ async function loadAdminOverview(db: Database['Service']) {
         subject: emailDeliveryLogsTable.subject,
         status: emailDeliveryLogsTable.status,
         createdAt: emailDeliveryLogsTable.createdAt,
-        errorMessage: emailDeliveryLogsTable.errorMessage
+        errorMessage: emailDeliveryLogsTable.errorMessage,
       })
       .from(emailDeliveryLogsTable)
       .where(
         inArray(emailDeliveryLogsTable.status, [
           EMAIL_DELIVERY_STATUSES.FAILED,
           EMAIL_DELIVERY_STATUSES.BOUNCED,
-          EMAIL_DELIVERY_STATUSES.COMPLAINED
-        ])
+          EMAIL_DELIVERY_STATUSES.COMPLAINED,
+        ]),
       )
       .orderBy(desc(emailDeliveryLogsTable.createdAt))
       .limit(5),
@@ -352,22 +356,26 @@ async function loadAdminOverview(db: Database['Service']) {
             lte(musicReminder.reminderDate, now),
             or(
               eq(musicReminder.status, REMINDER_STATUS.PENDING),
-              eq(musicReminder.status, REMINDER_STATUS.FAILED)
-            )
-          )
-        )
+              eq(musicReminder.status, REMINDER_STATUS.FAILED),
+            ),
+          ),
+        ),
       })
-      .from(musicReminder)
+      .from(musicReminder),
   ])
 
-  const recentContent: RecentContentItem[] = [
+  const recentContent: Array<RecentContentItem> = [
     ...recentAudio.map<RecentContentItem>((item) => ({
       id: item.id,
       title: item.title,
       slug: item.slug,
-      type: item.type === 'mix' ? 'mix' : item.type === 'track' ? 'track' : 'misc',
+      type: Match.value(item.type).pipe(
+        Match.when('mix', () => 'mix' as const),
+        Match.when('track', () => 'track' as const),
+        Match.orElse(() => 'misc' as const),
+      ),
       createdAt: iso(item.createdAt),
-      draft: item.draft
+      draft: item.draft,
     })),
     ...recentShows.map<RecentContentItem>((item) => ({
       id: item.id,
@@ -375,7 +383,7 @@ async function loadAdminOverview(db: Database['Service']) {
       slug: item.slug,
       type: 'show',
       createdAt: iso(item.createdAt),
-      draft: item.draft
+      draft: item.draft,
     })),
     ...recentPosts.map<RecentContentItem>((item) => ({
       id: item.id,
@@ -383,7 +391,7 @@ async function loadAdminOverview(db: Database['Service']) {
       slug: item.slug,
       type: item.type === 'micro' ? 'micro' : 'post',
       createdAt: iso(item.createdAt),
-      draft: item.draft
+      draft: item.draft,
     })),
     ...recentLabels.map<RecentContentItem>((item) => ({
       id: item.id,
@@ -391,7 +399,7 @@ async function loadAdminOverview(db: Database['Service']) {
       slug: item.slug,
       type: 'label',
       createdAt: iso(item.createdAt),
-      draft: item.draft
+      draft: item.draft,
     })),
     ...recentReleases.map<RecentContentItem>((item) => ({
       id: item.id,
@@ -399,13 +407,14 @@ async function loadAdminOverview(db: Database['Service']) {
       slug: item.slug,
       type: 'release',
       createdAt: iso(item.createdAt),
-      draft: item.draft
-    }))
+      draft: item.draft,
+    })),
   ]
     .toSorted((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 10)
 
   const topMixIds = topMixRows.map((mix) => mix.id)
+
   const topMixCreatorRows =
     topMixIds.length === 0
       ? []
@@ -415,7 +424,8 @@ async function loadAdminOverview(db: Database['Service']) {
           .innerJoin(user, eq(audioCreators.creatorId, user.id))
           .where(inArray(audioCreators.audioId, topMixIds))
 
-  const creatorsByMixId = new Map<string, string[]>()
+  const creatorsByMixId = new Map<string, Array<string>>()
+
   for (const row of topMixCreatorRows) {
     const names = creatorsByMixId.get(row.audioId) ?? []
     names.push(row.creatorName)
@@ -428,8 +438,9 @@ async function loadAdminOverview(db: Database['Service']) {
     DELIVERED: 0,
     BOUNCED: 0,
     COMPLAINED: 0,
-    FAILED: 0
+    FAILED: 0,
   }
+
   for (const row of emailStatusRows) {
     if (isEmailStatusCountKey(row.status, emailCounts)) {
       emailCounts[row.status] = row.total
@@ -446,7 +457,7 @@ async function loadAdminOverview(db: Database['Service']) {
       publishedMixes: mixes.published,
       newUsersLast7Days,
       newSubscribersLast30Days,
-      newMixesLast30Days
+      newMixesLast30Days,
     },
     publishing: {
       mixes,
@@ -464,8 +475,8 @@ async function loadAdminOverview(db: Database['Service']) {
         slug: mix.slug,
         playCount: mix.playCount,
         createdAt: iso(mix.createdAt),
-        creators: creatorsByMixId.get(mix.id) ?? []
-      }))
+        creators: creatorsByMixId.get(mix.id) ?? [],
+      })),
     },
     community: {
       users: {
@@ -476,21 +487,21 @@ async function loadAdminOverview(db: Database['Service']) {
         creators,
         banned: bannedUsers,
         newLast7Days: newUsersLast7Days,
-        newLast30Days: newUsersLast30Days
+        newLast30Days: newUsersLast30Days,
       },
       sessions: { active: activeSessions },
       newsletter: {
         total: newsletterSubscribers,
         newLast7Days: newSubscribersLast7Days,
-        newLast30Days: newSubscribersLast30Days
+        newLast30Days: newSubscribersLast30Days,
       },
       engagement: { favoritesTotal, showSubscriptionsTotal },
       recentUsers: recentUsersRows.map((item) => ({ ...item, createdAt: iso(item.createdAt) })),
       recentSubscribers: recentSubscriberRows.map((item) => ({
         ...item,
         source: item.source ?? null,
-        createdAt: iso(item.createdAt)
-      }))
+        createdAt: iso(item.createdAt),
+      })),
     },
     operations: {
       emails: {
@@ -505,21 +516,22 @@ async function loadAdminOverview(db: Database['Service']) {
         recentFailures: recentEmailFailures.map((item) => ({
           ...item,
           createdAt: iso(item.createdAt),
-          errorMessage: item.errorMessage ?? null
-        }))
+          errorMessage: item.errorMessage ?? null,
+        })),
       },
       reminders: {
         pending: reminderRows[0]?.pending ?? 0,
         processing: reminderRows[0]?.processing ?? 0,
         failed: reminderRows[0]?.failed ?? 0,
-        dueNow: reminderRows[0]?.dueNow ?? 0
-      }
-    }
+        dueNow: reminderRows[0]?.dueNow ?? 0,
+      },
+    },
   }
 }
 
 const requireAdmin = Effect.gen(function* () {
   const { user: sessionUser } = yield* AuthSession
+
   if (sessionUser.role !== 'admin') {
     return yield* new HttpApiError.Forbidden()
   }
@@ -533,6 +545,7 @@ export const AdminHandlersLive = HttpApiBuilder.group(Api, 'admin', (handlers) =
       Effect.gen(function* () {
         yield* requireAdmin
         const db = yield* Database
+
         return yield* dieOnAdminDatabaseError(
           Effect.tryPromise({
             try: () => loadAdminOverview(db),
@@ -540,11 +553,11 @@ export const AdminHandlersLive = HttpApiBuilder.group(Api, 'admin', (handlers) =
               new DatabaseError({
                 message: `Failed to fetch admin overview: ${getErrorMessage(error)}`,
                 operation: 'select',
-                table: 'admin-overview'
-              })
-          })
+                table: 'admin-overview',
+              }),
+          }),
         )
-      })
+      }),
     )
     .handle('simulateFrontendError', ({ params }) =>
       Effect.gen(function* () {
@@ -554,7 +567,7 @@ export const AdminHandlersLive = HttpApiBuilder.group(Api, 'admin', (handlers) =
           case 'ok':
             return {
               scenario: params.scenario,
-              message: 'Frontend error simulator is reachable.'
+              message: 'Frontend error simulator is reachable.',
             }
           case 'bad-request':
             return yield* new HttpApiError.BadRequest()
@@ -569,12 +582,13 @@ export const AdminHandlersLive = HttpApiBuilder.group(Api, 'admin', (handlers) =
         }
 
         return yield* new HttpApiError.InternalServerError()
-      })
+      }),
     )
     .handle('getNewsletterSubscribers', () =>
       Effect.gen(function* () {
         yield* requireAdmin
         const db = yield* Database
+
         const rows = yield* dieOnAdminDatabaseError(
           Effect.tryPromise({
             try: () =>
@@ -585,7 +599,7 @@ export const AdminHandlersLive = HttpApiBuilder.group(Api, 'admin', (handlers) =
                   name: newsletterSubscribersTable.name,
                   source: newsletterSubscribersTable.source,
                   unsubscribedAt: newsletterSubscribersTable.unsubscribedAt,
-                  createdAt: newsletterSubscribersTable.createdAt
+                  createdAt: newsletterSubscribersTable.createdAt,
                 })
                 .from(newsletterSubscribersTable)
                 .orderBy(desc(newsletterSubscribersTable.createdAt)),
@@ -593,18 +607,18 @@ export const AdminHandlersLive = HttpApiBuilder.group(Api, 'admin', (handlers) =
               new DatabaseError({
                 message: `Failed to fetch newsletter subscribers: ${getErrorMessage(error)}`,
                 operation: 'select',
-                table: 'newsletter_subscribers'
-              })
-          })
+                table: 'newsletter_subscribers',
+              }),
+          }),
         )
 
         return {
           subscribers: rows.map((r) => ({
             ...r,
             unsubscribedAt: r.unsubscribedAt?.toISOString() ?? null,
-            createdAt: r.createdAt.toISOString()
-          }))
+            createdAt: r.createdAt.toISOString(),
+          })),
         }
-      })
-    )
+      }),
+    ),
 )

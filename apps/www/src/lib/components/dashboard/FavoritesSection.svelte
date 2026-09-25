@@ -4,6 +4,7 @@
   import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 
   let { favorites, error = null }: { favorites: typeof GetFavoritesResponse.Type.favorites; error?: string | null } = $props()
+
   const audioFavorites = $derived(favorites.filter((favorite) => favorite.audio !== null).slice(0, 6))
 </script>
 

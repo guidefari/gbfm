@@ -3,7 +3,7 @@ import { Schema } from 'effect'
 export const DraftTrackEntrySchema = Schema.Struct({
   id: Schema.Number,
   time: Schema.Number,
-  title: Schema.String
+  title: Schema.String,
 })
 
 export const MixUploadDraftSchema = Schema.Struct({
@@ -22,7 +22,7 @@ export const MixUploadDraftSchema = Schema.Struct({
   episodeNumber: Schema.optional(Schema.String),
   creatorId: Schema.optional(Schema.String),
   url: Schema.optional(Schema.String),
-  updatedAt: Schema.Number
+  updatedAt: Schema.Number,
 })
 
 type StoredDraftInput =
@@ -31,7 +31,7 @@ type StoredDraftInput =
   | boolean
   | null
   | undefined
-  | readonly StoredDraftInput[]
+  | ReadonlyArray<StoredDraftInput>
   | { readonly [key: string]: StoredDraftInput }
 
 export type MixUploadDraft = {
@@ -40,7 +40,7 @@ export type MixUploadDraft = {
   readonly slug: string
   readonly content: string
   readonly thumbnailUrl: string
-  readonly tags: string[]
+  readonly tags: Array<string>
   readonly tracklist: Array<{ readonly id: number; readonly time: number; readonly title: string }>
   readonly audioFingerprint?: string
   readonly audioFileName?: string
@@ -69,12 +69,13 @@ export const emptyMixUploadDraft = (): MixUploadDraft => ({
   episodeNumber: undefined,
   creatorId: undefined,
   url: undefined,
-  updatedAt: Date.now()
+  updatedAt: Date.now(),
 })
 
 export const parseMixUploadDraft = (raw: StoredDraftInput): MixUploadDraft | null => {
   try {
     const decoded = Schema.decodeUnknownSync(MixUploadDraftSchema)(raw)
+
     return {
       title: decoded.title,
       description: decoded.description,
@@ -91,7 +92,7 @@ export const parseMixUploadDraft = (raw: StoredDraftInput): MixUploadDraft | nul
       episodeNumber: decoded.episodeNumber,
       creatorId: decoded.creatorId,
       url: decoded.url,
-      updatedAt: decoded.updatedAt
+      updatedAt: decoded.updatedAt,
     }
   } catch {
     return null

@@ -1,5 +1,6 @@
 import * as Context from 'effect/Context'
 import type * as Effect from 'effect/Effect'
+
 import type { ImageRenderError, ImageSaveError } from './errors'
 
 /** How the image reached the user, so callers can tailor confirmation copy. */
@@ -15,5 +16,5 @@ export interface ImageExportService {
 }
 
 export class ImageExport extends Context.Service<ImageExport, ImageExportService>()(
-  '@gbfm/www/ImageExport'
+  '@gbfm/www/ImageExport',
 ) {}

@@ -6,9 +6,9 @@ const SeedResponse = Schema.Struct({
     Schema.Struct({
       email: Schema.String,
       username: Schema.String,
-      role: Schema.Literals(['user', 'creator', 'editor', 'admin'])
-    })
-  )
+      role: Schema.Literals(['user', 'creator', 'editor', 'admin']),
+    }),
+  ),
 })
 
 const endpoint = new URL('/api/dev/seed', process.env.GBFM_API_URL ?? 'http://127.0.0.1:3003')

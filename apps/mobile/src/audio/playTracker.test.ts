@@ -1,29 +1,12 @@
 import { AudioStorageError, PlayReporter, PlayerStorage } from '@gbfm/player'
 import { Effect, Layer, ManagedRuntime } from 'effect'
-import { expect, test, vi } from 'vitest'
+import { expect, test } from 'vitest'
 
-type TrackAudioPlayRequest = { readonly params: { readonly id: string } }
-
-const api = vi.hoisted<{ calls: Array<TrackAudioPlayRequest> }>(() => ({ calls: [] }))
-
-vi.mock('@/api/client', async () => {
-  const { Effect } = await import('effect')
-  return {
-    getApiClient: Effect.succeed({
-      audio: {
-        trackAudioPlay: (request: TrackAudioPlayRequest) =>
-          Effect.sync(() => {
-            api.calls.push(request)
-          })
-      }
-    })
-  }
-})
-
-const { PlayReporterLive } = await import('./playTracker')
+import { makeMobilePlayReporterLayer } from './playTracker'
 
 test('reports each new track once even when local play-dedup storage is unavailable', async () => {
-  api.calls.length = 0
+  const calls: Array<string> = []
+
   const unavailableStorage = Layer.succeed(PlayerStorage, {
     loadQueue: Effect.succeed(null),
     saveQueue: () => Effect.void,
@@ -33,11 +16,15 @@ test('reports each new track once even when local play-dedup storage is unavaila
     savePosition: () => Effect.void,
     clearPosition: () => Effect.void,
     recordPlay: () => Effect.fail(new AudioStorageError('write')),
-    isWithinDedupWindow: () => Effect.fail(new AudioStorageError('read'))
+    isWithinDedupWindow: () => Effect.fail(new AudioStorageError('read')),
   })
-  const layer = PlayReporterLive.pipe(Layer.provideMerge(unavailableStorage))
+
+  const layer = makeMobilePlayReporterLayer((trackId) =>
+    Effect.sync(() => calls.push(trackId)),
+  ).pipe(Layer.provideMerge(unavailableStorage))
 
   const runtime = ManagedRuntime.make(layer)
+
   try {
     await runtime.runPromise(
       Effect.gen(function* () {
@@ -45,11 +32,11 @@ test('reports each new track once even when local play-dedup storage is unavaila
         yield* reporter.recordPlay('track-1')
         yield* reporter.recordPlay('track-1')
         yield* reporter.recordPlay('track-2')
-      })
+      }),
     )
   } finally {
     await runtime.dispose()
   }
 
-  expect(api.calls).toEqual([{ params: { id: 'track-1' } }, { params: { id: 'track-2' } }])
+  expect(calls).toEqual(['track-1', 'track-2'])
 })

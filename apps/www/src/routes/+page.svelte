@@ -1,6 +1,7 @@
 <script lang="ts">
   import FeaturedMixHero from '@/lib/components/public/FeaturedMixHero.svelte'
   import type { PageProps } from './$types'
+
   let { data }: PageProps = $props()
 </script>
 

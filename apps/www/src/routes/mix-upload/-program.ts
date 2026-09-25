@@ -1,7 +1,10 @@
-import * as Effect from 'effect/Effect'
-import * as Schedule from 'effect/Schedule'
 import type { TrackEntry } from '@gbfm/ui'
+import * as Effect from 'effect/Effect'
+import * as Predicate from 'effect/Predicate'
+import * as Schedule from 'effect/Schedule'
+
 import { HttpStatusError, uploadImageDirectToS3 } from '@/lib/upload/image-upload'
+
 import { ImageUploadError, NotSignedInError, RecordSaveError, isPageRetryable } from './-errors'
 import { buildRecordPayload } from './-payload'
 
@@ -11,8 +14,8 @@ export interface MixFormData {
   slug: string
   content: string
   thumbnailUrl: string
-  tags: string[]
-  tracklist: TrackEntry[]
+  tags: Array<string>
+  tracklist: Array<TrackEntry>
   draft: boolean
   creatorId?: string
   url?: string
@@ -34,27 +37,29 @@ const RETRY_TIMES = 3
 
 export const uploadImage = (
   file: File,
-  signal: AbortSignal
-): Effect.Effect<{ url: string; key: string }, ImageUploadError, never> =>
-  Effect.tryPromise<{ url: string; key: string }, ImageUploadError>({
+  signal: AbortSignal,
+): Effect.Effect<{ url: string; key: string }, ImageUploadError> =>
+  Effect.tryPromise({
     try: () => uploadImageDirectToS3(file, signal),
-    catch: (cause) =>
-      new ImageUploadError({
-        message: cause instanceof Error ? cause.message : String(cause),
-        status: cause instanceof HttpStatusError ? cause.status : undefined
-      })
+    catch: (cause) => {
+      const message = cause instanceof Error ? cause.message : String(cause)
+
+      return cause instanceof HttpStatusError
+        ? new ImageUploadError({ message, status: cause.status })
+        : new ImageUploadError({ message })
+    },
   }).pipe(
     Effect.retry({
       schedule: Schedule.exponential('500 millis'),
       times: RETRY_TIMES,
-      while: (e) => isPageRetryable(e)
-    })
+      while: (e) => isPageRetryable(e),
+    }),
   )
 
 export const saveRecord = (
   input: SubmitRecordInput,
-  signal: AbortSignal
-): Effect.Effect<unknown, RecordSaveError | NotSignedInError, never> => {
+  signal: AbortSignal,
+): Effect.Effect<unknown, RecordSaveError | NotSignedInError> => {
   const idempotencyKey = input.isEditMode ? undefined : crypto.randomUUID()
 
   return Effect.gen(function* () {
@@ -65,33 +70,36 @@ export const saveRecord = (
     const endpoint = input.isEditMode
       ? `/api/content/audio/${input.editType}/${input.editSlug}`
       : '/api/content/audio'
+
     const method = input.isEditMode ? 'PATCH' : 'POST'
     const payload = buildRecordPayload(input)
     const body = JSON.stringify(idempotencyKey ? { ...payload, idempotencyKey } : payload)
 
-    return yield* Effect.tryPromise<unknown, RecordSaveError>({
+    return yield* Effect.tryPromise({
       try: async () => {
         const response = await fetch(endpoint, {
           method,
           body,
           signal,
           credentials: 'include',
-          headers: { 'content-type': 'application/json' }
+          headers: { 'content-type': 'application/json' },
         })
+
         if (!response.ok) throw new Error(`Record save failed (${response.status})`)
         const text = await response.text()
+
         return text ? JSON.parse(text) : undefined
       },
       catch: (cause) =>
         new RecordSaveError({
-          message: cause instanceof Error ? cause.message : 'Network error'
-        })
+          message: cause instanceof Error ? cause.message : 'Network error',
+        }),
     }).pipe(
       Effect.retry({
         schedule: Schedule.exponential('500 millis'),
         times: RETRY_TIMES,
-        while: (e) => e._tag === 'RecordSaveError' && isPageRetryable(e)
-      })
+        while: (error) => Predicate.isTagged(error, 'RecordSaveError') && isPageRetryable(error),
+      }),
     )
   })
 }

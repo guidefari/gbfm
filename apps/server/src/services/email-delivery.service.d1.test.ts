@@ -2,33 +2,35 @@ import type { D1Database } from '@cloudflare/workers-types'
 import { buildWelcomeEmail } from '@gbfm/email/index'
 import { Clock, Effect, Layer } from 'effect'
 import { describe, expect, test } from 'vitest'
+
 import { emailDeliveryLogsTable } from '@/db/email.schema'
 import { Database, DatabaseLayer } from '@/db/layer'
 import {
   createPendingEmailDeliveryLog,
   EmailDeliveryLogTransitionError,
   markEmailDeliveryLogAsFailed,
-  markEmailDeliveryLogAsSent
+  markEmailDeliveryLogAsSent,
 } from '@/repositories/email-delivery-log.repository'
+import { ConfigService, createConfig, type WorkerConfigBindings } from '@/services/config.service'
 import {
   EmailDelivery,
   EmailDeliveryPersistenceError,
   EmailDeliveryRejected,
   EmailDeliveryUnavailable,
-  EmailDeliveryLive
+  EmailDeliveryLive,
 } from '@/services/email-delivery.service'
 import {
   EmailRejected,
   EmailTransport,
   EmailUnavailable,
   makeRecordingEmailTransport,
-  type EmailTransportService
+  type EmailTransportService,
 } from '@/services/email-transport.service'
-import { ConfigService, createConfig, type WorkerConfigBindings } from '@/services/config.service'
-import { createMigratedD1Database } from '@/test/migrate-d1'
 import { withTestLayer } from '@/test/effect'
+import { createMigratedD1Database } from '@/test/migrate-d1'
 
 const sender = 'noreply@mail.goosebumps.fm'
+
 const acceptedAt = new Date('2026-07-12T00:00:00.000Z')
 
 const workerBindings = (): WorkerConfigBindings => ({
@@ -49,14 +51,14 @@ const workerBindings = (): WorkerConfigBindings => ({
   StorageRegion: 'configured',
   StorageAccessKeyId: 'configured',
   StorageSecretAccessKey: 'configured',
-  StorageSigningEndpoint: 'configured'
+  StorageSigningEndpoint: 'configured',
 })
 
 const message = () =>
   buildWelcomeEmail({
     to: 'listener@example.com',
     username: 'Listener',
-    verificationUrl: 'https://goosebumps.fm/auth/verify-email?token=verify-token'
+    verificationUrl: 'https://goosebumps.fm/auth/verify-email?token=verify-token',
   })
 
 const fixedClock = Layer.succeed(Clock.Clock, {
@@ -66,7 +68,7 @@ const fixedClock = Layer.succeed(Clock.Clock, {
   currentTimeNanosUnsafe: () => BigInt(acceptedAt.getTime()) * 1_000_000n,
   monotonicTimeNanos: Effect.succeed(BigInt(acceptedAt.getTime()) * 1_000_000n),
   monotonicTimeNanosUnsafe: () => BigInt(acceptedAt.getTime()) * 1_000_000n,
-  sleep: () => Effect.void
+  sleep: () => Effect.void,
 })
 
 const deliveryLayer = (d1: D1Database, transport: Layer.Layer<EmailTransportService>) =>
@@ -76,9 +78,9 @@ const deliveryLayer = (d1: D1Database, transport: Layer.Layer<EmailTransportServ
         DatabaseLayer(d1),
         transport,
         Layer.succeed(ConfigService, createConfig(workerBindings())),
-        fixedClock
-      )
-    )
+        fixedClock,
+      ),
+    ),
   )
 
 describe('EmailDelivery', () => {
@@ -88,6 +90,7 @@ describe('EmailDelivery', () => {
     const database = Effect.runSync(withTestLayer(Database, DatabaseLayer(d1)))
     const recording = makeRecordingEmailTransport()
     const config = createConfig(workerBindings())
+
     const invalidSenderLayer = EmailDeliveryLive.pipe(
       Layer.provide(
         Layer.mergeAll(
@@ -95,15 +98,15 @@ describe('EmailDelivery', () => {
           recording.layer,
           Layer.succeed(ConfigService, {
             ...config,
-            auth: { ...config.auth, emailSender: 'noreply' }
+            auth: { ...config.auth, emailSender: 'noreply' },
           }),
-          fixedClock
-        )
-      )
+          fixedClock,
+        ),
+      ),
     )
 
     await expect(
-      Effect.runPromise(withTestLayer(EmailDelivery, invalidSenderLayer))
+      Effect.runPromise(withTestLayer(EmailDelivery, invalidSenderLayer)),
     ).rejects.toThrow('Configured email sender must be a full email address')
     await expect(database.select().from(emailDeliveryLogsTable)).resolves.toEqual([])
   })
@@ -119,14 +122,15 @@ describe('EmailDelivery', () => {
         Effect.gen(function* () {
           const delivery = yield* EmailDelivery
           const rendered = yield* message()
+
           return yield* delivery.deliver({
             message: rendered,
             emailType: 'TRANSACTIONAL',
-            recipientName: 'Listener'
+            recipientName: 'Listener',
           })
         }),
-        deliveryLayer(d1, recording.layer)
-      )
+        deliveryLayer(d1, recording.layer),
+      ),
     )
 
     const [log] = await database.select().from(emailDeliveryLogsTable)
@@ -135,21 +139,21 @@ describe('EmailDelivery', () => {
       expect.objectContaining({
         from: sender,
         fromName: 'goosebumps.fm',
-        to: 'listener@example.com'
-      })
+        to: 'listener@example.com',
+      }),
     ])
     expect(receipt).toEqual({
       deliveryLogId: log?.id,
       provider: 'cloudflare',
       providerMessageId: 'recorded-1',
-      acceptedAt
+      acceptedAt,
     })
     expect(log).toMatchObject({
       status: 'SENT',
       provider: 'cloudflare',
       providerMessageId: 'recorded-1',
       failureCategory: null,
-      sentAt: acceptedAt
+      sentAt: acceptedAt,
     })
   })
 
@@ -157,17 +161,20 @@ describe('EmailDelivery', () => {
     await using d1Resource = await createMigratedD1Database()
     const d1 = d1Resource.database
     const database = Effect.runSync(withTestLayer(Database, DatabaseLayer(d1)))
-    const observedStatuses: string[] = []
+    const observedStatuses: Array<string> = []
+
     const transport = Layer.succeed(EmailTransport, {
       send: () =>
         Effect.tryPromise({
           try: async () => {
             const [log] = await database.select().from(emailDeliveryLogsTable)
+
             if (log) observedStatuses.push(log.status)
+
             return { provider: 'cloudflare' as const, messageId: 'ordered-1' }
           },
-          catch: () => new EmailUnavailable({})
-        })
+          catch: () => new EmailUnavailable({}),
+        }),
     })
 
     await Effect.runPromise(
@@ -175,10 +182,11 @@ describe('EmailDelivery', () => {
         Effect.gen(function* () {
           const delivery = yield* EmailDelivery
           const rendered = yield* message()
+
           return yield* delivery.deliver({ message: rendered, emailType: 'TRANSACTIONAL' })
         }),
-        deliveryLayer(d1, transport)
-      )
+        deliveryLayer(d1, transport),
+      ),
     )
 
     expect(observedStatuses).toEqual(['PENDING'])
@@ -188,8 +196,9 @@ describe('EmailDelivery', () => {
     await using d1Resource = await createMigratedD1Database()
     const d1 = d1Resource.database
     const database = Effect.runSync(withTestLayer(Database, DatabaseLayer(d1)))
+
     const recording = makeRecordingEmailTransport({
-      failure: new EmailRejected({ reason: 'delivery-failed' })
+      failure: new EmailRejected({ reason: 'delivery-failed' }),
     })
 
     const failure = await Effect.runPromise(
@@ -197,12 +206,13 @@ describe('EmailDelivery', () => {
         Effect.gen(function* () {
           const delivery = yield* EmailDelivery
           const rendered = yield* message()
+
           return yield* Effect.flip(
-            delivery.deliver({ message: rendered, emailType: 'TRANSACTIONAL' })
+            delivery.deliver({ message: rendered, emailType: 'TRANSACTIONAL' }),
           )
         }),
-        deliveryLayer(d1, recording.layer)
-      )
+        deliveryLayer(d1, recording.layer),
+      ),
     )
 
     const [log] = await database.select().from(emailDeliveryLogsTable)
@@ -214,7 +224,7 @@ describe('EmailDelivery', () => {
       status: 'FAILED',
       failureCategory: 'delivery-failed',
       provider: null,
-      providerMessageId: null
+      providerMessageId: null,
     })
   })
 
@@ -222,49 +232,51 @@ describe('EmailDelivery', () => {
     await using d1Resource = await createMigratedD1Database()
     const d1 = d1Resource.database
     const database = Effect.runSync(withTestLayer(Database, DatabaseLayer(d1)))
+
     const sent = await createPendingEmailDeliveryLog(
       {
         recipientEmail: 'sent@example.com',
         emailType: 'TRANSACTIONAL',
         templateName: 'welcome',
-        subject: 'Welcome'
+        subject: 'Welcome',
       },
-      database
+      database,
     )
+
     const failed = await createPendingEmailDeliveryLog(
       {
         recipientEmail: 'failed@example.com',
         emailType: 'TRANSACTIONAL',
         templateName: 'welcome',
-        subject: 'Welcome'
+        subject: 'Welcome',
       },
-      database
+      database,
     )
 
     await markEmailDeliveryLogAsSent(
       sent.id,
       { provider: 'cloudflare', providerMessageId: 'cf-sent', acceptedAt },
-      database
+      database,
     )
     await markEmailDeliveryLogAsFailed(failed.id, 'unavailable', acceptedAt, database)
 
     await expect(
-      markEmailDeliveryLogAsFailed(sent.id, 'unavailable', acceptedAt, database)
+      markEmailDeliveryLogAsFailed(sent.id, 'unavailable', acceptedAt, database),
     ).rejects.toBeInstanceOf(EmailDeliveryLogTransitionError)
     await expect(
       markEmailDeliveryLogAsSent(
         failed.id,
         { provider: 'cloudflare', providerMessageId: 'cf-overwrite', acceptedAt },
-        database
-      )
+        database,
+      ),
     ).rejects.toBeInstanceOf(EmailDeliveryLogTransitionError)
 
     const rows = await database.select().from(emailDeliveryLogsTable)
     expect(rows).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: sent.id, status: 'SENT', providerMessageId: 'cf-sent' }),
-        expect.objectContaining({ id: failed.id, status: 'FAILED', providerMessageId: null })
-      ])
+        expect.objectContaining({ id: failed.id, status: 'FAILED', providerMessageId: null }),
+      ]),
     )
   })
 
@@ -279,13 +291,15 @@ describe('EmailDelivery', () => {
         Effect.gen(function* () {
           const delivery = yield* EmailDelivery
           const rendered = yield* message()
+
           return yield* Effect.flip(
-            delivery.deliver({ message: rendered, emailType: 'TRANSACTIONAL' })
+            delivery.deliver({ message: rendered, emailType: 'TRANSACTIONAL' }),
           )
         }),
-        deliveryLayer(d1, recording.layer)
-      )
+        deliveryLayer(d1, recording.layer),
+      ),
     )
+
     const [log] = await database.select().from(emailDeliveryLogsTable)
 
     expect(failure).toBeInstanceOf(EmailDeliveryUnavailable)
@@ -296,20 +310,22 @@ describe('EmailDelivery', () => {
     await using d1Resource = await createMigratedD1Database()
     const d1 = d1Resource.database
     const database = Effect.runSync(withTestLayer(Database, DatabaseLayer(d1)))
+
     const conflictingTransport = Layer.succeed(EmailTransport, {
       send: () =>
         Effect.tryPromise({
           try: async () => {
             const [pending] = await database.select().from(emailDeliveryLogsTable)
+
             if (!pending) throw new Error('Expected a pending delivery log')
             await markEmailDeliveryLogAsSent(
               pending.id,
               { provider: 'cloudflare', providerMessageId: 'conflict-receipt', acceptedAt },
-              database
+              database,
             )
           },
-          catch: () => new EmailUnavailable({ providerCode: 'unknown' })
-        }).pipe(Effect.andThen(Effect.fail(new EmailUnavailable({ providerCode: 'unknown' }))))
+          catch: () => new EmailUnavailable({ providerCode: 'unknown' }),
+        }).pipe(Effect.andThen(Effect.fail(new EmailUnavailable({ providerCode: 'unknown' })))),
     })
 
     const failure = await Effect.runPromise(
@@ -317,13 +333,15 @@ describe('EmailDelivery', () => {
         Effect.gen(function* () {
           const delivery = yield* EmailDelivery
           const rendered = yield* message()
+
           return yield* Effect.flip(
-            delivery.deliver({ message: rendered, emailType: 'TRANSACTIONAL' })
+            delivery.deliver({ message: rendered, emailType: 'TRANSACTIONAL' }),
           )
         }),
-        deliveryLayer(d1, conflictingTransport)
-      )
+        deliveryLayer(d1, conflictingTransport),
+      ),
     )
+
     const [log] = await database.select().from(emailDeliveryLogsTable)
 
     expect(failure).toBeInstanceOf(EmailDeliveryPersistenceError)

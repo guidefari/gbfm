@@ -1,10 +1,11 @@
 import { useState } from 'react'
+
 import { GenericAuthForm } from './generic-auth-form'
 import { PasswordChecklist } from './password-checklist'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Forms/Generic auth form'
+  title: '@gbfm/ui/Forms/Generic auth form',
 }
 
 export function AuthForms() {
@@ -29,15 +30,15 @@ export function AuthForms() {
                 name: 'email',
                 type: 'email',
                 placeholder: 'you@example.com',
-                required: true
+                required: true,
               },
               {
                 label: 'Password',
                 name: 'password',
                 type: 'password',
                 placeholder: '••••••••',
-                required: true
-              }
+                required: true,
+              },
             ]}
             onSubmit={async (e) => e.preventDefault()}
           />
@@ -52,7 +53,7 @@ export function AuthForms() {
                 name: 'email',
                 type: 'email',
                 placeholder: 'you@example.com',
-                required: true
+                required: true,
               },
               {
                 label: 'Password',
@@ -61,8 +62,8 @@ export function AuthForms() {
                 placeholder: '••••••••',
                 required: true,
                 onChange: setPassword,
-                belowField: <PasswordChecklist password={password} />
-              }
+                belowField: <PasswordChecklist password={password} />,
+              },
             ]}
             onSubmit={async (e) => e.preventDefault()}
           />

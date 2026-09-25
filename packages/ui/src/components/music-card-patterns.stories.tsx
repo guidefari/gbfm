@@ -3,10 +3,11 @@ import { playbackStates, PlayToggle } from './play-toggle'
 import { mediaExamples, StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/New/Music card patterns'
+  title: '@gbfm/ui/New/Music card patterns',
 }
 
 const FALLBACK = 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'
+
 const [mix] = mediaExamples
 
 export function MusicCardPatterns() {
@@ -79,6 +80,7 @@ export function MusicCardPatterns() {
         <div className='grid gap-x-4 gap-y-6 grid-cols-2 md:grid-cols-4'>
           {[0, 1, 2, 3].map((index) => {
             const example = mediaExamples[index % 2]
+
             return (
               <article key={index} className='group/card flex flex-col gap-3'>
                 <Artwork

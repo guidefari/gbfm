@@ -1,17 +1,16 @@
+import { useAtomValue } from '@effect/atom-react'
 import type { AudioResponse } from '@gbfm/api/audio'
 import {
-  AudioEngine,
+  type AudioEngine,
   makeAudioPlayback,
-  PlayReporter,
-  PlayerStorage,
+  type PlayReporter,
+  type PlayerStorage,
   type AudioPlaybackController,
   type PlaybackSnapshot,
-  type QueueTrackType
+  type QueueTrackType,
 } from '@gbfm/player'
 import { Effect, Layer, ManagedRuntime } from 'effect'
 import { useAudioPlayer } from 'expo-audio'
-import { Platform } from 'react-native'
-import { useAtomValue } from '@effect/atom-react'
 import {
   createContext,
   type PropsWithChildren,
@@ -20,12 +19,14 @@ import {
   useEffect,
   useMemo,
   useRef,
-  useState
+  useState,
 } from 'react'
-import { audioModeAtom } from '@/store/atoms/audio-mode'
+import { Platform } from 'react-native'
+
 import { ExpoAudioEngineLayer } from '@/audio/expoAudioEngine'
 import { PlayReporterLive } from '@/audio/playTracker'
 import { PlayerStorageLive } from '@/audio/queueStorage'
+import { audioModeAtom } from '@/store/atoms/audio-mode'
 
 type Track = typeof AudioResponse.Type
 
@@ -66,7 +67,7 @@ const toQueueTrack = (track: Track): QueueTrackType => ({
   url: track.url,
   thumbnailUrl: track.thumbnailUrl,
   type: track.type,
-  creators: track.creators
+  creators: track.creators,
 })
 
 const initialSnapshot: PlaybackSnapshot = {
@@ -77,9 +78,9 @@ const initialSnapshot: PlaybackSnapshot = {
     isPlaying: false,
     isBuffering: false,
     currentTime: 0,
-    duration: 0
+    duration: 0,
   },
-  volume: { volume: 100, isMuted: false }
+  volume: { volume: 100, isMuted: false },
 }
 
 export function NowPlayingProvider({ children }: PropsWithChildren) {
@@ -88,29 +89,33 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
   const player = useAudioPlayer(null, { updateInterval: 500, keepAudioSessionActive: true })
   const [snapshot, setSnapshot] = useState<PlaybackSnapshot>(initialSnapshot)
   const [queueNotice, setQueueNotice] = useState<QueueNotice | null>(null)
+
   const runtimeRef = useRef<ManagedRuntime.ManagedRuntime<
     AudioEngine | PlayerStorage | PlayReporter,
     never
   > | null>(null)
+
   const playbackRef = useRef<AudioPlaybackController | null>(null)
 
   const runPlayback = useCallback(
     (operation: (playback: AudioPlaybackController) => Effect.Effect<void>) => {
       const playback = playbackRef.current
       const runtime = runtimeRef.current
+
       if (!playback || !runtime) return
       runtime.runFork(operation(playback))
     },
-    []
+    [],
   )
 
   useEffect(() => {
     const runtime = ManagedRuntime.make(
       Layer.mergeAll(
         ExpoAudioEngineLayer(player, Platform.OS === 'web' ? 'web' : 'native'),
-        PlayReporterLive
-      ).pipe(Layer.provideMerge(PlayerStorageLive))
+        PlayReporterLive,
+      ).pipe(Layer.provideMerge(PlayerStorageLive)),
     )
+
     runtimeRef.current = runtime
 
     runtime.runFork(
@@ -119,8 +124,9 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
         playbackRef.current = playback
         const unsubscribe = playback.subscribeSnapshot(setSnapshot)
         yield* Effect.addFinalizer(() => Effect.sync(unsubscribe))
+
         return yield* Effect.never
-      }).pipe(Effect.scoped)
+      }).pipe(Effect.scoped),
     )
 
     return () => {
@@ -134,7 +140,7 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
     (nextTrack: Track) => {
       runPlayback((playback) => playback.playTrack(toQueueTrack(nextTrack)))
     },
-    [runPlayback]
+    [runPlayback],
   )
 
   const enqueue = useCallback(
@@ -142,7 +148,7 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
       runPlayback((playback) => playback.enqueue(toQueueTrack(track)))
       setQueueNotice({ id: Date.now(), message: `Queued: ${track.title}` })
     },
-    [runPlayback]
+    [runPlayback],
   )
 
   const enqueueAll = useCallback(
@@ -150,11 +156,13 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
       if (tracks.length === 0) return
       runPlayback((playback) => playback.enqueueAll(tracks.map(toQueueTrack)))
       const [first] = tracks
+
       const message =
         tracks.length === 1 && first ? `Queued: ${first.title}` : `Queued ${tracks.length} tracks`
+
       setQueueNotice({ id: Date.now(), message })
     },
-    [runPlayback]
+    [runPlayback],
   )
 
   const playAll = useCallback(
@@ -162,28 +170,28 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
       if (tracks.length === 0) return
       runPlayback((playback) => playback.playAll(tracks.map(toQueueTrack)))
     },
-    [runPlayback]
+    [runPlayback],
   )
 
   const removeFromQueue = useCallback(
     (index: number) => {
       runPlayback((playback) => playback.removeFromQueue(index))
     },
-    [runPlayback]
+    [runPlayback],
   )
 
   const reorderQueue = useCallback(
     (from: number, to: number) => {
       runPlayback((playback) => playback.reorderQueue(from, to))
     },
-    [runPlayback]
+    [runPlayback],
   )
 
   const skipTo = useCallback(
     (index: number) => {
       runPlayback((playback) => playback.playFromQueue(index))
     },
-    [runPlayback]
+    [runPlayback],
   )
 
   const skipNext = useCallback(() => {
@@ -193,8 +201,10 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
   const skipPrevious = useCallback(() => {
     if (snapshot.queue.currentIndex === 0) {
       runPlayback((playback) => playback.seekTo(0))
+
       return
     }
+
     runPlayback((playback) => playback.playPrevious)
   }, [runPlayback, snapshot.queue.currentIndex])
 
@@ -206,7 +216,7 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
     (seconds: number) => {
       runPlayback((playback) => playback.seekTo(seconds))
     },
-    [runPlayback]
+    [runPlayback],
   )
 
   const clearQueue = useCallback(() => {
@@ -234,7 +244,7 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
       skipPrevious,
       togglePlayback,
       seekTo,
-      clearQueue
+      clearQueue,
     }),
     [
       snapshot,
@@ -250,8 +260,8 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
       skipPrevious,
       togglePlayback,
       seekTo,
-      clearQueue
-    ]
+      clearQueue,
+    ],
   )
 
   return <NowPlayingContext value={value}>{children}</NowPlayingContext>
@@ -259,6 +269,8 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
 
 export function useNowPlaying() {
   const context = useContext(NowPlayingContext)
+
   if (!context) throw new Error('useNowPlaying must be used within a NowPlayingProvider')
+
   return context
 }

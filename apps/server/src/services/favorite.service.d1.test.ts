@@ -1,35 +1,38 @@
 import { and, eq } from 'drizzle-orm'
-import { Cause, Effect, Exit, Layer } from 'effect'
+import { Cause, Effect, Exit, Layer, Option, Predicate } from 'effect'
 import { describe, expect, test } from 'vitest'
+
 import { audioTable } from '@/db/audio.schema'
 import { user } from '@/db/auth.schema'
-import type { ConflictError, DatabaseError, NotFoundError } from '@/errors'
 import { favoritesTable } from '@/db/favorites.schema'
 import { Database } from '@/db/layer'
 import { showSubscriptionsTable, showsTable } from '@/db/show.schema'
+import type { ConflictError, DatabaseError, NotFoundError } from '@/errors'
 import { db } from '@/test/d1'
 import { withTestLayer } from '@/test/effect'
+
 import { FavoriteService, FavoriteServiceLayer } from './favorite.service'
 
 const CONCURRENCY = 20
 
 const TestFavoriteServiceLayer = FavoriteServiceLayer.pipe(
-  Layer.provide(Layer.succeed(Database)(db))
+  Layer.provide(Layer.succeed(Database)(db)),
 )
 
 const runFavoriteEffect = <A>(
   fn: (
-    svc: FavoriteService
-  ) => Effect.Effect<A, DatabaseError | NotFoundError | ConflictError, FavoriteService>
+    svc: FavoriteService,
+  ) => Effect.Effect<A, DatabaseError | NotFoundError | ConflictError, FavoriteService>,
 ) =>
   Effect.runPromiseExit(
     withTestLayer(
       Effect.gen(function* () {
         const svc = yield* FavoriteService
+
         return yield* fn(svc)
       }),
-      TestFavoriteServiceLayer
-    )
+      TestFavoriteServiceLayer,
+    ),
   )
 
 describe('D1 concurrent favorites', () => {
@@ -46,13 +49,13 @@ describe('D1 concurrent favorites', () => {
       slug: 'concurrent-favorite-mix',
       content: 'test content',
       type: 'mix',
-      url: 'https://example.com/concurrent.mp3'
+      url: 'https://example.com/concurrent.mp3',
     })
 
     const exits = await Promise.all(
       Array.from({ length: CONCURRENCY }, () =>
-        runFavoriteEffect((svc) => svc.addFavorite(userId, audioId))
-      )
+        runFavoriteEffect((svc) => svc.addFavorite(userId, audioId)),
+      ),
     )
 
     const succeeded = exits.filter(Exit.isSuccess)
@@ -63,16 +66,16 @@ describe('D1 concurrent favorites', () => {
 
     for (const exit of failed) {
       expect(Cause.hasDies(exit.cause)).toBe(false)
-      expect(Cause.findErrorOption(exit.cause)).toMatchObject({
-        _tag: 'Some',
-        value: { _tag: 'ConflictError' }
-      })
+      const error = Cause.findErrorOption(exit.cause)
+      expect(Option.isSome(error)).toBe(true)
+      expect(Option.exists(error, Predicate.isTagged('ConflictError'))).toBe(true)
     }
 
     const rows = await db
       .select()
       .from(favoritesTable)
       .where(and(eq(favoritesTable.userId, userId), eq(favoritesTable.audioId, audioId)))
+
     expect(rows.length).toBe(1)
   })
 
@@ -87,13 +90,13 @@ describe('D1 concurrent favorites', () => {
       id: showId,
       title: 'Concurrent Show',
       slug: 'concurrent-favorite-show',
-      content: 'test content'
+      content: 'test content',
     })
 
     const exits = await Promise.all(
       Array.from({ length: CONCURRENCY }, () =>
-        runFavoriteEffect((svc) => svc.addShowFavorite(userId, showId))
-      )
+        runFavoriteEffect((svc) => svc.addShowFavorite(userId, showId)),
+      ),
     )
 
     const succeeded = exits.filter(Exit.isSuccess)
@@ -104,24 +107,25 @@ describe('D1 concurrent favorites', () => {
 
     for (const exit of failed) {
       expect(Cause.hasDies(exit.cause)).toBe(false)
-      expect(Cause.findErrorOption(exit.cause)).toMatchObject({
-        _tag: 'Some',
-        value: { _tag: 'ConflictError' }
-      })
+      const error = Cause.findErrorOption(exit.cause)
+      expect(Option.isSome(error)).toBe(true)
+      expect(Option.exists(error, Predicate.isTagged('ConflictError'))).toBe(true)
     }
 
     const favoriteRows = await db
       .select()
       .from(favoritesTable)
       .where(and(eq(favoritesTable.userId, userId), eq(favoritesTable.showId, showId)))
+
     expect(favoriteRows.length).toBe(1)
 
     const subscriptionRows = await db
       .select()
       .from(showSubscriptionsTable)
       .where(
-        and(eq(showSubscriptionsTable.userId, userId), eq(showSubscriptionsTable.showId, showId))
+        and(eq(showSubscriptionsTable.userId, userId), eq(showSubscriptionsTable.showId, showId)),
       )
+
     expect(subscriptionRows.length).toBe(1)
   })
 })

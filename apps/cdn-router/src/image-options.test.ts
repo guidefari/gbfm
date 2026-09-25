@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+
 import { parseImageOptions } from './image-options'
 
 describe('parseImageOptions', () => {
@@ -13,7 +14,7 @@ describe('parseImageOptions', () => {
     'https://cdn.example/image.jpg?w=0',
     'https://cdn.example/image.jpg?w=2049',
     'https://cdn.example/image.jpg?w=640&q=101',
-    'https://cdn.example/image.jpg?w=640&f=gif'
+    'https://cdn.example/image.jpg?w=640&f=gif',
   ])('rejects invalid options in %s', (url) => {
     expect(parseImageOptions(new URL(url))).toBeNull()
   })

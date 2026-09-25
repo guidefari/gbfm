@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import type { SubmitRecordInput } from './-program'
+
 import { buildRecordPayload } from './-payload'
+import type { SubmitRecordInput } from './-program'
 
 const input: SubmitRecordInput = {
   userId: 'user-1',
@@ -15,13 +16,13 @@ const input: SubmitRecordInput = {
     draft: true,
     creatorId: 'current',
     showId: 'show-1',
-    episodeNumber: '12'
+    episodeNumber: '12',
   },
   imageUrl: 'https://example.com/image.jpg',
   audioUrl: 'https://example.com/audio.mp3',
   isEditMode: false,
   editSlug: '',
-  editType: 'mix'
+  editType: 'mix',
 }
 
 describe('buildRecordPayload', () => {
@@ -38,7 +39,7 @@ describe('buildRecordPayload', () => {
       tags: ['ambient'],
       creatorIds: ['user-1'],
       showId: 'show-1',
-      episodeNumber: 12
+      episodeNumber: 12,
     })
 
     expect(
@@ -51,14 +52,14 @@ describe('buildRecordPayload', () => {
           tracklist: [],
           draft: false,
           creatorId: 'dj-2',
-          episodeNumber: ''
-        }
-      })
+          episodeNumber: '',
+        },
+      }),
     ).toMatchObject({
       slug: 'published-mix',
       content: '# Notes',
       draft: false,
-      creatorIds: ['dj-2']
+      creatorIds: ['dj-2'],
     })
   })
 })

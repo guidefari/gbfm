@@ -1,14 +1,19 @@
 <script lang="ts">
   import ApiTable from './ApiTable.svelte'
   import Page from './Page.svelte'
-  let { title, description, endpoint, createEndpoint, createFields = [], actionBase, idKey }: { title: string; description: string; endpoint: string; createEndpoint?: string; createFields?: { name: string; label: string }[]; actionBase?: string; idKey?: string } = $props()
+
+  let { title, description, endpoint, createEndpoint, createFields = [], actionBase, idKey }: { title: string; description: string; endpoint: string; createEndpoint?: string; createFields?: Array<{ name: string; label: string }>; actionBase?: string; idKey?: string } = $props()
+
   let refresh = $state(0), message = $state('')
+
   let formElement = $state<HTMLFormElement>()
+
   async function create() {
     if (!createEndpoint || !formElement) return
     const form = new FormData(formElement)
     const response = await fetch(createEndpoint, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(Object.fromEntries(form)) })
     message = response.ok ? 'Created.' : `Could not create (${response.status}).`
+
     if (response.ok) { formElement.reset(); refresh++ }
   }
 </script>

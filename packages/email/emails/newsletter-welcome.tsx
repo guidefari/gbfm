@@ -6,8 +6,9 @@ import {
   Link,
   Preview,
   Section,
-  Text
+  Text,
 } from '@react-email/components'
+
 import { EmailHead } from './email-head'
 import { EmailHeader } from './email-header'
 import { emailTheme } from './theme'
@@ -17,7 +18,7 @@ interface NewsletterWelcomeEmailProps {
 }
 
 export function NewsletterWelcomeEmail({
-  unsubscribeUrl = 'https://goosebumps.fm/unsubscribe'
+  unsubscribeUrl = 'https://goosebumps.fm/unsubscribe',
 }: NewsletterWelcomeEmailProps) {
   return (
     <Html>
@@ -58,19 +59,19 @@ export function NewsletterWelcomeEmail({
 
 const main = {
   backgroundColor: emailTheme.colors.mono.page,
-  fontFamily: emailTheme.typography.sansAlt
+  fontFamily: emailTheme.typography.sansAlt,
 }
 
 const container = {
   backgroundColor: emailTheme.colors.mono.page,
   margin: '0 auto',
   padding: '0',
-  maxWidth: '600px'
+  maxWidth: '600px',
 }
 
 const hero = {
   padding: '60px 40px',
-  textAlign: 'center' as const
+  textAlign: 'center' as const,
 }
 
 const label = {
@@ -78,21 +79,21 @@ const label = {
   letterSpacing: '3px',
   color: emailTheme.colors.mono.textMuted,
   margin: '0 0 20px',
-  textTransform: 'uppercase' as const
+  textTransform: 'uppercase' as const,
 }
 
 const headline = {
   fontSize: '28px',
   fontWeight: '700',
   color: emailTheme.colors.mono.white,
-  margin: '0 0 16px'
+  margin: '0 0 16px',
 }
 
 const subtext = {
   fontSize: '16px',
   lineHeight: '24px',
   color: emailTheme.colors.mono.textSecondary,
-  margin: '0 0 32px'
+  margin: '0 0 32px',
 }
 
 const ctaButton = {
@@ -105,24 +106,24 @@ const ctaButton = {
   padding: '14px 40px',
   borderRadius: emailTheme.radius.pill,
   textDecoration: 'none',
-  display: 'inline-block'
+  display: 'inline-block',
 }
 
 const footer = {
   borderTop: `1px solid ${emailTheme.colors.mono.border}`,
   padding: '24px 40px',
-  textAlign: 'center' as const
+  textAlign: 'center' as const,
 }
 
 const footerText = {
   fontSize: '12px',
   color: emailTheme.colors.mono.textMuted,
-  margin: '0'
+  margin: '0',
 }
 
 const footerLink = {
   color: emailTheme.colors.mono.textMuted,
-  textDecoration: 'underline'
+  textDecoration: 'underline',
 }
 
 export default NewsletterWelcomeEmail

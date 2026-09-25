@@ -6,7 +6,7 @@ import { MusicEntityMetadataForm } from './music-entity-metadata-form'
 import { mockArtists, mockLinks, StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Media/Music entity detail'
+  title: '@gbfm/ui/Media/Music entity detail',
 }
 
 export function MusicEntityDetails() {
@@ -34,24 +34,24 @@ export function MusicEntityDetails() {
               imageUrl: null,
               genres: ['dubstep', 'ambient', 'electronic'],
               slug: 'burial',
-              publishedAt: new Date('2023-06-01')
+              publishedAt: new Date('2023-06-01'),
             }}
-            onSubmit={(data) => console.log('save', data)}
+            onSubmit={() => undefined}
           />
         }
         linksSlot={
           <MusicEntityLinksPanel
             links={mockLinks}
-            onAdd={(platform, url) => console.log('add', platform, url)}
-            onUpdateStatus={(id, status) => console.log('status', id, status)}
-            onDelete={(id) => console.log('delete', id)}
+            onAdd={() => undefined}
+            onUpdateStatus={() => undefined}
+            onDelete={() => undefined}
           />
         }
         relationshipsSlot={
           <MusicEntityArtistsPanel
             artists={mockArtists}
-            onAdd={(id, role) => console.log('add artist', id, role)}
-            onRemove={(id) => console.log('remove artist', id)}
+            onAdd={() => undefined}
+            onRemove={() => undefined}
           />
         }
         actionsSlot={
@@ -81,17 +81,17 @@ export function MusicEntityDetails() {
               genres: ['dubstep'],
               albumType: 'album',
               slug: 'untrue',
-              publishedAt: null
+              publishedAt: null,
             }}
-            onSubmit={(data) => console.log('save', data)}
+            onSubmit={() => undefined}
           />
         }
         linksSlot={
           <MusicEntityLinksPanel
             links={mockLinks}
-            onAdd={(platform, url) => console.log('add', platform, url)}
-            onUpdateStatus={(id, status) => console.log('status', id, status)}
-            onDelete={(id) => console.log('delete', id)}
+            onAdd={() => undefined}
+            onUpdateStatus={() => undefined}
+            onDelete={() => undefined}
           />
         }
       />

@@ -32,7 +32,7 @@ const publicRoutes = [
   '/subscribe',
   '/unsubscribe',
   '/invite/charlie3000',
-  '/spotify/callback'
+  '/spotify/callback',
 ] as const
 
 const protectedRoutes = [
@@ -67,7 +67,7 @@ const protectedRoutes = [
   '/dashboard/all',
   '/dashboard/all/mixes',
   '/dashboard/all/tweets',
-  '/dashboard/all/editorial'
+  '/dashboard/all/editorial',
 ] as const
 
 test.beforeEach(async ({ page }) => {
@@ -91,7 +91,7 @@ for (const path of protectedRoutes) {
 }
 
 test('primary tabs complete client-side navigation without a full document reload', async ({
-  page
+  page,
 }) => {
   await page.goto('/')
   await page.evaluate(() => sessionStorage.setItem('navigation-marker', 'preserved'))
@@ -124,12 +124,12 @@ test('home SSR includes canonical metadata and visible content', async ({ page }
   await expect(page.getByRole('heading', { name: /goosebumps\. fm/i })).toBeVisible()
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     'href',
-    'https://goosebumps.fm/'
+    'https://goosebumps.fm/',
   )
 })
 
 test('tweet replies render hydrated music without browser-side music API requests', async ({
-  page
+  page,
 }) => {
   const musicRequests: string[] = []
   page.on('request', (request) => {
@@ -146,7 +146,7 @@ test('tweet replies render hydrated music without browser-side music API request
   await expect(replies.getByText('Echo Unit, Return Path')).toBeVisible()
   await expect(replies.getByRole('link', { name: /Bandcamp/ })).toHaveAttribute(
     'href',
-    'https://example.bandcamp.com/track/e2e-reply'
+    'https://example.bandcamp.com/track/e2e-reply',
   )
   expect(musicRequests).toEqual([])
 })

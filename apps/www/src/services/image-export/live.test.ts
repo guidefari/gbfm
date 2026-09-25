@@ -1,8 +1,9 @@
 /* oxlint-disable effecttsgo/strict-effect-provide -- Each test invokes Effect.runPromise, making it an Effect application entry point. */
 import { Effect, Exit } from 'effect'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ImageExport } from './service'
+
 import { ImageExportLive } from './live'
+import { ImageExport } from './service'
 
 const run = <A, E>(effect: Effect.Effect<A, E, ImageExport>) =>
   effect.pipe(Effect.provide(ImageExportLive), Effect.runPromiseExit)
@@ -22,10 +23,11 @@ describe('ImageExport.save', () => {
     const shared: Array<ReadonlyArray<File>> = []
     vi.stubGlobal('navigator', {
       canShare: () => true,
-      share: (data: { files: File[] }) => {
+      share: (data: { files: Array<File> }) => {
         shared.push(data.files)
+
         return Promise.resolve()
-      }
+      },
     })
 
     const exit = await save(pngBlob(), 'tweet-poster.png')
@@ -39,7 +41,7 @@ describe('ImageExport.save', () => {
   it('reports dismissal rather than failure when the user closes the share sheet', async () => {
     vi.stubGlobal('navigator', {
       canShare: () => true,
-      share: () => Promise.reject(new DOMException('cancelled', 'AbortError'))
+      share: () => Promise.reject(new DOMException('cancelled', 'AbortError')),
     })
 
     const exit = await save(pngBlob(), 'tweet-poster.png')
@@ -50,7 +52,7 @@ describe('ImageExport.save', () => {
   it('fails with ImageSaveError when the share sheet errors for another reason', async () => {
     vi.stubGlobal('navigator', {
       canShare: () => true,
-      share: () => Promise.reject(new DOMException('not allowed', 'NotAllowedError'))
+      share: () => Promise.reject(new DOMException('not allowed', 'NotAllowedError')),
     })
 
     const exit = await save(pngBlob(), 'tweet-poster.png')
@@ -65,16 +67,18 @@ describe('ImageExport.save', () => {
     vi.stubGlobal('URL', { createObjectURL, revokeObjectURL })
 
     const clicked: Array<{ href: string; download: string }> = []
+
     const anchor = {
       href: '',
       download: '',
       rel: '',
       click: () => clicked.push({ href: anchor.href, download: anchor.download }),
-      remove: () => {}
+      remove: () => {},
     }
+
     vi.stubGlobal('document', {
       createElement: () => anchor,
-      body: { appendChild: () => {} }
+      body: { appendChild: () => {} },
     })
 
     const exit = await save(pngBlob(), 'tweet-poster.png')

@@ -4,21 +4,49 @@
   import { dashboardJson, jsonRequest } from '../api'
 
   const roles = ['admin','editor','creator','user'] as const
+
   const Role = Schema.Literals(roles)
+
   const User = Schema.Struct({ id: Schema.String, name: Schema.String, username: Schema.optional(Schema.NullOr(Schema.String)), email: Schema.String, image: Schema.optional(Schema.NullOr(Schema.String)), role: Schema.optional(Schema.NullOr(Schema.String)), banned: Schema.optional(Schema.NullOr(Schema.Boolean)), banReason: Schema.optional(Schema.NullOr(Schema.String)), emailVerified: Schema.optional(Schema.Boolean), createdAt: Schema.optional(Schema.Union([Schema.String, Schema.Date])) })
+
   const Result = Schema.Struct({ users: Schema.Array(User), total: Schema.Number, limit: Schema.Number })
+
   type UserValue = typeof User.Type
+
   type RoleValue = typeof Role.Type
+
   const limit=25
+
   let users=$state<ReadonlyArray<UserValue>>([]), total=$state(0), offset=$state(0), search=$state(''), loading=$state(true), message=$state(''), pending=$state('')
+
   let createOpen=$state(false), name=$state(''), username=$state(''), email=$state(''), password=$state(''), role=$state<RoleValue>('user')
 
-  async function load(){loading=true;message='';try{const query=new URLSearchParams({limit:String(limit),offset:String(offset)});if(search.trim()){query.set('searchValue',search.trim());query.set('searchField','email')}const result=await dashboardJson(Result,`/auth/admin/list-users?${query}`);users=result.users;total=result.total}catch(cause){message=cause instanceof Error?cause.message:'Could not load users.'}finally{loading=false}}
-  async function command(path:string,body:Schema.Json,success='Account updated.'){pending=path;try{await dashboardJson(Schema.Unknown,`/auth/admin/${path}`,jsonRequest('POST',body));message=success;await load()}catch(cause){message=cause instanceof Error?cause.message:'Account action failed.'}finally{pending=''}}
-  async function create(){const generatedEmail=email.trim()||`${username||crypto.randomUUID()}@placeholder.local`;const base={name:name||username||'User',email:generatedEmail,password:password||crypto.randomUUID(),role};if(username)await command('create-user',{...base,data:{username}},'User created.');else await command('create-user',base,'User created.');createOpen=false;name='';username='';email='';password=''}
-  async function invite(userId:string){pending=`invite-${userId}`;try{await dashboardJson(Schema.Unknown,'/api/invite/send',jsonRequest('POST',{userId}));message='Invite email sent.'}catch{message='Failed to send invite.'}finally{pending=''}}
-  function ban(user:UserValue){const reason=prompt(`Reason for banning ${user.name} (optional)`);if(reason!==null)void command('ban-user',reason?{userId:user.id,banReason:reason}:{userId:user.id})}
+  async function load(){loading=true;message='';
+
+try{const query=new URLSearchParams({limit:String(limit),offset:String(offset)});
+
+if(search.trim()){query.set('searchValue',search.trim());query.set('searchField','email')}
+
+const result=await dashboardJson(Result,`/auth/admin/list-users?${query}`);users=result.users;total=result.total}catch(cause){message=cause instanceof Error?cause.message:'Could not load users.'}finally{loading=false}}
+
+  async function command(path:string,body:Schema.Json,success='Account updated.'){pending=path;
+
+try{await dashboardJson(Schema.Unknown,`/auth/admin/${path}`,jsonRequest('POST',body));message=success;await load()}catch(cause){message=cause instanceof Error?cause.message:'Account action failed.'}finally{pending=''}}
+
+  async function create(){const generatedEmail=email.trim()||`${username||crypto.randomUUID()}@placeholder.local`;const base={name:name||username||'User',email:generatedEmail,password:password||crypto.randomUUID(),role};
+
+if(username)await command('create-user',{...base,data:{username}},'User created.');else await command('create-user',base,'User created.');createOpen=false;name='';username='';email='';password=''}
+
+  async function invite(userId:string){pending=`invite-${userId}`;
+
+try{await dashboardJson(Schema.Unknown,'/api/invite/send',jsonRequest('POST',{userId}));message='Invite email sent.'}catch{message='Failed to send invite.'}finally{pending=''}}
+
+  function ban(user:UserValue){const reason=prompt(`Reason for banning ${user.name} (optional)`);
+
+if(reason!==null)void command('ban-user',reason?{userId:user.id,banReason:reason}:{userId:user.id})}
+
   function remove(user:UserValue){if(confirm(`Permanently delete ${user.name}? This cannot be undone.`))void command('remove-user',{userId:user.id})}
+
   onMount(load)
 </script>
 

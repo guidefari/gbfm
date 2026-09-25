@@ -1,13 +1,14 @@
 import { EMAIL_DELIVERY_STATUSES } from '@gbfm/core/status'
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+
 import { user } from './auth.schema'
 
 export const EMAIL_NOTIFICATION_TYPES = {
   TRANSACTIONAL: 'TRANSACTIONAL',
   MIX_RELEASE: 'MIX_RELEASE',
   PROMOTIONAL: 'PROMOTIONAL',
-  SYSTEM: 'SYSTEM'
+  SYSTEM: 'SYSTEM',
 } as const
 
 export type EmailNotificationType =
@@ -15,6 +16,7 @@ export type EmailNotificationType =
 
 /** Providers retained only as delivery-log history, not as a runtime selection mechanism. */
 export const EMAIL_DELIVERY_PROVIDERS = ['ses', 'cloudflare'] as const
+
 export type EmailDeliveryProvider = (typeof EMAIL_DELIVERY_PROVIDERS)[number]
 
 /** Safe, closed failure categories persisted when a provider rejects or cannot accept a message. */
@@ -25,8 +27,9 @@ export const EMAIL_DELIVERY_FAILURE_CATEGORIES = [
   'recipient-suppressed',
   'delivery-failed',
   'content-too-large',
-  'unavailable'
+  'unavailable',
 ] as const
+
 export type EmailDeliveryFailureCategory = (typeof EMAIL_DELIVERY_FAILURE_CATEGORIES)[number]
 
 /** Safe metadata that supports delivery-log operations without accepting arbitrary request payloads. */
@@ -70,14 +73,14 @@ export const emailDeliveryLogsTable = sqliteTable(
       .$defaultFn(() => new Date()),
     updatedAt: integer({ mode: 'timestamp_ms' })
       .notNull()
-      .$defaultFn(() => new Date())
+      .$defaultFn(() => new Date()),
   },
   (table) => [
     index('email_delivery_logs_userId_idx').on(table.userId),
     index('email_delivery_logs_recipientEmail_idx').on(table.recipientEmail),
     index('email_delivery_logs_status_idx').on(table.status),
-    index('email_delivery_logs_createdAt_idx').on(table.createdAt)
-  ]
+    index('email_delivery_logs_createdAt_idx').on(table.createdAt),
+  ],
 )
 
 /** Per-user notification preferences. */
@@ -99,24 +102,27 @@ export const userEmailPreferencesTable = sqliteTable('user_email_preferences', {
     .$defaultFn(() => new Date()),
   updatedAt: integer({ mode: 'timestamp_ms' })
     .notNull()
-    .$defaultFn(() => new Date())
+    .$defaultFn(() => new Date()),
 })
 
 export type SelectEmailDeliveryLog = InferSelectModel<typeof emailDeliveryLogsTable>
+
 export type InsertEmailDeliveryLog = InferInsertModel<typeof emailDeliveryLogsTable>
+
 export type SelectAuthorEmailPreferences = InferSelectModel<typeof userEmailPreferencesTable>
+
 export type InsertAuthorEmailPreferences = InferInsertModel<typeof userEmailPreferencesTable>
 
 export const emailDeliveryLogsRelations = relations(emailDeliveryLogsTable, ({ one }) => ({
   user: one(user, {
     fields: [emailDeliveryLogsTable.userId],
-    references: [user.id]
-  })
+    references: [user.id],
+  }),
 }))
 
 export const authorEmailPreferencesRelations = relations(userEmailPreferencesTable, ({ one }) => ({
   user: one(user, {
     fields: [userEmailPreferencesTable.userId],
-    references: [user.id]
-  })
+    references: [user.id],
+  }),
 }))

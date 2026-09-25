@@ -1,14 +1,16 @@
-import { Context, Effect, Layer } from 'effect'
+import { Context, Effect, Layer, Predicate } from 'effect'
+
 import {
   type NavigationCommand,
   type NavigationIdentity,
   type NavigationResult,
   type CorpusExhausted,
   type Slug,
-  NoSuchMove
+  NoSuchMove,
 } from '@/domain/navigation'
 import type { DatabaseError } from '@/errors'
-import { makeNavigationPersistence } from './navigation-persistence'
+
+import { NavigationPersistence, NavigationPersistenceLayer } from './navigation-persistence'
 
 export type IntentToken = string
 
@@ -23,28 +25,28 @@ export interface NavigationSessionService {
   readonly peek: (
     identity: NavigationIdentity,
     command: NavigationCommand,
-    from: Slug
+    from: Slug,
   ) => Effect.Effect<NavigationResult, NoSuchMove | CorpusExhausted | DatabaseError>
   readonly record: (
     identity: NavigationIdentity,
     command: NavigationCommand,
     from: Slug,
-    intentToken: IntentToken
+    intentToken: IntentToken,
   ) => Effect.Effect<NavigationVisitOutcome, NoSuchMove | CorpusExhausted | DatabaseError>
   readonly resolve: (
     identity: NavigationIdentity,
     command: NavigationCommand,
     from: Slug,
-    intentToken: IntentToken
+    intentToken: IntentToken,
   ) => Effect.Effect<NavigationResult, NoSuchMove | CorpusExhausted | DatabaseError>
   readonly read: (
-    identity: NavigationIdentity
+    identity: NavigationIdentity,
   ) => Effect.Effect<NavigationSessionRead, DatabaseError>
   readonly reset: (identity: NavigationIdentity) => Effect.Effect<void, DatabaseError>
 }
 
 export const NavigationSessionService = Context.Service<NavigationSessionService>(
-  'NavigationSessionService'
+  'NavigationSessionService',
 )
 
 const MAX_NAVIGATION_LOCK_RETRIES = 5
@@ -52,24 +54,29 @@ const MAX_NAVIGATION_LOCK_RETRIES = 5
 export const NavigationSessionServiceLayer = Layer.effect(
   NavigationSessionService,
   Effect.gen(function* () {
-    const persistence = yield* makeNavigationPersistence
+    const persistence = yield* NavigationPersistence
 
     const resolve = (
       identity: NavigationIdentity,
       command: NavigationCommand,
       from: Slug,
-      intentToken: IntentToken
+      intentToken: IntentToken,
     ) =>
       Effect.gen(function* () {
         for (let retryCount = 0; ; retryCount += 1) {
           yield* Effect.annotateCurrentSpan('retried', retryCount > 0)
           const outcome = yield* persistence.attempt(identity, command, from, intentToken)
+
           if (!('_tag' in outcome)) return outcome
+
           if (retryCount === MAX_NAVIGATION_LOCK_RETRIES) {
             return yield* new NoSuchMove({
-              command: command._tag === 'Step' ? `Step(${command.direction})` : command._tag
+              command: Predicate.isTagged(command, 'Step')
+                ? `Step(${command.direction})`
+                : command._tag,
             })
           }
+
           yield* Effect.sleep('1 millis')
         }
       })
@@ -83,28 +90,26 @@ export const NavigationSessionServiceLayer = Layer.effect(
         resolve(identity, command, from, intentToken).pipe(
           Effect.map(() => ({ recorded: true })),
           Effect.withSpan('navigation.record', {
-            attributes:
-              command._tag === 'Step'
-                ? { command: command._tag, direction: command.direction }
-                : { command: command._tag }
-          })
+            attributes: Predicate.isTagged(command, 'Step')
+              ? { command: command._tag, direction: command.direction }
+              : { command: command._tag },
+          }),
         ),
       resolve: (identity, command, from, intentToken) =>
         resolve(identity, command, from, intentToken).pipe(
           Effect.tapError((error) => Effect.annotateCurrentSpan('errorType', error._tag)),
           Effect.withSpan('navigation.resolve', {
-            attributes:
-              command._tag === 'Step'
-                ? {
-                    command: command._tag,
-                    direction: command.direction,
-                    identityKind: identity._tag
-                  }
-                : { command: command._tag, identityKind: identity._tag }
-          })
+            attributes: Predicate.isTagged(command, 'Step')
+              ? {
+                  command: command._tag,
+                  direction: command.direction,
+                  identityKind: identity._tag,
+                }
+              : { command: command._tag, identityKind: identity._tag },
+          }),
         ),
       read: persistence.read,
-      reset: persistence.reset
+      reset: persistence.reset,
     }
-  })
-)
+  }),
+).pipe(Layer.provide(NavigationPersistenceLayer))

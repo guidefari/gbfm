@@ -1,9 +1,10 @@
 import * as Context from 'effect/Context'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
-import { type AudioStorageError, type PersistedQueueType } from './persistedQueue'
+
 import type { AudioStorageAdapter, VolumeRecordType } from './audioStorage'
 import { createAudioStorage } from './audioStorage'
+import type { AudioStorageError, PersistedQueueType } from './persistedQueue'
 
 export type PositionRecord = { readonly position: number; readonly updatedAt: number }
 
@@ -13,11 +14,11 @@ export interface PlayerStorageContract {
   readonly loadVolume: Effect.Effect<VolumeRecordType | null, AudioStorageError>
   readonly saveVolume: (volume: VolumeRecordType) => Effect.Effect<void, AudioStorageError>
   readonly loadPosition: (
-    trackId: string
+    trackId: string,
   ) => Effect.Effect<PositionRecord | null, AudioStorageError>
   readonly savePosition: (
     trackId: string,
-    position: number
+    position: number,
   ) => Effect.Effect<void, AudioStorageError>
   readonly clearPosition: (trackId: string) => Effect.Effect<void, AudioStorageError>
   readonly recordPlay: (trackId: string) => Effect.Effect<void, AudioStorageError>
@@ -25,7 +26,7 @@ export interface PlayerStorageContract {
 }
 
 export class PlayerStorage extends Context.Service<PlayerStorage, PlayerStorageContract>()(
-  '@gbfm/player/PlayerStorage'
+  '@gbfm/player/PlayerStorage',
 ) {}
 
 /** Builds a PlayerStorage layer from a platform storage adapter: expo-file-system
@@ -33,10 +34,11 @@ export class PlayerStorage extends Context.Service<PlayerStorage, PlayerStorageC
 export const layerFromAdapter = (adapter: AudioStorageAdapter, now: () => number = Date.now) =>
   Layer.sync(PlayerStorage, () => {
     const storage = createAudioStorage(adapter, now)
+
     return {
       ...storage,
       loadQueue: storage.loadQueue(),
-      loadVolume: storage.loadVolume()
+      loadVolume: storage.loadVolume(),
     }
   })
 
@@ -100,8 +102,9 @@ export const PlayerStorageInMemory = Layer.sync(PlayerStorage, () => {
     isWithinDedupWindow: (trackId) =>
       Effect.sync(() => {
         const last = plays.get(trackId)
+
         return last !== undefined && Date.now() - last < dedupWindowMs
-      })
+      }),
   }
 })
 
@@ -114,5 +117,5 @@ export const PlayerStorageTest = Layer.succeed(PlayerStorage, {
   savePosition: () => Effect.void,
   clearPosition: () => Effect.void,
   recordPlay: () => Effect.void,
-  isWithinDedupWindow: () => Effect.succeed(false)
+  isWithinDedupWindow: () => Effect.succeed(false),
 })

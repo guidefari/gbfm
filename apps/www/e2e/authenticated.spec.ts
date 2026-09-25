@@ -24,7 +24,7 @@ async function publishTweet(page: Page, slug: string, title: string, body: strin
 }
 
 test('listener can use member settings but cannot access creator or admin tools', async ({
-  page
+  page,
 }) => {
   await signIn(page, 'listener@gbfm.local')
   await expect(page.getByRole('heading', { name: /Welcome back, Local/i })).toBeVisible()
@@ -63,7 +63,7 @@ test('member settings are populated in server responses', async ({ page }) => {
   expect(html).toContain('value="local-listener"')
   expect(html).toContain('value="listener@gbfm.local"')
   expect(html).toContain(
-    'reset link to <strong class="text-foreground">listener@gbfm.local</strong>'
+    'reset link to <strong class="text-foreground">listener@gbfm.local</strong>',
   )
   expect(html).not.toContain('Loading social links')
 
@@ -82,12 +82,12 @@ test('show subscription state is present in the server-rendered response', async
       title: 'SSR subscription test',
       slug,
       content: 'Server-rendered subscription state.',
-      draft: false
-    }
+      draft: false,
+    },
   })
   expect(createResponse.ok()).toBe(true)
   const show = Schema.decodeUnknownSync(Schema.Struct({ id: Schema.String }))(
-    await createResponse.json()
+    await createResponse.json(),
   )
   const subscribeResponse = await page.context().request.post(`/api/shows/${show.id}/subscribe`)
   expect(subscribeResponse.ok()).toBe(true)
@@ -133,7 +133,7 @@ test('creator can save and reopen a draft but cannot access admin tools', async 
 
 test('tweet detail preserves the production content hierarchy and preloads navigation', async ({
   page,
-  context
+  context,
 }) => {
   await signIn(page, 'creator@gbfm.local', '/new')
   const suffix = `${Date.now()}-${test.info().workerIndex}`
@@ -151,7 +151,7 @@ test('tweet detail preserves the production content hierarchy and preloads navig
     page,
     secondSlug,
     'Second E2E transmission',
-    'The second transmission is live.'
+    'The second transmission is live.',
   )
 
   await expect(page.getByRole('heading', { name: 'Second E2E transmission' })).toBeVisible()
@@ -174,7 +174,7 @@ test('tweet detail preserves the production content hierarchy and preloads navig
     marker: sessionStorage.getItem('tweet-navigation-marker'),
     elapsed:
       performance.now() -
-      (performance.getEntriesByName('tweet-navigation-started')[0]?.startTime ?? 0)
+      (performance.getEntriesByName('tweet-navigation-started')[0]?.startTime ?? 0),
   }))
   expect(result.marker).toBe('preserved')
   expect(result.elapsed).toBeLessThan(1_000)
@@ -215,7 +215,7 @@ test('administrator can access creator and platform administration routes', asyn
     ['/dashboard/frontend-errors', 'Frontend Telemetry'],
     ['/dashboard/all/mixes', 'All Mixes'],
     ['/dashboard/all/tweets', 'All Tweets'],
-    ['/dashboard/all/editorial', 'All Editorial']
+    ['/dashboard/all/editorial', 'All Editorial'],
   ] as const
 
   for (const [path, heading] of routes) {

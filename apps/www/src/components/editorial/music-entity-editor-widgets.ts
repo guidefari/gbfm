@@ -1,4 +1,5 @@
-import { EditorView, WidgetType } from '@codemirror/view'
+import { type EditorView, WidgetType } from '@codemirror/view'
+
 import type { MusicEntityReference } from '@/components/editor/music-entity/music-entity-markdown'
 
 export type MusicEntityWidget = {
@@ -20,7 +21,7 @@ export class ResolvedMusicEntityWidget extends WidgetType {
     readonly reference: MusicEntityReference,
     readonly from: number,
     readonly mount: MusicEntityWidgetLifecycle['mount'],
-    readonly unmount: MusicEntityWidgetLifecycle['unmount']
+    readonly unmount: MusicEntityWidgetLifecycle['unmount'],
   ) {
     super()
   }
@@ -56,16 +57,18 @@ export class ResolvedMusicEntityWidget extends WidgetType {
     this.mount({
       key: `${this.from}:${this.reference.type}:${this.reference.id}`,
       host,
-      reference: this.reference
+      reference: this.reference,
     })
 
     this.resizeObserver = new ResizeObserver(() => view.requestMeasure())
     this.resizeObserver.observe(host)
+
     return container
   }
 
   destroy(): void {
     this.resizeObserver?.disconnect()
+
     if (this.host) this.unmount(this.host)
     this.host = null
     this.resizeObserver = null
@@ -94,6 +97,7 @@ export class PendingMusicEntityWidget extends WidgetType {
     copy.textContent = 'Adding Spotify music to the GBFM catalog…'
 
     container.append(spinner, copy)
+
     return container
   }
 }

@@ -1,5 +1,6 @@
 import { makePlayReporterLayer } from '@gbfm/player'
 import { Effect } from 'effect'
+
 import { getApiClient } from '@/api/client'
 
 export const trackAudioPlay = (trackId: string) =>
@@ -8,4 +9,7 @@ export const trackAudioPlay = (trackId: string) =>
     yield* client.audio.trackAudioPlay({ params: { id: trackId } })
   })
 
-export const PlayReporterLive = makePlayReporterLayer(trackAudioPlay)
+export const makeMobilePlayReporterLayer = (deliver: typeof trackAudioPlay) =>
+  makePlayReporterLayer(deliver)
+
+export const PlayReporterLive = makeMobilePlayReporterLayer(trackAudioPlay)

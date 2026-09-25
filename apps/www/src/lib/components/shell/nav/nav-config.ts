@@ -1,6 +1,9 @@
+import { Predicate } from 'effect'
+
 import type { Principal } from '@/lib/auth/principal'
 
 type Role = 'user' | 'creator' | 'editor' | 'admin'
+
 export type NavIcon =
   | 'home'
   | 'radio'
@@ -15,6 +18,7 @@ export type NavIcon =
   | 'youtube'
 
 export const NavTier = { browse: 'browse', create: 'create', follow: 'follow' } as const
+
 type NavTier = (typeof NavTier)[keyof typeof NavTier]
 
 export type NavItem = {
@@ -37,7 +41,7 @@ export const navItems: ReadonlyArray<NavItem> = [
     href: '/shows',
     icon: 'radio',
     tier: NavTier.browse,
-    desktop: true
+    desktop: true,
   },
   {
     id: 'mixes',
@@ -45,7 +49,7 @@ export const navItems: ReadonlyArray<NavItem> = [
     href: '/mixes',
     icon: 'disc',
     tier: NavTier.browse,
-    desktop: true
+    desktop: true,
   },
   {
     id: 'editorial',
@@ -53,7 +57,7 @@ export const navItems: ReadonlyArray<NavItem> = [
     href: '/editorial',
     icon: 'newspaper',
     tier: NavTier.browse,
-    desktop: true
+    desktop: true,
   },
   {
     id: 'tweets',
@@ -62,7 +66,7 @@ export const navItems: ReadonlyArray<NavItem> = [
     icon: 'message',
     tier: NavTier.browse,
     desktop: true,
-    matches: ['/tweet']
+    matches: ['/tweet'],
   },
   { id: 'labels', label: 'Record Labels', href: '/labels', icon: 'tag', tier: NavTier.browse },
   { id: 'djs', label: 'DJs', href: '/djs', icon: 'headphones', tier: NavTier.browse },
@@ -72,7 +76,7 @@ export const navItems: ReadonlyArray<NavItem> = [
     href: '/dashboard/content',
     icon: 'dashboard',
     tier: NavTier.create,
-    minRole: 'creator'
+    minRole: 'creator',
   },
   {
     id: 'new-mix',
@@ -80,7 +84,7 @@ export const navItems: ReadonlyArray<NavItem> = [
     href: '/mix-upload',
     icon: 'upload',
     tier: NavTier.create,
-    minRole: 'editor'
+    minRole: 'editor',
   },
   {
     id: 'new-post',
@@ -88,7 +92,7 @@ export const navItems: ReadonlyArray<NavItem> = [
     href: '/new',
     icon: 'message',
     tier: NavTier.create,
-    minRole: 'editor'
+    minRole: 'editor',
   },
   {
     id: 'manage-labels',
@@ -96,7 +100,7 @@ export const navItems: ReadonlyArray<NavItem> = [
     href: '/dashboard/music',
     icon: 'tag',
     tier: NavTier.create,
-    minRole: 'admin'
+    minRole: 'admin',
   },
   { id: 'newsletter', label: 'Newsletter', href: '/subscribe', icon: 'mail', tier: NavTier.follow },
   {
@@ -105,28 +109,33 @@ export const navItems: ReadonlyArray<NavItem> = [
     href: 'https://youtube.com/@goosebumpsfm',
     icon: 'youtube',
     tier: NavTier.follow,
-    external: true
-  }
+    external: true,
+  },
 ]
 
 const roleRank = { user: 0, creator: 1, editor: 2, admin: 3 } satisfies Record<Role, number>
 
 export const canSeeNavItem = (item: NavItem, principal: Principal) => {
   if (!item.minRole) return true
-  return principal._tag === 'Authenticated' && roleRank[principal.role] >= roleRank[item.minRole]
+
+  return (
+    Predicate.isTagged(principal, 'Authenticated') &&
+    roleRank[principal.role] >= roleRank[item.minRole]
+  )
 }
 
 export const isPathActive = (pathname: string, item: Pick<NavItem, 'href' | 'matches'>) => {
   if (item.href === '/') return pathname === '/'
+
   return [item.href, ...(item.matches ?? [])].some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   )
 }
 
 export const navSections = (principal: Principal) => ({
   browse: navItems.filter((item) => item.tier === NavTier.browse),
   create: navItems.filter((item) => item.tier === NavTier.create && canSeeNavItem(item, principal)),
-  follow: navItems.filter((item) => item.tier === NavTier.follow)
+  follow: navItems.filter((item) => item.tier === NavTier.follow),
 })
 
 export const desktopNavItems = navItems.filter((item) => item.desktop)

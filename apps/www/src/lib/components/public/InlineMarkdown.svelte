@@ -1,16 +1,21 @@
 <script lang="ts">
   let { value }: { value: string } = $props()
+
   type Part = { text: string; href?: string }
+
   const parts = $derived.by(() => {
-    const output: Part[] = []
+    const output: Array<Part> = []
     const pattern = /\[([^\]]+)\]\((https?:\/\/[^\s)]+|\/[^\s)]+)\)|(https?:\/\/[^\s]+)/g
     let cursor = 0
+
     for (const match of value.matchAll(pattern)) {
       if (match.index > cursor) output.push({ text: value.slice(cursor, match.index) })
       output.push({ text: match[1] ?? match[3], href: match[2] ?? match[3] })
       cursor = match.index + match[0].length
     }
+
     if (cursor < value.length) output.push({ text: value.slice(cursor) })
+
     return output
   })
 </script>

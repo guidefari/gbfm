@@ -4,9 +4,13 @@
   import { defaultPlayerPreferences, readPlayerPreferences, type PlayerPreferences } from '@/lib/player/player'
 
   const player = getPlayerContext()
+
   let preferences = $state<PlayerPreferences>({ ...defaultPlayerPreferences })
+
   let saved = $state(false)
+
   onMount(() => { preferences = { ...readPlayerPreferences() } })
+
   function save() {
     player.updatePreferences(preferences)
     saved = true

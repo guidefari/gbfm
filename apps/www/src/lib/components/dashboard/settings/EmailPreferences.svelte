@@ -4,14 +4,18 @@
   import { dashboardJson, jsonRequest } from '@/lib/components/dashboard/api'
 
   type Preferences = typeof EmailPreferences.Type
+
   let { initialPreferences, initialError = null }: { initialPreferences: Preferences | null; initialError?: string | null } = $props()
+
   let values = $derived<EmailPreferenceValues>(initialPreferences ? { mixReleaseEnabled: initialPreferences.mixReleaseEnabled, promotionalEnabled: initialPreferences.promotionalEnabled, systemEnabled: initialPreferences.systemEnabled, globalUnsubscribe: initialPreferences.globalUnsubscribe } : { mixReleaseEnabled: true, promotionalEnabled: true, systemEnabled: true, globalUnsubscribe: false })
+
   let error = $derived(initialError ?? '')
 
   async function update(key: keyof EmailPreferenceValues, value: boolean) {
     const previous = values
     values = { ...values, [key]: value }
     error = ''
+
     try { await dashboardJson(EmailPreferences, '/api/user/email-preferences', jsonRequest('PATCH', values)) }
     catch { values = previous; error = 'Failed to update email preferences. Please try again later.' }
   }

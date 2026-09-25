@@ -4,31 +4,44 @@
   let { content }: { content: string } = $props()
 
   type Block = { type: 'heading' | 'paragraph' | 'quote' | 'list' | 'code'; text: string; level?: number }
+
   const stripMdx = (value: string) => value
     .replace(/<([A-Z][\w.]*)\b[^>]*\/>/g, '')
     .replace(/<([A-Z][\w.]*)\b[^>]*>[\s\S]*?<\/\1>/g, '')
     .replace(/\{[^{}]*\}/g, '')
 
   const blocks = $derived.by(() => {
-    const result: Block[] = []
+    const result: Array<Block> = []
     let code = false
-    let buffer: string[] = []
+    let buffer: Array<string> = []
+
     const flush = () => {
       if (buffer.length) result.push({ type: code ? 'code' : 'paragraph', text: buffer.join(code ? '\n' : ' ') })
       buffer = []
     }
+
     for (const raw of stripMdx(content).split('\n')) {
       const line = raw.trimEnd()
+
       if (line.trim().startsWith('```')) { flush(); code = !code; continue }
+
       if (code) { buffer.push(raw); continue }
+
       if (!line.trim()) { flush(); continue }
+
       const heading = /^(#{1,6})\s+(.+)$/.exec(line)
+
       if (heading) { flush(); result.push({ type: 'heading', text: heading[2], level: heading[1].length }); continue }
+
       if (line.startsWith('> ')) { flush(); result.push({ type: 'quote', text: line.slice(2) }); continue }
+
       if (/^[-*+]\s+/.test(line)) { flush(); result.push({ type: 'list', text: line.replace(/^[-*+]\s+/, '') }); continue }
+
       buffer.push(line)
     }
+
     flush()
+
     return result
   })
 </script>

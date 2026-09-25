@@ -1,6 +1,7 @@
 import { spotifyEntityFromUrl } from '@gbfm/spotify'
 import { useState } from 'react'
 import { Text, TextInput, View } from 'react-native'
+
 import { SpotifyEntityActions } from '@/spotify/SpotifyEntityActions'
 import { useThemeColors } from '@/theme/colors'
 
@@ -36,7 +37,7 @@ export function SpotifyPasteAndPlay({ onNotice }: Props) {
           borderColor: `${colors.muted}66`,
           borderWidth: 1,
           borderRadius: 4,
-          fontSize: 14
+          fontSize: 14,
         }}
       />
 

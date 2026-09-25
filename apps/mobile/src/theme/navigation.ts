@@ -1,6 +1,8 @@
 import { brandDark, brandLight } from '@gbfm/theme'
 import { useColorScheme } from 'react-native'
+
 import { useColorSchemePreference } from '@/store/preferences'
+
 import { fonts } from './fonts'
 
 /**
@@ -20,11 +22,11 @@ export function useStackScreenOptions() {
     headerTintColor: brand['pastel-green-1'],
     headerTitleStyle: {
       color: isDark ? '#FFFFFF' : brand.defaultText,
-      fontFamily: fonts.monoSemiBold
+      fontFamily: fonts.monoSemiBold,
     },
     headerShadowVisible: false,
     // Chevron-only back button: never show the previous route's name.
     headerBackButtonDisplayMode: 'minimal',
-    contentStyle: { backgroundColor: brand.bg }
+    contentStyle: { backgroundColor: brand.bg },
   } as const
 }

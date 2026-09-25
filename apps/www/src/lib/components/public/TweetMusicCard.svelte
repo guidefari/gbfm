@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ExternalLink, Music4 } from 'lucide-svelte'
+  import { Match } from 'effect'
   import { text, type PublicRecord } from '@/lib/public-content'
 
   let {
@@ -8,16 +9,26 @@
     links
   }: { type: string; entity: PublicRecord | null; links: ReadonlyArray<PublicRecord> } = $props()
 
-  const musicLabel = $derived(
-    type === 'album' ? 'Album' : type === 'track' ? 'Track' : type === 'playlist' ? 'Playlist' : 'Music'
-  )
+  const musicLabel = $derived(Match.value(type).pipe(
+    Match.when('album', () => 'Album'),
+    Match.when('track', () => 'Track'),
+    Match.when('playlist', () => 'Playlist'),
+    Match.orElse(() => 'Music')
+  ))
+
   const platformLabel = (platform: string) => {
     if (platform === 'spotify') return 'Spotify'
+
     if (platform === 'youtube') return 'YouTube'
+
     if (platform === 'youtube_music') return 'YT Music'
+
     if (platform === 'apple_music') return 'Apple Music'
+
     if (platform === 'bandcamp') return 'Bandcamp'
+
     if (platform === 'soundcloud') return 'SoundCloud'
+
     return platform || 'Link'
   }
 </script>

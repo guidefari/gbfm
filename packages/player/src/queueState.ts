@@ -1,3 +1,5 @@
+import { Data } from 'effect'
+
 import type { PersistedQueueType, QueueTrackType } from './persistedQueue'
 
 export type QueueAction =
@@ -14,6 +16,8 @@ export type QueueAction =
   | { readonly _tag: 'reorder'; readonly from: number; readonly to: number }
   | { readonly _tag: 'clear' }
 
+export const QueueAction = Data.taggedEnum<QueueAction>()
+
 export const initialQueueState: PersistedQueueType = { tracks: [], currentIndex: -1 }
 
 const clampIndex = (tracks: ReadonlyArray<QueueTrackType>, index: number) =>
@@ -21,67 +25,84 @@ const clampIndex = (tracks: ReadonlyArray<QueueTrackType>, index: number) =>
 
 export const reduceQueue = (
   state: Readonly<PersistedQueueType>,
-  action: QueueAction
+  action: QueueAction,
 ): PersistedQueueType => {
-  switch (action._tag) {
-    case 'enqueue': {
+  return QueueAction.$match(action, {
+    enqueue: (action) => {
       const existing = state.tracks.findIndex((track) => track.id === action.track.id)
+
       if (existing !== -1) return state
       const at = Math.max(0, Math.min(action.at ?? state.tracks.length, state.tracks.length))
       const tracks = [...state.tracks.slice(0, at), action.track, ...state.tracks.slice(at)]
       const currentIndex = state.currentIndex >= at ? state.currentIndex + 1 : state.currentIndex
-      return { tracks, currentIndex }
-    }
 
-    case 'enqueueAll': {
+      return { tracks, currentIndex }
+    },
+
+    enqueueAll: (action) => {
       const knownIds = new Set(state.tracks.map((track) => track.id))
+
       const filtered = action.tracks.filter((track) => {
         if (knownIds.has(track.id)) return false
         knownIds.add(track.id)
+
         return true
       })
+
       if (filtered.length === 0) return state
       const at = Math.max(0, Math.min(action.at ?? state.tracks.length, state.tracks.length))
       const tracks = [...state.tracks.slice(0, at), ...filtered, ...state.tracks.slice(at)]
+
       const currentIndex =
         state.currentIndex >= at ? state.currentIndex + filtered.length : state.currentIndex
-      return { tracks, currentIndex }
-    }
 
-    case 'playNow': {
+      return { tracks, currentIndex }
+    },
+
+    playNow: (action) => {
       const existing = state.tracks.findIndex((track) => track.id === action.track.id)
+
       return existing === -1
         ? { tracks: [action.track, ...state.tracks], currentIndex: 0 }
         : { ...state, currentIndex: existing }
-    }
+    },
 
-    case 'playAll': {
+    playAll: (action) => {
       const ids = new Set<string>()
+
       const tracks = action.tracks.filter((track) => {
         if (ids.has(track.id)) return false
         ids.add(track.id)
+
         return true
       })
+
       return tracks.length === 0 ? initialQueueState : { tracks, currentIndex: 0 }
-    }
+    },
 
-    case 'playIndex':
-      return { ...state, currentIndex: clampIndex(state.tracks, action.index) }
+    playIndex: (action) => ({
+      ...state,
+      currentIndex: clampIndex(state.tracks, action.index),
+    }),
 
-    case 'remove': {
+    remove: (action) => {
       if (action.index < 0 || action.index >= state.tracks.length) return state
+
       const tracks = [
         ...state.tracks.slice(0, action.index),
-        ...state.tracks.slice(action.index + 1)
+        ...state.tracks.slice(action.index + 1),
       ]
+
       let currentIndex = state.currentIndex
+
       if (tracks.length === 0) currentIndex = -1
       else if (action.index < currentIndex) currentIndex -= 1
       else if (action.index === currentIndex) currentIndex = clampIndex(tracks, currentIndex)
-      return { tracks, currentIndex }
-    }
 
-    case 'reorder': {
+      return { tracks, currentIndex }
+    },
+
+    reorder: (action) => {
       if (
         action.from === action.to ||
         action.from < 0 ||
@@ -91,22 +112,21 @@ export const reduceQueue = (
       ) {
         return state
       }
+
       const tracks = [...state.tracks]
       const [moved] = tracks.splice(action.from, 1)
       tracks.splice(action.to, 0, moved)
       const currentId = state.tracks[state.currentIndex]?.id
       const currentIndex = currentId ? tracks.findIndex((track) => track.id === currentId) : -1
-      return { tracks, currentIndex }
-    }
 
-    case 'clear':
-      return initialQueueState
-    default:
-      return state
-  }
+      return { tracks, currentIndex }
+    },
+
+    clear: () => initialQueueState,
+  })
 }
 
 export const mergeHydratedQueue = (
   stored: Readonly<PersistedQueueType>,
-  pending: ReadonlyArray<QueueAction>
+  pending: ReadonlyArray<QueueAction>,
 ): PersistedQueueType => pending.reduce(reduceQueue, stored)

@@ -1,11 +1,12 @@
 import { Effect, Layer } from 'effect'
 import { describe, expect, test } from 'vitest'
+
 import { audioTable } from '@/db/audio.schema'
-import { Database } from '@/db/layer'
 import { replaceEntityLabels } from '@/db/labels'
+import { Database } from '@/db/layer'
 import { postsTable } from '@/db/post.schema'
-import { SearchService, SearchServiceLayer } from '@/services/search.service'
 import { showsTable } from '@/db/show.schema'
+import { SearchService, SearchServiceLayer } from '@/services/search.service'
 import { db, d1 } from '@/test/d1'
 import { withTestLayer } from '@/test/effect'
 
@@ -14,10 +15,11 @@ const search = (query: string) =>
     withTestLayer(
       Effect.gen(function* () {
         const service = yield* SearchService
+
         return yield* service.search(query, 20)
       }),
-      SearchServiceLayer.pipe(Layer.provide(Layer.succeed(Database, db)))
-    )
+      SearchServiceLayer.pipe(Layer.provide(Layer.succeed(Database, db))),
+    ),
   )
 
 const slugs = (rows: Array<{ slug: string }>) => rows.map((row) => row.slug).toSorted()
@@ -31,14 +33,14 @@ describe('D1 search fixture', () => {
           title: 'Aurora Signals',
           slug: 'aurora-signals',
           description: 'Night Signal Dispatch',
-          content: 'A transmission from the cosmos.'
+          content: 'A transmission from the cosmos.',
         },
         {
           id: '44444444-4444-4444-4444-444444444444',
           title: 'Cinder Club',
           slug: 'cinder-club',
           description: 'Ashes after the broadcast',
-          content: 'Embers in the studio.'
+          content: 'Embers in the studio.',
         },
         {
           id: '77777777-7777-7777-7777-777777777777',
@@ -46,8 +48,8 @@ describe('D1 search fixture', () => {
           slug: 'aurora-draft',
           description: 'Unpublished Aurora material',
           content: 'This must be hidden.',
-          draft: true
-        }
+          draft: true,
+        },
       ]),
       db.insert(audioTable).values([
         {
@@ -57,7 +59,7 @@ describe('D1 search fixture', () => {
           description: 'A midnight waveform.',
           content: 'Signal archive for night listeners.',
           type: 'mix',
-          url: 'https://example.com/aurora.mp3'
+          url: 'https://example.com/aurora.mp3',
         },
         {
           id: '55555555-5555-5555-5555-555555555555',
@@ -66,8 +68,8 @@ describe('D1 search fixture', () => {
           description: 'Warm analogue tones.',
           content: 'Coals and static.',
           type: 'mix',
-          url: 'https://example.com/ember.mp3'
-        }
+          url: 'https://example.com/ember.mp3',
+        },
       ]),
       db.insert(postsTable).values([
         {
@@ -76,7 +78,7 @@ describe('D1 search fixture', () => {
           slug: 'aurora-dispatch',
           description: 'A field note from the station.',
           content: 'Midnight! Decode the signal.',
-          type: 'post'
+          type: 'post',
         },
         {
           id: '66666666-6666-6666-6666-666666666666',
@@ -84,39 +86,44 @@ describe('D1 search fixture', () => {
           slug: 'coal-notes',
           description: 'Warm notes.',
           content: 'Ash and static.',
-          type: 'post'
-        }
-      ])
+          type: 'post',
+        },
+      ]),
     ])
     await Promise.all([
       replaceEntityLabels(db, 'show', '11111111-1111-1111-1111-111111111111', {
-        tags: ['stargaze']
+        tags: ['stargaze'],
       }),
       replaceEntityLabels(db, 'show', '44444444-4444-4444-4444-444444444444', { tags: ['fire'] }),
       replaceEntityLabels(db, 'show', '77777777-7777-7777-7777-777777777777', {
-        tags: ['stargaze']
+        tags: ['stargaze'],
       }),
       replaceEntityLabels(db, 'audio', '22222222-2222-2222-2222-222222222222', {
-        tags: ['deep-space']
+        tags: ['deep-space'],
       }),
       replaceEntityLabels(db, 'audio', '55555555-5555-5555-5555-555555555555', { tags: ['fire'] }),
       replaceEntityLabels(db, 'post', '33333333-3333-3333-3333-333333333333', { tags: ['relay'] }),
-      replaceEntityLabels(db, 'post', '66666666-6666-6666-6666-666666666666', { tags: ['fire'] })
+      replaceEntityLabels(db, 'post', '66666666-6666-6666-6666-666666666666', { tags: ['fire'] }),
     ])
 
-    const cases: Array<{ query: string; shows: string[]; audio: string[]; posts: string[] }> = [
+    const cases: Array<{
+      query: string
+      shows: Array<string>
+      audio: Array<string>
+      posts: Array<string>
+    }> = [
       {
         query: 'aurora',
         shows: ['aurora-signals'],
         audio: ['aurora-night-mix'],
-        posts: ['aurora-dispatch']
+        posts: ['aurora-dispatch'],
       },
       { query: 'night signal', shows: ['aurora-signals'], audio: [], posts: [] },
       {
         query: 'rora',
         shows: ['aurora-signals'],
         audio: ['aurora-night-mix'],
-        posts: ['aurora-dispatch']
+        posts: ['aurora-dispatch'],
       },
       { query: 'stargaze', shows: ['aurora-signals'], audio: [], posts: [] },
       { query: 'deep-space', shows: [], audio: ['aurora-night-mix'], posts: [] },
@@ -125,9 +132,9 @@ describe('D1 search fixture', () => {
         query: 'AuRoRa',
         shows: ['aurora-signals'],
         audio: ['aurora-night-mix'],
-        posts: ['aurora-dispatch']
+        posts: ['aurora-dispatch'],
       },
-      { query: 'midnight!', shows: [], audio: [], posts: ['aurora-dispatch'] }
+      { query: 'midnight!', shows: [], audio: [], posts: ['aurora-dispatch'] },
     ]
 
     for (const entry of cases) {
@@ -151,24 +158,28 @@ describe('D1 search fixture', () => {
           .bind('batch-atomicity-label', 'tag', 'batch-atomicity'),
         d1
           .prepare('INSERT INTO labels (id, kind, name) VALUES (?, ?, ?)')
-          .bind('batch-atomicity-label', 'tag', 'batch-atomicity-duplicate')
-      ])
+          .bind('batch-atomicity-label', 'tag', 'batch-atomicity-duplicate'),
+      ]),
     ).rejects.toThrow()
+
     const batchRows = await d1
       .prepare('SELECT count(*) AS count FROM labels WHERE id = ?')
       .bind('batch-atomicity-label')
       .all<{ count: number }>()
+
     expect(batchRows.results[0]?.count).toBe(0)
 
     await d1
       .prepare(
-        'INSERT INTO music_playlists (id, title, slug, createdAt, updatedAt, revision) VALUES (?, ?, ?, ?, ?, ?)'
+        'INSERT INTO music_playlists (id, title, slug, createdAt, updatedAt, revision) VALUES (?, ?, ?, ?, ?, ?)',
       )
       .bind('88888888-8888-8888-8888-888888888888', 'Guarded', 'guarded', 0, 0, 0)
       .run()
+
     const statement = d1.prepare(
-      'UPDATE music_playlists SET revision = revision + 1 WHERE id = ? AND revision = ?'
+      'UPDATE music_playlists SET revision = revision + 1 WHERE id = ? AND revision = ?',
     )
+
     const first = await statement.bind('88888888-8888-8888-8888-888888888888', 0).run()
     const stale = await statement.bind('88888888-8888-8888-8888-888888888888', 0).run()
     expect(first.meta.changes).toBe(1)

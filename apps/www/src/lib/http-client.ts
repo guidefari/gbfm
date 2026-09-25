@@ -1,4 +1,5 @@
 import type * as Effect from 'effect/Effect'
+
 import { log as defaultLog } from '@/services/logger'
 
 export type HttpRequestInput = RequestInfo | URL
@@ -22,13 +23,17 @@ type FetcherOptions = {
 
 export function getRequestUrl(input: HttpRequestInput) {
   if (input instanceof URL) return input.toString()
+
   if (input instanceof Request) return input.url
+
   return input
 }
 
 export function getRequestMethod(input: HttpRequestInput, init: RequestInit) {
   if (init.method) return init.method
+
   if (input instanceof Request) return input.method
+
   return 'GET'
 }
 
@@ -39,18 +44,18 @@ export function createFetcher({
   },
   reportFailure,
   runEffect,
-  logError = (error, context) => defaultLog('error', 'HTTP request failed', { error, ...context })
+  logError = (error, context) => defaultLog('error', 'HTTP request failed', { error, ...context }),
 }: FetcherOptions = {}) {
   const runFailureReport = (
     cause: unknown,
     input: HttpRequestInput,
     init: RequestInit,
-    context: HttpFailureContext = {}
+    context: HttpFailureContext = {},
   ) => {
     if (!reportFailure || !runEffect) return
 
     void runEffect(reportFailure({ error: cause, input, init, context })).catch((reportError) =>
-      logError(reportError, { failureType: 'report_failure' })
+      logError(reportError, { failureType: 'report_failure' }),
     )
   }
 
@@ -58,6 +63,7 @@ export function createFetcher({
     try {
       const isFormData = init.body instanceof FormData
       const headers = new Headers(init.headers)
+
       if (!isFormData && !headers.has('Content-Type')) {
         headers.set('Content-Type', 'application/json')
       }
@@ -65,7 +71,7 @@ export function createFetcher({
       const res = await request(input, {
         ...init,
         headers,
-        credentials: 'include'
+        credentials: 'include',
       })
 
       if (res.status === 401) {
@@ -81,7 +87,7 @@ export function createFetcher({
           runFailureReport(error, input, init, {
             status: res.status,
             statusText: res.statusText,
-            failureType: 'server_response'
+            failureType: 'server_response',
           })
         }
 
@@ -90,6 +96,7 @@ export function createFetcher({
 
       const text = await res.text()
       const parsed: T = text ? JSON.parse(text) : undefined
+
       return parsed
     } catch (error) {
       if (error instanceof TypeError) {

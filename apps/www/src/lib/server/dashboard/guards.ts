@@ -1,29 +1,35 @@
 import { error, redirect, type RequestEvent } from '@sveltejs/kit'
+import { Match } from 'effect'
 
 type Access = 'member' | 'creator' | 'admin'
 
 export function requireDashboardAccess(
   event: Pick<RequestEvent, 'locals' | 'url'>,
-  access: Access
+  access: Access,
 ) {
   const principal = event.locals.principal
-  if (principal._tag === 'Anonymous') {
-    redirect(
-      303,
-      `/auth/sign-in?redirect=${encodeURIComponent(event.url.pathname + event.url.search)}`
-    )
-  }
+
+  const authenticated = Match.value(principal).pipe(
+    Match.tag('Anonymous', () =>
+      redirect(
+        303,
+        `/auth/sign-in?redirect=${encodeURIComponent(event.url.pathname + event.url.search)}`,
+      ),
+    ),
+    Match.tag('Authenticated', (value) => value),
+    Match.exhaustive,
+  )
 
   switch (access) {
     case 'admin':
-      if (principal.role !== 'admin') error(403, 'Administrator access required')
+      if (authenticated.role !== 'admin') error(403, 'Administrator access required')
       break
     case 'creator':
-      if (principal.role === 'user') error(403, 'Creator access required')
+      if (authenticated.role === 'user') error(403, 'Creator access required')
       break
     case 'member':
       break
   }
 
-  return { principal }
+  return { principal: authenticated }
 }

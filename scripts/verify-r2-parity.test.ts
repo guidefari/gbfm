@@ -1,9 +1,11 @@
 import { createHash } from 'node:crypto'
+
 import { describe, expect, test } from 'vitest'
+
 import {
   compareContentHashSample,
   compareInventories,
-  type ObjectInventory
+  type ObjectInventory,
 } from './verify-r2-parity'
 
 const metadata = (contentType: string) => ({
@@ -13,13 +15,13 @@ const metadata = (contentType: string) => ({
   contentLanguage: null,
   contentType,
   expires: null,
-  custom: {}
+  custom: {},
 })
 
 const object = (key: string, size: number, contentType = 'audio/mpeg'): ObjectInventory => ({
   key,
   size,
-  metadata: metadata(contentType)
+  metadata: metadata(contentType),
 })
 
 const keySha256 = (key: string) => createHash('sha256').update(key).digest('hex')
@@ -30,13 +32,13 @@ describe('parity comparison', () => {
       {
         key: 'diverged.mp3',
         sourceSha256: 'source-content-hash',
-        destinationSha256: 'destination-content-hash'
+        destinationSha256: 'destination-content-hash',
       },
       {
         key: 'matching.mp3',
         sourceSha256: 'matching-content-hash',
-        destinationSha256: 'matching-content-hash'
-      }
+        destinationSha256: 'matching-content-hash',
+      },
     ])
 
     expect(result).toEqual([{ keySha256: keySha256('diverged.mp3') }])
@@ -50,8 +52,8 @@ describe('parity comparison', () => {
       [
         object('same.mp3', 10),
         object('changed.mp3', 21, 'application/octet-stream'),
-        object('unexpected.mp3', 40)
-      ]
+        object('unexpected.mp3', 40),
+      ],
     )
 
     expect(result).toEqual({
@@ -62,22 +64,22 @@ describe('parity comparison', () => {
           kind: 'Size',
           keySha256: keySha256('changed.mp3'),
           source: 20,
-          destination: 21
+          destination: 21,
         },
         {
           kind: 'Metadata',
           keySha256: keySha256('changed.mp3'),
-          fields: ['contentType']
+          fields: ['contentType'],
         },
         {
           kind: 'MissingFromDestination',
-          keySha256: keySha256('missing.mp3')
+          keySha256: keySha256('missing.mp3'),
         },
         {
           kind: 'UnexpectedInDestination',
-          keySha256: keySha256('unexpected.mp3')
-        }
-      ]
+          keySha256: keySha256('unexpected.mp3'),
+        },
+      ],
     })
     expect(JSON.stringify(result)).not.toContain('changed.mp3')
     expect(JSON.stringify(result)).not.toContain('missing.mp3')

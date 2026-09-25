@@ -1,13 +1,14 @@
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as Output from 'alchemy/Output'
 import * as Effect from 'effect/Effect'
+
 import type { NavigationLockDurableObject } from '../apps/server/src/durable-objects/navigation-lock.do'
 import type { SpotifyImportResolverDurableObject } from '../apps/server/src/durable-objects/spotify-import-resolver.do'
 import type { EmailDeploymentConfig } from '../apps/server/src/email-deployment-config'
 import {
   maintenanceSweepCron,
   reminderSweepCron,
-  sitemapRegenerationCron
+  sitemapRegenerationCron,
 } from '../apps/server/src/scheduled'
 import type { CdnRouter } from './cdn'
 import type { EmailResources } from './email'
@@ -36,10 +37,11 @@ export const apiWorker = ({
   emailConfig,
   cdn,
   qrPdf,
-  adminEmail
+  adminEmail,
 }: ApiWorkerInput) =>
   Effect.gen(function* () {
     const sentryDsn = secrets.SENTRY_BACKEND_DSN
+
     if (sentryDsn === undefined) {
       return yield* Effect.die(new Error('SENTRY_BACKEND_DSN secret is missing'))
     }
@@ -63,13 +65,13 @@ export const apiWorker = ({
         EMAIL_SENDER: emailConfig.emailSender,
         EMAIL_TRANSPORT_MODE: emailConfig.transport,
         NAVIGATION_LOCK: Cloudflare.DurableObject<NavigationLockDurableObject>('NavigationLock', {
-          className: 'NavigationLockDurableObject'
+          className: 'NavigationLockDurableObject',
         }),
         SPOTIFY_IMPORT_RESOLVER: Cloudflare.DurableObject<SpotifyImportResolverDurableObject>(
           'SpotifyImportResolver',
           {
-            className: 'SpotifyImportResolverDurableObject'
-          }
+            className: 'SpotifyImportResolverDurableObject',
+          },
         ),
         APP_STAGE: config.stage,
         ...(config.isLocalDev ? { LOCAL_DEV: 'true' } : undefined),
@@ -80,19 +82,19 @@ export const apiWorker = ({
         ADMIN_EMAIL: adminEmail,
         ...secrets,
         SENTRY_DSN: sentryDsn,
-        R2AccountId: store.userContent.accountId
-      }
+        R2AccountId: store.userContent.accountId,
+      },
     })
 
     yield* Cloudflare.Queues.Consumer('ReminderConsumer', {
       queueId: store.reminders.queueId,
-      scriptName: api.workerName
+      scriptName: api.workerName,
     })
     yield* Cloudflare.Queues.Consumer('PlaylistEnrichmentConsumer', {
       queueId: store.playlistEnrichment.queueId,
       scriptName: api.workerName,
       deadLetterQueue: store.playlistEnrichmentFailures.queueName,
-      settings: { maxRetries: 5, retryDelay: 30 }
+      settings: { maxRetries: 5, retryDelay: 30 },
     })
 
     return api

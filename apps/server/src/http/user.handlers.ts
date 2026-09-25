@@ -2,10 +2,11 @@ import { Api } from '@gbfm/api/api'
 import { AuthSession } from '@gbfm/api/middleware/auth'
 import { Effect, FileSystem } from 'effect'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
+
 import {
   dieOnDatabaseError as makeDieOnDatabaseError,
   dieOnPlatformError as makeDieOnPlatformError,
-  dieOnS3Error as makeDieOnS3Error
+  dieOnS3Error as makeDieOnS3Error,
 } from '@/http/handler-utils'
 import { ConfigService } from '@/services/config.service'
 import { S3Service } from '@/services/s3.service'
@@ -13,7 +14,9 @@ import { ShowSubscriptionService } from '@/services/show.service'
 import { UserService } from '@/services/user.service'
 
 const dieOnDatabaseError = makeDieOnDatabaseError('user')
+
 const dieOnS3Error = makeDieOnS3Error('user')
+
 const dieOnPlatformError = makeDieOnPlatformError('user')
 
 const sanitizeFileName = (value: string): string => value.replace(/\s+/g, '_')
@@ -24,7 +27,7 @@ const sanitizeFileName = (value: string): string => value.replace(/\s+/g, '_')
 // packages/api/src/upload.ts's comment on this same mismatch).
 const uploadAvatar = (
   userId: string,
-  avatarFile: { path: string; name: string; contentType: string }
+  avatarFile: { path: string; name: string; contentType: string },
 ) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem
@@ -35,7 +38,7 @@ const uploadAvatar = (
     const config = yield* ConfigService
     const s3Service = yield* S3Service
     yield* dieOnS3Error(
-      s3Service.uploadFile(fileName, Buffer.from(bytes), contentType, config.buckets.userContent)
+      s3Service.uploadFile(fileName, Buffer.from(bytes), contentType, config.buckets.userContent),
     )
 
     return `${config.urls.bucketRouter}/user-content/${fileName}`
@@ -43,6 +46,7 @@ const uploadAvatar = (
 
 const requireAdmin = Effect.gen(function* () {
   const { user: sessionUser } = yield* AuthSession
+
   if (sessionUser.role !== 'admin') {
     return yield* new HttpApiError.Forbidden()
   }
@@ -51,6 +55,7 @@ const requireAdmin = Effect.gen(function* () {
 })
 
 type UserProfile = Effect.Success<ReturnType<UserService['getUserById']>>
+
 type SocialLink = Effect.Success<ReturnType<UserService['getUserSocialLinks']>>[number]
 
 interface UserProfileUpdate {
@@ -69,7 +74,7 @@ const toProfileResponse = (profile: UserProfile, socialLinks: ReadonlyArray<Soci
   ...profile,
   avatarUrl: profile.image,
   verified: profile.emailVerified,
-  socialLinks: [...socialLinks]
+  socialLinks: [...socialLinks],
 })
 
 export const UserHandlersLive = HttpApiBuilder.group(Api, 'user', (handlers) =>
@@ -85,8 +90,11 @@ export const UserHandlersLive = HttpApiBuilder.group(Api, 'user', (handlers) =>
         // HttpApiBuilder already routed us here based on the real
         // content-type header, so this isn't re-deriving that decision.
         if (payload.email) updateData.email = payload.email
+
         if (payload.username) updateData.username = payload.username
+
         if (payload.bio !== undefined) updateData.bio = payload.bio
+
         if ('image' in payload && payload.image !== undefined) updateData.image = payload.image
 
         if ('avatar' in payload && payload.avatar) {
@@ -94,147 +102,168 @@ export const UserHandlersLive = HttpApiBuilder.group(Api, 'user', (handlers) =>
         }
 
         const svc = yield* UserService
+
         const profile = yield* dieOnDatabaseError(
           svc
             .updateUserProfile(user.id, updateData)
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
         )
+
         const socialLinks = yield* dieOnDatabaseError(
           svc
             .getUserSocialLinks(user.id)
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
         )
 
         return toProfileResponse(profile, socialLinks)
-      })
+      }),
     )
     .handle('getProfile', () =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
         const svc = yield* UserService
+
         const profile = yield* dieOnDatabaseError(
           svc
             .getUserById(user.id)
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
         )
+
         const socialLinks = yield* dieOnDatabaseError(
           svc
             .getUserSocialLinks(user.id)
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
         )
 
         return toProfileResponse(profile, socialLinks)
-      })
+      }),
     )
     .handle('getSocialLinks', () =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
         const svc = yield* UserService
+
         const links = yield* dieOnDatabaseError(
           svc
             .getUserSocialLinks(user.id)
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
         )
+
         return [...links]
-      })
+      }),
     )
     .handle('replaceSocialLinks', ({ payload }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
         const svc = yield* UserService
+
         const links = yield* dieOnDatabaseError(
           svc
             .replaceUserSocialLinks(user.id, [...payload])
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
         )
+
         return [...links]
-      })
+      }),
     )
     .handle('getAdminUserSocialLinks', ({ params }) =>
       Effect.gen(function* () {
         yield* requireAdmin
         const svc = yield* UserService
+
         const links = yield* dieOnDatabaseError(
           svc
             .getUserSocialLinks(params.userId)
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
         )
+
         return [...links]
-      })
+      }),
     )
     .handle('replaceAdminUserSocialLinks', ({ params, payload }) =>
       Effect.gen(function* () {
         yield* requireAdmin
         const svc = yield* UserService
+
         const links = yield* dieOnDatabaseError(
           svc
             .replaceUserSocialLinks(params.userId, [...payload])
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
         )
+
         return [...links]
-      })
+      }),
     )
     .handle('updateAdminUserBio', ({ params, payload }) =>
       Effect.gen(function* () {
         yield* requireAdmin
         const updateData: UserBioUpdate = {}
+
         if (payload.bio !== null) updateData.bio = payload.bio
+
         if (payload.image !== undefined) updateData.image = payload.image
 
         const svc = yield* UserService
+
         const updated = yield* dieOnDatabaseError(
           svc
             .updateUserProfile(params.userId, updateData)
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
         )
+
         return { bio: updated.bio }
-      })
+      }),
     )
     .handle('getAdminUserBio', ({ params }) =>
       Effect.gen(function* () {
         yield* requireAdmin
         const svc = yield* UserService
+
         const target = yield* dieOnDatabaseError(
           svc
             .getUserById(params.userId)
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
         )
+
         return { bio: target.bio }
-      })
+      }),
     )
     .handle('getEmailPreferences', () =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
         const svc = yield* UserService
         const prefs = yield* dieOnDatabaseError(svc.getUserEmailPreferences(user.id))
+
         return {
           ...prefs,
           createdAt: prefs.createdAt.toISOString(),
-          updatedAt: prefs.updatedAt.toISOString()
+          updatedAt: prefs.updatedAt.toISOString(),
         }
-      })
+      }),
     )
     .handle('updateEmailPreferences', ({ payload }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
         const svc = yield* UserService
         const prefs = yield* dieOnDatabaseError(svc.updateUserEmailPreferences(user.id, payload))
+
         return {
           ...prefs,
           createdAt: prefs.createdAt.toISOString(),
-          updatedAt: prefs.updatedAt.toISOString()
+          updatedAt: prefs.updatedAt.toISOString(),
         }
-      })
+      }),
     )
     .handle('getUserSubscriptions', ({ query }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
         const svc = yield* ShowSubscriptionService
+
         const result = yield* dieOnDatabaseError(
           svc.getUserSubscriptions(user.id, {
             limit: query.limit ?? 20,
-            offset: query.offset ?? 0
-          })
+            offset: query.offset ?? 0,
+          }),
         )
 
         return {
@@ -244,23 +273,25 @@ export const UserHandlersLive = HttpApiBuilder.group(Api, 'user', (handlers) =>
             show: {
               ...subscription.show,
               createdAt: subscription.show.createdAt.toISOString(),
-              updatedAt: subscription.show.updatedAt.toISOString()
-            }
+              updatedAt: subscription.show.updatedAt.toISOString(),
+            },
           })),
-          pagination: result.pagination
+          pagination: result.pagination,
         }
-      })
+      }),
     )
     .handle('listDjs', () =>
       Effect.gen(function* () {
         const svc = yield* UserService
+
         return yield* dieOnDatabaseError(svc.listDjs())
-      })
+      }),
     )
     .handle('searchUsers', ({ query }) =>
       Effect.gen(function* () {
         const svc = yield* UserService
+
         return yield* dieOnDatabaseError(svc.searchUsers(query.q))
-      })
-    )
+      }),
+    ),
 )

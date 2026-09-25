@@ -4,7 +4,7 @@ import * as Effect from 'effect/Effect'
 export const localDevPorts = {
   api: 3003,
   cdn: 3004,
-  qrPdf: 3005
+  qrPdf: 3005,
 } as const
 
 export interface StageConfig {
@@ -23,7 +23,7 @@ export const stageConfig = Effect.gen(function* () {
     stage: stack.stage,
     isProduction,
     isLocalDev,
-    apiUrl: isProduction ? 'https://api.goosebumps.fm' : `https://api.${stack.stage}.goosebumps.fm`
+    apiUrl: isProduction ? 'https://api.goosebumps.fm' : `https://api.${stack.stage}.goosebumps.fm`,
   } satisfies StageConfig
 })
 

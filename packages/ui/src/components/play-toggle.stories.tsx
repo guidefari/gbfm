@@ -1,16 +1,18 @@
 import { useState } from 'react'
+
 import {
   type PlaybackState,
   PlayToggle as PlayToggleComponent,
-  playbackStates
+  playbackStates,
 } from './play-toggle'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/New/Play toggle'
+  title: '@gbfm/ui/New/Play toggle',
 }
 
 const allStates = Object.values(playbackStates)
+
 const variants = ['icon', 'button', 'hero'] as const
 
 export function PlayToggle() {
@@ -33,7 +35,7 @@ export function PlayToggle() {
             label='Late Night Transmissions 04'
             onToggle={() =>
               setState((current) =>
-                current === playbackStates.playing ? playbackStates.idle : playbackStates.playing
+                current === playbackStates.playing ? playbackStates.idle : playbackStates.playing,
               )
             }
           />

@@ -1,26 +1,33 @@
 import type { RenderedEmail } from '@gbfm/email/index'
-import { Clock, Context, Data, Effect, Layer, Result } from 'effect'
-import {
-  type EmailDeliveryFailureCategory,
-  type EmailDeliveryMetadata,
-  type EmailNotificationType
+import { Clock, Context, Data, Effect, Layer, Match, Predicate, Result } from 'effect'
+
+import type {
+  EmailDeliveryFailureCategory,
+  EmailDeliveryMetadata,
+  EmailNotificationType,
 } from '@/db/email.schema'
 import { Database } from '@/db/layer'
+import { recordEmailFail, recordEmailSend } from '@/lib/performance-monitoring'
 import {
   createPendingEmailDeliveryLog,
   markEmailDeliveryLogAsFailed,
-  markEmailDeliveryLogAsSent
+  markEmailDeliveryLogAsSent,
 } from '@/repositories/email-delivery-log.repository'
 import { ConfigService } from '@/services/config.service'
-import { recordEmailFail, recordEmailSend } from '@/lib/performance-monitoring'
-import { EmailRejected, EmailTransport, EmailUnavailable } from './email-transport.service'
+
+import {
+  type EmailRejected,
+  EmailTransport,
+  type EmailUnavailable,
+} from './email-transport.service'
 
 const EMAIL_ADDRESS_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 const senderName = 'goosebumps.fm'
 
 /** A safe delivery-log persistence failure. */
 export class EmailDeliveryPersistenceError extends Data.TaggedError(
-  'EmailDeliveryPersistenceError'
+  'EmailDeliveryPersistenceError',
 )<{
   readonly operation: 'create-pending' | 'mark-sent' | 'mark-failed'
 }> {}
@@ -31,7 +38,7 @@ export class EmailDeliveryRejected extends Data.TaggedError('EmailDeliveryReject
 }> {}
 
 /** A provider availability failure after the delivery log records a safe failure category. */
-export class EmailDeliveryUnavailable extends Data.TaggedError('EmailDeliveryUnavailable')<{}> {}
+export class EmailDeliveryUnavailable extends Data.TaggedError('EmailDeliveryUnavailable') {}
 
 /** The expected failures from a delivery request. */
 export type EmailDeliveryError =
@@ -69,7 +76,7 @@ export interface DeliveryRequest {
 export interface EmailDeliveryService {
   /** Delivers one rendered message and persists either an accepted receipt or a safe failure. */
   readonly deliver: (
-    request: DeliveryRequest
+    request: DeliveryRequest,
   ) => Effect.Effect<EmailDeliveryReceipt, EmailDeliveryError>
 }
 
@@ -77,31 +84,37 @@ export interface EmailDeliveryService {
 export const EmailDelivery = Context.Service<EmailDeliveryService>('EmailDelivery')
 
 const toFailureCategory = (
-  failure: EmailRejected | EmailUnavailable
+  failure: EmailRejected | EmailUnavailable,
 ): EmailDeliveryFailureCategory =>
-  failure._tag === 'EmailRejected' ? failure.reason : 'unavailable'
+  Match.value(failure).pipe(
+    Match.tag('EmailRejected', ({ reason }) => reason),
+    Match.tag('EmailUnavailable', () => 'unavailable' as const),
+    Match.exhaustive,
+  )
 
 const persist = <A>(
   operation: EmailDeliveryPersistenceError['operation'],
-  effect: () => Promise<A>
+  effect: () => Promise<A>,
 ): Effect.Effect<A, EmailDeliveryPersistenceError> =>
   Effect.tryPromise({
     try: effect,
-    catch: () => new EmailDeliveryPersistenceError({ operation })
+    catch: () => new EmailDeliveryPersistenceError({ operation }),
   }).pipe(
     Effect.tapError((error) =>
       Effect.andThen(
         Effect.annotateCurrentSpan('email.persistence_operation', error.operation),
-        recordEmailFail
-      )
-    )
+        recordEmailFail,
+      ),
+    ),
   )
 
 const parseConfiguredSender = (value: string): string => {
   const sender = value.trim()
+
   if (!EMAIL_ADDRESS_PATTERN.test(sender)) {
     throw new Error('Configured email sender must be a full email address')
   }
+
   return sender
 }
 
@@ -127,14 +140,14 @@ export const EmailDeliveryLive = Layer.effect(
                 emailType: request.emailType,
                 templateName: request.message.templateName,
                 subject: request.message.subject,
-                metadata: request.safeMetadata
+                metadata: request.safeMetadata,
               },
-              database
-            )
+              database,
+            ),
           )
 
           const transportResult = yield* Effect.result(
-            transport.send({ ...request.message, from, fromName: senderName })
+            transport.send({ ...request.message, from, fromName: senderName }),
           )
 
           if (Result.isFailure(transportResult)) {
@@ -142,32 +155,37 @@ export const EmailDeliveryLive = Layer.effect(
             const failureCategory = toFailureCategory(failure)
             yield* Effect.annotateCurrentSpan(
               'email.outcome',
-              failure._tag === 'EmailRejected' ? 'rejected' : 'unavailable'
+              Predicate.isTagged('EmailRejected')(failure) ? 'rejected' : 'unavailable',
             )
+
             if (failure.providerCode) {
               yield* Effect.annotateCurrentSpan('email.provider_code', failure.providerCode)
             }
+
             const failedAt = new Date(yield* clock.currentTimeMillis)
             yield* persist('mark-failed', () =>
-              markEmailDeliveryLogAsFailed(pending.id, failureCategory, failedAt, database)
+              markEmailDeliveryLogAsFailed(pending.id, failureCategory, failedAt, database),
             )
             yield* recordEmailFail
 
-            if (failure._tag === 'EmailRejected') {
+            if (Predicate.isTagged('EmailRejected')(failure)) {
               return yield* new EmailDeliveryRejected({ category: failure.reason })
             }
+
             return yield* new EmailDeliveryUnavailable()
           }
 
           const receipt = transportResult.success
+
           if (receipt.messageId.trim().length === 0) {
             yield* Effect.annotateCurrentSpan('email.outcome', 'unavailable')
             yield* Effect.annotateCurrentSpan('email.provider_code', 'invalid-receipt')
             const failedAt = new Date(yield* clock.currentTimeMillis)
             yield* persist('mark-failed', () =>
-              markEmailDeliveryLogAsFailed(pending.id, 'unavailable', failedAt, database)
+              markEmailDeliveryLogAsFailed(pending.id, 'unavailable', failedAt, database),
             )
             yield* recordEmailFail
+
             return yield* new EmailDeliveryUnavailable()
           }
 
@@ -179,10 +197,10 @@ export const EmailDeliveryLive = Layer.effect(
               {
                 provider: receipt.provider,
                 providerMessageId: receipt.messageId,
-                acceptedAt
+                acceptedAt,
               },
-              database
-            )
+              database,
+            ),
           )
           yield* recordEmailSend
 
@@ -190,16 +208,16 @@ export const EmailDeliveryLive = Layer.effect(
             deliveryLogId: pending.id,
             provider: receipt.provider,
             providerMessageId: receipt.messageId,
-            acceptedAt
+            acceptedAt,
           }
         }).pipe(
           Effect.withSpan('email.delivery', {
             attributes: {
               'email.template': request.message.templateName,
-              'email.type': request.emailType
-            }
-          })
-        )
+              'email.type': request.emailType,
+            },
+          }),
+        ),
     }
-  })
+  }),
 )

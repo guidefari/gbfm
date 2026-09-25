@@ -1,6 +1,7 @@
 import type { FullUser, LoginRequest } from '@gbfm/core/api'
 import { Data, Effect, Schema } from 'effect'
 import { HttpClientRequest } from 'effect/unstable/http'
+
 import { getHttpClient } from '@/api/client'
 import { env } from '@/env'
 
@@ -12,7 +13,7 @@ export class SessionUnavailable extends Data.TaggedError('SessionUnavailable')<{
   readonly message: string
 }> {}
 
-export class SessionExpired extends Data.TaggedError('SessionExpired')<{}> {}
+export class SessionExpired extends Data.TaggedError('SessionExpired')<Record<never, never>> {}
 
 const BetterAuthUser = Schema.Struct({
   id: Schema.String,
@@ -22,12 +23,12 @@ const BetterAuthUser = Schema.Struct({
   emailVerified: Schema.Boolean,
   image: Schema.optional(Schema.NullOr(Schema.String)),
   createdAt: Schema.String,
-  updatedAt: Schema.String
+  updatedAt: Schema.String,
 })
 
 const BetterAuthLoginResponse = Schema.Struct({
   user: BetterAuthUser,
-  token: Schema.String
+  token: Schema.String,
 })
 
 const BetterAuthSessionResponse = Schema.Struct({ user: BetterAuthUser })
@@ -40,16 +41,18 @@ const toFullUser = (user: typeof BetterAuthUser.Type): FullUser => ({
   avatarUrl: user.image ?? null,
   verified: user.emailVerified,
   createdAt: user.createdAt,
-  updatedAt: user.updatedAt
+  updatedAt: user.updatedAt,
 })
 
 export const login = (credentials: LoginRequest) =>
   Effect.gen(function* () {
     const client = yield* getHttpClient
+
     const request = yield* HttpClientRequest.bodyJson(
       HttpClientRequest.post(`${env.EXPO_PUBLIC_API_URL}/auth/sign-in/email`),
-      credentials
+      credentials,
     )
+
     const response = yield* client.execute(request)
 
     if (response.status < 200 || response.status >= 300) {
@@ -57,31 +60,36 @@ export const login = (credentials: LoginRequest) =>
     }
 
     const data = yield* response.json.pipe(
-      Effect.flatMap(Schema.decodeUnknownEffect(BetterAuthLoginResponse))
+      Effect.flatMap(Schema.decodeUnknownEffect(BetterAuthLoginResponse)),
     )
+
     return { user: toFullUser(data.user), sessionToken: data.token }
   })
 
 export const getSession = (sessionToken: string) =>
   Effect.gen(function* () {
     const client = yield* getHttpClient
+
     const request = HttpClientRequest.get(`${env.EXPO_PUBLIC_API_URL}/auth/get-session`).pipe(
-      HttpClientRequest.setHeader('Authorization', `Bearer ${sessionToken}`)
+      HttpClientRequest.setHeader('Authorization', `Bearer ${sessionToken}`),
     )
+
     const response = yield* client
       .execute(request)
       .pipe(
-        Effect.mapError(() => new SessionUnavailable({ message: 'Unable to refresh session.' }))
+        Effect.mapError(() => new SessionUnavailable({ message: 'Unable to refresh session.' })),
       )
 
     if (response.status === 401) return yield* new SessionExpired()
+
     if (response.status < 200 || response.status >= 300) {
       return yield* new SessionUnavailable({ message: `Session check failed: ${response.status}` })
     }
 
     const data = yield* response.json.pipe(
       Effect.flatMap(Schema.decodeUnknownEffect(BetterAuthSessionResponse)),
-      Effect.mapError(() => new SessionExpired())
+      Effect.mapError(() => new SessionExpired()),
     )
+
     return toFullUser(data.user)
   })

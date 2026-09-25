@@ -1,16 +1,19 @@
 import { Cause, Effect, Exit, Layer } from 'effect'
 import { describe, expect, test } from 'vitest'
+
 import { withTestLayer } from '@/test/effect'
+
 import {
   ProductionVerificationPort,
   ProductionVerificationError,
   type ProductionVerificationConfig,
   type ProductionVerificationPort as ProductionVerificationPortService,
   summarizeProductionVerificationFailure,
-  verifyProductionDeployment
+  verifyProductionDeployment,
 } from './production-verification'
 
 const traceId = '1'.repeat(32)
+
 const parentSpanId = '2'.repeat(16)
 
 const config: ProductionVerificationConfig = {
@@ -24,18 +27,18 @@ const config: ProductionVerificationConfig = {
   traceId,
   parentSpanId,
   ecs: { attempts: 2, intervalMs: 1 },
-  sentry: { ingestionAttempts: 4, intervalMs: 1, settlementAttempts: 4 }
+  sentry: { ingestionAttempts: 4, intervalMs: 1, settlementAttempts: 4 },
 }
 
 const resources = {
   ResourceTagMappingList: [
     {
-      ResourceARN: 'arn:aws:ecs:us-east-1:123:cluster/gbfm-prod-cluster'
+      ResourceARN: 'arn:aws:ecs:us-east-1:123:cluster/gbfm-prod-cluster',
     },
     {
-      ResourceARN: 'arn:aws:ecs:us-east-1:123:service/gbfm-prod-cluster/gbfm_vps'
-    }
-  ]
+      ResourceARN: 'arn:aws:ecs:us-east-1:123:service/gbfm-prod-cluster/gbfm_vps',
+    },
+  ],
 }
 
 const ecsService = (rolloutState: 'IN_PROGRESS' | 'COMPLETED' = 'COMPLETED') => ({
@@ -55,8 +58,8 @@ const ecsService = (rolloutState: 'IN_PROGRESS' | 'COMPLETED' = 'COMPLETED') => 
                 runningCount: 1,
                 pendingCount: 0,
                 failedTasks: 0,
-                taskDefinition: 'arn:aws:ecs:us-east-1:123:task-definition/gbfm_vps:202'
-              }
+                taskDefinition: 'arn:aws:ecs:us-east-1:123:task-definition/gbfm_vps:202',
+              },
             ]
           : [
               {
@@ -65,7 +68,7 @@ const ecsService = (rolloutState: 'IN_PROGRESS' | 'COMPLETED' = 'COMPLETED') => 
                 runningCount: 1,
                 pendingCount: 0,
                 failedTasks: 0,
-                taskDefinition: 'arn:aws:ecs:us-east-1:123:task-definition/gbfm_vps:202'
+                taskDefinition: 'arn:aws:ecs:us-east-1:123:task-definition/gbfm_vps:202',
               },
               {
                 status: 'ACTIVE',
@@ -73,12 +76,12 @@ const ecsService = (rolloutState: 'IN_PROGRESS' | 'COMPLETED' = 'COMPLETED') => 
                 runningCount: 1,
                 pendingCount: 0,
                 failedTasks: 0,
-                taskDefinition: 'arn:aws:ecs:us-east-1:123:task-definition/gbfm_vps:201'
-              }
-            ]
-    }
+                taskDefinition: 'arn:aws:ecs:us-east-1:123:task-definition/gbfm_vps:201',
+              },
+            ],
+    },
   ],
-  failures: []
+  failures: [],
 })
 
 const profile = {
@@ -93,8 +96,8 @@ const profile = {
     mixes: [],
     shows: [],
     editorials: [],
-    tweets: []
-  }
+    tweets: [],
+  },
 }
 
 const databaseSpan = {
@@ -113,17 +116,17 @@ const databaseSpan = {
   'gbfm.db.instrumentation': 'manual',
   'db.statement': null,
   'db.query': null,
-  'db.query.text': null
+  'db.query.text': null,
 }
 
 const taskDefinition = (release = config.release) => ({
   taskDefinition: {
     containerDefinitions: [
       {
-        environment: [{ name: 'SENTRY_RELEASE', value: release }]
-      }
-    ]
-  }
+        environment: [{ name: 'SENTRY_RELEASE', value: release }],
+      },
+    ],
+  },
 })
 
 type TestOverrides = {
@@ -149,40 +152,41 @@ const makeTestLayer = (overrides: TestOverrides = {}) => {
       Effect.succeed(overrides.taskDefinitionResponse ?? taskDefinition()),
     probe: ({ traceparent, url }) => {
       probes.push({ url: url.toString(), traceparent })
+
       return Effect.succeed({
         status: 200,
-        body: url.pathname === '/health' ? { dbConnected: true } : profile
+        body: url.pathname === '/health' ? { dbConnected: true } : profile,
       })
     },
     querySpans: ({ operation }) =>
       Effect.succeed(
         operation === 'db.query'
           ? take(expectedSpanResponses, { data: [] })
-          : (overrides.forbiddenSpanResponse ?? { data: [] })
+          : (overrides.forbiddenSpanResponse ?? { data: [] }),
       ),
     wait: () =>
       Effect.sync(() => {
         waits += 1
-      })
+      }),
   }
 
   return {
     layer: Layer.succeed(ProductionVerificationPort, port),
     probes,
-    waitCount: () => waits
+    waitCount: () => waits,
   }
 }
 
 const runVerification = (
   configuration: ProductionVerificationConfig,
-  layer: ReturnType<typeof makeTestLayer>['layer']
+  layer: ReturnType<typeof makeTestLayer>['layer'],
 ) => Effect.runPromise(withTestLayer(verifyProductionDeployment(configuration), layer))
 
 describe('verifyProductionDeployment', () => {
   test('waits for ECS and proves functional, correlated, privacy-safe telemetry', async () => {
     const testLayer = makeTestLayer({
       ecsResponses: [ecsService('IN_PROGRESS'), ecsService()],
-      expectedSpanResponses: [{ data: [] }, { data: [databaseSpan] }, { data: [databaseSpan] }]
+      expectedSpanResponses: [{ data: [] }, { data: [databaseSpan] }, { data: [databaseSpan] }],
     })
 
     const report = await runVerification(config, testLayer.layer)
@@ -195,14 +199,14 @@ describe('verifyProductionDeployment', () => {
       traceId,
       databaseSpanCount: 1,
       healthStatus: 200,
-      profileStatus: 200
+      profileStatus: 200,
     })
     expect(testLayer.probes).toEqual([
       { url: 'https://vps.goosebumps.fm/health', traceparent: undefined },
       {
         url: 'https://vps.goosebumps.fm/api/profile/guidefari',
-        traceparent: `00-${traceId}-${parentSpanId}-01`
-      }
+        traceparent: `00-${traceId}-${parentSpanId}-01`,
+      },
     ])
     expect(testLayer.waitCount()).toBeGreaterThanOrEqual(3)
   })
@@ -213,39 +217,41 @@ describe('verifyProductionDeployment', () => {
       sentry: {
         ingestionAttempts: 2,
         intervalMs: 1,
-        settlementAttempts: 3
-      }
+        settlementAttempts: 3,
+      },
     }
+
     const testLayer = makeTestLayer({
       expectedSpanResponses: [
         { data: [] },
         { data: [databaseSpan] },
         { data: [databaseSpan] },
         { data: [databaseSpan] },
-        { data: [databaseSpan] }
-      ]
+        { data: [databaseSpan] },
+      ],
     })
 
     await expect(runVerification(lateIngestionConfig, testLayer.layer)).resolves.toMatchObject({
       databaseSpanCount: 1,
-      traceId
+      traceId,
     })
   })
 
   test('fails when ECS never reaches a single completed deployment', async () => {
     const testLayer = makeTestLayer({
-      ecsResponses: [ecsService('IN_PROGRESS'), ecsService('IN_PROGRESS')]
+      ecsResponses: [ecsService('IN_PROGRESS'), ecsService('IN_PROGRESS')],
     })
 
     await expect(runVerification(config, testLayer.layer)).rejects.toMatchObject({
       phase: 'ecs-rollout',
-      summary: expect.stringContaining('did not reach steady state')
+      summary: expect.stringContaining('did not reach steady state'),
     })
   })
 
   test('ignores failed-task history from the draining previous deployment', async () => {
     const rollingService = ecsService('IN_PROGRESS')
     const service = rollingService.services[0]
+
     const testLayer = makeTestLayer({
       ecsResponses: [
         {
@@ -258,62 +264,62 @@ describe('verifyProductionDeployment', () => {
                     ...service,
                     deployments: service.deployments
                       .map((deployment, index) =>
-                        index === 1 ? { ...deployment, failedTasks: 2 } : deployment
+                        index === 1 ? { ...deployment, failedTasks: 2 } : deployment,
                       )
-                      .toReversed()
-                  }
-                ]
+                      .toReversed(),
+                  },
+                ],
         },
-        ecsService()
-      ]
+        ecsService(),
+      ],
     })
 
     await expect(runVerification(config, testLayer.layer)).resolves.toMatchObject({
-      taskDefinition: 'arn:aws:ecs:us-east-1:123:task-definition/gbfm_vps:202'
+      taskDefinition: 'arn:aws:ecs:us-east-1:123:task-definition/gbfm_vps:202',
     })
   })
 
   test('fails safely when AWS returns a malformed service boundary', async () => {
     const testLayer = makeTestLayer({
-      ecsResponses: [{ services: 'not-an-array', failures: [] }]
+      ecsResponses: [{ services: 'not-an-array', failures: [] }],
     })
 
     await expect(runVerification(config, testLayer.layer)).rejects.toMatchObject({
       phase: 'ecs-rollout',
-      summary: 'AWS returned an invalid ECS service response'
+      summary: 'AWS returned an invalid ECS service response',
     })
   })
 
   test('fails when the stable ECS task belongs to a different release', async () => {
     const testLayer = makeTestLayer({
-      taskDefinitionResponse: taskDefinition('v-old')
+      taskDefinitionResponse: taskDefinition('v-old'),
     })
 
     await expect(runVerification(config, testLayer.layer)).rejects.toMatchObject({
       phase: 'ecs-rollout',
-      summary: expect.stringContaining('does not contain the deployed Sentry release')
+      summary: expect.stringContaining('does not contain the deployed Sentry release'),
     })
   })
 
   test('fails when the verification trace never reaches Sentry', async () => {
     const testLayer = makeTestLayer({
-      expectedSpanResponses: [{ data: [] }, { data: [] }]
+      expectedSpanResponses: [{ data: [] }, { data: [] }],
     })
 
     await expect(runVerification(config, testLayer.layer)).rejects.toMatchObject({
       phase: 'sentry-ingestion',
-      summary: expect.stringContaining('No database spans arrived')
+      summary: expect.stringContaining('No database spans arrived'),
     })
   })
 
   test('fails safely when Sentry returns a malformed span boundary', async () => {
     const testLayer = makeTestLayer({
-      expectedSpanResponses: [{ data: [{ id: 'incomplete-span' }] }]
+      expectedSpanResponses: [{ data: [{ id: 'incomplete-span' }] }],
     })
 
     await expect(runVerification(config, testLayer.layer)).rejects.toMatchObject({
       phase: 'sentry-ingestion',
-      summary: 'Sentry returned an invalid spans response'
+      summary: 'Sentry returned an invalid spans response',
     })
   })
 
@@ -327,37 +333,38 @@ describe('verifyProductionDeployment', () => {
             {
               ...databaseSpan,
               id: 'late-automatic-span',
-              'gbfm.db.instrumentation': null
-            }
-          ]
-        }
-      ]
+              'gbfm.db.instrumentation': null,
+            },
+          ],
+        },
+      ],
     })
 
     await expect(runVerification(config, testLayer.layer)).rejects.toMatchObject({
       phase: 'sentry-privacy',
-      summary: expect.stringContaining('automatic or privacy-unsafe')
+      summary: expect.stringContaining('automatic or privacy-unsafe'),
     })
   })
 
   test('waits for custom span attributes to finish indexing before validation', async () => {
     const indexingSpan = {
       ...databaseSpan,
-      'gbfm.db.instrumentation': null
+      'gbfm.db.instrumentation': null,
     }
+
     const testLayer = makeTestLayer({
       expectedSpanResponses: [
         { data: [indexingSpan] },
         { data: [indexingSpan] },
         { data: [databaseSpan] },
         { data: [databaseSpan] },
-        { data: [databaseSpan] }
-      ]
+        { data: [databaseSpan] },
+      ],
     })
 
     await expect(runVerification(config, testLayer.layer)).resolves.toMatchObject({
       databaseSpanCount: 1,
-      traceId
+      traceId,
     })
   })
 
@@ -366,50 +373,50 @@ describe('verifyProductionDeployment', () => {
       name: 'missing parent correlation',
       span: { ...databaseSpan, parent_span: null },
       phase: 'sentry-correlation',
-      summary: 'missing or mismatched trace correlation'
+      summary: 'missing or mismatched trace correlation',
     },
     {
       name: 'raw SQL attribute',
       span: {
         ...databaseSpan,
-        'db.statement': 'select * from user where id = $1'
+        'db.statement': 'select * from user where id = $1',
       },
       phase: 'sentry-privacy',
-      summary: 'automatic or privacy-unsafe database span'
+      summary: 'automatic or privacy-unsafe database span',
     },
     {
       name: 'wrong release',
       span: { ...databaseSpan, release: 'v-old' },
       phase: 'sentry-correlation',
-      summary: 'missing or mismatched trace correlation'
+      summary: 'missing or mismatched trace correlation',
     },
     {
       name: 'SQL-shaped description',
       span: { ...databaseSpan, description: 'select * from user where id = $1' },
       phase: 'sentry-privacy',
-      summary: 'automatic or privacy-unsafe database span'
-    }
+      summary: 'automatic or privacy-unsafe database span',
+    },
   ])('fails privacy and correlation for $name', async ({ phase, span, summary }) => {
     const testLayer = makeTestLayer({
-      expectedSpanResponses: [{ data: [span] }]
+      expectedSpanResponses: [{ data: [span] }],
     })
 
     await expect(runVerification(config, testLayer.layer)).rejects.toMatchObject({
       phase,
-      summary: expect.stringContaining(summary)
+      summary: expect.stringContaining(summary),
     })
   })
 
   test('fails when Sentry emits an automatic database span', async () => {
     const testLayer = makeTestLayer({
       forbiddenSpanResponse: {
-        data: [{ ...databaseSpan, 'span.op': 'db' }]
-      }
+        data: [{ ...databaseSpan, 'span.op': 'db' }],
+      },
     })
 
     await expect(runVerification(config, testLayer.layer)).rejects.toMatchObject({
       phase: 'sentry-privacy',
-      summary: expect.stringContaining('forbidden automatic database span')
+      summary: expect.stringContaining('forbidden automatic database span'),
     })
   })
 
@@ -418,15 +425,15 @@ describe('verifyProductionDeployment', () => {
       Effect.fail(
         new ProductionVerificationError({
           phase: 'ecs-rollout',
-          summary: 'ECS did not stabilize'
-        })
-      )
+          summary: 'ECS did not stabilize',
+        }),
+      ),
     )
 
     expect(Exit.isFailure(exit)).toBe(true)
     const failure = Exit.isFailure(exit) ? exit.cause.reasons.find(Cause.isFailReason) : undefined
     expect(summarizeProductionVerificationFailure(failure?.error)).toBe(
-      'ecs-rollout: ECS did not stabilize'
+      'ecs-rollout: ECS did not stabilize',
     )
   })
 })

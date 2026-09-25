@@ -10,14 +10,18 @@
   import { toNowPlaying } from './nav/now-playing'
 
   let { principal }: { principal: Principal } = $props()
+
   const snapshot = getPlayerContext().snapshot
+
   const player = $derived(toNowPlaying($snapshot))
+
   let search = $state<SearchDialog>()
 
   const openSearch = () => {
     document.getElementById('mobile-menu')?.hidePopover()
     search?.open()
   }
+
   const isTyping = (target: EventTarget | null) =>
     target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement || (target instanceof HTMLElement && target.isContentEditable)
 
@@ -30,12 +34,15 @@
   onMount(() => {
     const hotkeys = (event: KeyboardEvent) => {
       const commandK = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k'
+
       if (!commandK && (event.key !== '/' || isTyping(event.target))) return
       event.preventDefault()
       event.stopPropagation()
       openSearch()
     }
+
     window.addEventListener('keydown', hotkeys, { capture: true })
+
     return () => {
       window.removeEventListener('keydown', hotkeys, { capture: true })
     }

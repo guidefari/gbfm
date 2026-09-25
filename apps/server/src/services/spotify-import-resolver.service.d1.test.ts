@@ -1,26 +1,28 @@
 import { and, eq, inArray } from 'drizzle-orm'
 import { Cause, Effect, Exit, Layer } from 'effect'
 import { beforeAll, describe, expect, test } from 'vitest'
+
 import { Database } from '@/db/layer'
 import {
   musicEntityLinksTable,
   musicEntityTypesTable,
   musicPlaylistsTable,
   musicPlatformsTable,
-  musicTracksTable
+  musicTracksTable,
 } from '@/db/music-entity.schema'
 import type { SpotifyImportPlaylist, SpotifyImportTrack } from '@/services/spotify.service'
 import { db } from '@/test/d1'
 import { withTestLayer } from '@/test/effect'
+
 import {
   SpotifyImportResolver,
-  SpotifyImportResolverLocalLayer
+  SpotifyImportResolverLocalLayer,
 } from './spotify-import-resolver.service'
 
 const CONCURRENCY = 20
 
 const TestSpotifyImportResolverLayer = SpotifyImportResolverLocalLayer.pipe(
-  Layer.provide(Layer.succeed(Database)(db))
+  Layer.provide(Layer.succeed(Database)(db)),
 )
 
 const getTestResolver = () =>
@@ -29,8 +31,8 @@ const getTestResolver = () =>
       Effect.gen(function* () {
         return yield* SpotifyImportResolver
       }),
-      TestSpotifyImportResolverLayer
-    )
+      TestSpotifyImportResolverLayer,
+    ),
   )
 
 const spotifyTrack = {
@@ -44,7 +46,7 @@ const spotifyTrack = {
   trackUrl: 'https://open.spotify.com/track/spotify-concurrent-track',
   previewUrl: null,
   durationMs: 120_000,
-  trackNumber: 1
+  trackNumber: 1,
 } satisfies SpotifyImportTrack
 
 const spotifyPlaylist = {
@@ -54,13 +56,13 @@ const spotifyPlaylist = {
   coverImageUrl: null,
   ownerName: 'Concurrent Owner',
   playlistUrl: 'https://open.spotify.com/playlist/spotify-concurrent-playlist',
-  tracks: []
+  tracks: [],
 } satisfies SpotifyImportPlaylist
 
 beforeAll(async () => {
   await db.insert(musicEntityTypesTable).values([
     { id: 'track', displayName: 'Track' },
-    { id: 'playlist', displayName: 'Playlist' }
+    { id: 'playlist', displayName: 'Playlist' },
   ])
   await db.insert(musicPlatformsTable).values({ id: 'spotify', displayName: 'Spotify' })
 })
@@ -68,10 +70,11 @@ beforeAll(async () => {
 describe('D1 concurrent Spotify import resolution', () => {
   test('20 concurrent track resolutions for one Spotify URL create exactly one track', async () => {
     const resolver = await getTestResolver()
+
     const exits = await Promise.all(
       Array.from({ length: CONCURRENCY }, () =>
-        Effect.runPromiseExit(resolver.resolveTrack(spotifyTrack))
-      )
+        Effect.runPromiseExit(resolver.resolveTrack(spotifyTrack)),
+      ),
     )
 
     const succeeded = exits.filter(Exit.isSuccess)
@@ -95,9 +98,10 @@ describe('D1 concurrent Spotify import resolution', () => {
         and(
           eq(musicEntityLinksTable.entityType, 'track'),
           eq(musicEntityLinksTable.platform, 'spotify'),
-          eq(musicEntityLinksTable.url, spotifyTrack.trackUrl)
-        )
+          eq(musicEntityLinksTable.url, spotifyTrack.trackUrl),
+        ),
       )
+
     const tracks = await db
       .select()
       .from(musicTracksTable)
@@ -109,10 +113,11 @@ describe('D1 concurrent Spotify import resolution', () => {
 
   test('20 concurrent playlist resolutions for one Spotify URL create exactly one playlist', async () => {
     const resolver = await getTestResolver()
+
     const exits = await Promise.all(
       Array.from({ length: CONCURRENCY }, () =>
-        Effect.runPromiseExit(resolver.resolvePlaylist(spotifyPlaylist, null, null))
-      )
+        Effect.runPromiseExit(resolver.resolvePlaylist(spotifyPlaylist, null, null)),
+      ),
     )
 
     const succeeded = exits.filter(Exit.isSuccess)
@@ -135,9 +140,10 @@ describe('D1 concurrent Spotify import resolution', () => {
         and(
           eq(musicEntityLinksTable.entityType, 'playlist'),
           eq(musicEntityLinksTable.platform, 'spotify'),
-          eq(musicEntityLinksTable.url, spotifyPlaylist.playlistUrl)
-        )
+          eq(musicEntityLinksTable.url, spotifyPlaylist.playlistUrl),
+        ),
       )
+
     const playlists = await db
       .select()
       .from(musicPlaylistsTable)

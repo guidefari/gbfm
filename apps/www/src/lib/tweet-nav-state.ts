@@ -1,6 +1,7 @@
 import type { NavigationResultResponse } from '@gbfm/api/navigation'
 
 export type Capabilities = NavigationResultResponse['capabilities']
+
 export type Neighbours = NavigationResultResponse['neighbours']
 
 export type NavigationHead = {
@@ -12,25 +13,26 @@ export type NavigationHead = {
 export const optimisticCapabilities: Capabilities = {
   canStepBack: true,
   canStepForward: true,
-  hasUnread: false
+  hasUnread: false,
 }
 
 export const makeHead = (slug: string): NavigationHead => ({
   slug,
   neighbours: {},
-  confirmed: false
+  confirmed: false,
 })
 
 export const confirmHead = (slug: string, neighbours: Neighbours): NavigationHead => ({
   slug,
   neighbours,
-  confirmed: true
+  confirmed: true,
 })
 
 export type Step = 'back' | 'forward'
 
 export const projectHead = (head: NavigationHead, step: Step): NavigationHead => {
   const target = step === 'back' ? head.neighbours.back : head.neighbours.forward
+
   return target === undefined ? { ...head, confirmed: false } : makeHead(target)
 }
 
@@ -44,8 +46,8 @@ export const shouldReconcileRoute = (expectedSlug: string | undefined, destinati
   expectedSlug !== destinationSlug
 
 export type Neighbourhood = {
-  readonly back: readonly string[]
-  readonly forward: readonly string[]
+  readonly back: ReadonlyArray<string>
+  readonly forward: ReadonlyArray<string>
 }
 
 export const TRAIL_CAPACITY = 500
@@ -59,34 +61,40 @@ export const neighbourhoodOf = (result: NavigationResultResponse): Neighbourhood
 
   return {
     back: result.neighbours.back ? [result.neighbours.back] : [],
-    forward: result.neighbours.forward ? [result.neighbours.forward] : []
+    forward: result.neighbours.forward ? [result.neighbours.forward] : [],
   }
 }
 
-export const preloadTargets = (neighbourhood: Neighbourhood, depth: number): readonly string[] => {
+export const preloadTargets = (
+  neighbourhood: Neighbourhood,
+  depth: number,
+): ReadonlyArray<string> => {
   const candidates = [
     ...neighbourhood.back.slice(0, depth),
-    ...neighbourhood.forward.slice(0, depth)
+    ...neighbourhood.forward.slice(0, depth),
   ]
+
   return [...new Set(candidates)]
 }
 
 export type LocalTrail = {
-  readonly slugs: readonly string[]
+  readonly slugs: ReadonlyArray<string>
   readonly cursor: number
 }
 
 export const emptyTrail: LocalTrail = { slugs: [], cursor: -1 }
 
-const boundTrail = (slugs: readonly string[]): readonly string[] =>
+const boundTrail = (slugs: ReadonlyArray<string>): ReadonlyArray<string> =>
   slugs.length > TRAIL_CAPACITY ? slugs.slice(slugs.length - TRAIL_CAPACITY) : slugs
 
 export const visitSlug = (trail: LocalTrail, slug: string): LocalTrail => {
   const existing = trail.slugs.indexOf(slug)
+
   if (existing >= 0) return { slugs: trail.slugs, cursor: existing }
 
   const truncated = trail.cursor < 0 ? [] : trail.slugs.slice(0, trail.cursor + 1)
   const slugs = boundTrail([...truncated, slug])
+
   return { slugs, cursor: slugs.length - 1 }
 }
 
@@ -97,25 +105,27 @@ export type TrailNeighbours = {
 
 export const trailNeighbours = (trail: LocalTrail): TrailNeighbours => {
   if (trail.cursor < 0) return { back: undefined, forward: undefined }
+
   return {
     back: trail.cursor > 0 ? trail.slugs[trail.cursor - 1] : undefined,
-    forward: trail.cursor < trail.slugs.length - 1 ? trail.slugs[trail.cursor + 1] : undefined
+    forward: trail.cursor < trail.slugs.length - 1 ? trail.slugs[trail.cursor + 1] : undefined,
   }
 }
 
 export const localDestinationFor = (
   trail: LocalTrail,
   slug: string,
-  step: Step
+  step: Step,
 ): string | undefined => {
   if (trail.slugs[trail.cursor] !== slug) return undefined
+
   return step === 'back' ? trailNeighbours(trail).back : trailNeighbours(trail).forward
 }
 
 export const mergeNeighbourhoodIntoTrail = (
   trail: LocalTrail,
   slug: string,
-  neighbourhood: Neighbourhood
+  neighbourhood: Neighbourhood,
 ): LocalTrail => {
   const anchored = visitSlug(trail, slug)
   const cursor = anchored.cursor
@@ -125,8 +135,9 @@ export const mergeNeighbourhoodIntoTrail = (
   const backFill = neighbourhood.back
     .toReversed()
     .filter((candidate) => !anchored.slugs.includes(candidate))
+
   const forwardFill = neighbourhood.forward.filter(
-    (candidate) => !anchored.slugs.includes(candidate)
+    (candidate) => !anchored.slugs.includes(candidate),
   )
 
   const slugs = boundTrail([
@@ -134,7 +145,7 @@ export const mergeNeighbourhoodIntoTrail = (
     ...(before.length === 0 ? backFill : []),
     slug,
     ...after,
-    ...(after.length === 0 ? forwardFill : [])
+    ...(after.length === 0 ? forwardFill : []),
   ])
 
   return { slugs, cursor: slugs.indexOf(slug) }

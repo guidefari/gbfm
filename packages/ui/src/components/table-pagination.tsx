@@ -1,5 +1,5 @@
-import { Button } from './button'
 import { cn } from '../lib/cn'
+import { Button } from './button'
 
 interface TablePaginationProps {
   page: number
@@ -14,7 +14,7 @@ export function TablePagination({
   pageSize,
   total,
   onPageChange,
-  isLoading = false
+  isLoading = false,
 }: TablePaginationProps) {
   const totalPages = Math.max(Math.ceil(total / pageSize), 1)
   const canGoPrevious = page > 1 && !isLoading

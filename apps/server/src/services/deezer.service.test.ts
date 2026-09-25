@@ -1,16 +1,17 @@
 import { Effect } from 'effect'
 import { describe, expect, test } from 'vitest'
+
 import {
   DeezerInvalidInput,
   DeezerNotFound,
   makeDeezerService,
-  type DeezerFetch
+  type DeezerFetch,
 } from './deezer.service'
 
 const jsonResponse = (body: string, status = 200) =>
   new Response(body, {
     status,
-    headers: { 'Content-Type': 'application/json' }
+    headers: { 'Content-Type': 'application/json' },
   })
 
 const fetchReturning =
@@ -32,17 +33,17 @@ describe('DeezerService', () => {
           album: {
             id: 302127,
             title: 'Discovery',
-            cover_xl: 'https://example.com/discovery.jpg'
-          }
-        })
-      )
+            cover_xl: 'https://example.com/discovery.jpg',
+          },
+        }),
+      ),
     )
 
     const result = await Effect.runPromise(
       service.resolve({
         entityType: 'track',
-        source: 'https://www.deezer.com/us/track/3135556'
-      })
+        source: 'https://www.deezer.com/us/track/3135556',
+      }),
     )
 
     expect(result).toEqual({
@@ -56,7 +57,7 @@ describe('DeezerService', () => {
       albumTitle: 'Discovery',
       durationSeconds: 224,
       identifiers: { deezerId: '3135556', isrc: 'GBDUW0000059' },
-      match: 'exact_source'
+      match: 'exact_source',
     })
   })
 
@@ -71,20 +72,20 @@ describe('DeezerService', () => {
           picture_xl: 'https://example.com/playlist.jpg',
           duration: 3600,
           nb_tracks: 20,
-          creator: { name: 'Listener' }
-        })
-      )
+          creator: { name: 'Listener' },
+        }),
+      ),
     )
 
     const result = await Effect.runPromise(
-      service.resolve({ entityType: 'playlist', source: '908622995' })
+      service.resolve({ entityType: 'playlist', source: '908622995' }),
     )
 
     expect(result).toMatchObject({
       entityType: 'playlist',
       externalId: '908622995',
       match: 'exact_source',
-      crossPlatformMatching: 'prohibited'
+      crossPlatformMatching: 'prohibited',
     })
   })
 
@@ -98,13 +99,13 @@ describe('DeezerService', () => {
           cover_xl: 'https://example.com/discovery.jpg',
           release_date: '2001-03-07',
           nb_tracks: 14,
-          artist: { id: 27, name: 'Daft Punk' }
-        })
-      )
+          artist: { id: 27, name: 'Daft Punk' },
+        }),
+      ),
     )
 
     const result = await Effect.runPromise(
-      service.resolve({ entityType: 'album', source: '302127' })
+      service.resolve({ entityType: 'album', source: '302127' }),
     )
 
     expect(result).toMatchObject({
@@ -112,7 +113,7 @@ describe('DeezerService', () => {
       externalId: '302127',
       title: 'Discovery',
       artistNames: ['Daft Punk'],
-      match: 'exact_source'
+      match: 'exact_source',
     })
   })
 
@@ -128,7 +129,7 @@ describe('DeezerService', () => {
               link: 'https://www.deezer.com/track/1',
               isrc: 'WRONG123',
               artist: { id: 2, name: 'Artist' },
-              album: { id: 3, title: 'Album' }
+              album: { id: 3, title: 'Album' },
             },
             {
               id: 4,
@@ -137,11 +138,11 @@ describe('DeezerService', () => {
               link: 'https://www.deezer.com/track/4',
               isrc: 'GB-AAA-12-34567',
               artist: { id: 2, name: 'Artist' },
-              album: { id: 3, title: 'Album' }
-            }
-          ]
-        })
-      )
+              album: { id: 3, title: 'Album' },
+            },
+          ],
+        }),
+      ),
     )
 
     const result = await Effect.runPromise(service.searchTrackByIsrc('gb aaa 12 34567'))
@@ -158,15 +159,15 @@ describe('DeezerService', () => {
               id: 10,
               title: 'Discovery Deluxe',
               link: 'https://www.deezer.com/album/10',
-              artist: { id: 27, name: 'Daft Punk' }
-            }
-          ]
-        })
-      )
+              artist: { id: 27, name: 'Daft Punk' },
+            },
+          ],
+        }),
+      ),
     )
 
     const result = await Effect.runPromise(
-      service.searchAlbumByTitleArtist('Discovery', 'Daft Punk')
+      service.searchAlbumByTitleArtist('Discovery', 'Daft Punk'),
     )
 
     expect(result).toBeNull()
@@ -181,38 +182,41 @@ describe('DeezerService', () => {
               id: 302127,
               title: 'DISCOVERY!',
               link: 'https://www.deezer.com/album/302127',
-              artist: { id: 27, name: 'Daft-Punk' }
-            }
-          ]
-        })
-      )
+              artist: { id: 27, name: 'Daft-Punk' },
+            },
+          ],
+        }),
+      ),
     )
 
     const result = await Effect.runPromise(
-      service.searchAlbumByTitleArtist('Discovery', 'Daft Punk')
+      service.searchAlbumByTitleArtist('Discovery', 'Daft Punk'),
     )
 
     expect(result).toMatchObject({
       externalId: '302127',
-      match: 'exact_metadata'
+      match: 'exact_metadata',
     })
   })
 
   test('fails invalid sources before making a request', async () => {
     let requestCount = 0
+
     const fetcher: DeezerFetch = () => {
       requestCount += 1
+
       return Promise.resolve(jsonResponse('{}'))
     }
+
     const service = makeDeezerService(fetcher)
 
     const error = await Effect.runPromise(
       Effect.flip(
         service.resolve({
           entityType: 'playlist',
-          source: 'https://open.spotify.com/playlist/12'
-        })
-      )
+          source: 'https://open.spotify.com/playlist/12',
+        }),
+      ),
     )
 
     expect(error).toBeInstanceOf(DeezerInvalidInput)
@@ -223,7 +227,7 @@ describe('DeezerService', () => {
     const service = makeDeezerService(() => Promise.resolve(jsonResponse('{}', 404)))
 
     const error = await Effect.runPromise(
-      Effect.flip(service.resolve({ entityType: 'album', source: '302127' }))
+      Effect.flip(service.resolve({ entityType: 'album', source: '302127' })),
     )
 
     expect(error).toBeInstanceOf(DeezerNotFound)

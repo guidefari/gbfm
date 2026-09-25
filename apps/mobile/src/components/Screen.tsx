@@ -1,6 +1,7 @@
 import type { PropsWithChildren } from 'react'
 import { View } from 'react-native'
 import { SafeAreaView } from 'react-native-screens/experimental'
+
 import { useThemeColors } from '@/theme/colors'
 
 type ScreenProps = PropsWithChildren

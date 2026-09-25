@@ -3,35 +3,53 @@
   import { dashboardJson, jsonRequest } from '@/lib/components/dashboard/api'
 
   type Profile = typeof UserProfileResponse.Type
+
   type Link = Profile['socialLinks'][number]
+
   type PlatformValue = Link['platform']
 
   const platforms: ReadonlyArray<PlatformValue> = ['bandcamp', 'substack', 'soundcloud', 'instagram', 'twitter', 'tiktok']
+
   let { initialProfile, initialError = null }: { initialProfile: Profile | null; initialError?: string | null } = $props()
+
   let username = $derived(initialProfile?.username ?? '')
+
   let email = $derived(initialProfile?.email ?? '')
+
   let image = $derived(initialProfile?.image ?? initialProfile?.avatarUrl ?? '')
+
   let imagePreview = $state('')
+
   let avatar: File | undefined = $state()
+
   let links = $derived<ReadonlyArray<Link>>(initialProfile?.socialLinks ?? [])
+
   let profilePending = $state(false)
+
   let linksPending = $state(false)
+
   let resetPending = $state(false)
+
   let message = $derived(initialError ?? '')
+
   let failed = $derived(Boolean(initialError))
 
   function notify(text: string, isError = false) { message = text; failed = isError }
+
   function selectAvatar(file: File | undefined) {
     if (!file) return
     avatar = file
     imagePreview = URL.createObjectURL(file)
   }
+
   async function saveProfile() {
     profilePending = true
     const body = new FormData()
     body.set('username', username)
     body.set('email', email)
+
     if (avatar) body.set('avatar', avatar)
+
     try {
       const profile = await dashboardJson(UserProfileResponse, '/api/user/profile', { method: 'PATCH', body })
       image = profile.image ?? profile.avatarUrl ?? image
@@ -41,15 +59,19 @@
     } catch { notify('Failed to update profile. Please try again later.', true) }
     finally { profilePending = false }
   }
+
   async function saveLinks() {
     linksPending = true
     const cleaned = links.filter((link) => link.url.trim()).map((link, position) => ({ ...link, position }))
+
     try { links = await dashboardJson(SocialLinksResponse, '/api/user/profile/social-links', jsonRequest('PUT', cleaned)); notify('Social links updated') }
     catch { notify('Failed to update social links.', true) }
     finally { linksPending = false }
   }
+
   async function resetPassword() {
     resetPending = true
+
     try {
       const response = await fetch('/auth/forget-password', jsonRequest('POST', { email, redirectTo: `${location.origin}/auth/reset-password` }))
       notify(response.ok ? 'Reset link sent. Check your inbox.' : 'Failed to send reset link.', !response.ok)

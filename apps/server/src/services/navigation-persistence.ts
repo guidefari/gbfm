@@ -1,5 +1,13 @@
 import { and, asc, desc, eq, gt, inArray, isNull, lt, lte, ne, sql } from 'drizzle-orm'
-import { Effect, Schema } from 'effect'
+import { Context, Data, Effect, Layer, Match, Predicate, Schema } from 'effect'
+
+import { Database } from '@/db/layer'
+import {
+  navigationSeenPosts,
+  navigationSessions,
+  navigationTrailEntries,
+} from '@/db/navigation.schema'
+import { postsTable } from '@/db/post.schema'
 import {
   capabilitiesOf,
   type NavigationCommand,
@@ -9,18 +17,11 @@ import {
   CorpusExhausted,
   NEIGHBOURHOOD_DEPTH,
   Slug,
-  NoSuchMove
+  NoSuchMove,
 } from '@/domain/navigation'
-import {
-  navigationSeenPosts,
-  navigationSessions,
-  navigationTrailEntries
-} from '@/db/navigation.schema'
-import { postsTable } from '@/db/post.schema'
 import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
-import { Database } from '@/db/layer'
-import { PostService } from '@/services/post.service'
 import { NavigationLock } from '@/services/navigation-lock'
+import { PostService } from '@/services/post.service'
 
 type TrailRow = {
   readonly slug: Slug
@@ -56,8 +57,10 @@ type Locked =
   | { readonly _tag: 'Retry' }
   | { readonly _tag: 'Appended'; readonly session: SessionRow; readonly position: number }
 
+const Locked = Data.taggedEnum<Locked>()
+
 const identityWhere = (identity: NavigationIdentity) =>
-  identity._tag === 'User'
+  Predicate.isTagged(identity, 'User')
     ? eq(navigationSessions.userId, identity.userId)
     : eq(navigationSessions.deviceToken, identity.deviceToken)
 
@@ -78,53 +81,58 @@ const databaseError = (operation: string, error: Parameters<typeof getErrorMessa
   new DatabaseError({
     message: `Failed to ${operation} navigation session: ${getErrorMessage(error)}`,
     operation,
-    table: 'navigation_sessions'
+    table: 'navigation_sessions',
   })
 
 const noSuchMove = (command: NavigationCommand) =>
   new NoSuchMove({
-    command: command._tag === 'Step' ? `Step(${command.direction})` : command._tag
+    command: Predicate.isTagged(command, 'Step') ? `Step(${command.direction})` : command._tag,
   })
 
 const resultFor = (
   destination: TrailRow,
-  { index, length, hasUnread, neighbours, neighbourhood }: Snapshot
+  { index, length, hasUnread, neighbours, neighbourhood }: Snapshot,
 ): NavigationResult => {
   return {
     destination: { slug: destination.slug, postId: destination.postId },
     capabilities: capabilitiesOf(index, length, { hasUnread }),
     trailPosition: { index, length },
     neighbours,
-    neighbourhood
+    neighbourhood,
   }
 }
 
 const assembleSnapshot = (
   index: number,
   length: number,
-  backRows: readonly { readonly slug: string }[],
-  forwardRows: readonly { readonly slug: string }[],
-  unreadRows: readonly { readonly slug: string }[]
+  backRows: ReadonlyArray<{ readonly slug: string }>,
+  forwardRows: ReadonlyArray<{ readonly slug: string }>,
+  unreadRows: ReadonlyArray<{ readonly slug: string }>,
 ): Snapshot => {
   const back = backRows.map((row) => asSlug(row.slug))
+
   const forward = [...forwardRows, ...unreadRows]
     .slice(0, NEIGHBOURHOOD_DEPTH)
     .map((row) => asSlug(row.slug))
+
   const neighbours: MutableNeighbours = {}
+
   if (back[0]) neighbours.back = back[0]
+
   if (forward[0]) neighbours.forward = forward[0]
+
   return {
     index,
     length,
     hasUnread: unreadRows.length > 0,
     neighbours,
-    neighbourhood: { back, forward }
+    neighbourhood: { back, forward },
   }
 }
 
 // Internal seam: owns D1 snapshots and the D1/lock write protocol. A retry
 // discards the entire attempt, including its selected unread destination.
-export const makeNavigationPersistence = Effect.gen(function* () {
+const makeNavigationPersistence = Effect.gen(function* () {
   const db = yield* Database
   const posts = yield* PostService
   const lock = yield* NavigationLock
@@ -133,23 +141,25 @@ export const makeNavigationPersistence = Effect.gen(function* () {
     const base = db
       .select({ id: postsTable.id, slug: postsTable.slug, createdAt: postsTable.createdAt })
       .from(postsTable)
+
     const scoped = sessionId
       ? base.leftJoin(
           navigationSeenPosts,
           and(
             eq(navigationSeenPosts.slug, postsTable.slug),
-            eq(navigationSeenPosts.sessionId, sessionId)
-          )
+            eq(navigationSeenPosts.sessionId, sessionId),
+          ),
         )
       : base
+
     return scoped.where(
       and(
         eq(postsTable.type, 'micro'),
         eq(postsTable.draft, false),
         isNull(postsTable.parentPostId),
         sessionId ? isNull(navigationSeenPosts.slug) : undefined,
-        extra
-      )
+        extra,
+      ),
     )
   }
 
@@ -158,7 +168,7 @@ export const makeNavigationPersistence = Effect.gen(function* () {
     postId: navigationTrailEntries.postId,
     position: navigationTrailEntries.position,
     arrivedBy: navigationTrailEntries.arrivedBy,
-    visitedAt: navigationTrailEntries.visitedAt
+    visitedAt: navigationTrailEntries.visitedAt,
   }
 
   const toTrailRow = (row: {
@@ -170,7 +180,7 @@ export const makeNavigationPersistence = Effect.gen(function* () {
   }): TrailRow => ({
     ...row,
     slug: asSlug(row.slug),
-    arrivedBy: arrivedBy(row.arrivedBy)
+    arrivedBy: arrivedBy(row.arrivedBy),
   })
 
   const entryAtPosition = (sessionId: string, position: number) =>
@@ -184,14 +194,16 @@ export const makeNavigationPersistence = Effect.gen(function* () {
             and(
               eq(navigationTrailEntries.sessionId, sessionId),
               eq(navigationTrailEntries.position, position),
-              eq(postsTable.draft, false)
-            )
+              eq(postsTable.draft, false),
+            ),
           )
           .limit(1)
+
         const row = rows[0]
+
         return row ? toTrailRow(row) : undefined
       },
-      catch: (error) => databaseError('read', error)
+      catch: (error) => databaseError('read', error),
     })
 
   const readSnapshot = (session: SessionRow) =>
@@ -206,8 +218,8 @@ export const makeNavigationPersistence = Effect.gen(function* () {
               and(
                 eq(navigationTrailEntries.sessionId, session.id),
                 eq(navigationTrailEntries.position, session.cursor),
-                eq(postsTable.draft, false)
-              )
+                eq(postsTable.draft, false),
+              ),
             )
             .limit(1),
           db
@@ -215,7 +227,7 @@ export const makeNavigationPersistence = Effect.gen(function* () {
             .from(navigationTrailEntries)
             .innerJoin(postsTable, eq(navigationTrailEntries.postId, postsTable.id))
             .where(
-              and(eq(navigationTrailEntries.sessionId, session.id), eq(postsTable.draft, false))
+              and(eq(navigationTrailEntries.sessionId, session.id), eq(postsTable.draft, false)),
             ),
           db
             .select({ count: sql<number>`CAST(count(*) AS INTEGER)` })
@@ -225,20 +237,22 @@ export const makeNavigationPersistence = Effect.gen(function* () {
               and(
                 eq(navigationTrailEntries.sessionId, session.id),
                 lt(navigationTrailEntries.position, session.cursor),
-                eq(postsTable.draft, false)
-              )
+                eq(postsTable.draft, false),
+              ),
             ),
-          unseenMicroPosts(session.id).limit(1)
+          unseenMicroPosts(session.id).limit(1),
         ])
+
         const entry = entryRows[0]
+
         return {
           entry: entry ? toTrailRow(entry) : undefined,
           length: lengthRows[0]?.count ?? 0,
           index: indexRows[0]?.count ?? 0,
-          hasUnread: unreadRows.length > 0
+          hasUnread: unreadRows.length > 0,
         }
       },
-      catch: (error) => databaseError('read', error)
+      catch: (error) => databaseError('read', error),
     })
 
   // Preview is bounded by the caller's `from` and excludes its projected
@@ -251,9 +265,10 @@ export const makeNavigationPersistence = Effect.gen(function* () {
           readonly position: number
           readonly from: Slug
           readonly slug: Slug
-        }
+        },
   ) => {
     const { sessionId, position } = target
+
     const currentPostCreatedAt =
       'from' in target
         ? db
@@ -268,29 +283,32 @@ export const makeNavigationPersistence = Effect.gen(function* () {
             .where(
               and(
                 eq(navigationTrailEntries.sessionId, target.sessionId),
-                eq(navigationTrailEntries.position, position)
-              )
+                eq(navigationTrailEntries.position, position),
+              ),
             )
             .limit(1)
+
     const unread = unseenMicroPosts(
       sessionId,
       and(
         'from' in target ? ne(postsTable.slug, target.slug) : undefined,
-        lte(postsTable.createdAt, currentPostCreatedAt)
-      )
+        lte(postsTable.createdAt, currentPostCreatedAt),
+      ),
     )
       .orderBy(desc(postsTable.createdAt))
       .limit(NEIGHBOURHOOD_DEPTH)
+
     return Effect.tryPromise({
       try: async () => {
         if (!sessionId) return assembleSnapshot(0, 1, [], [], await unread)
+
         const [lengthRows, indexRows, backRows, forwardRows, unreadRows] = await db.batch([
           db
             .select({ count: sql<number>`CAST(count(*) AS INTEGER)` })
             .from(navigationTrailEntries)
             .innerJoin(postsTable, eq(navigationTrailEntries.postId, postsTable.id))
             .where(
-              and(eq(navigationTrailEntries.sessionId, sessionId), eq(postsTable.draft, false))
+              and(eq(navigationTrailEntries.sessionId, sessionId), eq(postsTable.draft, false)),
             ),
           db
             .select({ count: sql<number>`CAST(count(*) AS INTEGER)` })
@@ -300,8 +318,8 @@ export const makeNavigationPersistence = Effect.gen(function* () {
               and(
                 eq(navigationTrailEntries.sessionId, sessionId),
                 lt(navigationTrailEntries.position, position),
-                eq(postsTable.draft, false)
-              )
+                eq(postsTable.draft, false),
+              ),
             ),
           db
             .select({ slug: navigationTrailEntries.slug })
@@ -311,8 +329,8 @@ export const makeNavigationPersistence = Effect.gen(function* () {
               and(
                 eq(navigationTrailEntries.sessionId, sessionId),
                 lt(navigationTrailEntries.position, position),
-                eq(postsTable.draft, false)
-              )
+                eq(postsTable.draft, false),
+              ),
             )
             .orderBy(desc(navigationTrailEntries.position))
             .limit(NEIGHBOURHOOD_DEPTH),
@@ -324,22 +342,23 @@ export const makeNavigationPersistence = Effect.gen(function* () {
               and(
                 eq(navigationTrailEntries.sessionId, sessionId),
                 gt(navigationTrailEntries.position, position),
-                eq(postsTable.draft, false)
-              )
+                eq(postsTable.draft, false),
+              ),
             )
             .orderBy(asc(navigationTrailEntries.position))
             .limit(NEIGHBOURHOOD_DEPTH),
-          unread
+          unread,
         ])
+
         return assembleSnapshot(
           indexRows[0]?.count ?? 0,
           lengthRows[0]?.count ?? 0,
           backRows,
           forwardRows,
-          unreadRows
+          unreadRows,
         )
       },
-      catch: (error) => databaseError('read', error)
+      catch: (error) => databaseError('read', error),
     })
   }
 
@@ -348,28 +367,32 @@ export const makeNavigationPersistence = Effect.gen(function* () {
 
   const replayStatement = (
     identity: NavigationIdentity,
-    command: Exclude<NavigationCommand, { readonly _tag: 'Jump' }>
+    command: Exclude<NavigationCommand, { readonly _tag: 'Jump' }>,
   ) => {
     const scoped = inArray(navigationTrailEntries.sessionId, sessionIdsForIdentity(identity))
-    if (command._tag === 'Open') {
+
+    if (Predicate.isTagged(command, 'Open')) {
       return db
         .select(trailEntryColumns)
         .from(navigationTrailEntries)
         .innerJoin(postsTable, eq(navigationTrailEntries.postId, postsTable.id))
         .where(
-          and(scoped, eq(navigationTrailEntries.slug, command.slug), eq(postsTable.draft, false))
+          and(scoped, eq(navigationTrailEntries.slug, command.slug), eq(postsTable.draft, false)),
         )
         .limit(1)
     }
+
     const cursor = db
       .select({ cursor: navigationSessions.cursor })
       .from(navigationSessions)
       .where(identityWhere(identity))
       .limit(1)
+
     const condition =
       command.direction === 'Back'
         ? lt(navigationTrailEntries.position, cursor)
         : gt(navigationTrailEntries.position, cursor)
+
     return db
       .select(trailEntryColumns)
       .from(navigationTrailEntries)
@@ -378,7 +401,7 @@ export const makeNavigationPersistence = Effect.gen(function* () {
       .orderBy(
         command.direction === 'Back'
           ? desc(navigationTrailEntries.position)
-          : asc(navigationTrailEntries.position)
+          : asc(navigationTrailEntries.position),
       )
       .limit(1)
   }
@@ -387,6 +410,18 @@ export const makeNavigationPersistence = Effect.gen(function* () {
     Effect.tryPromise({
       try: async () => {
         const scoped = inArray(navigationTrailEntries.sessionId, sessionIdsForIdentity(identity))
+
+        const replayQuery = Match.value(command).pipe(
+          Match.tag('Jump', () =>
+            db
+              .select(trailEntryColumns)
+              .from(navigationTrailEntries)
+              .where(sql`0 = 1`)
+              .limit(1),
+          ),
+          Match.orElse((command) => replayStatement(identity, command)),
+        )
+
         const [sessionRows, lengthRows, replayRows] = await db.batch([
           db.select().from(navigationSessions).where(identityWhere(identity)).limit(1),
           db
@@ -394,24 +429,21 @@ export const makeNavigationPersistence = Effect.gen(function* () {
             .from(navigationTrailEntries)
             .innerJoin(postsTable, eq(navigationTrailEntries.postId, postsTable.id))
             .where(and(scoped, eq(postsTable.draft, false))),
-          command._tag === 'Jump'
-            ? db
-                .select(trailEntryColumns)
-                .from(navigationTrailEntries)
-                .where(sql`0 = 1`)
-                .limit(1)
-            : replayStatement(identity, command)
+          replayQuery,
         ])
+
         const session = sessionRows[0]
+
         if (!session) return { session: undefined, length: 0, replay: undefined } satisfies Phase
         const replayRow = replayRows[0]
+
         return {
           session,
           length: lengthRows[0]?.count ?? 0,
-          replay: replayRow ? toTrailRow(replayRow) : undefined
+          replay: replayRow ? toTrailRow(replayRow) : undefined,
         } satisfies Phase
       },
-      catch: (error) => databaseError('read', error)
+      catch: (error) => databaseError('read', error),
     }).pipe(Effect.withSpan('navigation.session.read'))
 
   const findNextUnread = (sessionId: string | undefined, from: Slug) => {
@@ -420,27 +452,30 @@ export const makeNavigationPersistence = Effect.gen(function* () {
       .from(postsTable)
       .where(and(eq(postsTable.slug, from), eq(postsTable.type, 'micro')))
       .limit(1)
+
     return Effect.tryPromise({
       try: async () => {
         const [post] = await unseenMicroPosts(
           sessionId,
-          and(ne(postsTable.slug, from), lte(postsTable.createdAt, currentPostCreatedAt))
+          and(ne(postsTable.slug, from), lte(postsTable.createdAt, currentPostCreatedAt)),
         )
           .orderBy(desc(postsTable.createdAt))
           .limit(1)
+
         if (!post) throw new CorpusExhausted()
+
         return {
           slug: asSlug(post.slug),
           postId: post.id,
-          visitedAt: Date.now()
+          visitedAt: Date.now(),
         } satisfies ResolvedDestination
       },
       catch: (error) =>
         error instanceof CorpusExhausted
           ? error
-          : databaseError('resolve next unread destination', error)
+          : databaseError('resolve next unread destination', error),
     }).pipe(
-      Effect.withSpan('navigation.destination.resolve', { attributes: { pick: 'NextByDate' } })
+      Effect.withSpan('navigation.destination.resolve', { attributes: { pick: 'NextByDate' } }),
     )
   }
 
@@ -452,25 +487,29 @@ export const makeNavigationPersistence = Effect.gen(function* () {
           : Effect.succeed({
               slug: asSlug(picked.slug),
               postId: picked.id,
-              visitedAt: Date.now()
-            } satisfies ResolvedDestination)
+              visitedAt: Date.now(),
+            } satisfies ResolvedDestination),
       ),
       Effect.mapError((error) => (error instanceof NotFoundError ? new CorpusExhausted() : error)),
-      Effect.withSpan('navigation.destination.resolve', { attributes: { pick: 'Random' } })
+      Effect.withSpan('navigation.destination.resolve', { attributes: { pick: 'Random' } }),
     )
 
   const selectDestination = (phase: Phase, command: NavigationCommand, from: Slug) => {
-    if (command._tag === 'Open') {
+    if (Predicate.isTagged(command, 'Open')) {
       return posts.getMicroPostReferenceBySlug(command.slug).pipe(
         Effect.map((post) => ({
           slug: asSlug(post.slug),
           postId: post.id,
-          visitedAt: Date.now()
+          visitedAt: Date.now(),
         })),
-        Effect.mapError((error) => (error instanceof NotFoundError ? new CorpusExhausted() : error))
+        Effect.mapError((error) =>
+          error instanceof NotFoundError ? new CorpusExhausted() : error,
+        ),
       )
     }
-    if (command._tag === 'Step') return findNextUnread(phase.session?.id, from)
+
+    if (Predicate.isTagged(command, 'Step')) return findNextUnread(phase.session?.id, from)
+
     const seenEffect = phase.session
       ? Effect.tryPromise({
           try: () =>
@@ -478,9 +517,10 @@ export const makeNavigationPersistence = Effect.gen(function* () {
               .select({ slug: navigationSeenPosts.slug })
               .from(navigationSeenPosts)
               .where(eq(navigationSeenPosts.sessionId, phase.session?.id ?? '')),
-          catch: (error) => databaseError('read', error)
+          catch: (error) => databaseError('read', error),
         }).pipe(Effect.map((rows) => new Set(rows.map((row) => asSlug(row.slug)))))
       : Effect.succeed(new Set<Slug>())
+
     return seenEffect.pipe(Effect.flatMap(findRandomUnread))
   }
 
@@ -488,7 +528,7 @@ export const makeNavigationPersistence = Effect.gen(function* () {
     identity: NavigationIdentity,
     command: NavigationCommand,
     from: Slug,
-    intentToken: string
+    intentToken: string,
   ): Effect.Effect<
     NavigationResult | { readonly _tag: 'Retry' },
     NoSuchMove | CorpusExhausted | DatabaseError
@@ -497,14 +537,17 @@ export const makeNavigationPersistence = Effect.gen(function* () {
       const phase = yield* readPhase(identity, command)
       yield* Effect.annotateCurrentSpan('trailLength', phase.length)
       yield* Effect.annotateCurrentSpan('cursor', phase.session?.cursor ?? -1)
+
       if (phase.replay && phase.session) {
         const replay = phase.replay
         const session = phase.session
         yield* Effect.annotateCurrentSpan('path', 'replay')
+
         const snapshotEffect = resultSnapshot({
           sessionId: session.id,
-          position: replay.position
+          position: replay.position,
         }).pipe(Effect.withSpan('navigation.result.read'))
+
         if (replay.position !== session.cursor) {
           const updateEffect = Effect.tryPromise({
             try: async () => {
@@ -513,40 +556,49 @@ export const makeNavigationPersistence = Effect.gen(function* () {
                 .set({
                   cursor: replay.position,
                   lastIntentToken: intentToken,
-                  updatedAt: new Date()
+                  updatedAt: new Date(),
                 })
                 .where(
                   and(
                     eq(navigationSessions.id, session.id),
                     eq(navigationSessions.cursor, session.cursor),
-                    eq(navigationSessions.updatedAt, session.updatedAt)
-                  )
+                    eq(navigationSessions.updatedAt, session.updatedAt),
+                  ),
                 )
                 .returning()
+
               return row
             },
-            catch: (error) => databaseError('update', error)
+            catch: (error) => databaseError('update', error),
           }).pipe(Effect.withSpan('navigation.cursor.update'))
+
           const { updated, snapshot } = yield* Effect.all(
             { updated: updateEffect, snapshot: snapshotEffect },
-            { concurrency: 'unbounded' }
+            { concurrency: 'unbounded' },
           )
+
           if (!updated) {
             return { _tag: 'Retry' as const }
           }
+
           yield* lock.sync(identity, {
             sessionId: updated.id,
             position: replay.position,
             intentToken,
-            updatedAtMs: updated.updatedAt.getTime()
+            updatedAtMs: updated.updatedAt.getTime(),
           })
+
           return resultFor(replay, snapshot)
         }
+
         const snapshot = yield* snapshotEffect
+
         return resultFor(replay, snapshot)
       }
-      if (command._tag === 'Step' && command.direction === 'Back') {
+
+      if (Predicate.isTagged(command, 'Step') && command.direction === 'Back') {
         yield* Effect.annotateCurrentSpan('path', 'rejected')
+
         return yield* noSuchMove(command)
       }
 
@@ -558,7 +610,7 @@ export const makeNavigationPersistence = Effect.gen(function* () {
           sessionId: phase.session?.id ?? null,
           cursor: phase.session?.cursor ?? null,
           updatedAtMs: phase.session?.updatedAt.getTime() ?? null,
-          intentToken
+          intentToken,
         })
         .pipe(Effect.withSpan('navigation.lock.decide'))
 
@@ -570,15 +622,16 @@ export const makeNavigationPersistence = Effect.gen(function* () {
               .from(navigationSessions)
               .where(eq(navigationSessions.id, sessionId))
               .limit(1)
+
             return rows[0]
           },
-          catch: (error) => databaseError('read', error)
+          catch: (error) => databaseError('read', error),
         })
 
       const appendAndAdvance = (
         sessionId: string | null,
         position: number,
-        knownSession: SessionRow | undefined
+        knownSession: SessionRow | undefined,
       ) =>
         Effect.tryPromise({
           try: async () => {
@@ -594,33 +647,37 @@ export const makeNavigationPersistence = Effect.gen(function* () {
                         .limit(1)
                     )[0]
                   : undefined
+
             const created = existing
               ? undefined
               : (
                   await db
                     .insert(navigationSessions)
                     .values(
-                      identity._tag === 'User'
+                      Predicate.isTagged(identity, 'User')
                         ? { userId: identity.userId }
-                        : { deviceToken: identity.deviceToken }
+                        : { deviceToken: identity.deviceToken },
                     )
                     .onConflictDoNothing()
                     .returning()
                 )[0]
+
             const active =
               existing ??
               created ??
               (
                 await db.select().from(navigationSessions).where(identityWhere(identity)).limit(1)
               )[0]
+
             if (!active) throw new Error('Failed to create navigation session')
+
             const [, , updatedRows] = await db.batch([
               db.insert(navigationTrailEntries).values({
                 sessionId: active.id,
                 postId: destination.postId,
                 slug: destination.slug,
                 position,
-                arrivedBy: command._tag
+                arrivedBy: command._tag,
               }),
               db
                 .insert(navigationSeenPosts)
@@ -630,67 +687,81 @@ export const makeNavigationPersistence = Effect.gen(function* () {
                 .update(navigationSessions)
                 .set({ cursor: position, lastIntentToken: intentToken, updatedAt: new Date() })
                 .where(eq(navigationSessions.id, active.id))
-                .returning()
+                .returning(),
             ])
+
             const updated = updatedRows[0]
+
             if (!updated) throw new Error('Failed to update navigation session')
+
             return updated
           },
-          catch: (error) => databaseError('write', error)
+          catch: (error) => databaseError('write', error),
         })
 
       const locked: Locked = yield* Effect.gen(function* () {
-        if (decision._tag === 'Retry') return { _tag: 'Retry' as const }
+        if (Predicate.isTagged(decision, 'Retry')) return Locked.Retry()
 
-        if (decision._tag === 'Duplicate') {
+        if (Predicate.isTagged(decision, 'Duplicate')) {
           const session = yield* readSessionById(decision.sessionId)
+
           if (!session) {
             return yield* Effect.fail(
-              databaseError('read', 'Failed to read duplicate navigation session')
+              databaseError('read', 'Failed to read duplicate navigation session'),
             )
           }
-          return { _tag: 'Duplicate' as const, session }
+
+          return Locked.Duplicate({ session })
         }
+
+        if (!Predicate.isTagged(decision, 'Proceed')) return Locked.Retry()
 
         const updated = yield* appendAndAdvance(
           decision.sessionId,
           decision.position,
-          phase.session
+          phase.session,
         ).pipe(Effect.tapError(() => lock.reset(identity).pipe(Effect.ignore)))
-        return { _tag: 'Appended' as const, session: updated, position: decision.position }
+
+        return Locked.Appended({ session: updated, position: decision.position })
       }).pipe(Effect.withSpan('navigation.append.write'))
 
-      if (locked._tag === 'Appended') {
+      if (Predicate.isTagged(locked, 'Appended')) {
         yield* lock
           .commit(identity, {
             sessionId: locked.session.id,
             position: locked.position,
             intentToken,
-            updatedAtMs: locked.session.updatedAt.getTime()
+            updatedAtMs: locked.session.updatedAt.getTime(),
           })
           .pipe(Effect.withSpan('navigation.lock.commit'))
       }
 
       yield* Effect.annotateCurrentSpan('lockOutcome', locked._tag)
-      if (locked._tag === 'Retry') {
+
+      if (Predicate.isTagged(locked, 'Retry')) {
         return locked
       }
+
+      if (!('session' in locked)) return locked
+
       return yield* Effect.gen(function* () {
-        const entry =
-          locked._tag === 'Appended'
-            ? {
-                slug: destination.slug,
-                postId: destination.postId,
-                position: locked.position,
-                arrivedBy: command._tag,
-                visitedAt: new Date(destination.visitedAt)
-              }
-            : yield* entryAtPosition(locked.session.id, locked.session.cursor)
+        const entry = Predicate.isTagged(locked, 'Appended')
+          ? {
+              slug: destination.slug,
+              postId: destination.postId,
+              position: locked.position,
+              arrivedBy: command._tag,
+              visitedAt: new Date(destination.visitedAt),
+            }
+          : yield* entryAtPosition(locked.session.id, locked.session.cursor)
+
         if (!entry) return yield* noSuchMove(command)
+
         const snapshot = yield* resultSnapshot({
           sessionId: locked.session.id,
-          position: entry.position
+          position: entry.position,
         })
+
         return resultFor(entry, snapshot)
       }).pipe(Effect.withSpan('navigation.result.read'))
     })
@@ -700,21 +771,26 @@ export const makeNavigationPersistence = Effect.gen(function* () {
       .select({ id: navigationSessions.id })
       .from(navigationSessions)
       .where(identityWhere(identity))
+
     const scoped = inArray(navigationTrailEntries.sessionId, sessionIds)
+
     const destinationPosition = db
       .select({ position: navigationTrailEntries.position })
       .from(navigationTrailEntries)
       .where(and(scoped, eq(navigationTrailEntries.slug, slug)))
       .limit(1)
+
     const fromCreatedAt = db
       .select({ createdAt: postsTable.createdAt })
       .from(postsTable)
       .where(and(eq(postsTable.slug, from), eq(postsTable.type, 'micro')))
       .limit(1)
+
     const seenSessionIds = db
       .select({ id: navigationSessions.id })
       .from(navigationSessions)
       .where(identityWhere(identity))
+
     return Effect.tryPromise({
       try: async () => {
         const [entryRows, lengthRows, indexRows, backRows, forwardRows, unreadRows] =
@@ -724,7 +800,7 @@ export const makeNavigationPersistence = Effect.gen(function* () {
               .from(navigationTrailEntries)
               .innerJoin(postsTable, eq(navigationTrailEntries.postId, postsTable.id))
               .where(
-                and(scoped, eq(navigationTrailEntries.slug, slug), eq(postsTable.draft, false))
+                and(scoped, eq(navigationTrailEntries.slug, slug), eq(postsTable.draft, false)),
               )
               .limit(1),
             db
@@ -740,8 +816,8 @@ export const makeNavigationPersistence = Effect.gen(function* () {
                 and(
                   scoped,
                   lt(navigationTrailEntries.position, destinationPosition),
-                  eq(postsTable.draft, false)
-                )
+                  eq(postsTable.draft, false),
+                ),
               ),
             db
               .select({ slug: navigationTrailEntries.slug })
@@ -751,8 +827,8 @@ export const makeNavigationPersistence = Effect.gen(function* () {
                 and(
                   scoped,
                   lt(navigationTrailEntries.position, destinationPosition),
-                  eq(postsTable.draft, false)
-                )
+                  eq(postsTable.draft, false),
+                ),
               )
               .orderBy(desc(navigationTrailEntries.position))
               .limit(NEIGHBOURHOOD_DEPTH),
@@ -764,8 +840,8 @@ export const makeNavigationPersistence = Effect.gen(function* () {
                 and(
                   scoped,
                   gt(navigationTrailEntries.position, destinationPosition),
-                  eq(postsTable.draft, false)
-                )
+                  eq(postsTable.draft, false),
+                ),
               )
               .orderBy(asc(navigationTrailEntries.position))
               .limit(NEIGHBOURHOOD_DEPTH),
@@ -776,8 +852,8 @@ export const makeNavigationPersistence = Effect.gen(function* () {
                 navigationSeenPosts,
                 and(
                   eq(navigationSeenPosts.slug, postsTable.slug),
-                  inArray(navigationSeenPosts.sessionId, seenSessionIds)
-                )
+                  inArray(navigationSeenPosts.sessionId, seenSessionIds),
+                ),
               )
               .where(
                 and(
@@ -786,14 +862,17 @@ export const makeNavigationPersistence = Effect.gen(function* () {
                   isNull(postsTable.parentPostId),
                   isNull(navigationSeenPosts.slug),
                   ne(postsTable.slug, slug),
-                  lte(postsTable.createdAt, fromCreatedAt)
-                )
+                  lte(postsTable.createdAt, fromCreatedAt),
+                ),
               )
               .orderBy(desc(postsTable.createdAt))
-              .limit(NEIGHBOURHOOD_DEPTH)
+              .limit(NEIGHBOURHOOD_DEPTH),
           ])
+
         const entryRow = entryRows[0]
+
         if (!entryRow) return undefined
+
         return resultFor(
           toTrailRow(entryRow),
           assembleSnapshot(
@@ -801,48 +880,58 @@ export const makeNavigationPersistence = Effect.gen(function* () {
             lengthRows[0]?.count ?? 0,
             backRows,
             forwardRows,
-            unreadRows
-          )
+            unreadRows,
+          ),
         )
       },
-      catch: (error) => databaseError('read', error)
+      catch: (error) => databaseError('read', error),
     })
   }
 
   const peek = (identity: NavigationIdentity, command: NavigationCommand, from: Slug) =>
     Effect.gen(function* () {
-      if (command._tag === 'Open') {
+      if (Predicate.isTagged(command, 'Open')) {
         const fast = yield* peekOpenInOneBatch(identity, from, command.slug)
+
         if (fast) return fast
       }
+
       const phase = yield* readPhase(identity, command)
+
       if (phase.replay) {
         const replay = phase.replay
+
         const snapshot = yield* resultSnapshot({
           sessionId: phase.session?.id,
           position: replay.position,
           from,
-          slug: replay.slug
+          slug: replay.slug,
         })
+
         return resultFor(replay, snapshot)
       }
-      if (command._tag === 'Step' && command.direction === 'Back') {
+
+      if (Predicate.isTagged(command, 'Step') && command.direction === 'Back') {
         return yield* noSuchMove(command)
       }
+
       const destination = yield* selectDestination(phase, command, from)
+
       const projected: TrailRow = {
         slug: destination.slug,
         postId: destination.postId,
         position: (phase.session?.cursor ?? -1) + 1,
         arrivedBy: command._tag,
-        visitedAt: new Date(destination.visitedAt)
+        visitedAt: new Date(destination.visitedAt),
       }
+
       const snapshot = yield* resultSnapshot({
         sessionId: phase.session?.id,
         position: projected.position,
         from,
-        slug: projected.slug
+        slug: projected.slug,
       })
+
       return resultFor(projected, { ...snapshot, index: phase.length, length: phase.length + 1 })
     }).pipe(Effect.withSpan('navigation.peek'))
 
@@ -850,26 +939,30 @@ export const makeNavigationPersistence = Effect.gen(function* () {
     Effect.gen(function* () {
       const session = yield* Effect.tryPromise({
         try: () => db.select().from(navigationSessions).where(identityWhere(identity)).limit(1),
-        catch: (error) => databaseError('read', error)
+        catch: (error) => databaseError('read', error),
       }).pipe(Effect.map((rows) => rows[0]))
+
       if (!session) {
         return {
           slug: null,
-          capabilities: { canStepBack: false, canStepForward: false, hasUnread: false }
+          capabilities: { canStepBack: false, canStepForward: false, hasUnread: false },
         }
       }
+
       const snapshot = yield* readSnapshot(session)
+
       if (!snapshot.entry || snapshot.length === 0) {
         return {
           slug: null,
-          capabilities: { canStepBack: false, canStepForward: false, hasUnread: false }
+          capabilities: { canStepBack: false, canStepForward: false, hasUnread: false },
         }
       }
+
       return {
         slug: snapshot.entry.slug,
         capabilities: capabilitiesOf(snapshot.index, snapshot.length, {
-          hasUnread: snapshot.hasUnread
-        })
+          hasUnread: snapshot.hasUnread,
+        }),
       }
     })
 
@@ -881,9 +974,19 @@ export const makeNavigationPersistence = Effect.gen(function* () {
       Effect.gen(function* () {
         yield* Effect.tryPromise({
           try: () => db.delete(navigationSessions).where(identityWhere(identity)),
-          catch: (error) => databaseError('delete', error)
+          catch: (error) => databaseError('delete', error),
         })
         yield* lock.reset(identity)
-      })
+      }),
   }
 })
+
+export class NavigationPersistence extends Context.Service<
+  NavigationPersistence,
+  Effect.Success<typeof makeNavigationPersistence>
+>()('NavigationPersistence') {}
+
+export const NavigationPersistenceLayer = Layer.effect(
+  NavigationPersistence,
+  makeNavigationPersistence,
+)

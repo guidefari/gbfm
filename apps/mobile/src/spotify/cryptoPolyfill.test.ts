@@ -1,19 +1,21 @@
-import { afterEach, expect, test, vi } from 'vitest'
+import { afterEach, expect, test } from 'vitest'
 
-vi.mock('expo-crypto', () => ({
+const cryptoPrimitives = {
   getRandomValues: (bytes: Uint8Array) => bytes,
   digest: async (_algorithm: AlgorithmIdentifier, bytes: Uint8Array) => bytes.buffer,
-  CryptoDigestAlgorithm: { SHA256: 'SHA256' }
-}))
+  CryptoDigestAlgorithm: { SHA256: 'SHA256' },
+}
 
-const { hasGlobal } = await import('./globalPolyfill')
-const { installSpotifyCryptoPolyfill } = await import('./cryptoPolyfill')
+import { installSpotifyCryptoPolyfill } from './cryptoPolyfill'
+import { hasGlobal } from './globalPolyfill'
 
 const originalBtoa = globalThis.btoa
+
 const originalCrypto = globalThis.crypto
 
 const replaceGlobal = <Value>(key: 'btoa' | 'crypto', value: Value) => {
   Reflect.deleteProperty(globalThis, key)
+
   if (value !== undefined) {
     Object.defineProperty(globalThis, key, { value, configurable: true, writable: true })
   }
@@ -29,7 +31,7 @@ test('installs working base64 and crypto primitives when the platform globals ar
   replaceGlobal('crypto', undefined)
   expect(hasGlobal('crypto')).toBe(false)
 
-  installSpotifyCryptoPolyfill()
+  installSpotifyCryptoPolyfill(cryptoPrimitives)
 
   for (const value of ['', 'a', 'ab', 'abc', 'abcd', 'hello']) {
     expect(globalThis.btoa(value)).toBe(originalBtoa(value))

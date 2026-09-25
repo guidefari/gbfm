@@ -14,7 +14,7 @@ const secretNames = [
   'StorageRegion',
   'StorageAccessKeyId',
   'StorageSecretAccessKey',
-  'StorageSigningEndpoint'
+  'StorageSigningEndpoint',
 ] as const
 
 type SecretName = (typeof secretNames)[number]
@@ -31,8 +31,8 @@ const optionalSecretNames = [
   'StorageSecretAccessKey',
   'StorageSigningEndpoint',
   'OTEL_EXPORTER_OTLP_ENDPOINT',
-  'OTEL_EXPORTER_OTLP_HEADERS'
-] as const satisfies readonly SecretName[]
+  'OTEL_EXPORTER_OTLP_HEADERS',
+] as const satisfies ReadonlyArray<SecretName>
 
 type OptionalSecretName = (typeof optionalSecretNames)[number]
 
@@ -57,12 +57,13 @@ export type WorkerConfigBindings = Readonly<
 
 function stringValue(value: string | undefined, fallback: string): string {
   if (value !== undefined && value.length > 0) return value
+
   return fallback
 }
 
 function secretValue(
   name: SecretName,
-  bindings: WorkerConfigBindings | undefined
+  bindings: WorkerConfigBindings | undefined,
 ): string | undefined {
   return bindings?.[name]
 }
@@ -70,7 +71,7 @@ function secretValue(
 function secretString(
   name: SecretName,
   fallback: string,
-  bindings: WorkerConfigBindings | undefined
+  bindings: WorkerConfigBindings | undefined,
 ): string {
   return stringValue(secretValue(name, bindings), fallback)
 }
@@ -79,8 +80,10 @@ function r2AccountId(endpoint: string): string | undefined {
   try {
     const hostname = new URL(endpoint).hostname
     const suffix = '.r2.cloudflarestorage.com'
+
     if (!hostname.endsWith(suffix)) return undefined
     const accountId = hostname.slice(0, -suffix.length)
+
     return accountId || undefined
   } catch {
     return undefined
@@ -89,7 +92,7 @@ function r2AccountId(endpoint: string): string | undefined {
 
 /** Parsed object storage configuration. R2 requires an account ID; signing checks credentials at use. */
 const FullEmailAddress = Schema.String.pipe(
-  Schema.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/))
+  Schema.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)),
 )
 
 export const StorageConfigSchema = Schema.Struct({
@@ -99,70 +102,71 @@ export const StorageConfigSchema = Schema.Struct({
   region: Schema.String,
   accessKeyId: Schema.optional(Schema.Redacted(Schema.String)),
   secretAccessKey: Schema.optional(Schema.Redacted(Schema.String)),
-  signingEndpoint: Schema.optional(Schema.String)
+  signingEndpoint: Schema.optional(Schema.String),
 }).check(
   Schema.makeFilter((storage) =>
     storage.provider === 'aws' || storage.accountId !== undefined
       ? undefined
-      : 'r2 provider requires an account ID'
-  )
+      : 'r2 provider requires an account ID',
+  ),
 )
 
 const ConfigSchema = Schema.Struct({
   urls: Schema.Struct({
     frontend: Schema.String,
     share: Schema.String,
-    bucketRouter: Schema.String
+    bucketRouter: Schema.String,
   }),
   auth: Schema.Struct({
     emailSender: FullEmailAddress,
     accessTokenSecret: Schema.String,
     refreshTokenSecret: Schema.String,
     betterAuthSecret: Schema.String,
-    betterAuthUrl: Schema.String
+    betterAuthUrl: Schema.String,
   }),
   spotify: Schema.Struct({
     clientId: Schema.String,
-    clientSecret: Schema.String
+    clientSecret: Schema.String,
   }),
   buckets: Schema.Struct({
     userContent: Schema.String,
-    mixes: Schema.String
+    mixes: Schema.String,
   }),
   storage: StorageConfigSchema,
   resources: Schema.Struct({
-    available: Schema.Boolean
+    available: Schema.Boolean,
   }),
   app: Schema.Struct({
     stage: Schema.String,
     nodeEnv: Schema.String,
     dbStage: Schema.optional(Schema.String),
-    logLevel: Schema.optional(Schema.String)
+    logLevel: Schema.optional(Schema.String),
   }),
   otel: Schema.Struct({
     endpoint: Schema.optional(Schema.String),
-    headers: Schema.optional(Schema.String)
+    headers: Schema.optional(Schema.String),
   }),
   sentry: Schema.Struct({
     dsn: Schema.String,
-    environment: Schema.String
+    environment: Schema.String,
   }),
-  adminEmail: Schema.String
+  adminEmail: Schema.String,
 })
 
-type ConfigSchemaType = typeof ConfigSchema.Type
-export interface ConfigService extends ConfigSchemaType {}
+export type ConfigService = typeof ConfigSchema.Type
 
 export const ConfigService = Context.Service<ConfigService>('ConfigService')
 
 function requiredInProduction(isProd: boolean, bindings: WorkerConfigBindings | undefined): void {
   if (!isProd) return
 
-  const optional: readonly string[] = optionalSecretNames
+  const optional: ReadonlyArray<string> = optionalSecretNames
+
   const missing = secretNames.filter(
     (name) =>
-      !optional.includes(name) && stringValue(secretValue(name, bindings), '').trim().length === 0
+      !optional.includes(name) && stringValue(secretValue(name, bindings), '').trim().length === 0,
   )
+
   if (missing.length > 0) {
     throw new Error(`Missing required production secrets: ${missing.join(', ')}`)
   }
@@ -186,7 +190,7 @@ export function createConfig(bindings?: WorkerConfigBindings): ConfigService {
     StorageRegion: secretString('StorageRegion', 'auto', bindings),
     StorageAccessKeyId: secretString('StorageAccessKeyId', '', bindings),
     StorageSecretAccessKey: secretString('StorageSecretAccessKey', '', bindings),
-    StorageSigningEndpoint: secretString('StorageSigningEndpoint', '', bindings)
+    StorageSigningEndpoint: secretString('StorageSigningEndpoint', '', bindings),
   }
 
   requiredInProduction(isProd, bindings)
@@ -194,9 +198,11 @@ export function createConfig(bindings?: WorkerConfigBindings): ConfigService {
   const frontendUrl = isProd
     ? 'https://goosebumps.fm'
     : stringValue(bindings?.FRONTEND_URL, 'http://127.0.0.1:5173')
+
   const shareUrl = isProd
     ? 'https://api.goosebumps.fm'
     : stringValue(bindings?.SHARE_URL, 'http://127.0.0.1:3003')
+
   // Production serves the CDN router on its own domain. Every other stage gets
   // a generated workers.dev URL instead, so the deployed router is bound as
   // CDN_ROUTER_URL rather than assumed: pointing a non-prod stage at the
@@ -205,10 +211,12 @@ export function createConfig(bindings?: WorkerConfigBindings): ConfigService {
   const bucketRouterUrl = isProd
     ? 'https://cdn.goosebumps.fm'
     : stringValue(bindings?.CDN_ROUTER_URL, 'https://cdn.goosebumps.fm')
+
   const emailSender = stringValue(bindings?.EMAIL_SENDER, 'noreply@mail.goosebumps.fm')
   const userContentBucketName = bindings?.USER_CONTENT_BUCKET_NAME ?? 'user-content-dev'
   const mixesBucketName = bindings?.MIXES_BUCKET_NAME ?? 'mixes-dev'
   const accountId = bindings?.R2AccountId ?? r2AccountId(secrets.StorageEndpoint)
+
   const storage = Schema.decodeUnknownSync(StorageConfigSchema)({
     // r2 is the deployment target, so an account ID is enough to select it.
     // Without one there is nothing to address a bucket with, and the aws
@@ -225,10 +233,11 @@ export function createConfig(bindings?: WorkerConfigBindings): ConfigService {
       secrets.StorageSecretAccessKey.length === 0
         ? undefined
         : Redacted.make(secrets.StorageSecretAccessKey),
-    signingEndpoint: secrets.StorageSigningEndpoint || undefined
+    signingEndpoint: secrets.StorageSigningEndpoint || undefined,
   })
 
   const nodeEnv = isProd ? 'production' : 'development'
+
   const otelEndpoint =
     secrets.OTEL_EXPORTER_OTLP_ENDPOINT ||
     (['dev', 'local'].includes(appStage) ? 'http://localhost:4318' : '')
@@ -237,49 +246,49 @@ export function createConfig(bindings?: WorkerConfigBindings): ConfigService {
     urls: {
       frontend: frontendUrl,
       share: shareUrl,
-      bucketRouter: bucketRouterUrl
+      bucketRouter: bucketRouterUrl,
     },
     auth: {
       emailSender,
       accessTokenSecret: 'secret',
       refreshTokenSecret: 'secret',
       betterAuthSecret: secrets.BETTER_AUTH_SECRET,
-      betterAuthUrl: secrets.BETTER_AUTH_URL
+      betterAuthUrl: secrets.BETTER_AUTH_URL,
     },
     spotify: {
       clientId: secrets.SpotifyClientId,
-      clientSecret: secrets.SpotifyClientSecret
+      clientSecret: secrets.SpotifyClientSecret,
     },
     buckets: {
       userContent: userContentBucketName,
-      mixes: mixesBucketName
+      mixes: mixesBucketName,
     },
     storage,
     app: {
       stage: appStage,
       nodeEnv,
       dbStage: isProd ? 'prod' : undefined,
-      logLevel: undefined
+      logLevel: undefined,
     },
     otel: {
       endpoint: otelEndpoint,
-      headers: secrets.OTEL_EXPORTER_OTLP_HEADERS || undefined
+      headers: secrets.OTEL_EXPORTER_OTLP_HEADERS || undefined,
     },
     sentry: {
       dsn: secrets.SENTRY_BACKEND_DSN,
-      environment: bindings?.SENTRY_ENVIRONMENT ?? (isProd ? 'production' : 'development')
+      environment: bindings?.SENTRY_ENVIRONMENT ?? (isProd ? 'production' : 'development'),
     },
     adminEmail: stringValue(bindings?.ADMIN_EMAIL, 'guidefari@icloud.com'),
     resources: {
-      available: bindings !== undefined
-    }
+      available: bindings !== undefined,
+    },
   }
 }
 
 const makeConfigServiceLayer = (bindings?: WorkerConfigBindings) =>
   Layer.effect(
     ConfigService,
-    Schema.decodeUnknownEffect(ConfigSchema)(createConfig(bindings)).pipe(Effect.orDie)
+    Schema.decodeUnknownEffect(ConfigSchema)(createConfig(bindings)).pipe(Effect.orDie),
   )
 
 export const ConfigServiceLayer = makeConfigServiceLayer()
@@ -288,14 +297,14 @@ export const WorkerConfigServiceLayer = (bindings: WorkerConfigBindings) =>
   makeConfigServiceLayer(bindings)
 
 export const WorkerConfigServiceLayerEffect = <E>(
-  bindings: Effect.Effect<WorkerConfigBindings, E>
+  bindings: Effect.Effect<WorkerConfigBindings, E>,
 ) =>
   Layer.effect(
     ConfigService,
     bindings.pipe(
       Effect.flatMap((resolved) =>
-        Schema.decodeUnknownEffect(ConfigSchema)(createConfig(resolved))
+        Schema.decodeUnknownEffect(ConfigSchema)(createConfig(resolved)),
       ),
-      Effect.orDie
-    )
+      Effect.orDie,
+    ),
   )

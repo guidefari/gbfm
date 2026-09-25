@@ -2,19 +2,31 @@
   import { Option, Schema } from 'effect'
 
   const UsernameAvailability = Schema.Struct({ available: Schema.Boolean })
+
   const ErrorResponse = Schema.Struct({ message: Schema.optional(Schema.String) })
 
   let sentEmail = $state('')
+
   let email = $state('')
+
   let name = $state('')
+
   let username = $state('')
+
   let password = $state('')
+
   let availability = $state<'idle' | 'checking' | 'available' | 'taken'>('idle')
+
   let error = $state('')
+
   let pending = $state(false)
+
   let resendPending = $state(false)
+
   let resendMessage = $state('')
+
   let cooldown = $state(0)
+
   let checkSequence = 0
 
   const passwordChecks = $derived([
@@ -22,16 +34,23 @@
     ['An uppercase and lowercase letter', /[a-z]/.test(password) && /[A-Z]/.test(password)],
     ['A number', /\d/.test(password)]
   ] as const)
+
   const passwordValid = $derived(passwordChecks.every(([, valid]) => valid))
 
   async function checkUsername(value: string) {
     username = value
     const sequence = ++checkSequence
     const candidate = value.trim()
-    if (candidate.length < 3) { availability = 'idle'; return }
+
+    if (candidate.length < 3) { availability = 'idle';
+
+ return }
+
     availability = 'checking'
     await new Promise((resolve) => setTimeout(resolve, 400))
+
     if (sequence !== checkSequence) return
+
     try {
       const response = await fetch(`/auth/is-username-available?username=${encodeURIComponent(candidate)}`)
       const input: Schema.Json = await response.json()
@@ -42,15 +61,22 @@
 
   function startCooldown() {
     cooldown = 30
-    const timer = setInterval(() => { cooldown -= 1; if (cooldown <= 0) clearInterval(timer) }, 1000)
+
+    const timer = setInterval(() => {
+      cooldown -= 1
+
+      if (cooldown <= 0) clearInterval(timer)
+    }, 1000)
   }
 
   async function submit() {
     pending = true; error = ''
+
     try {
       const response = await fetch('/auth/sign-up/email', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, name, username: username.trim(), password }) })
       const input: Schema.Json = await response.json().catch(() => null)
       const body = Option.getOrNull(Schema.decodeUnknownOption(ErrorResponse)(input))
+
       if (!response.ok) throw new Error(body?.message ?? 'Failed to sign up.')
       sentEmail = email; startCooldown()
     } catch (cause) { error = cause instanceof Error ? cause.message : 'Failed to sign up.' }
@@ -62,6 +88,7 @@
     const response = await fetch('/auth/send-verification-email', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: sentEmail }) })
     resendPending = false
     resendMessage = response.ok ? 'Sent. Check your inbox.' : 'Failed to resend.'
+
     if (response.ok) startCooldown()
   }
 </script>

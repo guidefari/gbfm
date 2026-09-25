@@ -1,24 +1,25 @@
 import type { D1Database } from '@cloudflare/workers-types'
 import { Layer } from 'effect'
+
 import { DatabaseLayer } from '@/db/layer'
 import { createWebHandler } from '@/http/routes'
-import { AppLayer, type AppLayerOptions } from '@/runtime/services'
 import {
   WorkerSentryEnabledLive,
   WorkerSentryEnv,
-  WorkerTracingLive
+  WorkerTracingLive,
 } from '@/runtime/sentry-worker'
+import { AppLayer, type AppLayerOptions } from '@/runtime/services'
 import { MusicCoverImageFetcher } from '@/services/canonical-music-identity/artwork-delivery'
-import { NavigationLockLocalLayer } from '@/services/navigation-lock'
-import { PlaylistEnrichmentQueueTestLayer } from '@/services/playlist-enrichment-queue'
-import { SpotifyImportResolverLocalLayer } from '@/services/spotify-import-resolver.service'
 import type { ConfigService } from '@/services/config.service'
 import {
   RecordingEmailTransportLayer,
-  type EmailTransportService
+  type EmailTransportService,
 } from '@/services/email-transport.service'
+import { NavigationLockLocalLayer } from '@/services/navigation-lock'
+import { PlaylistEnrichmentQueueTestLayer } from '@/services/playlist-enrichment-queue'
 import { SentryServiceLayer } from '@/services/sentry.service'
 import { SitemapCacheLayer, type SitemapKv } from '@/services/sitemap-cache'
+import { SpotifyImportResolverLocalLayer } from '@/services/spotify-import-resolver.service'
 import type { ObjectStoreClient } from '@/services/storage/object-store-client'
 
 // Tests never call Sentry.withSentry, so Sentry stays disabled (no DSN) and
@@ -28,19 +29,21 @@ import type { ObjectStoreClient } from '@/services/storage/object-store-client'
 // health.handlers.failure.test.ts) don't each rebuild this wiring.
 export const testSentryServiceLive = SentryServiceLayer.pipe(
   Layer.provide(WorkerSentryEnabledLive),
-  Layer.provide(Layer.succeed(WorkerSentryEnv, { dsn: undefined, environment: 'test' }))
+  Layer.provide(Layer.succeed(WorkerSentryEnv, { dsn: undefined, environment: 'test' })),
 )
 
 const inMemorySitemapKv = (): SitemapKv => {
   const store = new Map<string, string>()
+
   return {
     get: async (key) => {
       const value = store.get(key)
+
       return value ? JSON.parse(value) : null
     },
     put: async (key, value) => {
       store.set(key, value)
-    }
+    },
   }
 }
 
@@ -59,7 +62,7 @@ export const createTestWebHandler = (
   emailTransportLive: Layer.Layer<EmailTransportService> = RecordingEmailTransportLayer,
   objectStoreLive?: Layer.Layer<ObjectStoreClient>,
   musicCoverImageFetcherLive: Layer.Layer<never> = Layer.succeed(MusicCoverImageFetcher, fetch),
-  configLive?: Layer.Layer<ConfigService>
+  configLive?: Layer.Layer<ConfigService>,
 ) => {
   const baseServices = {
     database: DatabaseLayer(d1),
@@ -70,11 +73,15 @@ export const createTestWebHandler = (
     sentry: testSentryServiceLive,
     tracing: WorkerTracingLive,
     emailTransport: emailTransportLive,
-    musicCoverImageFetcher: musicCoverImageFetcherLive
+    musicCoverImageFetcher: musicCoverImageFetcherLive,
   }
+
   const services = configLive === undefined ? baseServices : { ...baseServices, config: configLive }
+
   const appLayerOptions: AppLayerOptions =
     objectStoreLive === undefined ? services : { ...services, objectStore: objectStoreLive }
+
   const appServicesLive = AppLayer(appLayerOptions)
+
   return createWebHandler({ appServicesLive })
 }

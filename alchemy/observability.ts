@@ -1,6 +1,7 @@
 import type { WorkerObservability } from 'alchemy/Cloudflare'
 
 const LOGS_DESTINATION = 'planetaryescape-logs'
+
 const TRACES_DESTINATION = 'planetaryescape-traces'
 
 export function workerObservability(isProduction: boolean): WorkerObservability {
@@ -11,13 +12,13 @@ export function workerObservability(isProduction: boolean): WorkerObservability 
       headSamplingRate: 1,
       invocationLogs: true,
       persist: !isProduction,
-      destinations: isProduction ? [LOGS_DESTINATION] : undefined
+      destinations: isProduction ? [LOGS_DESTINATION] : undefined,
     },
     traces: {
       enabled: true,
       headSamplingRate: 1,
       persist: !isProduction,
-      destinations: isProduction ? [TRACES_DESTINATION] : undefined
-    }
+      destinations: isProduction ? [TRACES_DESTINATION] : undefined,
+    },
   }
 }

@@ -8,7 +8,9 @@
   import { text, type PublicRecord } from '@/lib/public-content'
 
   let { shows, selected, episodes = [], failure = null, actionActive = false }: { shows: ReadonlyArray<PublicRecord>; selected: PublicRecord | null; episodes?: ReadonlyArray<PublicRecord>; failure?: string | null; actionActive?: boolean } = $props()
+
   const selectedId = $derived(text(selected?.id))
+
   const heading = 'mb-2 border-b border-border/60 pb-2 text-xs font-semibold tracking-wider text-muted-foreground'
 </script>
 

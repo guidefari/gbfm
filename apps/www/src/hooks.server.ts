@@ -1,5 +1,7 @@
 import type { Handle, HandleServerError } from '@sveltejs/kit/hooks'
+
 import { resolvePrincipal } from '@/lib/server/auth/session'
+import { log } from '@/services/logger'
 
 export const handle: Handle = async ({ event, resolve }) => {
   const incomingRequestId = event.request.headers.get('x-request-id')
@@ -8,12 +10,15 @@ export const handle: Handle = async ({ event, resolve }) => {
     incomingRequestId && /^[a-zA-Z0-9_-]{1,128}$/.test(incomingRequestId)
       ? incomingRequestId
       : crypto.randomUUID()
+
   if (event.tracing.enabled) {
     event.tracing.root.setAttribute('gbfm.request_id', event.locals.requestId)
+
     if (import.meta.env.DEV) {
       event.tracing.root.updateName(`www ${event.request.method} ${event.route.id ?? 'unknown'}`)
     }
   }
+
   event.locals.principal = await resolvePrincipal(event)
 
   const resolved = await resolve(event)
@@ -21,28 +26,31 @@ export const handle: Handle = async ({ event, resolve }) => {
   response.headers.set('x-request-id', event.locals.requestId)
   response.headers.append(
     'server-timing',
-    `sveltekit;dur=${(performance.now() - startedAt).toFixed(1)}`
+    `sveltekit;dur=${(performance.now() - startedAt).toFixed(1)}`,
   )
+
   if (import.meta.env.DEV) {
-    console.info('www request completed', {
+    log('info', 'www request completed', {
       requestId: event.locals.requestId,
       route: event.route.id,
       method: event.request.method,
       status: response.status,
-      durationMs: Math.round(performance.now() - startedAt)
+      durationMs: Math.round(performance.now() - startedAt),
     })
   }
+
   return response
 }
 
 export const handleError: HandleServerError = ({ error, event, kind }) => {
-  console.error('sveltekit request failed', {
+  log('error', 'sveltekit request failed', {
     operation: 'render-request',
     errorType: error instanceof Error ? error.name : 'UnknownError',
     errorMessage: error instanceof Error ? error.message : 'Unknown error',
     requestId: event.locals.requestId,
     routeId: event.route.id,
-    status: kind === 'unknown' ? 500 : error.status
+    status: kind === 'unknown' ? 500 : error.status,
   })
+
   return { message: 'Something went wrong', requestId: event.locals.requestId }
 }

@@ -6,7 +6,9 @@
   import type { NowPlaying } from './now-playing'
 
   let { player, onSearch }: { player: NowPlaying | null; onSearch: () => void } = $props()
+
   const controls = getPlayerContext()
+
   const tab = 'flex min-w-0 flex-col items-center justify-center gap-0.5 text-[10px] font-medium text-muted-foreground no-underline transition-colors hover:text-foreground aria-[current=page]:text-highlight'
 </script>
 

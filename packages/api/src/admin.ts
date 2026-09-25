@@ -1,5 +1,6 @@
 import { Schema } from 'effect'
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/unstable/httpapi'
+
 import { AuthMiddleware } from './middleware/auth'
 
 // effect@4.0.0-beta.93's HttpApiError has no built-in 429 -- the frontend
@@ -15,7 +16,7 @@ import { AuthMiddleware } from './middleware/auth'
 export class SimulatedRateLimitError extends Schema.TaggedError<SimulatedRateLimitError>()(
   'SimulatedRateLimitError',
   {},
-  { httpApiStatus: 429 }
+  { httpApiStatus: 429 },
 ) {}
 
 // Mirrors apps/server/src/db/admin-overview.schema.ts (Zod, DB-facing) --
@@ -24,7 +25,7 @@ export class SimulatedRateLimitError extends Schema.TaggedError<SimulatedRateLim
 const ContentBreakdown = Schema.Struct({
   published: Schema.Number,
   drafts: Schema.Number,
-  newLast7Days: Schema.Number
+  newLast7Days: Schema.Number,
 })
 
 const RecentContentItem = Schema.Struct({
@@ -33,7 +34,7 @@ const RecentContentItem = Schema.Struct({
   slug: Schema.String,
   type: Schema.Literals(['mix', 'track', 'misc', 'show', 'post', 'micro', 'label', 'release']),
   createdAt: Schema.String,
-  draft: Schema.Boolean
+  draft: Schema.Boolean,
 })
 
 const TopMix = Schema.Struct({
@@ -42,7 +43,7 @@ const TopMix = Schema.Struct({
   slug: Schema.String,
   playCount: Schema.Number,
   createdAt: Schema.String,
-  creators: Schema.Array(Schema.String)
+  creators: Schema.Array(Schema.String),
 })
 
 const RecentUser = Schema.Struct({
@@ -51,14 +52,14 @@ const RecentUser = Schema.Struct({
   email: Schema.String,
   role: Schema.String,
   createdAt: Schema.String,
-  emailVerified: Schema.Boolean
+  emailVerified: Schema.Boolean,
 })
 
 const RecentSubscriber = Schema.Struct({
   id: Schema.String,
   email: Schema.String,
   source: Schema.NullOr(Schema.String),
-  createdAt: Schema.String
+  createdAt: Schema.String,
 })
 
 const RecentEmailFailure = Schema.Struct({
@@ -67,7 +68,7 @@ const RecentEmailFailure = Schema.Struct({
   subject: Schema.String,
   status: Schema.String,
   createdAt: Schema.String,
-  errorMessage: Schema.NullOr(Schema.String)
+  errorMessage: Schema.NullOr(Schema.String),
 })
 
 export const AdminOverviewResponse = Schema.Struct({
@@ -80,7 +81,7 @@ export const AdminOverviewResponse = Schema.Struct({
     publishedMixes: Schema.Number,
     newUsersLast7Days: Schema.Number,
     newSubscribersLast30Days: Schema.Number,
-    newMixesLast30Days: Schema.Number
+    newMixesLast30Days: Schema.Number,
   }),
   publishing: Schema.Struct({
     mixes: ContentBreakdown,
@@ -92,7 +93,7 @@ export const AdminOverviewResponse = Schema.Struct({
     labels: ContentBreakdown,
     releases: ContentBreakdown,
     recentContent: Schema.Array(RecentContentItem),
-    topMixes: Schema.Array(TopMix)
+    topMixes: Schema.Array(TopMix),
   }),
   community: Schema.Struct({
     users: Schema.Struct({
@@ -103,22 +104,22 @@ export const AdminOverviewResponse = Schema.Struct({
       creators: Schema.Number,
       banned: Schema.Number,
       newLast7Days: Schema.Number,
-      newLast30Days: Schema.Number
+      newLast30Days: Schema.Number,
     }),
     sessions: Schema.Struct({
-      active: Schema.Number
+      active: Schema.Number,
     }),
     newsletter: Schema.Struct({
       total: Schema.Number,
       newLast7Days: Schema.Number,
-      newLast30Days: Schema.Number
+      newLast30Days: Schema.Number,
     }),
     engagement: Schema.Struct({
       favoritesTotal: Schema.Number,
-      showSubscriptionsTotal: Schema.Number
+      showSubscriptionsTotal: Schema.Number,
     }),
     recentUsers: Schema.Array(RecentUser),
-    recentSubscribers: Schema.Array(RecentSubscriber)
+    recentSubscribers: Schema.Array(RecentSubscriber),
   }),
   operations: Schema.Struct({
     emails: Schema.Struct({
@@ -130,16 +131,17 @@ export const AdminOverviewResponse = Schema.Struct({
       failed: Schema.Number,
       pending: Schema.Number,
       failedLast7Days: Schema.Number,
-      recentFailures: Schema.Array(RecentEmailFailure)
+      recentFailures: Schema.Array(RecentEmailFailure),
     }),
     reminders: Schema.Struct({
       pending: Schema.Number,
       processing: Schema.Number,
       failed: Schema.Number,
-      dueNow: Schema.Number
-    })
-  })
+      dueNow: Schema.Number,
+    }),
+  }),
 })
+
 export type AdminOverviewResponse = typeof AdminOverviewResponse.Type
 
 const FrontendErrorScenario = Schema.Literals([
@@ -148,12 +150,12 @@ const FrontendErrorScenario = Schema.Literals([
   'not-found',
   'rate-limit',
   'error',
-  'unavailable'
+  'unavailable',
 ])
 
 export const FrontendErrorOkResponse = Schema.Struct({
   scenario: Schema.String,
-  message: Schema.String
+  message: Schema.String,
 })
 
 export const NewsletterSubscribersResponse = Schema.Struct({
@@ -164,17 +166,17 @@ export const NewsletterSubscribersResponse = Schema.Struct({
       name: Schema.NullOr(Schema.String),
       source: Schema.NullOr(Schema.String),
       unsubscribedAt: Schema.NullOr(Schema.String),
-      createdAt: Schema.String
-    })
-  )
+      createdAt: Schema.String,
+    }),
+  ),
 })
 
 export const AdminGroup = HttpApiGroup.make('admin')
   .add(
     HttpApiEndpoint.get('getAdminOverview', '/api/admin/overview', {
       success: AdminOverviewResponse,
-      error: HttpApiError.Forbidden
-    }).middleware(AuthMiddleware)
+      error: HttpApiError.Forbidden,
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.get('simulateFrontendError', '/api/admin/frontend-errors/:scenario', {
@@ -186,13 +188,13 @@ export const AdminGroup = HttpApiGroup.make('admin')
         HttpApiError.NotFound,
         SimulatedRateLimitError,
         HttpApiError.InternalServerError,
-        HttpApiError.ServiceUnavailable
-      ]
-    }).middleware(AuthMiddleware)
+        HttpApiError.ServiceUnavailable,
+      ],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.get('getNewsletterSubscribers', '/api/admin/newsletter-subscribers', {
       success: NewsletterSubscribersResponse,
-      error: HttpApiError.Forbidden
-    }).middleware(AuthMiddleware)
+      error: HttpApiError.Forbidden,
+    }).middleware(AuthMiddleware),
   )

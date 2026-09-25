@@ -1,5 +1,6 @@
 import { brandDark, brandLight } from '@gbfm/theme'
 import { useColorScheme } from 'react-native'
+
 import { useColorSchemePreference } from '@/store/preferences'
 
 export type ThemeColors = {
@@ -37,7 +38,7 @@ const darkColors: ThemeColors = {
   success: brandDark.success,
   warning: brandDark.warning,
   accentSurface: brandDark.accentSurface,
-  shadow: brandDark.shadow
+  shadow: brandDark.shadow,
 }
 
 const lightColors: ThemeColors = {
@@ -56,7 +57,7 @@ const lightColors: ThemeColors = {
   success: brandLight.success,
   warning: brandLight.warning,
   accentSurface: brandLight.accentSurface,
-  shadow: brandLight.shadow
+  shadow: brandLight.shadow,
 }
 
 /**
@@ -66,13 +67,17 @@ const lightColors: ThemeColors = {
  */
 export const withAlpha = (color: string, alpha: number): string => {
   const hsl = color.match(/^hsl\(\s*([\d.]+)\s+([\d.]+)%\s+([\d.]+)%\s*\)$/)
+
   if (hsl) return `hsla(${hsl[1]}, ${hsl[2]}%, ${hsl[3]}%, ${alpha})`
+
   if (/^#[0-9a-fA-F]{6}$/.test(color)) {
     const channel = Math.round(alpha * 255)
       .toString(16)
       .padStart(2, '0')
+
     return `${color}${channel}`
   }
+
   return color
 }
 
@@ -80,5 +85,6 @@ export const useThemeColors = (): ThemeColors => {
   const systemColorScheme = useColorScheme()
   const preference = useColorSchemePreference()
   const colorScheme = preference === 'system' ? systemColorScheme : preference
+
   return colorScheme === 'light' ? lightColors : darkColors
 }

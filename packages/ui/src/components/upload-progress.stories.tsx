@@ -2,10 +2,10 @@ import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 import { UploadProgress, type UploadStep } from './upload-progress'
 
 export default {
-  title: '@gbfm/ui/Workflows/Upload progress'
+  title: '@gbfm/ui/Workflows/Upload progress',
 }
 
-const steps: UploadStep[] = ['uploading-audio', 'uploading-image', 'creating-record', 'success']
+const steps: Array<UploadStep> = ['uploading-audio', 'uploading-image', 'creating-record', 'success']
 
 export function UploadProgressStates() {
   return (

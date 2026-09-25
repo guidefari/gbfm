@@ -3,52 +3,77 @@
   import { Option, Schema } from 'effect'
 
   const EnrichedTrack = Schema.Struct({ title: Schema.String, artist: Schema.String, thumbnailUrl: Schema.optional(Schema.NullOr(Schema.String)), album: Schema.optional(Schema.NullOr(Schema.String)), platform: Schema.String })
+
   type Reminder = typeof GetMusicRemindersResponse.Type.reminders[number]
 
   let { initialReminders, initialError = null }: { initialReminders: ReadonlyArray<Reminder>; initialError?: string | null } = $props()
+
   let reminders = $derived(initialReminders), loading = $state(false), pending = $state(false), enriching = $state(false), error = $derived(initialError ?? ''), success = $state('')
+
   let musicUrl = $state(''), musicTitle = $state(''), artistName = $state(''), albumCoverUrl = $state(''), reminderDate = $state(''), notes = $state('')
+
   let enrichment = $state<typeof EnrichedTrack.Type | null>(null), enrichmentSequence = 0
 
   async function load() {
     loading = true
-    try { const response = await fetch('/api/music-reminders'); if (!response.ok) throw new Error(); reminders = Schema.decodeUnknownSync(GetMusicRemindersResponse)(await response.json()).reminders }
+
+    try { const response = await fetch('/api/music-reminders');
+
+ if (!response.ok) throw new Error(); reminders = Schema.decodeUnknownSync(GetMusicRemindersResponse)(await response.json()).reminders }
     catch { error = 'Could not load reminders.' }
     finally { loading = false }
   }
+
   async function enrich() {
     const sequence = ++enrichmentSequence
     enrichment = null
+
     if (!musicUrl.trim()) return
     enriching = true
+
     try {
       const response = await fetch('/api/spotify/enrich', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ url: musicUrl.trim() }) })
       const parsed = Option.getOrNull(Schema.decodeUnknownOption(EnrichedTrack)(await response.json()))
+
       if (sequence !== enrichmentSequence || !response.ok || !parsed) return
       enrichment = parsed
+
       if (!musicTitle) musicTitle = parsed.title
+
       if (!artistName) artistName = parsed.artist
       albumCoverUrl = parsed.thumbnailUrl ?? albumCoverUrl
     } catch { /* Manual entry remains available. */ }
     finally { if (sequence === enrichmentSequence) enriching = false }
   }
+
   async function create() {
     error = ''; success = ''
     const date = new Date(reminderDate)
-    if (!musicTitle.trim() || !artistName.trim() || !musicUrl.trim() || Number.isNaN(date.getTime())) { error = 'Please fill in all required fields.'; return }
+
+    if (!musicTitle.trim() || !artistName.trim() || !musicUrl.trim() || Number.isNaN(date.getTime())) { error = 'Please fill in all required fields.';
+
+ return }
+
     pending = true
     const payload = { musicTitle: musicTitle.trim(), artistName: artistName.trim(), musicUrl: musicUrl.trim(), albumCoverUrl: albumCoverUrl || undefined, reminderDate: date.toISOString(), notes: notes.trim() || undefined }
+
     try {
       const response = await fetch('/api/music-reminders', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
+
       if (!response.ok) throw new Error()
       musicUrl = ''; musicTitle = ''; artistName = ''; albumCoverUrl = ''; reminderDate = ''; notes = ''; enrichment = null; success = 'Reminder created. We will email you when the time comes.'; await load()
     } catch { error = 'Could not create reminder. Please try again.' }
     finally { pending = false }
   }
+
   async function remove(reminder: Reminder) {
     if (!confirm(`Delete reminder for “${reminder.musicTitle}”? This cannot be undone.`)) return
     const response = await fetch(`/api/music-reminders/${reminder.id}`, { method: 'DELETE' })
-    if (!response.ok) { error = 'Could not delete reminder.'; return }
+
+    if (!response.ok) { error = 'Could not delete reminder.';
+
+ return }
+
     reminders = reminders.filter(({ id }) => id !== reminder.id); success = 'Reminder deleted.'
   }
 </script>

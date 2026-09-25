@@ -7,8 +7,8 @@ export default defineConfig({
       main: './src/index.ts',
       miniflare: {
         compatibilityDate: '2026-08-08',
-        r2Buckets: ['USER_CONTENT', 'MIXES']
-      }
-    })
-  ]
+        r2Buckets: ['USER_CONTENT', 'MIXES'],
+      },
+    }),
+  ],
 })

@@ -1,18 +1,19 @@
 import { and, asc, desc, eq, like, or, sql } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
+
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import {
   SOCIAL_LINK_PLATFORMS,
   type SocialLinkPlatform,
   userSocialLinks,
-  user as userTable
+  user as userTable,
 } from '@/db/auth.schema'
-import { Database } from '@/db/layer'
 import type { InsertAuthorEmailPreferences, SelectAuthorEmailPreferences } from '@/db/email.schema'
+import { Database } from '@/db/layer'
 import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
 import {
   getOrCreateEmailPreferencesByUserId,
-  updateEmailPreferences as updateEmailPreferencesRepo
+  updateEmailPreferences as updateEmailPreferencesRepo,
 } from '@/repositories/email-preferences.repository'
 
 function isSocialLinkPlatform(value: string): value is SocialLinkPlatform {
@@ -57,7 +58,7 @@ export interface UserService {
       image?: string | null
       username?: string
       bio?: string | null
-    }
+    },
   ) => Effect.Effect<
     {
       id: string
@@ -92,7 +93,7 @@ export interface UserService {
       platform: SocialLinkPlatform
       url: string
       position: number
-    }>
+    }>,
   ) => Effect.Effect<
     Array<{
       platform: SocialLinkPlatform
@@ -116,12 +117,12 @@ export interface UserService {
   >
 
   readonly getUserEmailPreferences: (
-    userId: string
+    userId: string,
   ) => Effect.Effect<SelectAuthorEmailPreferences, DatabaseError>
 
   readonly updateUserEmailPreferences: (
     userId: string,
-    preferences: Partial<InsertAuthorEmailPreferences>
+    preferences: Partial<InsertAuthorEmailPreferences>,
   ) => Effect.Effect<SelectAuthorEmailPreferences, DatabaseError>
 }
 
@@ -132,22 +133,24 @@ export const UserService = Context.Service<UserService>('UserService')
 const getUserByIdEffect = (userId: string) =>
   Effect.gen(function* () {
     const db = yield* Database
+
     const userRecords = yield* Effect.tryPromise({
       try: () => db.select().from(userTable).where(eq(userTable.id, userId)).limit(1),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to get user: ${getErrorMessage(error)}`,
           operation: 'select',
-          table: 'user'
-        })
+          table: 'user',
+        }),
     })
 
     const user = userRecords[0]
+
     if (!user) {
       return yield* new NotFoundError({
         message: 'User not found',
         resource: 'user',
-        id: userId
+        id: userId,
       })
     }
 
@@ -161,7 +164,7 @@ const updateUserProfileEffect = (
     image?: string | null
     username?: string
     bio?: string | null
-  }
+  },
 ) =>
   Effect.gen(function* () {
     const db = yield* Database
@@ -175,16 +178,17 @@ const updateUserProfileEffect = (
         new DatabaseError({
           message: `Failed to update user profile: ${getErrorMessage(error)}`,
           operation: 'update',
-          table: 'user'
-        })
+          table: 'user',
+        }),
     })
 
     const user = updatedRecords[0]
+
     if (!user) {
       return yield* new NotFoundError({
         message: 'User not found',
         resource: 'user',
-        id: userId
+        id: userId,
       })
     }
 
@@ -203,22 +207,22 @@ const searchUsersEffect = (query: string) =>
             id: userTable.id,
             name: userTable.name,
             username: userTable.username,
-            image: userTable.image
+            image: userTable.image,
           })
           .from(userTable)
           .where(
             or(
               like(sql`lower(${userTable.name})`, searchPattern.toLowerCase()),
-              like(sql`lower(${userTable.username})`, searchPattern.toLowerCase())
-            )
+              like(sql`lower(${userTable.username})`, searchPattern.toLowerCase()),
+            ),
           )
           .limit(10),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to search users: ${getErrorMessage(error)}`,
           operation: 'select',
-          table: 'user'
-        })
+          table: 'user',
+        }),
     })
 
     return users
@@ -227,14 +231,15 @@ const searchUsersEffect = (query: string) =>
 const getUserEmailPreferencesEffect = (userId: string) =>
   Effect.gen(function* () {
     const db = yield* Database
+
     return yield* Effect.tryPromise({
       try: () => getOrCreateEmailPreferencesByUserId(userId, db),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to get user email preferences: ${getErrorMessage(error)}`,
           operation: 'select',
-          table: 'user_email_preferences'
-        })
+          table: 'user_email_preferences',
+        }),
     })
   })
 
@@ -249,7 +254,7 @@ const getUserSocialLinksEffect = (userId: string) =>
           .select({
             platform: userSocialLinks.platform,
             url: userSocialLinks.url,
-            position: userSocialLinks.position
+            position: userSocialLinks.position,
           })
           .from(userSocialLinks)
           .where(eq(userSocialLinks.userId, userId))
@@ -258,14 +263,14 @@ const getUserSocialLinksEffect = (userId: string) =>
         new DatabaseError({
           message: `Failed to get user social links: ${getErrorMessage(error)}`,
           operation: 'select',
-          table: 'user_social_links'
-        })
+          table: 'user_social_links',
+        }),
     })
 
     return links.flatMap((link) =>
       isSocialLinkPlatform(link.platform)
         ? [{ platform: link.platform, url: link.url, position: link.position }]
-        : []
+        : [],
     )
   })
 
@@ -275,7 +280,7 @@ const replaceUserSocialLinksEffect = (
     platform: SocialLinkPlatform
     url: string
     position: number
-  }>
+  }>,
 ) =>
   Effect.gen(function* () {
     const db = yield* Database
@@ -292,18 +297,18 @@ const replaceUserSocialLinksEffect = (
                     userId,
                     platform: link.platform,
                     url: link.url,
-                    position: link.position
-                  }))
-                )
+                    position: link.position,
+                  })),
+                ),
               ]
-            : [])
+            : []),
         ])
 
         return db
           .select({
             platform: userSocialLinks.platform,
             url: userSocialLinks.url,
-            position: userSocialLinks.position
+            position: userSocialLinks.position,
           })
           .from(userSocialLinks)
           .where(eq(userSocialLinks.userId, userId))
@@ -313,14 +318,14 @@ const replaceUserSocialLinksEffect = (
         new DatabaseError({
           message: `Failed to replace user social links: ${getErrorMessage(error)}`,
           operation: 'update',
-          table: 'user_social_links'
-        })
+          table: 'user_social_links',
+        }),
     })
 
     return updatedLinks.flatMap((link) =>
       isSocialLinkPlatform(link.platform)
         ? [{ platform: link.platform, url: link.url, position: link.position }]
-        : []
+        : [],
     )
   })
 
@@ -338,7 +343,7 @@ const listDjsEffect = () =>
             username: userTable.username,
             image: userTable.image,
             bio: userTable.bio,
-            mixCount: mixCountExpr
+            mixCount: mixCountExpr,
           })
           .from(userTable)
           .innerJoin(audioCreators, eq(audioCreators.creatorId, userTable.id))
@@ -350,8 +355,8 @@ const listDjsEffect = () =>
         new DatabaseError({
           message: `Failed to list djs: ${getErrorMessage(error)}`,
           operation: 'select',
-          table: 'user'
-        })
+          table: 'user',
+        }),
     })
 
     return rows
@@ -359,25 +364,26 @@ const listDjsEffect = () =>
 
 const updateUserEmailPreferencesEffect = (
   userId: string,
-  preferences: Partial<InsertAuthorEmailPreferences>
+  preferences: Partial<InsertAuthorEmailPreferences>,
 ) =>
   Effect.gen(function* () {
     const db = yield* Database
+
     const result = yield* Effect.tryPromise({
       try: () => updateEmailPreferencesRepo(userId, preferences, db),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to update user email preferences: ${getErrorMessage(error)}`,
           operation: 'update',
-          table: 'user_email_preferences'
-        })
+          table: 'user_email_preferences',
+        }),
     })
 
     if (!result) {
       return yield* new DatabaseError({
         message: 'Failed to update email preferences - no rows affected',
         operation: 'update',
-        table: 'user_email_preferences'
+        table: 'user_email_preferences',
       })
     }
 
@@ -390,36 +396,37 @@ export const UserServiceLayer = Layer.effect(
   Effect.gen(function* () {
     const db = yield* Database
     const provideDb = Effect.provideService(Database, db)
+
     return {
       getUserById: (userId) =>
         provideDb(getUserByIdEffect(userId)).pipe(
-          Effect.withSpan('user.getById', { attributes: { userId } })
+          Effect.withSpan('user.getById', { attributes: { userId } }),
         ),
       searchUsers: (query) =>
         provideDb(searchUsersEffect(query)).pipe(
-          Effect.withSpan('user.searchUsers', { attributes: { query } })
+          Effect.withSpan('user.searchUsers', { attributes: { query } }),
         ),
       updateUserProfile: (userId, data) =>
         provideDb(updateUserProfileEffect(userId, data)).pipe(
-          Effect.withSpan('user.updateProfile', { attributes: { userId } })
+          Effect.withSpan('user.updateProfile', { attributes: { userId } }),
         ),
       getUserSocialLinks: (userId) =>
         provideDb(getUserSocialLinksEffect(userId)).pipe(
-          Effect.withSpan('user.getSocialLinks', { attributes: { userId } })
+          Effect.withSpan('user.getSocialLinks', { attributes: { userId } }),
         ),
       replaceUserSocialLinks: (userId, links) =>
         provideDb(replaceUserSocialLinksEffect(userId, links)).pipe(
-          Effect.withSpan('user.replaceSocialLinks', { attributes: { userId } })
+          Effect.withSpan('user.replaceSocialLinks', { attributes: { userId } }),
         ),
       listDjs: () => provideDb(listDjsEffect()).pipe(Effect.withSpan('user.listDjs')),
       getUserEmailPreferences: (userId) =>
         provideDb(getUserEmailPreferencesEffect(userId)).pipe(
-          Effect.withSpan('user.getEmailPreferences', { attributes: { userId } })
+          Effect.withSpan('user.getEmailPreferences', { attributes: { userId } }),
         ),
       updateUserEmailPreferences: (userId, preferences) =>
         provideDb(updateUserEmailPreferencesEffect(userId, preferences)).pipe(
-          Effect.withSpan('user.updateEmailPreferences', { attributes: { userId } })
-        )
+          Effect.withSpan('user.updateEmailPreferences', { attributes: { userId } }),
+        ),
     }
-  })
+  }),
 )

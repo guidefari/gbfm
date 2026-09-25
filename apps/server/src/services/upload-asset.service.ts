@@ -1,5 +1,6 @@
 import { and, eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
+
 import { Database } from '@/db/layer'
 import { type SelectUploadAsset, uploadAssetsTable } from '@/db/upload-asset.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
@@ -25,7 +26,7 @@ export interface CreatePendingAssetInput {
 
 export interface UploadAssetService {
   readonly createPending: (
-    input: CreatePendingAssetInput
+    input: CreatePendingAssetInput,
   ) => Effect.Effect<SelectUploadAsset, DatabaseError>
 
   readonly markUploaded: (key: string) => Effect.Effect<void, DatabaseError>
@@ -33,7 +34,7 @@ export interface UploadAssetService {
   readonly markAttached: (
     key: string,
     attachedToTable: string,
-    attachedToId: string
+    attachedToId: string,
   ) => Effect.Effect<void, DatabaseError>
 }
 
@@ -57,23 +58,24 @@ const createPendingEffect = (input: CreatePendingAssetInput) =>
             uploadId: input.uploadId,
             expectedSize: input.expectedSize,
             status: 'pending',
-            expiresAt
+            expiresAt,
           })
           .returning(),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to create pending upload asset: ${getErrorMessage(error)}`,
           operation: 'insert',
-          table: 'upload_assets'
-        })
+          table: 'upload_assets',
+        }),
     })
 
     const asset = inserted[0]
+
     if (!asset) {
       return yield* new DatabaseError({
         message: 'Failed to create pending upload asset: no row returned',
         operation: 'insert',
-        table: 'upload_assets'
+        table: 'upload_assets',
       })
     }
 
@@ -93,8 +95,8 @@ const markUploadedEffect = (key: string) =>
         new DatabaseError({
           message: `Failed to mark upload asset uploaded: ${getErrorMessage(error)}`,
           operation: 'update',
-          table: 'upload_assets'
-        })
+          table: 'upload_assets',
+        }),
     })
   }).pipe(Effect.withSpan('uploadAsset.markUploaded', { attributes: { key } }))
 
@@ -118,8 +120,8 @@ const markAttachedEffect = (key: string, attachedToTable: string, attachedToId: 
         new DatabaseError({
           message: `Failed to mark upload asset attached: ${getErrorMessage(error)}`,
           operation: 'update',
-          table: 'upload_assets'
-        })
+          table: 'upload_assets',
+        }),
     })
   }).pipe(Effect.withSpan('uploadAsset.markAttached', { attributes: { key, attachedToTable } }))
 
@@ -128,13 +130,14 @@ export const UploadAssetServiceLayer = Layer.effect(
   Effect.gen(function* () {
     const db = yield* Database
     const provideDb = Effect.provideService(Database, db)
+
     return {
       createPending: (input) => provideDb(createPendingEffect(input)),
       markUploaded: (key) => provideDb(markUploadedEffect(key)),
       markAttached: (key, attachedToTable, attachedToId) =>
-        provideDb(markAttachedEffect(key, attachedToTable, attachedToId))
+        provideDb(markAttachedEffect(key, attachedToTable, attachedToId)),
     }
-  })
+  }),
 )
 
 // Content records store the full public URL (e.g. `${bucketRouter}/user-
@@ -146,6 +149,7 @@ export const UploadAssetServiceLayer = Layer.effect(
 // that could never match a row.
 export const keyFromAssetUrl = (url: string, bucketRouterUrl: string): string | null => {
   const prefix = `${bucketRouterUrl}/user-content/`
+
   return url.startsWith(prefix) ? url.slice(prefix.length) : null
 }
 
@@ -160,24 +164,26 @@ export const keyFromAssetUrl = (url: string, bucketRouterUrl: string): string | 
 export const markAttachedAssets = (
   attachedToTable: string,
   attachedToId: string,
-  urls: ReadonlyArray<string | null | undefined>
+  urls: ReadonlyArray<string | null | undefined>,
 ) =>
   Effect.gen(function* () {
     const config = yield* ConfigService
     const uploadAssetService = yield* UploadAssetService
 
-    const keys = urls
-      .filter((url): url is string => Boolean(url))
-      .map((url) => keyFromAssetUrl(url, config.urls.bucketRouter))
-      .filter((key): key is string => key !== null)
+    const keys = urls.flatMap((url) => {
+      if (!url) return []
+      const key = keyFromAssetUrl(url, config.urls.bucketRouter)
+
+      return key === null ? [] : [key]
+    })
 
     for (const key of keys) {
       yield* uploadAssetService
         .markAttached(key, attachedToTable, attachedToId)
         .pipe(
           Effect.catchTag('DatabaseError', (cause) =>
-            Effect.logError('[upload-asset] failed to mark upload_assets attached', cause)
-          )
+            Effect.logError('[upload-asset] failed to mark upload_assets attached', cause),
+          ),
         )
     }
   })

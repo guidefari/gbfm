@@ -20,8 +20,11 @@ interface MixUploadProgressProps {
 
 const formatBytes = (bytes: number): string => {
   if (bytes < 1024) return `${bytes} B`
+
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+
   if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
 }
 
@@ -29,6 +32,7 @@ export function MixUploadProgress({ step, audioProgress }: MixUploadProgressProp
   if (step === 'idle' || step === 'success') return null
 
   const isPaused = step === 'paused-audio'
+
   const stepLabel = isPaused
     ? 'Paused - will resume automatically'
     : step === 'uploading-audio'
@@ -41,13 +45,17 @@ export function MixUploadProgress({ step, audioProgress }: MixUploadProgressProp
 
   const percent = (() => {
     if (step === 'creating-record') return 85
+
     if (step === 'uploading-image') return 70
+
     if (step === 'uploading-audio' && audioProgress && audioProgress.totalBytes > 0) {
       return Math.min(65, Math.round((audioProgress.bytesUploaded / audioProgress.totalBytes) * 65))
     }
+
     if (isPaused && audioProgress && audioProgress.totalBytes > 0) {
       return Math.min(65, Math.round((audioProgress.bytesUploaded / audioProgress.totalBytes) * 65))
     }
+
     return 5
   })()
 

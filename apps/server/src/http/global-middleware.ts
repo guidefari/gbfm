@@ -1,5 +1,6 @@
 import { Cause, Effect, Exit, Layer } from 'effect'
 import { HttpMiddleware, HttpRouter, HttpServerRequest } from 'effect/unstable/http'
+
 import { browserOrigins } from '@/lib/browser-origins'
 import { checkPerformanceHealth, recordRequest } from '@/lib/performance-monitoring'
 import { ConfigService } from '@/services/config.service'
@@ -24,6 +25,7 @@ import { SentryService } from '@/services/sentry.service'
 export const CorsLive = Layer.unwrap(
   Effect.gen(function* () {
     const config = yield* ConfigService
+
     return HttpRouter.middleware(
       HttpMiddleware.cors({
         allowedOrigins: browserOrigins(config.urls.frontend),
@@ -36,14 +38,14 @@ export const CorsLive = Layer.unwrap(
           'sentry-trace',
           'baggage',
           'b3',
-          'traceparent'
+          'traceparent',
         ],
         exposedHeaders: ['Set-Cookie'],
-        credentials: true
+        credentials: true,
       }),
-      { global: true }
+      { global: true },
     )
-  })
+  }),
 )
 
 export const requestPath = (url: string) => new URL(url, 'http://localhost').pathname
@@ -54,6 +56,7 @@ export const requestPath = (url: string) => new URL(url, 'http://localhost').pat
 // to avoid a second response line. Slow-request warnings and the
 // recordRequest/checkPerformanceHealth Effect Metrics remain separate events.
 const SLOW_REQUEST_THRESHOLD = 500
+
 const VERY_SLOW_REQUEST_THRESHOLD = 2000
 
 export const RequestLoggerLive = HttpRouter.middleware(
@@ -79,16 +82,18 @@ export const RequestLoggerLive = HttpRouter.middleware(
               requestId,
               status: 499,
               duration,
-              outcome: 'client_abort'
+              outcome: 'client_abort',
             })
           : Effect.logError('[HTTP] request failed', {
               method: request.method,
               path,
               requestId,
               duration,
-              cause: result.cause
+              cause: result.cause,
             })
+
         if (clientAborted) yield* recordRequest(duration, false)
+
         return yield* Effect.failCause(result.cause)
       }
 
@@ -98,7 +103,7 @@ export const RequestLoggerLive = HttpRouter.middleware(
         path,
         requestId,
         status: response.status,
-        duration
+        duration,
       })
 
       if (duration > VERY_SLOW_REQUEST_THRESHOLD) {
@@ -108,7 +113,7 @@ export const RequestLoggerLive = HttpRouter.middleware(
           status: response.status,
           duration,
           threshold: VERY_SLOW_REQUEST_THRESHOLD,
-          severity: 'critical'
+          severity: 'critical',
         })
       } else if (duration > SLOW_REQUEST_THRESHOLD) {
         yield* Effect.logWarning('[Performance] Slow request detected', {
@@ -117,7 +122,7 @@ export const RequestLoggerLive = HttpRouter.middleware(
           status: response.status,
           duration,
           threshold: SLOW_REQUEST_THRESHOLD,
-          severity: 'warning'
+          severity: 'warning',
         })
       }
 
@@ -126,7 +131,7 @@ export const RequestLoggerLive = HttpRouter.middleware(
 
       return response
     }),
-  { global: true }
+  { global: true },
 )
 
 // ── Defect → Sentry capture ──────────────────────────────────────
@@ -147,8 +152,8 @@ export const SentryDefectLive = HttpRouter.middleware(
         Effect.gen(function* () {
           const sentry = yield* SentryService
           yield* sentry.captureException(defect)
-        })
-      )
+        }),
+      ),
     ),
-  { global: true }
+  { global: true },
 )

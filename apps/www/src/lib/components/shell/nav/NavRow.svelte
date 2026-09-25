@@ -4,6 +4,7 @@
   import { navIcons } from './nav-icons'
 
   let { item }: { item: NavItem } = $props()
+
   const Icon = $derived(navIcons[item.icon])
 </script>
 

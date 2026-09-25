@@ -6,7 +6,7 @@ const entityTypes = [
   { id: 'album', displayName: 'Album' },
   { id: 'track', displayName: 'Track' },
   { id: 'playlist', displayName: 'Playlist' },
-  { id: 'label', displayName: 'Label' }
+  { id: 'label', displayName: 'Label' },
 ]
 
 const platforms = [
@@ -15,45 +15,45 @@ const platforms = [
   {
     id: 'youtube_music',
     displayName: 'YouTube Music',
-    websiteUrl: 'https://music.youtube.com'
+    websiteUrl: 'https://music.youtube.com',
   },
   {
     id: 'apple_music',
     displayName: 'Apple Music',
-    websiteUrl: 'https://music.apple.com'
+    websiteUrl: 'https://music.apple.com',
   },
   {
     id: 'bandcamp',
     displayName: 'Bandcamp',
-    websiteUrl: 'https://bandcamp.com'
+    websiteUrl: 'https://bandcamp.com',
   },
   {
     id: 'soundcloud',
     displayName: 'SoundCloud',
-    websiteUrl: 'https://soundcloud.com'
+    websiteUrl: 'https://soundcloud.com',
   },
   { id: 'tidal', displayName: 'Tidal', websiteUrl: 'https://tidal.com' },
   { id: 'deezer', displayName: 'Deezer', websiteUrl: 'https://deezer.com' },
   {
     id: 'amazon_music',
     displayName: 'Amazon Music',
-    websiteUrl: 'https://music.amazon.com'
+    websiteUrl: 'https://music.amazon.com',
   },
   { id: 'discord', displayName: 'Discord', websiteUrl: 'https://discord.com' },
   { id: 'website', displayName: 'Official Website' },
   {
     id: 'instagram',
     displayName: 'Instagram',
-    websiteUrl: 'https://instagram.com'
+    websiteUrl: 'https://instagram.com',
   },
   { id: 'twitter', displayName: 'Twitter / X', websiteUrl: 'https://x.com' },
   {
     id: 'musicbrainz',
     displayName: 'MusicBrainz',
-    websiteUrl: 'https://musicbrainz.org'
+    websiteUrl: 'https://musicbrainz.org',
   },
   { id: 'discogs', displayName: 'Discogs', websiteUrl: 'https://discogs.com' },
-  { id: 'other', displayName: 'Other' }
+  { id: 'other', displayName: 'Other' },
 ]
 
 export async function seedMusicLookups(db: DatabaseClient) {
@@ -62,7 +62,7 @@ export async function seedMusicLookups(db: DatabaseClient) {
     .values(entityTypes)
     .onConflictDoUpdate({
       target: musicEntityTypesTable.id,
-      set: { displayName: musicEntityTypesTable.displayName }
+      set: { displayName: musicEntityTypesTable.displayName },
     })
 
   await db
@@ -73,12 +73,12 @@ export async function seedMusicLookups(db: DatabaseClient) {
       set: {
         displayName: musicPlatformsTable.displayName,
         websiteUrl: musicPlatformsTable.websiteUrl,
-        iconUrl: musicPlatformsTable.iconUrl
-      }
+        iconUrl: musicPlatformsTable.iconUrl,
+      },
     })
 
   return {
     entityTypeCount: entityTypes.length,
-    platformCount: platforms.length
+    platformCount: platforms.length,
   }
 }

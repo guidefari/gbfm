@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+
 import {
   activeFragment,
   appendHashtag,
@@ -7,7 +8,7 @@ import {
   removeHashtag,
   stripHashtags,
   suggestHashtags,
-  toTagToken
+  toTagToken,
 } from './-tweet-hashtags'
 
 describe('extractHashtags', () => {
@@ -15,7 +16,7 @@ describe('extractHashtags', () => {
     expect(extractHashtags('love this #Ambient #idm', 'more #ambient #Deep-House')).toEqual([
       'ambient',
       'idm',
-      'deep-house'
+      'deep-house',
     ])
   })
 
@@ -77,7 +78,7 @@ describe('suggestHashtags', () => {
     expect(suggestHashtags('am', known, [])).toEqual([
       { label: 'ambient', isNew: false },
       { label: 'amapiano', isNew: false },
-      { label: 'am', isNew: true }
+      { label: 'am', isNew: true },
     ])
   })
 
@@ -94,7 +95,7 @@ describe('suggestHashtags', () => {
       { label: 'ambient', isNew: false },
       { label: 'amapiano', isNew: false },
       { label: 'deep-house', isNew: false },
-      { label: 'idm', isNew: false }
+      { label: 'idm', isNew: false },
     ])
   })
 })
@@ -124,7 +125,7 @@ describe('appendHashtag', () => {
 describe('removeHashtag', () => {
   it('removes the tag while keeping surrounding words', () => {
     expect(removeHashtag('this one #ambient never gets old', 'ambient')).toBe(
-      'this one never gets old'
+      'this one never gets old',
     )
   })
 

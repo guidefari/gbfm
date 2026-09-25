@@ -1,5 +1,6 @@
 <script lang="ts">
   import AccountForm from '@/lib/components/account/AccountForm.svelte'
+
   let sent = $state('')
 </script>
 <svelte:head><title>Forgot password</title></svelte:head>

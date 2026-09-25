@@ -1,5 +1,6 @@
 import { cva, type VariantProps } from 'class-variance-authority'
 import type * as React from 'react'
+
 import { cn } from '../lib/cn'
 
 const badgeVariants = cva(
@@ -12,13 +13,13 @@ const badgeVariants = cva(
         destructive: 'border-transparent bg-destructive text-destructive-foreground',
         outline: 'border-border text-muted-foreground',
         success: 'border-transparent bg-success/15 text-success-foreground',
-        warning: 'border-transparent bg-warning/15 text-warning-foreground'
-      }
+        warning: 'border-transparent bg-warning/15 text-warning-foreground',
+      },
     },
     defaultVariants: {
-      variant: 'default'
-    }
-  }
+      variant: 'default',
+    },
+  },
 )
 
 export interface BadgeProps

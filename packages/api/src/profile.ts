@@ -7,13 +7,13 @@ const SOCIAL_LINK_PLATFORMS = [
   'soundcloud',
   'instagram',
   'twitter',
-  'tiktok'
+  'tiktok',
 ] as const
 
 const SocialLink = Schema.Struct({
   platform: Schema.Literals(SOCIAL_LINK_PLATFORMS),
   url: Schema.String,
-  position: Schema.Number
+  position: Schema.Number,
 })
 
 const MixSummary = Schema.Struct({
@@ -22,14 +22,14 @@ const MixSummary = Schema.Struct({
   slug: Schema.String,
   thumbnailUrl: Schema.NullOr(Schema.String),
   type: Schema.Literals(['mix', 'track', 'misc']),
-  showId: Schema.NullOr(Schema.String)
+  showId: Schema.NullOr(Schema.String),
 })
 
 const ShowSummary = Schema.Struct({
   id: Schema.String,
   title: Schema.String,
   slug: Schema.String,
-  thumbnailUrl: Schema.NullOr(Schema.String)
+  thumbnailUrl: Schema.NullOr(Schema.String),
 })
 
 const EditorialSummary = Schema.Struct({
@@ -38,14 +38,14 @@ const EditorialSummary = Schema.Struct({
   slug: Schema.String,
   thumbnailUrl: Schema.NullOr(Schema.String),
   description: Schema.NullOr(Schema.String),
-  createdAt: Schema.String
+  createdAt: Schema.String,
 })
 
 const TweetSummary = Schema.Struct({
   id: Schema.String,
   title: Schema.NullOr(Schema.String),
   slug: Schema.String,
-  createdAt: Schema.String
+  createdAt: Schema.String,
 })
 
 export const PublicProfileResponse = Schema.Struct({
@@ -60,9 +60,10 @@ export const PublicProfileResponse = Schema.Struct({
     mixes: Schema.Array(MixSummary),
     shows: Schema.Array(ShowSummary),
     editorials: Schema.Array(EditorialSummary),
-    tweets: Schema.Array(TweetSummary)
-  })
+    tweets: Schema.Array(TweetSummary),
+  }),
 })
+
 export type PublicProfileResponse = typeof PublicProfileResponse.Type
 
 export const PUBLIC_PROFILE_PATH = '/api/profile/:username'
@@ -71,6 +72,6 @@ export const ProfileGroup = HttpApiGroup.make('profile').add(
   HttpApiEndpoint.get('getPublicProfile', PUBLIC_PROFILE_PATH, {
     params: { username: Schema.String },
     success: PublicProfileResponse,
-    error: HttpApiError.NotFound
-  })
+    error: HttpApiError.NotFound,
+  }),
 )

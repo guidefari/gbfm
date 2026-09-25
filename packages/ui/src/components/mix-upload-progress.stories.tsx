@@ -2,10 +2,10 @@ import { MixUploadProgress, type MixUploadStep } from './mix-upload-progress'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Workflows/Mix upload progress'
+  title: '@gbfm/ui/Workflows/Mix upload progress',
 }
 
-const steps: MixUploadStep[] = ['uploading-audio', 'uploading-image', 'creating-record']
+const steps: Array<MixUploadStep> = ['uploading-audio', 'uploading-image', 'creating-record']
 
 export function MixUploadProgressStates() {
   return (

@@ -5,6 +5,7 @@
   import { dashboardJson, jsonRequest } from '../api'
 
   const Creator = Schema.Struct({ id: Schema.String, name: Schema.String })
+
   const Item = Schema.Struct({
     id: Schema.String, title: Schema.NullOr(Schema.String), description: Schema.NullOr(Schema.String),
     thumbnailUrl: Schema.NullOr(Schema.String), slug: Schema.String, content: Schema.NullOr(Schema.String),
@@ -12,18 +13,37 @@
     tags: Schema.optional(Schema.NullOr(Schema.Array(Schema.String))), creators: Schema.optional(Schema.Array(Creator)),
     url: Schema.optional(Schema.String), episodeNumber: Schema.optional(Schema.NullOr(Schema.Number)), playCount: Schema.optional(Schema.Number)
   })
+
   const Response = Schema.Struct({ data: Schema.Array(Item), pagination: Schema.Struct({ total: Schema.Number, limit: Schema.Number, offset: Schema.Number, hasMore: Schema.Boolean }) })
+
   type ItemValue = typeof Item.Type
+
   let { title, description, kind, scope = 'own' }: { title: string; description: string; kind: 'mix' | 'post' | 'micro'; scope?: 'own' | 'all' } = $props()
-  let items = $state<ReadonlyArray<ItemValue>>([]), selected = $state<string[]>([]), offset = $state(0), total = $state(0), pending = $state(false), message = $state(''), editing = $state<ItemValue | null>(null)
+
+  let items = $state<ReadonlyArray<ItemValue>>([]), selected = $state<Array<string>>([]), offset = $state(0), total = $state(0), pending = $state(false), message = $state(''), editing = $state<ItemValue | null>(null)
+
   let form = $state({ title: '', slug: '', description: '', content: '', thumbnailUrl: '', url: '', episodeNumber: '', tags: '', draft: false })
+
   let sort = $state<'created' | 'plays'>('created'), order = $state<'asc' | 'desc'>('desc')
+
   const limit = 25, isMix = $derived(kind === 'mix'), base = $derived(isMix ? '/api/content/audio/mix' : '/api/content/posts')
+
   const endpoint = () => `${base}/manage?${new URLSearchParams({ limit: String(limit), offset: String(offset), ...(isMix ? { sort, order } : { type: kind }) })}`
-  async function load() { pending = true; message = ''; try { const result = await dashboardJson(Response, endpoint()); items = result.data; total = result.pagination.total; selected = selected.filter((id) => items.some((item) => item.id === id)) } catch { message = 'Could not load content.' } finally { pending = false } }
+
+  async function load() { pending = true; message = '';
+
+ try { const result = await dashboardJson(Response, endpoint()); items = result.data; total = result.pagination.total; selected = selected.filter((id) => items.some((item) => item.id === id)) } catch { message = 'Could not load content.' } finally { pending = false } }
+
   function open(item: ItemValue) { editing = item; form = { title: item.title ?? '', slug: item.slug, description: item.description ?? '', content: item.content ?? '', thumbnailUrl: item.thumbnailUrl ?? '', url: item.url ?? '', episodeNumber: item.episodeNumber ? String(item.episodeNumber) : '', tags: item.tags?.join(', ') ?? '', draft: item.draft } }
-  async function save() { if (!editing) return; pending = true; try { await dashboardJson(Item, `${base}/${encodeURIComponent(editing.slug)}`, jsonRequest('PATCH', { ...form, title: form.title || null, tags: form.tags.split(',').map((tag) => tag.trim()).filter(Boolean), episodeNumber: form.episodeNumber ? Number(form.episodeNumber) : null })); editing = null; message = 'Changes saved.'; await load() } catch { message = 'Could not save changes.' } finally { pending = false } }
-  async function setDraft(targets: ReadonlyArray<ItemValue>, draft: boolean) { pending = true; try { await Promise.all(targets.map((item) => dashboardJson(Item, `${base}/${encodeURIComponent(item.slug)}`, jsonRequest('PATCH', { draft })))); selected = []; await load(); message = draft ? 'Moved to draft.' : 'Published.' } catch { message = 'Some items could not be updated.' } finally { pending = false } }
+
+  async function save() { if (!editing) return; pending = true;
+
+ try { await dashboardJson(Item, `${base}/${encodeURIComponent(editing.slug)}`, jsonRequest('PATCH', { ...form, title: form.title || null, tags: form.tags.split(',').map((tag) => tag.trim()).filter(Boolean), episodeNumber: form.episodeNumber ? Number(form.episodeNumber) : null })); editing = null; message = 'Changes saved.'; await load() } catch { message = 'Could not save changes.' } finally { pending = false } }
+
+  async function setDraft(targets: ReadonlyArray<ItemValue>, draft: boolean) { pending = true;
+
+ try { await Promise.all(targets.map((item) => dashboardJson(Item, `${base}/${encodeURIComponent(item.slug)}`, jsonRequest('PATCH', { draft })))); selected = []; await load(); message = draft ? 'Moved to draft.' : 'Published.' } catch { message = 'Some items could not be updated.' } finally { pending = false } }
+
   onMount(load)
 </script>
 <Page {title} {description}>

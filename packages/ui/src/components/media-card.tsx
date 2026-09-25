@@ -1,4 +1,5 @@
 import type * as React from 'react'
+
 import { cn } from '../lib/cn'
 import { Badge } from './badge'
 
@@ -9,7 +10,7 @@ export interface MediaCardProps extends React.HTMLAttributes<HTMLElement> {
   imageUrl: string
   imageAlt?: string
   href?: string
-  tags?: string[]
+  tags?: Array<string>
   actions?: React.ReactNode
   footer?: React.ReactNode
 }
@@ -42,7 +43,7 @@ function MediaCard({
     <article
       className={cn(
         'group overflow-hidden rounded-sm border-2 border-border bg-card text-card-foreground shadow-lg transition duration-300 hover:-translate-y-1 hover:border-highlight/70 hover:shadow-xl',
-        className
+        className,
       )}
       {...props}>
       <div className='overflow-hidden bg-muted'>

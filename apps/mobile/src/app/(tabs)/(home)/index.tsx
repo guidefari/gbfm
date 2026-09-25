@@ -1,7 +1,8 @@
 import { useAtomRefresh, useAtomValue } from '@effect/atom-react'
 import { AsyncResult } from 'effect/unstable/reactivity'
 import { useRouter } from 'expo-router'
-import { ScrollView, Text, View } from 'react-native'
+import { ScrollView, Text } from 'react-native'
+
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
 import { FeaturedMixCard } from '@/components/Home/FeaturedMixCard'
 import { FeaturedMixSkeleton } from '@/components/Home/FeaturedMixSkeleton'
@@ -25,10 +26,13 @@ export default function Home() {
 
   const handlePlay = () => {
     if (!mix) return
+
     if (track?.id === mix.id) {
       togglePlayback()
+
       return
     }
+
     loadAndPlay(mix)
     router.push('/now-playing')
   }
@@ -44,7 +48,7 @@ export default function Home() {
             fontFamily: fonts.monoSemiBold,
             fontWeight: 'bold',
             fontSize: 22,
-            lineHeight: 26
+            lineHeight: 26,
           }}>
           goosebumps.fm
         </Text>

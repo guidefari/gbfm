@@ -1,6 +1,7 @@
 import type { Schema } from 'effect'
 import { getContext, setContext } from 'svelte'
 import { writable, type Readable, type Writable } from 'svelte/store'
+
 import type { PlayerPreferences, PlayerSnapshot } from './player'
 import { PersistentPlayer, parsePlayTrackEvent, savePlayerPreferences } from './player'
 
@@ -29,7 +30,7 @@ export type PlayerContext = {
 const report = (name: 'enqueue' | 'play') =>
   navigator.sendBeacon(
     '/telemetry/browser',
-    JSON.stringify({ kind: 'player', name, route: location.pathname })
+    JSON.stringify({ kind: 'player', name, route: location.pathname }),
   )
 
 export const createPlayerContext = (): PlayerContext => {
@@ -55,16 +56,20 @@ export const createPlayerContext = (): PlayerContext => {
     },
     play: (input) => {
       const track = parsePlayTrackEvent(input)
+
       if (!track || !player) return false
       player.playTrack(track)
       report('play')
+
       return true
     },
     enqueue: (input) => {
       const track = parsePlayTrackEvent(input)
+
       if (!track || !player) return false
       player.enqueue(track)
       report('enqueue')
+
       return true
     },
     toggle: () => player?.toggle(),
@@ -81,10 +86,11 @@ export const createPlayerContext = (): PlayerContext => {
     updatePreferences: (preferences) => {
       savePlayerPreferences(preferences)
       player?.setPreferences(preferences)
-    }
+    },
   }
 
   setContext(PLAYER_CONTEXT, context)
+
   return context
 }
 

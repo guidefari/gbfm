@@ -13,7 +13,7 @@ const ComposerDraftSchema = Schema.Struct({
   musicEntityType: Schema.Literals(['', 'album', 'track', 'playlist']),
   musicEntityId: Schema.String,
   quotedPostId: Schema.String,
-  externalMediaUrl: Schema.String
+  externalMediaUrl: Schema.String,
 })
 
 const MixDraftSchema = Schema.Struct({
@@ -27,7 +27,7 @@ const MixDraftSchema = Schema.Struct({
   creatorId: Schema.String,
   showId: Schema.String,
   episodeNumber: Schema.String,
-  draft: Schema.Boolean
+  draft: Schema.Boolean,
 })
 
 export type ComposerDraft = {
@@ -64,9 +64,10 @@ export const readComposerDraft = (key: string): ComposerDraft | null => {
   try {
     const decoded = Option.getOrNull(
       Schema.decodeUnknownOption(ComposerDraftSchema)(
-        JSON.parse(localStorage.getItem(key) ?? 'null')
-      )
+        JSON.parse(localStorage.getItem(key) ?? 'null'),
+      ),
     )
+
     return decoded ? { ...decoded } : null
   } catch {
     return null
@@ -76,8 +77,9 @@ export const readComposerDraft = (key: string): ComposerDraft | null => {
 export const readMixDraft = (key: string): MixDraft | null => {
   try {
     const decoded = Option.getOrNull(
-      Schema.decodeUnknownOption(MixDraftSchema)(JSON.parse(localStorage.getItem(key) ?? 'null'))
+      Schema.decodeUnknownOption(MixDraftSchema)(JSON.parse(localStorage.getItem(key) ?? 'null')),
     )
+
     return decoded ? { ...decoded } : null
   } catch {
     return null
@@ -90,12 +92,12 @@ export const writeLocalDraft = (key: string, value: ComposerDraft | MixDraft): v
 
 export const clearLocalDraft = (key: string): void => localStorage.removeItem(key)
 
-export const splitCommaList = (value: string): string[] =>
+export const splitCommaList = (value: string): Array<string> =>
   Array.from(
     new Set(
       value
         .split(',')
         .map((item) => item.trim())
-        .filter(Boolean)
-    )
+        .filter(Boolean),
+    ),
   )

@@ -3,16 +3,17 @@ import type {
   FormEvent,
   HTMLInputAutoCompleteAttribute,
   HTMLInputTypeAttribute,
-  ReactNode
+  ReactNode,
 } from 'react'
 import { useState } from 'react'
+
 import { cn } from '../lib/cn'
 import { Button } from './button'
 import { Input } from './input'
 import { Label } from './label'
 
 type GenericAuthFormProps = {
-  fields: FormField[]
+  fields: Array<FormField>
   onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>
   formTitle: string
   submitButtonText?: string
@@ -103,7 +104,7 @@ export function GenericAuthForm({
   submitButtonText,
   isSubmitting = false,
   submitDisabled = false,
-  beforeSubmit
+  beforeSubmit,
 }: GenericAuthFormProps) {
   return (
     <form onSubmit={onSubmit} aria-label={formTitle}>

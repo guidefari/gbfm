@@ -5,7 +5,7 @@ import type {
   D1ExecResult,
   D1Meta,
   D1PreparedStatement,
-  D1Result
+  D1Result,
 } from '@cloudflare/workers-types'
 
 type QueryResult = {
@@ -16,6 +16,7 @@ type QueryResult = {
 }
 
 type Query = { readonly sql: string; readonly params?: ReadonlyArray<unknown> }
+
 type QueryBody = Query | { readonly batch: ReadonlyArray<Query> }
 
 type ApiResponse = {
@@ -38,28 +39,31 @@ const endpointFor = (options: RemoteD1Options) =>
 
 const post = async (
   options: RemoteD1Options,
-  body: QueryBody
+  body: QueryBody,
 ): Promise<ReadonlyArray<QueryResult>> => {
   const response = await (options.fetch ?? fetch)(endpointFor(options), {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${options.apiToken}`,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
   })
 
   /** `json()` resolves to `unknown`; this is the single HTTP decode boundary. */
-  const payload = (await response.json()) as ApiResponse
+  const payload = await response.json()
+
   if (!response.ok || !payload.success) {
     const detail = (payload.errors ?? []).map((e) => `${e.code}: ${e.message}`).join('; ')
     throw new Error(`D1 request failed (${response.status}): ${detail || 'unknown error'}`)
   }
+
   for (const [index, result] of payload.result.entries()) {
     if (!result.success) {
       throw new Error(`D1 statement ${index} failed: ${result.error ?? 'unknown error'}`)
     }
   }
+
   return payload.result
 }
 
@@ -67,14 +71,16 @@ const toResult = <T>(result: QueryResult): D1Result<T> => ({
   /** The REST API returns untyped rows; the prepared statement supplies their boundary type. */
   results: (result.results ?? []) as Array<T>,
   success: true,
-  meta: result.meta
+  meta: result.meta,
 })
 
 const requireFirstResult = (results: ReadonlyArray<QueryResult>, sql: string): QueryResult => {
   const result = results[0]
+
   if (result === undefined) {
     throw new Error(`D1 returned no result for statement: ${sql.slice(0, 120)}`)
   }
+
   return result
 }
 
@@ -95,6 +101,7 @@ class RemoteStatement implements D1PreparedStatement {
 
   async all<T = Record<string, unknown>>() {
     const results = await post(this.options, { sql: this.sql, params: this.params })
+
     return toResult<T>(requireFirstResult(results, this.sql))
   }
 
@@ -103,19 +110,23 @@ class RemoteStatement implements D1PreparedStatement {
   }
 
   async first<T = unknown>(column?: string) {
-    const { results } = await this.all<Record<string, unknown>>()
+    const { results } = await this.all()
     const row = results[0]
+
     if (row === undefined) return null
     const value = column === undefined ? row : (row[column] ?? null)
+
     return value as T
   }
 
   async raw<T = Array<unknown>>(options?: { columnNames?: boolean }) {
-    const { results } = await this.all<Record<string, unknown>>()
+    const { results } = await this.all()
     const rows = results.map((row) => Object.values(row))
+
     if (options?.columnNames && results[0] !== undefined) {
       return [Object.keys(results[0]), ...rows] as T
     }
+
     return rows as T
   }
 }
@@ -130,23 +141,28 @@ export const createRemoteD1 = (options: RemoteD1Options): D1Database => ({
 
   batch: async <T = unknown>(statements: Array<D1PreparedStatement>) => {
     const remote = statements.filter((s) => s instanceof RemoteStatement)
+
     if (remote.length !== statements.length) {
       throw new Error('createRemoteD1().batch() only accepts statements from the same database')
     }
 
     if (remote.length === 0) return []
+
     const results = await post(options, {
-      batch: remote.map((statement) => ({ sql: statement.sql, params: statement.params }))
+      batch: remote.map((statement) => ({ sql: statement.sql, params: statement.params })),
     })
+
     if (results.length !== remote.length) {
       throw new Error(`D1 batch returned ${results.length} results for ${remote.length} statements`)
     }
+
     return results.map((result) => toResult<T>(result))
   },
 
   exec: async (sql: string): Promise<D1ExecResult> => {
     const results = await post(options, { sql })
     const duration = results.reduce((total, result) => total + (result.meta?.duration ?? 0), 0)
+
     return { count: results.length, duration }
   },
 
@@ -156,7 +172,7 @@ export const createRemoteD1 = (options: RemoteD1Options): D1Database => ({
 
   withSession: () => {
     throw new Error('withSession() is not available over the D1 REST API')
-  }
+  },
 })
 
 export const remoteD1OptionsFromEnv = (): RemoteD1Options => {
@@ -165,7 +181,9 @@ export const remoteD1OptionsFromEnv = (): RemoteD1Options => {
   const databaseId = process.env.D1_DATABASE_ID
 
   if (!accountId) throw new Error('CLOUDFLARE_DEFAULT_ACCOUNT_ID or CLOUDFLARE_ACCOUNT_ID required')
+
   if (!apiToken) throw new Error('CLOUDFLARE_API_TOKEN required')
+
   if (!databaseId) throw new Error('D1_DATABASE_ID required')
 
   return { accountId, apiToken, databaseId }

@@ -10,7 +10,7 @@ export const EmailPreferences = Schema.Struct({
   globalUnsubscribe: Schema.Boolean,
   unsubscribeToken: Schema.NullOr(Schema.String),
   createdAt: Schema.String,
-  updatedAt: Schema.String
+  updatedAt: Schema.String,
 })
 
 /** Editable email preference fields. */

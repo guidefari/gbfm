@@ -1,12 +1,16 @@
 <script lang="ts">
-  let { endpoint, method = 'PATCH', fields }: { endpoint: string; method?: string; fields: { name: string; label: string; type?: string; value?: string }[] } = $props()
+  let { endpoint, method = 'PATCH', fields }: { endpoint: string; method?: string; fields: Array<{ name: string; label: string; type?: string; value?: string }> } = $props()
+
   let pending = $state(false), message = $state('')
+
   let formElement = $state<HTMLFormElement | null>(null)
+
   async function submit() {
     if (!formElement) return
     pending = true; message = ''
     const form = new FormData(formElement)
     const body = Object.fromEntries(form.entries())
+
     try {
       const response = await fetch(endpoint, { method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
       message = response.ok ? 'Saved.' : `Could not save (${response.status}).`

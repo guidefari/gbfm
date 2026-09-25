@@ -1,5 +1,6 @@
 import * as Effect from 'effect/Effect'
 import { describe, expect, test, vi } from 'vitest'
+
 import { createFetcher, getRequestMethod, getRequestUrl, type ApiFailureInput } from './http-client'
 
 type JsonValue =
@@ -7,7 +8,7 @@ type JsonValue =
   | number
   | boolean
   | null
-  | readonly JsonValue[]
+  | ReadonlyArray<JsonValue>
   | { readonly [key: string]: JsonValue }
 
 function jsonResponse(body: JsonValue, init?: ResponseInit) {
@@ -16,15 +17,17 @@ function jsonResponse(body: JsonValue, init?: ResponseInit) {
 
 describe('createFetcher', () => {
   test('performs default JSON requests and accepts empty success responses', async () => {
-    const observed: RequestInit[] = []
+    const observed: Array<RequestInit> = []
+
     const fetcher = createFetcher({
       request: async (_input, init) => {
         observed.push(init ?? {})
+
         return observed.length === 1
           ? jsonResponse({ ok: true })
           : new Response('', { status: 200 })
       },
-      logError: () => {}
+      logError: () => {},
     })
 
     await expect(fetcher('/api/test')).resolves.toEqual({ ok: true })
@@ -37,12 +40,14 @@ describe('createFetcher', () => {
   test('does not add JSON content type for FormData bodies', async () => {
     let observedInit: RequestInit | undefined
     const body = new FormData()
+
     const fetcher = createFetcher({
       request: async (_input, init) => {
         observedInit = init
+
         return jsonResponse({ ok: true })
       },
-      logError: () => {}
+      logError: () => {},
     })
 
     await fetcher('/api/upload', { method: 'POST', body })
@@ -52,12 +57,13 @@ describe('createFetcher', () => {
 
   test('redirects and rejects unauthorized responses', async () => {
     let redirected = false
+
     const fetcher = createFetcher({
       request: async () => new Response('nope', { status: 401 }),
       onUnauthorized: () => {
         redirected = true
       },
-      logError: () => {}
+      logError: () => {},
     })
 
     await expect(fetcher('/api/private')).rejects.toThrow('Unauthorized')
@@ -65,8 +71,9 @@ describe('createFetcher', () => {
   })
 
   test('reports reportable failures and logs every rejected request with its context', async () => {
-    const failures: ApiFailureInput[] = []
+    const failures: Array<ApiFailureInput> = []
     const logError = vi.fn()
+
     const fetcher = createFetcher({
       request: vi
         .fn()
@@ -75,10 +82,11 @@ describe('createFetcher', () => {
         .mockRejectedValueOnce(new Error('boom')),
       reportFailure: (input) => {
         failures.push(input)
+
         return Effect.void
       },
       runEffect: Effect.runPromise,
-      logError
+      logError,
     })
 
     await expect(fetcher('/api/broken', { method: 'PATCH' })).rejects.toThrow('HTTP 500: failed')
@@ -90,20 +98,20 @@ describe('createFetcher', () => {
     expect(failures[0]?.context).toEqual({
       status: 500,
       statusText: 'Server Error',
-      failureType: 'server_response'
+      failureType: 'server_response',
     })
     expect(failures[1]?.context).toEqual({ failureType: 'network' })
     expect(logError).toHaveBeenNthCalledWith(1, expect.any(Error), {
       url: '/api/broken',
-      method: 'PATCH'
+      method: 'PATCH',
     })
     expect(logError).toHaveBeenNthCalledWith(2, expect.any(TypeError), {
       url: '/api/network',
-      method: 'GET'
+      method: 'GET',
     })
     expect(logError).toHaveBeenNthCalledWith(3, expect.any(Error), {
       url: '/api/boom',
-      method: 'GET'
+      method: 'GET',
     })
   })
 })

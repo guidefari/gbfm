@@ -2,6 +2,7 @@ import type { AudioResponse } from '@gbfm/api/audio'
 import { LinearGradient } from 'expo-linear-gradient'
 import { SymbolView } from 'expo-symbols'
 import { ActivityIndicator, Image, Pressable, Text, View } from 'react-native'
+
 import { useThemeColors } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
 
@@ -9,15 +10,16 @@ const symbols = {
   warning: {
     ios: 'exclamationmark.triangle',
     android: 'warning',
-    web: 'warning'
+    web: 'warning',
   },
   play: { ios: 'play.fill', android: 'play_arrow', web: 'play_arrow' },
-  pause: { ios: 'pause.fill', android: 'pause', web: 'pause' }
+  pause: { ios: 'pause.fill', android: 'pause', web: 'pause' },
 } as const
 
 // Fixed geometry, mirrored by FeaturedMixSkeleton, so that
 // loading -> loaded/error never shifts layout.
 export const FEATURED_CARD_INFO_HEIGHT = 64
+
 export const FEATURED_CARD_BUTTON_HEIGHT = 52
 
 export function FeaturedMixCard({
@@ -26,7 +28,7 @@ export function FeaturedMixCard({
   isCurrent = false,
   isLoading = false,
   onPressPlay,
-  onRetry
+  onRetry,
 }: {
   mix: typeof AudioResponse.Type | null
   isPlaying?: boolean
@@ -36,12 +38,13 @@ export function FeaturedMixCard({
   onRetry?: () => void
 }) {
   const colors = useThemeColors()
+
   const cardContainerStyle = {
     borderWidth: 2,
     borderColor: colors.accent,
     borderRadius: 4,
     overflow: 'hidden',
-    backgroundColor: colors.surface
+    backgroundColor: colors.surface,
   } as const
 
   if (!mix) {
@@ -53,7 +56,7 @@ export function FeaturedMixCard({
             alignItems: 'center',
             justifyContent: 'center',
             gap: 12,
-            padding: 24
+            padding: 24,
           }}>
           <SymbolView name={symbols.warning} size={32} tintColor={colors.muted} />
           <Text
@@ -61,7 +64,7 @@ export function FeaturedMixCard({
               color: colors.text,
               fontFamily: fonts.mono,
               fontSize: 14,
-              textAlign: 'center'
+              textAlign: 'center',
             }}>
             couldn't load the featured mix
           </Text>
@@ -70,7 +73,7 @@ export function FeaturedMixCard({
           style={{
             height: FEATURED_CARD_INFO_HEIGHT,
             justifyContent: 'center',
-            paddingHorizontal: 16
+            paddingHorizontal: 16,
           }}>
           <Text style={{ color: colors.text, fontFamily: fonts.mono, fontSize: 14 }}>
             check your connection and try again
@@ -84,14 +87,14 @@ export function FeaturedMixCard({
             alignItems: 'center',
             justifyContent: 'center',
             backgroundColor: colors.accent,
-            opacity: pressed ? 0.85 : 1
+            opacity: pressed ? 0.85 : 1,
           })}>
           <Text
             style={{
               color: colors.surface,
               fontFamily: fonts.monoSemiBold,
               fontSize: 15,
-              letterSpacing: 0.5
+              letterSpacing: 0.5,
             }}>
             Retry
           </Text>
@@ -137,7 +140,7 @@ export function FeaturedMixCard({
             letterSpacing: 3,
             paddingHorizontal: 10,
             paddingVertical: 6,
-            borderRadius: 2
+            borderRadius: 2,
           }}>
           {isPlaying ? 'Now Playing' : 'Featured'}
         </Text>
@@ -148,14 +151,14 @@ export function FeaturedMixCard({
           height: FEATURED_CARD_INFO_HEIGHT,
           justifyContent: 'center',
           gap: 4,
-          paddingHorizontal: 16
+          paddingHorizontal: 16,
         }}>
         <Text
           style={{
             color: colors.overlayText,
             fontFamily: fonts.monoSemiBold,
             fontSize: 20,
-            lineHeight: 24
+            lineHeight: 24,
           }}
           numberOfLines={1}>
           {mix.title}
@@ -178,7 +181,7 @@ export function FeaturedMixCard({
           justifyContent: 'center',
           gap: 10,
           backgroundColor: colors.accent,
-          opacity: pressed ? 0.85 : 1
+          opacity: pressed ? 0.85 : 1,
         })}>
         {isLoading ? (
           <>
@@ -188,7 +191,7 @@ export function FeaturedMixCard({
                 color: colors.surface,
                 fontFamily: fonts.monoSemiBold,
                 fontSize: 15,
-                letterSpacing: 0.5
+                letterSpacing: 0.5,
               }}>
               Loading
             </Text>
@@ -205,7 +208,7 @@ export function FeaturedMixCard({
                 color: colors.surface,
                 fontFamily: fonts.monoSemiBold,
                 fontSize: 15,
-                letterSpacing: 0.5
+                letterSpacing: 0.5,
               }}>
               {isPlaying ? 'Pause' : isCurrent ? 'Resume' : 'Play'}
             </Text>

@@ -20,7 +20,8 @@
  *   2. Add it to the providers array in MusicScraperProvidersLayer
  */
 
-import { Context, Data, Effect, Layer, Schedule, Schema } from 'effect'
+import { Context, Data, Effect, Layer, Match, Schedule, Schema } from 'effect'
+
 import { getErrorMessage } from '@/errors'
 import { extractBandcampArtist, getBandcampMetadataWithSpan } from '@/services/bandcamp.service'
 import {
@@ -28,22 +29,23 @@ import {
   type DeezerAlbumCandidate,
   type DeezerError,
   type DeezerSourceCandidate,
-  type DeezerTrackCandidate
+  type DeezerTrackCandidate,
 } from '@/services/deezer.service'
-import { isBandcampUrl } from '@/services/url-utils'
-import {
-  SpotifyService,
-  type SpotifyServiceError,
-  type SpotifySourceCandidate
-} from '@/services/spotify.service'
 import {
   type CoverArtArchiveReference,
   MusicBrainzIdentityService,
   type MusicBrainzIdentityCandidate,
   type MusicBrainzIdentityError,
   type MusicBrainzIdentityServiceContract,
-  type MusicBrainzMbidType
+  type MusicBrainzMbidType,
 } from '@/services/musicbrainz-identity.service'
+import {
+  SpotifyService,
+  type SpotifyServiceError,
+  type SpotifySourceCandidate,
+} from '@/services/spotify.service'
+import { isBandcampUrl } from '@/services/url-utils'
+
 import type { InsertMusicEntityLink, MusicPlatform } from '../db/music-entity.schema'
 
 // ---------------------------------------------------------------------------
@@ -90,12 +92,12 @@ export interface EntityMeta {
 }
 
 export interface ProviderResult {
-  links: ScrapedLink[]
+  links: Array<ScrapedLink>
   entityMeta?: EntityMeta
 }
 
 export interface ScrapeResult {
-  links: ScrapedLink[]
+  links: Array<ScrapedLink>
   entityMeta?: EntityMeta
 }
 
@@ -120,7 +122,7 @@ export interface MusicDataProvider {
 export interface CrossPlatformLinkDiscovery {
   readonly name: string
   readonly discoverLinks: (
-    input: MusicScrapeInput
+    input: MusicScrapeInput,
   ) => Effect.Effect<ProviderResult, MusicScraperError>
 }
 
@@ -138,7 +140,7 @@ const ODESLI_PLATFORM_MAP = new Map<string, MusicPlatform>([
   ['deezer', 'deezer'],
   ['amazonMusic', 'amazon_music'],
   ['soundcloud', 'soundcloud'],
-  ['bandcamp', 'bandcamp']
+  ['bandcamp', 'bandcamp'],
 ])
 
 interface OdesliPlatformLink {
@@ -156,7 +158,7 @@ interface OdesliEntity {
   artistName?: string
   thumbnailUrl?: string
   apiProvider: string
-  platforms: readonly string[]
+  platforms: ReadonlyArray<string>
 }
 
 interface OdesliResponse {
@@ -172,7 +174,7 @@ const OdesliPlatformLinkSchema = Schema.Struct({
   url: Schema.String,
   nativeAppUriMobile: Schema.optional(Schema.String),
   nativeAppUriDesktop: Schema.optional(Schema.String),
-  entityUniqueId: Schema.String
+  entityUniqueId: Schema.String,
 })
 
 const OdesliEntitySchema = Schema.Struct({
@@ -182,7 +184,7 @@ const OdesliEntitySchema = Schema.Struct({
   artistName: Schema.optional(Schema.String),
   thumbnailUrl: Schema.optional(Schema.String),
   apiProvider: Schema.String,
-  platforms: Schema.Array(Schema.String)
+  platforms: Schema.Array(Schema.String),
 })
 
 const OdesliResponseSchema = Schema.Struct({
@@ -190,7 +192,7 @@ const OdesliResponseSchema = Schema.Struct({
   userCountry: Schema.String,
   pageUrl: Schema.String,
   linksByPlatform: Schema.Record(Schema.String, OdesliPlatformLinkSchema),
-  entitiesByUniqueId: Schema.Record(Schema.String, OdesliEntitySchema)
+  entitiesByUniqueId: Schema.Record(Schema.String, OdesliEntitySchema),
 })
 
 const decodeOdesliResponse = Schema.decodeUnknownSync(OdesliResponseSchema)
@@ -202,6 +204,7 @@ export class OdesliProvider implements CrossPlatformLinkDiscovery {
     if (!input.url) return Effect.succeed({ links: [] })
 
     const seedUrl = input.url
+
     return Effect.gen(function* () {
       const encoded = encodeURIComponent(seedUrl)
       const apiUrl = `https://api.song.link/v1-alpha.1/links?url=${encoded}&userCountry=US`
@@ -212,8 +215,8 @@ export class OdesliProvider implements CrossPlatformLinkDiscovery {
           new MusicScraperError({
             message: `Odesli fetch failed: ${getErrorMessage(err)}`,
             provider: 'odesli',
-            statusCode: 502
-          })
+            statusCode: 502,
+          }),
       })
 
       if (response.status === 404) {
@@ -224,7 +227,7 @@ export class OdesliProvider implements CrossPlatformLinkDiscovery {
         return yield* new MusicScraperError({
           message: `Odesli returned ${response.status}`,
           provider: 'odesli',
-          statusCode: response.status
+          statusCode: response.status,
         })
       }
 
@@ -234,36 +237,41 @@ export class OdesliProvider implements CrossPlatformLinkDiscovery {
           new MusicScraperError({
             message: `Odesli JSON parse failed: ${getErrorMessage(err)}`,
             provider: 'odesli',
-            statusCode: 500
-          })
+            statusCode: 500,
+          }),
       })
 
       const scrapedAt = new Date()
 
-      const links: ScrapedLink[] = Object.entries(data.linksByPlatform).flatMap(
+      const links: Array<ScrapedLink> = Object.entries(data.linksByPlatform).flatMap(
         ([key, platformData]) => {
           const platform = ODESLI_PLATFORM_MAP.get(key)
+
           if (!platform) return []
+
           const metadata: NonNullable<ScrapedLink['metadata']> = {
             odesliEntityId: platformData.entityUniqueId,
             discoveredBy: 'odesli',
-            confidence: 'cross_platform'
+            confidence: 'cross_platform',
           }
+
           if (platformData.nativeAppUriMobile) {
             metadata.nativeAppUriMobile = platformData.nativeAppUriMobile
           }
+
           if (platformData.nativeAppUriDesktop) {
             metadata.nativeAppUriDesktop = platformData.nativeAppUriDesktop
           }
+
           return [
             {
               platform,
               url: platformData.url,
               scrapedAt,
-              metadata
-            } satisfies ScrapedLink
+              metadata,
+            } satisfies ScrapedLink,
           ]
-        }
+        },
       )
 
       const primaryEntity =
@@ -274,7 +282,7 @@ export class OdesliProvider implements CrossPlatformLinkDiscovery {
             title: primaryEntity.title,
             artistName: primaryEntity.artistName,
             thumbnailUrl: primaryEntity.thumbnailUrl,
-            type: primaryEntity.type === 'song' ? 'song' : 'album'
+            type: primaryEntity.type === 'song' ? 'song' : 'album',
           }
         : undefined
 
@@ -282,7 +290,7 @@ export class OdesliProvider implements CrossPlatformLinkDiscovery {
     }).pipe(
       Effect.retry({
         schedule: Schedule.exponential('2 seconds').pipe(Schedule.upTo({ times: 5 })),
-        while: (err) => err.statusCode === 429
+        while: (err) => err.statusCode === 429,
       }),
       Effect.timeout('15 seconds'),
       Effect.catchTag('TimeoutError', () =>
@@ -290,13 +298,13 @@ export class OdesliProvider implements CrossPlatformLinkDiscovery {
           new MusicScraperError({
             message: 'Odesli request timed out after 15 seconds',
             provider: 'odesli',
-            statusCode: 504
-          })
-        )
+            statusCode: 504,
+          }),
+        ),
       ),
       Effect.withSpan('musicScraper.odesli', {
-        attributes: { 'scraper.seed_host': urlHostname(seedUrl) }
-      })
+        attributes: { 'scraper.seed_host': urlHostname(seedUrl) },
+      }),
     )
   }
 }
@@ -313,16 +321,18 @@ interface FirecrawlExtractResult {
 }
 
 const FirecrawlExtractResultSchema = Schema.Struct({
-  socialLinks: Schema.optional(Schema.Record(Schema.String, Schema.String))
+  socialLinks: Schema.optional(Schema.Record(Schema.String, Schema.String)),
 })
 
 const decodeFirecrawlExtractResult = Schema.decodeUnknownSync(FirecrawlExtractResultSchema)
 
 type JsonInput = Parameters<typeof decodeOdesliResponse>[0]
+
 type JsonDecoder<T> = (raw: JsonInput) => T
 
 async function decodeResponseJson<T>(response: Response, decode: JsonDecoder<T>): Promise<T> {
   const raw: unknown = JSON.parse(await response.text())
+
   return decode(raw)
 }
 
@@ -344,7 +354,7 @@ export class FirecrawlProvider implements MusicDataProvider {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${apiKey}`,
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
             },
             body: JSON.stringify({
               urls: [pageUrl],
@@ -358,26 +368,26 @@ export class FirecrawlProvider implements MusicDataProvider {
                   socialLinks: {
                     type: 'object',
                     description: 'Streaming and social links keyed by platform name',
-                    additionalProperties: { type: 'string' }
-                  }
-                }
-              }
+                    additionalProperties: { type: 'string' },
+                  },
+                },
+              },
             }),
-            signal
+            signal,
           }),
         catch: (err) =>
           new MusicScraperError({
             message: `Firecrawl fetch failed: ${getErrorMessage(err)}`,
             provider: 'firecrawl',
-            statusCode: 502
-          })
+            statusCode: 502,
+          }),
       })
 
       if (!response.ok) {
         return yield* new MusicScraperError({
           message: `Firecrawl returned ${response.status}`,
           provider: 'firecrawl',
-          statusCode: response.status
+          statusCode: response.status,
         })
       }
 
@@ -387,12 +397,12 @@ export class FirecrawlProvider implements MusicDataProvider {
           new MusicScraperError({
             message: 'Firecrawl JSON parse failed',
             provider: 'firecrawl',
-            statusCode: 500
-          })
+            statusCode: 500,
+          }),
       })
 
       const scrapedAt = new Date()
-      const links: ScrapedLink[] = []
+      const links: Array<ScrapedLink> = []
 
       for (const [key, url] of Object.entries(data.socialLinks ?? {})) {
         if (!url) continue
@@ -402,8 +412,8 @@ export class FirecrawlProvider implements MusicDataProvider {
       return { links } satisfies ProviderResult
     }).pipe(
       Effect.withSpan('musicScraper.firecrawl', {
-        attributes: { 'scraper.page_host': urlHostname(pageUrl) }
-      })
+        attributes: { 'scraper.page_host': urlHostname(pageUrl) },
+      }),
     )
   }
 }
@@ -425,6 +435,7 @@ export class BandcampProvider implements MusicDataProvider {
     if (!input.url || !isBandcampUrl(input.url)) return Effect.succeed({ links: [] })
 
     const url = input.url
+
     return Effect.gen(function* () {
       const metadata = yield* getBandcampMetadataWithSpan(url).pipe(
         Effect.catchTag(['MusicProviderRequestFailed', 'MusicProviderResponseInvalid'], (err) =>
@@ -432,10 +443,10 @@ export class BandcampProvider implements MusicDataProvider {
             new MusicScraperError({
               message: `Bandcamp scrape failed: ${err.message}`,
               provider: 'bandcamp',
-              statusCode: 502
-            })
-          )
-        )
+              statusCode: 502,
+            }),
+          ),
+        ),
       )
 
       const entityMeta: EntityMeta = {
@@ -443,14 +454,14 @@ export class BandcampProvider implements MusicDataProvider {
         artistName: extractBandcampArtist(metadata) || undefined,
         thumbnailUrl: metadata.image || undefined,
         type: metadata['@type'] === 'MusicRecording' ? 'song' : 'album',
-        isrc: metadata.isrcCode
+        isrc: metadata.isrcCode,
       }
 
       return { links: [], entityMeta } satisfies ProviderResult
     }).pipe(
       Effect.withSpan('musicScraper.bandcamp', {
-        attributes: { 'scraper.seed_host': urlHostname(url) }
-      })
+        attributes: { 'scraper.seed_host': urlHostname(url) },
+      }),
     )
   }
 }
@@ -466,7 +477,7 @@ export interface MusicLinkScraperService {
    */
   readonly scrape: (input: MusicScrapeInput) => Effect.Effect<ScrapeResult, MusicScraperError>
   readonly discoverCrossPlatformLinks: (
-    input: MusicScrapeInput
+    input: MusicScrapeInput,
   ) => Effect.Effect<ProviderResult, MusicScraperError>
 }
 
@@ -474,7 +485,7 @@ export const MusicLinkScraperService =
   Context.Service<MusicLinkScraperService>('MusicLinkScraperService')
 
 export interface MusicScraperProviders {
-  readonly providers: readonly MusicDataProvider[]
+  readonly providers: ReadonlyArray<MusicDataProvider>
   readonly discovery: CrossPlatformLinkDiscovery
 }
 
@@ -482,11 +493,11 @@ export const MusicScraperProviders = Context.Service<MusicScraperProviders>('Mus
 
 export const noCrossPlatformDiscovery: CrossPlatformLinkDiscovery = {
   name: 'none',
-  discoverLinks: () => Effect.succeed({ links: [] })
+  discoverLinks: () => Effect.succeed({ links: [] }),
 }
 
 export const discoverCrossPlatformLinksEffect = (
-  input: MusicScrapeInput
+  input: MusicScrapeInput,
 ): Effect.Effect<ProviderResult, MusicScraperError, MusicScraperProviders> =>
   Effect.flatMap(MusicScraperProviders, ({ discovery }) => discovery.discoverLinks(input))
 
@@ -499,9 +510,10 @@ export const scrapeEffect = Effect.fn('musicScraper.scrape')(function* (input: M
   let failedProviders = 0
   const playlist = isPlaylistInput(input)
   const source = sourceDetails(input)
+
   const exactSource = source
     ? yield* resolveExactSource(source, input.url ?? '').pipe(
-        Effect.catch((error) => Effect.fail(sourceResolutionError(source.platform, error)))
+        Effect.catch((error) => Effect.fail(sourceResolutionError(source.platform, error))),
       )
     : null
 
@@ -513,12 +525,13 @@ export const scrapeEffect = Effect.fn('musicScraper.scrape')(function* (input: M
   if (playlist) {
     return {
       links: [...platformMap.values()],
-      entityMeta
+      entityMeta,
     } satisfies ScrapeResult
   }
 
   if (input.url && discovery.name !== 'none') {
     attemptedProviders += 1
+
     const result = yield* discovery.discoverLinks(input).pipe(
       Effect.tap((value) => logProviderOutcome(discovery.name, providerResultOutcome(value))),
       Effect.catch((error) =>
@@ -529,26 +542,29 @@ export const scrapeEffect = Effect.fn('musicScraper.scrape')(function* (input: M
           Effect.andThen(
             logProviderOutcome(
               discovery.name,
-              error.statusCode === 429 ? 'rate_limited' : 'failed'
+              error.statusCode === 429 ? 'rate_limited' : 'failed',
             ),
             Effect.succeed({
               links: [],
-              entityMeta: undefined
-            } satisfies ProviderResult)
-          )
-        )
-      )
+              entityMeta: undefined,
+            } satisfies ProviderResult),
+          ),
+        ),
+      ),
     )
+
     for (const link of result.links) {
       if (exactSource && link.platform === source?.platform) continue
       platformMap.set(link.platform, link)
     }
+
     if (!entityMeta && result.entityMeta) entityMeta = result.entityMeta
   }
 
   for (const provider of providers) {
     if (!isProviderApplicable(provider, input)) continue
     attemptedProviders += 1
+
     const result = yield* provider.fetchLinks(input).pipe(
       Effect.tap((value) => logProviderOutcome(provider.name, providerResultOutcome(value))),
       Effect.catch((err) =>
@@ -560,11 +576,11 @@ export const scrapeEffect = Effect.fn('musicScraper.scrape')(function* (input: M
             logProviderOutcome(provider.name, err.statusCode === 429 ? 'rate_limited' : 'failed'),
             Effect.succeed({
               links: [],
-              entityMeta: undefined
-            } satisfies ProviderResult)
-          )
-        )
-      )
+              entityMeta: undefined,
+            } satisfies ProviderResult),
+          ),
+        ),
+      ),
     )
 
     // Later providers override earlier ones for the same platform
@@ -580,32 +596,36 @@ export const scrapeEffect = Effect.fn('musicScraper.scrape')(function* (input: M
   }
 
   const musicbrainzApplicable = isMusicBrainzIdentityInput(input)
+
   if (musicbrainzApplicable) attemptedProviders += 1
+
   const musicbrainzResult = yield* resolveMusicBrainzIdentity(
     { ...input, isrc: input.isrc ?? entityMeta?.isrc },
-    !entityMeta?.thumbnailUrl
+    !entityMeta?.thumbnailUrl,
   ).pipe(
     Effect.tap((value) => logProviderOutcome('musicbrainz', value ? 'succeeded' : 'not_found')),
     Effect.catchTag('MusicBrainzNotFound', () =>
-      Effect.andThen(logProviderOutcome('musicbrainz', 'not_found'), Effect.succeed(null))
+      Effect.andThen(logProviderOutcome('musicbrainz', 'not_found'), Effect.succeed(null)),
     ),
     Effect.catch(() =>
       Effect.andThen(
         Effect.sync(() => {
           failedProviders += 1
         }),
-        Effect.andThen(logProviderOutcome('musicbrainz', 'failed'), Effect.succeed(null))
-      )
-    )
+        Effect.andThen(logProviderOutcome('musicbrainz', 'failed'), Effect.succeed(null)),
+      ),
+    ),
   )
+
   if (musicbrainzResult) {
     for (const link of musicbrainzResult.links) platformMap.set(link.platform, link)
+
     if (!entityMeta) {
       entityMeta = musicbrainzResult.entityMeta
     } else if (!entityMeta.thumbnailUrl && musicbrainzResult.entityMeta?.thumbnailUrl) {
       entityMeta = {
         ...entityMeta,
-        thumbnailUrl: musicbrainzResult.entityMeta.thumbnailUrl
+        thumbnailUrl: musicbrainzResult.entityMeta.thumbnailUrl,
       }
     }
   }
@@ -617,7 +637,7 @@ export const scrapeEffect = Effect.fn('musicScraper.scrape')(function* (input: M
         : entityMeta.isrc
           ? spotify.searchTrackByIsrc(entityMeta.isrc)
           : Effect.succeed(null),
-      () => Effect.succeed(null)
+      () => Effect.succeed(null),
     )
 
     if (spotifyMatch) {
@@ -627,17 +647,19 @@ export const scrapeEffect = Effect.fn('musicScraper.scrape')(function* (input: M
         scrapedAt: new Date(),
         metadata: providerMetadata(
           'spotify',
-          entityMeta.type === 'album' ? 'exact_metadata' : 'exact_isrc'
-        )
+          entityMeta.type === 'album' ? 'exact_metadata' : 'exact_isrc',
+        ),
       })
+
       const odesliResult = yield* Effect.catch(
         discovery.discoverLinks({ url: spotifyMatch.url }),
         () =>
           Effect.succeed({
             links: [],
-            entityMeta: undefined
-          } satisfies ProviderResult)
+            entityMeta: undefined,
+          } satisfies ProviderResult),
       )
+
       for (const link of odesliResult.links) {
         if (exactSource && link.platform === source?.platform) continue
         platformMap.set(link.platform, link)
@@ -653,7 +675,7 @@ export const scrapeEffect = Effect.fn('musicScraper.scrape')(function* (input: M
         platform: 'deezer',
         url: deezerMatch.url,
         scrapedAt: new Date(),
-        metadata: providerMetadata('deezer', deezerMatch.match)
+        metadata: providerMetadata('deezer', deezerMatch.match),
       })
     }
   }
@@ -662,13 +684,13 @@ export const scrapeEffect = Effect.fn('musicScraper.scrape')(function* (input: M
     return yield* new MusicScraperError({
       message: 'All applicable music providers are unavailable',
       provider: 'all',
-      statusCode: 503
+      statusCode: 503,
     })
   }
 
   return {
     links: [...platformMap.values()],
-    entityMeta
+    entityMeta,
   } satisfies ScrapeResult
 })
 
@@ -677,9 +699,10 @@ export const scrapeEffect = Effect.fn('musicScraper.scrape')(function* (input: M
 // ---------------------------------------------------------------------------
 
 export function makeMusicScraperProviders(): MusicScraperProviders {
-  const providers: MusicDataProvider[] = [new BandcampProvider()]
+  const providers: Array<MusicDataProvider> = [new BandcampProvider()]
 
   const firecrawlKey = process.env.FIRECRAWL_API_KEY
+
   if (firecrawlKey) {
     providers.push(new FirecrawlProvider(firecrawlKey))
   }
@@ -693,20 +716,21 @@ export const MusicLinkScraperServiceLayer = Layer.effect(
     const context = yield* Effect.context<
       SpotifyService | DeezerService | MusicBrainzIdentityService
     >()
+
     const providerSet = makeMusicScraperProviders()
 
     return {
       scrape: (input) =>
         scrapeEffect(input).pipe(
           Effect.provideService(MusicScraperProviders, providerSet),
-          Effect.provideContext(context)
+          Effect.provideContext(context),
         ),
       discoverCrossPlatformLinks: (input) =>
         discoverCrossPlatformLinksEffect(input).pipe(
-          Effect.provideService(MusicScraperProviders, providerSet)
-        )
+          Effect.provideService(MusicScraperProviders, providerSet),
+        ),
     }
-  })
+  }),
 )
 
 // ---------------------------------------------------------------------------
@@ -715,28 +739,44 @@ export const MusicLinkScraperServiceLayer = Layer.effect(
 
 function mapToPlatform(key: string): MusicPlatform {
   const lower = key.toLowerCase()
+
   if (lower.includes('spotify')) return 'spotify'
+
   if (lower.includes('youtube_music') || lower === 'youtubemusic') return 'youtube_music'
+
   if (lower.includes('youtube')) return 'youtube'
+
   if (lower.includes('apple')) return 'apple_music'
+
   if (lower.includes('bandcamp')) return 'bandcamp'
+
   if (lower.includes('soundcloud')) return 'soundcloud'
+
   if (lower.includes('tidal')) return 'tidal'
+
   if (lower.includes('deezer')) return 'deezer'
+
   if (lower.includes('amazon')) return 'amazon_music'
+
   if (lower.includes('discord')) return 'discord'
+
   if (lower.includes('instagram')) return 'instagram'
+
   if (lower.includes('twitter') || lower.includes('x.com')) return 'twitter'
+
   if (lower.includes('musicbrainz')) return 'musicbrainz'
+
   return 'other'
 }
 
 function isPlaylistInput(input: MusicScrapeInput): boolean {
   if (input.entityType === 'playlist') return true
+
   if (!input.url) return false
 
   try {
     const parsed = new URL(input.url)
+
     return parsed.pathname.split('/').includes('playlist')
   } catch {
     return false
@@ -751,19 +791,27 @@ type DirectSource = {
 function sourceDetails(input: MusicScrapeInput): DirectSource | undefined {
   if (!input.url) return undefined
   const parsed = URL.parse(input.url)
+
   if (!parsed) return undefined
   const hostname = parsed.hostname.replace(/^www\./, '')
+
   const pathType = parsed.pathname
     .split('/')
     .find((segment) => segment === 'track' || segment === 'album' || segment === 'playlist')
+
   const inferredType =
     pathType === 'track' || pathType === 'album' || pathType === 'playlist' ? pathType : undefined
+
   const entityType = input.entityType ?? inferredType
+
   if (!entityType || entityType === 'artist') return undefined
+
   if (hostname === 'open.spotify.com' || hostname === 'spotify.com') {
     return { platform: 'spotify', entityType }
   }
+
   if (hostname === 'deezer.com') return { platform: 'deezer', entityType }
+
   return undefined
 }
 
@@ -778,16 +826,16 @@ function spotifyResult(candidate: SpotifySourceCandidate): ProviderResult {
         platform: 'spotify',
         url: candidate.url,
         scrapedAt: new Date(),
-        metadata: providerMetadata('spotify', 'exact_source', candidate.externalId)
-      }
+        metadata: providerMetadata('spotify', 'exact_source', candidate.externalId),
+      },
     ],
     entityMeta: {
       title: candidate.title,
       artistName: candidate.entityType === 'playlist' ? candidate.ownerName : candidate.artists,
       thumbnailUrl: candidate.imageUrl,
       type: candidate.entityType === 'track' ? 'song' : candidate.entityType,
-      isrc: candidate.entityType === 'track' ? candidate.isrc : undefined
-    }
+      isrc: candidate.entityType === 'track' ? candidate.isrc : undefined,
+    },
   }
 }
 
@@ -798,22 +846,22 @@ function deezerResult(candidate: DeezerSourceCandidate): ProviderResult {
         platform: 'deezer',
         url: candidate.url,
         scrapedAt: new Date(),
-        metadata: providerMetadata('deezer', 'exact_source', candidate.externalId)
-      }
+        metadata: providerMetadata('deezer', 'exact_source', candidate.externalId),
+      },
     ],
     entityMeta: {
       title: candidate.title,
       artistName: candidate.artistNames.join(', ') || undefined,
       thumbnailUrl: candidate.thumbnailUrl,
       type: candidate.entityType === 'track' ? 'song' : candidate.entityType,
-      isrc: candidate.entityType === 'track' ? candidate.identifiers.isrc : undefined
-    }
+      isrc: candidate.entityType === 'track' ? candidate.identifiers.isrc : undefined,
+    },
   }
 }
 
 function resolveExactSource(
   source: DirectSource,
-  url: string
+  url: string,
 ): Effect.Effect<
   ProviderResult,
   SpotifyServiceError | DeezerError,
@@ -822,20 +870,23 @@ function resolveExactSource(
   return Effect.gen(function* () {
     if (source.platform === 'spotify') {
       const spotify = yield* SpotifyService
+
       return spotifyResult(
         yield* spotify.resolveSource({
           entityType: source.entityType,
-          urlOrId: url
-        })
+          urlOrId: url,
+        }),
       )
     }
+
     const deezer = yield* DeezerService
+
     return deezerResult(yield* deezer.resolve({ entityType: source.entityType, source: url }))
   })
 }
 
 function findDeezerMatch(
-  entityMeta: EntityMeta
+  entityMeta: EntityMeta,
 ): Effect.Effect<DeezerTrackCandidate | DeezerAlbumCandidate | null, DeezerError, DeezerService> {
   return Effect.flatMap(
     DeezerService,
@@ -843,32 +894,38 @@ function findDeezerMatch(
       if (entityMeta.type === 'album') {
         return deezer.searchAlbumByTitleArtist(entityMeta.title ?? '', entityMeta.artistName ?? '')
       }
+
       return entityMeta.isrc ? deezer.searchTrackByIsrc(entityMeta.isrc) : Effect.succeed(null)
-    }
+    },
   )
 }
 
 function sourceResolutionError(
   provider: DirectSource['platform'],
-  error: SpotifyServiceError | DeezerError
+  error: SpotifyServiceError | DeezerError,
 ) {
-  const statusCode =
-    error._tag === 'DeezerRequestFailed' || error._tag === 'MusicProviderRequestFailed'
-      ? (error.statusCode ?? 503)
-      : error._tag === 'DeezerInvalidInput' || error._tag === 'MusicProviderInvalidInput'
-        ? 400
-        : error._tag === 'DeezerNotFound' || error._tag === 'MusicProviderNotFound'
-          ? 404
-          : 503
+  const statusCode = Match.value(error).pipe(
+    Match.tags({
+      DeezerRequestFailed: (failure) => failure.statusCode ?? 503,
+      MusicProviderRequestFailed: (failure) => failure.statusCode ?? 503,
+      DeezerInvalidInput: () => 400,
+      MusicProviderInvalidInput: () => 400,
+      DeezerNotFound: () => 404,
+      MusicProviderNotFound: () => 404,
+    }),
+    Match.orElse(() => 503),
+  )
+
   return new MusicScraperError({
     message: `Exact ${provider} source could not be resolved`,
     provider,
-    statusCode
+    statusCode,
   })
 }
 
 function isMusicBrainzIdentityInput(input: MusicScrapeInput) {
   const entityType = input.entityType ?? sourceDetails(input)?.entityType
+
   return (
     !isPlaylistInput(input) &&
     ((Boolean(input.mbid) && musicBrainzMbidType(entityType) !== null) ||
@@ -879,7 +936,9 @@ function isMusicBrainzIdentityInput(input: MusicScrapeInput) {
 
 function isProviderApplicable(provider: MusicDataProvider, input: MusicScrapeInput) {
   if (provider.name === 'bandcamp') return Boolean(input.url && isBandcampUrl(input.url))
+
   if (provider.name === 'firecrawl') return Boolean(input.url)
+
   return true
 }
 
@@ -891,55 +950,64 @@ function providerResultOutcome(result: ProviderResult): ProviderOutcome {
 
 function logProviderOutcome(provider: string, outcome: ProviderOutcome) {
   return Effect.logInfo('Music provider attempt completed').pipe(
-    Effect.annotateLogs({ provider, outcome })
+    Effect.annotateLogs({ provider, outcome }),
   )
 }
 
 function musicBrainzMbidType(
-  entityType: MusicScrapeInput['entityType']
+  entityType: MusicScrapeInput['entityType'],
 ): MusicBrainzMbidType | null {
   if (entityType === 'artist') return 'artist'
+
   if (entityType === 'track') return 'recording'
+
   if (entityType === 'album') return 'release'
+
   return null
 }
 
 function musicBrainzResult(
   candidate: MusicBrainzIdentityCandidate,
-  coverArt?: CoverArtArchiveReference
+  coverArt?: CoverArtArchiveReference,
 ): ProviderResult {
-  const mbidType =
-    candidate.entityType === 'artist'
-      ? 'artist'
-      : candidate.entityType === 'album'
-        ? 'release-group'
-        : 'recording'
-  const mbid =
-    candidate.entityType === 'artist'
-      ? candidate.artistMbid
-      : candidate.entityType === 'album'
-        ? candidate.releaseGroup.mbid
-        : candidate.recordingMbid
+  const mbidType = Match.value(candidate.entityType).pipe(
+    Match.when('artist', () => 'artist' as const),
+    Match.when('album', () => 'release-group' as const),
+    Match.orElse(() => 'recording' as const),
+  )
+
+  const mbid = Match.value(candidate).pipe(
+    Match.when({ entityType: 'artist' }, (artist) => artist.artistMbid),
+    Match.when({ entityType: 'album' }, (album) => album.releaseGroup.mbid),
+    Match.when({ entityType: 'track' }, (track) => track.recordingMbid),
+    Match.exhaustive,
+  )
+
   const metadata: NonNullable<ScrapedLink['metadata']> = {
     discoveredBy: 'musicbrainz',
     confidence: candidate.provenance.confidence,
     mbid,
     mbidType,
     lookupAt: candidate.provenance.lookupAt,
-    canonicalMbid: candidate.provenance.canonicalMbid
+    canonicalMbid: candidate.provenance.canonicalMbid,
   }
+
   if (candidate.provenance.requestedMbid) {
     metadata.requestedMbid = candidate.provenance.requestedMbid
   }
+
   if (candidate.entityType === 'track' && candidate.isrcs.length > 0) {
     metadata.matchedIdentifiers = { isrcs: candidate.isrcs }
   }
+
   if (candidate.entityType === 'album' && candidate.editionRelease) {
     metadata.editionRelease = candidate.editionRelease
   }
+
   if (candidate.provenance.matchedUrl) {
     metadata.matchedUrl = candidate.provenance.matchedUrl
   }
+
   if (coverArt) metadata.coverArt = coverArt
 
   return {
@@ -948,41 +1016,41 @@ function musicBrainzResult(
         platform: 'musicbrainz',
         url: `https://musicbrainz.org/${mbidType}/${mbid}`,
         scrapedAt: new Date(candidate.provenance.lookupAt),
-        metadata
-      }
+        metadata,
+      },
     ],
     entityMeta: {
       title: candidate.title,
       artistName: candidate.artistNames.join(', ') || undefined,
-      type:
-        candidate.entityType === 'track'
-          ? 'song'
-          : candidate.entityType === 'album'
-            ? 'album'
-            : 'artist',
+      type: Match.value(candidate.entityType).pipe(
+        Match.when('track', () => 'song' as const),
+        Match.when('album', () => 'album' as const),
+        Match.orElse(() => 'artist' as const),
+      ),
       isrc: candidate.entityType === 'track' ? candidate.isrcs[0] : undefined,
-      thumbnailUrl: coverArt?.imageUrl
-    }
+      thumbnailUrl: coverArt?.imageUrl,
+    },
   }
 }
 
 function enrichMusicBrainzResult(
   candidate: MusicBrainzIdentityCandidate,
   musicbrainz: MusicBrainzIdentityServiceContract,
-  allowCoverArt: boolean
+  allowCoverArt: boolean,
 ): Effect.Effect<ProviderResult, MusicBrainzIdentityError> {
   if (!allowCoverArt || candidate.entityType !== 'album' || !candidate.editionRelease) {
     return Effect.succeed(musicBrainzResult(candidate))
   }
+
   return musicbrainz.lookupCoverArt(candidate.editionRelease.mbid).pipe(
     Effect.map((coverArt) => musicBrainzResult(candidate, coverArt)),
-    Effect.catch(() => Effect.succeed(musicBrainzResult(candidate)))
+    Effect.catch(() => Effect.succeed(musicBrainzResult(candidate))),
   )
 }
 
 function resolveMusicBrainzIdentity(
   input: MusicScrapeInput,
-  allowCoverArt: boolean
+  allowCoverArt: boolean,
 ): Effect.Effect<ProviderResult | null, MusicBrainzIdentityError, MusicBrainzIdentityService> {
   if (isPlaylistInput(input)) return Effect.succeed(null)
 
@@ -990,23 +1058,26 @@ function resolveMusicBrainzIdentity(
     if (input.mbid) {
       const mbid = input.mbid
       const mbidType = musicBrainzMbidType(input.entityType)
+
       if (!mbidType) return Effect.succeed(null)
+
       if (input.entityType === 'album') {
         return musicbrainz.lookupByMbid({ mbidType: 'release', mbid }).pipe(
           Effect.catchTag('MusicBrainzNotFound', () =>
-            musicbrainz.lookupByMbid({ mbidType: 'release-group', mbid })
+            musicbrainz.lookupByMbid({ mbidType: 'release-group', mbid }),
           ),
           Effect.flatMap((candidate) =>
-            enrichMusicBrainzResult(candidate, musicbrainz, allowCoverArt)
-          )
+            enrichMusicBrainzResult(candidate, musicbrainz, allowCoverArt),
+          ),
         )
       }
+
       return musicbrainz
         .lookupByMbid({ mbidType, mbid })
         .pipe(
           Effect.flatMap((candidate) =>
-            enrichMusicBrainzResult(candidate, musicbrainz, allowCoverArt)
-          )
+            enrichMusicBrainzResult(candidate, musicbrainz, allowCoverArt),
+          ),
         )
     }
 
@@ -1015,19 +1086,20 @@ function resolveMusicBrainzIdentity(
         .lookupRecordingByIsrc(input.isrc)
         .pipe(
           Effect.flatMap((candidate) =>
-            enrichMusicBrainzResult(candidate, musicbrainz, allowCoverArt)
-          )
+            enrichMusicBrainzResult(candidate, musicbrainz, allowCoverArt),
+          ),
         )
     }
 
     const inferredEntityType = input.entityType ?? sourceDetails(input)?.entityType
+
     if (input.url && inferredEntityType && inferredEntityType !== 'playlist') {
       return musicbrainz
         .lookupByExternalUrl({ entityType: inferredEntityType, url: input.url })
         .pipe(
           Effect.flatMap((candidate) =>
-            enrichMusicBrainzResult(candidate, musicbrainz, allowCoverArt)
-          )
+            enrichMusicBrainzResult(candidate, musicbrainz, allowCoverArt),
+          ),
         )
     }
 

@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router'
 import { SymbolView } from 'expo-symbols'
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native'
+
 import Login from '@/components/Login'
 import { AppearanceSection } from '@/components/Profile/AppearanceSection'
 import { SpotifySection } from '@/components/Profile/SpotifySection'
@@ -43,7 +44,7 @@ export default function Profile() {
               backgroundColor: colors.surface,
               borderRadius: 4,
               padding: 16,
-              marginBottom: 16
+              marginBottom: 16,
             }}>
             <View className='flex-row items-center justify-between'>
               <View>
@@ -99,7 +100,7 @@ export default function Profile() {
             borderRadius: 4,
             padding: 16,
             marginBottom: 32,
-            alignItems: 'center'
+            alignItems: 'center',
           }}>
           <Text style={{ color: colors.error, fontSize: 16, fontWeight: '600' }}>Sign out</Text>
         </TouchableOpacity>

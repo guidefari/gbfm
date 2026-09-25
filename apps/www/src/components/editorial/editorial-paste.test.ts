@@ -1,8 +1,9 @@
 import { Effect } from 'effect'
 import { expect, test } from 'vitest'
+
 import {
   parsePendingMusicEntityEffect,
-  transformPastedEditorialContentEffect
+  transformPastedEditorialContentEffect,
 } from './editorial-paste'
 
 const transform = (value: string) => Effect.runSync(transformPastedEditorialContentEffect(value))
@@ -14,13 +15,13 @@ test('transforms standalone Spotify URLs, deduplicates resolution, and parses pe
 
   expect(result).toEqual({
     content: `<MusicEntityPending url="${url}" />\n\n<MusicEntityPending url="${url}" />\n\n<MusicEntityPending url="${otherUrl}" />`,
-    spotifyUrls: [url, otherUrl]
+    spotifyUrls: [url, otherUrl],
   })
   const [pending] = result.content.split('\n\n')
   expect(Effect.runSync(parsePendingMusicEntityEffect(pending))).toEqual({
     provider: 'spotify',
     url,
-    fallback: 'restore-url'
+    fallback: 'restore-url',
   })
 })
 
@@ -35,7 +36,7 @@ The next thought stays below the entity.`
 <MusicEntityPending url="https://open.spotify.com/album/1BIXNamH3zTLBSb3my28k6" fallback="remove" />
 
 The next thought stays below the entity.`,
-    spotifyUrls: ['https://open.spotify.com/album/1BIXNamH3zTLBSb3my28k6']
+    spotifyUrls: ['https://open.spotify.com/album/1BIXNamH3zTLBSb3my28k6'],
   })
 })
 
@@ -49,7 +50,9 @@ https://open.spotify.com/album/6AwBhTb30oRIH35Og6SdKG
 
 test('rejects hand-written unsafe pending values', () => {
   const parsed = Effect.runSync(
-    Effect.option(parsePendingMusicEntityEffect('<MusicEntityPending url="javascript:alert(1)" />'))
+    Effect.option(
+      parsePendingMusicEntityEffect('<MusicEntityPending url="javascript:alert(1)" />'),
+    ),
   )
 
   expect(parsed._tag).toBe('None')

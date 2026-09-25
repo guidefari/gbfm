@@ -3,6 +3,7 @@
   import FavoritesSection from '@/lib/components/dashboard/FavoritesSection.svelte'
   import Page from '@/lib/components/dashboard/Page.svelte'
   import RemindersCard from '@/lib/components/dashboard/RemindersCard.svelte'
+
   let { data }: PageProps = $props()
 </script>
 <Page title={`Welcome back, ${data.principal._tag === 'Authenticated' ? data.principal.name.split(' ')[0] : 'there'}`} description="Here's what's happening">

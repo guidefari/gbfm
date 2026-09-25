@@ -3,10 +3,14 @@
   import { page } from '$app/state'
   import { Schema } from 'effect'
   import AccountForm from '@/lib/components/account/AccountForm.svelte'
+
   const target = page.url.searchParams.get('redirect')
+
   const redirect = target?.startsWith('/') && !target.startsWith('//') ? target : '/'
+
   const signInPayload = (values: Record<string, string>): Schema.Json => {
     if (values.identifier.includes('@')) return { email: values.identifier, password: values.password }
+
     return { username: values.identifier, password: values.password }
   }
 </script>

@@ -2,32 +2,36 @@ import { Schema } from 'effect'
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/unstable/httpapi'
 
 export const Slug = Schema.String.pipe(Schema.brand('MicroPostSlug'))
+
 export type Slug = typeof Slug.Type
 
 export const IntentToken = Schema.NonEmptyString
+
 export type IntentToken = typeof IntentToken.Type
 
 export const NavigationCommand = Schema.Union([
   Schema.Struct({
     _tag: Schema.Literal('Step'),
-    direction: Schema.Literals(['Back', 'Forward'])
+    direction: Schema.Literals(['Back', 'Forward']),
   }),
   Schema.Struct({ _tag: Schema.Literal('Jump') }),
-  Schema.Struct({ _tag: Schema.Literal('Open'), slug: Slug })
+  Schema.Struct({ _tag: Schema.Literal('Open'), slug: Slug }),
 ])
+
 export type NavigationCommand = typeof NavigationCommand.Type
 
 export const NavigateInput = Schema.Struct({
   command: NavigationCommand,
   from: Slug,
-  intentToken: IntentToken
+  intentToken: IntentToken,
 })
+
 export type NavigateInput = typeof NavigateInput.Type
 
 const NavigationCapabilitiesResponse = Schema.Struct({
   canStepBack: Schema.Boolean,
   canStepForward: Schema.Boolean,
-  hasUnread: Schema.Boolean
+  hasUnread: Schema.Boolean,
 })
 
 export const NavigationResultResponse = Schema.Struct({
@@ -36,28 +40,32 @@ export const NavigationResultResponse = Schema.Struct({
   trailPosition: Schema.Struct({ index: Schema.Number, length: Schema.Number }),
   neighbours: Schema.Struct({ back: Schema.optional(Slug), forward: Schema.optional(Slug) }),
   neighbourhood: Schema.optional(
-    Schema.Struct({ back: Schema.Array(Slug), forward: Schema.Array(Slug) })
-  )
+    Schema.Struct({ back: Schema.Array(Slug), forward: Schema.Array(Slug) }),
+  ),
 })
+
 export type NavigationResultResponse = typeof NavigationResultResponse.Type
 
 export const NavigationPeekInput = Schema.Struct({
   command: NavigationCommand,
-  from: Slug
+  from: Slug,
 })
+
 export type NavigationPeekInput = typeof NavigationPeekInput.Type
 
 export const NavigationVisitInput = Schema.Struct({
   command: NavigationCommand,
   from: Slug,
-  intentToken: IntentToken
+  intentToken: IntentToken,
 })
+
 export type NavigationVisitInput = typeof NavigationVisitInput.Type
 
 export const NavigationSessionResponse = Schema.Struct({
   slug: Schema.NullOr(Slug),
-  capabilities: NavigationCapabilitiesResponse
+  capabilities: NavigationCapabilitiesResponse,
 })
+
 export type NavigationSessionResponse = typeof NavigationSessionResponse.Type
 
 export const NavigationGroup = HttpApiGroup.make('navigation')
@@ -65,22 +73,22 @@ export const NavigationGroup = HttpApiGroup.make('navigation')
     HttpApiEndpoint.post('navigateMicroPosts', '/api/content/posts/micro/navigate', {
       payload: NavigateInput,
       success: NavigationResultResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Conflict, HttpApiError.InternalServerError]
-    })
+      error: [HttpApiError.NotFound, HttpApiError.Conflict, HttpApiError.InternalServerError],
+    }),
   )
   .add(
     HttpApiEndpoint.post('peekMicroPostNavigation', '/api/content/posts/micro/navigate/peek', {
       payload: NavigationPeekInput,
       success: NavigationResultResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Conflict, HttpApiError.InternalServerError]
-    })
+      error: [HttpApiError.NotFound, HttpApiError.Conflict, HttpApiError.InternalServerError],
+    }),
   )
   .add(
     HttpApiEndpoint.post('recordMicroPostVisit', '/api/content/posts/micro/navigate/visit', {
       payload: NavigationVisitInput,
       success: Schema.Struct({ recorded: Schema.Boolean }),
-      error: [HttpApiError.NotFound, HttpApiError.Conflict, HttpApiError.InternalServerError]
-    })
+      error: [HttpApiError.NotFound, HttpApiError.Conflict, HttpApiError.InternalServerError],
+    }),
   )
   .add(
     HttpApiEndpoint.get(
@@ -88,7 +96,7 @@ export const NavigationGroup = HttpApiGroup.make('navigation')
       '/api/content/posts/micro/navigation-session',
       {
         success: NavigationSessionResponse,
-        error: [HttpApiError.InternalServerError]
-      }
-    )
+        error: [HttpApiError.InternalServerError],
+      },
+    ),
   )

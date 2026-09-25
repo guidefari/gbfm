@@ -1,12 +1,13 @@
-import type { ReactNode } from 'react'
 import type {
   ArtworkCardModel,
   EditorialCardModel,
   IdentityCardModel,
   SocialCardFormat,
   SocialCardModel,
-  TweetCardModel
+  TweetCardModel,
 } from '@gbfm/social-card'
+import { Match } from 'effect'
+import type { ReactNode } from 'react'
 
 const colors = {
   background: '#111827',
@@ -14,25 +15,27 @@ const colors = {
   foreground: '#d6fbe8',
   muted: '#769d8a',
   highlight: '#9bfd9e',
-  white: '#ffffff'
+  white: '#ffffff',
 } as const
 
 const base = {
   display: 'flex',
   fontFamily: 'JetBrains Mono',
-  color: colors.foreground
+  color: colors.foreground,
 } as const
 
 const commentarySize = (length: number, format: SocialCardFormat) => {
   if (format === 'openGraph') return length > 150 ? 35 : length > 90 ? 42 : 50
+
   if (format === 'sleeve') return length > 200 ? 38 : length > 110 ? 46 : 54
+
   return length > 200 ? 42 : length > 110 ? 52 : 64
 }
 
 function Artwork({
   data,
   size,
-  showMetadata = true
+  showMetadata = true,
 }: {
   readonly data: TweetCardModel
   readonly size: number
@@ -49,7 +52,7 @@ function Artwork({
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',
-        position: 'relative'
+        position: 'relative',
       }}>
       {data.coverImageUrl ? (
         <img
@@ -68,7 +71,7 @@ function Artwork({
             color: colors.highlight,
             fontWeight: 900,
             fontSize: Math.max(18, size * 0.07),
-            letterSpacing: Math.max(1, size * 0.006)
+            letterSpacing: Math.max(1, size * 0.006),
           }}>
           <div style={base}>goosebumps.</div>
           <div style={{ ...base, color: colors.muted }}>fm</div>
@@ -85,7 +88,7 @@ function Artwork({
             flexDirection: 'column',
             padding: size * 0.06,
             paddingTop: size * 0.17,
-            backgroundImage: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.92))'
+            backgroundImage: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.92))',
           }}>
           {data.entityLabel ? (
             <div
@@ -94,7 +97,7 @@ function Artwork({
                 color: 'rgba(255,255,255,0.65)',
                 fontSize: size * 0.025,
                 letterSpacing: size * 0.008,
-                textTransform: 'uppercase'
+                textTransform: 'uppercase',
               }}>
               {data.entityLabel}
             </div>
@@ -105,7 +108,7 @@ function Artwork({
               color: colors.white,
               fontWeight: 900,
               fontSize: size * 0.05,
-              lineHeight: 1.15
+              lineHeight: 1.15,
             }}>
             {data.entityTitle}
           </div>
@@ -149,7 +152,7 @@ function Author({ data, qrUrl }: { readonly data: TweetCardModel; readonly qrUrl
               alignItems: 'center',
               justifyContent: 'center',
               fontWeight: 900,
-              fontSize: 28
+              fontSize: 28,
             }}>
             G
           </div>
@@ -174,7 +177,7 @@ function Author({ data, qrUrl }: { readonly data: TweetCardModel; readonly qrUrl
 
 function Commentary({
   data,
-  format
+  format,
 }: {
   readonly data: TweetCardModel
   readonly format: SocialCardFormat
@@ -188,7 +191,11 @@ function Commentary({
           fontWeight: 900,
           lineHeight: 1.28,
           letterSpacing: -1.5,
-          lineClamp: format === 'openGraph' ? 7 : format === 'poster' ? 9 : 8
+          lineClamp: Match.value(format).pipe(
+            Match.when('openGraph', () => 7),
+            Match.when('poster', () => 9),
+            Match.orElse(() => 8),
+          ),
         }}>
         {data.commentary}
       </div>
@@ -206,7 +213,7 @@ function Poster({ data, qrUrl }: { readonly data: TweetCardModel; readonly qrUrl
         padding: 78,
         backgroundColor: colors.background,
         flexDirection: 'column',
-        justifyContent: 'space-between'
+        justifyContent: 'space-between',
       }}>
       <div style={{ ...base, justifyContent: 'space-between', color: colors.muted, fontSize: 22 }}>
         <div style={{ ...base, color: colors.highlight, fontWeight: 900 }}>
@@ -226,7 +233,7 @@ function Poster({ data, qrUrl }: { readonly data: TweetCardModel; readonly qrUrl
                   color: colors.muted,
                   fontSize: 18,
                   letterSpacing: 6,
-                  textTransform: 'uppercase'
+                  textTransform: 'uppercase',
                 }}>
                 {data.entityLabel}
               </div>
@@ -251,7 +258,7 @@ function Sleeve({ data, qrUrl }: { readonly data: TweetCardModel; readonly qrUrl
         width: 1080,
         height: 1920,
         backgroundColor: colors.background,
-        flexDirection: 'column'
+        flexDirection: 'column',
       }}>
       <Artwork data={data} size={1080} />
       <div
@@ -260,7 +267,7 @@ function Sleeve({ data, qrUrl }: { readonly data: TweetCardModel; readonly qrUrl
           height: 840,
           padding: 68,
           flexDirection: 'column',
-          justifyContent: 'space-between'
+          justifyContent: 'space-between',
         }}>
         <Commentary data={data} format='sleeve' />
         <div style={{ ...base, borderTop: `2px solid ${colors.muted}`, paddingTop: 34 }}>
@@ -280,7 +287,7 @@ function OpenGraph({ data }: { readonly data: TweetCardModel }) {
         height: 630,
         padding: 60,
         backgroundColor: colors.background,
-        alignItems: 'stretch'
+        alignItems: 'stretch',
       }}>
       <div
         style={{
@@ -288,7 +295,7 @@ function OpenGraph({ data }: { readonly data: TweetCardModel }) {
           width: 670,
           flexDirection: 'column',
           justifyContent: 'space-between',
-          paddingRight: 54
+          paddingRight: 54,
         }}>
         <div style={{ ...base, color: colors.highlight, fontSize: 22, fontWeight: 900 }}>
           goosebumps.fm
@@ -310,10 +317,12 @@ function OpenGraph({ data }: { readonly data: TweetCardModel }) {
 export const tweetCardTemplate = (
   data: TweetCardModel,
   format: SocialCardFormat,
-  qrUrl: string
+  qrUrl: string,
 ): ReactNode => {
   if (format === 'poster') return <Poster data={data} qrUrl={qrUrl} />
+
   if (format === 'sleeve') return <Sleeve data={data} qrUrl={qrUrl} />
+
   return <OpenGraph data={data} />
 }
 
@@ -340,7 +349,7 @@ function ArtworkFallback({ label }: { readonly label: string }) {
         color: colors.highlight,
         fontSize: 24,
         fontWeight: 900,
-        letterSpacing: 5
+        letterSpacing: 5,
       }}>
       <div style={{ ...base, textTransform: 'uppercase' }}>goosebumps</div>
       <div
@@ -349,7 +358,7 @@ function ArtworkFallback({ label }: { readonly label: string }) {
           marginTop: 12,
           color: colors.muted,
           fontSize: 16,
-          textTransform: 'uppercase'
+          textTransform: 'uppercase',
         }}>
         {label}
       </div>
@@ -359,6 +368,7 @@ function ArtworkFallback({ label }: { readonly label: string }) {
 
 function ArtworkCard({ data }: { readonly data: ArtworkCardModel }) {
   const creatorLine = data.creators.length > 0 ? data.creators.join(', ') : 'goosebumps.fm'
+
   return (
     <div
       style={{
@@ -367,7 +377,7 @@ function ArtworkCard({ data }: { readonly data: ArtworkCardModel }) {
         height: 630,
         padding: 60,
         backgroundColor: colors.background,
-        justifyContent: 'space-between'
+        justifyContent: 'space-between',
       }}>
       <div
         style={{
@@ -375,7 +385,7 @@ function ArtworkCard({ data }: { readonly data: ArtworkCardModel }) {
           width: 570,
           flexDirection: 'column',
           justifyContent: 'space-between',
-          paddingRight: 48
+          paddingRight: 48,
         }}>
         <Brand />
         <div style={{ ...base, flexDirection: 'column' }}>
@@ -387,7 +397,7 @@ function ArtworkCard({ data }: { readonly data: ArtworkCardModel }) {
               fontWeight: 900,
               letterSpacing: 7,
               marginBottom: 22,
-              textTransform: 'uppercase'
+              textTransform: 'uppercase',
             }}>
             {data.eyebrow}
           </div>
@@ -399,7 +409,7 @@ function ArtworkCard({ data }: { readonly data: ArtworkCardModel }) {
               fontWeight: 900,
               lineHeight: 1.08,
               letterSpacing: -2,
-              lineClamp: 3
+              lineClamp: 3,
             }}>
             {data.title}
           </div>
@@ -410,7 +420,7 @@ function ArtworkCard({ data }: { readonly data: ArtworkCardModel }) {
               fontSize: 22,
               lineHeight: 1.35,
               marginTop: 20,
-              lineClamp: 2
+              lineClamp: 2,
             }}>
             {creatorLine}
           </div>
@@ -421,7 +431,7 @@ function ArtworkCard({ data }: { readonly data: ArtworkCardModel }) {
             color: colors.muted,
             fontSize: 15,
             letterSpacing: 3,
-            textTransform: 'uppercase'
+            textTransform: 'uppercase',
           }}>
           Listen on goosebumps.fm
         </div>
@@ -433,7 +443,7 @@ function ArtworkCard({ data }: { readonly data: ArtworkCardModel }) {
           height: 510,
           overflow: 'hidden',
           border: `2px solid ${colors.muted}`,
-          boxShadow: '18px 18px 0 #22382f'
+          boxShadow: '18px 18px 0 #22382f',
         }}>
         {data.artworkUrl ? (
           <img
@@ -460,7 +470,7 @@ function IdentityCard({ data }: { readonly data: IdentityCardModel }) {
         height: 630,
         padding: 60,
         backgroundColor: colors.background,
-        alignItems: 'center'
+        alignItems: 'center',
       }}>
       <div
         style={{
@@ -470,7 +480,7 @@ function IdentityCard({ data }: { readonly data: IdentityCardModel }) {
           flexShrink: 0,
           overflow: 'hidden',
           borderRadius: data.kind === 'profile' ? 215 : 28,
-          border: `3px solid ${colors.highlight}`
+          border: `3px solid ${colors.highlight}`,
         }}>
         {data.imageUrl ? (
           <img
@@ -491,7 +501,7 @@ function IdentityCard({ data }: { readonly data: IdentityCardModel }) {
           flex: 1,
           flexDirection: 'column',
           justifyContent: 'space-between',
-          paddingLeft: 70
+          paddingLeft: 70,
         }}>
         <Brand />
         <div style={{ ...base, flexDirection: 'column' }}>
@@ -503,7 +513,7 @@ function IdentityCard({ data }: { readonly data: IdentityCardModel }) {
               fontWeight: 900,
               letterSpacing: 7,
               marginBottom: 18,
-              textTransform: 'uppercase'
+              textTransform: 'uppercase',
             }}>
             {data.eyebrow}
           </div>
@@ -515,7 +525,7 @@ function IdentityCard({ data }: { readonly data: IdentityCardModel }) {
               fontWeight: 900,
               lineHeight: 1.05,
               letterSpacing: -2,
-              lineClamp: 3
+              lineClamp: 3,
             }}>
             {data.title}
           </div>
@@ -526,7 +536,7 @@ function IdentityCard({ data }: { readonly data: IdentityCardModel }) {
               fontSize: 19,
               lineHeight: 1.4,
               marginTop: 22,
-              lineClamp: 3
+              lineClamp: 3,
             }}>
             {data.description}
           </div>
@@ -542,7 +552,7 @@ function IdentityCard({ data }: { readonly data: IdentityCardModel }) {
 function EditorialCard({ data }: { readonly data: EditorialCardModel }) {
   const attribution = [
     data.authors.length > 0 ? `By ${data.authors.join(', ')}` : null,
-    data.publishedLabel
+    data.publishedLabel,
   ]
     .filter((part) => part !== null)
     .join(' · ')
@@ -556,7 +566,7 @@ function EditorialCard({ data }: { readonly data: EditorialCardModel }) {
         padding: 60,
         backgroundColor: colors.background,
         position: 'relative',
-        overflow: 'hidden'
+        overflow: 'hidden',
       }}>
       {data.imageUrl ? (
         <img
@@ -571,7 +581,7 @@ function EditorialCard({ data }: { readonly data: EditorialCardModel }) {
             width: 440,
             height: 630,
             objectFit: 'cover',
-            opacity: 0.42
+            opacity: 0.42,
           }}
         />
       ) : (
@@ -584,7 +594,7 @@ function EditorialCard({ data }: { readonly data: EditorialCardModel }) {
             width: 520,
             height: 760,
             transform: 'rotate(18deg)',
-            backgroundImage: `linear-gradient(145deg, ${colors.panel}, #22382f)`
+            backgroundImage: `linear-gradient(145deg, ${colors.panel}, #22382f)`,
           }}
         />
       )}
@@ -596,7 +606,7 @@ function EditorialCard({ data }: { readonly data: EditorialCardModel }) {
           flexDirection: 'column',
           justifyContent: 'space-between',
           position: 'relative',
-          paddingRight: 70
+          paddingRight: 70,
         }}>
         <div style={{ ...base, justifyContent: 'space-between', alignItems: 'center' }}>
           <Brand />
@@ -607,7 +617,7 @@ function EditorialCard({ data }: { readonly data: EditorialCardModel }) {
               fontSize: 17,
               fontWeight: 900,
               letterSpacing: 7,
-              textTransform: 'uppercase'
+              textTransform: 'uppercase',
             }}>
             Editorial
           </div>
@@ -617,7 +627,7 @@ function EditorialCard({ data }: { readonly data: EditorialCardModel }) {
             ...base,
             flexDirection: 'column',
             borderLeft: `8px solid ${colors.highlight}`,
-            paddingLeft: 34
+            paddingLeft: 34,
           }}>
           <div
             style={{
@@ -627,7 +637,7 @@ function EditorialCard({ data }: { readonly data: EditorialCardModel }) {
               fontWeight: 900,
               lineHeight: 1.08,
               letterSpacing: -2,
-              lineClamp: 3
+              lineClamp: 3,
             }}>
             {data.title}
           </div>
@@ -638,7 +648,7 @@ function EditorialCard({ data }: { readonly data: EditorialCardModel }) {
               fontSize: 20,
               lineHeight: 1.4,
               marginTop: 20,
-              lineClamp: 2
+              lineClamp: 2,
             }}>
             {data.description}
           </div>
@@ -655,18 +665,13 @@ function EditorialCard({ data }: { readonly data: EditorialCardModel }) {
 export const socialCardTemplate = (
   data: SocialCardModel,
   format: SocialCardFormat,
-  qrUrl: string
+  qrUrl: string,
 ): ReactNode => {
-  switch (data._tag) {
-    case 'ArtworkCard':
-      return <ArtworkCard data={data} />
-    case 'IdentityCard':
-      return <IdentityCard data={data} />
-    case 'EditorialCard':
-      return <EditorialCard data={data} />
-    case 'TweetCard':
-      return tweetCardTemplate(data, format, qrUrl)
-    default:
-      return data satisfies never
-  }
+  return Match.value(data).pipe(
+    Match.tag('ArtworkCard', (card) => <ArtworkCard data={card} />),
+    Match.tag('IdentityCard', (card) => <IdentityCard data={card} />),
+    Match.tag('EditorialCard', (card) => <EditorialCard data={card} />),
+    Match.tag('TweetCard', (card) => tweetCardTemplate(card, format, qrUrl)),
+    Match.exhaustive,
+  )
 }

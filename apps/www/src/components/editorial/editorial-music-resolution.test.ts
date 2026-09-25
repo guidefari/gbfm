@@ -1,18 +1,21 @@
 import { Effect } from 'effect'
 import { describe, expect, test } from 'vitest'
+
 import { resolveMusicEntityBatchEffect } from './editorial-music-resolution'
 
 describe('resolveMusicEntityBatchEffect', () => {
   test('deduplicates work while preserving first-seen order', async () => {
-    const resolvedUrls: string[] = []
+    const resolvedUrls: Array<string> = []
+
     const resolve = (url: string) =>
       Effect.sync(() => {
         resolvedUrls.push(url)
+
         return { type: 'album' as const, id: `entity-${url}` }
       })
 
     const results = await Effect.runPromise(
-      resolveMusicEntityBatchEffect(['first', 'second', 'first'], resolve)
+      resolveMusicEntityBatchEffect(['first', 'second', 'first'], resolve),
     )
 
     expect(resolvedUrls).toEqual(['first', 'second'])
@@ -26,27 +29,28 @@ describe('resolveMusicEntityBatchEffect', () => {
         : Effect.succeed({ type: 'album' as const, id: `entity-${url}` })
 
     const results = await Effect.runPromise(
-      resolveMusicEntityBatchEffect(['first', 'broken', 'second'], resolve)
+      resolveMusicEntityBatchEffect(['first', 'broken', 'second'], resolve),
     )
 
     expect(results).toEqual([
       {
         status: 'resolved',
         url: 'first',
-        reference: { type: 'album', id: 'entity-first' }
+        reference: { type: 'album', id: 'entity-first' },
       },
       { status: 'failed', url: 'broken' },
       {
         status: 'resolved',
         url: 'second',
-        reference: { type: 'album', id: 'entity-second' }
-      }
+        reference: { type: 'album', id: 'entity-second' },
+      },
     ])
   })
 
   test('runs up to three resolutions concurrently', async () => {
     let active = 0
     let maximumActive = 0
+
     const resolve = (url: string) =>
       Effect.tryPromise({
         try: () =>
@@ -58,11 +62,11 @@ describe('resolveMusicEntityBatchEffect', () => {
               complete({ type: 'album', id: `entity-${url}` })
             }, 5)
           }),
-        catch: () => ({ _tag: 'UnexpectedResolutionFailure' as const })
+        catch: () => ({ _tag: 'UnexpectedResolutionFailure' as const }),
       })
 
     await Effect.runPromise(
-      resolveMusicEntityBatchEffect(['one', 'two', 'three', 'four', 'five'], resolve)
+      resolveMusicEntityBatchEffect(['one', 'two', 'three', 'four', 'five'], resolve),
     )
 
     expect(maximumActive).toBe(3)

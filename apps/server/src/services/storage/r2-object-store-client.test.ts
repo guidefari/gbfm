@@ -1,20 +1,23 @@
 import { Effect, Layer, Redacted } from 'effect'
 import { describe, expect, test } from 'vitest'
-import { createConfig, ConfigService } from '../config.service'
+
 import { withTestLayer } from '@/test/effect'
+
+import { createConfig, ConfigService } from '../config.service'
 import { ObjectStoreClient } from './object-store-client'
 import {
   R2ObjectStoreClientLayer,
   type R2BucketCapability,
-  type R2ObjectStoreBuckets
+  type R2ObjectStoreBuckets,
 } from './r2-object-store-client'
 
 const config = createConfig()
 
 const makeBucket = () => {
   const puts: Array<{ key: string; contentType: string }> = []
-  const deleted: string[] = []
+  const deleted: Array<string> = []
   const cursors: Array<string | undefined> = []
+
   const bucket: R2BucketCapability = {
     put: async (key, _body, options) => {
       puts.push({ key, contentType: options.httpMetadata.contentType })
@@ -26,49 +29,51 @@ const makeBucket = () => {
             key,
             size: 42,
             uploaded: new Date('2026-08-10T00:00:00.000Z'),
-            customMetadata: { source: 'test' }
+            customMetadata: { source: 'test' },
           },
     delete: async (key) => {
       deleted.push(key)
     },
     list: async (options) => {
       cursors.push(options?.cursor)
+
       return options?.cursor
         ? {
             objects: [
               {
                 key: 'prefix/second',
                 size: 2,
-                uploaded: new Date('2026-08-10T00:01:00.000Z')
-              }
+                uploaded: new Date('2026-08-10T00:01:00.000Z'),
+              },
             ],
-            truncated: false
+            truncated: false,
           }
         : {
             objects: [
               {
                 key: 'prefix/first',
                 size: 1,
-                uploaded: new Date('2026-08-10T00:00:00.000Z')
-              }
+                uploaded: new Date('2026-08-10T00:00:00.000Z'),
+              },
             ],
             truncated: true,
-            cursor: 'next-page'
+            cursor: 'next-page',
           }
     },
     createMultipartUpload: async () => ({ uploadId: 'upload-1' }),
     resumeMultipartUpload: () => ({
       uploadId: 'upload-1',
       complete: async () => {},
-      abort: async () => {}
-    })
+      abort: async () => {},
+    }),
   }
+
   return { bucket, puts, deleted, cursors }
 }
 
 const runWithStore = <A, E>(
   buckets: R2ObjectStoreBuckets,
-  effect: Effect.Effect<A, E, ObjectStoreClient>
+  effect: Effect.Effect<A, E, ObjectStoreClient>,
 ) => {
   const storage = {
     provider: 'r2' as const,
@@ -76,10 +81,12 @@ const runWithStore = <A, E>(
     endpoint: 'https://test-account.r2.cloudflarestorage.com',
     region: 'auto',
     accessKeyId: Redacted.make('test-access-key'),
-    secretAccessKey: Redacted.make('test-secret-key')
+    secretAccessKey: Redacted.make('test-secret-key'),
   }
+
   const configLayer = Layer.succeed(ConfigService, { ...config, storage })
   const storeLayer = R2ObjectStoreClientLayer(buckets).pipe(Layer.provide(configLayer))
+
   return Effect.runPromise(withTestLayer(effect, storeLayer))
 }
 
@@ -98,18 +105,22 @@ describe('R2ObjectStoreClientLayer', () => {
             bucketName: config.buckets.userContent,
             key: 'prefix/first',
             body: 'body',
-            contentType: 'text/plain'
-          })
+            contentType: 'text/plain',
+          }),
         )
+
         const metadata = yield* Effect.promise(() =>
-          store.headObject(config.buckets.userContent, 'prefix/first')
+          store.headObject(config.buckets.userContent, 'prefix/first'),
         )
+
         const objects = yield* Effect.promise(() =>
-          store.listObjects(config.buckets.userContent, 'prefix/')
+          store.listObjects(config.buckets.userContent, 'prefix/'),
         )
+
         yield* Effect.promise(() => store.deleteObject(config.buckets.userContent, 'prefix/first'))
+
         return { metadata, objects }
-      })
+      }),
     )
 
     expect(userContent.puts).toEqual([{ key: 'prefix/first', contentType: 'text/plain' }])

@@ -15,7 +15,9 @@ export const parseImageOptions = (url: URL): ImageOptions | null => {
   const format = url.searchParams.get('f') ?? 'webp'
 
   if (!Number.isInteger(width) || width < 1 || width > 2048) return null
+
   if (!Number.isInteger(quality) || quality < 1 || quality > 100) return null
+
   if (!isImageFormat(format)) return null
 
   return { width, quality, format }
@@ -24,7 +26,7 @@ export const parseImageOptions = (url: URL): ImageOptions | null => {
 const contentTypes = {
   avif: 'image/avif',
   webp: 'image/webp',
-  jpeg: 'image/jpeg'
+  jpeg: 'image/jpeg',
 } satisfies Record<ImageFormat, 'image/avif' | 'image/webp' | 'image/jpeg'>
 
 export const toContentType = (format: ImageFormat) => contentTypes[format]

@@ -4,6 +4,7 @@
   import type { NowPlaying } from './now-playing'
 
   let { player }: { player: NowPlaying } = $props()
+
   const controls = getPlayerContext()
 </script>
 

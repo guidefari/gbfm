@@ -6,7 +6,7 @@ import {
   parseArgs,
   printHeaders,
   separator,
-  API_URL
+  API_URL,
 } from './lib/common'
 
 const { GREEN, RED, CYAN, DIM, YELLOW, NC } = colors

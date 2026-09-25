@@ -1,6 +1,7 @@
 import { Slug } from '@gbfm/api/navigation'
 import { Schema } from 'effect'
 import { describe, expect, test } from 'vitest'
+
 import {
   confirmHead,
   expectedSlugFor,
@@ -15,7 +16,7 @@ import {
   shouldReconcileRoute,
   TRAIL_CAPACITY,
   trailNeighbours,
-  visitSlug
+  visitSlug,
 } from './tweet-nav-state'
 
 const asSlug = Schema.decodeUnknownSync(Slug)
@@ -31,8 +32,9 @@ describe('tweet nav head projection', () => {
 
     const confirmed = confirmHead(fresh.slug, {
       back: asSlug('alpha'),
-      forward: asSlug('gamma')
+      forward: asSlug('gamma'),
     })
+
     expect(expectedSlugFor(confirmed, 'back')).toBe('alpha')
     expect(expectedSlugFor(confirmed, 'forward')).toBe('gamma')
     expect(shouldReconcileRoute(expectedSlugFor(confirmed, 'forward'), 'gamma')).toBe(false)
@@ -51,7 +53,7 @@ describe('tweet nav head projection', () => {
     const head = {
       slug: asSlug('beta'),
       neighbours: { forward: asSlug('gamma') },
-      confirmed: false
+      confirmed: false,
     }
 
     expect(expectedSlugFor(head, 'forward')).toBe(undefined)
@@ -62,7 +64,7 @@ describe('neighbourhood derivation', () => {
   const baseResult = {
     destination: { slug: asSlug('beta'), postId: 'id-beta' },
     capabilities: optimisticCapabilities,
-    trailPosition: { index: 0, length: 1 }
+    trailPosition: { index: 0, length: 1 },
   }
 
   test('uses the deep neighbourhood when the server provides one', () => {
@@ -71,8 +73,8 @@ describe('neighbourhood derivation', () => {
       neighbours: { back: asSlug('alpha'), forward: asSlug('gamma') },
       neighbourhood: {
         back: [asSlug('alpha'), asSlug('zeta')],
-        forward: [asSlug('gamma'), asSlug('delta'), asSlug('epsilon')]
-      }
+        forward: [asSlug('gamma'), asSlug('delta'), asSlug('epsilon')],
+      },
     })
 
     expect(result.back).toEqual(['alpha', 'zeta'])
@@ -82,7 +84,7 @@ describe('neighbourhood derivation', () => {
   test('falls back to the shallow neighbours when the neighbourhood is absent', () => {
     const result = neighbourhoodOf({
       ...baseResult,
-      neighbours: { back: asSlug('alpha'), forward: asSlug('gamma') }
+      neighbours: { back: asSlug('alpha'), forward: asSlug('gamma') },
     })
 
     expect(result.back).toEqual(['alpha'])
@@ -99,7 +101,7 @@ describe('neighbourhood derivation', () => {
   test('preload targets are capped per direction and deduplicated', () => {
     const targets = preloadTargets(
       { back: ['alpha', 'zeta', 'eta', 'theta'], forward: ['gamma', 'delta', 'alpha'] },
-      3
+      3,
     )
 
     expect(targets).toEqual(['alpha', 'zeta', 'eta', 'gamma', 'delta'])
@@ -125,6 +127,7 @@ describe('local trail', () => {
 
   test('the trail is bounded to the capacity, dropping the oldest entries', () => {
     let trail = emptyTrail
+
     for (let index = 0; index < TRAIL_CAPACITY + 10; index += 1) {
       trail = visitSlug(trail, `slug-${index}`)
     }
@@ -157,7 +160,7 @@ describe('merging the server neighbourhood into the local trail', () => {
   test('a cold trail is seeded with the neighbourhood in both directions', () => {
     const trail = mergeNeighbourhoodIntoTrail(emptyTrail, 'beta', {
       back: ['alpha', 'zeta'],
-      forward: ['gamma', 'delta']
+      forward: ['gamma', 'delta'],
     })
 
     expect(trail.slugs).toEqual(['zeta', 'alpha', 'beta', 'gamma', 'delta'])
@@ -168,9 +171,10 @@ describe('merging the server neighbourhood into the local trail', () => {
 
   test('existing local history is preserved and only the open end is extended', () => {
     const walked = visitSlug(visitSlug(emptyTrail, 'alpha'), 'beta')
+
     const merged = mergeNeighbourhoodIntoTrail(walked, 'beta', {
       back: ['alpha'],
-      forward: ['gamma', 'delta']
+      forward: ['gamma', 'delta'],
     })
 
     expect(merged.slugs).toEqual(['alpha', 'beta', 'gamma', 'delta'])
@@ -180,9 +184,10 @@ describe('merging the server neighbourhood into the local trail', () => {
   test('slugs already in the trail are never duplicated by a merge', () => {
     const walked = visitSlug(visitSlug(visitSlug(emptyTrail, 'alpha'), 'beta'), 'gamma')
     const atAlpha = visitSlug(walked, 'alpha')
+
     const merged = mergeNeighbourhoodIntoTrail(atAlpha, 'alpha', {
       back: ['beta'],
-      forward: ['gamma']
+      forward: ['gamma'],
     })
 
     expect(merged.slugs).toEqual(['alpha', 'beta', 'gamma'])
@@ -198,12 +203,14 @@ describe('merging the server neighbourhood into the local trail', () => {
 
   test('the merged trail stays within capacity', () => {
     let trail = emptyTrail
+
     for (let index = 0; index < TRAIL_CAPACITY; index += 1) {
       trail = visitSlug(trail, `slug-${index}`)
     }
+
     const merged = mergeNeighbourhoodIntoTrail(trail, `slug-${TRAIL_CAPACITY - 1}`, {
       back: [],
-      forward: ['fresh-a', 'fresh-b', 'fresh-c']
+      forward: ['fresh-a', 'fresh-b', 'fresh-c'],
     })
 
     expect(merged.slugs.length).toBe(TRAIL_CAPACITY)

@@ -26,8 +26,8 @@ const makeLookup =
       catch: (error) =>
         new MDXCompileError({
           message: 'Failed to compile MDX content',
-          details: error instanceof Error ? error.message : String(error)
-        })
+          details: error instanceof Error ? error.message : String(error),
+        }),
     })
 
 const ttl = (exit: Exit.Exit<string, MDXCompileError>) =>
@@ -35,23 +35,24 @@ const ttl = (exit: Exit.Exit<string, MDXCompileError>) =>
 
 const defaultFn = (content: string): Promise<string> =>
   import('@mdx-js/mdx').then(({ compile }) =>
-    compile(content, { outputFormat: 'function-body' }).then((result) => result.toString())
+    compile(content, { outputFormat: 'function-body' }).then((result) => result.toString()),
   )
 
 const makeService = (fn: (content: string) => Promise<string>): Effect.Effect<MdxService> =>
   Effect.gen(function* () {
     const cache = yield* Cache.makeWith(makeLookup(fn), {
       capacity: 256,
-      timeToLive: ttl
+      timeToLive: ttl,
     })
+
     return MdxService.of({
       compile: (content) =>
         Cache.get(cache, content).pipe(
           Effect.withSpan('mdx.compile', {
-            attributes: { 'mdx.contentLength': content.length }
-          })
+            attributes: { 'mdx.contentLength': content.length },
+          }),
         ),
-      invalidateAll: Cache.invalidateAll(cache)
+      invalidateAll: Cache.invalidateAll(cache),
     })
   })
 
@@ -59,13 +60,13 @@ const makeService = (fn: (content: string) => Promise<string>): Effect.Effect<Md
 
 export const MdxServiceLayer: Layer.Layer<MdxService> = Layer.effect(
   MdxService,
-  makeService(defaultFn)
+  makeService(defaultFn),
 )
 
 // ── Test factory ──────────────────────────────────────────────────────────────
 
 export const makeMdxServiceTest = (
-  fn: (content: string) => Promise<string>
+  fn: (content: string) => Promise<string>,
 ): Layer.Layer<MdxService> => Layer.effect(MdxService, makeService(fn))
 
 // ── Backward-compat shim (for show, label, release, resolve services) ─────────
@@ -80,14 +81,14 @@ export interface MDXError {
 }
 
 export function isMDXCompilationResult(
-  result: MDXCompilationResult | MDXError
+  result: MDXCompilationResult | MDXError,
 ): result is MDXCompilationResult {
   return !('error' in result)
 }
 
 // Module-level cache shared by services that haven't migrated to MdxService
 const shimCache: Cache.Cache<string, string, MDXCompileError> = Effect.runSync(
-  Cache.makeWith(makeLookup(defaultFn), { capacity: 256, timeToLive: ttl })
+  Cache.makeWith(makeLookup(defaultFn), { capacity: 256, timeToLive: ttl }),
 )
 
 export async function compileMDX(mdxContent: string): Promise<MDXCompilationResult | MDXError> {
@@ -95,8 +96,8 @@ export async function compileMDX(mdxContent: string): Promise<MDXCompilationResu
     Cache.get(shimCache, mdxContent).pipe(
       Effect.map((compiled): MDXCompilationResult => ({ compiled })),
       Effect.catchTag('MDXCompileError', (e) =>
-        Effect.succeed<MDXError>({ error: e.message, details: e.details })
-      )
-    )
+        Effect.succeed<MDXError>({ error: e.message, details: e.details }),
+      ),
+    ),
   )
 }

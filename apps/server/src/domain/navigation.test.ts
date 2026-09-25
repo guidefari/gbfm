@@ -1,13 +1,16 @@
 import { Option, Result, Schema } from 'effect'
 import { describe, expect, test } from 'vitest'
+
 import {
   applyCommand,
   capabilitiesOf,
-  type NavigationCommand,
+  NavigationCommand,
+  NavigationIdentity,
+  NoSuchMove,
   type NavigationSession,
   type ResolvedDestination,
   Slug,
-  type TrailEntry
+  type TrailEntry,
 } from './navigation'
 
 const slug = (value: string) => Schema.decodeUnknownSync(Slug)(value)
@@ -15,24 +18,24 @@ const slug = (value: string) => Schema.decodeUnknownSync(Slug)(value)
 const destination = (value: string, visitedAt = 1): ResolvedDestination => ({
   slug: slug(value),
   postId: `${value}-id`,
-  visitedAt
+  visitedAt,
 })
 
 const entry = (value: string, visitedAt = 1): TrailEntry => ({
   ...destination(value, visitedAt),
-  arrivedBy: 'Open'
+  arrivedBy: 'Open',
 })
 
 const session = (
-  trail: readonly TrailEntry[],
+  trail: ReadonlyArray<TrailEntry>,
   cursor: number,
-  seenSlugs = new Set(trail.map((trailEntry) => trailEntry.slug))
+  seenSlugs = new Set(trail.map((trailEntry) => trailEntry.slug)),
 ): NavigationSession => ({
   id: 'session-id',
-  identity: { _tag: 'Anonymous', deviceToken: 'device-token' },
+  identity: NavigationIdentity.Anonymous({ deviceToken: 'device-token' }),
   trail,
   cursor,
-  seenSlugs
+  seenSlugs,
 })
 
 const succeeds = <Value>(result: Result.Result<Value, unknown>): Value => {
@@ -47,25 +50,22 @@ describe('applyCommand', () => {
   test('rejects Step(Back) at the start of the trail', () => {
     const result = applyCommand(
       session([entry('first')], 0),
-      { _tag: 'Step', direction: 'Back' },
-      Option.none()
+      NavigationCommand.Step({ direction: 'Back' }),
+      Option.none(),
     )
 
     if (Result.isSuccess(result)) {
       throw new Error('Step(Back) unexpectedly succeeded')
     }
 
-    expect(result.failure).toMatchObject({
-      _tag: 'NoSuchMove',
-      command: 'Step(Back)'
-    })
+    expect(result.failure).toMatchObject(new NoSuchMove({ command: 'Step(Back)' }))
   })
 
   test('replays Step(Back) without changing the trail', () => {
     const original = session([entry('first'), entry('second'), entry('third')], 2)
 
     const updated = succeeds(
-      applyCommand(original, { _tag: 'Step', direction: 'Back' }, Option.none())
+      applyCommand(original, NavigationCommand.Step({ direction: 'Back' }), Option.none()),
     )
 
     expect(updated.cursor).toBe(1)
@@ -74,12 +74,13 @@ describe('applyCommand', () => {
 
   test('replays Step(Forward) after Step(Back)', () => {
     const original = session([entry('first'), entry('second'), entry('third')], 2)
+
     const rewound = succeeds(
-      applyCommand(original, { _tag: 'Step', direction: 'Back' }, Option.none())
+      applyCommand(original, NavigationCommand.Step({ direction: 'Back' }), Option.none()),
     )
 
     const replayed = succeeds(
-      applyCommand(rewound, { _tag: 'Step', direction: 'Forward' }, Option.none())
+      applyCommand(rewound, NavigationCommand.Step({ direction: 'Forward' }), Option.none()),
     )
 
     expect(replayed.cursor).toBe(2)
@@ -89,18 +90,23 @@ describe('applyCommand', () => {
   test('replays Step(Forward) from a rewound cursor without appending', () => {
     const original = session(
       [entry('first'), entry('second'), entry('third'), entry('fourth'), entry('fifth')],
-      4
+      4,
     )
+
     const once = succeeds(
-      applyCommand(original, { _tag: 'Step', direction: 'Back' }, Option.none())
+      applyCommand(original, NavigationCommand.Step({ direction: 'Back' }), Option.none()),
     )
-    const twice = succeeds(applyCommand(once, { _tag: 'Step', direction: 'Back' }, Option.none()))
+
+    const twice = succeeds(
+      applyCommand(once, NavigationCommand.Step({ direction: 'Back' }), Option.none()),
+    )
+
     const rewound = succeeds(
-      applyCommand(twice, { _tag: 'Step', direction: 'Back' }, Option.none())
+      applyCommand(twice, NavigationCommand.Step({ direction: 'Back' }), Option.none()),
     )
 
     const replayed = succeeds(
-      applyCommand(rewound, { _tag: 'Step', direction: 'Forward' }, Option.none())
+      applyCommand(rewound, NavigationCommand.Step({ direction: 'Forward' }), Option.none()),
     )
 
     expect(replayed.cursor).toBe(2)
@@ -111,9 +117,9 @@ describe('applyCommand', () => {
     const updated = succeeds(
       applyCommand(
         session([], 0),
-        { _tag: 'Open', slug: slug('first') },
-        Option.some(destination('first'))
-      )
+        NavigationCommand.Open({ slug: slug('first') }),
+        Option.some(destination('first')),
+      ),
     )
 
     expect(updated.trail).toStrictEqual([{ ...entry('first'), arrivedBy: 'Open' }])
@@ -126,9 +132,9 @@ describe('applyCommand', () => {
     const updated = succeeds(
       applyCommand(
         original,
-        { _tag: 'Open', slug: slug('first') },
-        Option.some(destination('first'))
-      )
+        NavigationCommand.Open({ slug: slug('first') }),
+        Option.some(destination('first')),
+      ),
     )
 
     expect(updated.cursor).toBe(0)
@@ -137,15 +143,17 @@ describe('applyCommand', () => {
 
   test('appends Step(Forward) and Jump at the end of the trail', () => {
     const original = session([entry('first')], 0)
+
     const forward = succeeds(
       applyCommand(
         original,
-        { _tag: 'Step', direction: 'Forward' },
-        Option.some(destination('second'))
-      )
+        NavigationCommand.Step({ direction: 'Forward' }),
+        Option.some(destination('second')),
+      ),
     )
+
     const jumped = succeeds(
-      applyCommand(original, { _tag: 'Jump' }, Option.some(destination('third')))
+      applyCommand(original, NavigationCommand.Jump(), Option.some(destination('third'))),
     )
 
     expect(forward.trail).toStrictEqual([entry('first'), { ...entry('second'), arrivedBy: 'Step' }])
@@ -156,12 +164,18 @@ describe('applyCommand', () => {
 
   test('never appends a slug already in the trail', () => {
     const original = session([entry('first')], 0, new Set())
+
     const forward = applyCommand(
       original,
-      { _tag: 'Step', direction: 'Forward' },
-      Option.some(destination('first'))
+      NavigationCommand.Step({ direction: 'Forward' }),
+      Option.some(destination('first')),
     )
-    const jumped = applyCommand(original, { _tag: 'Jump' }, Option.some(destination('first')))
+
+    const jumped = applyCommand(
+      original,
+      NavigationCommand.Jump(),
+      Option.some(destination('first')),
+    )
 
     expect(Result.isFailure(forward)).toBe(true)
     expect(Result.isFailure(jumped)).toBe(true)
@@ -169,20 +183,21 @@ describe('applyCommand', () => {
 
   test('appends an Open of a seen slug after it was evicted from the trail', () => {
     const fullTrail = Array.from({ length: 500 }, (_, index) => entry(`tweet-${index}`, index))
+
     const evicted = succeeds(
       applyCommand(
         session(fullTrail, 499),
-        { _tag: 'Step', direction: 'Forward' },
-        Option.some(destination('tweet-500', 500))
-      )
+        NavigationCommand.Step({ direction: 'Forward' }),
+        Option.some(destination('tweet-500', 500)),
+      ),
     )
 
     const reopened = succeeds(
       applyCommand(
         evicted,
-        { _tag: 'Open', slug: slug('tweet-0') },
-        Option.some(destination('tweet-0', 501))
-      )
+        NavigationCommand.Open({ slug: slug('tweet-0') }),
+        Option.some(destination('tweet-0', 501)),
+      ),
     )
 
     expect(reopened.trail).toHaveLength(500)
@@ -199,19 +214,21 @@ describe('applyCommand', () => {
     const updated = succeeds(
       applyCommand(
         original,
-        { _tag: 'Step', direction: 'Forward' },
-        Option.some(destination('tweet-500', 500))
-      )
+        NavigationCommand.Step({ direction: 'Forward' }),
+        Option.some(destination('tweet-500', 500)),
+      ),
     )
+
     const repeatedForward = applyCommand(
       updated,
-      { _tag: 'Step', direction: 'Forward' },
-      Option.some(destination('tweet-0', 501))
+      NavigationCommand.Step({ direction: 'Forward' }),
+      Option.some(destination('tweet-0', 501)),
     )
+
     const repeatedJump = applyCommand(
       updated,
-      { _tag: 'Jump' },
-      Option.some(destination('tweet-0', 501))
+      NavigationCommand.Jump(),
+      Option.some(destination('tweet-0', 501)),
     )
 
     expect(updated.trail).toHaveLength(500)
@@ -229,11 +246,11 @@ describe('capabilitiesOf', () => {
 
   test('allows Step(Forward) while the trail has an entry ahead', () => {
     expect(
-      capabilitiesOf(original.cursor, original.trail.length, { hasUnread: false })
+      capabilitiesOf(original.cursor, original.trail.length, { hasUnread: false }),
     ).toStrictEqual({
       canStepBack: false,
       canStepForward: true,
-      hasUnread: false
+      hasUnread: false,
     })
   })
 
@@ -241,7 +258,7 @@ describe('capabilitiesOf', () => {
     expect(capabilitiesOf(1, original.trail.length, { hasUnread: true })).toStrictEqual({
       canStepBack: true,
       canStepForward: true,
-      hasUnread: true
+      hasUnread: true,
     })
   })
 
@@ -249,7 +266,7 @@ describe('capabilitiesOf', () => {
     expect(capabilitiesOf(1, original.trail.length, { hasUnread: false })).toStrictEqual({
       canStepBack: true,
       canStepForward: false,
-      hasUnread: false
+      hasUnread: false,
     })
   })
 })

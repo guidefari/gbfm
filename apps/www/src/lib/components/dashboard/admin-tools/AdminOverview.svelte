@@ -4,12 +4,17 @@
   import { dashboardJson } from '../api'
 
   let { compact = false }: { compact?: boolean } = $props()
+
   type Overview = typeof AdminOverviewResponse.Type
+
   let overview = $state<Overview>()
+
   let error = $state('')
 
   const count = (value: number) => new Intl.NumberFormat('en-US').format(value)
+
   const date = (value: string) => new Date(value).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+
   const breakdowns = (value: Overview) => [
     ['Mixes', value.publishing.mixes], ['Tracks', value.publishing.tracks], ['Shows', value.publishing.shows],
     ['Posts', value.publishing.posts], ['Micros', value.publishing.micros], ['Labels', value.publishing.labels],

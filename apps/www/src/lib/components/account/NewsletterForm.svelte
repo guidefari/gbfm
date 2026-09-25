@@ -1,7 +1,10 @@
 <script lang="ts">
   let { mode, token }: { mode: 'subscribe' | 'unsubscribe'; token?: string } = $props()
+
   let pending = $state(false)
+
   let complete = $state(false)
+
   let error = $state('')
 
   async function request(payload: Record<string, string>) {
@@ -10,7 +13,11 @@
     const path = mode === 'subscribe' ? '/api/newsletter/subscribe' : token ? '/api/newsletter/unsubscribe' : '/api/newsletter/request-unsubscribe'
     const response = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
     pending = false
-    if (!response.ok) { error = 'Something went wrong. Please try again.'; return }
+
+    if (!response.ok) { error = 'Something went wrong. Please try again.';
+
+ return }
+
     complete = true
   }
 

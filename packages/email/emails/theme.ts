@@ -4,13 +4,13 @@ export const emailTheme = {
   typography: {
     sans: typography.fontSans,
     sansAlt: typography.fontSans,
-    mono: 'monospace'
+    mono: 'monospace',
   },
   radius: {
     sm: '4px',
     md: '6px',
     lg: '12px',
-    pill: '30px'
+    pill: '30px',
   },
   colors: {
     brand: {
@@ -23,11 +23,11 @@ export const emailTheme = {
       textSecondary: light.foreground,
       textTertiary: brand['pastel-green-2'],
       textInverse: light.primaryForeground,
-      white: '#ffffff'
+      white: '#ffffff',
     },
     status: {
       failureContainer: '#fde8e8',
-      failureSurface: '#f87171'
+      failureSurface: '#f87171',
     },
     mono: {
       page: light.background,
@@ -37,7 +37,7 @@ export const emailTheme = {
       textMuted: light.mutedForeground,
       textSecondary: light.foreground,
       textPrimary: light.primary,
-      textTertiary: brand['pastel-green-2']
-    }
-  }
+      textTertiary: brand['pastel-green-2'],
+    },
+  },
 } as const

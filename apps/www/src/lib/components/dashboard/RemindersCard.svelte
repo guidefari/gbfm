@@ -3,9 +3,13 @@
   import { Bell, Plus } from 'lucide-svelte'
 
   type Reminder = typeof GetMusicRemindersResponse.Type.reminders[number]
+
   let { reminders, error = null }: { reminders: ReadonlyArray<Reminder>; error?: string | null } = $props()
+
   const upcoming = $derived(reminders.filter((item) => !item.isSent).toSorted((a, b) => Date.parse(a.reminderDate) - Date.parse(b.reminderDate)))
+
   const recent = $derived(reminders.filter((item) => item.isSent).toSorted((a, b) => Date.parse(b.reminderDate) - Date.parse(a.reminderDate)))
+
   const sections = $derived([
     { label: 'Upcoming', reminders: upcoming.slice(0, 5) },
     { label: 'Recent', reminders: recent.slice(0, 4) }

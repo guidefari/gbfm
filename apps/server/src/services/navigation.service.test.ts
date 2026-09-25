@@ -1,52 +1,67 @@
-import type { D1Database, D1PreparedStatement } from '@cloudflare/workers-types'
 import { randomUUID } from 'node:crypto'
+
+import type { D1Database, D1PreparedStatement } from '@cloudflare/workers-types'
 import { eq, inArray, sql } from 'drizzle-orm'
 import { Effect, Layer, ManagedRuntime, Schema } from 'effect'
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest'
+
 import { DatabaseLayer } from '@/db/layer'
-import { DatabaseTestLayer, d1, db } from '@/test/database'
 import {
   navigationSeenPosts,
   navigationSessions,
-  navigationTrailEntries
+  navigationTrailEntries,
 } from '@/db/navigation.schema'
 import { postsTable } from '@/db/post.schema'
-import { CorpusExhausted, Slug } from '@/domain/navigation'
+import {
+  CorpusExhausted,
+  NavigationCommand,
+  NavigationIdentity,
+  NoSuchMove,
+  Slug,
+} from '@/domain/navigation'
 import { MdxServiceLayer } from '@/lib/mdx'
 import { ConfigServiceLayer } from '@/services/config.service'
 import {
   NavigationLock,
   NavigationLockLocalLayer,
-  type NavigationLockContract
+  type NavigationLockContract,
 } from '@/services/navigation-lock'
 import { PostServiceLayer } from '@/services/post.service'
 import { UploadAssetServiceLayer } from '@/services/upload-asset.service'
+import { DatabaseTestLayer, d1, db } from '@/test/database'
+
 import {
   NavigationSessionService,
   NavigationSessionServiceLayer,
-  type IntentToken
+  type IntentToken,
 } from './navigation.service'
 
 const slug = Schema.decodeUnknownSync(Slug)
+
 const prefix = `navigation-service-${randomUUID().slice(0, 8)}`
-const postIds: string[] = []
-const sessionIds: string[] = []
-const readerTokens: string[] = []
+
+const postIds: Array<string> = []
+
+const sessionIds: Array<string> = []
+
+const readerTokens: Array<string> = []
 
 const postLayer = PostServiceLayer.pipe(
   Layer.provide(MdxServiceLayer),
-  Layer.provide(Layer.mergeAll(ConfigServiceLayer, UploadAssetServiceLayer))
+  Layer.provide(Layer.mergeAll(ConfigServiceLayer, UploadAssetServiceLayer)),
 )
+
 const navigationLayer = NavigationSessionServiceLayer.pipe(
   Layer.provide(postLayer),
   Layer.provide(DatabaseTestLayer),
-  Layer.provide(NavigationLockLocalLayer)
+  Layer.provide(NavigationLockLocalLayer),
 )
+
 const navigationRuntime = ManagedRuntime.make(navigationLayer)
 
 const withLock = async (
   decorate: (lock: NavigationLockContract) => NavigationLockContract,
-  run: (runtime: typeof navigationRuntime) => Promise<void>
+  run: (runtime: typeof navigationRuntime) => Promise<void>,
 ) => {
   const runtime = ManagedRuntime.make(
     NavigationSessionServiceLayer.pipe(
@@ -54,11 +69,12 @@ const withLock = async (
       Layer.provide(DatabaseTestLayer),
       Layer.provide(
         Layer.effect(NavigationLock, Effect.map(NavigationLock, decorate)).pipe(
-          Layer.provide(NavigationLockLocalLayer)
-        )
-      )
-    )
+          Layer.provide(NavigationLockLocalLayer),
+        ),
+      ),
+    ),
   )
+
   try {
     await run(runtime)
   } finally {
@@ -68,46 +84,73 @@ const withLock = async (
 
 let roundTrips = 0
 
-const countedMethods = ['all', 'run', 'first', 'raw'] as const
-
 const countStatement = (statement: D1PreparedStatement): D1PreparedStatement =>
   new Proxy(statement, {
-    get: (target, key: string | symbol) => {
+    get: (target, key: keyof D1PreparedStatement) => {
       if (key === 'bind') {
-        return (...values: readonly unknown[]) => countStatement(target.bind(...values))
+        return (...values: ReadonlyArray<unknown>) => countStatement(target.bind(...values))
       }
-      const isCounted = countedMethods.some((method) => method === key)
-      if (isCounted) {
-        return async (...args: readonly unknown[]) => {
+
+      if (key === 'all') {
+        return async (...args: Parameters<typeof target.all>) => {
           roundTrips += 1
-          return Reflect.apply(Reflect.get(target, key), target, args)
+
+          return target.all(...args)
         }
       }
-      return Reflect.get(target, key, target)
-    }
+
+      if (key === 'run') {
+        return async () => {
+          roundTrips += 1
+
+          return target.run()
+        }
+      }
+
+      if (key === 'first') {
+        return async (...args: Parameters<typeof target.first>) => {
+          roundTrips += 1
+
+          return target.first(...args)
+        }
+      }
+
+      if (key === 'raw') {
+        return async (...args: Parameters<typeof target.raw>) => {
+          roundTrips += 1
+
+          return target.raw(...args)
+        }
+      }
+
+      return target[key]
+    },
   })
 
 const countingD1: D1Database = new Proxy(d1, {
-  get: (target, key: string | symbol) => {
+  get: (target, key: keyof D1Database) => {
     if (key === 'prepare') {
       return (query: string) => countStatement(target.prepare(query))
     }
+
     if (key === 'batch') {
-      return async (statements: readonly D1PreparedStatement[]) => {
+      return async (statements: ReadonlyArray<D1PreparedStatement>) => {
         roundTrips += 1
+
         return target.batch([...statements])
       }
     }
-    return Reflect.get(target, key, target)
-  }
+
+    return target[key]
+  },
 })
 
 const countingRuntime = ManagedRuntime.make(
   NavigationSessionServiceLayer.pipe(
     Layer.provide(postLayer),
     Layer.provide(DatabaseLayer(countingD1)),
-    Layer.provide(NavigationLockLocalLayer)
-  )
+    Layer.provide(NavigationLockLocalLayer),
+  ),
 )
 
 const peek = (
@@ -116,10 +159,11 @@ const peek = (
     | { readonly _tag: 'Step'; readonly direction: 'Back' | 'Forward' }
     | { readonly _tag: 'Jump' }
     | { readonly _tag: 'Open'; readonly slug: Slug },
-  from: Slug
+  from: Slug,
 ) =>
   Effect.gen(function* () {
     const navigation = yield* NavigationSessionService
+
     return yield* navigation.peek(identity, command, from)
   })
 
@@ -130,16 +174,18 @@ const record = (
     | { readonly _tag: 'Jump' }
     | { readonly _tag: 'Open'; readonly slug: Slug },
   from: Slug,
-  intentToken: IntentToken
+  intentToken: IntentToken,
 ) =>
   Effect.gen(function* () {
     const navigation = yield* NavigationSessionService
+
     return yield* navigation.record(identity, command, from, intentToken)
   })
 
 const read = (identity: { readonly _tag: 'Anonymous'; readonly deviceToken: string }) =>
   Effect.gen(function* () {
     const navigation = yield* NavigationSessionService
+
     return yield* navigation.read(identity)
   })
 
@@ -150,10 +196,11 @@ const resolve = (
     | { readonly _tag: 'Jump' }
     | { readonly _tag: 'Open'; readonly slug: Slug },
   from: Slug,
-  intentToken: IntentToken
+  intentToken: IntentToken,
 ) =>
   Effect.gen(function* () {
     const navigation = yield* NavigationSessionService
+
     return yield* navigation.resolve(identity, command, from, intentToken)
   })
 
@@ -168,15 +215,17 @@ const createPost = async (name: string, createdAt: Date) => {
     content: name,
     type: 'micro',
     createdAt,
-    updatedAt: createdAt
+    updatedAt: createdAt,
   })
+
   return { id, slug: value }
 }
 
 const identity = () => {
   const deviceToken = randomUUID()
   readerTokens.push(deviceToken)
-  return { _tag: 'Anonymous' as const, deviceToken }
+
+  return NavigationIdentity.Anonymous({ deviceToken })
 }
 
 const sessionFor = async (deviceToken: string) => {
@@ -185,15 +234,18 @@ const sessionFor = async (deviceToken: string) => {
     .from(navigationSessions)
     .where(eq(navigationSessions.deviceToken, deviceToken))
     .limit(1)
+
   const session = rows[0]
+
   if (!session) throw new Error('Expected navigation session')
   sessionIds.push(session.id)
+
   return session
 }
 
 const open = (reader: ReturnType<typeof identity>, post: { readonly slug: Slug }) =>
   navigationRuntime.runPromise(
-    resolve(reader, { _tag: 'Open', slug: post.slug }, post.slug, randomUUID())
+    resolve(reader, NavigationCommand.Open({ slug: post.slug }), post.slug, randomUUID()),
   )
 
 beforeAll(async () => {
@@ -211,7 +263,9 @@ afterEach(async () => {
       .delete(navigationSessions)
       .where(inArray(navigationSessions.deviceToken, readerTokens.splice(0)))
   }
+
   sessionIds.splice(0)
+
   if (postIds.length > 0) {
     await db.delete(postsTable).where(inArray(postsTable.id, postIds.splice(0)))
   }
@@ -229,9 +283,9 @@ describe('NavigationSessionService', () => {
     const results = await Promise.all(
       [0, 1].map(() =>
         navigationRuntime.runPromise(
-          resolve(reader, { _tag: 'Step', direction: 'Forward' }, first.slug, token)
-        )
-      )
+          resolve(reader, NavigationCommand.Step({ direction: 'Forward' }), first.slug, token),
+        ),
+      ),
     )
 
     expect(results[0]).toEqual(results[1])
@@ -243,7 +297,7 @@ describe('NavigationSessionService', () => {
       await db
         .select()
         .from(navigationTrailEntries)
-        .where(eq(navigationTrailEntries.sessionId, session.id))
+        .where(eq(navigationTrailEntries.sessionId, session.id)),
     ).toHaveLength(2)
     expect((await navigationRuntime.runPromise(read(reader))).slug).toBe(second.slug)
   })
@@ -261,24 +315,27 @@ describe('NavigationSessionService', () => {
     const results = await Promise.all(
       [0, 1].map(() =>
         navigationRuntime.runPromise(
-          resolve(reader, { _tag: 'Step', direction: 'Back' }, last.slug, randomUUID())
-        )
-      )
+          resolve(reader, NavigationCommand.Step({ direction: 'Back' }), last.slug, randomUUID()),
+        ),
+      ),
     )
+
     expect(results.map((result) => result.destination.slug).toSorted()).toEqual(
-      [first.slug, middle.slug].toSorted()
+      [first.slug, middle.slug].toSorted(),
     )
     expect((await navigationRuntime.runPromise(read(reader))).slug).toBe(first.slug)
 
     await navigationRuntime.runPromise(
-      resolve(reader, { _tag: 'Step', direction: 'Forward' }, first.slug, randomUUID())
+      resolve(reader, NavigationCommand.Step({ direction: 'Forward' }), first.slug, randomUUID()),
     )
     await navigationRuntime.runPromise(
-      resolve(reader, { _tag: 'Step', direction: 'Forward' }, middle.slug, randomUUID())
+      resolve(reader, NavigationCommand.Step({ direction: 'Forward' }), middle.slug, randomUUID()),
     )
+
     const appended = await navigationRuntime.runPromise(
-      resolve(reader, { _tag: 'Step', direction: 'Forward' }, last.slug, randomUUID())
+      resolve(reader, NavigationCommand.Step({ direction: 'Forward' }), last.slug, randomUUID()),
     )
+
     expect(appended.destination.slug).toBe(unread.slug)
     expect(appended.trailPosition).toEqual({ index: 3, length: 4 })
   })
@@ -293,21 +350,22 @@ describe('NavigationSessionService', () => {
         decide: () =>
           Effect.sync(() => {
             decisions += 1
+
             return { _tag: 'Retry' as const }
-          })
+          }),
       }),
       async (runtime) => {
         await expect(
           runtime.runPromise(
-            resolve(reader, { _tag: 'Open', slug: post.slug }, post.slug, randomUUID())
-          )
-        ).rejects.toMatchObject({ _tag: 'NoSuchMove', command: 'Open' })
+            resolve(reader, NavigationCommand.Open({ slug: post.slug }), post.slug, randomUUID()),
+          ),
+        ).rejects.toMatchObject(new NoSuchMove({ command: 'Open' }))
         expect(decisions).toBe(6)
         expect(await runtime.runPromise(read(reader))).toEqual({
           slug: null,
-          capabilities: { canStepBack: false, canStepForward: false, hasUnread: false }
+          capabilities: { canStepBack: false, canStepForward: false, hasUnread: false },
         })
-      }
+      },
     )
   })
 
@@ -329,36 +387,48 @@ describe('NavigationSessionService', () => {
                     removeDestination = false
                     await db.delete(postsTable).where(eq(postsTable.id, deleted.id))
                   })
-                : Effect.void
-            )
+                : Effect.void,
+            ),
           ),
         reset: (identity) =>
           lock.reset(identity).pipe(
             Effect.tap(() =>
               Effect.sync(() => {
                 resets += 1
-              })
-            )
-          )
+              }),
+            ),
+          ),
       }),
       async (runtime) => {
         await runtime.runPromise(
-          resolve(reader, { _tag: 'Open', slug: first.slug }, first.slug, randomUUID())
+          resolve(reader, NavigationCommand.Open({ slug: first.slug }), first.slug, randomUUID()),
         )
         removeDestination = true
         await expect(
           runtime.runPromise(
-            resolve(reader, { _tag: 'Step', direction: 'Forward' }, first.slug, randomUUID())
-          )
-        ).rejects.toMatchObject({ _tag: 'DatabaseError', operation: 'write' })
+            resolve(
+              reader,
+              NavigationCommand.Step({ direction: 'Forward' }),
+              first.slug,
+              randomUUID(),
+            ),
+          ),
+        ).rejects.toMatchObject({ operation: 'write' })
         expect(resets).toBe(1)
         expect((await runtime.runPromise(read(reader))).slug).toBe(first.slug)
+
         const result = await runtime.runPromise(
-          resolve(reader, { _tag: 'Step', direction: 'Forward' }, first.slug, randomUUID())
+          resolve(
+            reader,
+            NavigationCommand.Step({ direction: 'Forward' }),
+            first.slug,
+            randomUUID(),
+          ),
         )
+
         expect(result.destination.slug).toBe(next.slug)
         expect(result.trailPosition).toEqual({ index: 1, length: 2 })
-      }
+      },
     )
   })
 
@@ -366,9 +436,11 @@ describe('NavigationSessionService', () => {
     const first = await createPost('initial-first', new Date('2026-01-02T00:00:00.000Z'))
     const next = await createPost('initial-next', new Date('2026-01-01T00:00:00.000Z'))
     const reader = identity()
+
     const preview = await navigationRuntime.runPromise(
-      peek(reader, { _tag: 'Open', slug: first.slug }, first.slug)
+      peek(reader, NavigationCommand.Open({ slug: first.slug }), first.slug),
     )
+
     expect((await navigationRuntime.runPromise(read(reader))).slug).toBeNull()
     expect(preview.trailPosition).toEqual({ index: 0, length: 1 })
     expect(preview.neighbourhood).toEqual({ back: [], forward: [next.slug] })
@@ -384,24 +456,27 @@ describe('NavigationSessionService', () => {
     await open(reader, newest)
 
     const back = await navigationRuntime.runPromise(
-      peek(reader, { _tag: 'Step', direction: 'Back' }, newest.slug)
+      peek(reader, NavigationCommand.Step({ direction: 'Back' }), newest.slug),
     )
+
     const fastOpen = await navigationRuntime.runPromise(
-      peek(reader, { _tag: 'Open', slug: oldest.slug }, newest.slug)
+      peek(reader, NavigationCommand.Open({ slug: oldest.slug }), newest.slug),
     )
+
     expect(fastOpen).toEqual(back)
     expect(back.neighbourhood.forward).toEqual([newest.slug, unread.slug])
     expect(back.capabilities.hasUnread).toBe(true)
     expect((await navigationRuntime.runPromise(read(reader))).slug).toBe(newest.slug)
 
     const replay = await navigationRuntime.runPromise(
-      resolve(reader, { _tag: 'Step', direction: 'Back' }, newest.slug, randomUUID())
+      resolve(reader, NavigationCommand.Step({ direction: 'Back' }), newest.slug, randomUUID()),
     )
+
     expect(replay.neighbourhood.forward).toEqual([newest.slug])
     expect(replay.capabilities).toEqual({
       canStepBack: false,
       canStepForward: true,
-      hasUnread: false
+      hasUnread: false,
     })
     expect(replay.trailPosition).toEqual(back.trailPosition)
   })
@@ -418,7 +493,7 @@ describe('NavigationSessionService', () => {
       Effect.gen(function* () {
         const navigation = yield* NavigationSessionService
         yield* navigation.reset(reader)
-      })
+      }),
     )
     expect((await navigationRuntime.runPromise(read(reader))).slug).toBeNull()
     expect((await navigationRuntime.runPromise(read(other))).slug).toBe(next.slug)
@@ -434,18 +509,20 @@ describe('NavigationSessionService', () => {
     const reader = identity()
 
     await open(reader, first)
+
     const results = await Promise.all([
       navigationRuntime.runPromise(
-        resolve(reader, { _tag: 'Step', direction: 'Forward' }, first.slug, randomUUID())
+        resolve(reader, NavigationCommand.Step({ direction: 'Forward' }), first.slug, randomUUID()),
       ),
       navigationRuntime.runPromise(
-        resolve(reader, { _tag: 'Step', direction: 'Forward' }, first.slug, randomUUID())
-      )
+        resolve(reader, NavigationCommand.Step({ direction: 'Forward' }), first.slug, randomUUID()),
+      ),
     ])
+
     const session = await sessionFor(reader.deviceToken)
 
     expect(results.map((result) => result.destination.slug).toSorted()).toEqual(
-      [second.slug, third.slug].toSorted()
+      [second.slug, third.slug].toSorted(),
     )
     expect(session.cursor).toBe(2)
   })
@@ -462,7 +539,7 @@ describe('NavigationSessionService', () => {
     await db.delete(postsTable).where(eq(postsTable.id, deleted.id))
 
     const result = await navigationRuntime.runPromise(
-      resolve(reader, { _tag: 'Step', direction: 'Back' }, last.slug, randomUUID())
+      resolve(reader, NavigationCommand.Step({ direction: 'Back' }), last.slug, randomUUID()),
     )
 
     expect(result.destination.slug).toBe(first.slug)
@@ -481,7 +558,7 @@ describe('NavigationSessionService', () => {
     await db.update(postsTable).set({ draft: true }).where(eq(postsTable.id, drafted.id))
 
     const result = await navigationRuntime.runPromise(
-      resolve(reader, { _tag: 'Step', direction: 'Back' }, last.slug, randomUUID())
+      resolve(reader, NavigationCommand.Step({ direction: 'Back' }), last.slug, randomUUID()),
     )
 
     expect(result.destination.slug).toBe(first.slug)
@@ -496,7 +573,7 @@ describe('NavigationSessionService', () => {
 
     await expect(navigationRuntime.runPromise(read(reader))).resolves.toEqual({
       slug: only.slug,
-      capabilities: { canStepBack: false, canStepForward: false, hasUnread: false }
+      capabilities: { canStepBack: false, canStepForward: false, hasUnread: false },
     })
   })
 
@@ -517,7 +594,7 @@ describe('NavigationSessionService', () => {
 
     await expect(navigationRuntime.runPromise(read(reader))).resolves.toMatchObject({
       slug: middle.slug,
-      capabilities: { canStepBack: true }
+      capabilities: { canStepBack: true },
     })
   })
 
@@ -530,11 +607,13 @@ describe('NavigationSessionService', () => {
 
     await expect(
       navigationRuntime.runPromise(
-        resolve(reader, { _tag: 'Step', direction: 'Forward' }, only.slug, randomUUID())
-      )
+        resolve(reader, NavigationCommand.Step({ direction: 'Forward' }), only.slug, randomUUID()),
+      ),
     ).rejects.toBeInstanceOf(CorpusExhausted)
     await expect(
-      navigationRuntime.runPromise(resolve(reader, { _tag: 'Jump' }, only.slug, randomUUID()))
+      navigationRuntime.runPromise(
+        resolve(reader, NavigationCommand.Jump(), only.slug, randomUUID()),
+      ),
     ).rejects.toBeInstanceOf(CorpusExhausted)
 
     const seen = await db
@@ -555,8 +634,9 @@ describe('NavigationSessionService', () => {
     const before = await sessionFor(reader.deviceToken)
 
     const result = await navigationRuntime.runPromise(
-      resolve(reader, { _tag: 'Step', direction: 'Back' }, last.slug, randomUUID())
+      resolve(reader, NavigationCommand.Step({ direction: 'Back' }), last.slug, randomUUID()),
     )
+
     const after = await sessionFor(reader.deviceToken)
 
     expect(result.destination.slug).toBe(first.slug)
@@ -570,16 +650,18 @@ describe('NavigationSessionService', () => {
 
     await open(reader, first)
     const before = await sessionFor(reader.deviceToken)
+
     const trailBefore = await db
       .select()
       .from(navigationTrailEntries)
       .where(eq(navigationTrailEntries.sessionId, before.id))
 
     const peeked = await navigationRuntime.runPromise(
-      peek(reader, { _tag: 'Open', slug: first.slug }, first.slug)
+      peek(reader, NavigationCommand.Open({ slug: first.slug }), first.slug),
     )
 
     const after = await sessionFor(reader.deviceToken)
+
     const trailAfter = await db
       .select()
       .from(navigationTrailEntries)
@@ -601,10 +683,11 @@ describe('NavigationSessionService', () => {
     await open(reader, last)
 
     const peeked = await navigationRuntime.runPromise(
-      peek(reader, { _tag: 'Step', direction: 'Back' }, last.slug)
+      peek(reader, NavigationCommand.Step({ direction: 'Back' }), last.slug),
     )
+
     const resolved = await navigationRuntime.runPromise(
-      resolve(reader, { _tag: 'Step', direction: 'Back' }, last.slug, randomUUID())
+      resolve(reader, NavigationCommand.Step({ direction: 'Back' }), last.slug, randomUUID()),
     )
 
     expect(peeked.destination.slug).toBe(first.slug)
@@ -623,8 +706,9 @@ describe('NavigationSessionService', () => {
     const before = await sessionFor(reader.deviceToken)
 
     const peeked = await navigationRuntime.runPromise(
-      peek(reader, { _tag: 'Step', direction: 'Forward' }, first.slug)
+      peek(reader, NavigationCommand.Step({ direction: 'Forward' }), first.slug),
     )
+
     const seen = await db
       .select({ slug: navigationSeenPosts.slug })
       .from(navigationSeenPosts)
@@ -640,14 +724,17 @@ describe('NavigationSessionService', () => {
     const reader = identity()
 
     await open(reader, first)
+
     const peeked = await navigationRuntime.runPromise(
-      peek(reader, { _tag: 'Step', direction: 'Forward' }, first.slug)
+      peek(reader, NavigationCommand.Step({ direction: 'Forward' }), first.slug),
     )
+
     const outcome = await navigationRuntime.runPromise(
-      record(reader, { _tag: 'Step', direction: 'Forward' }, first.slug, randomUUID())
+      record(reader, NavigationCommand.Step({ direction: 'Forward' }), first.slug, randomUUID()),
     )
 
     const session = await sessionFor(reader.deviceToken)
+
     const seen = await db
       .select({ slug: navigationSeenPosts.slug })
       .from(navigationSeenPosts)
@@ -697,7 +784,7 @@ describe('NavigationSessionService', () => {
     await open(reader, first)
 
     const result = await navigationRuntime.runPromise(
-      resolve(reader, { _tag: 'Step', direction: 'Forward' }, first.slug, randomUUID())
+      resolve(reader, NavigationCommand.Step({ direction: 'Forward' }), first.slug, randomUUID()),
     )
 
     expect(result.destination.slug).toBe(second.slug)
@@ -711,8 +798,9 @@ describe('NavigationSessionService', () => {
     await open(reader, first)
 
     roundTrips = 0
+
     const result = await countingRuntime.runPromise(
-      peek(reader, { _tag: 'Open', slug: first.slug }, first.slug)
+      peek(reader, NavigationCommand.Open({ slug: first.slug }), first.slug),
     )
 
     expect(result.destination.slug).toBe(first.slug)

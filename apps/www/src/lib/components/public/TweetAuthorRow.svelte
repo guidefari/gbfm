@@ -8,11 +8,15 @@
   }: { creator: PublicRecord | null; createdAt: string; interactive?: boolean } = $props()
 
   const username = $derived(text(creator?.username))
+
   const name = $derived(text(creator?.name, 'goosebumps.fm'))
+
   const href = $derived(interactive && username ? `/profile/${username}` : undefined)
+
   const image = $derived(
     text(creator?.image, 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png')
   )
+
   const date = $derived(
     createdAt
       ? new Date(createdAt).toLocaleDateString('en-US', {

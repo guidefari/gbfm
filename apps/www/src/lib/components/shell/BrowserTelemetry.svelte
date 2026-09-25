@@ -11,6 +11,7 @@
 
   const send = (event: TelemetryEvent) => {
     const body = JSON.stringify(event)
+
     if (!navigator.sendBeacon('/telemetry/browser', body)) {
       void fetch('/telemetry/browser', {
         method: 'POST',
@@ -22,6 +23,7 @@
   }
 
   let startedAt = performance.now()
+
   afterNavigate(({ to }) => {
     send({
       kind: 'navigation',
@@ -43,10 +45,12 @@
         })
       }
     })
+
     observer.observe({ type: 'largest-contentful-paint', buffered: true })
 
     const reportError = () =>
       send({ kind: 'ui-error', name: 'uncaught-error', route: location.pathname })
+
     window.addEventListener('error', reportError)
     window.addEventListener('unhandledrejection', reportError)
 

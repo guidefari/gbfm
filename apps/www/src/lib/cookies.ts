@@ -5,8 +5,10 @@ export namespace Cookies {
     const cookies = document.cookie.split('; ').reduce((acc: Record<string, string>, cookie) => {
       const [k, v] = cookie.split('=')
       acc[k] = v
+
       return acc
     }, {})
+
     return cookies[key]
   }
 
@@ -20,24 +22,30 @@ export namespace Cookies {
       maxAge?: number
       sameSite?: 'lax' | 'strict' | 'none'
       httpOnly?: boolean
-    } = {}
+    } = {},
   ): void {
     let cookieString = `${encodeURIComponent(key)}=${encodeURIComponent(value)}`
+
     if (options.expires) {
       cookieString += `; expires=${options.expires.toUTCString()}`
     }
+
     if (options.path) {
       cookieString += `; path=${options.path}`
     }
+
     if (options.secure) {
       cookieString += '; secure'
     }
+
     if (options.maxAge) {
       cookieString += `; max-age=${options.maxAge}`
     }
+
     if (options.sameSite) {
       cookieString += `; sameSite=${options.sameSite}`
     }
+
     if (options.httpOnly) {
       cookieString += '; httpOnly'
     }

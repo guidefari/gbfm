@@ -8,9 +8,10 @@ import {
   // Img,
   Preview,
   Section,
-  Text
+  Text,
 } from '@react-email/components'
 import type * as React from 'react'
+
 import { EmailHead } from './email-head'
 import { EmailHeader } from './email-header'
 import { emailTheme } from './theme'
@@ -32,8 +33,8 @@ export const NewMixNotification: React.FC<Readonly<NewMixNotificationProps>> = (
   releaseDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
-  })
+    day: 'numeric',
+  }),
 }) => {
   return (
     <Html>
@@ -100,19 +101,19 @@ export const NewMixNotification: React.FC<Readonly<NewMixNotificationProps>> = (
 // Styles
 const main = {
   backgroundColor: emailTheme.colors.mono.page,
-  fontFamily: emailTheme.typography.sansAlt
+  fontFamily: emailTheme.typography.sansAlt,
 }
 
 const container = {
   backgroundColor: emailTheme.colors.mono.page,
   margin: '0 auto',
   padding: '0',
-  maxWidth: '600px'
+  maxWidth: '600px',
 }
 
 const hero = {
   padding: '60px 20px',
-  textAlign: 'center' as const
+  textAlign: 'center' as const,
 }
 
 const newMixLabel = {
@@ -120,26 +121,26 @@ const newMixLabel = {
   letterSpacing: '3px',
   color: emailTheme.colors.mono.textSecondary,
   margin: '0 0 20px',
-  textTransform: 'uppercase' as const
+  textTransform: 'uppercase' as const,
 }
 
 const content = {
   padding: '40px 40px 60px',
-  textAlign: 'center' as const
+  textAlign: 'center' as const,
 }
 
 const greeting = {
   fontSize: '16px',
   color: emailTheme.colors.mono.white,
   margin: '0 0 16px',
-  fontWeight: '500'
+  fontWeight: '500',
 }
 
 const bodyText = {
   fontSize: '16px',
   lineHeight: '24px',
   color: emailTheme.colors.mono.textSecondary,
-  margin: '0 0 32px'
+  margin: '0 0 32px',
 }
 
 const ctaButton = {
@@ -153,13 +154,13 @@ const ctaButton = {
   borderRadius: emailTheme.radius.pill,
   textDecoration: 'none',
   display: 'inline-block',
-  margin: '0 0 24px'
+  margin: '0 0 24px',
 }
 
 const dateInfo = {
   fontSize: '13px',
   color: emailTheme.colors.mono.textMuted,
-  margin: '0'
+  margin: '0',
 }
 
 const mixTitleStyles = {
@@ -167,31 +168,31 @@ const mixTitleStyles = {
   fontSize: '28px',
   fontWeight: 'bold',
   margin: '24px 0 8px',
-  textAlign: 'center' as const
+  textAlign: 'center' as const,
 }
 
 const artistText = {
   color: emailTheme.colors.mono.textTertiary,
   fontSize: '18px',
   margin: '0 0 8px',
-  textAlign: 'center' as const
+  textAlign: 'center' as const,
 }
 
 const footer = {
   borderTop: `1px solid ${emailTheme.colors.mono.border}`,
   padding: '24px 40px',
-  textAlign: 'center' as const
+  textAlign: 'center' as const,
 }
 
 const footerText = {
   fontSize: '12px',
   color: emailTheme.colors.mono.textMuted,
-  margin: '0'
+  margin: '0',
 }
 
 const footerLink = {
   color: emailTheme.colors.mono.textMuted,
-  textDecoration: 'underline'
+  textDecoration: 'underline',
 }
 
 export default NewMixNotification

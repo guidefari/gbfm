@@ -1,23 +1,58 @@
 <script lang="ts">
   import { AlbumResponse, ArtistResponse, LabelResponse, TrackResponse } from '@gbfm/api/music'
-  import { Schema } from 'effect'
+  import { Match, Schema } from 'effect'
   import { onMount } from 'svelte'
   import Page from '../Page.svelte'
   import { dashboardCommand, dashboardJson, jsonRequest } from '../api'
+
   const Link = Schema.Struct({ id: Schema.String, platform: Schema.String, url: Schema.String, status: Schema.String })
+
   type EntityType = 'artist' | 'album' | 'track' | 'playlist' | 'label'
+
   let { entityType, id }: { entityType: EntityType; id: string } = $props()
+
   let form = $state<Record<string, string>>({}), name = $state(''), image = $state(''), createdAt = $state(''), updatedAt = $state(''), links = $state<ReadonlyArray<typeof Link.Type>>([]), platform = $state('spotify'), linkUrl = $state(''), pending = $state(false), message = $state('')
-  const fields = $derived(entityType === 'artist' ? ['name','slug','bio','imageUrl','genres','publishedAt'] : entityType === 'album' ? ['title','slug','artistNames','releaseDate','coverImageUrl','genres','albumType','publishedAt'] : entityType === 'track' ? ['title','slug','artistNames','coverImageUrl','albumId','trackNumber','publishedAt'] : ['name','slug','description','imageUrl','bannerImageUrl','content','tags','genres','publishedAt'])
+
+  const fields = $derived(Match.value(entityType).pipe(
+    Match.when('artist', () => ['name','slug','bio','imageUrl','genres','publishedAt']),
+    Match.when('album', () => ['title','slug','artistNames','releaseDate','coverImageUrl','genres','albumType','publishedAt']),
+    Match.when('track', () => ['title','slug','artistNames','coverImageUrl','albumId','trackNumber','publishedAt']),
+    Match.orElse(() => ['name','slug','description','imageUrl','bannerImageUrl','content','tags','genres','publishedAt'])
+  ))
+
   const plural = $derived(`${entityType}s`)
-  async function load() { pending = true; try { const endpoint = `/api/music/${plural}/${id}`; if (entityType === 'artist') { const entity = await dashboardJson(ArtistResponse, endpoint); form = { name: entity.name, slug: entity.slug, bio: entity.bio ?? '', imageUrl: entity.imageUrl ?? '', genres: entity.genres?.join(', ') ?? '', publishedAt: entity.publishedAt ?? '' }; name = entity.name; image = entity.imageUrl ?? ''; createdAt = entity.createdAt; updatedAt = entity.updatedAt } else if (entityType === 'album') { const entity = await dashboardJson(AlbumResponse, endpoint); form = { title: entity.title, slug: entity.slug, artistNames: entity.artistNames?.join(', ') ?? '', releaseDate: entity.releaseDate ?? '', coverImageUrl: entity.coverImageUrl ?? '', genres: entity.genres?.join(', ') ?? '', albumType: entity.albumType ?? '', publishedAt: entity.publishedAt ?? '' }; name = entity.title; image = entity.coverImageUrl ?? ''; createdAt = entity.createdAt; updatedAt = entity.updatedAt } else if (entityType === 'track') { const entity = await dashboardJson(TrackResponse, endpoint); form = { title: entity.title, slug: entity.slug, artistNames: entity.artistNames?.join(', ') ?? '', coverImageUrl: entity.coverImageUrl ?? '', albumId: entity.albumId ?? '', trackNumber: entity.trackNumber?.toString() ?? '', publishedAt: entity.publishedAt ?? '' }; name = entity.title; image = entity.coverImageUrl ?? ''; createdAt = entity.createdAt; updatedAt = entity.updatedAt } else if (entityType === 'label') { const entity = await dashboardJson(LabelResponse, endpoint); form = { name: entity.name, slug: entity.slug, description: entity.description ?? '', imageUrl: entity.imageUrl ?? '', bannerImageUrl: entity.bannerImageUrl ?? '', content: entity.content, tags: entity.tags?.join(', ') ?? '', genres: entity.genres?.join(', ') ?? '', publishedAt: entity.publishedAt ?? '' }; name = entity.name; image = entity.imageUrl ?? ''; createdAt = entity.createdAt; updatedAt = entity.updatedAt } else { message = 'Edit playlists in Playlist Management.'; return }
+
+  async function load() { pending = true;
+
+ try { const endpoint = `/api/music/${plural}/${id}`;
+
+ if (entityType === 'artist') { const entity = await dashboardJson(ArtistResponse, endpoint); form = { name: entity.name, slug: entity.slug, bio: entity.bio ?? '', imageUrl: entity.imageUrl ?? '', genres: entity.genres?.join(', ') ?? '', publishedAt: entity.publishedAt ?? '' }; name = entity.name; image = entity.imageUrl ?? ''; createdAt = entity.createdAt; updatedAt = entity.updatedAt } else if (entityType === 'album') { const entity = await dashboardJson(AlbumResponse, endpoint); form = { title: entity.title, slug: entity.slug, artistNames: entity.artistNames?.join(', ') ?? '', releaseDate: entity.releaseDate ?? '', coverImageUrl: entity.coverImageUrl ?? '', genres: entity.genres?.join(', ') ?? '', albumType: entity.albumType ?? '', publishedAt: entity.publishedAt ?? '' }; name = entity.title; image = entity.coverImageUrl ?? ''; createdAt = entity.createdAt; updatedAt = entity.updatedAt } else if (entityType === 'track') { const entity = await dashboardJson(TrackResponse, endpoint); form = { title: entity.title, slug: entity.slug, artistNames: entity.artistNames?.join(', ') ?? '', coverImageUrl: entity.coverImageUrl ?? '', albumId: entity.albumId ?? '', trackNumber: entity.trackNumber?.toString() ?? '', publishedAt: entity.publishedAt ?? '' }; name = entity.title; image = entity.coverImageUrl ?? ''; createdAt = entity.createdAt; updatedAt = entity.updatedAt } else if (entityType === 'label') { const entity = await dashboardJson(LabelResponse, endpoint); form = { name: entity.name, slug: entity.slug, description: entity.description ?? '', imageUrl: entity.imageUrl ?? '', bannerImageUrl: entity.bannerImageUrl ?? '', content: entity.content, tags: entity.tags?.join(', ') ?? '', genres: entity.genres?.join(', ') ?? '', publishedAt: entity.publishedAt ?? '' }; name = entity.name; image = entity.imageUrl ?? ''; createdAt = entity.createdAt; updatedAt = entity.updatedAt } else { message = 'Edit playlists in Playlist Management.';
+
+ return }
+
       links = await dashboardJson(Schema.Array(Link), `/api/music/${entityType}/${id}/links`)
     } catch { message = 'Could not load entity.' } finally { pending = false } }
-  const payload = () => Object.fromEntries(fields.map((key) => { const value = form[key]?.trim() ?? ''; if (['genres','artistNames','tags'].includes(key)) return [key, value ? value.split(',').map((item) => item.trim()).filter(Boolean) : null]; if (key === 'trackNumber') return [key, value ? Number(value) : null]; return [key, value || null] }))
-  async function save() { pending = true; try { await dashboardJson(entityType === 'artist' ? ArtistResponse : entityType === 'album' ? AlbumResponse : entityType === 'track' ? TrackResponse : LabelResponse, `/api/music/${plural}/${id}`, jsonRequest('PATCH', payload())); message = 'Entity saved.'; await load() } catch { message = 'Could not save entity.' } finally { pending = false } }
+
+  const payload = () => Object.fromEntries(fields.map((key) => { const value = form[key]?.trim() ?? '';
+
+ if (['genres','artistNames','tags'].includes(key)) return [key, value ? value.split(',').map((item) => item.trim()).filter(Boolean) : null];
+
+ if (key === 'trackNumber') return [key, value ? Number(value) : null];
+
+ return [key, value || null] }))
+
+  async function save() { pending = true;
+
+ try { const responseSchema = Match.value(entityType).pipe(Match.when('artist', () => ArtistResponse), Match.when('album', () => AlbumResponse), Match.when('track', () => TrackResponse), Match.orElse(() => LabelResponse)); await dashboardJson(responseSchema, `/api/music/${plural}/${id}`, jsonRequest('PATCH', payload())); message = 'Entity saved.'; await load() } catch { message = 'Could not save entity.' } finally { pending = false } }
+
   async function addLink() { try { await dashboardJson(Link, `/api/music/${entityType}/${id}/links`, jsonRequest('POST', { platform, url: linkUrl, status: 'verified' })); linkUrl = ''; await load() } catch { message = 'Could not add link.' } }
+
   async function removeLink(linkId: string) { try { await dashboardCommand(`/api/music/${entityType}/${id}/links/${linkId}`, { method: 'DELETE' }); await load() } catch { message = 'Could not delete link.' } }
-  async function removeEntity() { if (!confirm(`Delete ${name}? This cannot be undone.`)) return; try { await dashboardCommand(`/api/music/${plural}/${id}`, { method: 'DELETE' }); location.href = '/dashboard/music' } catch { message = 'Could not delete entity.' } }
+
+  async function removeEntity() { if (!confirm(`Delete ${name}? This cannot be undone.`)) return;
+
+ try { await dashboardCommand(`/api/music/${plural}/${id}`, { method: 'DELETE' }); location.href = '/dashboard/music' } catch { message = 'Could not delete entity.' } }
+
   onMount(load)
 </script>
 <Page title={`Edit ${entityType}`} description="Manage catalog metadata, publishing and source links."><a class="inline-block text-sm underline" href="/dashboard/music">← Music catalog</a>

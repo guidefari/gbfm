@@ -4,7 +4,9 @@
   import type { PageProps } from './$types'
 
   let { data }: PageProps = $props()
+
   const href = (item: PublicRecord) => `/tweet/${item.slug}`
+
   const query = $derived(data.query)
 </script>
 

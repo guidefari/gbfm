@@ -1,7 +1,7 @@
 <script lang="ts">
   import { GetMixQRPdfResponse } from '@gbfm/api/audio'
   import { page } from '$app/state'
-  import { Option, Schema } from 'effect'
+  import { Match, Option, Schema } from 'effect'
   import Artwork from './Artwork.svelte'
   import PublicActions from './PublicActions.svelte'
   import RichContent from './RichContent.svelte'
@@ -9,44 +9,72 @@
   import { records, text, type PublicRecord } from '@/lib/public-content'
 
   let { item, kind, canonical, relatedShow = null, actionActive = false }: { item: PublicRecord; kind: string; canonical: string; relatedShow?: PublicRecord | null; actionActive?: boolean } = $props()
+
   const player = getPlayerContext()
+
   const snapshot = player.snapshot
+
   let actionStatus = $state('')
+
   let qrBusy = $state(false)
-  const value = (...keys: string[]) => {
+
+  const value = (...keys: Array<string>) => {
     for (const key of keys) {
       const candidate = text(item[key])
+
       if (candidate) return candidate
     }
+
     return ''
   }
+
   const title = $derived(value('title', 'name') || 'Untitled')
+
   const tags = $derived(Array.isArray(item.tags) ? item.tags : [])
+
   const creators = $derived(records(item.creators))
+
   const links = $derived(records(item.streamingLinks ?? item.streamLinks))
+
   const date = $derived(value('releaseDate', 'createdAt'))
-  const actionKind = $derived<'audio' | 'show' | 'content'>(value('url') ? 'audio' : kind.toLowerCase().includes('show') ? 'show' : 'content')
+
+  const actionKind = $derived<'audio' | 'show' | 'content'>(Match.value({ hasUrl: Boolean(value('url')), isShow: kind.toLowerCase().includes('show') }).pipe(
+    Match.when({ hasUrl: true }, () => 'audio' as const),
+    Match.when({ isShow: true }, () => 'show' as const),
+    Match.orElse(() => 'content' as const)
+  ))
+
   const isMix = $derived(kind.toLowerCase() === 'mix')
+
   const track = $derived({
     url: value('url'),
     title,
     id: value('id', 'url'),
     slug: value('slug'),
-    type: kind.toLowerCase() === 'mix' ? 'mix' as const : kind.toLowerCase() === 'track' ? 'track' as const : 'misc' as const,
+    type: Match.value(kind.toLowerCase()).pipe(
+      Match.when('mix', () => 'mix' as const),
+      Match.when('track', () => 'track' as const),
+      Match.orElse(() => 'misc' as const)
+    ),
     thumbnailUrl: value('thumbnailUrl', 'imageUrl', 'image') || null
   })
+
   const current = $derived($snapshot ? ($snapshot.queue.tracks[$snapshot.queue.currentIndex] ?? null) : null)
+
   const isCurrent = $derived(current?.id === track.id)
+
   const role = $derived(page.data.principal?._tag === 'Authenticated' ? page.data.principal.role : 'user')
 
   const play = () => {
     if (isCurrent) player.toggle()
     else player.play(track)
   }
+
   const enqueue = () => {
     player.enqueue(track)
     actionStatus = 'Added to queue'
   }
+
   const downloadQr = async () => {
     if (qrBusy) return
     qrBusy = true
@@ -54,6 +82,7 @@
     const response = await fetch(`/api/content/audio/mix/${encodeURIComponent(value('slug'))}/qr-pdf`).catch(() => null)
     const json: unknown = response?.ok ? await response.json() : null
     const pdf = Option.getOrNull(Schema.decodeUnknownOption(GetMixQRPdfResponse)(json))
+
     if (pdf) {
       window.open(pdf.url, '_blank', 'noopener,noreferrer')
       actionStatus = 'QR PDF ready'

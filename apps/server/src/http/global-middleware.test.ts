@@ -1,10 +1,12 @@
+import { Context, Layer } from 'effect'
 import * as FileSystem from 'effect/FileSystem'
 import * as Path from 'effect/Path'
-import { Context, Layer } from 'effect'
 import { HttpRouter, HttpServer, HttpServerResponse } from 'effect/unstable/http'
 import { describe, expect, test } from 'vitest'
+
 import { Database } from '@/db/layer'
 import { DatabaseTestLayer, db } from '@/test/database'
+
 import { requestPath, RequestLoggerLive } from './global-middleware'
 
 describe('requestPath', () => {
@@ -25,23 +27,23 @@ describe('RequestLoggerLive', () => {
     HttpRouter.toWebHandler(
       Layer.mergeAll(
         HttpRouter.add('GET', '/probe', HttpServerResponse.text('ok')),
-        RequestLoggerLive
+        RequestLoggerLive,
       ).pipe(
         Layer.provide(HttpRouter.disableLogger),
         Layer.provideMerge(
           Layer.mergeAll(FileSystem.layerNoop({}), Path.layer).pipe(
-            Layer.provideMerge(HttpServer.layerServices)
-          )
+            Layer.provideMerge(HttpServer.layerServices),
+          ),
         ),
-        Layer.provide(DatabaseTestLayer)
+        Layer.provide(DatabaseTestLayer),
       ),
-      { disableLogger: true }
+      { disableLogger: true },
     )
 
   test('passes the response through for an absolute request url', async () => {
     const res = await loggedHandler().handler(
       new Request('http://localhost/probe'),
-      Context.make(Database, db)
+      Context.make(Database, db),
     )
 
     expect(res.status).toBe(200)

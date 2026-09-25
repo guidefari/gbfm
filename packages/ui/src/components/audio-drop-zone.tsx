@@ -1,5 +1,6 @@
 import { FolderOpen, Upload } from 'lucide-react'
 import type { ChangeEvent } from 'react'
+
 import { Button } from './button'
 
 interface AudioDropZoneProps {
@@ -11,7 +12,7 @@ interface AudioDropZoneProps {
 export function AudioDropZone({
   onFileSelect,
   onPickFromS3,
-  secondaryActionLabel = 'Pick from S3 bucket'
+  secondaryActionLabel = 'Pick from S3 bucket',
 }: AudioDropZoneProps) {
   return (
     <div className='space-y-3'>

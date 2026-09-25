@@ -12,6 +12,7 @@
     createdAt: Schema.String,
     updatedAt: Schema.String
   })
+
   const Response = Schema.Struct({
     data: Schema.Array(Item),
     pagination: Schema.Struct({
@@ -21,6 +22,7 @@
       hasMore: Schema.Boolean
     })
   })
+
   const Status = Schema.Literals(['all', 'draft', 'live'])
 
   let {
@@ -36,31 +38,48 @@
   } = $props()
 
   type ItemValue = typeof Item.Type
+
   type StatusValue = typeof Status.Type
+
   let items = $state<ReadonlyArray<ItemValue>>([])
+
   let selected = $state<ReadonlyArray<string>>([])
+
   let offset = $state(0)
+
   let total = $state(0)
+
   let query = $state('')
+
   let status = $state<StatusValue>('all')
+
   let pending = $state(false)
+
   let message = $state('')
+
   const limit = 25
+
   const isAudio = $derived(contentType === 'mix')
+
   const actionBase = $derived(isAudio ? '/api/content/audio/mix' : '/api/content/posts')
 
   const endpoint = () => {
     const path = isAudio ? '/api/content/audio/mix/manage' : '/api/content/posts/manage'
     const parameters = new URLSearchParams({ limit: String(limit), offset: String(offset) })
+
     if (!isAudio) parameters.set('type', contentType)
+
     if (!isAudio && query.trim()) parameters.set('q', query.trim())
+
     if (!isAudio && status !== 'all') parameters.set('status', status)
+
     return `${path}?${parameters}`
   }
 
   async function load() {
     pending = true
     message = ''
+
     try {
       const response = await dashboardJson(Response, endpoint())
       items = response.data
@@ -86,6 +105,7 @@
     if (slugs.length === 0) return
     pending = true
     message = ''
+
     try {
       await Promise.all(
         slugs.map((slug) =>

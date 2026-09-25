@@ -1,6 +1,7 @@
-import { Context, Effect, Layer } from 'effect'
+import { Context, Data, Effect, Layer, Predicate } from 'effect'
+
 import type { NavigationIdentity } from '@/domain/navigation'
-import { DatabaseError } from '@/errors'
+import type { DatabaseError } from '@/errors'
 
 export type LockRequest = {
   readonly sessionId: string | null
@@ -14,6 +15,8 @@ export type LockDecision =
   | { readonly _tag: 'Retry' }
   | { readonly _tag: 'Proceed'; readonly sessionId: string | null; readonly position: number }
 
+export const LockDecision = Data.taggedEnum<LockDecision>()
+
 export type LockCommit = {
   readonly sessionId: string
   readonly position: number
@@ -22,26 +25,28 @@ export type LockCommit = {
 }
 
 export const canonicalNavigationLockName = (identity: NavigationIdentity): string =>
-  identity._tag === 'User' ? `user:${identity.userId}` : `device:${identity.deviceToken}`
+  Predicate.isTagged(identity, 'User')
+    ? `user:${identity.userId}`
+    : `device:${identity.deviceToken}`
 
 export interface NavigationLockContract {
   readonly decide: (
     identity: NavigationIdentity,
-    request: LockRequest
+    request: LockRequest,
   ) => Effect.Effect<LockDecision, DatabaseError>
   readonly commit: (
     identity: NavigationIdentity,
-    input: LockCommit
+    input: LockCommit,
   ) => Effect.Effect<void, DatabaseError>
   readonly sync: (
     identity: NavigationIdentity,
-    input: LockCommit
+    input: LockCommit,
   ) => Effect.Effect<void, DatabaseError>
   readonly reset: (identity: NavigationIdentity) => Effect.Effect<void, DatabaseError>
 }
 
 export class NavigationLock extends Context.Service<NavigationLock, NavigationLockContract>()(
-  'NavigationLock'
+  'NavigationLock',
 ) {}
 
 type LocalSession = {
@@ -60,9 +65,11 @@ export const NavigationLockLocalLayer = Layer.sync(NavigationLock, () => {
 
   const stateFor = (name: string): LocalState => {
     const existing = sessions.get(name)
+
     if (existing) return existing
     const created: LocalState = { session: null }
     sessions.set(name, created)
+
     return created
   }
 
@@ -72,11 +79,11 @@ export const NavigationLockLocalLayer = Layer.sync(NavigationLock, () => {
       const local = state.session
 
       if (local?.lastIntentToken === request.intentToken && local.sessionId) {
-        return { _tag: 'Duplicate', sessionId: local.sessionId }
+        return LockDecision.Duplicate({ sessionId: local.sessionId })
       }
 
       if (local && (local.cursor !== request.cursor || local.updatedAtMs !== request.updatedAtMs)) {
-        return { _tag: 'Retry' }
+        return LockDecision.Retry()
       }
 
       const position = (local?.cursor ?? request.cursor ?? -1) + 1
@@ -85,9 +92,10 @@ export const NavigationLockLocalLayer = Layer.sync(NavigationLock, () => {
         sessionId,
         cursor: position,
         updatedAtMs: request.updatedAtMs,
-        lastIntentToken: null
+        lastIntentToken: null,
       }
-      return { _tag: 'Proceed', sessionId, position }
+
+      return LockDecision.Proceed({ sessionId, position })
     })
 
   const commit = (identity: NavigationIdentity, input: LockCommit) =>
@@ -97,7 +105,7 @@ export const NavigationLockLocalLayer = Layer.sync(NavigationLock, () => {
         sessionId: input.sessionId,
         cursor: input.position,
         updatedAtMs: input.updatedAtMs,
-        lastIntentToken: input.intentToken
+        lastIntentToken: input.intentToken,
       }
     })
 

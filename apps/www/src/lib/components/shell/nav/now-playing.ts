@@ -10,7 +10,9 @@ export type NowPlaying = {
 
 export const toNowPlaying = (snapshot: PlayerSnapshot | null): NowPlaying | null => {
   const track = snapshot?.queue.tracks[snapshot.queue.currentIndex]
+
   if (!snapshot || !track) return null
+
   return {
     id: track.id,
     playing: snapshot.playing,
@@ -18,6 +20,6 @@ export const toNowPlaying = (snapshot: PlayerSnapshot | null): NowPlaying | null
     thumbnailUrl: track.thumbnailUrl ?? null,
     progress: snapshot.duration
       ? Math.min(100, (snapshot.currentTime / snapshot.duration) * 100)
-      : 0
+      : 0,
   }
 }

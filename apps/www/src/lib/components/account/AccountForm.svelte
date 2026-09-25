@@ -11,6 +11,7 @@
     type?: HTMLInputAttributes['type']
     autocomplete?: HTMLInputAttributes['autocomplete']
   }
+
   let {
     title,
     description,
@@ -22,7 +23,7 @@
   }: {
     title: string
     description: string
-    fields: Field[]
+    fields: Array<Field>
     submitLabel: string
     endpoint: string | ((values: Record<string, string>) => string)
     transform?: (values: Record<string, string>) => Schema.Json
@@ -30,8 +31,11 @@
   } = $props()
 
   let pending = $state(false)
+
   let hydrated = $state(false)
+
   let error = $state('')
+
   let success = $state('')
 
   onMount(() => (hydrated = true))
@@ -41,22 +45,27 @@
     error = ''
     success = ''
     const formElement = event.currentTarget
+
     if (!(formElement instanceof HTMLFormElement)) return
     const form = new FormData(formElement)
     const values = Object.fromEntries([...form.entries()].map(([key, value]) => [key, String(value)]))
+
     try {
       const target = Schema.is(Schema.String)(endpoint) ? endpoint : endpoint(values)
+
       const response = await fetch(target, {
         method: 'POST',
         credentials: 'include',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(transform(values))
       })
+
       if (!response.ok) {
         const input: Schema.Json = await response.json().catch(() => null)
         const parsed = Option.getOrNull(Schema.decodeUnknownOption(ErrorResponse)(input))
         throw new Error(parsed?.message ?? 'The request could not be completed.')
       }
+
       success = 'Done.'
       onSuccess(values)
     } catch (cause) {

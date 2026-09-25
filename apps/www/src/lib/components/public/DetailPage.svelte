@@ -17,6 +17,7 @@
     fallbackTitle: string
     relatedShow?: PublicRecord | null
   } = $props()
+
   const string = (item: PublicRecord | null, key: string, fallback = '') =>
     text(item?.[key], fallback)
 </script>

@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/core'
 import { Effect, Layer, Logger, Option, References, Schema, type LogLevel } from 'effect'
 import pino from 'pino'
 import pretty from 'pino-pretty'
+
 import { ConfigService } from './config.service'
 
 const REDACT_PATHS = [
@@ -22,7 +23,7 @@ const REDACT_PATHS = [
   'accessToken',
   'refreshToken',
   'spotifyAccessToken',
-  'betterAuthSession'
+  'betterAuthSession',
 ]
 
 const PII_KEY_PATTERN = /password|token|authorization|cookie|secret|email|session/i
@@ -33,34 +34,42 @@ type RedactedLogValue =
   | boolean
   | null
   | undefined
-  | readonly RedactedLogValue[]
+  | ReadonlyArray<RedactedLogValue>
   | { readonly [key: string]: RedactedLogValue }
+
 type EffectLogMessage = Logger.Options<unknown>['message']
 
 const LogScalar = Schema.Union([Schema.String, Schema.Number, Schema.Boolean, Schema.Null])
+
 const LogRecord = Schema.Record(Schema.String, Schema.Unknown)
 
 function redactValue(value: EffectLogMessage, depth = 0): RedactedLogValue {
   if (depth > 4) return '[Truncated]'
+
   if (value === undefined) return undefined
+
   if (Array.isArray(value)) return value.map((entry) => redactValue(entry, depth + 1))
   const record = Schema.decodeUnknownOption(LogRecord)(value)
+
   if (Option.isSome(record)) {
     const out: Record<string, RedactedLogValue> = {}
+
     for (const [k, v] of Object.entries(record.value)) {
       out[k] = PII_KEY_PATTERN.test(k) ? '[Redacted]' : redactValue(v, depth + 1)
     }
+
     return out
   }
+
   // oxlint-disable-next-line typescript/no-base-to-string -- This fallback intentionally preserves arbitrary log payloads when they cannot be decoded as scalars or records.
   return Option.getOrElse(Schema.decodeUnknownOption(LogScalar)(value), () => String(value))
 }
 
 function redactAttributes(
-  attributes: Record<string, EffectLogMessage>
+  attributes: Record<string, EffectLogMessage>,
 ): Record<string, RedactedLogValue> {
   return Object.fromEntries(
-    Object.entries(attributes).map(([key, value]) => [key, redactValue(value)])
+    Object.entries(attributes).map(([key, value]) => [key, redactValue(value)]),
   )
 }
 
@@ -68,9 +77,9 @@ const makePinoLogger = (nodeEnv: string, logLevel: string | undefined) =>
   pino(
     {
       level: logLevel || (nodeEnv === 'production' ? 'warn' : 'info'),
-      redact: { paths: REDACT_PATHS, censor: '[Redacted]' }
+      redact: { paths: REDACT_PATHS, censor: '[Redacted]' },
     },
-    nodeEnv === 'production' ? undefined : pretty()
+    nodeEnv === 'production' ? undefined : pretty(),
   )
 
 function pinoLevel(level: LogLevel.LogLevel): pino.Level {
@@ -92,8 +101,11 @@ function pinoLevel(level: LogLevel.LogLevel): pino.Level {
 
 function formatMessage(value: EffectLogMessage): string {
   const message = Schema.decodeUnknownOption(Schema.String)(value)
+
   if (Option.isSome(message)) return message.value
+
   if (Array.isArray(value)) return value.map(formatMessage).join(' ')
+
   try {
     return JSON.stringify(value)
   } catch {
@@ -104,12 +116,14 @@ function formatMessage(value: EffectLogMessage): string {
 const makeAppLogger = (pinoInstance: pino.Logger) =>
   Logger.make(({ logLevel, message, cause, fiber, date }) => {
     const msg = formatMessage(message)
+
     const data = redactAttributes({
       annotations: fiber.getRef(References.CurrentLogAnnotations),
       cause,
       fiberId: fiber.id,
-      date
+      date,
     })
+
     const payload = { ...data, logLevel }
 
     pinoInstance[pinoLevel(logLevel)](payload, msg)
@@ -117,6 +131,7 @@ const makeAppLogger = (pinoInstance: pino.Logger) =>
     if (!Sentry.getClient() || ['Trace', 'Debug', 'Info'].includes(logLevel)) return
 
     const sentryLogger = Sentry.logger
+
     switch (logLevel) {
       case 'Trace':
       case 'Debug':
@@ -142,6 +157,7 @@ const makeAppLogger = (pinoInstance: pino.Logger) =>
 export const AppLoggerLive = Layer.unwrap(
   Effect.gen(function* () {
     const config = yield* ConfigService
+
     return Logger.layer([makeAppLogger(makePinoLogger(config.app.nodeEnv, config.app.logLevel))])
-  })
+  }),
 )

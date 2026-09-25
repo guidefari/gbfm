@@ -1,11 +1,12 @@
 import { expect, test } from 'vitest'
+
 import { parseArtistNames } from './parse-artist-names'
 
 test('parses credited collaborators without splitting artist names that use ordinary conjunctions', () => {
   expect(parseArtistNames('Hurricane Dan, Fischer & Chloe feat. Burial')).toEqual([
     'Hurricane Dan',
     'Fischer & Chloe',
-    'Burial'
+    'Burial',
   ])
   expect(parseArtistNames('  Burial ,  Four Tet,,  ')).toEqual(['Burial', 'Four Tet'])
   expect(parseArtistNames('Burial ft Four Tet')).toEqual(['Burial', 'Four Tet'])

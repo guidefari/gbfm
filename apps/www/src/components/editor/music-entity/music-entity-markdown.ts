@@ -16,28 +16,29 @@ export type MusicEntityParseError = {
 
 const MusicEntityReferenceSchema = Schema.Struct({
   type: Schema.Literals(['album', 'track', 'playlist']),
-  id: Schema.NonEmptyString
+  id: Schema.NonEmptyString,
 })
 
 const musicEntityPattern = /^<MusicEntity type="([^"]+)" id="([^"]+)" \/>$/
 
 export function serializeMusicEntity({ type, id }: MusicEntityReference): string {
   const escapedId = id.replaceAll('&', '&amp;').replaceAll('"', '&quot;')
+
   return `<MusicEntity type="${type}" id="${escapedId}" />`
 }
 
 export const parseMusicEntityMarkdownEffect = (
-  markdown: string
+  markdown: string,
 ): Effect.Effect<MusicEntityReference, MusicEntityParseError> => {
   const match = musicEntityPattern.exec(markdown.trim())
 
   return Schema.decodeUnknownEffect(MusicEntityReferenceSchema)({
     type: match?.[1],
-    id: match?.[2]
+    id: match?.[2],
   }).pipe(
     Effect.mapError(() => ({
       _tag: 'MusicEntityParseError' as const,
-      message: 'This music entity embed is invalid.'
-    }))
+      message: 'This music entity embed is invalid.',
+    })),
   )
 }

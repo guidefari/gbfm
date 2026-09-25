@@ -5,12 +5,12 @@ import {
   BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
-  BreadcrumbSeparator
+  BreadcrumbSeparator,
 } from './breadcrumb'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Content/Breadcrumb'
+  title: '@gbfm/ui/Content/Breadcrumb',
 }
 
 export function Breadcrumbs() {

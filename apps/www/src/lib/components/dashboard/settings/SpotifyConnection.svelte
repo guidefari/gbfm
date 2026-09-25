@@ -5,24 +5,44 @@
   import { runAppEffect } from '@/runtime'
 
   let session = $state<SpotifyAuthSession | undefined>()
+
   let profile = $state<SpotifyProfile | undefined>()
+
   let pending = $state(true)
+
   let connecting = $state(false)
+
   let error = $state('')
-  const expiresIn = $derived.by(() => { if (!session) return ''; const minutes = Math.max(0, Math.floor((session.accessTokenExpiresAt - Date.now()) / 60_000)); return minutes < 60 ? `~${minutes}m` : `~${Math.floor(minutes / 60)}h ${minutes % 60}m` })
+
+  const expiresIn = $derived.by(() => { if (!session) return ''; const minutes = Math.max(0, Math.floor((session.accessTokenExpiresAt - Date.now()) / 60_000));
+
+ return minutes < 60 ? `~${minutes}m` : `~${Math.floor(minutes / 60)}h ${minutes % 60}m` })
 
   async function refresh() {
     pending = true; error = ''
-    session = await runAppEffect(getValidSpotifyAuthSessionEffect().pipe(Effect.catch((cause: SpotifyRequestError) => Effect.sync(() => { error = spotifyErrorMessage(cause); return undefined }))))
-    profile = session ? await runAppEffect(fetchSpotifyProfileEffect().pipe(Effect.catch((cause: SpotifyRequestError) => Effect.sync(() => { error = spotifyErrorMessage(cause); return undefined })))) : undefined
+    session = await runAppEffect(getValidSpotifyAuthSessionEffect().pipe(Effect.catch((cause: SpotifyRequestError) => Effect.sync(() => { error = spotifyErrorMessage(cause);
+
+ return undefined }))))
+    profile = session ? await runAppEffect(fetchSpotifyProfileEffect().pipe(Effect.catch((cause: SpotifyRequestError) => Effect.sync(() => { error = spotifyErrorMessage(cause);
+
+ return undefined })))) : undefined
     pending = false
   }
+
   async function connect() {
-    connecting = true; error = ''; storeSpotifyReturnPath(`${location.pathname}${location.search}`)
-    const url = await runAppEffect(startSpotifyPkceLoginEffect(SPOTIFY_WEB_SCOPES, getSpotifyRedirectUri()).pipe(Effect.catch((cause: SpotifyRequestError) => Effect.sync(() => { error = spotifyErrorMessage(cause); return null }))))
+    connecting = true
+    error = ''
+    storeSpotifyReturnPath(`${location.pathname}${location.search}`)
+
+    const url = await runAppEffect(startSpotifyPkceLoginEffect(SPOTIFY_WEB_SCOPES, getSpotifyRedirectUri()).pipe(Effect.catch((cause: SpotifyRequestError) => Effect.sync(() => { error = spotifyErrorMessage(cause);
+
+ return null }))))
+
     if (url) location.assign(url); else connecting = false
   }
+
   async function disconnect() { await runAppEffect(logoutSpotifyEffect().pipe(Effect.orDie)); session = undefined; profile = undefined }
+
   onMount(refresh)
 </script>
 

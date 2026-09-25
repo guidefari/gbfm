@@ -11,7 +11,7 @@ const presignResponseSchema = Schema.Struct({
   uploadUrl: Schema.String,
   publicUrl: Schema.String,
   key: Schema.String,
-  expiresInSeconds: Schema.Number
+  expiresInSeconds: Schema.Number,
 })
 
 type PresignResponseInput =
@@ -19,7 +19,7 @@ type PresignResponseInput =
   | number
   | boolean
   | null
-  | readonly PresignResponseInput[]
+  | ReadonlyArray<PresignResponseInput>
   | { readonly [key: string]: PresignResponseInput }
 
 export const parsePresignImageResponse = (raw: PresignResponseInput): PresignImageResponse =>

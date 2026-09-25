@@ -1,5 +1,4 @@
 import { HealthLiveResponse, HealthReadyResponse } from '@gbfm/api/health'
-import { NavigationSessionResponse } from '@gbfm/api/navigation'
 import {
   AlbumListResponse,
   ArtistListResponse,
@@ -9,37 +8,32 @@ import {
   PlaylistListResponse,
   ResolvedMusicEntityResponse,
   ScrapeEntityLinksResponse,
-  TrackListResponse
+  TrackListResponse,
 } from '@gbfm/api/music'
+import { NavigationSessionResponse, Slug } from '@gbfm/api/navigation'
 import {
   CompiledMicroPostResponse,
   CompiledPostResponse,
   GetMicroPostsResponse,
   MicroPostScreenResponse,
   MicroPostThreadResponse,
-  PostResponse
+  PostResponse,
 } from '@gbfm/api/post'
 import { SearchResults } from '@gbfm/api/search'
 import { decodeResponseBody } from '@gbfm/api/testing'
-import { SocialCardPresentation, TweetCardPresentation } from '@gbfm/social-card'
 import { SiteMetadata } from '@gbfm/site-metadata'
+import { SocialCardPresentation, TweetCardPresentation } from '@gbfm/social-card'
 import { and, eq } from 'drizzle-orm'
 import { Layer } from 'effect'
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { d1, db } from '@/test/database'
-import { createTestWebHandler } from '@/test/http-handler'
-import { MusicCoverImageFetcher } from '@/services/canonical-music-identity/artwork-delivery'
-import { ObjectStoreClient } from '@/services/storage/object-store-client'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+
 import { audioTable } from '@/db/audio.schema'
 import { session, user } from '@/db/auth.schema'
-import { entityLabelsTable } from '@/db/tags.schema'
 import { replaceEntityLabels } from '@/db/labels'
-import { navigationSessions } from '@/db/navigation.schema'
 import {
   musicAlbumsTable,
   musicArtistsTable,
   musicEntityLinksTable,
-  musicEntityResolutionClaimsTable,
   musicEntityTypesTable,
   musicPlatformsTable,
   musicPlaylistsTable,
@@ -49,12 +43,20 @@ import {
   musicLabelAlbumsTable,
   musicLabelArtistsTable,
   musicLabelCreatorsTable,
-  musicLabelsTable
+  musicLabelsTable,
 } from '@/db/music-entity.schema'
+import { navigationSessions } from '@/db/navigation.schema'
 import { postCreators, postsTable } from '@/db/post.schema'
 import { releasesTable } from '@/db/release.schema'
 import { showsTable } from '@/db/show.schema'
-import { createWebHandler } from './routes'
+import { entityLabelsTable } from '@/db/tags.schema'
+import { NavigationCommand as NavigationCommandData } from '@/domain/navigation'
+import { MusicCoverImageFetcher } from '@/services/canonical-music-identity/artwork-delivery'
+import { ObjectStoreClient } from '@/services/storage/object-store-client'
+import { d1, db } from '@/test/database'
+import { createTestWebHandler } from '@/test/http-handler'
+
+import type { createWebHandler } from './routes'
 
 // Blackbox suite asserting only the wire contract, so these assertions keep
 // working as more groups move from the Hono fallback onto the Effect router
@@ -73,7 +75,7 @@ const writableObjectStoreLayer = Layer.succeed(ObjectStoreClient, {
   presignUploadPart: () => Promise.resolve('https://object-store.test/part'),
   completeMultipartUpload: () => Promise.resolve(),
   abortMultipartUpload: () => Promise.resolve(),
-  listMultipartParts: () => Promise.resolve([])
+  listMultipartParts: () => Promise.resolve([]),
 } satisfies ObjectStoreClient)
 
 beforeAll(async () => {
@@ -111,7 +113,7 @@ describe('Effect router (Step 8: HonoFallback removed)', () => {
       ['GET', '/api/integrations/bluesky/account-id/sources'],
       ['PATCH', '/api/integrations/bluesky/account-id/schedule'],
       ['PATCH', '/api/integrations/bluesky/sources/source-id'],
-      ['DELETE', '/api/integrations/bluesky/account-id']
+      ['DELETE', '/api/integrations/bluesky/account-id'],
     ]) {
       const res = await webHandler.handler(new Request(`http://localhost${path}`, { method }))
       expect(res.status, `${method} ${path}`).toBe(404)
@@ -157,16 +159,16 @@ describe('health (HttpApiBuilder group, Step 3a)', () => {
     expect(res.status).toBe(200)
     expect(checkRes.status).toBe(200)
     await expect(decodeResponseBody(HealthReadyResponse, res)).resolves.toEqual({
-      dbConnected: true
+      dbConnected: true,
     })
     await expect(decodeResponseBody(HealthReadyResponse, checkRes)).resolves.toEqual({
-      dbConnected: true
+      dbConnected: true,
     })
   })
 
   it('responds 404 to unsupported methods on health paths', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/health/live', { method: 'POST' })
+      new Request('http://localhost/health/live', { method: 'POST' }),
     )
 
     expect(res.status).toBe(404)
@@ -183,7 +185,7 @@ describe('music artists (HttpApiBuilder group, Step 4)', () => {
 
   it('GET /api/music/artists/:id returns 404 for an unknown id', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/api/music/artists/00000000-0000-0000-0000-000000000000')
+      new Request('http://localhost/api/music/artists/00000000-0000-0000-0000-000000000000'),
     )
 
     expect(res.status).toBe(404)
@@ -194,8 +196,8 @@ describe('music artists (HttpApiBuilder group, Step 4)', () => {
       new Request('http://localhost/api/music/artists', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ name: 'Test Artist', slug: 'test-artist' })
-      })
+        body: JSON.stringify({ name: 'Test Artist', slug: 'test-artist' }),
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -206,8 +208,8 @@ describe('music artists (HttpApiBuilder group, Step 4)', () => {
       new Request('http://localhost/api/music/artists/00000000-0000-0000-0000-000000000000', {
         method: 'PATCH',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ name: 'Renamed' })
-      })
+        body: JSON.stringify({ name: 'Renamed' }),
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -216,8 +218,8 @@ describe('music artists (HttpApiBuilder group, Step 4)', () => {
   it('DELETE /api/music/artists/:id returns 401 without a session cookie', async () => {
     const res = await webHandler.handler(
       new Request('http://localhost/api/music/artists/00000000-0000-0000-0000-000000000000', {
-        method: 'DELETE'
-      })
+        method: 'DELETE',
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -227,8 +229,12 @@ describe('music artists (HttpApiBuilder group, Step 4)', () => {
     const res = await webHandler.handler(
       new Request(
         'http://localhost/api/music/albums/00000000-0000-0000-0000-000000000000/artists/00000000-0000-0000-0000-000000000000',
-        { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({}) }
-      )
+        {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({}),
+        },
+      ),
     )
 
     expect(res.status).toBe(401)
@@ -236,13 +242,14 @@ describe('music artists (HttpApiBuilder group, Step 4)', () => {
 
   it('requires authentication to read and change label affiliations', async () => {
     const id = '00000000-0000-0000-0000-000000000000'
+
     const requests = [
       new Request(`http://localhost/api/music/labels/${id}/artists`),
       new Request(`http://localhost/api/music/labels/${id}/albums`),
       new Request(`http://localhost/api/music/artists/${id}/labels`),
       new Request(`http://localhost/api/music/albums/${id}/labels`),
       new Request(`http://localhost/api/music/labels/${id}/artists/${id}`, { method: 'PUT' }),
-      new Request(`http://localhost/api/music/labels/${id}/albums/${id}`, { method: 'PUT' })
+      new Request(`http://localhost/api/music/labels/${id}/albums/${id}`, { method: 'PUT' }),
     ]
 
     const responses = await Promise.all(requests.map((request) => webHandler.handler(request)))
@@ -261,7 +268,7 @@ describe('music labels', () => {
 
   it('returns 404 for an unknown public label slug', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/api/music/labels/slug/unknown-label')
+      new Request('http://localhost/api/music/labels/slug/unknown-label'),
     )
 
     expect(res.status).toBe(404)
@@ -284,30 +291,33 @@ describe('music labels', () => {
       id: adminId,
       name: 'Affiliation admin',
       email: `${adminId}@example.com`,
-      role: 'admin'
+      role: 'admin',
     })
     await db.insert(session).values({
       id: crypto.randomUUID(),
       token: adminToken,
       userId: adminId,
-      expiresAt: new Date(now.getTime() + 60_000)
+      expiresAt: new Date(now.getTime() + 60_000),
     })
+
     const [label] = await db
       .insert(musicLabelsTable)
       .values({
         name: 'Affiliation label',
         slug: `affiliation-label-${suffix}`,
         content: '',
-        publishedAt: now
+        publishedAt: now,
       })
       .returning()
+
     const [publishedArtist, draftArtist] = await db
       .insert(musicArtistsTable)
       .values([
         { name: 'Alpha Artist', slug: `alpha-artist-${suffix}`, publishedAt: now },
-        { name: 'Draft Artist', slug: `draft-artist-${suffix}` }
+        { name: 'Draft Artist', slug: `draft-artist-${suffix}` },
       ])
       .returning()
+
     const [publishedAlbum, futureAlbum] = await db
       .insert(musicAlbumsTable)
       .values([
@@ -315,16 +325,17 @@ describe('music labels', () => {
           title: 'Published Album',
           slug: `published-album-${suffix}`,
           releaseDate: now,
-          publishedAt: now
+          publishedAt: now,
         },
         {
           title: 'Future Album',
           slug: `future-album-${suffix}`,
           releaseDate: future,
-          publishedAt: future
-        }
+          publishedAt: future,
+        },
       ])
       .returning()
+
     if (!label || !publishedArtist || !draftArtist || !publishedAlbum || !futureAlbum) {
       throw new Error('Failed to seed label affiliation test')
     }
@@ -332,7 +343,7 @@ describe('music labels', () => {
     const adminRequest = (path: string, method = 'GET') =>
       new Request(`http://localhost${path}`, {
         method,
-        headers: { authorization: `Bearer ${adminToken}` }
+        headers: { authorization: `Bearer ${adminToken}` },
       })
 
     const publishedArtistPath = `/api/music/labels/${label.id}/artists/${publishedArtist.id}`
@@ -348,9 +359,10 @@ describe('music labels', () => {
           publishedAlbumPath,
           futureAlbumPath,
           publishedArtistPath,
-          publishedAlbumPath
-        ].map((path) => webHandler.handler(adminRequest(path, 'PUT')))
+          publishedAlbumPath,
+        ].map((path) => webHandler.handler(adminRequest(path, 'PUT'))),
       )
+
       expect(writes.map((response) => response.status)).toEqual([204, 204, 204, 204, 204, 204])
 
       const [labelArtists, labelAlbums, artistLabels, albumLabels, publicLabel] = await Promise.all(
@@ -359,8 +371,8 @@ describe('music labels', () => {
           webHandler.handler(adminRequest(`/api/music/labels/${label.id}/albums`)),
           webHandler.handler(adminRequest(`/api/music/artists/${publishedArtist.id}/labels`)),
           webHandler.handler(adminRequest(`/api/music/albums/${publishedAlbum.id}/labels`)),
-          webHandler.handler(new Request(`http://localhost/api/music/labels/slug/${label.slug}`))
-        ]
+          webHandler.handler(new Request(`http://localhost/api/music/labels/slug/${label.slug}`)),
+        ],
       )
 
       expect(labelArtists.status).toBe(200)
@@ -373,11 +385,11 @@ describe('music labels', () => {
       const albumLabelsBody = await decodeResponseBody(LabelListResponse, albumLabels)
       expect(labelArtistsBody.map((artist) => artist.name)).toEqual([
         'Alpha Artist',
-        'Draft Artist'
+        'Draft Artist',
       ])
       expect(labelAlbumsBody.map((album) => album.title)).toEqual([
         'Future Album',
-        'Published Album'
+        'Published Album',
       ])
       expect(artistLabelsBody.map((row) => row.id)).toEqual([label.id])
       expect(albumLabelsBody.map((row) => row.id)).toEqual([label.id])
@@ -387,9 +399,11 @@ describe('music labels', () => {
       expect(publicBody.affiliatedAlbums?.map((album) => album.id)).toEqual([publishedAlbum.id])
 
       const removed = await webHandler.handler(adminRequest(publishedArtistPath, 'DELETE'))
+
       const afterRemove = await webHandler.handler(
-        adminRequest(`/api/music/artists/${publishedArtist.id}/labels`)
+        adminRequest(`/api/music/artists/${publishedArtist.id}/labels`),
       )
+
       expect(removed.status).toBe(204)
       await expect(decodeResponseBody(LabelListResponse, afterRemove)).resolves.toEqual([])
     } finally {
@@ -422,7 +436,7 @@ describe('music albums/tracks/playlists (HttpApiBuilder group, Step 6c)', () => 
 
   it('GET /api/music/albums/:id returns 404 for an unknown id', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/api/music/albums/00000000-0000-0000-0000-000000000000')
+      new Request('http://localhost/api/music/albums/00000000-0000-0000-0000-000000000000'),
     )
 
     expect(res.status).toBe(404)
@@ -433,8 +447,8 @@ describe('music albums/tracks/playlists (HttpApiBuilder group, Step 6c)', () => 
       new Request('http://localhost/api/music/albums', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ title: 'Test Album', slug: 'test-album' })
-      })
+        body: JSON.stringify({ title: 'Test Album', slug: 'test-album' }),
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -445,8 +459,8 @@ describe('music albums/tracks/playlists (HttpApiBuilder group, Step 6c)', () => 
       new Request('http://localhost/api/music/albums/00000000-0000-0000-0000-000000000000', {
         method: 'PATCH',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ title: 'Renamed' })
-      })
+        body: JSON.stringify({ title: 'Renamed' }),
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -455,8 +469,8 @@ describe('music albums/tracks/playlists (HttpApiBuilder group, Step 6c)', () => 
   it('DELETE /api/music/albums/:id returns 401 without a session cookie', async () => {
     const res = await webHandler.handler(
       new Request('http://localhost/api/music/albums/00000000-0000-0000-0000-000000000000', {
-        method: 'DELETE'
-      })
+        method: 'DELETE',
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -471,7 +485,7 @@ describe('music albums/tracks/playlists (HttpApiBuilder group, Step 6c)', () => 
 
   it('GET /api/music/tracks/:id returns 404 for an unknown id', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/api/music/tracks/00000000-0000-0000-0000-000000000000')
+      new Request('http://localhost/api/music/tracks/00000000-0000-0000-0000-000000000000'),
     )
 
     expect(res.status).toBe(404)
@@ -482,8 +496,8 @@ describe('music albums/tracks/playlists (HttpApiBuilder group, Step 6c)', () => 
       new Request('http://localhost/api/music/tracks', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ title: 'Test Track', slug: 'test-track' })
-      })
+        body: JSON.stringify({ title: 'Test Track', slug: 'test-track' }),
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -492,8 +506,8 @@ describe('music albums/tracks/playlists (HttpApiBuilder group, Step 6c)', () => 
   it('DELETE /api/music/tracks/:id returns 401 without a session cookie', async () => {
     const res = await webHandler.handler(
       new Request('http://localhost/api/music/tracks/00000000-0000-0000-0000-000000000000', {
-        method: 'DELETE'
-      })
+        method: 'DELETE',
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -508,7 +522,7 @@ describe('music albums/tracks/playlists (HttpApiBuilder group, Step 6c)', () => 
 
   it('GET /api/music/playlists/:id returns 404 for an unknown id', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/api/music/playlists/00000000-0000-0000-0000-000000000000')
+      new Request('http://localhost/api/music/playlists/00000000-0000-0000-0000-000000000000'),
     )
 
     expect(res.status).toBe(404)
@@ -517,8 +531,8 @@ describe('music albums/tracks/playlists (HttpApiBuilder group, Step 6c)', () => 
   it('GET /api/music/playlists/:id/tracks returns 401-free 200 (public read) with an empty list for an unknown playlist', async () => {
     const res = await webHandler.handler(
       new Request(
-        'http://localhost/api/music/playlists/00000000-0000-0000-0000-000000000000/tracks'
-      )
+        'http://localhost/api/music/playlists/00000000-0000-0000-0000-000000000000/tracks',
+      ),
     )
 
     expect(res.status).toBe(200)
@@ -532,9 +546,9 @@ describe('music albums/tracks/playlists (HttpApiBuilder group, Step 6c)', () => 
         {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ trackId: '00000000-0000-0000-0000-000000000000', position: 0 })
-        }
-      )
+          body: JSON.stringify({ trackId: '00000000-0000-0000-0000-000000000000', position: 0 }),
+        },
+      ),
     )
 
     expect(res.status).toBe(401)
@@ -547,9 +561,9 @@ describe('music albums/tracks/playlists (HttpApiBuilder group, Step 6c)', () => 
         {
           method: 'PUT',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ trackIds: ['00000000-0000-0000-0000-000000000000'] })
-        }
-      )
+          body: JSON.stringify({ trackIds: ['00000000-0000-0000-0000-000000000000'] }),
+        },
+      ),
     )
 
     expect(res.status).toBe(401)
@@ -560,8 +574,8 @@ describe('music albums/tracks/playlists (HttpApiBuilder group, Step 6c)', () => 
       new Request('http://localhost/api/music/playlists/import/spotify', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ url: 'https://open.spotify.com/playlist/abc' })
-      })
+        body: JSON.stringify({ url: 'https://open.spotify.com/playlist/abc' }),
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -571,7 +585,7 @@ describe('music albums/tracks/playlists (HttpApiBuilder group, Step 6c)', () => 
 describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', () => {
   it('GET /api/music/artist/:id/links returns 200 with a decodable (empty) list for an unknown entity', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/api/music/artist/00000000-0000-0000-0000-000000000000/links')
+      new Request('http://localhost/api/music/artist/00000000-0000-0000-0000-000000000000/links'),
     )
 
     expect(res.status).toBe(200)
@@ -581,8 +595,8 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
   it('GET /api/music/:entityType/:entityId/links 400s for an invalid entityType (schema-level rejection)', async () => {
     const res = await webHandler.handler(
       new Request(
-        'http://localhost/api/music/not-a-real-type/00000000-0000-0000-0000-000000000000/links'
-      )
+        'http://localhost/api/music/not-a-real-type/00000000-0000-0000-0000-000000000000/links',
+      ),
     )
 
     expect(res.status).toBe(400)
@@ -593,8 +607,8 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
       new Request('http://localhost/api/music/artist/00000000-0000-0000-0000-000000000000/links', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ platform: 'spotify', url: 'https://open.spotify.com/artist/x' })
-      })
+        body: JSON.stringify({ platform: 'spotify', url: 'https://open.spotify.com/artist/x' }),
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -607,9 +621,9 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
         {
           method: 'PATCH',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ status: 'verified' })
-        }
-      )
+          body: JSON.stringify({ status: 'verified' }),
+        },
+      ),
     )
 
     expect(res.status).toBe(401)
@@ -619,8 +633,8 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
     const res = await webHandler.handler(
       new Request(
         'http://localhost/api/music/artist/00000000-0000-0000-0000-000000000000/links/00000000-0000-0000-0000-000000000000',
-        { method: 'DELETE' }
-      )
+        { method: 'DELETE' },
+      ),
     )
 
     expect(res.status).toBe(401)
@@ -633,29 +647,31 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
     const albumId = crypto.randomUUID()
     const trackId = crypto.randomUUID()
     const videoId = suffix.replaceAll('-', '')
+
     const canonicalLinks = [
       {
         entityType: 'album',
         entityId: albumId,
         platform: 'discogs',
-        url: `https://www.discogs.com/release/${suffix}`
+        url: `https://www.discogs.com/release/${suffix}`,
       },
       {
         entityType: 'album',
         entityId: albumId,
         platform: 'website',
-        url: `https://artist-${suffix}.example.com/album`
+        url: `https://artist-${suffix}.example.com/album`,
       },
       {
         entityType: 'track',
         entityId: trackId,
         platform: 'youtube_music',
-        url: `https://music.youtube.com/watch?v=${videoId}`
-      }
+        url: `https://music.youtube.com/watch?v=${videoId}`,
+      },
     ] as const
+
     const legacyLink = {
       platform: 'youtube',
-      url: `https://www.youtube.com/watch?v=legacy${videoId}`
+      url: `https://www.youtube.com/watch?v=legacy${videoId}`,
     } as const
 
     await db.batch([
@@ -663,19 +679,19 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
         id: userId,
         name: 'Link admin',
         email: `${userId}@example.com`,
-        role: 'admin'
+        role: 'admin',
       }),
       db.insert(session).values({
         id: crypto.randomUUID(),
         token,
         userId,
-        expiresAt: new Date(Date.now() + 60_000)
+        expiresAt: new Date(Date.now() + 60_000),
       }),
       db
         .insert(musicEntityTypesTable)
         .values([
           { id: 'album', displayName: 'Album' },
-          { id: 'track', displayName: 'Track' }
+          { id: 'track', displayName: 'Track' },
         ])
         .onConflictDoNothing(),
       db
@@ -683,8 +699,8 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
         .values(
           ['discogs', 'website', 'youtube_music', 'youtube', 'other'].map((platform) => ({
             id: platform,
-            displayName: platform
-          }))
+            displayName: platform,
+          })),
         )
         .onConflictDoNothing(),
       db
@@ -692,7 +708,7 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
         .values({ id: albumId, title: 'Link compatibility album', slug: `links-${suffix}` }),
       db
         .insert(musicTracksTable)
-        .values({ id: trackId, title: 'Link compatibility track', slug: `track-links-${suffix}` })
+        .values({ id: trackId, title: 'Link compatibility track', slug: `track-links-${suffix}` }),
     ])
 
     const request = (
@@ -707,37 +723,40 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
         | {
             readonly status: 'verified'
             readonly metadata?: { readonly reviewNote: string }
-          }
+          },
     ) =>
       webHandler.handler(
         new Request(`http://localhost${path}`, {
           method,
           headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-          body: JSON.stringify(body)
-        })
+          body: JSON.stringify(body),
+        }),
       )
 
     try {
       await Promise.all(
         canonicalLinks.map(async (link) => {
           const path = `/api/music/${link.entityType}/${link.entityId}/links`
+
           const added = await request(path, 'POST', {
             platform: link.platform,
             url: link.url,
-            status: 'rejected'
+            status: 'rejected',
           })
+
           expect(added.status).toBe(200)
           const addedLink = await decodeResponseBody(EntityLinkResponse, added)
           expect(addedLink).toMatchObject({
             platform: link.platform,
             url: link.url,
-            status: 'rejected'
+            status: 'rejected',
           })
 
           const verified = await request(`${path}/${addedLink.id}`, 'PATCH', {
             status: 'verified',
-            metadata: { reviewNote: 'approved' }
+            metadata: { reviewNote: 'approved' },
           })
+
           expect(verified.status).toBe(200)
           await expect(decodeResponseBody(EntityLinkResponse, verified)).resolves.toMatchObject({
             platform: link.platform,
@@ -747,49 +766,54 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
             metadata: {
               discoveredBy: 'manual',
               confidence: 'exact_source',
-              reviewNote: 'approved'
-            }
+              reviewNote: 'approved',
+            },
           })
-        })
+        }),
       )
 
       const legacyAdded = await request(`/api/music/album/${albumId}/links`, 'POST', {
         ...legacyLink,
-        status: 'rejected'
+        status: 'rejected',
       })
+
       expect(legacyAdded.status).toBe(200)
       const legacyAddedLink = await decodeResponseBody(EntityLinkResponse, legacyAdded)
+
       const legacyVerified = await request(
         `/api/music/album/${albumId}/links/${legacyAddedLink.id}`,
         'PATCH',
-        { status: 'verified' }
+        { status: 'verified' },
       )
+
       expect(legacyVerified.status).toBe(200)
       await expect(decodeResponseBody(EntityLinkResponse, legacyVerified)).resolves.toMatchObject({
         ...legacyLink,
         status: 'verified',
-        verifiedBy: userId
+        verifiedBy: userId,
       })
 
       const identities = await db.select().from(musicSourceIdentitiesTable)
+
       const ownedIdentities = identities.filter(
-        ({ entityId }) => entityId === albumId || entityId === trackId
+        ({ entityId }) => entityId === albumId || entityId === trackId,
       )
+
       expect(ownedIdentities).toHaveLength(3)
       expect(ownedIdentities.map(({ platform }) => platform).sort()).toEqual([
         'other',
         'other',
-        'youtube'
+        'youtube',
       ])
       expect(ownedIdentities).toContainEqual(
         expect.objectContaining({
           sourceKey: `youtube:video:${videoId}`,
           entityType: 'track',
-          entityId: trackId
-        })
+          entityId: trackId,
+        }),
       )
       expect(
-        ownedIdentities.some(({ sourceKey }) => sourceKey === `youtube:video:legacy${videoId}`)
+        ownedIdentities.some(({ sourceKey }) => sourceKey === `youtube:video:legacy${videoId}`),
       ).toBe(false)
     } finally {
       await db
@@ -823,13 +847,13 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
         id: userId,
         name: 'Reverify admin',
         email: `${userId}@example.com`,
-        role: 'admin'
+        role: 'admin',
       }),
       db.insert(session).values({
         id: crypto.randomUUID(),
         token,
         userId,
-        expiresAt: new Date(Date.now() + 60_000)
+        expiresAt: new Date(Date.now() + 60_000),
       }),
       db
         .insert(musicEntityTypesTable)
@@ -840,14 +864,14 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
         .values(
           ['youtube_music', 'youtube'].map((platform) => ({
             id: platform,
-            displayName: platform
-          }))
+            displayName: platform,
+          })),
         )
         .onConflictDoNothing(),
       db.insert(musicTracksTable).values([
         { id: incumbentId, title: 'Reverified incumbent', slug: `reverified-${suffix}` },
-        { id: candidateId, title: 'Reverified candidate', slug: `candidate-${suffix}` }
-      ])
+        { id: candidateId, title: 'Reverified candidate', slug: `candidate-${suffix}` },
+      ]),
     ])
 
     const request = (
@@ -862,34 +886,40 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
         | {
             readonly status: 'verified'
             readonly metadata: { readonly reviewNote: string }
-          }
+          },
     ) => {
       const headers = new Headers({ authorization: `Bearer ${token}` })
+
       if (body) headers.set('content-type', 'application/json')
+
       return webHandler.handler(
         new Request(`http://localhost${path}`, {
           method,
           headers,
-          body: body ? JSON.stringify(body) : undefined
-        })
+          body: body ? JSON.stringify(body) : undefined,
+        }),
       )
     }
 
     try {
       const incumbentPath = `/api/music/track/${incumbentId}/links`
+
       const added = await request(incumbentPath, 'POST', {
         platform: 'youtube_music',
         url: youtubeMusicUrl,
-        status: 'rejected'
+        status: 'rejected',
       })
+
       expect(added.status).toBe(200)
       const addedLink = await decodeResponseBody(EntityLinkResponse, added)
 
       const linkPath = `${incumbentPath}/${addedLink.id}`
+
       const verified = await request(linkPath, 'PATCH', {
         status: 'verified',
-        metadata: { reviewNote: 'approved' }
+        metadata: { reviewNote: 'approved' },
       })
+
       expect(verified.status).toBe(200)
       const verifiedLink = await decodeResponseBody(EntityLinkResponse, verified)
 
@@ -898,14 +928,17 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
 
       const attached = await request(`/api/music/track/${candidateId}/links`, 'POST', {
         platform: 'youtube',
-        url: youtubeUrl
+        url: youtubeUrl,
       })
+
       expect(attached.status).toBe(200)
       const attachedLink = await decodeResponseBody(EntityLinkResponse, attached)
+
       const identities = await db
         .select()
         .from(musicSourceIdentitiesTable)
         .where(eq(musicSourceIdentitiesTable.sourceKey, sourceKey))
+
       const aliases = await db
         .select()
         .from(musicSourceAliasesTable)
@@ -914,27 +947,27 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
       expect(verifiedLink.metadata).toMatchObject({
         discoveredBy: 'manual',
         confidence: 'exact_source',
-        reviewNote: 'approved'
+        reviewNote: 'approved',
       })
       expect(attachedLink).toMatchObject({
         entityId: candidateId,
         platform: 'youtube',
         url: youtubeUrl,
-        status: 'verified'
+        status: 'verified',
       })
       expect(identities).toEqual([
         expect.objectContaining({
           sourceKey,
           platform: 'youtube',
           entityType: 'track',
-          entityId: candidateId
-        })
+          entityId: candidateId,
+        }),
       ])
       expect(aliases).toEqual([
         expect.objectContaining({
           normalizedUrl: youtubeUrl,
-          sourceKey
-        })
+          sourceKey,
+        }),
       ])
     } finally {
       await db
@@ -969,13 +1002,13 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
         id: userId,
         name: 'Collision admin',
         email: `${userId}@example.com`,
-        role: 'admin'
+        role: 'admin',
       }),
       db.insert(session).values({
         id: crypto.randomUUID(),
         token,
         userId,
-        expiresAt: new Date(Date.now() + 60_000)
+        expiresAt: new Date(Date.now() + 60_000),
       }),
       db
         .insert(musicEntityTypesTable)
@@ -985,14 +1018,14 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
         .insert(musicPlatformsTable)
         .values(
           ['spotify', 'website', 'discogs', 'youtube_music', 'youtube', 'other'].map(
-            (platform) => ({ id: platform, displayName: platform })
-          )
+            (platform) => ({ id: platform, displayName: platform }),
+          ),
         )
         .onConflictDoNothing(),
       db.insert(musicTracksTable).values([
         { id: incumbentId, title: 'Identity incumbent', slug: `incumbent-${suffix}` },
-        { id: candidateId, title: 'Identity candidate', slug: `candidate-${suffix}` }
-      ])
+        { id: candidateId, title: 'Identity candidate', slug: `candidate-${suffix}` },
+      ]),
     ])
 
     const addLink = (entityId: string, link: Readonly<{ platform: string; url: string }>) =>
@@ -1000,88 +1033,97 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
         new Request(`http://localhost/api/music/track/${entityId}/links`, {
           method: 'POST',
           headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-          body: JSON.stringify(link)
-        })
+          body: JSON.stringify(link),
+        }),
       )
 
     try {
       const spotifyAttached = await addLink(incumbentId, {
         platform: 'spotify',
-        url: spotifyUrl
+        url: spotifyUrl,
       })
+
       expect(spotifyAttached.status).toBe(200)
 
       const mislabeledSpotify = await addLink(candidateId, {
         platform: 'website',
-        url: spotifyUrl
+        url: spotifyUrl,
       })
+
       expect(mislabeledSpotify.status).toBe(400)
 
       const wrongSpotifyEntityType = await addLink(candidateId, {
         platform: 'spotify',
-        url: `https://open.spotify.com/album/${spotifyId}`
+        url: `https://open.spotify.com/album/${spotifyId}`,
       })
+
       expect(wrongSpotifyEntityType.status).toBe(400)
 
       const genericAttached = await addLink(incumbentId, {
         platform: 'website',
-        url: genericUrl
+        url: genericUrl,
       })
+
       expect(genericAttached.status).toBe(200)
       await expect(decodeResponseBody(EntityLinkResponse, genericAttached)).resolves.toMatchObject({
         platform: 'website',
-        url: genericUrl
+        url: genericUrl,
       })
 
       const genericCollision = await addLink(candidateId, {
         platform: 'discogs',
-        url: genericUrl
+        url: genericUrl,
       })
+
       expect(genericCollision.status).toBe(409)
 
       const youtubeMusicAttached = await addLink(incumbentId, {
         platform: 'youtube_music',
-        url: youtubeMusicUrl
+        url: youtubeMusicUrl,
       })
+
       expect(youtubeMusicAttached.status).toBe(200)
       await expect(
-        decodeResponseBody(EntityLinkResponse, youtubeMusicAttached)
+        decodeResponseBody(EntityLinkResponse, youtubeMusicAttached),
       ).resolves.toMatchObject({
         platform: 'youtube_music',
-        url: youtubeMusicUrl
+        url: youtubeMusicUrl,
       })
 
       const youtubeCollision = await addLink(candidateId, {
         platform: 'youtube',
-        url: youtubeMusicUrl
+        url: youtubeMusicUrl,
       })
+
       expect(youtubeCollision.status).toBe(409)
 
       const identities = await db
         .select()
         .from(musicSourceIdentitiesTable)
         .where(eq(musicSourceIdentitiesTable.entityId, incumbentId))
+
       const incumbentLinks = await db
         .select()
         .from(musicEntityLinksTable)
         .where(eq(musicEntityLinksTable.entityId, incumbentId))
+
       const candidateLinks = await db
         .select()
         .from(musicEntityLinksTable)
         .where(eq(musicEntityLinksTable.entityId, candidateId))
 
       expect(new Set(identities.map(({ platform }) => platform))).toEqual(
-        new Set(['spotify', 'other', 'youtube'])
+        new Set(['spotify', 'other', 'youtube']),
       )
       expect(identities).toContainEqual(
         expect.objectContaining({
           sourceKey: `youtube:video:${youtubeId}`,
           platform: 'youtube',
-          entityId: incumbentId
-        })
+          entityId: incumbentId,
+        }),
       )
       expect(new Set(incumbentLinks.map(({ platform }) => platform))).toEqual(
-        new Set(['spotify', 'website', 'youtube_music'])
+        new Set(['spotify', 'website', 'youtube_music']),
       )
       expect(candidateLinks).toHaveLength(0)
     } finally {
@@ -1102,8 +1144,8 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
       new Request('http://localhost/api/music/resolve', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ url: 'https://open.spotify.com/track/abc' })
-      })
+        body: JSON.stringify({ url: 'https://open.spotify.com/track/abc' }),
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -1114,8 +1156,8 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
       new Request('http://localhost/api/music/resolve', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ url: 'not-a-url' })
-      })
+        body: JSON.stringify({ url: 'not-a-url' }),
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -1130,13 +1172,13 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
       id: userId,
       name: 'Admin user',
       email: `${userId}@example.com`,
-      role: 'admin'
+      role: 'admin',
     })
     await db.insert(session).values({
       id: crypto.randomUUID(),
       token,
       userId,
-      expiresAt: new Date(Date.now() + 60_000)
+      expiresAt: new Date(Date.now() + 60_000),
     })
     await db.batch([
       db
@@ -1146,7 +1188,7 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
       db
         .insert(musicPlatformsTable)
         .values({ id: 'spotify', displayName: 'Spotify' })
-        .onConflictDoNothing()
+        .onConflictDoNothing(),
     ])
 
     try {
@@ -1155,10 +1197,10 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
           method: 'POST',
           headers: {
             authorization: `Bearer ${token}`,
-            'content-type': 'application/json'
+            'content-type': 'application/json',
           },
-          body: JSON.stringify({ url: 'https://open.spotify.com/track/0000000000000000000000' })
-        })
+          body: JSON.stringify({ url: 'https://open.spotify.com/track/0000000000000000000000' }),
+        }),
       )
 
       expect(res.status).toBe(503)
@@ -1182,13 +1224,13 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
         id: userId,
         name: 'Admin user',
         email: `${userId}@example.com`,
-        role: 'admin'
+        role: 'admin',
       }),
       db.insert(session).values({
         id: crypto.randomUUID(),
         token,
         userId,
-        expiresAt: new Date(Date.now() + 60_000)
+        expiresAt: new Date(Date.now() + 60_000),
       }),
       db
         .insert(musicEntityTypesTable)
@@ -1207,7 +1249,7 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
         platform: 'spotify',
         url,
         status: 'verified',
-        metadata: { confidence: 'exact_source' }
+        metadata: { confidence: 'exact_source' },
       }),
       db.insert(musicSourceIdentitiesTable).values({
         sourceKey,
@@ -1218,14 +1260,14 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
         state: 'resolved',
         entityType: 'artist',
         entityId: artistId,
-        resolvedAt: new Date()
+        resolvedAt: new Date(),
       }),
       db.insert(musicSourceAliasesTable).values({
         normalizedUrl: url,
         sourceKey,
         firstSeenAt: new Date(),
-        lastSeenAt: new Date()
-      })
+        lastSeenAt: new Date(),
+      }),
     ])
 
     try {
@@ -1234,12 +1276,13 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
           new Request(`http://localhost${path}`, {
             method: 'POST',
             headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-            body: JSON.stringify({ url })
-          })
+            body: JSON.stringify({ url }),
+          }),
         )
+
       const [resolve, scrape] = await Promise.all([
         request('/api/music/resolve'),
-        request('/api/music/artist/scrape')
+        request('/api/music/artist/scrape'),
       ])
 
       expect(resolve.status).toBe(200)
@@ -1276,13 +1319,13 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
         id: userId,
         name: 'Admin user',
         email: `${userId}@example.com`,
-        role: 'admin'
+        role: 'admin',
       }),
       db.insert(session).values({
         id: crypto.randomUUID(),
         token,
         userId,
-        expiresAt: new Date(Date.now() + 60_000)
+        expiresAt: new Date(Date.now() + 60_000),
       }),
       db
         .insert(musicEntityTypesTable)
@@ -1296,7 +1339,7 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
         id: artistId,
         name: 'Artwork artist',
         imageUrl,
-        slug: `artwork-${suffix}`
+        slug: `artwork-${suffix}`,
       }),
       db.insert(musicEntityLinksTable).values({
         entityType: 'artist',
@@ -1304,7 +1347,7 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
         platform: 'spotify',
         url,
         status: 'verified',
-        metadata: { confidence: 'exact_source' }
+        metadata: { confidence: 'exact_source' },
       }),
       db.insert(musicSourceIdentitiesTable).values({
         sourceKey,
@@ -1315,29 +1358,30 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
         state: 'resolved',
         entityType: 'artist',
         entityId: artistId,
-        resolvedAt: new Date()
+        resolvedAt: new Date(),
       }),
       db.insert(musicSourceAliasesTable).values({
         normalizedUrl: url,
         sourceKey,
         firstSeenAt: new Date(),
-        lastSeenAt: new Date()
-      })
+        lastSeenAt: new Date(),
+      }),
     ])
 
     const artworkFetchLayer = Layer.succeed(MusicCoverImageFetcher, () =>
       Promise.resolve(
         new Response('image-bytes', {
           status: 200,
-          headers: { 'content-type': 'image/jpeg' }
-        })
-      )
+          headers: { 'content-type': 'image/jpeg' },
+        }),
+      ),
     )
+
     const artworkHandler = createTestWebHandler(
       d1,
       undefined,
       writableObjectStoreLayer,
-      artworkFetchLayer
+      artworkFetchLayer,
     )
 
     try {
@@ -1345,13 +1389,14 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
         new Request('http://localhost/api/music/resolve', {
           method: 'POST',
           headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-          body: JSON.stringify({ url })
-        })
+          body: JSON.stringify({ url }),
+        }),
       )
 
       expect(response.status).toBe(200)
       const body = await decodeResponseBody(ResolvedMusicEntityResponse, response)
       expect(body.entityType).toBe('artist')
+
       if (body.entityType !== 'artist') throw new Error('Expected resolved artist response')
       expect(body.coverImageUrl).toBe(copiedImageUrl)
       expect(body.entity.imageUrl).toBe(copiedImageUrl)
@@ -1379,13 +1424,13 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
       id: userId,
       name: 'Admin user',
       email: `${userId}@example.com`,
-      role: 'admin'
+      role: 'admin',
     })
     await db.insert(session).values({
       id: crypto.randomUUID(),
       token,
       userId,
-      expiresAt: new Date(Date.now() + 60_000)
+      expiresAt: new Date(Date.now() + 60_000),
     })
     await db.batch([
       db
@@ -1395,7 +1440,7 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
       db
         .insert(musicPlatformsTable)
         .values({ id: 'spotify', displayName: 'Spotify' })
-        .onConflictDoNothing()
+        .onConflictDoNothing(),
     ])
     await db.insert(musicSourceIdentitiesTable).values({
       sourceKey: `spotify:track:${spotifyTrackId}`,
@@ -1405,7 +1450,7 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
       canonicalUrl: url,
       state: 'resolving',
       ownerToken: crypto.randomUUID(),
-      leaseExpiresAt: new Date(Date.now() + 60_000)
+      leaseExpiresAt: new Date(Date.now() + 60_000),
     })
 
     try {
@@ -1413,11 +1458,12 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
         new Request(`http://localhost${path}`, {
           method: 'POST',
           headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-          body: JSON.stringify({ url })
+          body: JSON.stringify({ url }),
         })
+
       const [resolve, scrape] = await Promise.all([
         webHandler.handler(request('/api/music/resolve')),
-        webHandler.handler(request('/api/music/track/scrape'))
+        webHandler.handler(request('/api/music/track/scrape')),
       ])
 
       expect(resolve.status).toBe(503)
@@ -1440,8 +1486,8 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
       new Request('http://localhost/api/music/artist/scrape', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ artistName: 'Test Artist' })
-      })
+        body: JSON.stringify({ artistName: 'Test Artist' }),
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -1451,8 +1497,8 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
     const res = await webHandler.handler(
       new Request(
         'http://localhost/api/music/track/00000000-0000-0000-0000-000000000000/links/rescrape',
-        { method: 'POST' }
-      )
+        { method: 'POST' },
+      ),
     )
 
     expect(res.status).toBe(401)
@@ -1468,26 +1514,26 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
       id: userId,
       name: 'Admin user',
       email: `${userId}@example.com`,
-      role: 'admin'
+      role: 'admin',
     })
     await db.insert(session).values({
       id: crypto.randomUUID(),
       token,
       userId,
-      expiresAt: new Date(Date.now() + 60_000)
+      expiresAt: new Date(Date.now() + 60_000),
     })
     await db.insert(musicTracksTable).values({
       id: trackId,
       title: 'Track without Spotify',
-      slug: `track-without-spotify-${suffix}`
+      slug: `track-without-spotify-${suffix}`,
     })
 
     try {
       const res = await webHandler.handler(
         new Request(`http://localhost/api/music/track/${trackId}/links/rescrape`, {
           method: 'POST',
-          headers: { authorization: `Bearer ${token}` }
-        })
+          headers: { authorization: `Bearer ${token}` },
+        }),
       )
 
       expect(res.status).toBe(404)
@@ -1524,7 +1570,7 @@ describe('search (HttpApiBuilder group, Step 6)', () => {
 
   it('GET /api/search?q=test&limit=999 returns 400 (limit above the 50 max)', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/api/search?q=test&limit=999')
+      new Request('http://localhost/api/search?q=test&limit=999'),
     )
 
     expect(res.status).toBe(400)
@@ -1540,7 +1586,7 @@ describe('search (HttpApiBuilder group, Step 6)', () => {
 describe('profile (HttpApiBuilder group, Step 6)', () => {
   it('GET /api/profile/:username returns 404 for an unknown username', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/api/profile/does-not-exist-user')
+      new Request('http://localhost/api/profile/does-not-exist-user'),
     )
 
     expect(res.status).toBe(404)
@@ -1548,7 +1594,7 @@ describe('profile (HttpApiBuilder group, Step 6)', () => {
 
   it('responds 404 to unsupported methods on the profile path', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/api/profile/does-not-exist-user', { method: 'POST' })
+      new Request('http://localhost/api/profile/does-not-exist-user', { method: 'POST' }),
     )
 
     expect(res.status).toBe(404)
@@ -1558,7 +1604,7 @@ describe('profile (HttpApiBuilder group, Step 6)', () => {
 describe('resolve (HttpApiBuilder group, Step 6)', () => {
   it('GET /api/resolve/:slug returns 404 for an unknown slug', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/api/resolve/does-not-exist-slug')
+      new Request('http://localhost/api/resolve/does-not-exist-slug'),
     )
 
     expect(res.status).toBe(404)
@@ -1572,7 +1618,7 @@ describe('resolve (HttpApiBuilder group, Step 6)', () => {
 
   it('responds 404 to unsupported methods on the resolve path', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/api/resolve/does-not-exist-slug', { method: 'POST' })
+      new Request('http://localhost/api/resolve/does-not-exist-slug', { method: 'POST' }),
     )
 
     expect(res.status).toBe(404)
@@ -1588,7 +1634,7 @@ describe('admin (HttpApiBuilder group, Step 6)', () => {
 
   it('GET /api/admin/newsletter-subscribers returns 401 without a session cookie', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/api/admin/newsletter-subscribers')
+      new Request('http://localhost/api/admin/newsletter-subscribers'),
     )
 
     expect(res.status).toBe(401)
@@ -1596,7 +1642,7 @@ describe('admin (HttpApiBuilder group, Step 6)', () => {
 
   it('GET /api/admin/frontend-errors/:scenario returns 401 without a session cookie', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/api/admin/frontend-errors/ok')
+      new Request('http://localhost/api/admin/frontend-errors/ok'),
     )
 
     expect(res.status).toBe(401)
@@ -1604,7 +1650,7 @@ describe('admin (HttpApiBuilder group, Step 6)', () => {
 
   it('GET /api/admin/frontend-errors/:scenario returns 401 (not 400) for an undeclared scenario literal without a session cookie', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/api/admin/frontend-errors/not-a-real-scenario')
+      new Request('http://localhost/api/admin/frontend-errors/not-a-real-scenario'),
     )
 
     // AuthMiddleware runs before param schema validation, so an invalid
@@ -1626,8 +1672,8 @@ describe('email (HttpApiBuilder group, Step 6)', () => {
       new Request('http://localhost/api/email/send-mix-notification', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ mixSlug: 'test-mix' })
-      })
+        body: JSON.stringify({ mixSlug: 'test-mix' }),
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -1640,8 +1686,8 @@ describe('invite (HttpApiBuilder group, Step 6)', () => {
       new Request('http://localhost/api/invite/send', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ userId: '00000000-0000-0000-0000-000000000000' })
-      })
+        body: JSON.stringify({ userId: '00000000-0000-0000-0000-000000000000' }),
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -1652,8 +1698,8 @@ describe('invite (HttpApiBuilder group, Step 6)', () => {
       new Request('http://localhost/api/invite/confirm', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ token: 'not-a-real-token', password: 'irrelevant-password' })
-      })
+        body: JSON.stringify({ token: 'not-a-real-token', password: 'irrelevant-password' }),
+      }),
     )
 
     // No auth required (matches the old Hono route). Asserting != 404 rather
@@ -1672,8 +1718,8 @@ describe('invite (HttpApiBuilder group, Step 6)', () => {
       new Request('http://localhost/api/invite/confirm', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ notToken: 'missing required fields' })
-      })
+        body: JSON.stringify({ notToken: 'missing required fields' }),
+      }),
     )
 
     // Schema decode failure short-circuits before any DB call, so this
@@ -1694,8 +1740,8 @@ describe('favorites (HttpApiBuilder group, Step 6)', () => {
       new Request('http://localhost/api/favorites', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ audioId: '00000000-0000-0000-0000-000000000000' })
-      })
+        body: JSON.stringify({ audioId: '00000000-0000-0000-0000-000000000000' }),
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -1704,8 +1750,8 @@ describe('favorites (HttpApiBuilder group, Step 6)', () => {
   it('DELETE /api/favorites/:audioId returns 401 without a session cookie', async () => {
     const res = await webHandler.handler(
       new Request('http://localhost/api/favorites/00000000-0000-0000-0000-000000000000', {
-        method: 'DELETE'
-      })
+        method: 'DELETE',
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -1714,8 +1760,8 @@ describe('favorites (HttpApiBuilder group, Step 6)', () => {
   it('DELETE /api/favorites/show/:showId returns 401 without a session cookie', async () => {
     const res = await webHandler.handler(
       new Request('http://localhost/api/favorites/show/00000000-0000-0000-0000-000000000000', {
-        method: 'DELETE'
-      })
+        method: 'DELETE',
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -1723,7 +1769,7 @@ describe('favorites (HttpApiBuilder group, Step 6)', () => {
 
   it('DELETE /api/favorites/:audioId returns 401 (not 400) for a non-UUID audioId without a session cookie', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/api/favorites/not-a-uuid', { method: 'DELETE' })
+      new Request('http://localhost/api/favorites/not-a-uuid', { method: 'DELETE' }),
     )
 
     // AuthMiddleware runs before param schema validation (same ordering as
@@ -1749,9 +1795,9 @@ describe('music-reminders (HttpApiBuilder group, Step 6)', () => {
           musicTitle: 'Test Song',
           artistName: 'Test Artist',
           musicUrl: 'https://example.com/track',
-          reminderDate: '2030-01-01T00:00:00Z'
-        })
-      })
+          reminderDate: '2030-01-01T00:00:00Z',
+        }),
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -1762,8 +1808,8 @@ describe('music-reminders (HttpApiBuilder group, Step 6)', () => {
       new Request('http://localhost/api/music-reminders/00000000-0000-0000-0000-000000000000', {
         method: 'PUT',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ musicTitle: 'Updated' })
-      })
+        body: JSON.stringify({ musicTitle: 'Updated' }),
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -1772,8 +1818,8 @@ describe('music-reminders (HttpApiBuilder group, Step 6)', () => {
   it('DELETE /api/music-reminders/:id returns 401 without a session cookie', async () => {
     const res = await webHandler.handler(
       new Request('http://localhost/api/music-reminders/00000000-0000-0000-0000-000000000000', {
-        method: 'DELETE'
-      })
+        method: 'DELETE',
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -1781,7 +1827,7 @@ describe('music-reminders (HttpApiBuilder group, Step 6)', () => {
 
   it('DELETE /api/music-reminders/:id returns 401 (not 400) for a non-UUID id without a session cookie', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/api/music-reminders/not-a-uuid', { method: 'DELETE' })
+      new Request('http://localhost/api/music-reminders/not-a-uuid', { method: 'DELETE' }),
     )
 
     // AuthMiddleware runs before param schema validation (same ordering as
@@ -1804,9 +1850,9 @@ describe('upload (HttpApiBuilder group, Step 7)', () => {
         body: JSON.stringify({
           fileName: 'artwork.png',
           contentType: 'image/png',
-          fileSize: 1024
-        })
-      })
+          fileSize: 1024,
+        }),
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -1821,9 +1867,9 @@ describe('upload (HttpApiBuilder group, Step 7)', () => {
           fileName: 'test.mp3',
           contentType: 'audio/mpeg',
           fileSize: 1024,
-          fileType: 'audio'
-        })
-      })
+          fileType: 'audio',
+        }),
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -1837,9 +1883,9 @@ describe('upload (HttpApiBuilder group, Step 7)', () => {
         body: JSON.stringify({
           key: 'user123/audio_1_test.mp3',
           uploadId: 'upload-id',
-          partNumber: 1
-        })
-      })
+          partNumber: 1,
+        }),
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -1857,7 +1903,7 @@ describe('upload (HttpApiBuilder group, Step 7)', () => {
       id: crypto.randomUUID(),
       token,
       userId,
-      expiresAt: new Date(Date.now() + 60_000)
+      expiresAt: new Date(Date.now() + 60_000),
     })
 
     try {
@@ -1866,16 +1912,16 @@ describe('upload (HttpApiBuilder group, Step 7)', () => {
           method: 'POST',
           headers: {
             authorization: `Bearer ${token}`,
-            'content-type': 'application/json'
+            'content-type': 'application/json',
           },
           body: JSON.stringify({
             // assertKeyOwnership requires the key to start with `${userId}/`
             // -- this key belongs to a different user prefix entirely.
             key: 'someone-elses-user-id/multipart/uuid/1024/audio_test.mp3',
             uploadId: 'upload-id',
-            partNumber: 1
-          })
-        })
+            partNumber: 1,
+          }),
+        }),
       )
 
       expect(res.status).toBe(400)
@@ -1892,9 +1938,9 @@ describe('upload (HttpApiBuilder group, Step 7)', () => {
         body: JSON.stringify({
           key: 'user123/audio_1_test.mp3',
           uploadId: 'upload-id',
-          parts: [{ partNumber: 1, etag: 'etag1' }]
-        })
-      })
+          parts: [{ partNumber: 1, etag: 'etag1' }],
+        }),
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -1905,8 +1951,8 @@ describe('upload (HttpApiBuilder group, Step 7)', () => {
       new Request('http://localhost/api/upload/multipart/abort', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ key: 'user123/audio_1_test.mp3', uploadId: 'upload-id' })
-      })
+        body: JSON.stringify({ key: 'user123/audio_1_test.mp3', uploadId: 'upload-id' }),
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -1915,8 +1961,8 @@ describe('upload (HttpApiBuilder group, Step 7)', () => {
   it('GET /api/upload/multipart/status returns 401 without a session cookie', async () => {
     const res = await webHandler.handler(
       new Request(
-        'http://localhost/api/upload/multipart/status?key=user123%2Faudio_1_test.mp3&uploadId=upload-id'
-      )
+        'http://localhost/api/upload/multipart/status?key=user123%2Faudio_1_test.mp3&uploadId=upload-id',
+      ),
     )
 
     expect(res.status).toBe(401)
@@ -1929,8 +1975,8 @@ describe('newsletter (HttpApiBuilder group, Step 6)', () => {
       new Request('http://localhost/api/newsletter/unsubscribe', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ token: '00000000-0000-0000-0000-000000000000' })
-      })
+        body: JSON.stringify({ token: '00000000-0000-0000-0000-000000000000' }),
+      }),
     )
 
     expect(res.status).toBe(404)
@@ -1941,8 +1987,8 @@ describe('newsletter (HttpApiBuilder group, Step 6)', () => {
       new Request('http://localhost/api/newsletter/subscribe', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ notEmail: 'missing required field' })
-      })
+        body: JSON.stringify({ notEmail: 'missing required field' }),
+      }),
     )
 
     expect(res.status).toBe(400)
@@ -1953,8 +1999,8 @@ describe('newsletter (HttpApiBuilder group, Step 6)', () => {
       new Request('http://localhost/api/newsletter/request-unsubscribe', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email: 'definitely-not-a-real-subscriber@example.com' })
-      })
+        body: JSON.stringify({ email: 'definitely-not-a-real-subscriber@example.com' }),
+      }),
     )
 
     // Matches the old handler: always 200 with { sent: true } regardless of
@@ -1966,7 +2012,7 @@ describe('newsletter (HttpApiBuilder group, Step 6)', () => {
 
   it('responds 404 to unsupported methods on the newsletter subscribe path', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/api/newsletter/subscribe', { method: 'GET' })
+      new Request('http://localhost/api/newsletter/subscribe', { method: 'GET' }),
     )
 
     expect(res.status).toBe(404)
@@ -1977,8 +2023,8 @@ describe('newsletter (HttpApiBuilder group, Step 6)', () => {
       new Request('http://localhost/api/newsletter/subscribe', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email: 'not-an-email' })
-      })
+        body: JSON.stringify({ email: 'not-an-email' }),
+      }),
     )
 
     expect(res.status).toBe(400)
@@ -1989,8 +2035,8 @@ describe('newsletter (HttpApiBuilder group, Step 6)', () => {
       new Request('http://localhost/api/newsletter/unsubscribe', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ token: 'not-a-uuid' })
-      })
+        body: JSON.stringify({ token: 'not-a-uuid' }),
+      }),
     )
 
     expect(res.status).toBe(400)
@@ -2006,7 +2052,7 @@ describe('file-manager (HttpApiBuilder group, Step 6)', () => {
 
   it('GET /api/file-manager/list returns 401 without a session cookie', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/api/file-manager/list?bucketName=test-bucket')
+      new Request('http://localhost/api/file-manager/list?bucketName=test-bucket'),
     )
 
     expect(res.status).toBe(401)
@@ -2020,9 +2066,9 @@ describe('file-manager (HttpApiBuilder group, Step 6)', () => {
         body: JSON.stringify({
           key: 'some-key',
           sourceBucket: 'a',
-          destinationBucket: 'b'
-        })
-      })
+          destinationBucket: 'b',
+        }),
+      }),
     )
 
     expect(res.status).toBe(404)
@@ -2035,8 +2081,8 @@ describe('spotify (HttpApiBuilder group, Step 6)', () => {
       new Request('http://localhost/api/spotify/track', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ id: '' })
-      })
+        body: JSON.stringify({ id: '' }),
+      }),
     )
 
     expect(res.status).toBe(400)
@@ -2047,8 +2093,8 @@ describe('spotify (HttpApiBuilder group, Step 6)', () => {
       new Request('http://localhost/api/spotify/search/albums', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ query: '' })
-      })
+        body: JSON.stringify({ query: '' }),
+      }),
     )
 
     expect(res.status).toBe(400)
@@ -2059,8 +2105,8 @@ describe('spotify (HttpApiBuilder group, Step 6)', () => {
       new Request('http://localhost/api/spotify/search/albums', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ query: 'test', limit: 999 })
-      })
+        body: JSON.stringify({ query: 'test', limit: 999 }),
+      }),
     )
 
     expect(res.status).toBe(400)
@@ -2071,8 +2117,8 @@ describe('spotify (HttpApiBuilder group, Step 6)', () => {
       new Request('http://localhost/api/spotify/enrich', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ url: 'not-a-url' })
-      })
+        body: JSON.stringify({ url: 'not-a-url' }),
+      }),
     )
 
     expect(res.status).toBe(400)
@@ -2083,8 +2129,8 @@ describe('spotify (HttpApiBuilder group, Step 6)', () => {
       new Request('http://localhost/api/spotify/track', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ id: 'not-a-real-spotify-id' })
-      })
+        body: JSON.stringify({ id: 'not-a-real-spotify-id' }),
+      }),
     )
 
     // No AuthMiddleware on this group (matches the old Hono routes, which
@@ -2111,7 +2157,7 @@ describe('shows (HttpApiBuilder group, Step 6)', () => {
 
   it('GET /api/shows/:slug returns something other than 401 without a session cookie', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/api/shows/does-not-exist-slug')
+      new Request('http://localhost/api/shows/does-not-exist-slug'),
     )
 
     expect(res.status).not.toBe(401)
@@ -2128,8 +2174,8 @@ describe('shows (HttpApiBuilder group, Step 6)', () => {
       new Request('http://localhost/api/shows', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ title: 'Test Show', slug: 'test-show', content: 'hello' })
-      })
+        body: JSON.stringify({ title: 'Test Show', slug: 'test-show', content: 'hello' }),
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -2140,8 +2186,8 @@ describe('shows (HttpApiBuilder group, Step 6)', () => {
       new Request('http://localhost/api/shows/some-slug', {
         method: 'PATCH',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ title: 'Renamed' })
-      })
+        body: JSON.stringify({ title: 'Renamed' }),
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -2149,7 +2195,7 @@ describe('shows (HttpApiBuilder group, Step 6)', () => {
 
   it('DELETE /api/shows/:slug returns 401 without a session cookie', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/api/shows/some-slug', { method: 'DELETE' })
+      new Request('http://localhost/api/shows/some-slug', { method: 'DELETE' }),
     )
 
     expect(res.status).toBe(401)
@@ -2158,8 +2204,8 @@ describe('shows (HttpApiBuilder group, Step 6)', () => {
   it('POST /api/shows/:id/subscribe returns 401 without a session cookie', async () => {
     const res = await webHandler.handler(
       new Request('http://localhost/api/shows/00000000-0000-0000-0000-000000000000/subscribe', {
-        method: 'POST'
-      })
+        method: 'POST',
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -2168,8 +2214,8 @@ describe('shows (HttpApiBuilder group, Step 6)', () => {
   it('DELETE /api/shows/:id/unsubscribe returns 401 without a session cookie', async () => {
     const res = await webHandler.handler(
       new Request('http://localhost/api/shows/00000000-0000-0000-0000-000000000000/unsubscribe', {
-        method: 'DELETE'
-      })
+        method: 'DELETE',
+      }),
     )
 
     expect(res.status).toBe(401)
@@ -2177,7 +2223,7 @@ describe('shows (HttpApiBuilder group, Step 6)', () => {
 
   it('POST /api/shows/:id/subscribe returns 401 (not 400) for a non-UUID id without a session cookie', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/api/shows/not-a-uuid/subscribe', { method: 'POST' })
+      new Request('http://localhost/api/shows/not-a-uuid/subscribe', { method: 'POST' }),
     )
 
     // AuthMiddleware runs before param schema validation, same ordering as
@@ -2187,7 +2233,7 @@ describe('shows (HttpApiBuilder group, Step 6)', () => {
 
   it('GET /api/shows/:slug/episodes returns something other than 401 without a session cookie', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/api/shows/does-not-exist-slug/episodes')
+      new Request('http://localhost/api/shows/does-not-exist-slug/episodes'),
     )
 
     expect(res.status).not.toBe(401)
@@ -2195,7 +2241,7 @@ describe('shows (HttpApiBuilder group, Step 6)', () => {
 
   it('GET /api/shows/:slug/qr-pdf returns something other than 401 without a session cookie', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/api/shows/does-not-exist-slug/qr-pdf')
+      new Request('http://localhost/api/shows/does-not-exist-slug/qr-pdf'),
     )
 
     expect(res.status).not.toBe(401)
@@ -2212,15 +2258,16 @@ describe('micro post replies (community permission, Slice 4)', () => {
     await db.insert(user).values({
       id: plainUserId,
       name: 'Plain user',
-      email: `${plainUserId}@example.com`
+      email: `${plainUserId}@example.com`,
       // no role -- not creator/editor/admin
     })
     await db.insert(session).values({
       id: crypto.randomUUID(),
       token: plainUserToken,
       userId: plainUserId,
-      expiresAt: new Date(Date.now() + 60_000)
+      expiresAt: new Date(Date.now() + 60_000),
     })
+
     const [parentPost] = await db
       .insert(postsTable)
       .values({
@@ -2228,15 +2275,17 @@ describe('micro post replies (community permission, Slice 4)', () => {
         slug: parentSlug,
         content: 'Original tweet',
         type: 'micro',
-        draft: false
+        draft: false,
       })
       .returning()
+
     if (!parentPost) throw new Error('Failed to seed parent tweet')
     await db.insert(postCreators).values({ postId: parentPost.id, creatorId: plainUserId })
 
     const authenticatedRequest = (url: string, token: string, init: RequestInit = {}) => {
       const request = new Request(url, init)
       request.headers.set('authorization', `Bearer ${token}`)
+
       return request
     }
 
@@ -2247,9 +2296,10 @@ describe('micro post replies (community permission, Slice 4)', () => {
         new Request(`http://localhost/api/content/posts/micro/${parentSlug}/replies`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ content: 'no session' })
-        })
+          body: JSON.stringify({ content: 'no session' }),
+        }),
       )
+
       expect(unauthenticatedReply.status).toBe(401)
 
       const replyRes = await webHandler.handler(
@@ -2259,10 +2309,11 @@ describe('micro post replies (community permission, Slice 4)', () => {
           {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ content: 'a reply from a plain user' })
-          }
-        )
+            body: JSON.stringify({ content: 'a reply from a plain user' }),
+          },
+        ),
       )
+
       expect(replyRes.status).toBe(200)
       const replyBody = await decodeResponseBody(CompiledMicroPostResponse, replyRes)
       replyId = replyBody.id
@@ -2277,18 +2328,21 @@ describe('micro post replies (community permission, Slice 4)', () => {
           body: JSON.stringify({
             slug: `plain-user-post-${suffix}`,
             content: 'attempted top-level tweet',
-            type: 'micro'
-          })
-        })
+            type: 'micro',
+          }),
+        }),
       )
+
       // Community reply permission must not broaden top-level create access:
       // a plain-role user can reply (above) but cannot create a top-level post.
       expect(createTopLevelRes.status).toBe(403)
     } finally {
       await db.delete(postCreators).where(eq(postCreators.postId, parentPost.id))
+
       if (replyId) {
         await db.delete(postCreators).where(eq(postCreators.postId, replyId))
       }
+
       await db.delete(postsTable).where(eq(postsTable.rootPostId, parentPost.id))
       await db.delete(postsTable).where(eq(postsTable.id, parentPost.id))
       await db.delete(postsTable).where(eq(postsTable.slug, `plain-user-post-${suffix}`))
@@ -2306,7 +2360,7 @@ describe('micro post replies (community permission, Slice 4)', () => {
       id: crypto.randomUUID(),
       token,
       userId,
-      expiresAt: new Date(Date.now() + 60_000)
+      expiresAt: new Date(Date.now() + 60_000),
     })
 
     try {
@@ -2315,11 +2369,12 @@ describe('micro post replies (community permission, Slice 4)', () => {
           method: 'POST',
           headers: {
             authorization: `Bearer ${token}`,
-            'content-type': 'application/json'
+            'content-type': 'application/json',
           },
-          body: JSON.stringify({ content: 'reply to nothing' })
-        })
+          body: JSON.stringify({ content: 'reply to nothing' }),
+        }),
       )
+
       expect(res.status).toBe(404)
     } finally {
       await db.delete(user).where(eq(user.id, userId))
@@ -2338,8 +2393,9 @@ describe('micro post replies (community permission, Slice 4)', () => {
       id: crypto.randomUUID(),
       token,
       userId,
-      expiresAt: new Date(Date.now() + 60_000)
+      expiresAt: new Date(Date.now() + 60_000),
     })
+
     const [parentPost] = await db
       .insert(postsTable)
       .values({
@@ -2347,9 +2403,10 @@ describe('micro post replies (community permission, Slice 4)', () => {
         slug: parentSlug,
         content: 'Original tweet',
         type: 'micro',
-        draft: false
+        draft: false,
       })
       .returning()
+
     if (!parentPost) throw new Error('Failed to seed parent tweet')
     await db.insert(postCreators).values({ postId: parentPost.id, creatorId: userId })
 
@@ -2361,15 +2418,16 @@ describe('micro post replies (community permission, Slice 4)', () => {
           method: 'POST',
           headers: {
             authorization: `Bearer ${token}`,
-            'content-type': 'application/json'
+            'content-type': 'application/json',
           },
           body: JSON.stringify({
             content: 'check out this track',
             musicEntityType: 'track',
-            musicEntityId: fakeTrackId
-          })
-        })
+            musicEntityId: fakeTrackId,
+          }),
+        }),
       )
+
       expect(res.status).toBe(200)
       const body = await decodeResponseBody(CompiledMicroPostResponse, res)
       replyId = body.id
@@ -2382,6 +2440,7 @@ describe('micro post replies (community permission, Slice 4)', () => {
       if (replyId) {
         await db.delete(postCreators).where(eq(postCreators.postId, replyId))
       }
+
       await db.delete(postCreators).where(eq(postCreators.postId, parentPost.id))
       await db.delete(postsTable).where(eq(postsTable.rootPostId, parentPost.id))
       await db.delete(postsTable).where(eq(postsTable.id, parentPost.id))
@@ -2402,8 +2461,9 @@ describe('micro post replies against non-replyable/invisible parents (Slice 5)',
       id: crypto.randomUUID(),
       token,
       userId,
-      expiresAt: new Date(Date.now() + 60_000)
+      expiresAt: new Date(Date.now() + 60_000),
     })
+
     const [parentPost] = await db
       .insert(postsTable)
       .values({
@@ -2411,9 +2471,10 @@ describe('micro post replies against non-replyable/invisible parents (Slice 5)',
         slug: parentSlug,
         content: 'Editorial body',
         type: 'post',
-        draft: false
+        draft: false,
       })
       .returning()
+
     if (!parentPost) throw new Error('Failed to seed editorial parent')
 
     try {
@@ -2422,11 +2483,12 @@ describe('micro post replies against non-replyable/invisible parents (Slice 5)',
           method: 'POST',
           headers: {
             authorization: `Bearer ${token}`,
-            'content-type': 'application/json'
+            'content-type': 'application/json',
           },
-          body: JSON.stringify({ content: 'reply to an editorial post' })
-        })
+          body: JSON.stringify({ content: 'reply to an editorial post' }),
+        }),
       )
+
       expect(res.status).toBe(422)
     } finally {
       await db.delete(postsTable).where(eq(postsTable.id, parentPost.id))
@@ -2443,14 +2505,15 @@ describe('micro post replies against non-replyable/invisible parents (Slice 5)',
 
     await db.insert(user).values([
       { id: ownerId, name: 'Owner', email: `${ownerId}@example.com` },
-      { id: outsiderId, name: 'Outsider', email: `${outsiderId}@example.com` }
+      { id: outsiderId, name: 'Outsider', email: `${outsiderId}@example.com` },
     ])
     await db.insert(session).values({
       id: crypto.randomUUID(),
       token: outsiderToken,
       userId: outsiderId,
-      expiresAt: new Date(Date.now() + 60_000)
+      expiresAt: new Date(Date.now() + 60_000),
     })
+
     const [parentPost] = await db
       .insert(postsTable)
       .values({
@@ -2458,9 +2521,10 @@ describe('micro post replies against non-replyable/invisible parents (Slice 5)',
         slug: parentSlug,
         content: 'Draft tweet',
         type: 'micro',
-        draft: true
+        draft: true,
       })
       .returning()
+
     if (!parentPost) throw new Error('Failed to seed draft parent')
     await db.insert(postCreators).values({ postId: parentPost.id, creatorId: ownerId })
 
@@ -2470,11 +2534,12 @@ describe('micro post replies against non-replyable/invisible parents (Slice 5)',
           method: 'POST',
           headers: {
             authorization: `Bearer ${outsiderToken}`,
-            'content-type': 'application/json'
+            'content-type': 'application/json',
           },
-          body: JSON.stringify({ content: 'reply to a hidden draft' })
-        })
+          body: JSON.stringify({ content: 'reply to a hidden draft' }),
+        }),
       )
+
       expect(res.status).toBe(404)
     } finally {
       await db.delete(postCreators).where(eq(postCreators.postId, parentPost.id))
@@ -2501,9 +2566,10 @@ describe('GET /api/content/posts/micro/:parentSlug/replies (Slice 6)', () => {
         slug: parentSlug,
         content: 'Original tweet',
         type: 'micro',
-        draft: false
+        draft: false,
       })
       .returning()
+
     if (!parentPost) throw new Error('Failed to seed parent tweet')
 
     const [otherParentPost] = await db
@@ -2513,9 +2579,10 @@ describe('GET /api/content/posts/micro/:parentSlug/replies (Slice 6)', () => {
         slug: otherParentSlug,
         content: 'A different tweet',
         type: 'micro',
-        draft: false
+        draft: false,
       })
       .returning()
+
     if (!otherParentPost) throw new Error('Failed to seed other parent tweet')
 
     const [firstReply] = await db
@@ -2529,9 +2596,10 @@ describe('GET /api/content/posts/micro/:parentSlug/replies (Slice 6)', () => {
         parentPostId: parentPost.id,
         rootPostId: parentPost.id,
         depth: 1,
-        createdAt: new Date(Date.now() - 60_000)
+        createdAt: new Date(Date.now() - 60_000),
       })
       .returning()
+
     if (!firstReply) throw new Error('Failed to seed first reply')
 
     const [secondReply] = await db
@@ -2545,9 +2613,10 @@ describe('GET /api/content/posts/micro/:parentSlug/replies (Slice 6)', () => {
         parentPostId: parentPost.id,
         rootPostId: parentPost.id,
         depth: 1,
-        createdAt: new Date()
+        createdAt: new Date(),
       })
       .returning()
+
     if (!secondReply) throw new Error('Failed to seed second reply')
 
     const [unrelatedReply] = await db
@@ -2560,9 +2629,10 @@ describe('GET /api/content/posts/micro/:parentSlug/replies (Slice 6)', () => {
         draft: false,
         parentPostId: otherParentPost.id,
         rootPostId: otherParentPost.id,
-        depth: 1
+        depth: 1,
       })
       .returning()
+
     if (!unrelatedReply) throw new Error('Failed to seed unrelated reply')
 
     await db.insert(postCreators).values([
@@ -2570,13 +2640,14 @@ describe('GET /api/content/posts/micro/:parentSlug/replies (Slice 6)', () => {
       { postId: otherParentPost.id, creatorId: authorId },
       { postId: firstReply.id, creatorId: authorId },
       { postId: secondReply.id, creatorId: authorId },
-      { postId: unrelatedReply.id, creatorId: authorId }
+      { postId: unrelatedReply.id, creatorId: authorId },
     ])
 
     try {
       const res = await webHandler.handler(
-        new Request(`http://localhost/api/content/posts/micro/${parentSlug}/replies`)
+        new Request(`http://localhost/api/content/posts/micro/${parentSlug}/replies`),
       )
+
       expect(res.status).toBe(200)
 
       const body = await decodeResponseBody(GetMicroPostsResponse, res)
@@ -2601,8 +2672,9 @@ describe('GET /api/content/posts/micro/:parentSlug/replies (Slice 6)', () => {
     const suffix = crypto.randomUUID()
 
     const res = await webHandler.handler(
-      new Request(`http://localhost/api/content/posts/micro/does-not-exist-${suffix}/replies`)
+      new Request(`http://localhost/api/content/posts/micro/does-not-exist-${suffix}/replies`),
     )
+
     expect(res.status).toBe(404)
   })
 })
@@ -2625,9 +2697,10 @@ describe('GET /api/content/posts/micro/:slug/thread (Slice 7)', () => {
         content: 'Root tweet',
         type: 'micro',
         draft: false,
-        createdAt: new Date(Date.now() - 120_000)
+        createdAt: new Date(Date.now() - 120_000),
       })
       .returning()
+
     if (!rootPost) throw new Error('Failed to seed root tweet')
 
     const [reply] = await db
@@ -2641,9 +2714,10 @@ describe('GET /api/content/posts/micro/:slug/thread (Slice 7)', () => {
         parentPostId: rootPost.id,
         rootPostId: rootPost.id,
         depth: 1,
-        createdAt: new Date(Date.now() - 60_000)
+        createdAt: new Date(Date.now() - 60_000),
       })
       .returning()
+
     if (!reply) throw new Error('Failed to seed direct reply')
 
     const [nestedReply] = await db
@@ -2657,21 +2731,23 @@ describe('GET /api/content/posts/micro/:slug/thread (Slice 7)', () => {
         parentPostId: reply.id,
         rootPostId: rootPost.id,
         depth: 2,
-        createdAt: new Date()
+        createdAt: new Date(),
       })
       .returning()
+
     if (!nestedReply) throw new Error('Failed to seed nested reply')
 
     await db.insert(postCreators).values([
       { postId: rootPost.id, creatorId: authorId },
       { postId: reply.id, creatorId: authorId },
-      { postId: nestedReply.id, creatorId: authorId }
+      { postId: nestedReply.id, creatorId: authorId },
     ])
 
     try {
       const rootRes = await webHandler.handler(
-        new Request(`http://localhost/api/content/posts/micro/${rootSlug}/thread`)
+        new Request(`http://localhost/api/content/posts/micro/${rootSlug}/thread`),
       )
+
       expect(rootRes.status).toBe(200)
       const rootBody = await decodeResponseBody(MicroPostThreadResponse, rootRes)
       expect(rootBody.root.slug).toBe(rootSlug)
@@ -2680,8 +2756,9 @@ describe('GET /api/content/posts/micro/:slug/thread (Slice 7)', () => {
       expect(rootBody.pagination.total).toBe(2)
 
       const nestedRes = await webHandler.handler(
-        new Request(`http://localhost/api/content/posts/micro/${nestedReplySlug}/thread`)
+        new Request(`http://localhost/api/content/posts/micro/${nestedReplySlug}/thread`),
       )
+
       expect(nestedRes.status).toBe(200)
       const nestedBody = await decodeResponseBody(MicroPostThreadResponse, nestedRes)
       expect(nestedBody.root.slug).toBe(rootSlug)
@@ -2703,8 +2780,9 @@ describe('GET /api/content/posts/micro/:slug/thread (Slice 7)', () => {
     const suffix = crypto.randomUUID()
 
     const res = await webHandler.handler(
-      new Request(`http://localhost/api/content/posts/micro/does-not-exist-${suffix}/thread`)
+      new Request(`http://localhost/api/content/posts/micro/does-not-exist-${suffix}/thread`),
     )
+
     expect(res.status).toBe(404)
   })
 })
@@ -2726,7 +2804,7 @@ describe('GET /api/content/posts/micro/:slug/screen', () => {
       name: 'Screen Author',
       email: `${authorId}@example.com`,
       username: `screen-${suffix}`,
-      image
+      image,
     })
     await db.batch([
       db
@@ -2734,14 +2812,14 @@ describe('GET /api/content/posts/micro/:slug/screen', () => {
         .values([
           { id: 'album', displayName: 'Album' },
           { id: 'track', displayName: 'Track' },
-          { id: 'playlist', displayName: 'Playlist' }
+          { id: 'playlist', displayName: 'Playlist' },
         ])
         .onConflictDoNothing(),
       db
         .insert(musicPlatformsTable)
         .values([
           { id: 'spotify', displayName: 'Spotify' },
-          { id: 'bandcamp', displayName: 'Bandcamp' }
+          { id: 'bandcamp', displayName: 'Bandcamp' },
         ])
         .onConflictDoNothing(),
       db.insert(musicAlbumsTable).values({
@@ -2749,21 +2827,21 @@ describe('GET /api/content/posts/micro/:slug/screen', () => {
         title: 'Root Album',
         slug: `root-album-${suffix}`,
         artistNames: ['Root Artist'],
-        coverImageUrl: 'https://cdn.goosebumps.fm/user-content/root-album.png'
+        coverImageUrl: 'https://cdn.goosebumps.fm/user-content/root-album.png',
       }),
       db.insert(musicTracksTable).values({
         id: replyTrackId,
         title: 'Reply Track',
         slug: `reply-track-${suffix}`,
         artistNames: ['Reply Artist'],
-        coverImageUrl: 'https://cdn.goosebumps.fm/user-content/reply-track.png'
+        coverImageUrl: 'https://cdn.goosebumps.fm/user-content/reply-track.png',
       }),
       db.insert(musicPlaylistsTable).values({
         id: quotePlaylistId,
         title: 'Quote Playlist',
         slug: `quote-playlist-${suffix}`,
-        coverImageUrl: 'https://cdn.goosebumps.fm/user-content/quote-playlist.png'
-      })
+        coverImageUrl: 'https://cdn.goosebumps.fm/user-content/quote-playlist.png',
+      }),
     ])
     await db.insert(musicEntityLinksTable).values([
       {
@@ -2771,30 +2849,31 @@ describe('GET /api/content/posts/micro/:slug/screen', () => {
         entityId: rootAlbumId,
         platform: 'spotify',
         url: 'https://open.spotify.com/album/root',
-        status: 'verified'
+        status: 'verified',
       },
       {
         entityType: 'track',
         entityId: replyTrackId,
         platform: 'bandcamp',
         url: 'https://artist.bandcamp.com/track/reply',
-        status: 'verified'
+        status: 'verified',
       },
       {
         entityType: 'track',
         entityId: replyTrackId,
         platform: 'spotify',
         url: 'https://open.spotify.com/track/rejected',
-        status: 'rejected'
+        status: 'rejected',
       },
       {
         entityType: 'playlist',
         entityId: quotePlaylistId,
         platform: 'spotify',
         url: 'https://open.spotify.com/playlist/quote',
-        status: 'verified'
-      }
+        status: 'verified',
+      },
     ])
+
     const [quote, root] = await db
       .insert(postsTable)
       .values([
@@ -2804,7 +2883,7 @@ describe('GET /api/content/posts/micro/:slug/screen', () => {
           type: 'micro',
           draft: false,
           musicEntityType: 'playlist',
-          musicEntityId: quotePlaylistId
+          musicEntityId: quotePlaylistId,
         },
         {
           slug: rootSlug,
@@ -2812,12 +2891,14 @@ describe('GET /api/content/posts/micro/:slug/screen', () => {
           type: 'micro',
           draft: false,
           musicEntityType: 'album',
-          musicEntityId: rootAlbumId
-        }
+          musicEntityId: rootAlbumId,
+        },
       ])
       .returning()
+
     if (!quote || !root) throw new Error('Failed to seed tweet screen')
     await db.update(postsTable).set({ quotedPostId: quote.id }).where(eq(postsTable.id, root.id))
+
     const [reply] = await db
       .insert(postsTable)
       .values({
@@ -2829,20 +2910,22 @@ describe('GET /api/content/posts/micro/:slug/screen', () => {
         rootPostId: root.id,
         depth: 1,
         musicEntityType: 'track',
-        musicEntityId: replyTrackId
+        musicEntityId: replyTrackId,
       })
       .returning()
+
     if (!reply) throw new Error('Failed to seed tweet reply')
     await db.insert(postCreators).values([
       { postId: root.id, creatorId: authorId },
       { postId: reply.id, creatorId: authorId },
-      { postId: quote.id, creatorId: authorId }
+      { postId: quote.id, creatorId: authorId },
     ])
 
     try {
       const response = await webHandler.handler(
-        new Request(`http://localhost/api/content/posts/micro/${rootSlug}/screen`)
+        new Request(`http://localhost/api/content/posts/micro/${rootSlug}/screen`),
       )
+
       expect(response.status).toBe(200)
       const body = await decodeResponseBody(MicroPostScreenResponse, response)
       expect(body.post.slug).toBe(rootSlug)
@@ -2856,16 +2939,16 @@ describe('GET /api/content/posts/micro/:slug/screen', () => {
           type: 'album',
           title: 'Root Album',
           artistNames: ['Root Artist'],
-          coverImageUrl: 'https://cdn.goosebumps.fm/user-content/root-album.png'
+          coverImageUrl: 'https://cdn.goosebumps.fm/user-content/root-album.png',
         },
-        links: [{ platform: 'spotify', url: 'https://open.spotify.com/album/root' }]
+        links: [{ platform: 'spotify', url: 'https://open.spotify.com/album/root' }],
       })
       expect(body.root.music).toEqual(body.post.music)
       expect(body.quote?.music?.entity).toMatchObject({
         id: quotePlaylistId,
         type: 'playlist',
         title: 'Quote Playlist',
-        artistNames: null
+        artistNames: null,
       })
       expect(body.replies[0]?.music).toEqual({
         entity: {
@@ -2873,9 +2956,9 @@ describe('GET /api/content/posts/micro/:slug/screen', () => {
           type: 'track',
           title: 'Reply Track',
           artistNames: ['Reply Artist'],
-          coverImageUrl: 'https://cdn.goosebumps.fm/user-content/reply-track.png'
+          coverImageUrl: 'https://cdn.goosebumps.fm/user-content/reply-track.png',
         },
-        links: [{ platform: 'bandcamp', url: 'https://artist.bandcamp.com/track/reply' }]
+        links: [{ platform: 'bandcamp', url: 'https://artist.bandcamp.com/track/reply' }],
       })
     } finally {
       await db.delete(postCreators).where(eq(postCreators.creatorId, authorId))
@@ -2896,8 +2979,9 @@ describe('GET /api/content/posts/micro/:slug/screen', () => {
 
   it('404s when the tweet does not exist', async () => {
     const response = await webHandler.handler(
-      new Request(`http://localhost/api/content/posts/micro/missing-${crypto.randomUUID()}/screen`)
+      new Request(`http://localhost/api/content/posts/micro/missing-${crypto.randomUUID()}/screen`),
     )
+
     expect(response.status).toBe(404)
   })
 })
@@ -2915,7 +2999,7 @@ describe('PATCH /api/content/posts/:slug thread-field immutability (Slice 8)', (
       id: crypto.randomUUID(),
       token: authorToken,
       userId: authorId,
-      expiresAt: new Date(Date.now() + 60_000)
+      expiresAt: new Date(Date.now() + 60_000),
     })
 
     const [rootPost] = await db
@@ -2925,9 +3009,10 @@ describe('PATCH /api/content/posts/:slug thread-field immutability (Slice 8)', (
         slug: rootSlug,
         content: 'Root tweet',
         type: 'micro',
-        draft: false
+        draft: false,
       })
       .returning()
+
     if (!rootPost) throw new Error('Failed to seed root tweet')
 
     const [reply] = await db
@@ -2940,14 +3025,15 @@ describe('PATCH /api/content/posts/:slug thread-field immutability (Slice 8)', (
         draft: false,
         parentPostId: rootPost.id,
         rootPostId: rootPost.id,
-        depth: 1
+        depth: 1,
       })
       .returning()
+
     if (!reply) throw new Error('Failed to seed reply')
 
     await db.insert(postCreators).values([
       { postId: rootPost.id, creatorId: authorId },
-      { postId: reply.id, creatorId: authorId }
+      { postId: reply.id, creatorId: authorId },
     ])
 
     try {
@@ -2956,15 +3042,15 @@ describe('PATCH /api/content/posts/:slug thread-field immutability (Slice 8)', (
           method: 'PATCH',
           headers: {
             authorization: `Bearer ${authorToken}`,
-            'content-type': 'application/json'
+            'content-type': 'application/json',
           },
           body: JSON.stringify({
             content: 'edited content',
             parentPostId: null,
             rootPostId: null,
-            depth: 0
-          })
-        })
+            depth: 0,
+          }),
+        }),
       )
 
       expect(res.status).toBe(200)
@@ -2997,32 +3083,34 @@ describe('content draft management authorization', () => {
     await db.insert(user).values([
       { id: ownerId, name: 'Post owner', email: `${ownerId}@example.com` },
       { id: unrelatedId, name: 'Unrelated user', email: `${unrelatedId}@example.com` },
-      { id: adminId, name: 'Admin user', email: `${adminId}@example.com`, role: 'admin' }
+      { id: adminId, name: 'Admin user', email: `${adminId}@example.com`, role: 'admin' },
     ])
     await db.insert(session).values([
       {
         id: crypto.randomUUID(),
         token: ownerToken,
         userId: ownerId,
-        expiresAt: new Date(Date.now() + 60_000)
+        expiresAt: new Date(Date.now() + 60_000),
       },
       {
         id: crypto.randomUUID(),
         token: unrelatedToken,
         userId: unrelatedId,
-        expiresAt: new Date(Date.now() + 60_000)
+        expiresAt: new Date(Date.now() + 60_000),
       },
       {
         id: crypto.randomUUID(),
         token: adminToken,
         userId: adminId,
-        expiresAt: new Date(Date.now() + 60_000)
-      }
+        expiresAt: new Date(Date.now() + 60_000),
+      },
     ])
+
     const [post] = await db
       .insert(postsTable)
       .values({ title: 'Managed draft', slug, content: 'draft', type: 'post', draft: true })
       .returning()
+
     if (!post) throw new Error('Failed to seed managed draft post')
     await db.insert(postCreators).values({ postId: post.id, creatorId: ownerId })
 
@@ -3035,20 +3123,20 @@ describe('content draft management authorization', () => {
           webHandler.handler(new Request(`http://localhost/api/content/posts/${slug}`)),
           webHandler.handler(new Request('http://localhost/api/content/posts?limit=100')),
           webHandler.handler(
-            authenticatedRequest(`http://localhost/api/content/posts/${slug}/edit`, ownerToken)
+            authenticatedRequest(`http://localhost/api/content/posts/${slug}/edit`, ownerToken),
           ),
           webHandler.handler(
-            authenticatedRequest(`http://localhost/api/content/posts/${slug}/edit`, adminToken)
+            authenticatedRequest(`http://localhost/api/content/posts/${slug}/edit`, adminToken),
           ),
           webHandler.handler(
-            authenticatedRequest(`http://localhost/api/content/posts/${slug}/edit`, unrelatedToken)
+            authenticatedRequest(`http://localhost/api/content/posts/${slug}/edit`, unrelatedToken),
           ),
           webHandler.handler(
             authenticatedRequest(
               'http://localhost/api/content/posts/manage?type=post&limit=100',
-              ownerToken
-            )
-          )
+              ownerToken,
+            ),
+          ),
         ])
 
       expect(publicDetail.status).toBe(404)
@@ -3079,32 +3167,34 @@ describe('content draft management authorization', () => {
     await db.insert(user).values([
       { id: ownerId, name: 'Release owner', email: `${ownerId}@example.com` },
       { id: unrelatedId, name: 'Unrelated user', email: `${unrelatedId}@example.com` },
-      { id: adminId, name: 'Admin user', email: `${adminId}@example.com`, role: 'admin' }
+      { id: adminId, name: 'Admin user', email: `${adminId}@example.com`, role: 'admin' },
     ])
     await db.insert(session).values([
       {
         id: crypto.randomUUID(),
         token: ownerToken,
         userId: ownerId,
-        expiresAt: new Date(Date.now() + 60_000)
+        expiresAt: new Date(Date.now() + 60_000),
       },
       {
         id: crypto.randomUUID(),
         token: unrelatedToken,
         userId: unrelatedId,
-        expiresAt: new Date(Date.now() + 60_000)
+        expiresAt: new Date(Date.now() + 60_000),
       },
       {
         id: crypto.randomUUID(),
         token: adminToken,
         userId: adminId,
-        expiresAt: new Date(Date.now() + 60_000)
-      }
+        expiresAt: new Date(Date.now() + 60_000),
+      },
     ])
+
     const [label] = await db
       .insert(musicLabelsTable)
       .values({ name: 'Release label', slug: labelSlug, content: '' })
       .returning()
+
     if (!label) throw new Error('Failed to seed release label')
     await db.insert(musicLabelCreatorsTable).values({ labelId: label.id, creatorId: ownerId })
 
@@ -3113,7 +3203,7 @@ describe('content draft management authorization', () => {
         method: 'POST',
         headers: {
           authorization: `Bearer ${token}`,
-          'content-type': 'application/json'
+          'content-type': 'application/json',
         },
         body: JSON.stringify({
           title: slug,
@@ -3121,18 +3211,19 @@ describe('content draft management authorization', () => {
           content: '',
           draft: true,
           labelId: label.id,
-          releaseDate: new Date().toISOString()
-        })
+          releaseDate: new Date().toISOString(),
+        }),
       })
 
     try {
       const ownerSlug = `owner-release-${suffix}`
       const adminSlug = `admin-release-${suffix}`
       const deniedSlug = `denied-release-${suffix}`
+
       const [ownerCreate, adminCreate, unrelatedCreate] = await Promise.all([
         webHandler.handler(createRequest(ownerToken, ownerSlug)),
         webHandler.handler(createRequest(adminToken, adminSlug)),
-        webHandler.handler(createRequest(unrelatedToken, deniedSlug))
+        webHandler.handler(createRequest(unrelatedToken, deniedSlug)),
       ])
 
       expect(ownerCreate.status).toBe(200)
@@ -3144,14 +3235,15 @@ describe('content draft management authorization', () => {
           method: 'PATCH',
           headers: {
             authorization: `Bearer ${token}`,
-            'content-type': 'application/json'
+            'content-type': 'application/json',
           },
-          body: JSON.stringify({ title })
+          body: JSON.stringify({ title }),
         })
+
       const [ownerUpdate, adminUpdate, unrelatedUpdate] = await Promise.all([
         webHandler.handler(updateRequest(ownerToken, ownerSlug, 'Owner updated')),
         webHandler.handler(updateRequest(adminToken, adminSlug, 'Admin updated')),
-        webHandler.handler(updateRequest(unrelatedToken, ownerSlug, 'Denied update'))
+        webHandler.handler(updateRequest(unrelatedToken, ownerSlug, 'Denied update')),
       ])
 
       expect(ownerUpdate.status).toBe(200)
@@ -3161,15 +3253,17 @@ describe('content draft management authorization', () => {
       const deniedDelete = await webHandler.handler(
         new Request(`http://localhost/api/content/releases/${ownerSlug}`, {
           method: 'DELETE',
-          headers: { authorization: `Bearer ${unrelatedToken}` }
-        })
+          headers: { authorization: `Bearer ${unrelatedToken}` },
+        }),
       )
+
       const adminDelete = await webHandler.handler(
         new Request(`http://localhost/api/content/releases/${adminSlug}`, {
           method: 'DELETE',
-          headers: { authorization: `Bearer ${adminToken}` }
-        })
+          headers: { authorization: `Bearer ${adminToken}` },
+        }),
       )
+
       expect(deniedDelete.status).toBe(401)
       expect(adminDelete.status).toBe(200)
     } finally {
@@ -3190,17 +3284,19 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
     const tag = `draft-tag-${suffix}`
     const audioId = crypto.randomUUID()
     const postId = crypto.randomUUID()
+
     const [publishedShow] = await db
       .insert(showsTable)
       .values({ title: 'Published parent', slug: `published-${suffix}`, content: '', draft: false })
       .returning()
+
     const [publishedLabel] = await db
       .insert(musicLabelsTable)
       .values({
         name: 'Published parent',
         slug: `published-${suffix}`,
         content: '',
-        publishedAt: new Date()
+        publishedAt: new Date(),
       })
       .returning()
 
@@ -3214,7 +3310,7 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
         content: '',
         type: 'mix',
         url: 'https://example.com/draft.mp3',
-        draft: true
+        draft: true,
       }),
       db.insert(audioTable).values({
         title: 'Draft episode',
@@ -3223,7 +3319,7 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
         type: 'mix',
         url: 'https://example.com/episode.mp3',
         showId: publishedShow.id,
-        draft: true
+        draft: true,
       }),
       db.insert(showsTable).values({ title: 'Draft show', slug, content: '', draft: true }),
       db.insert(postsTable).values({
@@ -3232,7 +3328,7 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
         slug,
         content: 'draft',
         type: 'post',
-        draft: true
+        draft: true,
       }),
       db.insert(musicLabelsTable).values({ name: 'Draft label', slug, content: '' }),
       db.insert(releasesTable).values({
@@ -3240,12 +3336,12 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
         slug,
         content: '',
         labelId: publishedLabel.id,
-        draft: true
-      })
+        draft: true,
+      }),
     ])
     await Promise.all([
       replaceEntityLabels(db, 'audio', audioId, { tags: [tag] }),
-      replaceEntityLabels(db, 'post', postId, { tags: [tag] })
+      replaceEntityLabels(db, 'post', postId, { tags: [tag] }),
     ])
 
     try {
@@ -3258,10 +3354,11 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
         webHandler.handler(new Request(`http://localhost/api/content/audio/mix/${slug}/edit`)),
         webHandler.handler(new Request(`http://localhost/api/site-metadata/mix/${slug}`)),
         webHandler.handler(new Request(`http://localhost/s/mix/${slug}`)),
-        webHandler.handler(new Request(`http://localhost/s/post/${slug}`))
+        webHandler.handler(new Request(`http://localhost/s/post/${slug}`)),
       ])
+
       expect(responses.map((response) => response.status)).toEqual([
-        404, 404, 404, 404, 404, 401, 404, 404, 404
+        404, 404, 404, 404, 404, 401, 404, 404, 404,
       ])
 
       const [audioList, audioTags, posts, postTags, episodes, labels, rss] = await Promise.all([
@@ -3270,10 +3367,10 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
         webHandler.handler(new Request('http://localhost/api/content/posts?limit=100')),
         webHandler.handler(new Request('http://localhost/api/content/posts/editorials/tags')),
         webHandler.handler(
-          new Request(`http://localhost/api/shows/${publishedShow.slug}/episodes?limit=100`)
+          new Request(`http://localhost/api/shows/${publishedShow.slug}/episodes?limit=100`),
         ),
         webHandler.handler(new Request('http://localhost/api/music/labels')),
-        webHandler.handler(new Request('http://localhost/rss.xml'))
+        webHandler.handler(new Request('http://localhost/rss.xml')),
       ])
 
       expect(JSON.stringify(await audioList.json())).not.toContain(slug)
@@ -3287,12 +3384,12 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
       await db
         .delete(entityLabelsTable)
         .where(
-          and(eq(entityLabelsTable.entityType, 'audio'), eq(entityLabelsTable.entityId, audioId))
+          and(eq(entityLabelsTable.entityType, 'audio'), eq(entityLabelsTable.entityId, audioId)),
         )
       await db
         .delete(entityLabelsTable)
         .where(
-          and(eq(entityLabelsTable.entityType, 'post'), eq(entityLabelsTable.entityId, postId))
+          and(eq(entityLabelsTable.entityType, 'post'), eq(entityLabelsTable.entityId, postId)),
         )
       await db.delete(releasesTable).where(eq(releasesTable.slug, slug))
       await db.delete(audioTable).where(eq(audioTable.slug, `episode-${suffix}`))
@@ -3343,15 +3440,16 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
       content: '',
       type: 'mix',
       url: 'https://audio.example.com/metadata-mix.mp3',
-      draft: false
+      draft: false,
     })
 
     try {
       const [metadataResponse, cardResponse, shareResponse] = await Promise.all([
         webHandler.handler(new Request(`http://localhost/api/site-metadata/mix/${slug}`)),
         webHandler.handler(new Request(`http://localhost/api/social-cards/mix/${slug}`)),
-        webHandler.handler(new Request(`http://localhost/s/mix/${slug}`))
+        webHandler.handler(new Request(`http://localhost/s/mix/${slug}`)),
       ])
+
       const metadata = await decodeResponseBody(SiteMetadata, metadataResponse)
       const card = await decodeResponseBody(SocialCardPresentation, cardResponse)
       const shareHtml = await shareResponse.text()
@@ -3365,16 +3463,15 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
         image: {
           url: card.images.openGraph,
           width: 1200,
-          height: 630
+          height: 630,
         },
-        audio: { url: 'https://audio.example.com/metadata-mix.mp3' }
+        audio: { url: 'https://audio.example.com/metadata-mix.mp3' },
       })
       expect(card).toMatchObject({
         model: {
-          _tag: 'ArtworkCard',
           kind: 'mix',
-          title: 'Metadata mix'
-        }
+          title: 'Metadata mix',
+        },
       })
       expect(shareResponse.status).toBe(200)
       expect(shareHtml).toContain(`<meta property="og:url" content="${metadata.canonicalUrl}">`)
@@ -3425,7 +3522,7 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
     const [post, editorial, tweet] = await Promise.all([
       webHandler.handler(new Request('http://localhost/s/post/does-not-exist')),
       webHandler.handler(new Request('http://localhost/s/editorial/does-not-exist')),
-      webHandler.handler(new Request('http://localhost/s/tweet/does-not-exist'))
+      webHandler.handler(new Request('http://localhost/s/tweet/does-not-exist')),
     ])
 
     expect(post.status).toBe(404)
@@ -3461,30 +3558,31 @@ describe('POST /api/content/post server-generated slug (Slice 9)', () => {
       id: userId,
       name: 'Creator',
       email: `${userId}@example.com`,
-      role: 'creator'
+      role: 'creator',
     })
     await db.insert(session).values({
       id: crypto.randomUUID(),
       token,
       userId,
-      expiresAt: new Date(Date.now() + 60_000)
+      expiresAt: new Date(Date.now() + 60_000),
     })
 
     let createdSlug: string | undefined
+
     try {
       const res = await webHandler.handler(
         new Request('http://localhost/api/content/post', {
           method: 'POST',
           headers: {
             authorization: `Bearer ${token}`,
-            'content-type': 'application/json'
+            'content-type': 'application/json',
           },
           body: JSON.stringify({
             title: `No slug supplied ${suffix}`,
             content: 'created without a client-supplied slug',
-            type: 'post'
-          })
-        })
+            type: 'post',
+          }),
+        }),
       )
 
       expect(res.status).toBe(200)
@@ -3493,8 +3591,9 @@ describe('POST /api/content/post server-generated slug (Slice 9)', () => {
       createdSlug = body.slug
 
       const fetchRes = await webHandler.handler(
-        new Request(`http://localhost/api/content/posts/${body.slug}`)
+        new Request(`http://localhost/api/content/posts/${body.slug}`),
       )
+
       expect(fetchRes.status).toBe(200)
     } finally {
       if (createdSlug) {
@@ -3503,11 +3602,14 @@ describe('POST /api/content/post server-generated slug (Slice 9)', () => {
           .from(postsTable)
           .where(eq(postsTable.slug, createdSlug))
           .limit(1)
+
         if (createdPost) {
           await db.delete(postCreators).where(eq(postCreators.postId, createdPost.id))
         }
+
         await db.delete(postsTable).where(eq(postsTable.slug, createdSlug))
       }
+
       await db.delete(user).where(eq(user.id, userId))
     }
   })
@@ -3522,13 +3624,13 @@ describe('POST /api/content/post server-generated slug (Slice 9)', () => {
       id: userId,
       name: 'Creator',
       email: `${userId}@example.com`,
-      role: 'creator'
+      role: 'creator',
     })
     await db.insert(session).values({
       id: crypto.randomUUID(),
       token,
       userId,
-      expiresAt: new Date(Date.now() + 60_000)
+      expiresAt: new Date(Date.now() + 60_000),
     })
 
     try {
@@ -3537,15 +3639,15 @@ describe('POST /api/content/post server-generated slug (Slice 9)', () => {
           method: 'POST',
           headers: {
             authorization: `Bearer ${token}`,
-            'content-type': 'application/json'
+            'content-type': 'application/json',
           },
           body: JSON.stringify({
             slug,
             title: `Client slug ${suffix}`,
             content: 'created with a client-supplied slug',
-            type: 'post'
-          })
-        })
+            type: 'post',
+          }),
+        }),
       )
 
       expect(res.status).toBe(200)
@@ -3557,9 +3659,11 @@ describe('POST /api/content/post server-generated slug (Slice 9)', () => {
         .from(postsTable)
         .where(eq(postsTable.slug, slug))
         .limit(1)
+
       if (createdPost) {
         await db.delete(postCreators).where(eq(postCreators.postId, createdPost.id))
       }
+
       await db.delete(postsTable).where(eq(postsTable.slug, slug))
       await db.delete(user).where(eq(user.id, userId))
     }
@@ -3577,14 +3681,15 @@ describe('quote-tweet (quotedPostId)', () => {
       id: userId,
       name: 'Creator',
       email: `${userId}@example.com`,
-      role: 'creator'
+      role: 'creator',
     })
     await db.insert(session).values({
       id: crypto.randomUUID(),
       token,
       userId,
-      expiresAt: new Date(Date.now() + 60_000)
+      expiresAt: new Date(Date.now() + 60_000),
     })
+
     const [quotedPost] = await db
       .insert(postsTable)
       .values({
@@ -3592,27 +3697,29 @@ describe('quote-tweet (quotedPostId)', () => {
         slug: quotedSlug,
         content: 'The original tweet being quoted',
         type: 'micro',
-        draft: false
+        draft: false,
       })
       .returning()
+
     if (!quotedPost) throw new Error('Failed to seed quoted tweet')
 
     let createdSlug: string | undefined
+
     try {
       const res = await webHandler.handler(
         new Request('http://localhost/api/content/post', {
           method: 'POST',
           headers: {
             authorization: `Bearer ${token}`,
-            'content-type': 'application/json'
+            'content-type': 'application/json',
           },
           body: JSON.stringify({
             slug: `quoting-tweet-${suffix}`,
             content: 'quoting another tweet',
             type: 'micro',
-            quotedPostId: quotedPost.id
-          })
-        })
+            quotedPostId: quotedPost.id,
+          }),
+        }),
       )
 
       expect(res.status).toBe(200)
@@ -3626,11 +3733,14 @@ describe('quote-tweet (quotedPostId)', () => {
           .from(postsTable)
           .where(eq(postsTable.slug, createdSlug))
           .limit(1)
+
         if (createdPost) {
           await db.delete(postCreators).where(eq(postCreators.postId, createdPost.id))
         }
+
         await db.delete(postsTable).where(eq(postsTable.slug, createdSlug))
       }
+
       await db.delete(postsTable).where(eq(postsTable.id, quotedPost.id))
       await db.delete(user).where(eq(user.id, userId))
     }
@@ -3648,8 +3758,9 @@ describe('quote-tweet (quotedPostId)', () => {
       id: crypto.randomUUID(),
       token,
       userId,
-      expiresAt: new Date(Date.now() + 60_000)
+      expiresAt: new Date(Date.now() + 60_000),
     })
+
     const [parentPost] = await db
       .insert(postsTable)
       .values({
@@ -3657,9 +3768,10 @@ describe('quote-tweet (quotedPostId)', () => {
         slug: parentSlug,
         content: 'Parent tweet',
         type: 'micro',
-        draft: false
+        draft: false,
       })
       .returning()
+
     if (!parentPost) throw new Error('Failed to seed parent tweet')
     await db.insert(postCreators).values({ postId: parentPost.id, creatorId: userId })
 
@@ -3670,25 +3782,27 @@ describe('quote-tweet (quotedPostId)', () => {
         slug: quotedSlug,
         content: 'A tweet to be quoted in a reply',
         type: 'micro',
-        draft: false
+        draft: false,
       })
       .returning()
+
     if (!quotedPost) throw new Error('Failed to seed quoted tweet')
 
     let replyId: string | undefined
+
     try {
       const res = await webHandler.handler(
         new Request(`http://localhost/api/content/posts/micro/${parentSlug}/replies`, {
           method: 'POST',
           headers: {
             authorization: `Bearer ${token}`,
-            'content-type': 'application/json'
+            'content-type': 'application/json',
           },
           body: JSON.stringify({
             content: 'replying with a quote',
-            quotedPostId: quotedPost.id
-          })
-        })
+            quotedPostId: quotedPost.id,
+          }),
+        }),
       )
 
       expect(res.status).toBe(200)
@@ -3699,6 +3813,7 @@ describe('quote-tweet (quotedPostId)', () => {
       if (replyId) {
         await db.delete(postCreators).where(eq(postCreators.postId, replyId))
       }
+
       await db.delete(postCreators).where(eq(postCreators.postId, parentPost.id))
       await db.delete(postsTable).where(eq(postsTable.rootPostId, parentPost.id))
       await db.delete(postsTable).where(eq(postsTable.id, parentPost.id))
@@ -3717,13 +3832,13 @@ describe('quote-tweet (quotedPostId)', () => {
       id: userId,
       name: 'Creator',
       email: `${userId}@example.com`,
-      role: 'creator'
+      role: 'creator',
     })
     await db.insert(session).values({
       id: crypto.randomUUID(),
       token,
       userId,
-      expiresAt: new Date(Date.now() + 60_000)
+      expiresAt: new Date(Date.now() + 60_000),
     })
 
     try {
@@ -3732,16 +3847,17 @@ describe('quote-tweet (quotedPostId)', () => {
           method: 'POST',
           headers: {
             authorization: `Bearer ${token}`,
-            'content-type': 'application/json'
+            'content-type': 'application/json',
           },
           body: JSON.stringify({
             slug: `quote-missing-post-${suffix}`,
             content: 'quoting a post that does not exist',
             type: 'micro',
-            quotedPostId: fakeQuotedId
-          })
-        })
+            quotedPostId: fakeQuotedId,
+          }),
+        }),
       )
+
       expect(res.status).toBe(404)
     } finally {
       await db.delete(user).where(eq(user.id, userId))
@@ -3758,14 +3874,15 @@ describe('quote-tweet (quotedPostId)', () => {
       id: userId,
       name: 'Creator',
       email: `${userId}@example.com`,
-      role: 'creator'
+      role: 'creator',
     })
     await db.insert(session).values({
       id: crypto.randomUUID(),
       token,
       userId,
-      expiresAt: new Date(Date.now() + 60_000)
+      expiresAt: new Date(Date.now() + 60_000),
     })
+
     const [editorialPost] = await db
       .insert(postsTable)
       .values({
@@ -3773,9 +3890,10 @@ describe('quote-tweet (quotedPostId)', () => {
         slug: editorialSlug,
         content: 'Editorial body',
         type: 'post',
-        draft: false
+        draft: false,
       })
       .returning()
+
     if (!editorialPost) throw new Error('Failed to seed editorial post')
 
     try {
@@ -3784,16 +3902,17 @@ describe('quote-tweet (quotedPostId)', () => {
           method: 'POST',
           headers: {
             authorization: `Bearer ${token}`,
-            'content-type': 'application/json'
+            'content-type': 'application/json',
           },
           body: JSON.stringify({
             slug: `quote-editorial-post-${suffix}`,
             content: 'quoting an editorial post',
             type: 'micro',
-            quotedPostId: editorialPost.id
-          })
-        })
+            quotedPostId: editorialPost.id,
+          }),
+        }),
       )
+
       expect(res.status).toBe(422)
     } finally {
       await db.delete(postsTable).where(eq(postsTable.id, editorialPost.id))
@@ -3811,8 +3930,9 @@ describe('GET /api/content/posts/micro/:slug', () => {
       id: userId,
       name: 'Tweet Author',
       username: `tweet-author-${suffix}`,
-      email: `${userId}@example.com`
+      email: `${userId}@example.com`,
     })
+
     const [post] = await db
       .insert(postsTable)
       .values({
@@ -3820,24 +3940,26 @@ describe('GET /api/content/posts/micro/:slug', () => {
         slug,
         content: 'Fetchable **tweet**',
         type: 'micro',
-        draft: false
+        draft: false,
       })
       .returning()
+
     if (!post) throw new Error('Failed to seed post')
     await db.insert(postCreators).values({ postId: post.id, creatorId: userId })
     await replaceEntityLabels(db, 'post', post.id, { tags: ['performance'] })
 
     try {
       const res = await webHandler.handler(
-        new Request(`http://localhost/api/content/posts/micro/${slug}`)
+        new Request(`http://localhost/api/content/posts/micro/${slug}`),
       )
+
       expect(res.status).toBe(200)
       const body = await decodeResponseBody(CompiledMicroPostResponse, res)
       expect(body).toMatchObject({
         id: post.id,
         slug,
         tags: ['performance'],
-        creators: [{ id: userId, name: 'Tweet Author', username: `tweet-author-${suffix}` }]
+        creators: [{ id: userId, name: 'Tweet Author', username: `tweet-author-${suffix}` }],
       })
       expect(body.compiledContent).toContain('tweet')
     } finally {
@@ -3850,8 +3972,9 @@ describe('GET /api/content/posts/micro/:slug', () => {
 
   it('404s for an unknown slug', async () => {
     const res = await webHandler.handler(
-      new Request(`http://localhost/api/content/posts/micro/does-not-exist-${crypto.randomUUID()}`)
+      new Request(`http://localhost/api/content/posts/micro/does-not-exist-${crypto.randomUUID()}`),
     )
+
     expect(res.status).toBe(404)
   })
 })
@@ -3867,15 +3990,16 @@ describe('GET /api/social-cards/tweet/:slug', () => {
       name: 'Share Author',
       username: `share-author-${suffix}`,
       image: 'https://cdn.goosebumps.fm/user-content/share-author.png',
-      email: `${userId}@example.com`
+      email: `${userId}@example.com`,
     })
     await db.insert(musicTracksTable).values({
       id: trackId,
       title: 'A Different Track',
       slug: `different-track-${suffix}`,
       artistNames: ['Artist One', 'Artist Two'],
-      coverImageUrl: 'https://cdn.goosebumps.fm/user-content/different-track.png'
+      coverImageUrl: 'https://cdn.goosebumps.fm/user-content/different-track.png',
     })
+
     const [post] = await db
       .insert(postsTable)
       .values({
@@ -3884,16 +4008,18 @@ describe('GET /api/social-cards/tweet/:slug', () => {
         type: 'micro',
         draft: false,
         musicEntityType: 'track',
-        musicEntityId: trackId
+        musicEntityId: trackId,
       })
       .returning()
+
     if (!post) throw new Error('Failed to seed post')
     await db.insert(postCreators).values({ postId: post.id, creatorId: userId })
 
     try {
       const response = await webHandler.handler(
-        new Request(`http://localhost/api/social-cards/tweet/${slug}`)
+        new Request(`http://localhost/api/social-cards/tweet/${slug}`),
       )
+
       expect(response.status).toBe(200)
       const body = await decodeResponseBody(TweetCardPresentation, response)
       expect(body.model).toMatchObject({
@@ -3904,10 +4030,10 @@ describe('GET /api/social-cards/tweet/:slug', () => {
         entityLabel: 'Track',
         entityTitle: 'A Different Track',
         entityArtists: 'Artist One, Artist Two',
-        coverImageUrl: 'https://cdn.goosebumps.fm/user-content/different-track.png'
+        coverImageUrl: 'https://cdn.goosebumps.fm/user-content/different-track.png',
       })
       expect(body.images.openGraph).toBe(
-        `https://goosebumps.fm/social/cards/tweet/${slug}/${body.revision}/open-graph.png`
+        `https://goosebumps.fm/social/cards/tweet/${slug}/${body.revision}/open-graph.png`,
       )
     } finally {
       await db.delete(postCreators).where(eq(postCreators.postId, post.id))
@@ -3930,15 +4056,17 @@ describe('GET /api/content/posts/micro/by-id/:id', () => {
         slug,
         content: 'Fetchable by id',
         type: 'micro',
-        draft: false
+        draft: false,
       })
       .returning()
+
     if (!post) throw new Error('Failed to seed post')
 
     try {
       const res = await webHandler.handler(
-        new Request(`http://localhost/api/content/posts/micro/by-id/${post.id}`)
+        new Request(`http://localhost/api/content/posts/micro/by-id/${post.id}`),
       )
+
       expect(res.status).toBe(200)
       const body = await decodeResponseBody(CompiledMicroPostResponse, res)
       expect(body.id).toBe(post.id)
@@ -3950,8 +4078,9 @@ describe('GET /api/content/posts/micro/by-id/:id', () => {
 
   it('404s for an unknown id', async () => {
     const res = await webHandler.handler(
-      new Request(`http://localhost/api/content/posts/micro/by-id/${crypto.randomUUID()}`)
+      new Request(`http://localhost/api/content/posts/micro/by-id/${crypto.randomUUID()}`),
     )
+
     expect(res.status).toBe(404)
   })
 })
@@ -3959,32 +4088,38 @@ describe('GET /api/content/posts/micro/by-id/:id', () => {
 describe('micro post navigation', () => {
   it('reads an anonymous navigation session without creating or changing it', async () => {
     const emptyRes = await webHandler.handler(
-      new Request('http://localhost/api/content/posts/micro/navigation-session')
+      new Request('http://localhost/api/content/posts/micro/navigation-session'),
     )
+
     expect(emptyRes.status).toBe(200)
     await expect(decodeResponseBody(NavigationSessionResponse, emptyRes)).resolves.toEqual({
       slug: null,
-      capabilities: { canStepBack: false, canStepForward: false, hasUnread: false }
+      capabilities: { canStepBack: false, canStepForward: false, hasUnread: false },
     })
 
     const setCookie = emptyRes.headers.getSetCookie()[0]
+
     if (!setCookie) throw new Error('Expected navigation device cookie')
     const cookie = setCookie.split(';')[0]
+
     if (!cookie) throw new Error('Expected navigation device cookie value')
     const deviceToken = cookie.split('=')[1]
+
     if (!deviceToken) throw new Error('Expected navigation device token')
     expect(
       await db
         .select()
         .from(navigationSessions)
-        .where(eq(navigationSessions.deviceToken, deviceToken))
+        .where(eq(navigationSessions.deviceToken, deviceToken)),
     ).toEqual([])
 
     const slug = `navigation-read-${crypto.randomUUID()}`
+
     const [post] = await db
       .insert(postsTable)
       .values({ title: null, slug, content: 'Navigation test', type: 'micro', draft: false })
       .returning()
+
     if (!post) throw new Error('Failed to seed navigation post')
 
     try {
@@ -3993,34 +4128,40 @@ describe('micro post navigation', () => {
           method: 'POST',
           headers: { cookie, 'content-type': 'application/json' },
           body: JSON.stringify({
-            command: { _tag: 'Open', slug },
+            command: NavigationCommandData.Open({ slug: Slug.make(slug) }),
             from: slug,
-            intentToken: crypto.randomUUID()
-          })
-        })
+            intentToken: crypto.randomUUID(),
+          }),
+        }),
       )
+
       expect(openRes.status).toBe(200)
+
       const [beforeRead] = await db
         .select()
         .from(navigationSessions)
         .where(eq(navigationSessions.deviceToken, deviceToken))
+
       if (!beforeRead) throw new Error('Expected navigation session')
 
       const resumedRes = await webHandler.handler(
         new Request('http://localhost/api/content/posts/micro/navigation-session', {
-          headers: { cookie }
-        })
+          headers: { cookie },
+        }),
       )
+
       expect(resumedRes.status).toBe(200)
       await expect(
-        decodeResponseBody(NavigationSessionResponse, resumedRes)
+        decodeResponseBody(NavigationSessionResponse, resumedRes),
       ).resolves.toMatchObject({
-        slug
+        slug,
       })
+
       const [afterRead] = await db
         .select()
         .from(navigationSessions)
         .where(eq(navigationSessions.deviceToken, deviceToken))
+
       expect(afterRead?.cursor).toBe(beforeRead.cursor)
       expect(afterRead?.updatedAt).toEqual(beforeRead.updatedAt)
     } finally {
@@ -4030,10 +4171,12 @@ describe('micro post navigation', () => {
 
   it('creates an anonymous session and device cookie without authentication', async () => {
     const slug = `navigation-anonymous-${crypto.randomUUID()}`
+
     const [post] = await db
       .insert(postsTable)
       .values({ title: null, slug, content: 'Navigation test', type: 'micro', draft: false })
       .returning()
+
     if (!post) throw new Error('Failed to seed navigation post')
 
     try {
@@ -4042,16 +4185,16 @@ describe('micro post navigation', () => {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
-            command: { _tag: 'Open', slug },
+            command: NavigationCommandData.Open({ slug: Slug.make(slug) }),
             from: slug,
-            intentToken: crypto.randomUUID()
-          })
-        })
+            intentToken: crypto.randomUUID(),
+          }),
+        }),
       )
 
       expect(res.status).toBe(200)
       expect(res.headers.getSetCookie()).toContainEqual(
-        expect.stringContaining('gbfm-navigation-device=')
+        expect.stringContaining('gbfm-navigation-device='),
       )
     } finally {
       await db.delete(postsTable).where(eq(postsTable.id, post.id))
@@ -4070,12 +4213,14 @@ describe('micro post navigation', () => {
       id: crypto.randomUUID(),
       token,
       userId,
-      expiresAt: new Date(Date.now() + 60_000)
+      expiresAt: new Date(Date.now() + 60_000),
     })
+
     const [post] = await db
       .insert(postsTable)
       .values({ title: null, slug, content: 'Navigation test', type: 'micro', draft: false })
       .returning()
+
     if (!post) throw new Error('Failed to seed navigation post')
 
     try {
@@ -4085,27 +4230,31 @@ describe('micro post navigation', () => {
           headers: {
             authorization: `Bearer ${token}`,
             cookie: 'gbfm-navigation-device=ignored-device-token',
-            'content-type': 'application/json'
+            'content-type': 'application/json',
           },
           body: JSON.stringify({
-            command: { _tag: 'Open', slug },
+            command: NavigationCommandData.Open({ slug: Slug.make(slug) }),
             from: slug,
-            intentToken: crypto.randomUUID()
-          })
-        })
+            intentToken: crypto.randomUUID(),
+          }),
+        }),
       )
 
       expect(res.status).toBe(200)
+
       const sessions = await db
         .select()
         .from(navigationSessions)
         .where(eq(navigationSessions.userId, userId))
+
       expect(sessions).toHaveLength(1)
       expect(sessions[0]?.deviceToken).toBeNull()
+
       const deviceSessions = await db
         .select()
         .from(navigationSessions)
         .where(eq(navigationSessions.deviceToken, 'ignored-device-token'))
+
       expect(deviceSessions).toEqual([])
     } finally {
       await db.delete(postsTable).where(eq(postsTable.id, post.id))
@@ -4115,16 +4264,17 @@ describe('micro post navigation', () => {
 
   it('returns not found when opening an unknown tweet', async () => {
     const slug = `navigation-missing-${crypto.randomUUID()}`
+
     const res = await webHandler.handler(
       new Request('http://localhost/api/content/posts/micro/navigate', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          command: { _tag: 'Open', slug },
+          command: NavigationCommandData.Open({ slug: Slug.make(slug) }),
           from: slug,
-          intentToken: crypto.randomUUID()
-        })
-      })
+          intentToken: crypto.randomUUID(),
+        }),
+      }),
     )
 
     expect(res.status).toBe(404)
@@ -4136,11 +4286,11 @@ describe('micro post navigation', () => {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          command: { _tag: 'Unknown' },
+          command: JSON.parse('{"_tag":"Unknown"}'),
           from: 'navigation-unknown-command',
-          intentToken: crypto.randomUUID()
-        })
-      })
+          intentToken: crypto.randomUUID(),
+        }),
+      }),
     )
 
     expect(res.status).toBeGreaterThanOrEqual(400)

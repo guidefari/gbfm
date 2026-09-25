@@ -1,5 +1,11 @@
-import { Context, Effect, Layer } from 'effect'
-import { Cookies, HttpEffect, HttpServerRequest, HttpServerResponse } from 'effect/unstable/http'
+import { Context, Data, Effect, Layer } from 'effect'
+import {
+  type Cookies,
+  HttpEffect,
+  HttpServerRequest,
+  HttpServerResponse,
+} from 'effect/unstable/http'
+
 import type { NavigationIdentity } from '@/domain/navigation'
 import { Auth } from '@/lib/auth'
 
@@ -10,12 +16,11 @@ export class IdentityResolver extends Context.Service<
   }
 >()('middleware/IdentityResolver') {}
 
-const userIdentity = (userId: string): NavigationIdentity => ({ _tag: 'User', userId })
+const NavigationIdentities = Data.taggedEnum<NavigationIdentity>()
 
-const anonymousIdentity = (deviceToken: string): NavigationIdentity => ({
-  _tag: 'Anonymous',
-  deviceToken
-})
+const userIdentity = (userId: string) => NavigationIdentities.User({ userId })
+
+const anonymousIdentity = (deviceToken: string) => NavigationIdentities.Anonymous({ deviceToken })
 
 const deviceTokenCookieName = 'gbfm-navigation-device'
 
@@ -23,25 +28,26 @@ const deviceTokenCookie: NonNullable<Cookies.Cookie['options']> = {
   httpOnly: true,
   path: '/',
   sameSite: 'lax',
-  secure: true
+  secure: true,
 }
 
 export const IdentityResolverLive = Layer.effect(
   IdentityResolver,
   Effect.gen(function* () {
     const auth = yield* Auth
+
     const getSession = (request: HttpServerRequest.HttpServerRequest) =>
       Effect.tryPromise({
         try: () => auth.api.getSession({ headers: new Headers(request.headers) }),
-        catch: () => null
+        catch: () => null,
       }).pipe(
         Effect.tapError(() =>
           Effect.logWarning('[optional-auth] getSession failed', {
             method: request.method,
-            path: request.url
-          })
+            path: request.url,
+          }),
         ),
-        Effect.orElseSucceed(() => null)
+        Effect.orElseSucceed(() => null),
       )
 
     return IdentityResolver.of({
@@ -54,6 +60,7 @@ export const IdentityResolverLive = Layer.effect(
         }
 
         const deviceToken = request.cookies[deviceTokenCookieName]
+
         if (deviceToken) {
           return anonymousIdentity(deviceToken)
         }
@@ -65,13 +72,13 @@ export const IdentityResolverLive = Layer.effect(
               response,
               deviceTokenCookieName,
               mintedDeviceToken,
-              deviceTokenCookie
-            )
-          )
+              deviceTokenCookie,
+            ),
+          ),
         )
 
         return anonymousIdentity(mintedDeviceToken)
-      })
+      }),
     })
-  })
+  }),
 )

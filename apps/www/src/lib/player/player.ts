@@ -2,13 +2,16 @@ import {
   PersistedQueue,
   reduceQueue,
   type PersistedQueueType,
-  type QueueTrackType
+  type QueueTrackType,
 } from '@gbfm/player'
-import { Option, Schema } from 'effect'
+import { Data, Option, Schema } from 'effect'
 
 const QUEUE_KEY = 'gbfm-audio-queue.json'
+
 const VOLUME_KEY = 'gbfm-audio-volume.json'
+
 const POSITION_PREFIX = 'gbfm-audio-position-'
+
 const PREFERENCES_KEY = 'gbfm-player-preferences.json'
 
 export type PlayerSnapshot = {
@@ -29,27 +32,41 @@ const PlayTrackEvent = Schema.Struct({
   thumbnailUrl: Schema.optional(Schema.NullOr(Schema.String)),
   id: Schema.optional(Schema.String),
   slug: Schema.optional(Schema.String),
-  type: Schema.optional(Schema.Literals(['mix', 'track', 'misc']))
-})
-const VolumeState = Schema.Struct({ volume: Schema.Number, isMuted: Schema.Boolean })
-const PositionState = Schema.Struct({ position: Schema.Number })
-const PlayerPreferences = Schema.Struct({
-  continueQueue: Schema.Boolean,
-  restorePosition: Schema.Boolean
+  type: Schema.optional(Schema.Literals(['mix', 'track', 'misc'])),
 })
 
+const VolumeState = Schema.Struct({ volume: Schema.Number, isMuted: Schema.Boolean })
+
+const PositionState = Schema.Struct({ position: Schema.Number })
+
+const PlayerPreferences = Schema.Struct({
+  continueQueue: Schema.Boolean,
+  restorePosition: Schema.Boolean,
+})
+
+const QueueEvent = Data.taggedEnum<
+  | { readonly _tag: 'playNow'; readonly track: QueueTrackType }
+  | { readonly _tag: 'enqueue'; readonly track: QueueTrackType }
+  | { readonly _tag: 'playIndex'; readonly index: number }
+  | { readonly _tag: 'remove'; readonly index: number }
+  | { readonly _tag: 'reorder'; readonly from: number; readonly to: number }
+>()
+
 export type PlayerPreferences = typeof PlayerPreferences.Type
+
 export const defaultPlayerPreferences: PlayerPreferences = {
   continueQueue: true,
-  restorePosition: true
+  restorePosition: true,
 }
 
 export const readPlayerPreferences = (): PlayerPreferences => {
   try {
     const stored = localStorage.getItem(PREFERENCES_KEY)
+
     const value = Option.getOrNull(
-      Schema.decodeUnknownOption(PlayerPreferences)(stored ? JSON.parse(stored) : null)
+      Schema.decodeUnknownOption(PlayerPreferences)(stored ? JSON.parse(stored) : null),
     )
+
     return value ?? defaultPlayerPreferences
   } catch {
     return defaultPlayerPreferences
@@ -62,28 +79,35 @@ export const savePlayerPreferences = (preferences: PlayerPreferences) => {
 
 export const parsePlayTrackEvent = (value: Schema.Json): QueueTrackType | null => {
   const parsed = Option.getOrNull(Schema.decodeUnknownOption(PlayTrackEvent)(value))
+
   if (!parsed || !parsed.url || !parsed.title) return null
+
   return {
     id: parsed.id || parsed.url,
     title: parsed.title,
     slug: parsed.slug ?? '',
     url: parsed.url,
     thumbnailUrl: parsed.thumbnailUrl ?? parsed.artwork ?? null,
-    type: parsed.type ?? 'misc'
+    type: parsed.type ?? 'misc',
   }
 }
 
 const parseQueue = (raw: string | null): PersistedQueueType => {
   if (raw === null) return emptyQueue
+
   try {
     const queue = Option.getOrNull(Schema.decodeUnknownOption(PersistedQueue)(JSON.parse(raw)))
+
     if (!queue) return emptyQueue
     const index = queue.currentIndex
+
     if ((queue.tracks.length === 0 && index !== -1) || index < -1 || index >= queue.tracks.length) {
       return emptyQueue
     }
+
     if (new Set(queue.tracks.map((track) => track.id)).size !== queue.tracks.length)
       return emptyQueue
+
     return queue
   } catch {
     return emptyQueue
@@ -131,11 +155,13 @@ export class PersistentPlayer {
   subscribe(listener: (snapshot: PlayerSnapshot) => void) {
     this.#listeners.add(listener)
     listener(this.#snapshot)
+
     return () => this.#listeners.delete(listener)
   }
 
   destroy() {
     this.#persistPosition()
+
     if (this.#positionTimer) clearInterval(this.#positionTimer)
     this.audio.pause()
     this.audio.removeEventListener('play', this.#onAudioChange)
@@ -143,8 +169,10 @@ export class PersistentPlayer {
     this.audio.removeEventListener('timeupdate', this.#onAudioChange)
     this.audio.removeEventListener('durationchange', this.#onAudioChange)
     this.audio.removeEventListener('ended', this.#onEnded)
+
     if ('mediaSession' in navigator) {
       navigator.mediaSession.metadata = null
+
       for (const action of mediaSessionActions) {
         try {
           navigator.mediaSession.setActionHandler(action, null)
@@ -156,16 +184,17 @@ export class PersistentPlayer {
   }
 
   playTrack(track: QueueTrackType) {
-    this.#setQueue(reduceQueue(this.#queue, { _tag: 'playNow', track }))
+    this.#setQueue(reduceQueue(this.#queue, QueueEvent.playNow({ track })))
     this.#installCurrent(true)
   }
 
   enqueue(track: QueueTrackType) {
-    this.#setQueue(reduceQueue(this.#queue, { _tag: 'enqueue', track }))
+    this.#setQueue(reduceQueue(this.#queue, QueueEvent.enqueue({ track })))
   }
 
   toggle() {
     if (!this.current) return
+
     if (this.audio.paused) void this.audio.play()
     else this.audio.pause()
   }
@@ -182,7 +211,7 @@ export class PersistentPlayer {
   playIndex(index: number) {
     if (index < 0 || index >= this.#queue.tracks.length) return
     this.#persistPosition()
-    this.#setQueue(reduceQueue(this.#queue, { _tag: 'playIndex', index }))
+    this.#setQueue(reduceQueue(this.#queue, QueueEvent.playIndex({ index })))
     this.#installCurrent(true)
   }
 
@@ -199,6 +228,7 @@ export class PersistentPlayer {
   setVolume(volume: number) {
     this.#volume = Math.max(0, Math.min(100, volume))
     this.audio.volume = this.#volume / 100
+
     if (this.#volume > 0 && this.#muted) this.#muted = this.audio.muted = false
     this.#persistVolume()
     this.#emit()
@@ -217,12 +247,13 @@ export class PersistentPlayer {
 
   remove(index: number) {
     const removingCurrent = index === this.#queue.currentIndex
-    this.#setQueue(reduceQueue(this.#queue, { _tag: 'remove', index }))
+    this.#setQueue(reduceQueue(this.#queue, QueueEvent.remove({ index })))
+
     if (removingCurrent) this.#installCurrent(!this.audio.paused)
   }
 
   reorder(from: number, to: number) {
-    this.#setQueue(reduceQueue(this.#queue, { _tag: 'reorder', from, to }))
+    this.#setQueue(reduceQueue(this.#queue, QueueEvent.reorder({ from, to })))
   }
 
   clear() {
@@ -239,31 +270,39 @@ export class PersistentPlayer {
 
   #installCurrent(autoplay: boolean) {
     const track = this.current
+
     if (!track) {
       this.audio.pause()
       this.audio.removeAttribute('src')
       this.audio.load()
       this.#setMetadata(null)
+
       return this.#emit()
     }
+
     if (this.audio.src !== new URL(track.url, location.href).href) {
       this.audio.src = track.url
+
       const restore = () => {
         const record = this.#preferences.restorePosition
           ? this.#read(`${POSITION_PREFIX}${encodeURIComponent(track.id)}.json`)
           : null
+
         if (record) {
           try {
             const value = Option.getOrNull(
-              Schema.decodeUnknownOption(PositionState)(JSON.parse(record))
+              Schema.decodeUnknownOption(PositionState)(JSON.parse(record)),
             )
+
             if (value) this.seek(finiteNumber(value.position, 0))
           } catch {
             // Ignore corrupt checkpoints.
           }
         }
+
         if (autoplay) void this.audio.play()
       }
+
       this.audio.addEventListener('loadedmetadata', restore, { once: true })
     } else if (autoplay) void this.audio.play()
     this.#setMetadata(track)
@@ -272,13 +311,15 @@ export class PersistentPlayer {
 
   #onAudioChange = () => {
     this.#emit()
+
     if ('mediaSession' in navigator) {
       navigator.mediaSession.playbackState = this.audio.paused ? 'paused' : 'playing'
+
       if (this.audio.duration > 0 && Number.isFinite(this.audio.duration)) {
         navigator.mediaSession.setPositionState({
           duration: this.audio.duration,
           position: Math.min(this.audio.currentTime, this.audio.duration),
-          playbackRate: this.audio.playbackRate
+          playbackRate: this.audio.playbackRate,
         })
       }
     }
@@ -303,32 +344,37 @@ export class PersistentPlayer {
       currentTime: finiteNumber(this.audio.currentTime, 0),
       duration: finiteNumber(this.audio.duration, 0),
       volume: this.#volume,
-      muted: this.#muted
+      muted: this.#muted,
     }
   }
 
   #emit() {
     this.#snapshot = this.#makeSnapshot()
+
     for (const listener of this.#listeners) listener(this.#snapshot)
   }
 
   #persistPosition() {
     const track = this.current
+
     if (!track || !Number.isFinite(this.audio.currentTime)) return
     this.#write(
       `${POSITION_PREFIX}${encodeURIComponent(track.id)}.json`,
-      JSON.stringify({ position: this.audio.currentTime, updatedAt: Date.now() })
+      JSON.stringify({ position: this.audio.currentTime, updatedAt: Date.now() }),
     )
   }
 
   #parseVolume(raw: string | null) {
     if (!raw) return { volume: 100, muted: false }
+
     try {
       const value = Option.getOrNull(Schema.decodeUnknownOption(VolumeState)(JSON.parse(raw)))
+
       if (!value) return { volume: 100, muted: false }
+
       return {
         volume: Math.max(0, Math.min(100, finiteNumber(value.volume, 100))),
-        muted: value.isMuted
+        muted: value.isMuted,
       }
     } catch {
       return { volume: 100, muted: false }
@@ -361,13 +407,14 @@ export class PersistentPlayer {
       ? new MediaMetadata({
           title: track.title,
           artist: track.creators?.map((creator) => creator.name).join(', '),
-          artwork: track.thumbnailUrl ? [{ src: track.thumbnailUrl }] : undefined
+          artwork: track.thumbnailUrl ? [{ src: track.thumbnailUrl }] : undefined,
         })
       : null
   }
 
   #installMediaSession() {
     if (!('mediaSession' in navigator)) return
+
     const actions: ReadonlyArray<readonly [MediaSessionAction, MediaSessionActionHandler]> = [
       ['play', () => void this.audio.play()],
       ['pause', () => this.audio.pause()],
@@ -375,8 +422,9 @@ export class PersistentPlayer {
       ['nexttrack', () => this.next()],
       ['seekbackward', (details) => this.jump(-(details.seekOffset ?? 10))],
       ['seekforward', (details) => this.jump(details.seekOffset ?? 10)],
-      ['seekto', (details) => this.seek(details.seekTime ?? 0)]
+      ['seekto', (details) => this.seek(details.seekTime ?? 0)],
     ]
+
     for (const [action, handler] of actions) {
       try {
         navigator.mediaSession.setActionHandler(action, handler)
@@ -394,5 +442,5 @@ const mediaSessionActions: ReadonlyArray<MediaSessionAction> = [
   'nexttrack',
   'seekbackward',
   'seekforward',
-  'seekto'
+  'seekto',
 ]

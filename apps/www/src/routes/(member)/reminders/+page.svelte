@@ -1,1 +1,3 @@
-<script lang="ts">import ReminderManager from '@/lib/components/member/ReminderManager.svelte'; import type { PageProps } from './$types'; let { data }: PageProps = $props()</script><svelte:head><title>Music reminders</title></svelte:head><ReminderManager initialReminders={data.reminders} initialError={data.failure} />
+<script lang="ts">import ReminderManager from '@/lib/components/member/ReminderManager.svelte'; import type { PageProps } from './$types';
+
+ let { data }: PageProps = $props()</script><svelte:head><title>Music reminders</title></svelte:head><ReminderManager initialReminders={data.reminders} initialError={data.failure} />

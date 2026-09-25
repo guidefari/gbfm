@@ -1,9 +1,10 @@
 import { useState } from 'react'
+
 import { ArtworkUploader } from './artwork-uploader'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Workflows/Artwork uploader'
+  title: '@gbfm/ui/Workflows/Artwork uploader',
 }
 
 export function ArtworkUploaders() {
@@ -13,6 +14,7 @@ export function ArtworkUploaders() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] ?? null
     setFile(f)
+
     if (f) setPreview(URL.createObjectURL(f))
   }
 

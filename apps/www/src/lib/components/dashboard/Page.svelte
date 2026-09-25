@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
+
   let { title, description, children }: { title: string; description?: string; children: Snippet } = $props()
 </script>
 <svelte:head><title>{title} | goosebumps.fm</title><meta name="robots" content="noindex" /></svelte:head>

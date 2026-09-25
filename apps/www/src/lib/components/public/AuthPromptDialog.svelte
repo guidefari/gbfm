@@ -3,6 +3,7 @@
   import { tick } from 'svelte'
 
   const ErrorResponse = Schema.Struct({ message: Schema.optional(Schema.String) })
+
   type Mode = 'choice' | 'sign-in' | 'sign-up'
 
   let {
@@ -18,15 +19,22 @@
   } = $props()
 
   let dialog = $state<HTMLDialogElement>()
+
   let mode = $state<Mode>('choice')
+
   let pending = $state(false)
+
   let error = $state('')
+
   let verificationEmail = $state('')
 
   $effect(() => {
     const element = dialog
+
     if (!element) return
+
     if (open && !element.open) void tick().then(() => element.showModal())
+
     if (!open && element.open) element.close()
   })
 
@@ -39,20 +47,26 @@
 
   async function submit(event: SubmitEvent) {
     const form = event.currentTarget
+
     if (!(form instanceof HTMLFormElement) || pending) return
+
     const values = Object.fromEntries(
       [...new FormData(form).entries()].map(([key, value]) => [key, String(value)])
     )
+
     pending = true
     error = ''
+
     try {
       const isSignIn = mode === 'sign-in'
       const identifier = values.identifier ?? ''
+
       const endpoint = isSignIn
         ? identifier.includes('@')
           ? '/auth/sign-in/email'
           : '/auth/sign-in/username'
         : '/auth/sign-up/email'
+
       const payload = isSignIn
         ? identifier.includes('@')
           ? { email: identifier, password: values.password }
@@ -63,18 +77,22 @@
             username: values.username,
             password: values.password
           }
+
       const response = await fetch(endpoint, {
         method: 'POST',
         credentials: 'include',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload)
       })
+
       if (!response.ok) {
         const body = Option.getOrNull(
           Schema.decodeUnknownOption(ErrorResponse)(await response.json().catch(() => null))
         )
+
         throw new Error(body?.message ?? 'The request could not be completed.')
       }
+
       if (isSignIn) {
         close()
         onAuthenticated()

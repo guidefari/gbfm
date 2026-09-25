@@ -6,16 +6,17 @@ import {
   spotifyEntityFromUrl,
   spotifyErrorMessage,
   type SpotifyEntityRef,
-  type SpotifyRequestError
+  type SpotifyRequestError,
 } from '@gbfm/spotify'
 import * as Effect from 'effect/Effect'
-import { Linking } from 'react-native'
 import { useState } from 'react'
-import { Text, TouchableOpacity, View } from 'react-native'
-import { SPOTIFY_GREEN, SpotifyIcon } from './SpotifyIcon'
-import { runSpotifyEffect } from './runtime'
-import { SpotifyConnectionState, useSpotifyConnection } from './connection'
+import { Linking, Text, TouchableOpacity, View } from 'react-native'
+
 import { useThemeColors } from '@/theme/colors'
+
+import { SpotifyConnectionState, useSpotifyConnection } from './connection'
+import { runSpotifyEffect } from './runtime'
+import { SPOTIFY_GREEN, SpotifyIcon } from './SpotifyIcon'
 
 type Props = {
   url: string
@@ -25,7 +26,7 @@ type Props = {
 const entityNoun = {
   [SPOTIFY_ENTITY_KIND.TRACK]: 'Track',
   [SPOTIFY_ENTITY_KIND.ALBUM]: 'Album',
-  [SPOTIFY_ENTITY_KIND.PLAYLIST]: 'Playlist'
+  [SPOTIFY_ENTITY_KIND.PLAYLIST]: 'Playlist',
 } satisfies Record<SpotifyEntityRef['kind'], string>
 
 export function SpotifyEntityActions({ url, onNotice }: Props) {
@@ -34,6 +35,7 @@ export function SpotifyEntityActions({ url, onNotice }: Props) {
   const colors = useThemeColors()
 
   const entity = spotifyEntityFromUrl(url)
+
   if (!entity || !SpotifyConnectionState.$is('Connected')(connection)) return null
 
   const openInSpotify = () => {
@@ -57,23 +59,23 @@ export function SpotifyEntityActions({ url, onNotice }: Props) {
             return playSpotifyEntityEffect(entity).pipe(
               Effect.map(() => {
                 onNotice(`Playing ${entityNoun[entity.kind].toLowerCase()}`)
-              })
+              }),
             )
           }
 
           return queueSpotifyEntityEffect(entity).pipe(
             Effect.map((count) => {
               onNotice(count === 1 ? 'Added to queue' : `Added ${count} tracks to queue`)
-            })
+            }),
           )
         }),
         Effect.catch((error: SpotifyRequestError) =>
           Effect.sync(() => {
             onNotice(spotifyErrorMessage(error))
             openInSpotify()
-          })
-        )
-      )
+          }),
+        ),
+      ),
     ).finally(() => setPending(null))
   }
 
@@ -85,7 +87,7 @@ export function SpotifyEntityActions({ url, onNotice }: Props) {
         borderRadius: 4,
         borderWidth: 1,
         borderColor: `${colors.muted}40`,
-        overflow: 'hidden'
+        overflow: 'hidden',
       }}>
       <TouchableOpacity
         accessibilityRole='button'
@@ -99,7 +101,7 @@ export function SpotifyEntityActions({ url, onNotice }: Props) {
           paddingHorizontal: 12,
           paddingVertical: 8,
           backgroundColor: `${SPOTIFY_GREEN}1a`,
-          opacity: pending !== null ? 0.6 : 1
+          opacity: pending !== null ? 0.6 : 1,
         }}>
         <SpotifyIcon size={12} />
         <Text style={{ color: colors.strong, fontSize: 12, fontWeight: '600' }}>
@@ -115,7 +117,7 @@ export function SpotifyEntityActions({ url, onNotice }: Props) {
         style={{
           paddingHorizontal: 12,
           paddingVertical: 8,
-          opacity: pending !== null ? 0.6 : 1
+          opacity: pending !== null ? 0.6 : 1,
         }}>
         <Text style={{ color: colors.muted, fontSize: 12, fontWeight: '600' }}>
           {pending === 'queue' ? 'Queueing...' : 'Queue'}

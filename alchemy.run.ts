@@ -1,6 +1,7 @@
 import * as Alchemy from 'alchemy'
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as Effect from 'effect/Effect'
+
 import { apiWorker } from './alchemy/api'
 import { cdnRouter } from './alchemy/cdn'
 import { deploymentConfig } from './alchemy/config'
@@ -18,22 +19,24 @@ export default Alchemy.Stack(
   'gbfm',
   {
     providers: Cloudflare.providers(),
-    state: Cloudflare.state()
+    state: Cloudflare.state(),
   },
   Effect.gen(function* () {
     const config = yield* stageConfig
     const deployment = yield* deploymentConfig(config.isLocalDev)
     const secrets = yield* secretsStore(config.apiUrl, config.isLocalDev, deployment.secrets)
+
     const emailConfig = emailDeploymentConfig({
       stage: config.stage,
       testRecipient: deployment.emailTestRecipient,
-      localDev: config.isLocalDev
+      localDev: config.isLocalDev,
     })
 
     const email = yield* emailResources(config, emailConfig)
     const store = yield* storage(config)
     const cdn = yield* cdnRouter(config, store)
     const qrPdf = yield* qrPdfWorker(config, store, cdn)
+
     const api = yield* apiWorker({
       config,
       store,
@@ -42,8 +45,9 @@ export default Alchemy.Stack(
       emailConfig,
       cdn,
       qrPdf,
-      adminEmail: deployment.adminEmail
+      adminEmail: deployment.adminEmail,
     })
+
     const socialImages = yield* socialImageWorker(config, store, api)
 
     yield* dnsRedirects(config)
@@ -52,7 +56,7 @@ export default Alchemy.Stack(
       config,
       websiteConfig: deployment.website,
       api,
-      socialImages
+      socialImages,
     })
 
     return {
@@ -65,7 +69,7 @@ export default Alchemy.Stack(
       databaseName: store.db.databaseName,
       userContentBucketName: store.userContent.bucketName,
       mixesBucketName: store.mixes.bucketName,
-      socialCardsBucketName: store.socialCards.bucketName
+      socialCardsBucketName: store.socialCards.bucketName,
     }
-  })
+  }),
 )

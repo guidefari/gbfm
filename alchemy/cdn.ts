@@ -1,5 +1,6 @@
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as Effect from 'effect/Effect'
+
 import { workerObservability } from './observability'
 import { hostname, localDevPorts, type StageConfig } from './stage'
 import type { Storage } from './storage'
@@ -15,8 +16,8 @@ export const cdnRouter = (config: StageConfig, store: Storage) =>
       env: {
         USER_CONTENT: store.userContent,
         MIXES: store.mixes,
-        IMAGES: Cloudflare.Images.Images('IMAGES')
-      }
+        IMAGES: Cloudflare.Images.Images('IMAGES'),
+      },
     })
   })
 

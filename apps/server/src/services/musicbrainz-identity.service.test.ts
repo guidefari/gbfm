@@ -1,14 +1,18 @@
 import { Effect } from 'effect'
 import { describe, expect, test } from 'vitest'
+
 import {
   makeMusicBrainzIdentityService,
   MusicBrainzNotFound,
-  type MusicBrainzFetch
+  type MusicBrainzFetch,
 } from './musicbrainz-identity.service'
 
 const requestedRecordingMbid = '11111111-1111-4111-8111-111111111111'
+
 const canonicalRecordingMbid = '22222222-2222-4222-8222-222222222222'
+
 const releaseMbid = '33333333-3333-4333-8333-333333333333'
+
 const releaseGroupMbid = '44444444-4444-4444-8444-444444444444'
 
 type JsonValue =
@@ -16,15 +20,17 @@ type JsonValue =
   | number
   | boolean
   | null
-  | readonly JsonValue[]
+  | ReadonlyArray<JsonValue>
   | { readonly [key: string]: JsonValue }
 
 const jsonResponse = (value: JsonValue, status = 200, url?: string) => {
   const response = new Response(JSON.stringify(value), {
     status,
-    headers: { 'Content-Type': 'application/json' }
+    headers: { 'Content-Type': 'application/json' },
   })
+
   if (url) Object.defineProperty(response, 'url', { value })
+
   return response
 }
 
@@ -32,8 +38,8 @@ const makeService = (fetcher: MusicBrainzFetch) =>
   Effect.runPromise(
     makeMusicBrainzIdentityService(fetcher, {
       requestIntervalMs: 0,
-      maxRetries: 0
-    })
+      maxRetries: 0,
+    }),
   )
 
 describe('MusicBrainzIdentityService', () => {
@@ -47,11 +53,11 @@ describe('MusicBrainzIdentityService', () => {
               title: 'Exact recording',
               isrcs: ['GB-AAA-12-34567'],
               length: 183000,
-              'artist-credit': [{ name: 'Artist' }]
-            }
-          ]
-        })
-      )
+              'artist-credit': [{ name: 'Artist' }],
+            },
+          ],
+        }),
+      ),
     )
 
     const result = await Effect.runPromise(service.lookupRecordingByIsrc('gb aaa 12 34567'))
@@ -63,8 +69,8 @@ describe('MusicBrainzIdentityService', () => {
       provenance: {
         source: 'musicbrainz',
         confidence: 'exact_isrc',
-        canonicalMbid: canonicalRecordingMbid
-      }
+        canonicalMbid: canonicalRecordingMbid,
+      },
     })
     expect(result.provenance.lookupAt).toEqual(expect.any(String))
   })
@@ -77,15 +83,15 @@ describe('MusicBrainzIdentityService', () => {
             {
               id: canonicalRecordingMbid,
               title: 'Other recording',
-              isrcs: ['US-WRONG-1']
-            }
-          ]
-        })
-      )
+              isrcs: ['US-WRONG-1'],
+            },
+          ],
+        }),
+      ),
     )
 
     const error = await Effect.runPromise(
-      Effect.flip(service.lookupRecordingByIsrc('GB-AAA-12-34567'))
+      Effect.flip(service.lookupRecordingByIsrc('GB-AAA-12-34567')),
     )
 
     expect(error).toBeInstanceOf(MusicBrainzNotFound)
@@ -104,14 +110,14 @@ describe('MusicBrainzIdentityService', () => {
           'release-group': {
             id: releaseGroupMbid,
             title: 'Album',
-            'primary-type': 'Album'
-          }
-        })
-      )
+            'primary-type': 'Album',
+          },
+        }),
+      ),
     )
 
     const result = await Effect.runPromise(
-      service.lookupByMbid({ mbidType: 'release', mbid: releaseMbid })
+      service.lookupByMbid({ mbidType: 'release', mbid: releaseMbid }),
     )
 
     expect(result).toMatchObject({
@@ -122,8 +128,8 @@ describe('MusicBrainzIdentityService', () => {
         mbid: releaseMbid,
         country: 'GB',
         date: '2020-01-02',
-        barcode: '123456789'
-      }
+        barcode: '123456789',
+      },
     })
   })
 
@@ -134,19 +140,19 @@ describe('MusicBrainzIdentityService', () => {
           {
             id: canonicalRecordingMbid,
             title: 'Canonical recording',
-            isrcs: []
+            isrcs: [],
           },
           200,
-          `https://musicbrainz.org/ws/2/recording/${canonicalRecordingMbid}?fmt=json`
-        )
-      )
+          `https://musicbrainz.org/ws/2/recording/${canonicalRecordingMbid}?fmt=json`,
+        ),
+      ),
     )
 
     const result = await Effect.runPromise(
       service.lookupByMbid({
         mbidType: 'recording',
-        mbid: requestedRecordingMbid
-      })
+        mbid: requestedRecordingMbid,
+      }),
     )
 
     expect(result).toMatchObject({
@@ -155,8 +161,8 @@ describe('MusicBrainzIdentityService', () => {
       provenance: {
         requestedMbid: requestedRecordingMbid,
         canonicalMbid: canonicalRecordingMbid,
-        confidence: 'exact_mbid'
-      }
+        confidence: 'exact_mbid',
+      },
     })
   })
 
@@ -168,24 +174,24 @@ describe('MusicBrainzIdentityService', () => {
             {
               id: requestedRecordingMbid,
               title: 'Song',
-              'artist-credit': [{ name: 'Artist' }]
+              'artist-credit': [{ name: 'Artist' }],
             },
             {
               id: canonicalRecordingMbid,
               title: 'Song',
-              'artist-credit': [{ name: 'Artist' }]
-            }
-          ]
-        })
-      )
+              'artist-credit': [{ name: 'Artist' }],
+            },
+          ],
+        }),
+      ),
     )
 
     const results = await Effect.runPromise(
       service.searchCandidates({
         entityType: 'track',
         title: 'Song',
-        artistName: 'Artist'
-      })
+        artistName: 'Artist',
+      }),
     )
 
     expect(results).toHaveLength(2)
@@ -202,19 +208,19 @@ describe('MusicBrainzIdentityService', () => {
               recording: {
                 id: canonicalRecordingMbid,
                 title: 'URL matched recording',
-                'artist-credit': [{ name: 'Artist' }]
-              }
-            }
-          ]
-        })
-      )
+                'artist-credit': [{ name: 'Artist' }],
+              },
+            },
+          ],
+        }),
+      ),
     )
 
     const result = await Effect.runPromise(
       service.lookupByExternalUrl({
         entityType: 'track',
-        url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh?si=ignored'
-      })
+        url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh?si=ignored',
+      }),
     )
 
     expect(result).toMatchObject({
@@ -222,8 +228,8 @@ describe('MusicBrainzIdentityService', () => {
       recordingMbid: canonicalRecordingMbid,
       provenance: {
         confidence: 'exact_url',
-        matchedUrl: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh'
-      }
+        matchedUrl: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh',
+      },
     })
   })
 
@@ -234,19 +240,19 @@ describe('MusicBrainzIdentityService', () => {
           resource: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh',
           relations: [
             { recording: { id: requestedRecordingMbid, title: 'First' } },
-            { recording: { id: canonicalRecordingMbid, title: 'Second' } }
-          ]
-        })
-      )
+            { recording: { id: canonicalRecordingMbid, title: 'Second' } },
+          ],
+        }),
+      ),
     )
 
     const error = await Effect.runPromise(
       Effect.flip(
         service.lookupByExternalUrl({
           entityType: 'track',
-          url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh'
-        })
-      )
+          url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh',
+        }),
+      ),
     )
 
     expect(error).toBeInstanceOf(MusicBrainzNotFound)
@@ -263,12 +269,12 @@ describe('MusicBrainzIdentityService', () => {
               front: true,
               approved: true,
               thumbnails: {
-                '500': `https://coverartarchive.org/release/${releaseMbid}/1-500.jpg`
-              }
-            }
-          ]
-        })
-      )
+                '500': `https://coverartarchive.org/release/${releaseMbid}/1-500.jpg`,
+              },
+            },
+          ],
+        }),
+      ),
     )
 
     const result = await Effect.runPromise(service.lookupCoverArt(releaseMbid))
@@ -280,22 +286,25 @@ describe('MusicBrainzIdentityService', () => {
       archiveUrl: `https://coverartarchive.org/release/${releaseMbid}`,
       approved: true,
       rights: 'not_asserted',
-      storage: 'remote_reference'
+      storage: 'remote_reference',
     })
   })
 
   test('serializes requests across independently constructed service instances', async () => {
-    const starts: number[] = []
+    const starts: Array<number> = []
+
     const fetcher: MusicBrainzFetch = () => {
       starts.push(performance.now())
+
       return Promise.resolve(
         jsonResponse({
           id: requestedRecordingMbid,
           title: 'Recording',
-          isrcs: []
-        })
+          isrcs: [],
+        }),
       )
     }
+
     const options = { requestIntervalMs: 30, maxRetries: 0 }
     const first = await Effect.runPromise(makeMusicBrainzIdentityService(fetcher, options))
     const second = await Effect.runPromise(makeMusicBrainzIdentityService(fetcher, options))
@@ -304,15 +313,15 @@ describe('MusicBrainzIdentityService', () => {
       Effect.runPromise(
         first.lookupByMbid({
           mbidType: 'recording',
-          mbid: requestedRecordingMbid
-        })
+          mbid: requestedRecordingMbid,
+        }),
       ),
       Effect.runPromise(
         second.lookupByMbid({
           mbidType: 'recording',
-          mbid: canonicalRecordingMbid
-        })
-      )
+          mbid: canonicalRecordingMbid,
+        }),
+      ),
     ])
 
     expect(starts).toHaveLength(2)
@@ -320,40 +329,42 @@ describe('MusicBrainzIdentityService', () => {
   })
 
   test('sends a contactable user agent and retries a transient response', async () => {
-    const headers: string[] = []
+    const headers: Array<string> = []
     let count = 0
+
     const service = await Effect.runPromise(
       makeMusicBrainzIdentityService(
         (_input, init) => {
           headers.push(
             new Request('https://example.com', {
-              headers: init?.headers
-            }).headers.get('User-Agent') ?? ''
+              headers: init?.headers,
+            }).headers.get('User-Agent') ?? '',
           )
           count += 1
+
           return Promise.resolve(
             count === 1
               ? jsonResponse({}, 503)
               : jsonResponse({
                   id: requestedRecordingMbid,
                   title: 'Song',
-                  isrcs: []
-                })
+                  isrcs: [],
+                }),
           )
         },
         {
           requestIntervalMs: 0,
           maxRetries: 1,
-          userAgent: 'gbfm-test/1 (dev@example.com)'
-        }
-      )
+          userAgent: 'gbfm-test/1 (dev@example.com)',
+        },
+      ),
     )
 
     await Effect.runPromise(
       service.lookupByMbid({
         mbidType: 'recording',
-        mbid: requestedRecordingMbid
-      })
+        mbid: requestedRecordingMbid,
+      }),
     )
 
     expect(headers).toEqual(['gbfm-test/1 (dev@example.com)', 'gbfm-test/1 (dev@example.com)'])
@@ -361,36 +372,43 @@ describe('MusicBrainzIdentityService', () => {
 
   test('caches successful and missing exact lookups', async () => {
     let foundRequests = 0
+
     const foundService = await makeService(() => {
       foundRequests += 1
+
       return Promise.resolve(jsonResponse({ id: requestedRecordingMbid, title: 'Song', isrcs: [] }))
     })
+
     await Effect.runPromise(
       foundService.lookupByMbid({
         mbidType: 'recording',
-        mbid: requestedRecordingMbid
-      })
+        mbid: requestedRecordingMbid,
+      }),
     )
     await Effect.runPromise(
       foundService.lookupByMbid({
         mbidType: 'recording',
-        mbid: requestedRecordingMbid
-      })
+        mbid: requestedRecordingMbid,
+      }),
     )
 
     let missingRequests = 0
+
     const missingService = await makeService(() => {
       missingRequests += 1
+
       return Promise.resolve(jsonResponse({}, 404))
     })
-    for (const _iteration of [1, 2]) {
+
+    for (const iteration of [1, 2]) {
+      void iteration
       await Effect.runPromise(
         Effect.flip(
           missingService.lookupByMbid({
             mbidType: 'recording',
-            mbid: canonicalRecordingMbid
-          })
-        )
+            mbid: canonicalRecordingMbid,
+          }),
+        ),
       )
     }
 

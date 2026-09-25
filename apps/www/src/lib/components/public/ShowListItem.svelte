@@ -3,7 +3,9 @@
   import { records, text, type PublicRecord } from '@/lib/public-content'
 
   let { show, selected }: { show: PublicRecord; selected: boolean } = $props()
+
   const title = $derived(text(show.title, 'Untitled show'))
+
   const hosts = $derived(records(show.hosts).map((host) => text(host.name)).filter(Boolean).join(', '))
 </script>
 

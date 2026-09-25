@@ -1,13 +1,16 @@
 import { randomUUID } from 'node:crypto'
+
 import { inArray } from 'drizzle-orm'
 import { Effect, Layer } from 'effect'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
-import { DatabaseTestLayer, db } from '@/test/database'
-import { withTestLayer } from '@/test/effect'
+
 import { audioTable } from '@/db/audio.schema'
 import { MdxServiceLayer } from '@/lib/mdx'
 import { ConfigServiceLayer } from '@/services/config.service'
 import { UploadAssetServiceLayer } from '@/services/upload-asset.service'
+import { DatabaseTestLayer, db } from '@/test/database'
+import { withTestLayer } from '@/test/effect'
+
 import { AudioService, AudioServiceLayer } from './audio.service'
 
 const slugPrefix = `audio-sort-${randomUUID().slice(0, 8)}`
@@ -16,15 +19,17 @@ const seeded = [
   { playCount: 5, minutesAgo: 40 },
   { playCount: 90, minutesAgo: 30 },
   { playCount: 1, minutesAgo: 20 },
-  { playCount: 42, minutesAgo: 10 }
+  { playCount: 42, minutesAgo: 10 },
 ].map((row, index) => ({
   ...row,
   id: randomUUID(),
-  slug: `${slugPrefix}-${index}`
+  slug: `${slugPrefix}-${index}`,
 }))
 
 const seededIds = seeded.map((row) => row.id)
+
 const seededSlugs = new Set(seeded.map((row) => row.slug))
+
 const slugAt = (index: number) => `${slugPrefix}-${index}`
 
 const adminId = `audio-sort-admin-${randomUUID()}`
@@ -38,9 +43,9 @@ const getService = () =>
       AudioServiceLayer.pipe(
         Layer.provide(MdxServiceLayer),
         Layer.provide(Layer.mergeAll(ConfigServiceLayer, UploadAssetServiceLayer)),
-        Layer.provide(DatabaseTestLayer)
-      )
-    )
+        Layer.provide(DatabaseTestLayer),
+      ),
+    ),
   )
 
 const fetchSeeded = async (options: {
@@ -51,6 +56,7 @@ const fetchSeeded = async (options: {
 }) => {
   const service = await getService()
   const result = await Effect.runPromise(service.getByTypeForEdit('mix', options, adminId, 'admin'))
+
   return result.data.filter((audio) => seededSlugs.has(audio.slug)).map((audio) => audio.slug)
 }
 
@@ -66,8 +72,8 @@ beforeAll(async () => {
       url: 'https://example.com/audio.mp3',
       draft: false,
       playCount: row.playCount,
-      createdAt: new Date(now - row.minutesAgo * 60_000)
-    }))
+      createdAt: new Date(now - row.minutesAgo * 60_000),
+    })),
   )
 })
 
@@ -102,22 +108,26 @@ describe('AudioService.getByTypeForEdit ordering', () => {
 
   test('orders across all rows rather than within a page', async () => {
     const service = await getService()
+
     const unsorted = await Effect.runPromise(
-      service.getByTypeForEdit('mix', { limit: 100, offset: 0 }, adminId, 'admin')
+      service.getByTypeForEdit('mix', { limit: 100, offset: 0 }, adminId, 'admin'),
     )
+
     const total = unsorted.pagination.total
 
     const pageSize = 1
-    const collected: string[] = []
+    const collected: Array<string> = []
+
     for (let offset = 0; offset < total; offset += pageSize) {
       const page = await Effect.runPromise(
         service.getByTypeForEdit(
           'mix',
           { limit: pageSize, offset, sort: 'plays', order: 'desc' },
           adminId,
-          'admin'
-        )
+          'admin',
+        ),
       )
+
       for (const audio of page.data) {
         if (seededSlugs.has(audio.slug)) collected.push(audio.slug)
       }

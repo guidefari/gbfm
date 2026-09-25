@@ -1,14 +1,15 @@
-import { Redacted, Schema } from 'effect'
+import { Redacted, Schema, Effect } from 'effect'
 import { describe, expect, test } from 'vitest'
+
+import { withTestLayer } from '@/test/effect'
+
 import {
   ConfigService,
   createConfig,
   StorageConfigSchema,
   WorkerConfigServiceLayer,
-  type WorkerConfigBindings
+  type WorkerConfigBindings,
 } from './config.service'
-import { Effect } from 'effect'
-import { withTestLayer } from '@/test/effect'
 
 const decodeStorageConfig = Schema.decodeUnknownSync(StorageConfigSchema)
 
@@ -30,7 +31,7 @@ const workerBindings = (): WorkerConfigBindings => ({
   StorageRegion: 'configured',
   StorageAccessKeyId: 'configured',
   StorageSecretAccessKey: 'configured',
-  StorageSigningEndpoint: 'configured'
+  StorageSigningEndpoint: 'configured',
 })
 
 describe('StorageConfigSchema', () => {
@@ -59,7 +60,7 @@ describe('StorageConfigSchema', () => {
     const config = createConfig({
       ...workerBindings(),
       FRONTEND_URL: 'https://d1-staging.goosebumps.fm',
-      SHARE_URL: 'https://api.d1-staging.goosebumps.fm'
+      SHARE_URL: 'https://api.d1-staging.goosebumps.fm',
     })
 
     expect(config.urls.frontend).toBe('https://d1-staging.goosebumps.fm')
@@ -69,7 +70,7 @@ describe('StorageConfigSchema', () => {
   test('points a non-prod stage at its own deployed CDN router', () => {
     const config = createConfig({
       ...workerBindings(),
-      CDN_ROUTER_URL: 'https://cdn-router-d1-staging.workers.dev'
+      CDN_ROUTER_URL: 'https://cdn-router-d1-staging.workers.dev',
     })
 
     expect(config.urls.bucketRouter).toBe('https://cdn-router-d1-staging.workers.dev')
@@ -79,7 +80,7 @@ describe('StorageConfigSchema', () => {
     const config = createConfig({
       ...workerBindings(),
       APP_STAGE: 'prod',
-      CDN_ROUTER_URL: 'https://cdn-router-prod.workers.dev'
+      CDN_ROUTER_URL: 'https://cdn-router-prod.workers.dev',
     })
 
     expect(config.urls.bucketRouter).toBe('https://cdn.goosebumps.fm')
@@ -96,22 +97,22 @@ describe('StorageConfigSchema', () => {
       Effect.runSync(
         withTestLayer(
           ConfigService,
-          WorkerConfigServiceLayer({ ...workerBindings(), EMAIL_SENDER: 'noreply' })
-        )
-      )
+          WorkerConfigServiceLayer({ ...workerBindings(), EMAIL_SENDER: 'noreply' }),
+        ),
+      ),
     ).toThrow()
   })
 
   test('rejects missing production Worker secrets', () => {
     expect(() =>
-      createConfig({ ...workerBindings(), APP_STAGE: 'prod', BETTER_AUTH_SECRET: '' })
+      createConfig({ ...workerBindings(), APP_STAGE: 'prod', BETTER_AUTH_SECRET: '' }),
     ).toThrow('Missing required production secrets: BETTER_AUTH_SECRET')
   })
 
   test('accepts AWS with ambient credentials', () => {
     expect(decodeStorageConfig({ provider: 'aws', region: 'us-east-1' })).toMatchObject({
       provider: 'aws',
-      region: 'us-east-1'
+      region: 'us-east-1',
     })
   })
 
@@ -119,7 +120,7 @@ describe('StorageConfigSchema', () => {
     const config = createConfig({
       ...workerBindings(),
       StorageProvider: 'r2',
-      R2AccountId: 'test-account'
+      R2AccountId: 'test-account',
     })
 
     expect(config.storage.accountId).toBe('test-account')
@@ -127,20 +128,21 @@ describe('StorageConfigSchema', () => {
 
   test('rejects R2 without its account ID', () => {
     expect(() => decodeStorageConfig({ provider: 'r2', region: 'auto' })).toThrow(
-      /r2 provider requires an account ID/
+      /r2 provider requires an account ID/,
     )
   })
 
   test('does not serialize R2 credentials', () => {
     const accessKey = 'r2-access-key-for-test'
     const secretKey = 'r2-secret-key-for-test'
+
     const config = decodeStorageConfig({
       provider: 'r2',
       accountId: 'account',
       endpoint: 'https://account.r2.cloudflarestorage.com',
       region: 'auto',
       accessKeyId: Redacted.make(accessKey),
-      secretAccessKey: Redacted.make(secretKey)
+      secretAccessKey: Redacted.make(secretKey),
     })
 
     expect(JSON.stringify(config)).not.toContain(accessKey)

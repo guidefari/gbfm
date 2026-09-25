@@ -1,5 +1,6 @@
 import { Effect } from 'effect'
 import { expect, test } from 'vitest'
+
 import { runNavigationIntent } from './navigation-intent'
 
 test('superseding navigation aborts the stale workflow and completes its replacement', async () => {
@@ -12,11 +13,11 @@ test('superseding navigation aborts the stale workflow and completes its replace
   runNavigationIntent(
     Effect.sync(() => (requestStarted = true)).pipe(
       Effect.andThen(
-        Effect.onInterrupt(Effect.never, () => Effect.sync(() => (requestAborted = true)))
+        Effect.onInterrupt(Effect.never, () => Effect.sync(() => (requestAborted = true))),
       ),
       Effect.andThen(Effect.sync(() => (staleNavigationRan = true))),
-      Effect.tapError(() => Effect.sync(() => (staleErrorPathRan = true)))
-    )
+      Effect.tapError(() => Effect.sync(() => (staleErrorPathRan = true))),
+    ),
   )
   await new Promise((resolve) => setTimeout(resolve, 0))
   runNavigationIntent(Effect.sync(() => (replacementCompleted = true)))
@@ -35,7 +36,9 @@ test('the newest of many rapid intents is the one that completes', async () => {
 
   for (const destination of ['beta', 'gamma', 'delta', 'epsilon']) {
     runNavigationIntent(
-      Effect.sleep('10 millis').pipe(Effect.andThen(Effect.sync(() => completed.push(destination))))
+      Effect.sleep('10 millis').pipe(
+        Effect.andThen(Effect.sync(() => completed.push(destination))),
+      ),
     )
   }
 

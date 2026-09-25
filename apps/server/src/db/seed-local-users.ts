@@ -1,5 +1,6 @@
 import { hashPassword } from 'better-auth/crypto'
 import { and, eq } from 'drizzle-orm'
+
 import { account, user } from './auth.schema'
 import type { DatabaseClient } from './layer'
 
@@ -10,16 +11,16 @@ export const localUsers = [
     name: 'Local Listener',
     email: 'listener@gbfm.local',
     username: 'local-listener',
-    role: 'user'
+    role: 'user',
   },
   {
     name: 'Local Creator',
     email: 'creator@gbfm.local',
     username: 'local-creator',
-    role: 'creator'
+    role: 'creator',
   },
   { name: 'Local Editor', email: 'editor@gbfm.local', username: 'local-editor', role: 'editor' },
-  { name: 'Local Admin', email: 'admin@gbfm.local', username: 'local-admin', role: 'admin' }
+  { name: 'Local Admin', email: 'admin@gbfm.local', username: 'local-admin', role: 'admin' },
 ] as const
 
 export type LocalUserRole = (typeof localUsers)[number]['role']
@@ -32,6 +33,7 @@ export const seedLocalUsers = async (database: DatabaseClient) => {
       .select({ id: user.id })
       .from(user)
       .where(eq(user.email, fixture.email))
+
     const userId = existing[0]?.id ?? crypto.randomUUID()
 
     await database
@@ -43,7 +45,7 @@ export const seedLocalUsers = async (database: DatabaseClient) => {
         emailVerified: true,
         username: fixture.username,
         displayUsername: fixture.username,
-        role: fixture.role
+        role: fixture.role,
       })
       .onConflictDoUpdate({
         target: user.email,
@@ -56,8 +58,8 @@ export const seedLocalUsers = async (database: DatabaseClient) => {
           banned: false,
           banReason: null,
           banExpires: null,
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       })
 
     const credentials = await database
@@ -76,13 +78,13 @@ export const seedLocalUsers = async (database: DatabaseClient) => {
         accountId: userId,
         providerId: 'credential',
         userId,
-        password
+        password,
       })
     }
   }
 
   return {
     password: localPassword,
-    users: localUsers.map(({ email, role, username }) => ({ email, role, username }))
+    users: localUsers.map(({ email, role, username }) => ({ email, role, username })),
   }
 }

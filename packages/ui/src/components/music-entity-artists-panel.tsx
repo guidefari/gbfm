@@ -1,4 +1,5 @@
 import { useState } from 'react'
+
 import { Button } from './button'
 import { Card, CardContent, CardHeader, CardTitle } from './card'
 import { Input } from './input'
@@ -11,7 +12,7 @@ export interface ArtistJunction {
 }
 
 export interface MusicEntityArtistsPanelProps {
-  artists: ArtistJunction[]
+  artists: Array<ArtistJunction>
   onAdd?: (artistId: string, role?: string) => void
   onRemove?: (artistId: string) => void
   readOnly?: boolean
@@ -21,7 +22,7 @@ export function MusicEntityArtistsPanel({
   artists,
   onAdd,
   onRemove,
-  readOnly = false
+  readOnly = false,
 }: MusicEntityArtistsPanelProps) {
   const [artistId, setArtistId] = useState('')
   const [role, setRole] = useState('')

@@ -10,8 +10,9 @@ export {
   StorageQuotaError,
   UnknownError,
   UploadAborted,
-  UploadPaused
+  UploadPaused,
 } from './errors'
+
 export {
   clearCheckpoint,
   readCheckpoint,
@@ -19,8 +20,9 @@ export {
   ResumableUploadStorageInMemory,
   ResumableUploadStorageLive,
   ResumableUploadStorageTest,
-  writeCheckpoint
+  writeCheckpoint,
 } from './storage'
+
 export {
   cancelProgram,
   type PersistedResumableUpload,
@@ -30,5 +32,5 @@ export {
   type UploadInput,
   type UploadOptions,
   type UploadProgress,
-  uploadProgram
+  uploadProgram,
 } from './service'
