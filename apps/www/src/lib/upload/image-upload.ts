@@ -38,6 +38,7 @@ export class HttpStatusError extends Error {
 export async function uploadImageDirectToS3(
   file: File,
   signal?: AbortSignal,
+  request: typeof fetch = fetch,
 ): Promise<ImageUploadResult> {
   const presignInit: RequestInit = {
     method: 'POST',
@@ -51,7 +52,7 @@ export async function uploadImageDirectToS3(
   }
 
   if (signal !== undefined) presignInit.signal = signal
-  const presignResponse = await fetch(apiUrl('/upload/image/presign'), presignInit)
+  const presignResponse = await request(apiUrl('/upload/image/presign'), presignInit)
 
   if (!presignResponse.ok) {
     const errorText = await presignResponse.text()
@@ -71,7 +72,7 @@ export async function uploadImageDirectToS3(
   }
 
   if (signal !== undefined) putInit.signal = signal
-  const putResponse = await fetch(uploadUrl, putInit)
+  const putResponse = await request(uploadUrl, putInit)
 
   if (!putResponse.ok) {
     throw new HttpStatusError(
