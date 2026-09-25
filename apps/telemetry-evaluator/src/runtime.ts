@@ -1,4 +1,4 @@
-import { Effect, Schema } from 'effect'
+import { Data, Effect, Schema } from 'effect'
 
 import type { AlertState, Metric, Notification, Signal } from './domain'
 import { transition } from './domain'
@@ -29,6 +29,10 @@ export interface AlertConfig {
   readonly investigationUrl: string
 }
 
+export class TelemetryRuntimeError extends Data.TaggedError('TelemetryRuntimeError')<{
+  readonly operation: 'read-state' | 'write-state' | 'send-notification'
+}> {}
+
 const StoredState = Schema.Struct({
   active: Schema.Boolean,
   status: Schema.optional(
@@ -44,12 +48,16 @@ const StoredState = Schema.Struct({
 })
 
 const readState = (kv: KvStore, signal: Signal) =>
-  Effect.tryPromise(() => kv.get(`slo:${signal}`)).pipe(
+  Effect.tryPromise({
+    try: () => kv.get(`slo:${signal}`),
+    catch: () => new TelemetryRuntimeError({ operation: 'read-state' }),
+  }).pipe(
     Effect.flatMap((value) =>
       value === null
         ? Effect.succeed({ active: false } satisfies AlertState)
         : Effect.try(() => JSON.parse(value)).pipe(
             Effect.flatMap((unknownState) => Schema.decodeUnknownEffect(StoredState)(unknownState)),
+            Effect.mapError(() => new TelemetryRuntimeError({ operation: 'read-state' })),
           ),
     ),
   )
@@ -84,10 +92,16 @@ export const persistAndNotify = Effect.fn('TelemetryEvaluator.persistAndNotify')
     const next = transition(previous, metric, evaluationId)
 
     for (const notification of next.notifications) {
-      yield* Effect.tryPromise(() => email.send(renderNotification(notification, metric, config)))
+      yield* Effect.tryPromise({
+        try: () => email.send(renderNotification(notification, metric, config)),
+        catch: () => new TelemetryRuntimeError({ operation: 'send-notification' }),
+      })
     }
 
-    yield* Effect.tryPromise(() => kv.put(`slo:${metric.signal}`, JSON.stringify(next.state)))
+    yield* Effect.tryPromise({
+      try: () => kv.put(`slo:${metric.signal}`, JSON.stringify(next.state)),
+      catch: () => new TelemetryRuntimeError({ operation: 'write-state' }),
+    })
   }
 })
 
@@ -101,7 +115,14 @@ export const runDrill = Effect.fn('TelemetryEvaluator.runDrill')(function* (
   if (config.environment === 'production') return
 
   const completionKey = `drill:completed:${config.release}`
-  if ((yield* Effect.tryPromise(() => kv.get(completionKey))) !== null) return
+
+  if (
+    (yield* Effect.tryPromise({
+      try: () => kv.get(completionKey),
+      catch: () => new TelemetryRuntimeError({ operation: 'read-state' }),
+    })) !== null
+  )
+    return
 
   const drillKv: KvStore = {
     get: (key) => kv.get(`drill:${key}`),
@@ -126,5 +147,8 @@ export const runDrill = Effect.fn('TelemetryEvaluator.runDrill')(function* (
     `${evaluationId}-resolve`,
     config,
   )
-  yield* Effect.tryPromise(() => kv.put(completionKey, evaluationId))
+  yield* Effect.tryPromise({
+    try: () => kv.put(completionKey, evaluationId),
+    catch: () => new TelemetryRuntimeError({ operation: 'write-state' }),
+  })
 })

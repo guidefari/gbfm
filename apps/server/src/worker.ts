@@ -369,6 +369,7 @@ export default Sentry.withSentry<ApiEnv, ApiQueueJob>(sentryOptions, {
               (promise) => ctx.waitUntil(promise),
             )
           : webHandler.handler(correlatedRequest))
+
         const output = new Response(response.body, response)
         output.headers.set('x-request-id', requestId)
 

@@ -1,4 +1,4 @@
-import { Effect } from 'effect'
+import { Context, Effect, Layer } from 'effect'
 import { describe, expect, test } from 'vitest'
 
 import { RequestTelemetry, RequestTelemetryLive } from './request-telemetry.service'
@@ -6,6 +6,7 @@ import { RequestTelemetry, RequestTelemetryLive } from './request-telemetry.serv
 describe('RequestTelemetryLive', () => {
   test('writes only the bounded request dimensions used by SLO queries', async () => {
     const points: Array<unknown> = []
+
     const layer = RequestTelemetryLive({
       release: 'release-1',
       stage: 'prod',
@@ -13,15 +14,19 @@ describe('RequestTelemetryLive', () => {
     })
 
     await Effect.runPromise(
-      Effect.gen(function* () {
-        const telemetry = yield* RequestTelemetry
-        yield* telemetry.record({
-          method: 'GET',
-          route: '/api/shows/:slug',
-          status: 200,
-          durationMs: 125,
-        })
-      }).pipe(Effect.provide(layer)),
+      Effect.scoped(
+        Effect.gen(function* () {
+          const services = yield* Layer.build(layer)
+          const telemetry = Context.get(services, RequestTelemetry)
+
+          yield* telemetry.record({
+            method: 'GET',
+            route: '/api/shows/:slug',
+            status: 200,
+            durationMs: 125,
+          })
+        }),
+      ),
     )
 
     expect(points).toEqual([

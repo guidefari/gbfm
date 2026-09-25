@@ -71,10 +71,12 @@ export const RequestLoggerLive = HttpRouter.middleware(
       const result = yield* Effect.exit(httpEffect)
       const duration = Date.now() - start
       const routeContext = yield* Effect.serviceOption(HttpRouter.RouteContext)
+
       const route = Option.match(routeContext, {
         onNone: () => '/unmatched' as const,
         onSome: ({ route }) => route.path,
       })
+
       const telemetry = yield* RequestTelemetry
 
       const annotate = (status: number, outcome: string) =>
@@ -119,6 +121,7 @@ export const RequestLoggerLive = HttpRouter.middleware(
             })
 
         yield* annotate(status, clientAborted ? 'client_abort' : 'failure')
+
         if (clientAborted) yield* recordRequest(duration, false)
 
         return yield* Effect.failCause(result.cause)

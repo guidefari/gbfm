@@ -62,6 +62,7 @@ describe('RequestLoggerLive', () => {
     const request = new Request('http://localhost/probe', {
       headers: { 'x-request-id': 'request-1' },
     })
+
     Object.defineProperty(request, 'url', { value: '/probe' })
 
     const res = await loggedHandler().handler(request, Context.make(Database, db))
@@ -72,11 +73,13 @@ describe('RequestLoggerLive', () => {
 
   test('records a bounded route template instead of the request URL', async () => {
     const points: Array<RequestTelemetryPoint> = []
+
     const telemetry = Layer.succeed(RequestTelemetry, {
       release: 'release-1',
       stage: 'test',
       record: (point) => Effect.sync(() => points.push(point)),
     })
+
     const request = new Request('http://localhost/probe?secret=private', {
       headers: { 'x-request-id': 'request-1' },
     })

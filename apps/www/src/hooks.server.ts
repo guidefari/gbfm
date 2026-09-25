@@ -1,3 +1,4 @@
+import { VPS_PROXY_TARGET } from '$app/env/private'
 import { resolveRequestId } from '@gbfm/core/observability/request-id'
 import type { Handle, HandleServerError } from '@sveltejs/kit/hooks'
 
@@ -7,6 +8,7 @@ import { log } from '@/services/logger'
 export const handle: Handle = async ({ event, resolve }) => {
   const startedAt = performance.now()
   event.locals.requestId = resolveRequestId(event.request.headers.get('x-request-id'))
+  event.locals.apiOrigin = VPS_PROXY_TARGET ?? 'http://127.0.0.1:3003'
 
   if (event.tracing.enabled) {
     event.tracing.root.setAttribute('gbfm.request_id', event.locals.requestId)

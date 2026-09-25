@@ -1,6 +1,7 @@
 <script lang="ts">
   import { afterNavigate, beforeNavigate } from '$app/navigation'
   import { page } from '$app/state'
+  import { Option, Schema } from 'effect'
   import { onMount } from 'svelte'
 
   import {
@@ -24,6 +25,16 @@
   let currentRoute = '/unknown'
 
   let vitalRoute = '/unknown'
+
+  const LayoutShiftEntry = Schema.Struct({
+    hadRecentInput: Schema.Boolean,
+    value: Schema.Number,
+  })
+
+  const InteractionEntry = Schema.Struct({
+    interactionId: Schema.Number,
+    duration: Schema.Number,
+  })
 
   beforeNavigate(() => {
     navigationStartedAt = performance.now()
@@ -57,10 +68,12 @@
 
   onMount(() => {
     const session = anonymousSession(localStorage, Date.now())
+
     const release = boundedName(
       document.querySelector<HTMLMetaElement>('meta[name="gbfm-release"]')?.content ?? 'unknown',
       'unknown',
     )
+
     const sampleRate = release === 'local' ? 1 : TELEMETRY_SAMPLE_RATE
 
     if (!isSampled(session, sampleRate)) return
@@ -107,21 +120,14 @@
       lcp = entry.startTime
     })
     observe('layout-shift', (entry) => {
-      if (
-        'hadRecentInput' in entry &&
-        entry.hadRecentInput === false &&
-        'value' in entry &&
-        typeof entry.value === 'number'
-      )
-        cls += entry.value
+      const shift = Option.getOrUndefined(Schema.decodeUnknownOption(LayoutShiftEntry)(entry))
+
+      if (shift && !shift.hadRecentInput) cls += shift.value
     })
     observe('event', (entry) => {
-      if (
-        'interactionId' in entry &&
-        typeof entry.interactionId === 'number' &&
-        entry.interactionId > 0
-      )
-        inp = Math.max(inp, entry.duration)
+      const interaction = Option.getOrUndefined(Schema.decodeUnknownOption(InteractionEntry)(entry))
+
+      if (interaction && interaction.interactionId > 0) inp = Math.max(inp, interaction.duration)
     })
 
     let finalized = false
@@ -163,6 +169,7 @@
     window.addEventListener('pagehide', finalize)
     window.addEventListener('error', reportError)
     window.addEventListener('unhandledrejection', reportRejection)
+
     const stopPlayerTelemetry = listenForPlayerTelemetry((name) =>
       batcher.add({ kind: 'player', name, route: currentRoute }),
     )

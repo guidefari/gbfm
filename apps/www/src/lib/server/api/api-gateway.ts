@@ -1,12 +1,33 @@
-import { VPS_PROXY_TARGET } from '$app/env/private'
 import { context, propagation, SpanStatusCode, trace } from '@opentelemetry/api'
 import type { RequestEvent } from '@sveltejs/kit'
 
 import { log } from '@/services/logger'
 
-const localApiOrigin = () => VPS_PROXY_TARGET ?? 'http://127.0.0.1:3003'
-
 const tracer = trace.getTracer('gbfm-www-api')
+
+type ApiFetcher = {
+  fetch(
+    input: string,
+    init?: {
+      readonly method?: string
+      readonly headers?: Readonly<Record<string, string>>
+      readonly redirect?: RequestRedirect
+      readonly body?: ArrayBuffer
+    },
+  ): Promise<{
+    readonly headers: { forEach(callback: (value: string, key: string) => void): void }
+    readonly status: number
+    readonly statusText: string
+    arrayBuffer(): Promise<ArrayBuffer>
+  }>
+}
+
+type ApiRequestEvent = {
+  readonly platform: { readonly env: { readonly API: ApiFetcher } } | undefined
+  readonly request: Request
+  readonly locals: { readonly apiOrigin: string; readonly requestId: string }
+  readonly route?: RequestEvent['route'] | undefined
+}
 
 const traceHeaders = (headers: Headers) => {
   if (import.meta.env.DEV) {
@@ -19,7 +40,7 @@ const traceHeaders = (headers: Headers) => {
 }
 
 const profileApiRequest = async (
-  event: Pick<RequestEvent, 'locals'> & { route?: RequestEvent['route'] },
+  event: Pick<ApiRequestEvent, 'locals' | 'route'>,
   operation: string,
   path: string,
   run: () => Promise<Response>,
@@ -83,7 +104,7 @@ const bindingRequest = async (request: Request, requestId: string) => {
 }
 
 const normalizeBindingResponse = async (
-  response: Awaited<ReturnType<NonNullable<App.Platform['env']['API']>['fetch']>>,
+  response: Awaited<ReturnType<ApiFetcher['fetch']>>,
 ): Promise<Response> => {
   const headers = new Headers()
   response.headers.forEach((value, key) => headers.append(key, value))
@@ -97,7 +118,7 @@ const normalizeBindingResponse = async (
 }
 
 const fetchBinding = async (
-  event: Pick<RequestEvent, 'platform'>,
+  event: Pick<ApiRequestEvent, 'platform'>,
   request: Request,
 ): Promise<Response | null> => {
   const api = event.platform?.env.API
@@ -140,7 +161,7 @@ export async function forwardApiRequest(event: RequestEvent): Promise<Response> 
       if (bindingResponse) return bindingResponse
 
       const url = new URL(event.request.url)
-      const target = new URL(`${url.pathname}${url.search}`, localApiOrigin())
+      const target = new URL(`${url.pathname}${url.search}`, event.locals.apiOrigin)
 
       return fetch(new Request(target, request))
     },
@@ -149,7 +170,7 @@ export async function forwardApiRequest(event: RequestEvent): Promise<Response> 
 
 /** Performs a server-side request through the same API boundary as browser traffic. */
 export async function apiRequest(
-  event: Pick<RequestEvent, 'platform' | 'request' | 'locals'>,
+  event: ApiRequestEvent,
   path: string,
   init: RequestInit = {},
 ): Promise<Response> {
@@ -177,7 +198,7 @@ export async function apiRequest(
         if (bindingResponse) return bindingResponse
       }
 
-      const target = new URL(`${url.pathname}${url.search}`, localApiOrigin())
+      const target = new URL(`${url.pathname}${url.search}`, event.locals.apiOrigin)
 
       return fetch(new Request(target, request))
     },

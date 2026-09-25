@@ -41,6 +41,7 @@ export const apiWorker = ({
 }: ApiWorkerInput) =>
   Effect.gen(function* () {
     const sentryDsn = secrets.SENTRY_BACKEND_DSN
+
     const requestTelemetry = yield* Cloudflare.AnalyticsEngine.Dataset('ApiRequestTelemetry', {
       dataset: `gbfm_api_${config.stage}`,
     })

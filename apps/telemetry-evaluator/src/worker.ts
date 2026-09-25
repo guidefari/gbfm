@@ -3,7 +3,12 @@ import { FetchHttpClient, type HttpClient } from 'effect/unstable/http'
 
 import { querySlos } from './analytics'
 import { evaluate } from './domain'
-import { persistAndNotify, runDrill, type EmailBinding } from './runtime'
+import {
+  persistAndNotify,
+  runDrill,
+  type EmailBinding,
+  type TelemetryRuntimeError,
+} from './runtime'
 
 export interface Env {
   readonly CLOUDFLARE_ACCOUNT_ID: string
@@ -24,7 +29,7 @@ export interface Env {
 const scheduled = (
   env: Env,
   scheduledTime: number,
-): Effect.Effect<void, unknown, HttpClient.HttpClient> =>
+): Effect.Effect<void, TelemetryRuntimeError, HttpClient.HttpClient> =>
   Effect.gen(function* () {
     const evaluationId = `${env.APP_RELEASE}:${scheduledTime}`
 

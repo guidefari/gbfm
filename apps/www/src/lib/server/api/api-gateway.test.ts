@@ -1,13 +1,11 @@
-import type { RequestEvent } from '@sveltejs/kit'
-import { describe, expect, test, vi } from 'vitest'
-
-vi.mock('$app/env/private', () => ({ VPS_PROXY_TARGET: undefined }))
+import { describe, expect, test } from 'vitest'
 
 import { apiRequest } from './api-gateway'
 
 describe('apiRequest request correlation', () => {
   test('forwards the WWW request ID through the API service binding', async () => {
     let received: Request | undefined
+
     const api = {
       fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
         received = new Request(input, init)
@@ -15,11 +13,12 @@ describe('apiRequest request correlation', () => {
         return new Response(null, { status: 204 })
       },
     }
+
     const event = {
-      locals: { requestId: 'www-request-123' },
+      locals: { apiOrigin: 'http://127.0.0.1:3003', requestId: 'www-request-123' },
       request: new Request('https://www.goosebumps.fm/shows/example'),
       platform: { env: { API: api } },
-    } as unknown as Pick<RequestEvent, 'platform' | 'request' | 'locals'>
+    }
 
     const response = await apiRequest(event, '/api/shows/example')
 

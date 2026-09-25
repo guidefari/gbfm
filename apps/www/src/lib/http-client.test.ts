@@ -119,6 +119,7 @@ describe('createFetcher', () => {
 describe('request metadata helpers', () => {
   test('derives effective URLs and methods from strings, URLs, requests, and overrides', () => {
     const url = new URL('https://www.goosebumps.fm/api/url?token=secret')
+
     const request = new Request('https://www.goosebumps.fm/api/test?email=user@example.com', {
       method: 'DELETE',
     })

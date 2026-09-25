@@ -82,10 +82,13 @@ export const listenForPlayerTelemetry = (
   listener: (name: PlayerTelemetryName) => void,
 ): (() => void) => {
   const onEvent = (event: Event) => {
-    const name: unknown = (event as CustomEvent<unknown>).detail
+    if (!(event instanceof CustomEvent)) return
+
+    const name: unknown = event.detail
 
     if (name === 'play' || name === 'pause' || name === 'stall' || name === 'error') listener(name)
   }
+
   window.addEventListener(PLAYER_EVENT, onEvent)
 
   return () => window.removeEventListener(PLAYER_EVENT, onEvent)
