@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { Schema } from 'effect'
 
 const password = 'LocalTest123!'
 
@@ -36,6 +37,41 @@ test('listener can use member settings but cannot access creator or admin tools'
   expect(response?.status()).toBe(403)
   response = await page.goto('/dashboard/users')
   expect(response?.status()).toBe(403)
+})
+
+test('show subscription state is present in the server-rendered response', async ({ page }) => {
+  await signIn(page, 'admin@gbfm.local')
+  const suffix = `${Date.now()}-${test.info().workerIndex}`
+  const slug = `ssr-subscription-${suffix}`
+  const createResponse = await page.context().request.post('/api/shows', {
+    data: {
+      title: 'SSR subscription test',
+      slug,
+      content: 'Server-rendered subscription state.',
+      draft: false
+    }
+  })
+  expect(createResponse.ok()).toBe(true)
+  const show = Schema.decodeUnknownSync(Schema.Struct({ id: Schema.String }))(
+    await createResponse.json()
+  )
+  const subscribeResponse = await page.context().request.post(`/api/shows/${show.id}/subscribe`)
+  expect(subscribeResponse.ok()).toBe(true)
+
+  const browserSubscriptionRequests: Array<string> = []
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === '/api/user/subscriptions') {
+      browserSubscriptionRequests.push(request.url())
+    }
+  })
+
+  const response = await page.goto(`/shows/${slug}`)
+  expect(await response?.text()).toContain('>Subscribed</button>')
+  await expect(page.getByRole('button', { name: 'Subscribed' })).toBeVisible()
+  expect(browserSubscriptionRequests).toEqual([])
+
+  await page.getByRole('button', { name: 'Subscribed' }).click()
+  await expect(page.getByRole('button', { name: 'Subscribe' })).toBeVisible()
 })
 
 test('creator can save and reopen a draft but cannot access admin tools', async ({ page }) => {
