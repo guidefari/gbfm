@@ -10,7 +10,7 @@ export default defineConfig({
   plugins: [
     tailwindcss(),
     repoChangelogPlugin(),
-    sveltekit({ tracing: { server: process.env.NODE_ENV !== 'production' } })
+    sveltekit({ tracing: { server: process.env.NODE_ENV !== 'production' } }),
   ],
   resolve: {
     alias: {

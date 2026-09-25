@@ -65,10 +65,12 @@ export const RequestLoggerLive = HttpRouter.middleware(
       const request = yield* HttpServerRequest.HttpServerRequest
       const path = requestPath(request.url)
       const incomingRequestId = request.headers['x-request-id']
+
       const requestId =
         incomingRequestId && /^[a-zA-Z0-9_-]{1,128}$/.test(incomingRequestId)
           ? incomingRequestId
           : undefined
+
       const start = Date.now()
       const result = yield* Effect.exit(httpEffect)
       const duration = Date.now() - start

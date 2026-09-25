@@ -107,7 +107,7 @@ export const createWebHandler = (options: {
     Layer.provideMerge(Layer.mergeAll(AuthMiddlewareLive, IdentityResolverLive)),
   )
 
-  return HttpRouter.toWebHandler(
+  const routes =
     // Global-middleware order here is load-bearing but NOT contractually
     // guaranteed by Layer.mergeAll -- each HttpRouter.middleware(fn, {global:
     // true}) registers into a shared Set via Layer.effectDiscard, and
@@ -140,10 +140,14 @@ export const createWebHandler = (options: {
       // Pino + Sentry logger, not Effect's bare default console logger --
       // otherwise a DB outage's cause is logged nowhere on-call looks.
       Layer.provideMerge(AppLoggerLive.pipe(Layer.provide(appServices))),
-    ),
-    {
+    )
+
+  if (options.localTracing) {
+    return HttpRouter.toWebHandler(routes, {
       disableLogger: true,
-      middleware: options.localTracing ? localRequestMiddleware : undefined,
-    },
-  )
+      middleware: localRequestMiddleware,
+    })
+  }
+
+  return HttpRouter.toWebHandler(routes, { disableLogger: true })
 }

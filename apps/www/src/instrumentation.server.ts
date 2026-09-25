@@ -8,9 +8,10 @@ if (process.env.NODE_ENV !== 'production') {
     resource: resourceFromAttributes({ 'service.name': 'goosebumps-fm-www' }),
     spanProcessors: [
       new BatchSpanProcessor(new OTLPTraceExporter({ url: 'http://127.0.0.1:4318/v1/traces' }), {
-        scheduledDelayMillis: 250
-      })
-    ]
+        scheduledDelayMillis: 250,
+      }),
+    ],
   })
+
   provider.register()
 }
