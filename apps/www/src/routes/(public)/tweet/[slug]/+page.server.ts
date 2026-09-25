@@ -1,5 +1,9 @@
 import { MicroPostNeighboursResponse, MicroPostRandomUnreadResponse } from '@gbfm/api/navigation'
-import { CompiledMicroPostResponse, MicroPostScreenResponse } from '@gbfm/api/post'
+import {
+  CompiledMicroPostResponse,
+  MicroPostScreenRepliesResponse,
+  MicroPostScreenResponse,
+} from '@gbfm/api/post'
 import { error, fail, redirect } from '@sveltejs/kit'
 import { Effect, Option, Result, Schema } from 'effect'
 
@@ -19,8 +23,14 @@ export const load = (async (event) => {
     ),
   )
 
+  const replies = Effect.runPromise(
+    apiJson(event, `${path}/screen/replies`, MicroPostScreenRepliesResponse).pipe(
+      Effect.orElseSucceed(() => []),
+    ),
+  )
+
   const screen = await Effect.runPromise(
-    Effect.result(apiJson(event, `${path}/screen`, MicroPostScreenResponse)),
+    Effect.result(apiJson(event, `${path}/screen?part=main`, MicroPostScreenResponse)),
   )
 
   if (Result.isFailure(screen)) {
@@ -34,6 +44,7 @@ export const load = (async (event) => {
 
   return {
     screen: screen.success,
+    replies,
     neighbours,
     readMode: parseReadMode(event.cookies.get(READ_MODE_COOKIE)),
   }

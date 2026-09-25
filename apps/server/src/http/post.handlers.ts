@@ -238,7 +238,7 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
         return toDateStrings(post)
       }),
     )
-    .handle('getMicroPostScreen', ({ params }) =>
+    .handle('getMicroPostScreen', ({ params, query }) =>
       Effect.gen(function* () {
         const svc = yield* PostService
 
@@ -246,7 +246,10 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
           Effect.all(
             {
               post: svc.getMicroPostBySlug(params.slug),
-              replies: svc.getMicroPostReplies(params.slug, { limit: 100, offset: 0 }),
+              replies:
+                query.part === 'main'
+                  ? Effect.succeed({ data: [] })
+                  : svc.getMicroPostReplies(params.slug, { limit: 100, offset: 0 }),
             },
             { concurrency: 'unbounded' },
           ).pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
@@ -288,6 +291,26 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
           quote: related.quote ? toScreenPost(related.quote) : null,
         }
       }).pipe(Effect.withSpan('post.getMicroPostScreen', { attributes: { slug: params.slug } })),
+    )
+    .handle('getMicroPostScreenReplies', ({ params }) =>
+      Effect.gen(function* () {
+        const svc = yield* PostService
+
+        const replies = yield* dieOnDatabaseError(
+          svc
+            .getMicroPostReplies(params.slug, { limit: 100, offset: 0 })
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
+        )
+
+        const musicByPostId = yield* dieOnDatabaseError(svc.getMicroPostScreenMusic(replies.data))
+
+        return replies.data.map((reply) => ({
+          ...toDateStrings(reply),
+          music: musicByPostId.get(reply.id) ?? null,
+        }))
+      }).pipe(
+        Effect.withSpan('post.getMicroPostScreenReplies', { attributes: { slug: params.slug } }),
+      ),
     )
     .handle('getMicroPostById', ({ params }) =>
       Effect.gen(function* () {

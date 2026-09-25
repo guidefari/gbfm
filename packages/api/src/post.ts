@@ -263,6 +263,8 @@ export const MicroPostScreenResponse = Schema.Struct({
   quote: Schema.NullOr(MicroPostScreenPost),
 })
 
+export const MicroPostScreenRepliesResponse = Schema.Array(MicroPostScreenPost)
+
 export type MicroPostScreenResponse = typeof MicroPostScreenResponse.Type
 
 export type MicroPostScreenPost = typeof MicroPostScreenPost.Type
@@ -355,9 +357,21 @@ export const PostGroup = HttpApiGroup.make('post')
   .add(
     HttpApiEndpoint.get('getMicroPostScreen', '/api/content/posts/micro/:slug/screen', {
       params: SlugParam,
+      query: { part: Schema.optional(Schema.Literal('main')) },
       success: MicroPostScreenResponse,
       error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
     }),
+  )
+  .add(
+    HttpApiEndpoint.get(
+      'getMicroPostScreenReplies',
+      '/api/content/posts/micro/:slug/screen/replies',
+      {
+        params: SlugParam,
+        success: MicroPostScreenRepliesResponse,
+        error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+      },
+    ),
   )
   .add(
     HttpApiEndpoint.post('createMicroPostReply', '/api/content/posts/micro/:parentSlug/replies', {

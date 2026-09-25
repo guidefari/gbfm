@@ -15,6 +15,7 @@ import {
   CompiledMicroPostResponse,
   CompiledPostResponse,
   GetMicroPostsResponse,
+  MicroPostScreenRepliesResponse,
   MicroPostScreenResponse,
   MicroPostThreadResponse,
   PostResponse,
@@ -2966,6 +2967,25 @@ describe('GET /api/content/posts/micro/:slug/screen', () => {
         },
         links: [{ platform: 'bandcamp', url: 'https://artist.bandcamp.com/track/reply' }],
       })
+
+      const mainResponse = await webHandler.handler(
+        new Request(`http://localhost/api/content/posts/micro/${rootSlug}/screen?part=main`),
+      )
+
+      expect(mainResponse.status).toBe(200)
+      const main = await decodeResponseBody(MicroPostScreenResponse, mainResponse)
+      expect(main.post).toEqual(body.post)
+      expect(main.root).toEqual(body.root)
+      expect(main.quote).toEqual(body.quote)
+      expect(main.replies).toEqual([])
+
+      const repliesResponse = await webHandler.handler(
+        new Request(`http://localhost/api/content/posts/micro/${rootSlug}/screen/replies`),
+      )
+
+      expect(repliesResponse.status).toBe(200)
+      const replies = await decodeResponseBody(MicroPostScreenRepliesResponse, repliesResponse)
+      expect(replies).toEqual(body.replies)
     } finally {
       await db.delete(postCreators).where(eq(postCreators.creatorId, authorId))
       await db.delete(postsTable).where(eq(postsTable.id, reply.id))

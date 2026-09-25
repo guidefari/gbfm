@@ -29,6 +29,8 @@
 
   const slug = $derived(post.slug)
 
+  const replyCount = $derived(data.replies.then((replies) => replies.length))
+
   const readMode = $derived(form?.readMode ?? data.readMode)
 
   const links = $derived(tweetLinks(neighbours, readMode))
@@ -82,13 +84,17 @@
       {post}
       quote={data.screen.quote}
       {title}
-      replyCount={data.screen.replies.length}
+      {replyCount}
       seen={neighbours?.seen ?? null}
     />
 
     <section id="replies" class="mt-6 scroll-mt-4 space-y-4">
       <ReplyForm {slug} signedIn={data.principal._tag !== 'Anonymous'} feedback={form?.reply} />
-      <ReplyList replies={data.screen.replies} />
+      {#await data.replies}
+        <p class="py-4 text-sm text-muted-foreground" role="status">Loading replies…</p>
+      {:then replies}
+        <ReplyList {replies} />
+      {/await}
     </section>
   </div>
 

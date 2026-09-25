@@ -16,7 +16,7 @@
     post: MicroPostScreenPost
     quote: MicroPostScreenPost | null
     title: string
-    replyCount: number
+    replyCount: number | Promise<number>
     seen: boolean | null
   } = $props()
 </script>

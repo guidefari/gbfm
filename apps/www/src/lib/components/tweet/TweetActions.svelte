@@ -7,7 +7,8 @@
     title,
     content,
     replyCount,
-  }: { slug: string; title: string; content: string; replyCount: number } = $props()
+  }: { slug: string; title: string; content: string; replyCount: number | Promise<number> } =
+    $props()
 
   let copied = $state(false)
 
@@ -34,14 +35,16 @@
   >
     <ImageDown size={14} /> Download
   </button>
-  {#if replyCount}
-    <a
-      href="#replies"
-      class="inline-flex min-h-8 items-center gap-1.5 text-xs text-muted-foreground no-underline transition-colors hover:text-foreground"
-    >
-      <MessageSquareQuote size={14} />
-      {replyCount}
-      {replyCount === 1 ? 'reply' : 'replies'}
-    </a>
-  {/if}
+  {#await replyCount then count}
+    {#if count}
+      <a
+        href="#replies"
+        class="inline-flex min-h-8 items-center gap-1.5 text-xs text-muted-foreground no-underline transition-colors hover:text-foreground"
+      >
+        <MessageSquareQuote size={14} />
+        {count}
+        {count === 1 ? 'reply' : 'replies'}
+      </a>
+    {/if}
+  {/await}
 </div>
