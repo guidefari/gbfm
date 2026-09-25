@@ -261,6 +261,14 @@ export const MicroPostScreenResponse = Schema.Struct({
   quote: Schema.NullOr(MicroPostScreenPost),
 })
 
+export type MicroPostScreenResponse = typeof MicroPostScreenResponse.Type
+
+export type MicroPostScreenPost = typeof MicroPostScreenPost.Type
+
+export type MicroPostScreenMusic = typeof MicroPostScreenMusic.Type
+
+export type PostCreator = typeof Creator.Type
+
 export const PostGroup = HttpApiGroup.make('post')
   .add(
     HttpApiEndpoint.get('getPosts', '/api/content/posts', {
