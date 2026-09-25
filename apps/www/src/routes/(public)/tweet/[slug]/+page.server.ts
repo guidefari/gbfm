@@ -25,7 +25,7 @@ export const load = (async (event) => {
 
   const replies = Effect.runPromise(
     apiJson(event, `${path}/screen/replies`, MicroPostScreenRepliesResponse).pipe(
-      Effect.orElseSucceed(() => []),
+      Effect.orElseSucceed(() => null),
     ),
   )
 

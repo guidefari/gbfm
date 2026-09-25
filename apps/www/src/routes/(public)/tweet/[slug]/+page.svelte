@@ -29,7 +29,7 @@
 
   const slug = $derived(post.slug)
 
-  const replyCount = $derived(data.replies.then((replies) => replies.length))
+  const replyCount = $derived(data.replies.then((replies) => replies?.length ?? 0))
 
   const readMode = $derived(form?.readMode ?? data.readMode)
 
@@ -93,7 +93,13 @@
       {#await data.replies}
         <p class="py-4 text-sm text-muted-foreground" role="status">Loading replies…</p>
       {:then replies}
-        <ReplyList {replies} />
+        {#if replies}
+          <ReplyList {replies} />
+        {:else}
+          <p class="py-4 text-sm text-muted-foreground" role="status">
+            Replies are unavailable right now.
+          </p>
+        {/if}
       {/await}
     </section>
   </div>
