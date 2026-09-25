@@ -32,6 +32,7 @@ import { SpotifyHandlersLive } from '@/http/spotify.handlers'
 import { UploadHandlersLive } from '@/http/upload.handlers'
 import { UserHandlersLive } from '@/http/user.handlers'
 import { Auth } from '@/lib/auth'
+import { localRequestMiddleware } from '@/lib/local-request-tracing'
 import { AuthMiddlewareLive } from '@/middleware/auth.impl'
 import { IdentityResolverLive } from '@/middleware/optional-auth.impl'
 import { prepareAuthRequest } from '@/routes/user/better-auth.routes'
@@ -68,6 +69,7 @@ const betterAuthRoute = HttpRouter.add('*', '/auth/*', (request) =>
 export const createWebHandler = (options: {
   readonly healthDatabaseCheck?: Effect.Effect<void, ReadinessCheckFailedError>
   readonly appServicesLive: AppServicesLive
+  readonly localTracing?: boolean
 }) => {
   const appServices = options.appServicesLive
   const ApiLive = HttpApiBuilder.layer(Api).pipe(
@@ -135,6 +137,6 @@ export const createWebHandler = (options: {
       // otherwise a DB outage's cause is logged nowhere on-call looks.
       Layer.provideMerge(AppLoggerLive.pipe(Layer.provide(appServices)))
     ),
-    { disableLogger: true }
+    { disableLogger: true, middleware: options.localTracing ? localRequestMiddleware : undefined }
   )
 }

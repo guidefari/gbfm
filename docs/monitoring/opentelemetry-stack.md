@@ -16,12 +16,11 @@ open a trace. The `gbfm.request_id` attribute matches the `x-request-id`
 response header and the structured `www` request and API-call logs.
 
 The API Worker records the same validated request ID on its request span and
-structured request logs. For local requests it exports a request-duration span
-through Effect's `OtlpTracer`, continuing the `traceparent` from `www`. Open a
-`goosebumps-fm-www` trace to see the API calls and Worker request durations in
-one waterfall. The Worker's existing Sentry-backed Effect service spans are
-not exported to local Jaeger; use its structured request and slow-query logs
-for more detail inside the API. Production Worker tracing remains unchanged.
+structured request logs. For local requests its HTTP handler and Effect services
+use `OtlpTracer`, continuing the `traceparent` from `www`. Open a
+`goosebumps-fm-www` trace to see the page route, API paths, and nested service
+spans in one waterfall. Production Worker tracing remains on Sentry. Application
+logs are printed locally but are not exported to Loki by this setup.
 
 That starts Jaeger through docker compose. The UI is at
 `http://localhost:16686`, and it accepts OTLP on `4317` (gRPC) and `4318`

@@ -1,5 +1,4 @@
 import { Layer } from 'effect'
-import { OtelTracer } from '@effect/opentelemetry'
 import { Database } from '@/db/layer'
 import { AuthLive } from '@/lib/auth'
 import { MdxServiceLayer } from '@/lib/mdx'
@@ -58,7 +57,7 @@ export interface AppLayerOptions {
   readonly spotifyImportResolver: Layer.Layer<SpotifyImportResolver, never, Database>
   readonly playlistEnrichmentQueue: Layer.Layer<PlaylistEnrichmentQueue>
   readonly sentry: Layer.Layer<SentryService>
-  readonly tracing: Layer.Layer<OtelTracer.OtelTracer>
+  readonly tracing: Layer.Layer<never>
   readonly emailTransport: Layer.Layer<EmailTransportService>
   readonly config?: Layer.Layer<ConfigService>
   readonly objectStore?: Layer.Layer<ObjectStoreClient>

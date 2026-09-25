@@ -13,7 +13,7 @@ import type {
 import * as Sentry from '@sentry/cloudflare'
 import type { ErrorEvent, TracesSamplerSamplingContext, TransactionEvent } from '@sentry/core'
 import { traceSampleRate } from '@gbfm/core/observability/trace-sampling'
-import { Effect, Layer, Schema } from 'effect'
+import { Effect, Layer, Schema, Tracer } from 'effect'
 import type { NavigationLockDurableObject } from '@/durable-objects/navigation-lock.do'
 import type { SpotifyImportResolverDurableObject } from '@/durable-objects/spotify-import-resolver.do'
 import { DatabaseLayer, makeDatabaseClient } from '@/db/layer'
@@ -21,7 +21,7 @@ import { seedLocalUsers } from '@/db/seed-local-users'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { sanitizeDatabaseSpan } from '@/lib/database-telemetry'
 import { hasLocalSentryContext, shouldEnableSentry } from '@/lib/sentry'
-import { traceLocalRequest } from '@/lib/local-request-tracing'
+import { localTracer, traceLocalRequest } from '@/lib/local-request-tracing'
 import { createWebHandler } from '@/http/routes'
 import { regenerateSitemap } from '@/routes/redirect/seo/sitemap.service'
 import { AppLayer } from '@/runtime/services'
@@ -178,7 +178,7 @@ const spotifyImportResolverLive = (env: ApiEnv) =>
       })
   })
 
-const appServicesLive = (env: ApiEnv) => {
+const appServicesLive = (env: ApiEnv, tracing: Layer.Layer<never> = WorkerTracingLive) => {
   const configLive = WorkerConfigServiceLayerEffect(
     resolveSecretBindings(env).pipe(
       Effect.map((secrets) => ({ ...env, ...secrets })),
@@ -199,7 +199,7 @@ const appServicesLive = (env: ApiEnv) => {
     spotifyImportResolver: spotifyImportResolverLive(env),
     playlistEnrichmentQueue: playlistEnrichmentQueueLive(env),
     sentry: workerSentryServiceLive(env),
-    tracing: WorkerTracingLive,
+    tracing,
     config: configLive,
     objectStore: objectStoreLive,
     qrCode: QRCodeServiceLayer({ fetch: (request) => env.QR_PDF.fetch(request) }),
@@ -356,11 +356,15 @@ export default Sentry.withSentry<ApiEnv, ApiQueueJob>(sentryOptions, {
         return Response.json(result)
       }
 
-      const webHandler = createWebHandler({ appServicesLive: appServicesLive(env) })
+      const local = env.LOCAL_DEV === 'true'
+      const tracing = local ? Layer.succeed(Tracer.Tracer, await localTracer()) : WorkerTracingLive
+      const webHandler = createWebHandler({
+        appServicesLive: appServicesLive(env, tracing),
+        localTracing: local
+      })
       try {
-        return await (env.LOCAL_DEV === 'true'
+        return await (local
           ? traceLocalRequest(
-              request,
               () => webHandler.handler(request),
               (promise) => ctx.waitUntil(promise)
             )

@@ -1,5 +1,6 @@
 import { Effect, Layer, ManagedRuntime, Tracer } from 'effect'
 import { FetchHttpClient } from 'effect/unstable/http'
+import { HttpServerRequest, HttpServerResponse } from 'effect/unstable/http'
 import { OtlpExporter, OtlpSerialization, OtlpTracer } from 'effect/unstable/observability'
 
 const LocalTracer = OtlpTracer.layer({
@@ -8,6 +9,8 @@ const LocalTracer = OtlpTracer.layer({
   exportInterval: '250 millis'
 }).pipe(Layer.provide(OtlpSerialization.layerJson), Layer.provide(FetchHttpClient.layer))
 const runtime = ManagedRuntime.make(LocalTracer)
+
+export const localTracer = () => runtime.runPromise(Tracer.Tracer)
 
 const remoteParent = (header: string | null) => {
   const match = /^00-([0-9a-f]{32})-([0-9a-f]{16})-([0-9a-f]{2})$/.exec(header ?? '')
@@ -23,16 +26,29 @@ const remoteParent = (header: string | null) => {
 }
 
 export const traceLocalRequest = (
-  request: Request,
   run: () => Promise<Response>,
   waitUntil: (promise: Promise<unknown>) => void
 ) => {
-  const requestId = request.headers.get('x-request-id')
-  const parent = remoteParent(request.headers.get('traceparent'))
-  const path = new URL(request.url).pathname
+  return run().finally(() => {
+    waitUntil(
+      runtime.runPromise(
+        Effect.flatMap(OtlpExporter.Flusher, (flusher) =>
+          Effect.timeoutOption(flusher.flush, '2 seconds')
+        )
+      )
+    )
+  })
+}
 
-  const response = runtime.runPromise(
-    Effect.promise(run).pipe(
+export const localRequestMiddleware = <E, R>(
+  effect: Effect.Effect<HttpServerResponse.HttpServerResponse, E, R>
+) =>
+  Effect.gen(function* () {
+    const request = yield* HttpServerRequest.HttpServerRequest
+    const path = new URL(request.url, 'http://localhost').pathname
+    const requestId = request.headers['x-request-id']
+    const parent = remoteParent(request.headers.traceparent ?? null)
+    return yield* effect.pipe(
       Effect.tap((response) =>
         Effect.annotateCurrentSpan('http.response.status_code', response.status)
       ),
@@ -47,15 +63,4 @@ export const traceLocalRequest = (
         }
       })
     )
-  )
-
-  return response.finally(() => {
-    waitUntil(
-      runtime.runPromise(
-        Effect.flatMap(OtlpExporter.Flusher, (flusher) =>
-          Effect.timeoutOption(flusher.flush, '2 seconds')
-        )
-      )
-    )
   })
-}
