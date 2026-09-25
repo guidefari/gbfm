@@ -1,4 +1,4 @@
-import type { AnalyticsEngineDataset, Fetcher } from '@cloudflare/workers-types'
+import type { AnalyticsEngineDataset, Fetcher, RateLimit } from '@cloudflare/workers-types'
 
 import type { Principal } from './lib/auth/principal'
 
@@ -9,7 +9,9 @@ declare global {
         readonly API: Fetcher
         readonly SOCIAL_IMAGES: Fetcher
         readonly BROWSER_TELEMETRY: AnalyticsEngineDataset
+        readonly BROWSER_TELEMETRY_RATE_LIMIT: RateLimit
         readonly APP_STAGE: string
+        readonly APP_RELEASE: string
         readonly VITE_SPOTIFY_CLIENT_ID: string
       }
     }

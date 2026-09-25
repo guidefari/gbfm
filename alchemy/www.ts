@@ -35,6 +35,10 @@ export const website = ({ config, websiteConfig, api, socialImages }: WebsiteInp
         API: api,
         SOCIAL_IMAGES: socialImages,
         BROWSER_TELEMETRY: browserTelemetry,
+        BROWSER_TELEMETRY_RATE_LIMIT: Cloudflare.RateLimit('BrowserTelemetryRateLimit', {
+          namespaceId: 1_001,
+          simple: { limit: 30, period: 60 },
+        }),
         APP_STAGE: config.stage,
         APP_RELEASE: config.release,
         VITE_SPOTIFY_CLIENT_ID: websiteConfig.spotifyClientId,

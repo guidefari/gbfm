@@ -33,6 +33,7 @@
 <svelte:head>
   <link rel="stylesheet" href={mainStylesheet} />
   <meta name="theme-color" content="#080d0b" />
+  <meta name="gbfm-release" content={data.release} />
 </svelte:head>
 
 <div class="grid h-dvh w-full grid-cols-1 bg-background">

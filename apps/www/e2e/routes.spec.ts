@@ -154,3 +154,109 @@ test('tweet replies render hydrated music without browser-side music API request
   )
   expect(musicRequests).toEqual([])
 })
+
+test('browser telemetry batches initial, SPA, error, and player events without private data', async ({
+  page,
+}) => {
+  const pageErrors: Array<string> = []
+  const session = '29ba483e1f8842e6b8cf27df87be3556'
+
+  page.on('pageerror', (error) => pageErrors.push(error.message))
+
+  await page.addInitScript((sampledSession) => {
+    localStorage.setItem(
+      'gbfm.telemetry.session.v1',
+      JSON.stringify({ id: sampledSession, createdAt: Date.now() }),
+    )
+    const telemetryWindow = window as typeof window & {
+      __telemetryBodies: Array<string>
+      __listenerTypes: Array<string>
+    }
+    telemetryWindow.__telemetryBodies = []
+    telemetryWindow.__listenerTypes = []
+    const addEventListener = window.addEventListener.bind(window)
+    window.addEventListener = ((type: string, ...input: Array<unknown>) => {
+      telemetryWindow.__listenerTypes.push(type)
+
+      return Reflect.apply(addEventListener, window, [type, ...input])
+    }) as typeof window.addEventListener
+    Object.defineProperty(navigator, 'sendBeacon', {
+      value: (_url: string, body: BodyInit | null) => {
+        telemetryWindow.__telemetryBodies.push(String(body))
+
+        return true
+      },
+    })
+  }, session)
+
+  await page.goto('/')
+  expect(await page.evaluate(() => localStorage.getItem('gbfm.telemetry.session.v1'))).toContain(
+    session,
+  )
+  expect(
+    await page.evaluate((value) => {
+      let hash = 0
+
+      for (const character of value) hash = (Math.imul(hash, 31) + character.charCodeAt(0)) >>> 0
+
+      return hash / 0x1_0000_0000 < 0.1
+    }, session),
+  ).toBe(true)
+  expect(pageErrors).toEqual([])
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (
+          window as typeof window & {
+            __listenerTypes: Array<string>
+          }
+        ).__listenerTypes.includes('gbfm:player-telemetry'),
+      ),
+    )
+    .toBe(true)
+  await page.getByRole('button', { name: 'Menu', exact: true }).click()
+  await page.getByRole('dialog', { name: 'Menu' }).getByRole('link', { name: 'Newsletter' }).click()
+  await expect(page).toHaveURL(/\/subscribe$/)
+  await expect(page.getByRole('heading', { name: 'Stay in the loop' })).toBeVisible()
+
+  await page.evaluate(() => {
+    window.addEventListener('error', (event) => event.preventDefault(), { once: true })
+    window.dispatchEvent(
+      new ErrorEvent('error', {
+        error: new Error('failed person@example.com https://private.test/path/123'),
+      }),
+    )
+    for (let index = 0; index < 20; index += 1)
+      window.dispatchEvent(new CustomEvent('gbfm:player-telemetry', { detail: 'play' }))
+  })
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as typeof window & { __telemetryBodies: Array<string> }).__telemetryBodies.length,
+      ),
+    )
+    .toBeGreaterThan(0)
+
+  const bodies = await page.evaluate(
+    () => (window as typeof window & { __telemetryBodies: Array<string> }).__telemetryBodies,
+  )
+  const serialized = bodies.join('\n')
+  const events = bodies.flatMap((body) => JSON.parse(body).events as Array<Record<string, unknown>>)
+
+  expect(events).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ kind: 'navigation', name: 'initial-load', route: '/' }),
+      expect.objectContaining({
+        kind: 'navigation',
+        name: 'spa-navigation',
+        route: '/subscribe',
+      }),
+      expect.objectContaining({ kind: 'ui-error', route: '/subscribe' }),
+      expect.objectContaining({ kind: 'player', name: 'play', route: '/subscribe' }),
+    ]),
+  )
+  expect(serialized).not.toContain('person@example.com')
+  expect(serialized).not.toContain('private.test')
+  expect(serialized).not.toMatch(/"(?:userId|email|url|query)"/)
+})

@@ -2,6 +2,8 @@ import type { Schema } from 'effect'
 import { getContext, setContext } from 'svelte'
 import { writable, type Readable, type Writable } from 'svelte/store'
 
+import { reportPlayerTelemetry } from '@/lib/telemetry/client'
+
 import type { PlayerPreferences, PlayerSnapshot } from './player'
 import { PersistentPlayer, parsePlayTrackEvent, savePlayerPreferences } from './player'
 
@@ -27,30 +29,41 @@ export type PlayerContext = {
   readonly updatePreferences: (preferences: PlayerPreferences) => void
 }
 
-const report = (name: 'enqueue' | 'play') =>
-  navigator.sendBeacon(
-    '/telemetry/browser',
-    JSON.stringify({ kind: 'player', name, route: location.pathname }),
-  )
-
 export const createPlayerContext = (): PlayerContext => {
   const snapshot = writable<PlayerSnapshot | null>(null)
   const fullscreen = writable(false)
   let player: PersistentPlayer | undefined
   let unsubscribe: (() => void) | undefined
+  let previousPlaying = false
+  const reportStall = () => reportPlayerTelemetry('stall')
+  const reportError = () => reportPlayerTelemetry('error')
 
   const context: PlayerContext = {
     snapshot,
     fullscreen,
     initialize: () => {
-      player ??= new PersistentPlayer(new Audio())
-      unsubscribe ??= player.subscribe(snapshot.set)
+      if (!player) {
+        player = new PersistentPlayer(new Audio())
+        player.audio.addEventListener('waiting', reportStall)
+        player.audio.addEventListener('error', reportError)
+      }
+
+      unsubscribe ??= player.subscribe((next) => {
+        snapshot.set(next)
+
+        if (next.playing !== previousPlaying) reportPlayerTelemetry(next.playing ? 'play' : 'pause')
+
+        previousPlaying = next.playing
+      })
 
       return () => {
+        player?.audio.removeEventListener('waiting', reportStall)
+        player?.audio.removeEventListener('error', reportError)
         unsubscribe?.()
         unsubscribe = undefined
         player?.destroy()
         player = undefined
+        previousPlaying = false
         snapshot.set(null)
       }
     },
@@ -59,7 +72,6 @@ export const createPlayerContext = (): PlayerContext => {
 
       if (!track || !player) return false
       player.playTrack(track)
-      report('play')
 
       return true
     },
@@ -68,7 +80,6 @@ export const createPlayerContext = (): PlayerContext => {
 
       if (!track || !player) return false
       player.enqueue(track)
-      report('enqueue')
 
       return true
     },
