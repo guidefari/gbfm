@@ -100,6 +100,21 @@ export const NavigationServiceLayer = Layer.effect(
         .leftJoin(navigationSeenPosts, seenBy(identity))
         .where(and(feedPost, isNull(navigationSeenPosts.slug), condition))
 
+    const createdMonth = sql<string>`strftime('%Y-%m', ${postsTable.createdAt} / 1000, 'unixepoch')`
+
+    const timeline = (identity: NavigationIdentity) =>
+      db
+        .select({
+          month: createdMonth,
+          total: sql<number>`CAST(count(*) AS INTEGER)`,
+          unread: sql<number>`CAST(sum(CASE WHEN ${navigationSeenPosts.slug} IS NULL THEN 1 ELSE 0 END) AS INTEGER)`,
+        })
+        .from(postsTable)
+        .leftJoin(navigationSeenPosts, seenBy(identity))
+        .where(feedPost)
+        .groupBy(createdMonth)
+        .orderBy(createdMonth)
+
     const neighbours = (identity: NavigationIdentity, slug: string) => {
       const createdAt = db
         .select({ createdAt: postsTable.createdAt })
@@ -129,11 +144,12 @@ export const NavigationServiceLayer = Layer.effect(
             feedCount(newer),
             feedCount(undefined),
             unreadCount(identity, ne(postsTable.slug, slug)),
+            timeline(identity),
           ]),
         catch: (error) => databaseError('read', error),
       }).pipe(
         Effect.flatMap(
-          ([current, back, olderUnread, olderAny, newerRows, totalRows, unreadRows]) => {
+          ([current, back, olderUnread, olderAny, newerRows, totalRows, unreadRows, months]) => {
             if (!current[0]) return Effect.fail(new MicroPostMissing({ slug }))
             const forward = olderUnread[0] ?? olderAny[0]
 
@@ -143,6 +159,7 @@ export const NavigationServiceLayer = Layer.effect(
               position: newerRows[0]?.count ?? 0,
               total: totalRows[0]?.count ?? 0,
               unreadCount: unreadRows[0]?.count ?? 0,
+              timeline: months,
             })
           },
         ),

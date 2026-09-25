@@ -9,11 +9,25 @@ const decode = (response: Response) =>
 
 test('decodes a successful response with the published schema', async () => {
   const result = await decode(
-    Response.json({ back: null, forward: 'next-tweet', position: 3, total: 9, unreadCount: 4 }),
+    Response.json({
+      back: null,
+      forward: 'next-tweet',
+      position: 3,
+      total: 9,
+      unreadCount: 4,
+      timeline: [],
+    }),
   )
 
   expect(result).toEqual(
-    Result.succeed({ back: null, forward: 'next-tweet', position: 3, total: 9, unreadCount: 4 }),
+    Result.succeed({
+      back: null,
+      forward: 'next-tweet',
+      position: 3,
+      total: 9,
+      unreadCount: 4,
+      timeline: [],
+    }),
   )
 })
 

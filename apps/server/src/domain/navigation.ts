@@ -8,12 +8,19 @@ export type NavigationIdentity =
   | { readonly _tag: 'User'; readonly userId: string }
   | { readonly _tag: 'Anonymous'; readonly deviceToken: string }
 
+export type MicroPostTimelineMonth = {
+  readonly month: string
+  readonly total: number
+  readonly unread: number
+}
+
 export type MicroPostNeighbours = {
   readonly back: Slug | null
   readonly forward: Slug | null
   readonly position: number
   readonly total: number
   readonly unreadCount: number
+  readonly timeline: ReadonlyArray<MicroPostTimelineMonth>
 }
 
 export class MicroPostMissing extends Schema.TaggedError<MicroPostMissing>()('MicroPostMissing', {

@@ -7,12 +7,21 @@ export type Slug = typeof Slug.Type
 
 const SlugParam = { slug: Schema.String }
 
+export const MicroPostTimelineMonth = Schema.Struct({
+  month: Schema.String,
+  total: Schema.Number,
+  unread: Schema.Number,
+})
+
+export type MicroPostTimelineMonth = typeof MicroPostTimelineMonth.Type
+
 export const MicroPostNeighboursResponse = Schema.Struct({
   back: Schema.NullOr(Slug),
   forward: Schema.NullOr(Slug),
   position: Schema.Number,
   total: Schema.Number,
   unreadCount: Schema.Number,
+  timeline: Schema.Array(MicroPostTimelineMonth),
 })
 
 export type MicroPostNeighboursResponse = typeof MicroPostNeighboursResponse.Type

@@ -4190,6 +4190,7 @@ describe('micro post navigation', () => {
         position: 1,
         unreadCount: middle.total - 1,
       })
+      expect(middle.timeline.at(-1)).toEqual({ month: '2100-01', total: 4, unread: 4 })
       const newest = await neighbours(feed.newest.slug, deviceCookie())
       expect(newest).toMatchObject({
         back: null,
@@ -4217,6 +4218,7 @@ describe('micro post navigation', () => {
         forward: feed.oldest.slug,
         unreadCount: middle.total - 3,
       })
+      expect(middle.timeline.at(-1)).toEqual({ month: '2100-01', total: 4, unread: 2 })
       await expect(neighbours(feed.middle.slug, deviceCookie())).resolves.toMatchObject({
         forward: feed.older.slug,
       })
