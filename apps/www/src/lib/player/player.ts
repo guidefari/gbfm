@@ -58,13 +58,9 @@ export const readPlayerPreferences = (): PlayerPreferences => {
 
 export const savePlayerPreferences = (preferences: PlayerPreferences) => {
   localStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences))
-  window.dispatchEvent(new CustomEvent('gbfm:player-preferences', { detail: preferences }))
 }
 
-export const parsePlayerPreferencesEvent = (value: Schema.Json): PlayerPreferences | null =>
-  Option.getOrNull(Schema.decodeUnknownOption(PlayerPreferences)(value))
-
-const parseTrack = (value: Schema.Json): QueueTrackType | null => {
+export const parsePlayTrackEvent = (value: Schema.Json): QueueTrackType | null => {
   const parsed = Option.getOrNull(Schema.decodeUnknownOption(PlayTrackEvent)(value))
   if (!parsed || !parsed.url || !parsed.title) return null
   return {
@@ -76,8 +72,6 @@ const parseTrack = (value: Schema.Json): QueueTrackType | null => {
     type: parsed.type ?? 'misc'
   }
 }
-
-export const parsePlayTrackEvent = (value: Schema.Json): QueueTrackType | null => parseTrack(value)
 
 const parseQueue = (raw: string | null): PersistedQueueType => {
   if (raw === null) return emptyQueue

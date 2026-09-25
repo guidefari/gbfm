@@ -1,12 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { defaultPlayerPreferences, readPlayerPreferences, savePlayerPreferences, type PlayerPreferences } from '@/lib/player/player'
+  import { getPlayerContext } from '@/lib/player/context'
+  import { defaultPlayerPreferences, readPlayerPreferences, type PlayerPreferences } from '@/lib/player/player'
 
+  const player = getPlayerContext()
   let preferences = $state<PlayerPreferences>({ ...defaultPlayerPreferences })
   let saved = $state(false)
   onMount(() => { preferences = { ...readPlayerPreferences() } })
   function save() {
-    savePlayerPreferences(preferences)
+    player.updatePreferences(preferences)
     saved = true
   }
 </script>

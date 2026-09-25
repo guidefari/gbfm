@@ -8,8 +8,10 @@
   import GlobalNav from '@/lib/components/shell/GlobalNav.svelte'
   import NavigationProgress from '@/lib/components/shell/NavigationProgress.svelte'
   import PlayerBar from '@/lib/components/shell/PlayerBar.svelte'
+  import { createPlayerContext } from '@/lib/player/context'
 
   let { data, children }: LayoutProps = $props()
+  createPlayerContext()
 
   onNavigate((navigation) => {
     if (!document.startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches)

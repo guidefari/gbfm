@@ -1,8 +1,10 @@
 <script lang="ts">
   import Artwork from './Artwork.svelte'
+  import { getPlayerContext } from '@/lib/player/context'
   import { records, text, type PublicRecord } from '@/lib/public-content'
 
   let { mix }: { mix: PublicRecord | undefined } = $props()
+  const player = getPlayerContext()
   let error = $state('')
   const title = $derived(text(mix?.title, 'Featured mix'))
   const creators = $derived(records(mix?.creators).map((creator) => text(creator.name)).filter(Boolean).join(', '))
@@ -10,10 +12,10 @@
     const url = text(mix?.url)
     if (!url) { error = 'No audio available for this mix'; return }
     error = ''
-    window.dispatchEvent(new CustomEvent('gbfm:play-track', { detail: {
+    player.play({
       id: text(mix?.id, url), slug: text(mix?.slug), type: 'mix', url, title,
       thumbnailUrl: text(mix?.thumbnailUrl) || null
-    }}))
+    })
   }
 </script>
 

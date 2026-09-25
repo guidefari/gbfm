@@ -2,16 +2,15 @@
   import { GetMixQRPdfResponse } from '@gbfm/api/audio'
   import { page } from '$app/state'
   import { Option, Schema } from 'effect'
-  import { onMount } from 'svelte'
   import Artwork from './Artwork.svelte'
   import PublicActions from './PublicActions.svelte'
   import RichContent from './RichContent.svelte'
+  import { getPlayerContext } from '@/lib/player/context'
   import { records, text, type PublicRecord } from '@/lib/public-content'
 
   let { item, kind, canonical, relatedShow = null }: { item: PublicRecord; kind: string; canonical: string; relatedShow?: PublicRecord | null } = $props()
-  const PlayerChrome = Schema.Struct({ id: Schema.String, playing: Schema.Boolean })
-  let currentId = $state('')
-  let playing = $state(false)
+  const player = getPlayerContext()
+  const snapshot = player.snapshot
   let actionStatus = $state('')
   let qrBusy = $state(false)
   const value = (...keys: string[]) => {
@@ -36,27 +35,16 @@
     type: kind.toLowerCase() === 'mix' ? 'mix' as const : kind.toLowerCase() === 'track' ? 'track' as const : 'misc' as const,
     thumbnailUrl: value('thumbnailUrl', 'imageUrl', 'image') || null
   })
-  const isCurrent = $derived(currentId === track.id)
+  const current = $derived($snapshot ? ($snapshot.queue.tracks[$snapshot.queue.currentIndex] ?? null) : null)
+  const isCurrent = $derived(current?.id === track.id)
   const role = $derived(page.data.principal?._tag === 'Authenticated' ? page.data.principal.role : 'user')
 
-  onMount(() => {
-    const updatePlayer = (event: Event) => {
-      if (!(event instanceof CustomEvent)) return
-      const state = Option.getOrNull(Schema.decodeUnknownOption(PlayerChrome)(event.detail))
-      currentId = state?.id ?? ''
-      playing = state?.playing ?? false
-    }
-    window.addEventListener('gbfm:player-chrome', updatePlayer)
-    window.dispatchEvent(new CustomEvent('gbfm:player-chrome-request'))
-    return () => window.removeEventListener('gbfm:player-chrome', updatePlayer)
-  })
-
   const play = () => {
-    if (isCurrent) window.dispatchEvent(new CustomEvent('gbfm:player-toggle'))
-    else window.dispatchEvent(new CustomEvent('gbfm:play-track', { detail: track }))
+    if (isCurrent) player.toggle()
+    else player.play(track)
   }
   const enqueue = () => {
-    window.dispatchEvent(new CustomEvent('gbfm:enqueue-track', { detail: track }))
+    player.enqueue(track)
     actionStatus = 'Added to queue'
   }
   const downloadQr = async () => {
@@ -88,7 +76,7 @@
   </header>
 
   <div class="mb-8 flex flex-wrap gap-3">
-    {#if value('url')}<button class="border-2 border-foreground bg-highlight px-5 py-3 font-bold text-highlight-foreground" onclick={play}>{isCurrent && playing ? 'Ⅱ Pause' : '▶ Play'}</button>{/if}
+    {#if value('url')}<button class="border-2 border-foreground bg-highlight px-5 py-3 font-bold text-highlight-foreground" onclick={play}>{isCurrent && $snapshot?.playing ? 'Ⅱ Pause' : '▶ Play'}</button>{/if}
     <PublicActions id={value('id') || undefined} {title} kind={actionKind} slug={canonical} />
     {#if isMix && value('url')}<button class="border border-border px-3 py-2 text-sm font-bold" onclick={enqueue}>Add to queue</button>{/if}
     {#if isMix && ['creator', 'admin'].includes(role)}<button class="border border-border px-3 py-2 text-sm font-bold" disabled={qrBusy} onclick={downloadQr}>{qrBusy ? 'Generating…' : 'Download QR'}</button>{/if}
