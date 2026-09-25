@@ -12,6 +12,7 @@ import { secretsStore } from './alchemy/secrets'
 import { socialImageWorker } from './alchemy/social-image'
 import { stageConfig } from './alchemy/stage'
 import { storage } from './alchemy/storage'
+import { telemetryEvaluator } from './alchemy/telemetry-evaluator'
 import { website } from './alchemy/www'
 import { emailDeploymentConfig } from './apps/server/src/email-deployment-config'
 
@@ -48,6 +49,17 @@ export default Alchemy.Stack(
       adminEmail: deployment.adminEmail,
     })
 
+    const evaluator =
+      email === undefined
+        ? undefined
+        : yield* telemetryEvaluator({
+            config,
+            email,
+            analyticsApiToken: deployment.secrets.CloudflareAnalyticsApiToken,
+            alertEmail: emailConfig.destinationAddress ?? deployment.adminEmail,
+            senderEmail: emailConfig.emailSender,
+          })
+
     const socialImages = yield* socialImageWorker(config, store, api)
 
     yield* dnsRedirects(config)
@@ -70,6 +82,7 @@ export default Alchemy.Stack(
       userContentBucketName: store.userContent.bucketName,
       mixesBucketName: store.mixes.bucketName,
       socialCardsBucketName: store.socialCards.bucketName,
+      telemetryEvaluatorName: evaluator?.workerName,
     }
   }),
 )
