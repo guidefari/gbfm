@@ -8,18 +8,17 @@
     links
   }: { type: string; entity: PublicRecord | null; links: ReadonlyArray<PublicRecord> } = $props()
 
-  const labels: Readonly<Record<string, string>> = {
-    album: 'Album',
-    track: 'Track',
-    playlist: 'Playlist'
-  }
-  const platformLabels: Readonly<Record<string, string>> = {
-    spotify: 'Spotify',
-    youtube: 'YouTube',
-    youtube_music: 'YT Music',
-    apple_music: 'Apple Music',
-    bandcamp: 'Bandcamp',
-    soundcloud: 'SoundCloud'
+  const musicLabel = $derived(
+    type === 'album' ? 'Album' : type === 'track' ? 'Track' : type === 'playlist' ? 'Playlist' : 'Music'
+  )
+  const platformLabel = (platform: string) => {
+    if (platform === 'spotify') return 'Spotify'
+    if (platform === 'youtube') return 'YouTube'
+    if (platform === 'youtube_music') return 'YT Music'
+    if (platform === 'apple_music') return 'Apple Music'
+    if (platform === 'bandcamp') return 'Bandcamp'
+    if (platform === 'soundcloud') return 'SoundCloud'
+    return platform || 'Link'
   }
 </script>
 
@@ -34,7 +33,7 @@
         {/if}
       </div>
       <div class="min-w-0 flex-1 space-y-2">
-        <p class="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground/70">{labels[type] ?? 'Music'}</p>
+        <p class="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground/70">{musicLabel}</p>
         <h2 class="break-words text-lg font-bold leading-snug tracking-tight text-foreground sm:text-xl">{text(entity.title)}</h2>
         {#if Array.isArray(entity.artistNames) && entity.artistNames.length}
           <p class="text-sm text-muted-foreground">{entity.artistNames.join(', ')}</p>
@@ -45,7 +44,7 @@
       <div class="flex flex-wrap items-center gap-2 border-t border-border/40 px-4 py-3">
         {#each links as link}
           <a href={text(link.url)} target="_blank" rel="noopener noreferrer" class="inline-flex h-7 items-center gap-1.5 rounded-sm border border-border px-2.5 text-xs font-medium text-muted-foreground no-underline transition-colors hover:bg-muted hover:text-foreground">
-            {platformLabels[text(link.platform)] ?? text(link.platform, 'Link')}
+            {platformLabel(text(link.platform))}
             <ExternalLink size={12} class="opacity-40" />
           </a>
         {/each}
