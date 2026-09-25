@@ -1,23 +1,46 @@
 ---
-import BaseLayout from '@/layouts/BaseLayout.astro'
-import { buildHref } from '@/lib/navigation'
-import { isPageRedirect, preparePage } from '@/lib/prepare-page'
-import { Page, Route } from '@/routes/labels/index'
+import { Effect } from 'effect'
+import SiteLayout from '@/layouts/SiteLayout.astro'
+import { DEFAULT_IMAGE_URL } from '@/lib/constants'
+import { getApiClient } from '@/lib/api-client'
+import { generateSEOHead, STATIC_PAGE_SEO } from '@/lib/seo'
 
-let prepared
-try {
-  prepared = await preparePage(Route, Astro.url, {}, Astro.locals.auth)
-} catch (cause) {
-  if (isPageRedirect(cause)) return Astro.redirect(buildHref(cause.options))
-  throw cause
-}
+const client = await getApiClient()
+const labels = await Effect.runPromise(client.music.listLabels({}))
 ---
 
-<BaseLayout head={prepared.head}>
-  <Page
-    params={prepared.params}
-    search={prepared.search}
-    loaderData={prepared.loaderData}
-    client:load
-  />
-</BaseLayout>
+<SiteLayout head={generateSEOHead(STATIC_PAGE_SEO.labels)}>
+  <div class='p-4 mx-auto max-w-7xl'>
+    <h1 class='mb-6 text-3xl font-bold text-foreground'>Record Labels</h1>
+    {
+      labels.length === 0 ? (
+        <div class='p-4 text-center text-muted-foreground'>No labels found</div>
+      ) : (
+        <div class='grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'>
+          {labels.map((label) => (
+            <a
+              href={`/labels/${encodeURIComponent(label.slug)}`}
+              class='flex flex-col gap-2 transition-transform group hover:scale-105'
+            >
+              <div class='w-full overflow-hidden border rounded-sm shadow-sm aspect-square border-border bg-background'>
+                <img
+                  src={label.imageUrl || DEFAULT_IMAGE_URL}
+                  alt={label.name}
+                  class='object-cover w-full h-full transition-opacity group-hover:opacity-80'
+                />
+              </div>
+              <div class='flex flex-col gap-1'>
+                <h2 class='text-base font-semibold leading-tight transition-colors text-foreground group-hover:text-highlight line-clamp-2'>
+                  {label.name}
+                </h2>
+                {label.genres && label.genres.length > 0 && (
+                  <p class='text-xs text-muted-foreground line-clamp-1'>{label.genres.join(', ')}</p>
+                )}
+              </div>
+            </a>
+          ))}
+        </div>
+      )
+    }
+  </div>
+</SiteLayout>

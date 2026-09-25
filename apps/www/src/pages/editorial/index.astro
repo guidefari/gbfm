@@ -1,23 +1,150 @@
 ---
-import BaseLayout from '@/layouts/BaseLayout.astro'
-import { buildHref } from '@/lib/navigation'
-import { isPageRedirect, preparePage } from '@/lib/prepare-page'
-import { Page, Route } from '@/routes/editorial/index'
+import { getMixRecencyLabel } from '@gbfm/core/utils'
+import { Effect } from 'effect'
+import SiteLayout from '@/layouts/SiteLayout.astro'
+import { getApiClient } from '@/lib/api-client'
+import { DEFAULT_IMAGE_URL } from '@/lib/constants'
+import { generateSEOHead, STATIC_PAGE_SEO } from '@/lib/seo'
+import { captureException } from '@/services/analytics'
 
-let prepared
-try {
-  prepared = await preparePage(Route, Astro.url, {}, Astro.locals.auth)
-} catch (cause) {
-  if (isPageRedirect(cause)) return Astro.redirect(buildHref(cause.options))
-  throw cause
+const PAGE_SIZE = 20
+const tag = Astro.url.searchParams.get('tag')?.trim() || undefined
+const requestedOffset = Number(Astro.url.searchParams.get('offset') ?? 0)
+const offset = Number.isSafeInteger(requestedOffset) && requestedOffset >= 0 ? requestedOffset : 0
+const client = await getApiClient()
+const result = await Effect.runPromise(
+  client.post
+    .getEditorialPosts({ query: { limit: PAGE_SIZE, offset, tag } })
+    .pipe(
+      Effect.tapError((error) =>
+        Effect.sync(() => captureException(error, { endpoint: 'post.getEditorialPosts' }))
+      )
+    )
+)
+const posts = result.data
+const head = generateSEOHead(STATIC_PAGE_SEO.editorial)
+const pageHref = (nextOffset: number) => {
+  const params = new URLSearchParams()
+  if (tag) params.set('tag', tag)
+  if (nextOffset > 0) params.set('offset', String(nextOffset))
+  const search = params.toString()
+  return search ? `/editorial?${search}` : '/editorial'
 }
 ---
 
-<BaseLayout head={prepared.head}>
-  <Page
-    params={prepared.params}
-    search={prepared.search}
-    loaderData={prepared.loaderData}
-    client:load
-  />
-</BaseLayout>
+<SiteLayout head={head}>
+  <div class='mx-auto max-w-2xl px-4 py-8'>
+    {
+      tag && (
+        <div class='mb-6 flex items-center gap-2 text-xs tracking-wide text-muted-foreground'>
+          <span class='font-semibold text-foreground'>#{tag}</span>
+          <a href='/editorial' class='hover:text-foreground' aria-label='Remove tag filter'>
+            <svg class='h-3 w-3' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'>
+              <path d='M18 6 6 18M6 6l12 12' />
+            </svg>
+          </a>
+        </div>
+      )
+    }
+    <div class='grid gap-3'>
+      {
+        posts.map((post) => {
+          const recencyLabel = getMixRecencyLabel(post.createdAt)
+          const creators = post.creators ?? []
+          return (
+            <article class='group relative flex items-start gap-3 border border-border bg-card p-3 transition-all duration-200 hover:border-foreground hover:bg-muted hover:shadow-sm sm:p-4'>
+              <img
+                src={post.thumbnailUrl || DEFAULT_IMAGE_URL}
+                alt={post.title}
+                class='h-16 w-16 shrink-0 border border-border bg-background object-cover transition-transform duration-300 group-hover:scale-101 sm:h-20 sm:w-20'
+              />
+              <div class='min-w-0 flex-1'>
+                {recencyLabel && (
+                  <div
+                    class:list={[
+                      'mb-1 flex items-center gap-1 text-[10px] font-bold tracking-widest',
+                      recencyLabel === 'new' ? 'text-highlight' : 'text-muted-foreground'
+                    ]}>
+                    <span aria-hidden='true'>✦</span>
+                    {recencyLabel}
+                  </div>
+                )}
+                <a
+                  href={`/editorial/${encodeURIComponent(post.slug)}`}
+                  class='line-clamp-2 block text-base font-extrabold leading-tight text-foreground underline-offset-4 hover:underline sm:text-lg'>
+                  {post.title}
+                </a>
+                {(creators.length > 0 || post.createdAt) && (
+                  <div class='mt-2 flex flex-wrap items-center gap-x-1.5 text-xs tracking-widest text-muted-foreground/90'>
+                    {creators.length > 0 && <span class='opacity-60'>By </span>}
+                    {creators.map((creator, index) => (
+                      <span>
+                        {creator.username ? (
+                          <a
+                            href={`/profile/${encodeURIComponent(creator.username)}`}
+                            class='font-semibold text-foreground/90 hover:text-foreground hover:underline'>
+                            {creator.name}
+                          </a>
+                        ) : (
+                          <span class='font-semibold text-foreground/90'>{creator.name}</span>
+                        )}
+                        {index < creators.length - 1 && <span class='mx-1 opacity-50'>&</span>}
+                      </span>
+                    ))}
+                    {creators.length > 0 && post.createdAt && <span class='opacity-40'>&middot;</span>}
+                    {post.createdAt && (
+                      <span>
+                        {new Date(post.createdAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {post.description && (
+                  <div class='mt-2 line-clamp-2 text-base leading-relaxed text-foreground/70'>
+                    {post.description}
+                  </div>
+                )}
+                {post.tags && post.tags.length > 0 && (
+                  <div class='mt-2 flex flex-wrap gap-x-2 gap-y-1 text-xs tracking-wide text-muted-foreground/80'>
+                    {post.tags.map((postTag) => (
+                      <a
+                        href={`/editorial?tag=${encodeURIComponent(postTag)}`}
+                        class='hover:text-foreground hover:underline'>
+                        #{postTag}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </article>
+          )
+        })
+      }
+      {
+        posts.length === 0 && (
+          <p class='py-12 text-center text-base text-muted-foreground'>No editorial posts found.</p>
+        )
+      }
+    </div>
+    {
+      (offset > 0 || result.pagination.hasMore) && (
+        <nav class='mt-6 flex items-center justify-between' aria-label='Editorial pagination'>
+          {offset > 0 ? (
+            <a class='text-sm font-semibold text-foreground hover:underline' href={pageHref(Math.max(0, offset - PAGE_SIZE))}>
+              Previous
+            </a>
+          ) : <span />}
+          {result.pagination.hasMore && (
+            <a class='text-sm font-semibold text-foreground hover:underline' href={pageHref(offset + PAGE_SIZE)}>
+              More
+            </a>
+          )}
+        </nav>
+      )
+    }
+  </div>
+</SiteLayout>

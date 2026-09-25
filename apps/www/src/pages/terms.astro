@@ -1,8 +1,8 @@
 ---
-import BaseLayout from '@/layouts/BaseLayout.astro'
+import SiteLayout from '@/layouts/SiteLayout.astro'
 import { buildHref } from '@/lib/navigation'
 import { isPageRedirect, preparePage } from '@/lib/prepare-page'
-import { Page, Route } from '@/routes/terms'
+import { Route } from '@/routes/terms'
 
 let prepared
 try {
@@ -13,11 +13,12 @@ try {
 }
 ---
 
-<BaseLayout head={prepared.head}>
-  <Page
-    params={prepared.params}
-    search={prepared.search}
-    loaderData={prepared.loaderData}
-    client:load
-  />
-</BaseLayout>
+<SiteLayout head={prepared.head}>
+  <div class='mx-auto max-w-2xl space-y-4 px-6 py-12'>
+    <h1 class='text-3xl font-bold'>Terms of Service</h1>
+    <p class='text-muted-foreground'>
+      Placeholder. Full terms coming soon. Use the service in good faith. No scraping, no abuse, no
+      impersonation. We can suspend accounts that violate these basics.
+    </p>
+  </div>
+</SiteLayout>

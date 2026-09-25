@@ -1,26 +1,54 @@
 ---
-import { Schema } from 'effect'
-import BaseLayout from '@/layouts/BaseLayout.astro'
-import { buildHref } from '@/lib/navigation'
-import { isPageRedirect, preparePage } from '@/lib/prepare-page'
-import { Page, Route } from '@/routes/tracks/$trackId'
+import { Effect, Schema } from 'effect'
+import MusicLongPost from '@/components/music/MusicLongPost.astro'
+import SiteLayout from '@/layouts/SiteLayout.astro'
+import { getApiClient } from '@/lib/api-client'
+import { nullOnNotFound } from '@/lib/http-errors'
+import { generateSEOHead, generateTrackSEO, notFoundHead } from '@/lib/seo'
+import { captureException } from '@/services/analytics'
 
 const trackId = Schema.decodeUnknownSync(Schema.NonEmptyString)(Astro.params.trackId)
-let prepared
-try {
-  prepared = await preparePage(Route, Astro.url, { trackId }, Astro.locals.auth)
-} catch (cause) {
-  if (isPageRedirect(cause)) return Astro.redirect(buildHref(cause.options))
-  throw cause
-}
-if (!prepared.loaderData.track) Astro.response.status = 404
+const client = await getApiClient()
+const response = await nullOnNotFound(
+  Effect.runPromise(
+    client.audio.getAudioBySlug({ params: { type: 'track', slug: trackId } }).pipe(
+      Effect.tapError((error) =>
+        Effect.sync(() => captureException(error, { endpoint: 'audio.getAudioBySlug' }))
+      )
+    )
+  )
+)
+const track = response
+  ? {
+      ...response,
+      bannerImageUrl: null,
+      createdAt: new Date(response.createdAt),
+      updatedAt: new Date(response.updatedAt),
+      tags: response.tags ? [...response.tags] : null,
+      creators: response.creators ? [...response.creators] : undefined
+    }
+  : null
+if (!track) Astro.response.status = 404
+const head = track
+  ? generateSEOHead(generateTrackSEO(track, trackId))
+  : notFoundHead('Track', 'Listen to individual tracks on goosebumps.fm')
 ---
 
-<BaseLayout head={prepared.head}>
-  <Page
-    params={prepared.params}
-    search={prepared.search}
-    loaderData={prepared.loaderData}
-    client:load
-  />
-</BaseLayout>
+<SiteLayout head={head}>
+  {
+    track ? (
+      <MusicLongPost
+        title={track.title}
+        description={track.description ?? ''}
+        content={track.compiledContent ?? track.content}
+        thumbnailUrl={track.thumbnailUrl ?? ''}
+        date={track.createdAt}
+        mp3Url={track.url}
+        slug={trackId}
+        shareType='track'
+      />
+    ) : (
+      <div>No data</div>
+    )
+  }
+</SiteLayout>

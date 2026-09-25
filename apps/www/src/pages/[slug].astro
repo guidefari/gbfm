@@ -1,27 +1,121 @@
 ---
-import { Schema } from 'effect'
-import BaseLayout from '@/layouts/BaseLayout.astro'
-import { buildHref } from '@/lib/navigation'
-import { isPageRedirect, preparePage } from '@/lib/prepare-page'
-import { Page, Route } from '@/routes/$slug'
+import { Effect, Schema } from 'effect'
+import { ProfileSocialLinks } from '@/components/profile/ProfileSocialLinks'
+import SiteLayout from '@/layouts/SiteLayout.astro'
+import { getApiClient } from '@/lib/api-client'
+import { DEFAULT_IMAGE_URL } from '@/lib/constants'
+import { nullOnNotFound } from '@/lib/http-errors'
+import {
+  generateProfileSEO,
+  generateSEOHead,
+  notFoundHead
+} from '@/lib/seo'
 
 const slug = Schema.decodeUnknownSync(Schema.NonEmptyString)(Astro.params.slug)
-let prepared
-try {
-  prepared = await preparePage(Route, Astro.url, { slug }, Astro.locals.auth)
-} catch (cause) {
-  if (isPageRedirect(cause)) return Astro.redirect(buildHref(cause.options))
-  throw cause
+const client = await getApiClient()
+const resolved = await nullOnNotFound(
+  Effect.runPromise(client.resolve.resolveSlug({ params: { slug } }))
+)
+
+if (resolved?.type === 'show') {
+  return Astro.redirect(`/shows/${encodeURIComponent(resolved.data.slug)}`)
 }
 
-if (!prepared.loaderData.resolved) Astro.response.status = 404
+if (!resolved) Astro.response.status = 404
+const profile = resolved?.type === 'profile' ? resolved.data : null
+const head = profile
+  ? generateSEOHead(generateProfileSEO(profile, slug))
+  : notFoundHead('Not found', 'This page does not exist on goosebumps.fm')
+const memberSince = profile
+  ? new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  : null
+const mixes = profile?.content.mixes ?? []
+const editorials = profile?.content.editorials ?? []
+const tweets = profile?.content.tweets ?? []
+const hasContent = mixes.length > 0 || editorials.length > 0 || tweets.length > 0
 ---
 
-<BaseLayout head={prepared.head}>
-  <Page
-    params={prepared.params}
-    search={prepared.search}
-    loaderData={prepared.loaderData}
-    client:load
-  />
-</BaseLayout>
+<SiteLayout head={head}>
+  {
+    profile ? (
+      <div class='mx-auto w-full max-w-5xl lg:grid lg:grid-cols-[minmax(280px,1fr)_2fr] lg:gap-8'>
+        <aside class='flex flex-col gap-4'>
+          <div class='flex items-start gap-4 px-4 pb-2 pt-4 lg:px-8 lg:pb-0 lg:pt-8'>
+            <div class='h-24 w-24 shrink-0 overflow-hidden bg-muted'>
+              <img src={profile.image || DEFAULT_IMAGE_URL} alt={`${profile.name}'s avatar`} class='h-full w-full object-cover' />
+            </div>
+            <div class='flex min-w-0 flex-1 flex-col gap-1'>
+              <h1 class='my-0 font-mono text-2xl font-bold text-highlight'>{profile.name}</h1>
+              {profile.username && <p class='font-mono text-base text-foreground'>@{profile.username}</p>}
+              <p class='font-mono text-xs text-foreground'>Member since {memberSince}</p>
+            </div>
+          </div>
+          <div class='flex flex-col gap-3 px-4 pb-4 lg:px-8 lg:pb-6'>
+            {profile.bio && (
+              <div class='flex flex-col'>
+                <h2 class='font-mono text-base font-bold text-highlight'>About</h2>
+                <p class='p-0 font-mono text-base leading-relaxed text-foreground'>{profile.bio}</p>
+              </div>
+            )}
+            {(profile.socialLinks.length > 0 || profile.username) && (
+              <ProfileSocialLinks username={profile.username} socialLinks={profile.socialLinks} client:load />
+            )}
+          </div>
+        </aside>
+        <main class='min-w-0 px-4 py-4 lg:px-0 lg:py-0'>
+          {!hasContent && <div class='py-8 font-mono text-base text-muted-foreground'>No public content yet</div>}
+          <div class='flex flex-col divide-y divide-border/50'>
+            {mixes.length > 0 && (
+              <section class='py-4'>
+                <h2 class='mb-3 font-mono text-lg font-bold text-highlight'>Mixes</h2>
+                <div class='flex gap-4 overflow-x-auto pb-2'>
+                  {mixes.map((mix) => (
+                    <a href={`/mixes/${encodeURIComponent(mix.slug)}`} class='group flex w-36 shrink-0 flex-col gap-2'>
+                      <img src={mix.thumbnailUrl || DEFAULT_IMAGE_URL} alt={mix.title} class='aspect-square w-full object-cover transition-opacity group-hover:opacity-80' />
+                      <h3 class='line-clamp-2 font-mono text-base font-medium leading-tight text-foreground group-hover:text-highlight'>{mix.title}</h3>
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )}
+            {editorials.length > 0 && (
+              <section class='py-4'>
+                <h2 class='mb-3 font-mono text-lg font-bold text-highlight'>Editorial</h2>
+                <div class='flex gap-4 overflow-x-auto pb-2'>
+                  {editorials.map((editorial) => (
+                    <a href={`/editorial/${encodeURIComponent(editorial.slug)}`} class='group flex w-36 shrink-0 flex-col gap-2'>
+                      {editorial.thumbnailUrl && <img src={editorial.thumbnailUrl} alt={editorial.title} class='aspect-video w-full object-cover transition-opacity group-hover:opacity-80' />}
+                      <h3 class='line-clamp-2 font-mono text-base font-medium leading-tight text-foreground group-hover:text-highlight'>{editorial.title}</h3>
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )}
+            {tweets.length > 0 && (
+              <section class='py-4'>
+                <h2 class='mb-3 font-mono text-lg font-bold text-highlight'>Tweet</h2>
+                <div class='flex gap-4 overflow-x-auto pb-2'>
+                  {tweets.map((tweet) => (
+                    <a href={`/tweet/${encodeURIComponent(tweet.slug)}`} class='group flex w-36 shrink-0 flex-col gap-1 rounded-sm border border-border bg-card p-3 hover:bg-muted/50'>
+                      {tweet.title && <h3 class='line-clamp-2 font-mono text-base font-semibold leading-tight text-foreground group-hover:text-highlight'>{tweet.title}</h3>}
+                      <p class='font-mono text-xs text-muted-foreground'>{new Date(tweet.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+        </main>
+      </div>
+    ) : (
+      <div class='mx-auto max-w-md px-4 py-16 text-center'>
+        <h1 class='text-3xl font-bold text-foreground'>Not found</h1>
+        <p class='mt-3 text-muted-foreground'><span class='font-medium text-foreground'>@{slug}</span> doesn&apos;t exist.</p>
+        <div class='mt-6 flex justify-center gap-3'>
+          <a href='/' class='rounded-md bg-primary px-4 py-2 text-base font-medium text-primary-foreground hover:bg-primary/90'>Go home</a>
+          <a href='/shows' class='rounded-md border border-border px-4 py-2 text-base font-medium text-foreground hover:bg-muted'>Browse radio shows</a>
+        </div>
+      </div>
+    )
+  }
+</SiteLayout>

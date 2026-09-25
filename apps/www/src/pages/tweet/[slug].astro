@@ -1,26 +1,166 @@
 ---
-import { Schema } from 'effect'
-import BaseLayout from '@/layouts/BaseLayout.astro'
-import { buildHref } from '@/lib/navigation'
-import { isPageRedirect, preparePage } from '@/lib/prepare-page'
-import { Page, Route } from '@/routes/tweet/$slug'
+import { Effect, Schema } from 'effect'
+import { InteractiveMDX } from '@/components/InteractiveMDX'
+import {
+  TweetActionsIsland,
+  TweetMusicIsland,
+  TweetNavigationIsland,
+  TweetParentIsland,
+  TweetQuoteIsland,
+  TweetRepliesIsland
+} from '@/components/tweet/TweetIslands'
+import SiteLayout from '@/layouts/SiteLayout.astro'
+import { getApiClient } from '@/lib/api-client'
+import { DEFAULT_IMAGE_URL } from '@/lib/constants'
+import { nullOnNotFound } from '@/lib/http-errors'
+import { generateMicroPostSEO, generateSEOHead, notFoundHead } from '@/lib/seo'
+import { captureException } from '@/services/analytics'
 
 const slug = Schema.decodeUnknownSync(Schema.NonEmptyString)(Astro.params.slug)
-let prepared
-try {
-  prepared = await preparePage(Route, Astro.url, { slug }, Astro.locals.auth)
-} catch (cause) {
-  if (isPageRedirect(cause)) return Astro.redirect(buildHref(cause.options))
-  throw cause
-}
-if (!prepared.loaderData.post) Astro.response.status = 404
+const client = await getApiClient()
+const post = await nullOnNotFound(
+  Effect.runPromise(
+    client.post
+      .getMicroPostBySlug({ params: { slug } })
+      .pipe(
+        Effect.tapError((error) =>
+          Effect.sync(() => captureException(error, { endpoint: 'post.getMicroPostBySlug' }))
+        )
+      )
+  )
+)
+
+if (!post) Astro.response.status = 404
+const head = post
+  ? generateSEOHead(
+      generateMicroPostSEO(
+        {
+          title: post.title,
+          description: post.description,
+          thumbnailUrl: post.thumbnailUrl,
+          createdAt: new Date(post.createdAt),
+          updatedAt: new Date(post.updatedAt),
+          creators: post.creators ? [...post.creators] : undefined
+        },
+        slug
+      )
+    )
+  : notFoundHead('Tweet', 'Short updates on goosebumps.fm')
+const user = Astro.locals.auth.user
+const canEdit = Boolean(
+  post && user && (user.role === 'admin' || post.creators?.some((creator) => creator.id === user.id))
+)
+const createdAt = post?.createdAt ? new Date(post.createdAt).getTime() : null
+const updatedAt = post?.updatedAt ? new Date(post.updatedAt).getTime() : null
+const editedAt = createdAt && updatedAt && updatedAt > createdAt ? post?.updatedAt : null
+const creator = post?.creators?.[0]
+const creatorHref = creator?.username
+  ? `/profile/${encodeURIComponent(creator.username)}`
+  : undefined
+const formattedDate = post?.createdAt
+  ? new Date(post.createdAt).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  : null
 ---
 
-<BaseLayout head={prepared.head}>
-  <Page
-    params={prepared.params}
-    search={prepared.search}
-    loaderData={prepared.loaderData}
-    client:load
-  />
-</BaseLayout>
+<SiteLayout head={head}>
+  {
+    post && (
+      <div class='mx-auto max-w-3xl px-4 py-8'>
+        <div class='mb-6 lg:mb-0'>
+          <TweetNavigationIsland slug={slug} client:load />
+        </div>
+        {post.parentPostId && <TweetParentIsland parentPostId={post.parentPostId} client:visible />}
+        <article class='space-y-4 rounded-lg border border-border/60 bg-card/60 p-4 shadow-sm sm:p-5'>
+          {creator && (
+            <div class='space-y-1'>
+              <div class='flex min-w-0 items-center gap-3'>
+                {creatorHref ? (
+                  <a
+                    href={creatorHref}
+                    class='shrink-0 overflow-hidden rounded-sm ring-1 ring-border/60 transition-transform hover:scale-[1.02]'>
+                    <img
+                      src={DEFAULT_IMAGE_URL}
+                      alt={`${creator.name}'s avatar`}
+                      class='h-10 w-10 object-cover'
+                      loading='lazy'
+                    />
+                  </a>
+                ) : (
+                  <div class='shrink-0 overflow-hidden rounded-sm ring-1 ring-border/60'>
+                    <img
+                      src={DEFAULT_IMAGE_URL}
+                      alt={`${creator.name}'s avatar`}
+                      class='h-10 w-10 object-cover'
+                      loading='lazy'
+                    />
+                  </div>
+                )}
+                <div class='min-w-0 leading-tight'>
+                  {creatorHref ? (
+                    <a href={creatorHref} class='block truncate font-bold text-foreground hover:underline'>
+                      {creator.name}
+                    </a>
+                  ) : (
+                    <span class='block truncate font-bold text-foreground'>{creator.name}</span>
+                  )}
+                  <div class='flex items-center gap-1.5 truncate text-base text-muted-foreground'>
+                    {creator.username && <span class='truncate'>@{creator.username}</span>}
+                    {creator.username && formattedDate && <span aria-hidden class='text-muted-foreground/50'>·</span>}
+                    {formattedDate && <span class='shrink-0 font-mono text-xs text-muted-foreground/70'>{formattedDate}</span>}
+                  </div>
+                </div>
+              </div>
+              {editedAt && (
+                <p class='pl-[52px] font-mono text-[11px] tracking-wider text-muted-foreground/60'>
+                  Edited{' '}
+                  {new Date(editedAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  })}
+                </p>
+              )}
+            </div>
+          )}
+
+          {post.title && <h1 class='text-lg font-medium leading-snug tracking-tight'>{post.title}</h1>}
+          <div class='prose prose-base dark:prose-invert max-w-none prose-headings:font-black prose-headings:tracking-tighter prose-p:leading-relaxed prose-p:my-0 prose-a:text-foreground prose-a:underline'>
+            <InteractiveMDX
+              mdxString={post.compiledContent ?? post.content ?? ''}
+              client:load
+            />
+          </div>
+          {post.musicEntityType && post.musicEntityId && (
+            <TweetMusicIsland
+              entityType={post.musicEntityType}
+              entityId={post.musicEntityId}
+              client:visible
+            />
+          )}
+          {post.quotedPostId && <TweetQuoteIsland quotedPostId={post.quotedPostId} client:visible />}
+          {post.tags && post.tags.length > 0 && (
+            <div class='flex flex-wrap items-center gap-x-3 gap-y-1 pt-1'>
+              {post.tags.map((tag) => (
+                <a
+                  href={`/tags/${encodeURIComponent(tag)}`}
+                  class='text-xs font-medium text-muted-foreground no-underline transition-colors hover:text-foreground'>
+                  #{tag}
+                </a>
+              ))}
+            </div>
+          )}
+          <div class='border-t border-border/40 pt-3'>
+            <TweetActionsIsland slug={slug} canEdit={canEdit} client:load />
+          </div>
+        </article>
+        <div id='replies' class='mt-6 scroll-mt-4'>
+          <TweetRepliesIsland slug={slug} client:visible />
+        </div>
+      </div>
+    )
+  }
+</SiteLayout>

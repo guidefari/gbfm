@@ -1,26 +1,117 @@
 ---
-import { Schema } from 'effect'
-import BaseLayout from '@/layouts/BaseLayout.astro'
-import { buildHref } from '@/lib/navigation'
-import { isPageRedirect, preparePage } from '@/lib/prepare-page'
-import { Page, Route } from '@/routes/editorial/$slug'
+import { Effect, Schema } from 'effect'
+import { InteractiveMDX } from '@/components/InteractiveMDX'
+import { ShareButton } from '@/components/ShareButton'
+import SiteLayout from '@/layouts/SiteLayout.astro'
+import { getApiClient } from '@/lib/api-client'
+import { DEFAULT_IMAGE_URL } from '@/lib/constants'
+import { nullOnNotFound } from '@/lib/http-errors'
+import { generatePostSEO, generateSEOHead, notFoundHead } from '@/lib/seo'
+import { captureException } from '@/services/analytics'
 
 const slug = Schema.decodeUnknownSync(Schema.NonEmptyString)(Astro.params.slug)
-let prepared
-try {
-  prepared = await preparePage(Route, Astro.url, { slug }, Astro.locals.auth)
-} catch (cause) {
-  if (isPageRedirect(cause)) return Astro.redirect(buildHref(cause.options))
-  throw cause
-}
-if (!prepared.loaderData.post) Astro.response.status = 404
+const client = await getApiClient()
+const response = await nullOnNotFound(
+  Effect.runPromise(
+    client.post
+      .getEditorialPostBySlug({ params: { slug } })
+      .pipe(
+        Effect.tapError((error) =>
+          Effect.sync(() => captureException(error, { endpoint: 'post.getEditorialPostBySlug' }))
+        )
+      )
+  )
+)
+const post = response
+  ? {
+      ...response,
+      bannerImageUrl: null,
+      createdAt: new Date(response.createdAt),
+      updatedAt: new Date(response.updatedAt),
+      tags: response.tags ? [...response.tags] : null,
+      creators: response.creators ? [...response.creators] : undefined
+    }
+  : null
+if (!post) Astro.response.status = 404
+const head = post
+  ? generateSEOHead(generatePostSEO(post, slug))
+  : notFoundHead('Post', 'Read posts on goosebumps.fm')
 ---
 
-<BaseLayout head={prepared.head}>
-  <Page
-    params={prepared.params}
-    search={prepared.search}
-    loaderData={prepared.loaderData}
-    client:load
-  />
-</BaseLayout>
+<SiteLayout head={head}>
+  {
+    post && (
+      <div class='mx-auto max-w-3xl px-4 py-6'>
+        <a
+          href='/editorial'
+          class='mb-8 inline-flex items-center gap-1 text-base text-muted-foreground transition-colors hover:text-foreground'>
+          <span aria-hidden='true'>←</span> Editorial
+        </a>
+        <article class='space-y-8'>
+          <div class='flex flex-col items-start gap-8 md:flex-row'>
+            {post.thumbnailUrl && (
+              <div class='w-full shrink-0 md:w-64'>
+                <img
+                  src={post.thumbnailUrl || DEFAULT_IMAGE_URL}
+                  alt={post.title}
+                  class='aspect-video w-full rounded-sm border border-border object-cover shadow-lg'
+                />
+              </div>
+            )}
+            <div class='flex-1 space-y-6 pt-2'>
+              <div class='space-y-4'>
+                <div class='flex items-start justify-between gap-4'>
+                  <div class='flex flex-col gap-2'>
+                    <h1 class='text-4xl font-black leading-none tracking-tighter md:text-5xl'>{post.title}</h1>
+                    {post.creators && post.creators.length > 0 && (
+                      <div class='flex flex-wrap gap-x-1.5 gap-y-1 text-xs font-bold tracking-widest text-muted-foreground/80'>
+                        <span class='opacity-50'>by</span>
+                        {post.creators.map((creator, index) => (
+                          <span>
+                            {creator.username ? (
+                              <a
+                                href={`/profile/${encodeURIComponent(creator.username)}`}
+                                class='text-foreground/90 underline-offset-4 hover:text-foreground hover:underline'>
+                                {creator.name}
+                              </a>
+                            ) : creator.name}
+                            {index < (post.creators?.length ?? 0) - 1 && <span class='ml-1.5 opacity-30'>&</span>}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <ShareButton type='post' slug={slug} client:load />
+                </div>
+                {post.description && (
+                  <p class='border-l-2 border-border/50 pl-4 text-xl font-medium italic leading-relaxed text-muted-foreground'>
+                    {post.description}
+                  </p>
+                )}
+                <p class='font-mono text-base text-muted-foreground/60'>
+                  {post.createdAt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                </p>
+              </div>
+            </div>
+          </div>
+          {post.tags && post.tags.length > 0 && (
+            <div class='flex flex-wrap gap-2'>
+              {post.tags.map((tag) => (
+                <a
+                  href={`/editorial?tag=${encodeURIComponent(tag)}`}
+                  class='bg-muted/50 px-2 py-1 text-[10px] font-bold tracking-widest text-muted-foreground hover:text-foreground'>
+                  <span class='mr-1 opacity-50'>#</span>{tag}
+                </a>
+              ))}
+            </div>
+          )}
+          <div class='border-t border-border/50 pt-8'>
+            <div class='prose prose-base max-w-none prose-headings:font-black prose-headings:tracking-tighter prose-p:leading-relaxed prose-a:text-foreground prose-a:underline dark:prose-invert'>
+              <InteractiveMDX mdxString={post.compiledContent ?? post.content} client:load />
+            </div>
+          </div>
+        </article>
+      </div>
+    )
+  }
+</SiteLayout>

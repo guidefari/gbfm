@@ -17,9 +17,6 @@ type Props = {
 }
 
 export default function AppShell({ children }: Props) {
-  useMediaHotkeys()
-  const isQueueEnabled = useFeatureFlag('ui.queue')
-
   return (
     <div className='grid h-dvh w-full grid-cols-1 bg-background'>
       <div className='relative flex h-dvh min-w-0 flex-col overflow-hidden'>
@@ -33,16 +30,25 @@ export default function AppShell({ children }: Props) {
           </main>
         </div>
 
-        <StationNav />
-
-        {isQueueEnabled && (
-          <Suspense fallback={null}>
-            <QueueColumn />
-          </Suspense>
-        )}
-
-        <FullscreenAudioPlayer />
+        <AppChrome />
       </div>
     </div>
+  )
+}
+
+export function AppChrome() {
+  useMediaHotkeys()
+  const isQueueEnabled = useFeatureFlag('ui.queue')
+
+  return (
+    <>
+      <StationNav />
+      {isQueueEnabled && (
+        <Suspense fallback={null}>
+          <QueueColumn />
+        </Suspense>
+      )}
+      <FullscreenAudioPlayer />
+    </>
   )
 }

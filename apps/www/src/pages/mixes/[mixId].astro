@@ -1,26 +1,109 @@
 ---
-import { Schema } from 'effect'
-import BaseLayout from '@/layouts/BaseLayout.astro'
-import { buildHref } from '@/lib/navigation'
-import { isPageRedirect, preparePage } from '@/lib/prepare-page'
-import { Page, Route } from '@/routes/mixes/$mixId'
+import { Effect, Schema } from 'effect'
+import { Tag } from 'lucide-react'
+import { InteractiveMDX } from '@/components/InteractiveMDX'
+import { MixActions } from '@/components/mixes/MixActions'
+import SiteLayout from '@/layouts/SiteLayout.astro'
+import { getApiClient } from '@/lib/api-client'
+import { DEFAULT_IMAGE_URL } from '@/lib/constants'
+import { nullOnNotFound } from '@/lib/http-errors'
+import { generateMixSEO, generateSEOHead, notFoundHead } from '@/lib/seo'
 
 const mixId = Schema.decodeUnknownSync(Schema.NonEmptyString)(Astro.params.mixId)
-let prepared
-try {
-  prepared = await preparePage(Route, Astro.url, { mixId }, Astro.locals.auth)
-} catch (cause) {
-  if (isPageRedirect(cause)) return Astro.redirect(buildHref(cause.options))
-  throw cause
-}
-if (!prepared.loaderData.mix) Astro.response.status = 404
+const client = await getApiClient()
+const mix = await nullOnNotFound(
+  Effect.runPromise(client.audio.getAudioBySlug({ params: { type: 'mix', slug: mixId } }))
+)
+const shows = mix?.showId
+  ? await Effect.runPromise(client.shows.getAllShows({ query: { limit: 100, offset: 0 } }))
+  : null
+const show = shows?.data.find((candidate) => candidate.id === mix?.showId)
+
+if (!mix) Astro.response.status = 404
+const head = mix
+  ? generateSEOHead(
+      generateMixSEO(
+        {
+          ...mix,
+          bannerImageUrl: null,
+          createdAt: new Date(mix.createdAt),
+          updatedAt: new Date(mix.updatedAt),
+          tags: mix.tags ? [...mix.tags] : null,
+          creators: mix.creators ? [...mix.creators] : undefined
+        },
+        mixId
+      )
+    )
+  : notFoundHead('Mix', 'Listen to mixes on goosebumps.fm')
+const actionMix = mix
+  ? {
+      id: mix.id,
+      title: mix.title,
+      slug: mix.slug,
+      url: mix.url,
+      type: mix.type,
+      thumbnailUrl: mix.thumbnailUrl,
+      creators: mix.creators ? [...mix.creators] : undefined,
+      description: mix.description,
+      content: mix.content,
+      tags: mix.tags ? [...mix.tags] : null
+    }
+  : null
 ---
 
-<BaseLayout head={prepared.head}>
-  <Page
-    params={prepared.params}
-    search={prepared.search}
-    loaderData={prepared.loaderData}
-    client:load
-  />
-</BaseLayout>
+<SiteLayout head={head}>
+  {
+    mix ? (
+      <div class='mx-auto max-w-3xl px-4 py-6'>
+        <a href='/shows' class='mb-8 inline-flex items-center gap-1 text-base text-muted-foreground transition-colors hover:text-foreground'>
+          <span aria-hidden='true'>←</span> Radio shows
+        </a>
+        <div class='space-y-8'>
+          <div class='flex flex-col items-start gap-8 md:flex-row'>
+            <div class='w-full shrink-0 space-y-4 md:w-64'>
+              <img src={mix.thumbnailUrl || DEFAULT_IMAGE_URL} alt={mix.title} class='aspect-square w-full rounded-sm border border-border object-cover shadow-lg' />
+              {actionMix && <MixActions mix={actionMix} client:load />}
+              {mix.tags && mix.tags.length > 0 && (
+                <div class='flex flex-wrap gap-2'>
+                  {mix.tags.map((tag) => (
+                    <span class='inline-flex items-center bg-muted/50 px-2 py-1 text-[10px] font-bold tracking-widest text-muted-foreground'>
+                      <Tag className='mr-1 h-3 w-3 opacity-50' /> {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div class='flex-1 space-y-6 pt-2'>
+              <div class='space-y-4'>
+                <div class='flex flex-col gap-2'>
+                  <div class='flex flex-wrap items-center gap-3'>
+                    <h1 class='text-4xl font-black leading-none tracking-tighter md:text-5xl'>{mix.title}</h1>
+                    {mix.draft && <span class='rounded-md bg-secondary px-2.5 py-0.5 text-xs font-semibold text-secondary-foreground'>Draft</span>}
+                  </div>
+                  {mix.creators && mix.creators.length > 0 && (
+                    <div class='flex flex-wrap gap-x-1.5 gap-y-1 text-xs font-bold tracking-widest text-muted-foreground/80'>
+                      <span class='opacity-50'>by</span>
+                      {mix.creators.map((creator, index) => (
+                        <><a href={`/profile/${encodeURIComponent(creator.username || '')}`} class='transition-colors hover:text-primary'>{creator.name}</a>{index < (mix.creators?.length ?? 0) - 1 && <span class='opacity-30'>&amp;</span>}</>
+                      ))}
+                    </div>
+                  )}
+                  {show && <div class='flex items-center gap-1.5 text-xs font-bold tracking-widest text-muted-foreground/80'><span class='opacity-50'>from</span><a href={`/shows/${encodeURIComponent(show.slug)}`} class='transition-colors hover:text-primary'>{show.title}</a></div>}
+                </div>
+                {mix.description && <p class='border-l-2 border-border/50 pl-4 text-xl font-medium italic leading-relaxed text-muted-foreground'>{mix.description}</p>}
+                <p class='font-mono text-base text-muted-foreground/60'>{new Date(mix.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              </div>
+            </div>
+          </div>
+          <div class='border-t border-border/50 pt-8'>
+            <div class='prose prose-base max-w-none prose-headings:font-black prose-headings:tracking-tighter prose-p:leading-relaxed prose-a:text-foreground prose-a:underline dark:prose-invert'>
+              <InteractiveMDX mdxString={mix.compiledContent ?? mix.content} client:load />
+            </div>
+          </div>
+        </div>
+      </div>
+    ) : (
+      <div class='mx-auto max-w-3xl px-4 py-12'><h1 class='text-3xl font-bold'>Mix not found</h1><p class='mt-2 text-muted-foreground'>The mix you requested does not exist.</p></div>
+    )
+  }
+</SiteLayout>

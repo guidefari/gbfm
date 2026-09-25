@@ -1,23 +1,48 @@
 ---
-import BaseLayout from '@/layouts/BaseLayout.astro'
-import { buildHref } from '@/lib/navigation'
-import { isPageRedirect, preparePage } from '@/lib/prepare-page'
-import { Page, Route } from '@/routes/djs/index'
+import { Effect } from 'effect'
+import SiteLayout from '@/layouts/SiteLayout.astro'
+import { getApiClient } from '@/lib/api-client'
+import { generateSEOHead, STATIC_PAGE_SEO } from '@/lib/seo'
 
-let prepared
-try {
-  prepared = await preparePage(Route, Astro.url, {}, Astro.locals.auth)
-} catch (cause) {
-  if (isPageRedirect(cause)) return Astro.redirect(buildHref(cause.options))
-  throw cause
-}
+const client = await getApiClient()
+const djs = await Effect.runPromise(client.user.listDjs({}))
 ---
 
-<BaseLayout head={prepared.head}>
-  <Page
-    params={prepared.params}
-    search={prepared.search}
-    loaderData={prepared.loaderData}
-    client:load
-  />
-</BaseLayout>
+<SiteLayout head={generateSEOHead(STATIC_PAGE_SEO.djs)}>
+  <div class='p-4 mx-auto max-w-7xl'>
+    <h1 class='mb-2 text-3xl font-bold text-foreground'>DJs & Residents</h1>
+    <p class='mb-6 text-muted-foreground'>Everyone who has a mix on goosebumps.fm.</p>
+    {
+      djs.length === 0 ? (
+        <div class='p-4 text-center text-muted-foreground'>No DJs found yet.</div>
+      ) : (
+        <div class='grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'>
+          {djs.map((dj) => (
+            <a
+              href={`/${encodeURIComponent(dj.username ?? dj.id)}`}
+              class='group p-4 border rounded-none border-border/60 bg-muted/20 transition-colors hover:border-gb-highlight/50 hover:bg-gb-pastel-green-2/10'
+            >
+              <div class='flex items-center gap-3'>
+                {dj.image ? (
+                  <img src={dj.image} alt={dj.name} class='object-cover w-14 h-14 rounded-sm' loading='lazy' />
+                ) : (
+                  <div class='w-14 h-14 rounded-sm bg-muted flex items-center justify-center text-lg font-bold text-muted-foreground'>
+                    {dj.name.charAt(0)}
+                  </div>
+                )}
+                <div class='min-w-0 flex-1'>
+                  <h2 class='text-base font-bold truncate group-hover:text-gb-highlight'>{dj.name}</h2>
+                  {dj.username && <p class='text-xs text-muted-foreground truncate'>@{dj.username}</p>}
+                  <p class='mt-0.5 text-xs text-muted-foreground'>
+                    {dj.mixCount} {dj.mixCount === 1 ? 'mix' : 'mixes'}
+                  </p>
+                </div>
+              </div>
+              {dj.bio && <p class='mt-3 text-base leading-relaxed text-muted-foreground line-clamp-3'>{dj.bio}</p>}
+            </a>
+          ))}
+        </div>
+      )
+    }
+  </div>
+</SiteLayout>

@@ -1,26 +1,43 @@
 ---
-import { Schema } from 'effect'
-import BaseLayout from '@/layouts/BaseLayout.astro'
-import { buildHref } from '@/lib/navigation'
-import { isPageRedirect, preparePage } from '@/lib/prepare-page'
-import { Page, Route } from '@/routes/shows/$showSlug'
+import { Effect, Schema } from 'effect'
+import ShowsBrowser from '@/components/shows/ShowsBrowser.astro'
+import SiteLayout from '@/layouts/SiteLayout.astro'
+import { getApiClient } from '@/lib/api-client'
+import { nullOnNotFound } from '@/lib/http-errors'
+import { generateSEOHead, generateShowSEO, notFoundHead } from '@/lib/seo'
 
 const showSlug = Schema.decodeUnknownSync(Schema.NonEmptyString)(Astro.params.showSlug)
-let prepared
-try {
-  prepared = await preparePage(Route, Astro.url, { showSlug }, Astro.locals.auth)
-} catch (cause) {
-  if (isPageRedirect(cause)) return Astro.redirect(buildHref(cause.options))
-  throw cause
-}
-if (!prepared.loaderData.show) Astro.response.status = 404
+const client = await getApiClient()
+const [showsResult, show] = await Promise.all([
+  Effect.runPromise(client.shows.getAllShows({ query: { limit: 50, offset: 0 } })),
+  nullOnNotFound(Effect.runPromise(client.shows.getShowBySlug({ params: { slug: showSlug } })))
+])
+const episodes = show
+  ? await Effect.runPromise(
+      client.shows.getShowEpisodes({
+        params: { slug: show.slug },
+        query: { limit: 50, offset: 0 }
+      })
+    )
+  : null
+
+if (!show) Astro.response.status = 404
+const head = show
+  ? generateSEOHead(generateShowSEO(show, showSlug))
+  : notFoundHead('Show', 'Explore radio shows on goosebumps.fm')
 ---
 
-<BaseLayout head={prepared.head}>
-  <Page
-    params={prepared.params}
-    search={prepared.search}
-    loaderData={prepared.loaderData}
-    client:load
-  />
-</BaseLayout>
+<SiteLayout head={head}>
+  {
+    show ? (
+      <ShowsBrowser
+        shows={showsResult.data}
+        selectedShow={show}
+        episodes={episodes?.data ?? []}
+        navigation='path'
+      />
+    ) : (
+      <div class='p-4 text-center'>No data</div>
+    )
+  }
+</SiteLayout>

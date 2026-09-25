@@ -1,26 +1,56 @@
 ---
-import { Schema } from 'effect'
-import BaseLayout from '@/layouts/BaseLayout.astro'
-import { buildHref } from '@/lib/navigation'
-import { isPageRedirect, preparePage } from '@/lib/prepare-page'
-import { Page, Route } from '@/routes/releases/$slug'
+import { Effect, Schema } from 'effect'
+import MusicLongPost from '@/components/music/MusicLongPost.astro'
+import SiteLayout from '@/layouts/SiteLayout.astro'
+import { getApiClient } from '@/lib/api-client'
+import { nullOnNotFound } from '@/lib/http-errors'
+import { generateReleaseSEO, generateSEOHead, notFoundHead } from '@/lib/seo'
+import { captureException } from '@/services/analytics'
 
 const slug = Schema.decodeUnknownSync(Schema.NonEmptyString)(Astro.params.slug)
-let prepared
-try {
-  prepared = await preparePage(Route, Astro.url, { slug }, Astro.locals.auth)
-} catch (cause) {
-  if (isPageRedirect(cause)) return Astro.redirect(buildHref(cause.options))
-  throw cause
-}
-if (!prepared.loaderData.release) Astro.response.status = 404
+const client = await getApiClient()
+const response = await nullOnNotFound(
+  Effect.runPromise(
+    client.release.getReleaseBySlug({ params: { slug } }).pipe(
+      Effect.tapError((error) =>
+        Effect.sync(() => captureException(error, { endpoint: 'release.getReleaseBySlug' }))
+      )
+    )
+  )
+)
+const release = response
+  ? {
+      ...response,
+      bannerImageUrl: null,
+      createdAt: new Date(response.createdAt),
+      updatedAt: new Date(response.updatedAt),
+      releaseDate: response.releaseDate ? new Date(response.releaseDate) : null,
+      tags: response.tags ? [...response.tags] : null,
+      streamingLinks: response.streamingLinks ? [...response.streamingLinks] : null
+    }
+  : null
+if (!release) Astro.response.status = 404
+const head = release
+  ? generateSEOHead(generateReleaseSEO(release, slug))
+  : notFoundHead('Release', 'Discover music releases on goosebumps.fm')
 ---
 
-<BaseLayout head={prepared.head}>
-  <Page
-    params={prepared.params}
-    search={prepared.search}
-    loaderData={prepared.loaderData}
-    client:load
-  />
-</BaseLayout>
+<SiteLayout head={head}>
+  {
+    release ? (
+      <div class='mx-auto max-w-4xl'>
+        <MusicLongPost
+          title={release.title}
+          description={release.description ?? ''}
+          content={release.compiledContent ?? release.content}
+          thumbnailUrl={release.thumbnailUrl ?? ''}
+          date={release.releaseDate ?? release.createdAt}
+          slug={slug}
+          shareType='release'
+        />
+      </div>
+    ) : (
+      <div class='p-4 text-center'>No data</div>
+    )
+  }
+</SiteLayout>

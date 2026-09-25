@@ -1,8 +1,9 @@
 ---
-import BaseLayout from '@/layouts/BaseLayout.astro'
+import { MDXRendrr } from '@/components/MDXRendrr'
+import SiteLayout from '@/layouts/SiteLayout.astro'
 import { buildHref } from '@/lib/navigation'
 import { isPageRedirect, preparePage } from '@/lib/prepare-page'
-import { Page, Route } from '@/routes/changelog'
+import { Route } from '@/routes/changelog'
 
 let prepared
 try {
@@ -13,11 +14,25 @@ try {
 }
 ---
 
-<BaseLayout head={prepared.head}>
-  <Page
-    params={prepared.params}
-    search={prepared.search}
-    loaderData={prepared.loaderData}
-    client:load
-  />
-</BaseLayout>
+<SiteLayout head={prepared.head}>
+  <main class='mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8 lg:py-10'>
+    <section
+      class='border border-border/60 bg-background/80 p-6 shadow-[0_24px_80px_-48px_rgba(0,0,0,0.8)] backdrop-blur'
+    >
+      <h1 class='my-0 text-center text-4xl font-black tracking-tight text-foreground sm:text-5xl'>
+        Changelog
+      </h1>
+
+      <p class='mt-4 max-w-2xl text-base leading-6 text-muted-foreground'>
+        Latest release notes, updates, and fixes. This page is generated from the repository
+        changelog so it stays in lockstep with each publish.
+      </p>
+    </section>
+
+    <section class='border border-border/60 bg-background/70 p-4 shadow-sm sm:p-6'>
+      <div class='changelog-prose prose prose-neutral max-w-none dark:prose-invert'>
+        <MDXRendrr mdxString={prepared.loaderData.changelog} />
+      </div>
+    </section>
+  </main>
+</SiteLayout>

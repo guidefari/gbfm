@@ -1,0 +1,77 @@
+---
+import { Download } from 'lucide-react'
+import { Artwork } from '@/components/common/Artwork'
+import { InteractiveMDX } from '@/components/InteractiveMDX'
+import { ShareButton } from '@/components/ShareButton'
+import { DEFAULT_IMAGE_URL } from '@/lib/constants'
+import type { ShareContentType } from '@/lib/share'
+
+interface Props {
+  readonly content: string
+  readonly thumbnailUrl: string
+  readonly title: string
+  readonly date?: string | Date
+  readonly description?: string
+  readonly mp3Url?: string
+  readonly slug: string
+  readonly shareType: ShareContentType
+}
+
+const { title, thumbnailUrl, description, content, date, mp3Url, slug, shareType } = Astro.props
+const downloadUrl = mp3Url
+  ? `/api/dl?fileUrl=${encodeURIComponent(mp3Url)}&title=${encodeURIComponent(title)}`
+  : null
+const formattedDate = date
+  ? new Date(date).toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    })
+  : null
+---
+
+<div class='relative grid grid-flow-row lg:grid-flow-col lg:grid-cols-[auto_1fr] lg:gap-5'>
+  <div class='wrap-break-word mt-6 w-fit rounded-md px-2 lg:sticky lg:top-6 lg:col-span-1 lg:mx-auto lg:self-start'>
+    {
+      mp3Url ? (
+        <div class='not-prose relative z-10 my-8 min-w-64 max-w-md shrink-0 overflow-hidden rounded-md border-2 border-l-0 border-t-0 border-gb-tomato md:max-w-xs'>
+          <div class='group relative mb-4 shrink-0 sm:mb-0 sm:mr-4'>
+            <Artwork
+              src={thumbnailUrl || DEFAULT_IMAGE_URL}
+              alt={title}
+              radius='md'
+              border='none'
+              className='w-full'
+              width={300}
+              height={300}
+            />
+          </div>
+          <div class='p-3'>
+            <div class='my-2 flex space-x-3 align-bottom'>
+              <a type='button' title='Download' href={downloadUrl ?? undefined}>
+                <Download className='default-icon py-0.5' />
+              </a>
+              <ShareButton type={shareType} slug={slug} variant='ghost' size='icon' client:load />
+            </div>
+            <div class='mt-2'><br /></div>
+          </div>
+        </div>
+      ) : (
+        <img
+          class='rounded-md'
+          src={thumbnailUrl || DEFAULT_IMAGE_URL}
+          alt={`Thumbnail for post titled - ${title}`}
+          width='320'
+          height='320'
+          loading='lazy'
+        />
+      )
+    }
+    <h4 class='text-left text-gb-pastel-green-2 lg:mx-0'>{title}</h4>
+    {date && <time datetime={new Date(date).toISOString()} class='bg-gb-bg text-xs opacity-80'>{formattedDate}</time>}
+  </div>
+  <article class='wrap-break-word mt-6 min-h-screen px-2 lg:col-span-2 lg:w-auto lg:px-0'>
+    {description && <p class='text-left'>{description}</p>}
+    <InteractiveMDX mdxString={content} client:load />
+  </article>
+</div>

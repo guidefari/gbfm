@@ -1,23 +1,84 @@
 ---
-import BaseLayout from '@/layouts/BaseLayout.astro'
-import { buildHref } from '@/lib/navigation'
-import { isPageRedirect, preparePage } from '@/lib/prepare-page'
-import { Page, Route } from '@/routes/index'
+import { Effect } from 'effect'
+import { Radio } from 'lucide-react'
+import { FeaturedMixPlayButton } from '@/components/home/FeaturedMixPlayButton'
+import SiteLayout from '@/layouts/SiteLayout.astro'
+import { getApiClient } from '@/lib/api-client'
+import { DEFAULT_IMAGE_URL } from '@/lib/constants'
+import { toImageSrcSet, toImageUrl } from '@/lib/image'
+import { generateSEOHead, STATIC_PAGE_SEO } from '@/lib/seo'
 
-let prepared
-try {
-  prepared = await preparePage(Route, Astro.url, {}, Astro.locals.auth)
-} catch (cause) {
-  if (isPageRedirect(cause)) return Astro.redirect(buildHref(cause.options))
-  throw cause
-}
+const client = await getApiClient()
+const result = await Effect.runPromise(
+  client.audio.getAudioByType({ params: { type: 'mix' }, query: { limit: 1, offset: 0 } })
+)
+const featuredMix = result.data[0]
+const artworkUrl = featuredMix?.thumbnailUrl || DEFAULT_IMAGE_URL
+const artworkSrcSet = toImageSrcSet(artworkUrl, [320, 480, 640, 768, 1024, 1280])
+const playableMix = featuredMix
+  ? {
+      id: featuredMix.id,
+      title: featuredMix.title,
+      slug: featuredMix.slug,
+      url: featuredMix.url,
+      type: featuredMix.type,
+      thumbnailUrl: featuredMix.thumbnailUrl,
+      creators: featuredMix.creators ? [...featuredMix.creators] : undefined
+    }
+  : undefined
 ---
 
-<BaseLayout head={prepared.head}>
-  <Page
-    params={prepared.params}
-    search={prepared.search}
-    loaderData={prepared.loaderData}
-    client:load
-  />
-</BaseLayout>
+<SiteLayout head={generateSEOHead(STATIC_PAGE_SEO.home)}>
+  <div class='flex min-h-full items-center justify-center px-6 py-8 lg:py-0'>
+    <div class='flex w-fit flex-col items-center gap-8 lg:flex-row lg:items-center lg:gap-12'>
+      <h1 class='my-0 w-fit shrink-0 text-right text-[min(12vw,4.5rem)] font-bold leading-[0.85] tracking-tight md:text-8xl lg:border-r-2 lg:border-foreground/30 lg:pr-12 lg:text-7xl xl:text-9xl'>
+        goosebumps.<br /><span class='text-highlight'>fm</span>
+      </h1>
+      <div class='flex w-full max-w-xs shrink-0 lg:w-72 xl:w-80'>
+        <div class='flex w-full flex-col gap-3'>
+          <div class='relative aspect-square w-full overflow-hidden border-2 border-foreground'>
+            <img
+              id='featured-mix-artwork'
+              src={toImageUrl(artworkUrl, { width: 768 })}
+              srcset={artworkSrcSet}
+              sizes='(max-width: 640px) calc(100vw - 3rem), 384px'
+              alt={featuredMix?.title ?? 'goosebumps.fm'}
+              loading='eager'
+              fetchpriority='high'
+              class='absolute inset-0 h-full w-full object-cover'
+            />
+            <div class='absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent'></div>
+            <div class='absolute inset-0 flex flex-col justify-between p-3'>
+              <span class='self-start bg-highlight px-2 py-1 text-[10px] font-bold leading-none tracking-[0.25em] text-highlight-foreground'>Featured</span>
+              <div class='flex flex-col gap-3'>
+                {
+                  featuredMix && (
+                    <div>
+                      <a href={`/mixes/${encodeURIComponent(featuredMix.slug)}`} class='text-2xl font-black leading-[0.95] tracking-tight text-white decoration-highlight decoration-2 hover:underline'>
+                        {featuredMix.title}
+                      </a>
+                      {featuredMix.creators?.length ? <p class='mt-1 text-xs font-bold tracking-widest text-white/70'>{featuredMix.creators.map((creator) => creator.name).join(', ')}</p> : null}
+                    </div>
+                  )
+                }
+                <FeaturedMixPlayButton mix={playableMix} client:load />
+              </div>
+            </div>
+          </div>
+          <a href='/shows' class='inline-flex w-full items-center justify-center gap-2 border-2 border-foreground px-5 py-3 text-xs font-bold tracking-widest text-foreground transition-colors hover:bg-foreground hover:text-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
+            <Radio className='h-4 w-4' />
+            <span>Browse radio shows</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</SiteLayout>
+
+<script define:vars={{ fallbackArtworkUrl: DEFAULT_IMAGE_URL }}>
+  document.getElementById('featured-mix-artwork')?.addEventListener('error', (event) => {
+    if (!(event.currentTarget instanceof HTMLImageElement)) return
+    event.currentTarget.srcset = ''
+    event.currentTarget.src = fallbackArtworkUrl
+  })
+</script>

@@ -1,25 +1,150 @@
 ---
-import { Schema } from 'effect'
-import BaseLayout from '@/layouts/BaseLayout.astro'
-import { buildHref } from '@/lib/navigation'
-import { isPageRedirect, preparePage } from '@/lib/prepare-page'
-import { Page, Route } from '@/routes/tags/$tag'
+import { Effect, Schema } from 'effect'
+import { MessageCircle } from 'lucide-react'
+import SiteLayout from '@/layouts/SiteLayout.astro'
+import { InteractiveMDX } from '@/components/InteractiveMDX'
+import { DEFAULT_IMAGE_URL } from '@/lib/constants'
+import { getApiClient } from '@/lib/api-client'
+import { DEFAULT_PAGE_SIZE } from '@/lib/http-pagination'
+import { generateSEOHead, generateStaticPageSEO } from '@/lib/seo'
 
 const tag = Schema.decodeUnknownSync(Schema.NonEmptyString)(Astro.params.tag)
-let prepared
-try {
-  prepared = await preparePage(Route, Astro.url, { tag }, Astro.locals.auth)
-} catch (cause) {
-  if (isPageRedirect(cause)) return Astro.redirect(buildHref(cause.options))
-  throw cause
-}
+const rawOffset = Astro.url.searchParams.get('offset') ?? '0'
+const parsedOffset = Number(rawOffset)
+const offset = Number.isSafeInteger(parsedOffset) && parsedOffset >= 0 ? parsedOffset : 0
+const client = await getApiClient()
+const result = await Effect.runPromise(
+  client.post.getMicroPosts({ query: { limit: DEFAULT_PAGE_SIZE, offset, tag } })
+)
+const head = generateSEOHead(
+  generateStaticPageSEO(
+    `#${tag}`,
+    `Posts tagged #${tag} on goosebumps.fm`,
+    `/tags/${encodeURIComponent(tag)}`
+  )
+)
+const nextOffset = result.pagination.offset + result.pagination.limit
+const previousOffset = Math.max(0, result.pagination.offset - result.pagination.limit)
+const formatDate = (date: string | Date) =>
+  new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
 ---
 
-<BaseLayout head={prepared.head}>
-  <Page
-    params={prepared.params}
-    search={prepared.search}
-    loaderData={prepared.loaderData}
-    client:load
-  />
-</BaseLayout>
+<SiteLayout head={head}>
+  <div class='mx-auto max-w-2xl px-4 py-8'>
+    <div class='mb-6 flex items-baseline gap-3'>
+      <h1 class='text-lg font-black tracking-tight text-foreground'>#{tag}</h1>
+      <a href='/tags' class='text-xs text-muted-foreground no-underline transition-colors hover:text-foreground'>
+        All tags
+      </a>
+    </div>
+
+    {
+      result.data.length === 0 ? (
+        <p class='text-base text-muted-foreground'>Nothing tagged #{tag} yet.</p>
+      ) : (
+        <div class='space-y-2'>
+          {result.data.map((post) => {
+            const creator = post.creators?.[0]
+            return (
+              <article class='space-y-2 rounded-lg border border-border/40 bg-card p-3 transition-colors hover:bg-card/80'>
+                {creator && (
+                  <div class='flex min-w-0 items-center gap-3'>
+                    {creator.username ? (
+                      <a
+                        href={`/profile/${encodeURIComponent(creator.username)}`}
+                        class='shrink-0 overflow-hidden rounded-sm ring-1 ring-border/60'>
+                        <img
+                          src={DEFAULT_IMAGE_URL}
+                          alt={`${creator.name}'s avatar`}
+                          class='h-10 w-10 object-cover'
+                          loading='lazy'
+                        />
+                      </a>
+                    ) : (
+                      <span class='shrink-0 overflow-hidden rounded-sm ring-1 ring-border/60'>
+                        <img
+                          src={DEFAULT_IMAGE_URL}
+                          alt={`${creator.name}'s avatar`}
+                          class='h-10 w-10 object-cover'
+                          loading='lazy'
+                        />
+                      </span>
+                    )}
+                    <div class='min-w-0 leading-tight'>
+                      {creator.username ? (
+                        <a
+                          href={`/profile/${encodeURIComponent(creator.username)}`}
+                          class='block truncate font-bold text-foreground hover:underline'>
+                          {creator.name}
+                        </a>
+                      ) : (
+                        <span class='block truncate font-bold text-foreground'>{creator.name}</span>
+                      )}
+                      <div class='flex items-center gap-1.5 truncate text-base text-muted-foreground'>
+                        {creator.username && <span class='truncate'>@{creator.username}</span>}
+                        {creator.username && <span aria-hidden class='text-muted-foreground/50'>·</span>}
+                        <span class='shrink-0 font-mono text-xs text-muted-foreground/70'>
+                          {formatDate(post.createdAt)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {post.title && (
+                  <h2 class='text-base font-medium leading-snug tracking-tight'>
+                    <a href={`/tweet/${encodeURIComponent(post.slug)}`}>{post.title}</a>
+                  </h2>
+                )}
+                {(post.compiledContent || post.content) && (
+                  <div class='prose prose-sm dark:prose-invert max-w-none prose-p:my-0 prose-p:leading-relaxed prose-a:text-foreground'>
+                    <InteractiveMDX
+                      mdxString={post.compiledContent ?? post.content ?? ''}
+                      client:visible
+                    />
+                  </div>
+                )}
+                {post.musicEntityType && post.musicEntityId && (
+                  <p class='rounded-md border border-border/50 bg-muted/20 p-3 text-base font-medium'>
+                    Attached {post.musicEntityType}
+                  </p>
+                )}
+                {post.tags && post.tags.length > 0 && (
+                  <div class='flex flex-wrap items-center gap-x-3 gap-y-1'>
+                    {post.tags.map((postTag) => (
+                      <a
+                        href={`/tags/${encodeURIComponent(postTag)}`}
+                        class='text-xs font-medium text-muted-foreground no-underline transition-colors hover:text-foreground'
+                      >
+                        #{postTag}
+                      </a>
+                    ))}
+                  </div>
+                )}
+                {Boolean(post.replyCount) && (
+                  <div class='flex items-center gap-1.5 text-xs text-muted-foreground'>
+                    <MessageCircle className='h-3 w-3' />
+                    <span>{post.replyCount} {post.replyCount === 1 ? 'reply' : 'replies'}</span>
+                  </div>
+                )}
+                <a
+                  href={`/tweet/${encodeURIComponent(post.slug)}`}
+                  class='block text-xs font-medium text-muted-foreground hover:text-foreground'
+                >
+                  Open post
+                </a>
+              </article>
+            )
+          })}
+          <nav class='flex items-center justify-between pt-4' aria-label='Tagged posts pagination'>
+            {offset > 0 ? (
+              <a href={`?offset=${previousOffset}`} class='text-base text-muted-foreground hover:text-foreground'>Previous</a>
+            ) : <span />}
+            {result.pagination.hasMore && (
+              <a href={`?offset=${nextOffset}`} class='text-base text-muted-foreground hover:text-foreground'>Next</a>
+            )}
+          </nav>
+        </div>
+      )
+    }
+  </div>
+</SiteLayout>

@@ -6,12 +6,7 @@ import { RouteError } from '@/components/RouteError'
 import { TweetActionsMenu } from '@/components/TweetActionsMenu'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
 import { TweetCardActions } from '@/components/TweetCardActions'
-import {
-  isMusicEntityType,
-  musicEntityLinksQueryOptions,
-  musicEntityQueryOptions,
-  TweetMusicEntityCard
-} from '@/components/TweetMusicEntityCard'
+import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
 import { TweetNav } from '@/components/TweetNav'
 import { TweetParentPreview } from '@/components/TweetParentPreview'
 import { TweetQuoteCard } from '@/components/TweetQuoteCard'
@@ -21,55 +16,9 @@ import { TweetTagLinks } from '@/components/TweetTagLinks'
 import { useSession } from '@/lib/auth-client'
 import { getApiClient } from '@/lib/api-client'
 import { nullOnNotFound } from '@/lib/http-errors'
-import {
-  microPostByIdQueryOptions,
-  microPostRepliesQueryOptions,
-  spotifyAlbumProxyQueryOptions,
-  spotifyPlaylistProxyQueryOptions,
-  spotifyTrackProxyQueryOptions,
-  useMicroPostReplies
-} from '@/lib/http'
-import { mdxMusicReferences } from '@/lib/mdx-music-references'
-import { queryClient } from '@/lib/query-client'
+import { useMicroPostReplies } from '@/lib/http'
 import { generateMicroPostSEO, generateSEOHead, notFoundHead } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
-
-type PostDependencyReference = {
-  content?: string | null
-  musicEntityType?: string | null
-  musicEntityId?: string | null
-  quotedPostId?: string | null
-}
-
-const prefetchMdxDependencies = (content: string | null): Array<Promise<void>> =>
-  mdxMusicReferences(content).map((reference) => {
-    switch (reference.type) {
-      case 'album':
-        return queryClient.prefetchQuery(spotifyAlbumProxyQueryOptions(reference.encodedUrl))
-      case 'track':
-        return queryClient.prefetchQuery(spotifyTrackProxyQueryOptions(reference.encodedUrl))
-      case 'playlist':
-        return queryClient.prefetchQuery(spotifyPlaylistProxyQueryOptions(reference.encodedUrl))
-      default:
-        return Promise.resolve()
-    }
-  })
-
-const prefetchPostDependencies = (post: PostDependencyReference): Array<Promise<void>> => {
-  const prefetches = prefetchMdxDependencies(post.content ?? null)
-  if (post.musicEntityType && isMusicEntityType(post.musicEntityType) && post.musicEntityId) {
-    prefetches.push(
-      queryClient.prefetchQuery(musicEntityQueryOptions(post.musicEntityType, post.musicEntityId)),
-      queryClient.prefetchQuery(
-        musicEntityLinksQueryOptions(post.musicEntityType, post.musicEntityId)
-      )
-    )
-  }
-  if (post.quotedPostId) {
-    prefetches.push(queryClient.prefetchQuery(microPostByIdQueryOptions(post.quotedPostId)))
-  }
-  return prefetches
-}
 
 export const Route = createFileRoute('/tweet/$slug')({
   component: TweetPostPage,
@@ -79,9 +28,6 @@ export const Route = createFileRoute('/tweet/$slug')({
     </div>
   ),
   loader: async ({ params }) => {
-    const repliesPromise = queryClient
-      .fetchQuery(microPostRepliesQueryOptions(params.slug))
-      .catch(() => undefined)
     const client = await getApiClient()
     const post = await nullOnNotFound(
       Effect.runPromise(
@@ -95,17 +41,6 @@ export const Route = createFileRoute('/tweet/$slug')({
       )
     )
     if (post === null) return { post: null }
-    const rootDependenciesPromise = Promise.all([
-      ...prefetchPostDependencies(post),
-      ...(post.parentPostId
-        ? [queryClient.prefetchQuery(microPostByIdQueryOptions(post.parentPostId))]
-        : [])
-    ])
-    const dependenciesReady = Promise.all([repliesPromise, rootDependenciesPromise]).then(
-      ([replies]) =>
-        replies ? Promise.all(replies.data.flatMap(prefetchPostDependencies)) : undefined
-    )
-    await dependenciesReady
 
     return {
       post: {
