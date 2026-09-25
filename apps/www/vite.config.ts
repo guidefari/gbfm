@@ -17,6 +17,9 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  ssr: {
+    noExternal: ['@tanstack/svelte-query'],
+  },
   server: {
     host: '0.0.0.0',
     allowedHosts: true,

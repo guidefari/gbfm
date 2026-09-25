@@ -20,6 +20,7 @@
 
 <a
   href={`/shows/${text(show.slug)}`}
+  data-sveltekit-preload-data="off"
   onclick={onSelect}
   aria-current={selected ? 'page' : undefined}
   class={[

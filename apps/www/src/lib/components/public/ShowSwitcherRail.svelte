@@ -17,6 +17,7 @@
     {@const selected = text(show.id) === selectedId}
     <a
       href={`/shows/${text(show.slug)}`}
+      data-sveltekit-preload-data="off"
       onclick={(event) => onSelect?.(show, event)}
       aria-current={selected ? 'page' : undefined}
       class={[

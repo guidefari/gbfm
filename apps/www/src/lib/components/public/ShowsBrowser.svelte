@@ -1,7 +1,11 @@
 <script lang="ts">
-  import EpisodeList from './EpisodeList.svelte'
+  import { goto } from '$app/navigation'
+  import { page } from '$app/state'
+  import { GetUserSubscriptionsResponse } from '@gbfm/api/user'
+  import { Option, Predicate, Schema } from 'effect'
   import PublicHead from './PublicHead.svelte'
   import PublicState from './PublicState.svelte'
+  import ShowEpisodes from './ShowEpisodes.svelte'
   import ShowListItem from './ShowListItem.svelte'
   import ShowMeta from './ShowMeta.svelte'
   import ShowSwitcherRail from './ShowSwitcherRail.svelte'
@@ -23,20 +27,83 @@
 
   let previewShow = $state<PublicRecord | null>(null)
 
-  $effect(() => {
-    void selected
-    previewShow = null
+  let clientActionActive = $state<boolean | Promise<boolean>>(false)
+
+  let clientNavigated = $state(false)
+
+  const serverSlug = $derived(text(selected?.slug))
+
+  const routeSlug = $derived.by(() => {
+    const url = page.shallow?.url ?? page.url
+
+    return url.pathname.startsWith('/shows/')
+      ? decodeURIComponent(url.pathname.slice('/shows/'.length))
+      : (url.searchParams.get('show') ?? text(shows[0]?.slug))
   })
 
-  const currentShow = $derived(previewShow ?? selected)
+  const displaySlug = $derived(text(previewShow?.slug) || routeSlug)
+
+  const currentShow = $derived(
+    previewShow ??
+      shows.find((show) => text(show.slug) === displaySlug) ??
+      (serverSlug === displaySlug ? selected : null),
+  )
+
+  const shownActionActive = $derived(
+    !clientNavigated && routeSlug === serverSlug ? actionActive : clientActionActive,
+  )
 
   const selectedId = $derived(text(currentShow?.id))
+
+  $effect(() => {
+    const slug = routeSlug
+    const show = shows.find((item) => text(item.slug) === slug)
+
+    if (!clientNavigated || !show || Predicate.isTagged(page.data.principal, 'Anonymous')) {
+      clientActionActive = false
+
+      return
+    }
+
+    clientActionActive = (async () => {
+      try {
+        const response = await fetch('/api/user/subscriptions?limit=100&offset=0')
+
+        if (!response.ok) return false
+        const body: unknown = await response.json()
+
+        const subscriptions = Option.getOrNull(
+          Schema.decodeUnknownOption(GetUserSubscriptionsResponse)(body),
+        )
+
+        return (
+          subscriptions?.data.some((subscription) => subscription.showId === text(show.id)) ?? false
+        )
+      } catch {
+        return false
+      }
+    })()
+  })
 
   const preview = (show: PublicRecord, event: MouseEvent) => {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
       return
 
-    if (text(show.id) !== text(selected?.id)) previewShow = show
+    event.preventDefault()
+    const slug = text(show.slug)
+
+    if (slug === routeSlug) return
+
+    previewShow = show
+    clientNavigated = true
+    const href = `/shows/${encodeURIComponent(slug)}`
+    void goto(href, { shallow: true, reset: false })
+      .then(() => {
+        previewShow = null
+      })
+      .catch(() => {
+        window.location.assign(href)
+      })
   }
 
   const heading =
@@ -80,18 +147,16 @@
 
     <main class="min-w-0 max-w-4xl space-y-8">
       {#if currentShow}
-        <ShowMeta show={currentShow} {actionActive} showActions={previewShow === null} />
+        {#key selectedId}
+          <ShowMeta
+            show={currentShow}
+            actionActive={shownActionActive}
+            showActions={previewShow === null}
+          />
+        {/key}
         <section>
           <h2 class={heading}>Episodes</h2>
-          {#if previewShow}
-            <p class="py-6 text-sm text-muted-foreground" role="status">Loading episodes…</p>
-          {:else}
-            {#await episodes}
-              <p class="py-6 text-sm text-muted-foreground" role="status">Loading episodes…</p>
-            {:then loadedEpisodes}
-              <EpisodeList episodes={loadedEpisodes} />
-            {/await}
-          {/if}
+          <ShowEpisodes slug={displaySlug} {serverSlug} {episodes} />
         </section>
       {:else}
         <PublicState message="Select a show to browse its mixes" />
