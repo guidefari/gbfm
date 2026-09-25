@@ -191,6 +191,13 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
         }
       }),
     )
+    .handle('getLatestMicroPost', () =>
+      Effect.gen(function* () {
+        const svc = yield* PostService
+
+        return yield* dieOnDatabaseError(svc.getLatestMicroPost)
+      }),
+    )
     .handle('getMicroTags', () =>
       Effect.gen(function* () {
         const svc = yield* PostService

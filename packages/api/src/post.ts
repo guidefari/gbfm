@@ -129,6 +129,8 @@ export const GetMicroPostsResponse = Schema.Struct({
   pagination: PaginationMeta,
 })
 
+export const LatestMicroPostResponse = Schema.NullOr(Schema.Struct({ slug: Schema.String }))
+
 export const GetPostsByTagResponse = Schema.Struct({
   data: Schema.Array(PostResponse),
   pagination: PaginationMeta,
@@ -314,6 +316,12 @@ export const PostGroup = HttpApiGroup.make('post')
     HttpApiEndpoint.get('getMicroPosts', '/api/content/posts/micro', {
       query: GetMicroPostsQuery,
       success: GetMicroPostsResponse,
+      error: HttpApiError.InternalServerError,
+    }),
+  )
+  .add(
+    HttpApiEndpoint.get('getLatestMicroPost', '/api/content/posts/micro/latest', {
+      success: LatestMicroPostResponse,
       error: HttpApiError.InternalServerError,
     }),
   )

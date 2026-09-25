@@ -135,6 +135,7 @@ export interface PostService {
     DatabaseError,
     SentryService
   >
+  readonly getLatestMicroPost: Effect.Effect<{ slug: string } | null, DatabaseError>
   readonly getMicroPostBySlug: (
     slug: string,
   ) => Effect.Effect<SelectMdxCompiledMicroPost, DatabaseError | NotFoundError>
@@ -1159,6 +1160,34 @@ const getMicroPostsEffect = (
       data,
     }
   }).pipe(Effect.withSpan('post.getMicroPosts'))
+
+const getLatestMicroPostEffect = Effect.gen(function* () {
+  const db = yield* Database
+
+  const rows = yield* Effect.tryPromise({
+    try: () =>
+      db
+        .select({ slug: postsTable.slug })
+        .from(postsTable)
+        .where(
+          and(
+            eq(postsTable.type, 'micro'),
+            eq(postsTable.draft, false),
+            isNull(postsTable.parentPostId),
+          ),
+        )
+        .orderBy(desc(postsTable.createdAt))
+        .limit(1),
+    catch: (error) =>
+      new DatabaseError({
+        message: `Failed to fetch latest tweet: ${getErrorMessage(error)}`,
+        operation: 'select',
+        table: 'posts',
+      }),
+  })
+
+  return rows[0] ?? null
+}).pipe(Effect.withSpan('post.getLatestMicroPost'))
 
 const getByTagEffect = (tag: string, options: { limit: number; offset: number }) =>
   Effect.gen(function* () {
@@ -2426,6 +2455,7 @@ export const PostServiceLayer = Layer.effect(
       getEditorials: (opts) => provideDb(getEditorialsEffect(opts, mdx)),
       getEditorialBySlug: (slug) => provideDb(getEditorialBySlugEffect(slug, mdx)),
       getMicroPosts: (opts) => provideDb(getMicroPostsEffect(opts, mdx)),
+      getLatestMicroPost: provideDb(getLatestMicroPostEffect),
       getMicroPostBySlug: (slug) => provideDb(getMicroPostBySlugEffect(slug, mdx)),
       getTweetCardInput: (slug) => provideDb(getTweetCardInputEffect(slug, mdx)),
       getMicroPostReferenceBySlug: (slug) => provideDb(getMicroPostReferenceBySlugEffect(slug)),
