@@ -1,6 +1,7 @@
 import { Disc3, Home, Mail, MessageSquare, Newspaper, Radio, Rss, Tag } from 'lucide-react'
 import { RSS } from '@/components/RSS'
 import { YoutubeIcon } from '@/components/icons/YoutubeIcon'
+import { useTweetTrail } from '@/store/tweetTrail'
 
 export type NavSurface = 'overlay' | 'desktop'
 
@@ -147,3 +148,12 @@ export const navItemsForSurface = (surface: NavSurface) =>
 
 export const navItemsByTier = (tier: NavTier, surface: NavSurface) =>
   navConfig.filter((item) => item.tier === tier && item.surfaces.includes(surface))
+
+/** Skips the landing lookup when this browser already has a current tweet. */
+export function useNavItemHref(item: NavItem): string | undefined {
+  const trail = useTweetTrail()
+  if (!item.slug || item.id !== 'tweets') return item.slug
+
+  const slug = trail.slugs[trail.cursor]
+  return slug ? `/tweet/${encodeURIComponent(slug)}` : item.slug
+}

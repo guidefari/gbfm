@@ -1,6 +1,6 @@
 import { Link } from '@/lib/navigation'
 import { cn } from '@/lib/utils'
-import type { NavItem } from '../NavLinks'
+import { type NavItem, useNavItemHref } from '../NavLinks'
 
 export const navRowClass = cn(
   'flex w-full items-center gap-3 rounded-sm px-3 py-2 text-base font-medium no-underline transition-colors',
@@ -8,6 +8,8 @@ export const navRowClass = cn(
 )
 
 export function NavItemLink({ item, onNavigate }: { item: NavItem; onNavigate?: () => void }) {
+  const href = useNavItemHref(item)
+
   if (item.external) {
     return (
       <a
@@ -33,10 +35,10 @@ export function NavItemLink({ item, onNavigate }: { item: NavItem; onNavigate?: 
     )
   }
 
-  if (item.slug === undefined) return null
+  if (href === undefined) return null
 
   return (
-    <Link to={item.slug} onClick={onNavigate} className={navRowClass}>
+    <Link to={href} onClick={onNavigate} className={navRowClass}>
       <span className='flex h-5 w-5 shrink-0 items-center justify-center'>{item.icon}</span>
       <span className='min-w-0 flex-1 truncate'>{item.name}</span>
     </Link>

@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils'
 import { useNowPlayingTrack, usePlayerActions, useProgress, useTransport } from '@/services/player'
 import { useUIActions } from '@/store/ui'
 import { isPathActive } from './is-path-active'
-import { navItemsForSurface } from '../NavLinks'
+import { navItemsForSurface, type NavItem, useNavItemHref } from '../NavLinks'
 import { useNavSections } from './useNavSections'
 
 const desktopLinkClass = cn(
@@ -26,22 +26,28 @@ const desktopLinkClass = cn(
   'aria-[current=page]:text-highlight'
 )
 
+function DesktopLink({ item, pathname }: { readonly item: NavItem; readonly pathname: string }) {
+  const href = useNavItemHref(item)
+  if (!href) return null
+
+  return (
+    <Link
+      to={href}
+      aria-current={item.slug && isPathActive(pathname, item.slug) ? 'page' : undefined}
+      className={desktopLinkClass}>
+      {item.name}
+    </Link>
+  )
+}
+
 function DesktopLinks() {
   const pathname = useLocation().pathname
 
   return (
     <nav aria-label='Primary' className='flex shrink-0 items-center gap-1'>
-      {navItemsForSurface('desktop').map((item) =>
-        item.slug ? (
-          <Link
-            key={item.id}
-            to={item.slug}
-            aria-current={isPathActive(pathname, item.slug) ? 'page' : undefined}
-            className={desktopLinkClass}>
-            {item.name}
-          </Link>
-        ) : null
-      )}
+      {navItemsForSurface('desktop').map((item) => (
+        <DesktopLink key={item.id} item={item} pathname={pathname} />
+      ))}
     </nav>
   )
 }

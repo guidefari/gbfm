@@ -1,5 +1,6 @@
 import { useAtomSet, useAtomValue } from '@effect/atom-react'
 import { Schema } from 'effect'
+import { useCallback } from 'react'
 import { emptyTrail, type LocalTrail } from '@/lib/tweet-nav-state'
 import { persistedAtom } from './persistedAtom'
 
@@ -21,11 +22,14 @@ export const useTweetTrail = (): LocalTrail => useAtomValue(tweetTrailAtom)
 export const useUpdateTweetTrail = () => {
   const set = useAtomSet(tweetTrailAtom)
 
-  return (next: (trail: LocalTrail) => LocalTrail) =>
-    set((trail) => {
-      const value = next(trail)
-      if (value === trail) return trail
-      write(value)
-      return value
-    })
+  return useCallback(
+    (next: (trail: LocalTrail) => LocalTrail) =>
+      set((trail) => {
+        const value = next(trail)
+        if (value === trail) return trail
+        write(value)
+        return value
+      }),
+    [set]
+  )
 }

@@ -95,6 +95,7 @@ export function useTweetNavigation(slug: string) {
   )
 
   useEffect(() => {
+    updateTrail((current) => visitSlug(current, slug))
     if (headRef.current.slug === slug && headRef.current.confirmed) return undefined
 
     const fiber = Effect.runFork(
@@ -119,7 +120,7 @@ export function useTweetNavigation(slug: string) {
     return () => {
       Effect.runFork(Fiber.interrupt(fiber))
     }
-  }, [acceptResult, peekMicroPostNavigationEffect, recordMicroPostVisitEffect, slug])
+  }, [acceptResult, peekMicroPostNavigationEffect, recordMicroPostVisitEffect, slug, updateTrail])
 
   useEffect(() => {
     const targets = preloadTargets(neighbourhood, PRELOAD_DEPTH)

@@ -1,8 +1,9 @@
 import { createPageComponent } from '@/components/PageApp'
-import { createFileRoute, redirect } from '@/lib/page'
+import { createFileRoute } from '@/lib/page'
+import { redirectToTweetLanding } from './-landing'
 
 export const Route = createFileRoute('/tweet/')({
-  loader: () => redirect({ to: '/tweets' })
+  loader: () => redirectToTweetLanding()
 })
 
 export const Page = createPageComponent(Route)
