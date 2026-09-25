@@ -1,16 +1,20 @@
 {
-  "$schema": "https://json.schemastore.org/tsconfig",
+  "$schema": "../../node_modules/@effect/tsgo/schema.json",
   "extends": "$app/tsconfig",
   "compilerOptions": {
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitReturns": true,
+    "noUncheckedSideEffectImports": true,
+    "exactOptionalPropertyTypes": true,
     "jsx": "react-jsx",
     "paths": {
       "@/*": ["./src/*"]
     },
-    "plugins": [{ "name": "@effect/language-service", "diagnostics": false }]
+    "plugins": [{ "name": "@effect/language-service", "diagnostics": true }]
   },
   "include": [
     "src/**/*.d.ts",

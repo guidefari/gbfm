@@ -13,12 +13,17 @@
     "strict": true,
     "exactOptionalPropertyTypes": true,
     "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitReturns": true,
+    "noUncheckedSideEffectImports": true,
     "declarationMap": true,
     "sourceMap": true,
     "incremental": true,
     "composite": true,
-    "plugins": [{ "name": "@effect/language-service", "diagnostics": false }]
+    "plugins": [{ "name": "@effect/language-service", "diagnostics": true }]
   },
   "files": []
 }
