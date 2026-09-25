@@ -105,7 +105,7 @@
   {/if}
 {/snippet}
 
-<nav aria-label="Tweet navigation" aria-busy={loading} class="mb-6 lg:mb-0">
+<nav aria-label="Tweet navigation" aria-busy={loading} class="mb-4 lg:mb-0">
   <div class="flex items-center gap-1 lg:hidden">
     {@render arrow(
       backHref,

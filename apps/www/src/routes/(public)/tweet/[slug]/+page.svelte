@@ -5,6 +5,7 @@
   import TweetCard from '@/lib/components/tweet/TweetCard.svelte'
   import TweetPager from '@/lib/components/tweet/TweetPager.svelte'
   import TweetPreview from '@/lib/components/tweet/TweetPreview.svelte'
+  import TweetProgress from '@/lib/components/tweet/TweetProgress.svelte'
   import type { PageProps } from './$types'
 
   let { data, form }: PageProps = $props()
@@ -29,8 +30,10 @@
 <div class="mx-auto max-w-3xl px-4 py-8">
   {#await data.neighbours}
     <TweetPager neighbours={null} randomMessage={undefined} />
+    <TweetProgress neighbours={null} />
   {:then neighbours}
     <TweetPager {neighbours} randomMessage={form?.random} />
+    <TweetProgress {neighbours} />
   {/await}
 
   {#if data.screen.root.slug !== post.slug}
