@@ -22,7 +22,8 @@ const MusicEntityType = Schema.Literals(['album', 'track', 'playlist'])
 const Creator = Schema.Struct({
   id: Schema.String,
   name: Schema.String,
-  username: Schema.NullOr(Schema.String)
+  username: Schema.NullOr(Schema.String),
+  image: Schema.NullOr(Schema.String)
 })
 
 const BlueskySource = Schema.Struct({
@@ -223,6 +224,13 @@ export const MicroPostThreadResponse = Schema.Struct({
   pagination: PaginationMeta
 })
 
+export const MicroPostScreenResponse = Schema.Struct({
+  post: CompiledMicroPostResponse,
+  replies: Schema.Array(CompiledMicroPostResponse),
+  root: CompiledMicroPostResponse,
+  quote: Schema.NullOr(CompiledMicroPostResponse)
+})
+
 export const PostGroup = HttpApiGroup.make('post')
   .add(
     HttpApiEndpoint.get('getPosts', '/api/content/posts', {
@@ -295,6 +303,13 @@ export const PostGroup = HttpApiGroup.make('post')
     HttpApiEndpoint.get('getMicroPostBySlug', '/api/content/posts/micro/:slug', {
       params: SlugParam,
       success: CompiledMicroPostResponse,
+      error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
+    })
+  )
+  .add(
+    HttpApiEndpoint.get('getMicroPostScreen', '/api/content/posts/micro/:slug/screen', {
+      params: SlugParam,
+      success: MicroPostScreenResponse,
       error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
     })
   )

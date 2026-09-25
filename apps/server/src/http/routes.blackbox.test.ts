@@ -15,6 +15,7 @@ import {
   CompiledMicroPostResponse,
   CompiledPostResponse,
   GetMicroPostsResponse,
+  MicroPostScreenResponse,
   MicroPostThreadResponse,
   PostResponse
 } from '@gbfm/api/post'
@@ -2704,6 +2705,83 @@ describe('GET /api/content/posts/micro/:slug/thread (Slice 7)', () => {
       new Request(`http://localhost/api/content/posts/micro/does-not-exist-${suffix}/thread`)
     )
     expect(res.status).toBe(404)
+  })
+})
+
+describe('GET /api/content/posts/micro/:slug/screen', () => {
+  it('returns the tweet, its replies, root, quote, and creator image in one response', async () => {
+    const suffix = crypto.randomUUID()
+    const authorId = `screen-author-${suffix}`
+    const rootSlug = `screen-root-${suffix}`
+    const replySlug = `screen-reply-${suffix}`
+    const quoteSlug = `screen-quote-${suffix}`
+    const image = 'https://cdn.goosebumps.fm/user-content/screen-author.png'
+
+    await db.insert(user).values({
+      id: authorId,
+      name: 'Screen Author',
+      email: `${authorId}@example.com`,
+      username: `screen-${suffix}`,
+      image
+    })
+    const [quote, root] = await db
+      .insert(postsTable)
+      .values([
+        { slug: quoteSlug, content: 'Quoted tweet', type: 'micro', draft: false },
+        {
+          slug: rootSlug,
+          content: 'Root tweet',
+          type: 'micro',
+          draft: false
+        }
+      ])
+      .returning()
+    if (!quote || !root) throw new Error('Failed to seed tweet screen')
+    await db.update(postsTable).set({ quotedPostId: quote.id }).where(eq(postsTable.id, root.id))
+    const [reply] = await db
+      .insert(postsTable)
+      .values({
+        slug: replySlug,
+        content: 'Reply tweet',
+        type: 'micro',
+        draft: false,
+        parentPostId: root.id,
+        rootPostId: root.id,
+        depth: 1
+      })
+      .returning()
+    if (!reply) throw new Error('Failed to seed tweet reply')
+    await db.insert(postCreators).values([
+      { postId: root.id, creatorId: authorId },
+      { postId: reply.id, creatorId: authorId },
+      { postId: quote.id, creatorId: authorId }
+    ])
+
+    try {
+      const response = await webHandler.handler(
+        new Request(`http://localhost/api/content/posts/micro/${rootSlug}/screen`)
+      )
+      expect(response.status).toBe(200)
+      const body = await decodeResponseBody(MicroPostScreenResponse, response)
+      expect(body.post.slug).toBe(rootSlug)
+      expect(body.post.creators?.[0]?.image).toBe(image)
+      expect(body.replies.map((post) => post.slug)).toEqual([replySlug])
+      expect(body.root.slug).toBe(rootSlug)
+      expect(body.quote?.slug).toBe(quoteSlug)
+    } finally {
+      await db.delete(postCreators).where(eq(postCreators.creatorId, authorId))
+      await db.delete(postsTable).where(eq(postsTable.id, reply.id))
+      await db.delete(postsTable).where(eq(postsTable.id, root.id))
+      await db.delete(postsTable).where(eq(postsTable.id, quote.id))
+      await db.delete(user).where(eq(user.id, authorId))
+    }
+  })
+
+  it('404s when the tweet does not exist', async () => {
+    const response = await webHandler.handler(
+      new Request(`http://localhost/api/content/posts/micro/missing-${crypto.randomUUID()}/screen`)
+    )
+    expect(response.status).toBe(404)
   })
 })
 

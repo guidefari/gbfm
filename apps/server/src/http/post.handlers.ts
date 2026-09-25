@@ -196,6 +196,40 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
         return toDateStrings(post)
       })
     )
+    .handle('getMicroPostScreen', ({ params }) =>
+      Effect.gen(function* () {
+        const svc = yield* PostService
+        const result = yield* dieOnDatabaseError(
+          Effect.all(
+            {
+              post: svc.getMicroPostBySlug(params.slug),
+              replies: svc.getMicroPostReplies(params.slug, { limit: 100, offset: 0 })
+            },
+            { concurrency: 'unbounded' }
+          ).pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+        )
+        const related = yield* dieOnDatabaseError(
+          Effect.all(
+            {
+              root: result.post.rootPostId
+                ? svc.getMicroPostById(result.post.rootPostId)
+                : Effect.succeed(result.post),
+              quote: result.post.quotedPostId
+                ? svc.getMicroPostById(result.post.quotedPostId)
+                : Effect.succeed(null)
+            },
+            { concurrency: 'unbounded' }
+          ).pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+        )
+
+        return {
+          post: toDateStrings(result.post),
+          replies: result.replies.data.map(toDateStrings),
+          root: toDateStrings(related.root),
+          quote: related.quote ? toDateStrings(related.quote) : null
+        }
+      }).pipe(Effect.withSpan('post.getMicroPostScreen', { attributes: { slug: params.slug } }))
+    )
     .handle('getMicroPostById', ({ params }) =>
       Effect.gen(function* () {
         const svc = yield* PostService

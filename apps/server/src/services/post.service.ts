@@ -305,7 +305,8 @@ const buildPostWithCreators = (post: PostRow, mdx: MdxService) =>
             .select({
               id: usersTable.id,
               name: usersTable.name,
-              username: usersTable.username
+              username: usersTable.username,
+              image: usersTable.image
             })
             .from(postCreators)
             .innerJoin(usersTable, eq(postCreators.creatorId, usersTable.id))
@@ -364,7 +365,8 @@ const loadPostRelations = (rows: PostRow[]) =>
             postId: postCreators.postId,
             id: usersTable.id,
             name: usersTable.name,
-            username: usersTable.username
+            username: usersTable.username,
+            image: usersTable.image
           })
           .from(postCreators)
           .innerJoin(usersTable, eq(postCreators.creatorId, usersTable.id))
@@ -1306,7 +1308,8 @@ const getMicroPostBySlugEffect = (slug: string, mdx: MdxService) =>
             .select({
               id: usersTable.id,
               name: usersTable.name,
-              username: usersTable.username
+              username: usersTable.username,
+              image: usersTable.image
             })
             .from(postCreators)
             .innerJoin(usersTable, eq(postCreators.creatorId, usersTable.id))
