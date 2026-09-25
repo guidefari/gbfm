@@ -8,6 +8,10 @@ import type { SitemapCache } from '@/services/sitemap-cache'
 
 export { Database, DatabaseLayer } from '@/db/layer'
 
+import {
+  AdminTelemetryUnavailableLayer,
+  type AdminTelemetryService,
+} from '@/services/admin-telemetry.service'
 import { AudioServiceLayer } from '@/services/audio.service'
 import { CanonicalMusicIdentityLayer } from '@/services/canonical-music-identity'
 import { MusicCoverImageFetcher } from '@/services/canonical-music-identity/artwork-delivery'
@@ -29,6 +33,10 @@ import { ProfileServiceLayer } from '@/services/profile.service'
 import { type QRCodeService, QRCodeServiceUnavailableLayer } from '@/services/qrcode.service'
 import { ReleaseServiceLayer } from '@/services/release.service'
 import { ReminderSignalServiceLayer } from '@/services/reminder-signal.service'
+import {
+  type RequestTelemetry,
+  RequestTelemetryUnavailableLayer,
+} from '@/services/request-telemetry.service'
 import { ResolveServiceLayer } from '@/services/resolve.service'
 import { S3ServiceLayer } from '@/services/s3.service'
 import { SearchServiceLayer } from '@/services/search.service'
@@ -62,6 +70,8 @@ export interface AppLayerOptions {
   readonly objectStore?: Layer.Layer<ObjectStoreClient>
   readonly qrCode?: Layer.Layer<QRCodeService>
   readonly musicCoverImageFetcher?: Layer.Layer<never>
+  readonly adminTelemetry?: Layer.Layer<AdminTelemetryService>
+  readonly requestTelemetry?: Layer.Layer<RequestTelemetry>
 }
 
 export const AppLayer = ({
@@ -76,6 +86,8 @@ export const AppLayer = ({
   objectStore: objectStoreLive = UnavailableObjectStoreClientLayer,
   qrCode: qrCodeLive = QRCodeServiceUnavailableLayer,
   musicCoverImageFetcher: musicCoverImageFetcherLive = Layer.succeed(MusicCoverImageFetcher, fetch),
+  adminTelemetry: adminTelemetryLive = AdminTelemetryUnavailableLayer,
+  requestTelemetry: requestTelemetryLive = RequestTelemetryUnavailableLayer,
 }: AppLayerOptions) => {
   const EmailDeliveryWithDependencies = EmailDeliveryLive.pipe(
     Layer.provide(Layer.mergeAll(databaseLive, configLive, emailTransportLive)),
@@ -115,6 +127,8 @@ export const AppLayer = ({
     UploadAssetServiceLayer,
     UserServiceLayer,
     DevToolsLive,
+    adminTelemetryLive,
+    requestTelemetryLive,
   ).pipe(Layer.provideMerge(configLive), Layer.provide(databaseLive))
 
   const CanonicalMusicIdentityLive = CanonicalMusicIdentityLayer.pipe(

@@ -87,8 +87,9 @@ const normalizeBindingResponse = async (
 ): Promise<Response> => {
   const headers = new Headers()
   response.headers.forEach((value, key) => headers.append(key, value))
+  const body = [204, 205, 304].includes(response.status) ? null : await response.arrayBuffer()
 
-  return new Response(await response.arrayBuffer(), {
+  return new Response(body, {
     status: response.status,
     statusText: response.statusText,
     headers,

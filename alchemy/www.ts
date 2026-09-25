@@ -16,7 +16,7 @@ export interface WebsiteInput {
 export const website = ({ config, websiteConfig, api, socialImages }: WebsiteInput) =>
   Effect.gen(function* () {
     const browserTelemetry = yield* Cloudflare.AnalyticsEngine.Dataset('BrowserTelemetry', {
-      dataset: `gbfm-www-${config.stage}`,
+      dataset: `gbfm_www_${config.stage}`,
     })
 
     return yield* Cloudflare.Website.SvelteKit('Www', {

@@ -42,6 +42,7 @@ export type WorkerConfigBindings = Readonly<
   Record<Exclude<SecretName, OptionalSecretName>, string | undefined> &
     Partial<Record<OptionalSecretName, string>> & {
       APP_STAGE: string
+      APP_RELEASE?: string
       LOCAL_DEV?: 'true'
       CDN_ROUTER_URL?: string
       FRONTEND_URL?: string

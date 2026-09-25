@@ -1,9 +1,11 @@
-import { Cause, Effect, Exit, Layer } from 'effect'
+import { resolveRequestId } from '@gbfm/core/observability/request-id'
+import { Cause, Effect, Exit, Layer, Option } from 'effect'
 import { HttpMiddleware, HttpRouter, HttpServerRequest } from 'effect/unstable/http'
 
 import { browserOrigins } from '@/lib/browser-origins'
 import { checkPerformanceHealth, recordRequest } from '@/lib/performance-monitoring'
 import { ConfigService } from '@/services/config.service'
+import { RequestTelemetry } from '@/services/request-telemetry.service'
 import { SentryService } from '@/services/sentry.service'
 
 // Step 8 (docs/migration-effect-http-api.md): the global concerns that used
@@ -63,37 +65,60 @@ export const RequestLoggerLive = HttpRouter.middleware(
   (httpEffect) =>
     Effect.gen(function* () {
       const request = yield* HttpServerRequest.HttpServerRequest
-      const path = requestPath(request.url)
-      const incomingRequestId = request.headers['x-request-id']
-
-      const requestId =
-        incomingRequestId && /^[a-zA-Z0-9_-]{1,128}$/.test(incomingRequestId)
-          ? incomingRequestId
-          : undefined
+      const requestId = resolveRequestId(request.headers['x-request-id'])
 
       const start = Date.now()
       const result = yield* Effect.exit(httpEffect)
       const duration = Date.now() - start
+      const routeContext = yield* Effect.serviceOption(HttpRouter.RouteContext)
+      const route = Option.match(routeContext, {
+        onNone: () => '/unmatched' as const,
+        onSome: ({ route }) => route.path,
+      })
+      const telemetry = yield* RequestTelemetry
+
+      const annotate = (status: number, outcome: string) =>
+        Effect.all([
+          telemetry.record({ method: request.method, route, status, durationMs: duration }),
+          Effect.annotateCurrentSpan({
+            'gbfm.request_id': requestId,
+            'gbfm.release': telemetry.release,
+            'service.name': 'api',
+            'http.request.method': request.method,
+            'http.route': route,
+            'http.response.status_code': status,
+            'http.request.duration_ms': duration,
+            'http.request.outcome': outcome,
+          }),
+        ])
 
       if (Exit.isFailure(result)) {
         const clientAborted = Cause.hasInterruptsOnly(result.cause)
+        const status = clientAborted ? 499 : 500
         yield* clientAborted
           ? Effect.logInfo('[HTTP] client aborted request', {
               method: request.method,
-              path,
+              route,
               requestId,
-              status: 499,
+              status,
               duration,
               outcome: 'client_abort',
+              release: telemetry.release,
+              service: 'api',
             })
           : Effect.logError('[HTTP] request failed', {
               method: request.method,
-              path,
+              route,
               requestId,
+              status,
               duration,
               cause: result.cause,
+              outcome: 'failure',
+              release: telemetry.release,
+              service: 'api',
             })
 
+        yield* annotate(status, clientAborted ? 'client_abort' : 'failure')
         if (clientAborted) yield* recordRequest(duration, false)
 
         return yield* Effect.failCause(result.cause)
@@ -102,32 +127,42 @@ export const RequestLoggerLive = HttpRouter.middleware(
       const response = result.value
       yield* Effect.logInfo('[HTTP] request completed', {
         method: request.method,
-        path,
+        route,
         requestId,
         status: response.status,
         duration,
+        outcome: response.status >= 500 ? 'failure' : 'success',
+        release: telemetry.release,
+        service: 'api',
       })
 
       if (duration > VERY_SLOW_REQUEST_THRESHOLD) {
         yield* Effect.logError('[Performance] Very slow request detected', {
           method: request.method,
-          path,
+          route,
+          requestId,
           status: response.status,
           duration,
           threshold: VERY_SLOW_REQUEST_THRESHOLD,
           severity: 'critical',
+          release: telemetry.release,
+          service: 'api',
         })
       } else if (duration > SLOW_REQUEST_THRESHOLD) {
         yield* Effect.logWarning('[Performance] Slow request detected', {
           method: request.method,
-          path,
+          route,
+          requestId,
           status: response.status,
           duration,
           threshold: SLOW_REQUEST_THRESHOLD,
           severity: 'warning',
+          release: telemetry.release,
+          service: 'api',
         })
       }
 
+      yield* annotate(response.status, response.status >= 500 ? 'failure' : 'success')
       yield* recordRequest(duration, response.status >= 400)
       yield* checkPerformanceHealth
 

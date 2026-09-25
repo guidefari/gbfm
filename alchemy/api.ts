@@ -41,6 +41,9 @@ export const apiWorker = ({
 }: ApiWorkerInput) =>
   Effect.gen(function* () {
     const sentryDsn = secrets.SENTRY_BACKEND_DSN
+    const requestTelemetry = yield* Cloudflare.AnalyticsEngine.Dataset('ApiRequestTelemetry', {
+      dataset: `gbfm_api_${config.stage}`,
+    })
 
     if (sentryDsn === undefined) {
       return yield* Effect.die(new Error('SENTRY_BACKEND_DSN secret is missing'))
@@ -56,6 +59,7 @@ export const apiWorker = ({
       observability: workerObservability(config.isProduction),
       env: {
         DB: store.db,
+        REQUEST_TELEMETRY: requestTelemetry,
         USER_CONTENT: store.userContent,
         MIXES: store.mixes,
         SITEMAP: store.sitemap,

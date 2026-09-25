@@ -155,7 +155,7 @@ export const SearchServiceLayer = Layer.effect(
     return {
       search: (query, limit) =>
         provideDb(searchEffect(query, limit)).pipe(
-          Effect.withSpan('search.search', { attributes: { query } }),
+          Effect.withSpan('search.search', { attributes: { limit } }),
         ),
     }
   }),

@@ -1,4 +1,5 @@
 import type {
+  AnalyticsEngineDataset,
   D1Database,
   DurableObjectNamespace,
   ExecutionContext,
@@ -10,6 +11,7 @@ import type {
   ScheduledController,
   SendEmail,
 } from '@cloudflare/workers-types'
+import { resolveRequestId } from '@gbfm/core/observability/request-id'
 import { traceSampleRate } from '@gbfm/core/observability/trace-sampling'
 import * as Sentry from '@sentry/cloudflare'
 import type { ErrorEvent, TracesSamplerSamplingContext, TransactionEvent } from '@sentry/core'
@@ -57,6 +59,7 @@ import {
   sendClaimedReminder,
 } from '@/services/reminder-processor'
 import { ReminderQueue, ReminderQueueLayer, type ReminderJob } from '@/services/reminder-queue'
+import { RequestTelemetryLive } from '@/services/request-telemetry.service'
 import { resolveSecretBindings } from '@/services/secrets-store.service'
 import { SentryServiceLayer } from '@/services/sentry.service'
 import { SitemapCacheLayer } from '@/services/sitemap-cache'
@@ -75,7 +78,9 @@ export { SpotifyImportResolverDurableObject } from '@/durable-objects/spotify-im
 // (Database, SitemapCache, ReminderQueue), never D1Database/KVNamespace/Queue
 // directly.
 export type ApiEnv = WorkerConfigBindings & {
+  readonly APP_RELEASE: string
   readonly DB: D1Database
+  readonly REQUEST_TELEMETRY: AnalyticsEngineDataset
   readonly USER_CONTENT: R2Bucket
   readonly MIXES: R2Bucket
   readonly SITEMAP: KVNamespace
@@ -161,6 +166,11 @@ const appServicesLive = (env: ApiEnv, tracing: Layer.Layer<never> = WorkerTracin
     config: configLive,
     objectStore: objectStoreLive,
     qrCode: QRCodeServiceLayer({ fetch: (request) => env.QR_PDF.fetch(request) }),
+    requestTelemetry: RequestTelemetryLive({
+      release: env.APP_RELEASE,
+      stage: env.APP_STAGE,
+      writer: env.REQUEST_TELEMETRY,
+    }),
     emailTransport:
       env.EMAIL !== undefined
         ? CloudflareEmailTransportLayer(env.EMAIL)
@@ -304,20 +314,23 @@ type ApiQueueJob = ReminderJob | PlaylistEnrichmentJob
 export default Sentry.withSentry<ApiEnv, ApiQueueJob>(sentryOptions, {
   async fetch(request: Request, env: ApiEnv, ctx: ExecutionContext): Promise<Response> {
     return ctx.tracing.enterSpan('gbfm.api.request', async (span): Promise<Response> => {
-      span.setAttribute('http.request.method', request.method)
+      const incomingRequestId = request.headers.get('x-request-id')
+      const requestId = resolveRequestId(incomingRequestId)
+      const headers = new Headers(request.headers)
+      headers.set('x-request-id', requestId)
+      const correlatedRequest = new Request(request, { headers })
+
+      span.setAttribute('http.request.method', correlatedRequest.method)
+      span.setAttribute('gbfm.request_id', requestId)
+      span.setAttribute('gbfm.release', env.APP_RELEASE)
+      span.setAttribute('service.name', 'api')
       const url = new URL(request.url)
-      span.setAttribute('url.path', url.pathname)
-      const requestId = request.headers.get('x-request-id')
 
-      if (env.LOCAL_DEV === 'true' && requestId && /^[a-zA-Z0-9_-]{1,128}$/.test(requestId)) {
-        span.setAttribute('gbfm.request_id', requestId)
-      }
-
-      if (request.method === 'POST' && url.pathname === '/api/dev/seed') {
+      if (correlatedRequest.method === 'POST' && url.pathname === '/api/dev/seed') {
         if (env.LOCAL_DEV !== 'true') return new Response('Not Found', { status: 404 })
         const result = await seedLocalUsers(makeDatabaseClient(env.DB))
 
-        return Response.json(result)
+        return Response.json(result, { headers: { 'x-request-id': requestId } })
       }
 
       const local = env.LOCAL_DEV === 'true'
@@ -329,12 +342,16 @@ export default Sentry.withSentry<ApiEnv, ApiQueueJob>(sentryOptions, {
       })
 
       try {
-        return await (local
+        const response = await (local
           ? traceLocalRequest(
-              () => webHandler.handler(request),
+              () => webHandler.handler(correlatedRequest),
               (promise) => ctx.waitUntil(promise),
             )
-          : webHandler.handler(request))
+          : webHandler.handler(correlatedRequest))
+        const output = new Response(response.body, response)
+        output.headers.set('x-request-id', requestId)
+
+        return output
       } finally {
         await webHandler.dispose()
       }
