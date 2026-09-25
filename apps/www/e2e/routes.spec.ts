@@ -102,7 +102,7 @@ test('primary tabs complete client-side navigation without a full document reloa
     .poll(() => page.evaluate(() => sessionStorage.getItem('navigation-marker')))
     .toBe('preserved')
 
-  await page.getByRole('link', { name: 'Radio Shows' }).click()
+  await page.getByRole('link', { name: 'Radio Shows', exact: true }).click()
   await expect(page).toHaveURL(/\/shows$/)
 })
 

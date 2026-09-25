@@ -86,9 +86,34 @@
   }
 }
 
+@keyframes route-progress {
+  0% {
+    transform: translateX(-100%) scaleX(0.35);
+  }
+
+  55% {
+    transform: translateX(-20%) scaleX(0.7);
+  }
+
+  100% {
+    transform: translateX(100%) scaleX(0.45);
+  }
+}
+
+.route-progress {
+  width: 70%;
+  transform-origin: left;
+  animation: route-progress 900ms ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(root),
   ::view-transition-new(root) {
+    animation: none;
+  }
+
+  .route-progress {
+    width: 100%;
     animation: none;
   }
 }

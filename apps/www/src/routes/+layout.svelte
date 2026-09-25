@@ -2,12 +2,26 @@
   import type { LayoutProps } from './$types'
   import '@/styles/main.css'
   import { dev } from '$app/env'
+  import { onNavigate } from '$app/navigation'
   import BrowserTelemetry from '@/lib/components/shell/BrowserTelemetry.svelte'
   import FpsMeter from '@/lib/components/shell/FpsMeter.svelte'
-  import PlayerBar from '@/lib/components/shell/PlayerBar.svelte'
   import GlobalNav from '@/lib/components/shell/GlobalNav.svelte'
+  import NavigationProgress from '@/lib/components/shell/NavigationProgress.svelte'
+  import PlayerBar from '@/lib/components/shell/PlayerBar.svelte'
 
   let { data, children }: LayoutProps = $props()
+
+  onNavigate((navigation) => {
+    if (!document.startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+      return
+
+    return new Promise<void>((resolve) => {
+      document.startViewTransition(async () => {
+        resolve()
+        await navigation.complete
+      })
+    })
+  })
 </script>
 
 <svelte:head>
@@ -29,5 +43,6 @@
 </div>
 
 <PlayerBar />
+<NavigationProgress />
 <BrowserTelemetry />
 {#if dev}<FpsMeter />{/if}
