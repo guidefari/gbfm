@@ -14,7 +14,7 @@
 <form
   method="POST"
   action="?/readMode"
-  aria-label="Older goes to"
+  aria-label="Browse"
   class="inline-flex rounded-sm border border-border p-0.5 text-xs"
   use:enhance={() =>
     async ({ update }) => {

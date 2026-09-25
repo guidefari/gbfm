@@ -11,16 +11,31 @@
     quote,
     title,
     replyCount,
+    seen,
   }: {
     post: MicroPostScreenPost
     quote: MicroPostScreenPost | null
     title: string
     replyCount: number
+    seen: boolean | null
   } = $props()
 </script>
 
 <article class="space-y-4 rounded-lg border border-border/60 bg-card/60 p-4 shadow-sm sm:p-5">
-  <TweetAuthorRow creator={post.creators?.[0] ?? null} createdAt={post.createdAt} />
+  <header class="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+    <div class="min-w-[16rem] flex-1">
+      <TweetAuthorRow creator={post.creators?.[0] ?? null} createdAt={post.createdAt} />
+    </div>
+    {#if seen !== null}
+      <span
+        class={seen
+          ? 'shrink-0 rounded-sm border border-border px-2 py-0.5 text-xs text-muted-foreground'
+          : 'shrink-0 rounded-sm bg-primary/15 px-2 py-0.5 text-xs text-primary'}
+      >
+        {seen ? 'Seen before' : 'New to you'}
+      </span>
+    {/if}
+  </header>
 
   {#if post.title}
     <h1 class="text-lg font-medium leading-snug tracking-tight">{post.title}</h1>

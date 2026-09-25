@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { MicroPostTimelineMonth } from '@gbfm/api/navigation'
 
+  import { tweetHref } from './tweet-links'
   import {
     markerPercent,
     monthLabel,
@@ -18,49 +19,48 @@
 
   const marker = $derived(markerPercent(months, at))
 
-  const age = $derived(relativeAge(at, Date.now()))
+  const here = $derived(relativeAge(at, Date.now()))
 
-  const newest = $derived(months[0] ? monthLabel(months[0].month) : '')
-
-  const oldest = $derived(months.at(-1) ? monthLabel(months.at(-1)?.month ?? '') : '')
+  const labelShift = $derived(marker < 20 ? '0%' : marker > 80 ? '-100%' : '-50%')
 
   const barHeight = (entry: RailMonth) =>
     entry.total ? Math.max(entry.total / busiest, 0.12) * 100 : 0
 </script>
 
-<figure class="mb-6" aria-busy={!timeline}>
-  <div
-    role="img"
-    aria-label={months.length
-      ? `Timeline from ${oldest} to ${newest}. This tweet is from ${age}.`
-      : 'Timeline loading'}
-    class="relative flex h-8 items-end gap-px"
-  >
+<figure aria-busy={!timeline} class="space-y-1">
+  <div class="relative flex h-8 items-end gap-px">
     {#each months as entry (entry.month)}
-      <div
-        class="flex flex-1 flex-col justify-end"
-        style:height="{barHeight(entry)}%"
-        title={monthLabel(entry.month)}
-      >
-        <div class="bg-primary/70" style:flex-grow={entry.unread}></div>
-        <div class="bg-muted-foreground/30" style:flex-grow={entry.total - entry.unread}></div>
-      </div>
+      {@const href = tweetHref(entry.newestSlug)}
+      {#if href}
+        <a
+          {href}
+          aria-label={`Jump to ${monthLabel(entry.month)}`}
+          title={monthLabel(entry.month)}
+          class="flex flex-1 flex-col justify-end opacity-80 hover:opacity-100"
+          style:height="{barHeight(entry)}%"
+        >
+          <span class="bg-primary/70" style:flex-grow={entry.unread}></span>
+          <span class="bg-muted-foreground/35" style:flex-grow={entry.total - entry.unread}></span>
+        </a>
+      {:else}
+        <span class="flex-1"></span>
+      {/if}
     {/each}
     {#if months.length}
-      <div
-        class="pointer-events-none absolute -inset-y-1 w-px bg-foreground"
+      <span
+        class="pointer-events-none absolute -inset-y-1 w-0.5 bg-foreground"
         style:left="{marker}%"
         aria-hidden="true"
-      ></div>
+      ></span>
     {/if}
   </div>
-  <figcaption class="mt-1.5 flex justify-between gap-2 font-mono text-xs text-muted-foreground">
+  <figcaption class="relative h-4 font-mono text-xs">
     {#if months.length}
-      <span>{newest}</span>
-      <span class="text-foreground">{age}</span>
-      <span>{oldest}</span>
-    {:else}
-      <span>&nbsp;</span>
+      <span
+        class="absolute whitespace-nowrap text-foreground"
+        style:left="{marker}%"
+        style:transform="translateX({labelShift})">{here}</span
+      >
     {/if}
   </figcaption>
 </figure>
