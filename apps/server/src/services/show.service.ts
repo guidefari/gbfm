@@ -92,38 +92,42 @@ const getAllEffect = (
         : showIdsForCreator(db, actor.userId)
       : eq(showsTable.draft, false)
 
-    const countResult = yield* Effect.tryPromise({
-      try: () => db.select({ total: count() }).from(showsTable).where(whereCondition),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to count shows: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'shows',
+    const [countResult, shows] = yield* Effect.all(
+      [
+        Effect.tryPromise({
+          try: () => db.select({ total: count() }).from(showsTable).where(whereCondition),
+          catch: (error) =>
+            new DatabaseError({
+              message: `Failed to count shows: ${getErrorMessage(error)}`,
+              operation: 'select',
+              table: 'shows',
+            }),
         }),
-    })
+        Effect.tryPromise({
+          try: () =>
+            db.query.showsTable.findMany({
+              where: whereCondition,
+              limit,
+              offset,
+              orderBy: [desc(showsTable.createdAt), asc(showsTable.title)],
+              with: {
+                showCreators: {
+                  with: { creator: true },
+                },
+              },
+            }),
+          catch: (error) =>
+            new DatabaseError({
+              message: `Failed to fetch shows: ${getErrorMessage(error)}`,
+              operation: 'select',
+              table: 'shows',
+            }),
+        }),
+      ],
+      { concurrency: 'unbounded' },
+    )
 
     const total = countResult[0]?.total ?? 0
-
-    const shows = yield* Effect.tryPromise({
-      try: () =>
-        db.query.showsTable.findMany({
-          where: whereCondition,
-          limit,
-          offset,
-          orderBy: [desc(showsTable.createdAt), asc(showsTable.title)],
-          with: {
-            showCreators: {
-              with: { creator: true },
-            },
-          },
-        }),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to fetch shows: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'shows',
-        }),
-    })
 
     const projectedShows = yield* Effect.tryPromise({
       try: () => projectEntityLabelsForRows(db, 'show', shows),
@@ -517,41 +521,45 @@ const getEpisodesEffect = (
     const draftCondition = actor?.userRole === 'admin' ? undefined : eq(audioTable.draft, false)
     const whereCondition = and(eq(audioTable.showId, show.id), draftCondition)
 
-    const countResult = yield* Effect.tryPromise({
-      try: () => db.select({ total: count() }).from(audioTable).where(whereCondition),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to count episodes: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'audio',
+    const [countResult, episodes] = yield* Effect.all(
+      [
+        Effect.tryPromise({
+          try: () => db.select({ total: count() }).from(audioTable).where(whereCondition),
+          catch: (error) =>
+            new DatabaseError({
+              message: `Failed to count episodes: ${getErrorMessage(error)}`,
+              operation: 'select',
+              table: 'audio',
+            }),
         }),
-    })
+        Effect.tryPromise({
+          try: () =>
+            db.query.audioTable.findMany({
+              where: whereCondition,
+              limit,
+              offset,
+              orderBy: desc(audioTable.createdAt),
+              with: {
+                audioCreators: {
+                  with: { creator: true },
+                },
+                show: {
+                  columns: { thumbnailUrl: true },
+                },
+              },
+            }),
+          catch: (error) =>
+            new DatabaseError({
+              message: `Failed to fetch episodes: ${getErrorMessage(error)}`,
+              operation: 'select',
+              table: 'audio',
+            }),
+        }),
+      ],
+      { concurrency: 'unbounded' },
+    )
 
     const total = countResult[0]?.total ?? 0
-
-    const episodes = yield* Effect.tryPromise({
-      try: () =>
-        db.query.audioTable.findMany({
-          where: whereCondition,
-          limit,
-          offset,
-          orderBy: desc(audioTable.createdAt),
-          with: {
-            audioCreators: {
-              with: { creator: true },
-            },
-            show: {
-              columns: { thumbnailUrl: true },
-            },
-          },
-        }),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to fetch episodes: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'audio',
-        }),
-    })
 
     const projectedEpisodes = yield* Effect.tryPromise({
       try: () => projectEntityLabelsForRows(db, 'audio', episodes),

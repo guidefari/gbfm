@@ -16,24 +16,42 @@
   }: {
     shows: ReadonlyArray<PublicRecord>
     selected: PublicRecord | null
-    episodes?: ReadonlyArray<PublicRecord>
+    episodes?: ReadonlyArray<PublicRecord> | Promise<ReadonlyArray<PublicRecord>>
     failure?: string | null
-    actionActive?: boolean
+    actionActive?: boolean | Promise<boolean>
   } = $props()
 
-  const selectedId = $derived(text(selected?.id))
+  let previewShow = $state<PublicRecord | null>(null)
+
+  $effect(() => {
+    void selected
+    previewShow = null
+  })
+
+  const currentShow = $derived(previewShow ?? selected)
+
+  const selectedId = $derived(text(currentShow?.id))
+
+  const preview = (show: PublicRecord, event: MouseEvent) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+      return
+
+    if (text(show.id) !== text(selected?.id)) previewShow = show
+  }
 
   const heading =
     'mb-2 border-b border-border/60 pb-2 text-xs font-semibold tracking-wider text-muted-foreground'
 </script>
 
 <PublicHead
-  title={selected ? text(selected.title, 'Radio Shows') : 'Radio Shows'}
-  description={selected
-    ? text(selected.description, 'Listen to radio shows on goosebumps.fm.')
+  title={currentShow ? text(currentShow.title, 'Radio Shows') : 'Radio Shows'}
+  description={currentShow
+    ? text(currentShow.description, 'Listen to radio shows on goosebumps.fm.')
     : 'Regular radio shows, hosts and episodes on goosebumps.fm.'}
-  canonical={selected ? `/shows/${text(selected.slug)}` : '/shows'}
-  {...selected && text(selected.thumbnailUrl) ? { image: text(selected.thumbnailUrl) } : {}}
+  canonical={currentShow ? `/shows/${text(currentShow.slug)}` : '/shows'}
+  {...currentShow && text(currentShow.thumbnailUrl)
+    ? { image: text(currentShow.thumbnailUrl) }
+    : {}}
 />
 {#if failure}
   <PublicState message={failure} error />
@@ -48,20 +66,32 @@
         <h2 class={heading}>Radio shows</h2>
         <nav aria-label="Shows" class="font-mono text-base">
           {#each shows as show (text(show.id))}
-            <ShowListItem {show} selected={text(show.id) === selectedId} />
+            <ShowListItem
+              {show}
+              selected={text(show.id) === selectedId}
+              onSelect={(event) => preview(show, event)}
+            />
           {/each}
         </nav>
       </div>
     </aside>
 
-    <div class="lg:hidden"><ShowSwitcherRail {shows} {selectedId} /></div>
+    <div class="lg:hidden"><ShowSwitcherRail {shows} {selectedId} onSelect={preview} /></div>
 
     <main class="min-w-0 max-w-4xl space-y-8">
-      {#if selected}
-        <ShowMeta show={selected} {actionActive} />
+      {#if currentShow}
+        <ShowMeta show={currentShow} {actionActive} showActions={previewShow === null} />
         <section>
           <h2 class={heading}>Episodes</h2>
-          <EpisodeList {episodes} />
+          {#if previewShow}
+            <p class="py-6 text-sm text-muted-foreground" role="status">Loading episodes…</p>
+          {:else}
+            {#await episodes}
+              <p class="py-6 text-sm text-muted-foreground" role="status">Loading episodes…</p>
+            {:then loadedEpisodes}
+              <EpisodeList episodes={loadedEpisodes} />
+            {/await}
+          {/if}
         </section>
       {:else}
         <PublicState message="Select a show to browse its mixes" />

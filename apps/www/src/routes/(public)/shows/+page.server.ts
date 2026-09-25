@@ -20,17 +20,16 @@ export const load = (async (event) => {
 
   if (!selected) return { shows, selected, episodes: [], actionActive: false, failure: null }
 
-  const episodesResult = await getPublicJson(
-    event,
-    `/api/shows/${encodeURIComponent(slug)}/episodes`,
+  const episodes = getPublicJson(event, `/api/shows/${encodeURIComponent(slug)}/episodes`).then(
+    (result) => (result.ok ? records(result.value) : []),
   )
 
-  const actionActive = await loadPublicActionState(event, 'show', text(selected.id))
+  const actionActive = loadPublicActionState(event, 'show', text(selected.id))
 
   return {
     shows,
     selected: record(selected),
-    episodes: episodesResult.ok ? records(episodesResult.value) : [],
+    episodes,
     actionActive,
     failure: null,
   }

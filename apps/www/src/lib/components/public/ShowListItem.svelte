@@ -2,7 +2,11 @@
   import Artwork from './Artwork.svelte'
   import { records, text, type PublicRecord } from '@/lib/public-content'
 
-  let { show, selected }: { show: PublicRecord; selected: boolean } = $props()
+  let {
+    show,
+    selected,
+    onSelect,
+  }: { show: PublicRecord; selected: boolean; onSelect?: (event: MouseEvent) => void } = $props()
 
   const title = $derived(text(show.title, 'Untitled show'))
 
@@ -16,6 +20,7 @@
 
 <a
   href={`/shows/${text(show.slug)}`}
+  onclick={onSelect}
   aria-current={selected ? 'page' : undefined}
   class={[
     'flex w-full items-center gap-2 border-b border-border/40 px-1 py-1.5 no-underline transition-colors last:border-b-0',
