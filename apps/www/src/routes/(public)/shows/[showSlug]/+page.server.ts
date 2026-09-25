@@ -16,7 +16,7 @@ export const load = (async (event) => {
   ])
 
   const item = show.ok ? record(show.value) : null
-  const actionActive = item ? loadPublicActionState(event, 'show', text(item.id)) : false
+  const actionActive = item ? await loadPublicActionState(event, 'show', text(item.id)) : false
 
   return {
     item,

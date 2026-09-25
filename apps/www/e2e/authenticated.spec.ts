@@ -167,13 +167,13 @@ test('tweet detail preserves the content hierarchy, navigates by link, and posts
   await expect(page.getByRole('status').filter({ hasText: 'Reply posted' })).toBeVisible()
   await expect(page.getByText('E2E reply transmission')).toBeVisible()
 
-  const next = page.getByRole('link', { name: 'Next tweet' })
-  await expect(next).toBeVisible()
+  const older = page.getByRole('link', { name: 'Older' })
+  await expect(older).toBeVisible()
   await page.evaluate(() => {
     sessionStorage.setItem('tweet-navigation-marker', 'preserved')
     performance.mark('tweet-navigation-started')
   })
-  await next.click()
+  await older.click()
   await expect.poll(() => new URL(page.url()).pathname).not.toBe(`/tweet/${secondSlug}`)
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   const result = await page.evaluate(() => ({

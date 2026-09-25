@@ -24,7 +24,7 @@ export const load = (async (event) => {
     (result) => (result.ok ? records(result.value) : []),
   )
 
-  const actionActive = loadPublicActionState(event, 'show', text(selected.id))
+  const actionActive = await loadPublicActionState(event, 'show', text(selected.id))
 
   return {
     shows,
