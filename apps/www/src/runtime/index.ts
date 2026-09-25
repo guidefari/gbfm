@@ -1,5 +1,5 @@
 import { SpotifyBrowser } from '@spotify-effect/browser'
-import { Effect, Layer, Scope } from 'effect'
+import { Effect, Layer, ManagedRuntime } from 'effect'
 import { VITE_SPOTIFY_CLIENT_ID } from '$app/env/public'
 import { getSpotifyRedirectUri } from '@/lib/spotify-pkce'
 import { ImageExport, ImageExportLive } from '@/services/image-export'
@@ -32,25 +32,16 @@ const mainLayer = Layer.mergeAll(
   mixUploadDraftStorageLayer
 )
 
-type AppServices =
-  | SpotifyBrowser
-  | ImageExport
-  | ResumableUploadStorage
-  | MixUploadDraftStorage
+type AppServices = SpotifyBrowser | ImageExport | ResumableUploadStorage | MixUploadDraftStorage
 
-const appScope = Scope.makeUnsafe()
-const makeAppContext = () => Effect.runPromise(Layer.buildWithScope(mainLayer, appScope))
-let appContextPromise: ReturnType<typeof makeAppContext> | undefined
-const getAppContext = () => (appContextPromise ??= makeAppContext())
+const appRuntime = ManagedRuntime.make(mainLayer)
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => void appRuntime.dispose())
+}
 
 export const runAppEffect = <A, E>(effect: Effect.Effect<A, E, AppServices>) =>
-  getAppContext()
-    .then((context) => Effect.runPromiseWith(context)(effect))
-    .catch((error) => {
-      console.error('App effect failed', error)
-      throw error
-    })
-
-export const RuntimeClient = {
-  runPromise: runAppEffect
-}
+  appRuntime.runPromise(effect).catch((error) => {
+    console.error('App effect failed', error)
+    throw error
+  })

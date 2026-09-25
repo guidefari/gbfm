@@ -1,6 +1,15 @@
-import * as Effect from 'effect/Effect'
-import * as Layer from 'effect/Layer'
-import { Logger, type LogAttributes, type LogSeverity } from './service'
+export type LogValue =
+  | string
+  | number
+  | boolean
+  | bigint
+  | null
+  | undefined
+  | Error
+  | readonly LogValue[]
+  | { readonly [key: string]: LogValue }
+export type LogAttributes = Readonly<Record<string, LogValue>> | Readonly<{ error: unknown }>
+export type LogSeverity = 'debug' | 'info' | 'warn' | 'error'
 
 const write = (severity: LogSeverity, message: string, attributes?: LogAttributes) => {
   const method =
@@ -16,8 +25,3 @@ const write = (severity: LogSeverity, message: string, attributes?: LogAttribute
 
 export const log = (severity: LogSeverity, message: string, attributes?: LogAttributes) =>
   write(severity, message, attributes)
-
-export const dispatchLog = (severity: LogSeverity, message: string, attributes?: LogAttributes) =>
-  Effect.sync(() => write(severity, message, attributes))
-
-export const LoggerLive = Layer.succeed(Logger, { log: dispatchLog })
