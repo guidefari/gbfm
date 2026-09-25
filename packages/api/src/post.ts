@@ -224,11 +224,32 @@ export const MicroPostThreadResponse = Schema.Struct({
   pagination: PaginationMeta
 })
 
+const MicroPostScreenMusic = Schema.Struct({
+  entity: Schema.Struct({
+    id: Schema.String,
+    type: MusicEntityType,
+    title: Schema.String,
+    artistNames: Schema.NullOr(Schema.Array(Schema.String)),
+    coverImageUrl: Schema.NullOr(Schema.String)
+  }),
+  links: Schema.Array(
+    Schema.Struct({
+      platform: Schema.String,
+      url: Schema.String
+    })
+  )
+})
+
+const MicroPostScreenPost = Schema.Struct({
+  ...CompiledMicroPostResponse.fields,
+  music: Schema.NullOr(MicroPostScreenMusic)
+})
+
 export const MicroPostScreenResponse = Schema.Struct({
-  post: CompiledMicroPostResponse,
-  replies: Schema.Array(CompiledMicroPostResponse),
-  root: CompiledMicroPostResponse,
-  quote: Schema.NullOr(CompiledMicroPostResponse)
+  post: MicroPostScreenPost,
+  replies: Schema.Array(MicroPostScreenPost),
+  root: MicroPostScreenPost,
+  quote: Schema.NullOr(MicroPostScreenPost)
 })
 
 export const PostGroup = HttpApiGroup.make('post')

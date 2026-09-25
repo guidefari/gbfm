@@ -42,6 +42,7 @@ import {
   musicEntityResolutionClaimsTable,
   musicEntityTypesTable,
   musicPlatformsTable,
+  musicPlaylistsTable,
   musicSourceAliasesTable,
   musicSourceIdentitiesTable,
   musicTracksTable,
@@ -2709,13 +2710,16 @@ describe('GET /api/content/posts/micro/:slug/thread (Slice 7)', () => {
 })
 
 describe('GET /api/content/posts/micro/:slug/screen', () => {
-  it('returns the tweet, its replies, root, quote, and creator image in one response', async () => {
+  it('returns verified music attachments for the tweet, replies, root, and quote in one response', async () => {
     const suffix = crypto.randomUUID()
     const authorId = `screen-author-${suffix}`
     const rootSlug = `screen-root-${suffix}`
     const replySlug = `screen-reply-${suffix}`
     const quoteSlug = `screen-quote-${suffix}`
     const image = 'https://cdn.goosebumps.fm/user-content/screen-author.png'
+    const rootAlbumId = crypto.randomUUID()
+    const replyTrackId = crypto.randomUUID()
+    const quotePlaylistId = crypto.randomUUID()
 
     await db.insert(user).values({
       id: authorId,
@@ -2724,15 +2728,91 @@ describe('GET /api/content/posts/micro/:slug/screen', () => {
       username: `screen-${suffix}`,
       image
     })
+    await db.batch([
+      db
+        .insert(musicEntityTypesTable)
+        .values([
+          { id: 'album', displayName: 'Album' },
+          { id: 'track', displayName: 'Track' },
+          { id: 'playlist', displayName: 'Playlist' }
+        ])
+        .onConflictDoNothing(),
+      db
+        .insert(musicPlatformsTable)
+        .values([
+          { id: 'spotify', displayName: 'Spotify' },
+          { id: 'bandcamp', displayName: 'Bandcamp' }
+        ])
+        .onConflictDoNothing(),
+      db.insert(musicAlbumsTable).values({
+        id: rootAlbumId,
+        title: 'Root Album',
+        slug: `root-album-${suffix}`,
+        artistNames: ['Root Artist'],
+        coverImageUrl: 'https://cdn.goosebumps.fm/user-content/root-album.png'
+      }),
+      db.insert(musicTracksTable).values({
+        id: replyTrackId,
+        title: 'Reply Track',
+        slug: `reply-track-${suffix}`,
+        artistNames: ['Reply Artist'],
+        coverImageUrl: 'https://cdn.goosebumps.fm/user-content/reply-track.png'
+      }),
+      db.insert(musicPlaylistsTable).values({
+        id: quotePlaylistId,
+        title: 'Quote Playlist',
+        slug: `quote-playlist-${suffix}`,
+        coverImageUrl: 'https://cdn.goosebumps.fm/user-content/quote-playlist.png'
+      })
+    ])
+    await db.insert(musicEntityLinksTable).values([
+      {
+        entityType: 'album',
+        entityId: rootAlbumId,
+        platform: 'spotify',
+        url: 'https://open.spotify.com/album/root',
+        status: 'verified'
+      },
+      {
+        entityType: 'track',
+        entityId: replyTrackId,
+        platform: 'bandcamp',
+        url: 'https://artist.bandcamp.com/track/reply',
+        status: 'verified'
+      },
+      {
+        entityType: 'track',
+        entityId: replyTrackId,
+        platform: 'spotify',
+        url: 'https://open.spotify.com/track/rejected',
+        status: 'rejected'
+      },
+      {
+        entityType: 'playlist',
+        entityId: quotePlaylistId,
+        platform: 'spotify',
+        url: 'https://open.spotify.com/playlist/quote',
+        status: 'verified'
+      }
+    ])
     const [quote, root] = await db
       .insert(postsTable)
       .values([
-        { slug: quoteSlug, content: 'Quoted tweet', type: 'micro', draft: false },
+        {
+          slug: quoteSlug,
+          content: 'Quoted tweet',
+          type: 'micro',
+          draft: false,
+          musicEntityType: 'playlist',
+          musicEntityId: quotePlaylistId
+        },
         {
           slug: rootSlug,
           content: 'Root tweet',
           type: 'micro',
-          draft: false
+          draft: false,
+          musicEntityType: 'album',
+          musicEntityId: rootAlbumId
         }
       ])
       .returning()
@@ -2747,7 +2827,9 @@ describe('GET /api/content/posts/micro/:slug/screen', () => {
         draft: false,
         parentPostId: root.id,
         rootPostId: root.id,
-        depth: 1
+        depth: 1,
+        musicEntityType: 'track',
+        musicEntityId: replyTrackId
       })
       .returning()
     if (!reply) throw new Error('Failed to seed tweet reply')
@@ -2768,11 +2850,46 @@ describe('GET /api/content/posts/micro/:slug/screen', () => {
       expect(body.replies.map((post) => post.slug)).toEqual([replySlug])
       expect(body.root.slug).toBe(rootSlug)
       expect(body.quote?.slug).toBe(quoteSlug)
+      expect(body.post.music).toEqual({
+        entity: {
+          id: rootAlbumId,
+          type: 'album',
+          title: 'Root Album',
+          artistNames: ['Root Artist'],
+          coverImageUrl: 'https://cdn.goosebumps.fm/user-content/root-album.png'
+        },
+        links: [{ platform: 'spotify', url: 'https://open.spotify.com/album/root' }]
+      })
+      expect(body.root.music).toEqual(body.post.music)
+      expect(body.quote?.music?.entity).toMatchObject({
+        id: quotePlaylistId,
+        type: 'playlist',
+        title: 'Quote Playlist',
+        artistNames: null
+      })
+      expect(body.replies[0]?.music).toEqual({
+        entity: {
+          id: replyTrackId,
+          type: 'track',
+          title: 'Reply Track',
+          artistNames: ['Reply Artist'],
+          coverImageUrl: 'https://cdn.goosebumps.fm/user-content/reply-track.png'
+        },
+        links: [{ platform: 'bandcamp', url: 'https://artist.bandcamp.com/track/reply' }]
+      })
     } finally {
       await db.delete(postCreators).where(eq(postCreators.creatorId, authorId))
       await db.delete(postsTable).where(eq(postsTable.id, reply.id))
       await db.delete(postsTable).where(eq(postsTable.id, root.id))
       await db.delete(postsTable).where(eq(postsTable.id, quote.id))
+      await db.delete(musicEntityLinksTable).where(eq(musicEntityLinksTable.entityId, rootAlbumId))
+      await db.delete(musicEntityLinksTable).where(eq(musicEntityLinksTable.entityId, replyTrackId))
+      await db
+        .delete(musicEntityLinksTable)
+        .where(eq(musicEntityLinksTable.entityId, quotePlaylistId))
+      await db.delete(musicAlbumsTable).where(eq(musicAlbumsTable.id, rootAlbumId))
+      await db.delete(musicTracksTable).where(eq(musicTracksTable.id, replyTrackId))
+      await db.delete(musicPlaylistsTable).where(eq(musicPlaylistsTable.id, quotePlaylistId))
       await db.delete(user).where(eq(user.id, authorId))
     }
   })
