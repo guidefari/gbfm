@@ -12,7 +12,7 @@ const functionBoundaryTypes = new Set([
   'FunctionDeclaration',
   'FunctionExpression',
   'TSDeclareFunction',
-  'TSEmptyBodyFunctionExpression'
+  'TSEmptyBodyFunctionExpression',
 ])
 
 function unwrapExpressionParentheses(expression: ESTree.Expression): ESTree.Expression {
@@ -89,13 +89,13 @@ function broadTypeKind(type: ESTree.TSType): BroadTypeKind | null {
 }
 
 function assertedExpression(
-  node: ESTree.TSAsExpression | ESTree.TSTypeAssertion
+  node: ESTree.TSAsExpression | ESTree.TSTypeAssertion,
 ): ESTree.Expression {
   return unwrapExpressionParentheses(node.expression)
 }
 
 function assertionFromExpression(
-  expression: ESTree.Expression
+  expression: ESTree.Expression,
 ): ESTree.TSAsExpression | ESTree.TSTypeAssertion | null {
   const unwrapped = unwrapExpressionParentheses(expression)
   return unwrapped.type === 'TSAsExpression' || unwrapped.type === 'TSTypeAssertion'
@@ -110,7 +110,7 @@ function normalizedTypeText(sourceText: string, type: ESTree.TSType): string {
 function typesHaveSameSyntax(
   sourceText: string,
   left: ESTree.TSType | null,
-  right: ESTree.TSType
+  right: ESTree.TSType,
 ): boolean {
   return (
     left !== null &&
@@ -175,13 +175,13 @@ function resolvedVariableForIdentifier(
       readonly resolved: Variable | null
     }[]
   }[],
-  identifier: ESTree.IdentifierReference
+  identifier: ESTree.IdentifierReference,
 ): Variable | null {
   for (const scope of scopes) {
     const reference = scope.references.find(
       (candidate) =>
         candidate.identifier.start === identifier.start &&
-        candidate.identifier.end === identifier.end
+        candidate.identifier.end === identifier.end,
     )
     if (reference !== undefined) return reference.resolved
   }
@@ -201,7 +201,7 @@ function knownValueEvidence(
   expression: ESTree.Expression,
   scopes: Parameters<typeof resolvedVariableForIdentifier>[0],
   boundary: ESTree.Node | null,
-  visitedVariables: ReadonlySet<Variable>
+  visitedVariables: ReadonlySet<Variable>,
 ): KnownValueEvidence | null {
   const unwrapped = unwrapExpressionParentheses(expression)
 
@@ -230,7 +230,7 @@ function knownValueEvidence(
   if (variable === null || visitedVariables.has(variable)) return null
 
   const annotatedIdentifier = variable.identifiers.find(
-    (identifier) => identifier.typeAnnotation !== null && identifier.typeAnnotation !== undefined
+    (identifier) => identifier.typeAnnotation !== null && identifier.typeAnnotation !== undefined,
   )
   const annotation = annotatedIdentifier?.typeAnnotation?.typeAnnotation
   if (annotation !== undefined && annotatedIdentifier !== undefined) {
@@ -256,13 +256,13 @@ function knownValueEvidence(
     declarator.init,
     scopes,
     boundary,
-    new Set([...visitedVariables, variable])
+    new Set([...visitedVariables, variable]),
   )
 }
 
 function widenedBinding(
   variable: Variable,
-  scopes: Parameters<typeof resolvedVariableForIdentifier>[0]
+  scopes: Parameters<typeof resolvedVariableForIdentifier>[0],
 ): {
   readonly broadKind: BroadTypeKind
   readonly evidence: KnownValueEvidence
@@ -302,7 +302,7 @@ function assertionIsNarrower(
   sourceText: string,
   broadKind: BroadTypeKind,
   evidence: KnownValueEvidence,
-  assertedType: ESTree.TSType
+  assertedType: ESTree.TSType,
 ): boolean {
   if (broadTypeKind(assertedType) !== null) return false
   if (broadKind === 'top') return true
@@ -317,15 +317,15 @@ export const noWidenThenAssertRule = defineRule({
     type: 'problem',
     docs: {
       description:
-        'Disallow local const flows that explicitly widen a known value before asserting the widened binding to a narrower type.'
+        'Disallow local const flows that explicitly widen a known value before asserting the widened binding to a narrower type.',
     },
     messages: {
       widenThenAssert:
-        'Binding "{{name}}" erases established type evidence by widening the value, then reconstructs that evidence with a type assertion. Preserve the precise type end-to-end; if the input is genuinely unknown, parse it once at the boundary instead.'
-    }
+        'Binding "{{name}}" discards type evidence and later recreates it with an assertion. Keep the precise type from initialization through use; parse boundary input once.',
+    },
   },
-  create(context) {
-    const scopes = context.sourceCode.scopeManager.scopes
+  createOnce(context) {
+    let scopes: Parameters<typeof resolvedVariableForIdentifier>[0] = []
 
     const checkAssertion = (node: ESTree.TSAsExpression | ESTree.TSTypeAssertion) => {
       const expression = assertedExpression(node)
@@ -342,7 +342,7 @@ export const noWidenThenAssertRule = defineRule({
           context.sourceCode.text,
           widened.broadKind,
           widened.evidence,
-          node.typeAnnotation
+          node.typeAnnotation,
         )
       ) {
         return
@@ -351,13 +351,16 @@ export const noWidenThenAssertRule = defineRule({
       context.report({
         node,
         messageId: 'widenThenAssert',
-        data: { name: expression.name }
+        data: { name: expression.name },
       })
     }
 
     return {
+      Program() {
+        scopes = context.sourceCode.scopeManager.scopes
+      },
       TSAsExpression: checkAssertion,
-      TSTypeAssertion: checkAssertion
+      TSTypeAssertion: checkAssertion,
     }
-  }
+  },
 })
