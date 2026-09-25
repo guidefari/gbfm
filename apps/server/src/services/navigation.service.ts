@@ -1,115 +1,190 @@
-import { Context, Effect, Layer, Predicate } from 'effect'
+import { and, asc, desc, eq, gt, inArray, isNull, lt, ne, or, sql } from 'drizzle-orm'
+import { Context, Effect, Layer, Predicate, Schema } from 'effect'
 
+import { Database } from '@/db/layer'
+import { navigationSeenPosts, navigationSessions } from '@/db/navigation.schema'
+import { postsTable } from '@/db/post.schema'
 import {
-  type NavigationCommand,
+  CorpusExhausted,
+  type MicroPostNeighbours,
+  MicroPostMissing,
   type NavigationIdentity,
-  type NavigationResult,
-  type CorpusExhausted,
-  type Slug,
-  NoSuchMove,
+  Slug,
 } from '@/domain/navigation'
-import type { DatabaseError } from '@/errors'
+import { DatabaseError, getErrorMessage } from '@/errors'
 
-import { NavigationPersistence, NavigationPersistenceLayer } from './navigation-persistence'
-
-export type IntentToken = string
-
-export type NavigationSessionRead = {
-  readonly slug: Slug | null
-  readonly capabilities: NavigationResult['capabilities']
+export interface NavigationService {
+  readonly neighbours: (
+    identity: NavigationIdentity,
+    slug: string,
+  ) => Effect.Effect<MicroPostNeighbours, MicroPostMissing | DatabaseError>
+  readonly randomUnread: (
+    identity: NavigationIdentity,
+    slug: string,
+  ) => Effect.Effect<Slug, CorpusExhausted | DatabaseError>
+  readonly markSeen: (
+    identity: NavigationIdentity,
+    slug: string,
+  ) => Effect.Effect<void, MicroPostMissing | DatabaseError>
 }
 
-export type NavigationVisitOutcome = { readonly recorded: boolean }
+export const NavigationService = Context.Service<NavigationService>('NavigationService')
 
-export interface NavigationSessionService {
-  readonly peek: (
-    identity: NavigationIdentity,
-    command: NavigationCommand,
-    from: Slug,
-  ) => Effect.Effect<NavigationResult, NoSuchMove | CorpusExhausted | DatabaseError>
-  readonly record: (
-    identity: NavigationIdentity,
-    command: NavigationCommand,
-    from: Slug,
-    intentToken: IntentToken,
-  ) => Effect.Effect<NavigationVisitOutcome, NoSuchMove | CorpusExhausted | DatabaseError>
-  readonly resolve: (
-    identity: NavigationIdentity,
-    command: NavigationCommand,
-    from: Slug,
-    intentToken: IntentToken,
-  ) => Effect.Effect<NavigationResult, NoSuchMove | CorpusExhausted | DatabaseError>
-  readonly read: (
-    identity: NavigationIdentity,
-  ) => Effect.Effect<NavigationSessionRead, DatabaseError>
-  readonly reset: (identity: NavigationIdentity) => Effect.Effect<void, DatabaseError>
-}
+const asSlug = Schema.decodeUnknownSync(Slug)
 
-export const NavigationSessionService = Context.Service<NavigationSessionService>(
-  'NavigationSessionService',
+const databaseError = (operation: string, error: Parameters<typeof getErrorMessage>[0]) =>
+  new DatabaseError({
+    message: `Failed to ${operation} micro post navigation: ${getErrorMessage(error)}`,
+    operation,
+    table: 'navigation_seen_posts',
+  })
+
+const identityWhere = (identity: NavigationIdentity) =>
+  Predicate.isTagged(identity, 'User')
+    ? eq(navigationSessions.userId, identity.userId)
+    : eq(navigationSessions.deviceToken, identity.deviceToken)
+
+const feedPost = and(
+  eq(postsTable.type, 'micro'),
+  eq(postsTable.draft, false),
+  isNull(postsTable.parentPostId),
 )
 
-const MAX_NAVIGATION_LOCK_RETRIES = 5
-
-export const NavigationSessionServiceLayer = Layer.effect(
-  NavigationSessionService,
+export const NavigationServiceLayer = Layer.effect(
+  NavigationService,
   Effect.gen(function* () {
-    const persistence = yield* NavigationPersistence
+    const db = yield* Database
 
-    const resolve = (
-      identity: NavigationIdentity,
-      command: NavigationCommand,
-      from: Slug,
-      intentToken: IntentToken,
-    ) =>
-      Effect.gen(function* () {
-        for (let retryCount = 0; ; retryCount += 1) {
-          yield* Effect.annotateCurrentSpan('retried', retryCount > 0)
-          const outcome = yield* persistence.attempt(identity, command, from, intentToken)
+    const sessionIds = (identity: NavigationIdentity) =>
+      db
+        .select({ id: navigationSessions.id })
+        .from(navigationSessions)
+        .where(identityWhere(identity))
 
-          if (!('_tag' in outcome)) return outcome
+    const currentPost = (slug: string) =>
+      db
+        .select({ slug: postsTable.slug, createdAt: postsTable.createdAt })
+        .from(postsTable)
+        .where(
+          and(eq(postsTable.slug, slug), eq(postsTable.type, 'micro'), eq(postsTable.draft, false)),
+        )
+        .limit(1)
 
-          if (retryCount === MAX_NAVIGATION_LOCK_RETRIES) {
-            return yield* new NoSuchMove({
-              command: Predicate.isTagged(command, 'Step')
-                ? `Step(${command.direction})`
-                : command._tag,
-            })
-          }
+    const feed = (condition: ReturnType<typeof and>) =>
+      db.select({ slug: postsTable.slug }).from(postsTable).where(and(feedPost, condition))
 
-          yield* Effect.sleep('1 millis')
-        }
-      })
+    const unreadFeed = (identity: NavigationIdentity, condition: ReturnType<typeof and>) =>
+      db
+        .select({ slug: postsTable.slug })
+        .from(postsTable)
+        .leftJoin(
+          navigationSeenPosts,
+          and(
+            eq(navigationSeenPosts.slug, postsTable.slug),
+            inArray(navigationSeenPosts.sessionId, sessionIds(identity)),
+          ),
+        )
+        .where(and(feedPost, isNull(navigationSeenPosts.slug), condition))
 
-    return {
-      peek: (identity, command, from) =>
-        persistence
-          .preview(identity, command, from)
-          .pipe(Effect.tapError((error) => Effect.annotateCurrentSpan('errorType', error._tag))),
-      record: (identity, command, from, intentToken) =>
-        resolve(identity, command, from, intentToken).pipe(
-          Effect.map(() => ({ recorded: true })),
-          Effect.withSpan('navigation.record', {
-            attributes: Predicate.isTagged(command, 'Step')
-              ? { command: command._tag, direction: command.direction }
-              : { command: command._tag },
-          }),
-        ),
-      resolve: (identity, command, from, intentToken) =>
-        resolve(identity, command, from, intentToken).pipe(
-          Effect.tapError((error) => Effect.annotateCurrentSpan('errorType', error._tag)),
-          Effect.withSpan('navigation.resolve', {
-            attributes: Predicate.isTagged(command, 'Step')
-              ? {
-                  command: command._tag,
-                  direction: command.direction,
-                  identityKind: identity._tag,
-                }
-              : { command: command._tag, identityKind: identity._tag },
-          }),
-        ),
-      read: persistence.read,
-      reset: persistence.reset,
+    const neighbours = (identity: NavigationIdentity, slug: string) => {
+      const createdAt = db
+        .select({ createdAt: postsTable.createdAt })
+        .from(postsTable)
+        .where(eq(postsTable.slug, slug))
+        .limit(1)
+
+      const newer = or(
+        gt(postsTable.createdAt, createdAt),
+        and(eq(postsTable.createdAt, createdAt), gt(postsTable.slug, slug)),
+      )
+
+      const older = or(
+        lt(postsTable.createdAt, createdAt),
+        and(eq(postsTable.createdAt, createdAt), lt(postsTable.slug, slug)),
+      )
+
+      return Effect.tryPromise({
+        try: () =>
+          db.batch([
+            currentPost(slug),
+            feed(newer).orderBy(asc(postsTable.createdAt), asc(postsTable.slug)).limit(1),
+            unreadFeed(identity, older)
+              .orderBy(desc(postsTable.createdAt), desc(postsTable.slug))
+              .limit(1),
+            feed(older).orderBy(desc(postsTable.createdAt), desc(postsTable.slug)).limit(1),
+            unreadFeed(identity, ne(postsTable.slug, slug)).limit(1),
+          ]),
+        catch: (error) => databaseError('read', error),
+      }).pipe(
+        Effect.flatMap(([current, back, olderUnread, olderAny, anyUnread]) => {
+          if (!current[0]) return Effect.fail(new MicroPostMissing({ slug }))
+          const forward = olderUnread[0] ?? olderAny[0]
+
+          return Effect.succeed({
+            back: back[0] ? asSlug(back[0].slug) : null,
+            forward: forward ? asSlug(forward.slug) : null,
+            hasUnread: anyUnread.length > 0,
+          })
+        }),
+        Effect.withSpan('navigation.neighbours', { attributes: { slug } }),
+      )
     }
+
+    const randomUnread = (identity: NavigationIdentity, slug: string) =>
+      Effect.tryPromise({
+        try: () =>
+          unreadFeed(identity, ne(postsTable.slug, slug))
+            .orderBy(sql`random()`)
+            .limit(1),
+        catch: (error) => databaseError('read', error),
+      }).pipe(
+        Effect.flatMap(([row]) =>
+          row ? Effect.succeed(asSlug(row.slug)) : Effect.fail(new CorpusExhausted()),
+        ),
+        Effect.withSpan('navigation.randomUnread'),
+      )
+
+    const markSeen = (identity: NavigationIdentity, slug: string) =>
+      Effect.gen(function* () {
+        const [current] = yield* Effect.tryPromise({
+          try: () => currentPost(slug),
+          catch: (error) => databaseError('read', error),
+        })
+
+        if (!current) return yield* new MicroPostMissing({ slug })
+
+        return yield* Effect.tryPromise({
+          try: () =>
+            db.batch([
+              db
+                .insert(navigationSessions)
+                .values(
+                  Predicate.isTagged(identity, 'User')
+                    ? { userId: identity.userId }
+                    : { deviceToken: identity.deviceToken },
+                )
+                .onConflictDoNothing(),
+              db
+                .insert(navigationSeenPosts)
+                .select(
+                  db
+                    .select({
+                      sessionId: navigationSessions.id,
+                      slug: sql`${current.slug}`.as('slug'),
+                    })
+                    .from(navigationSessions)
+                    .where(identityWhere(identity)),
+                )
+                .onConflictDoNothing(),
+              db
+                .update(navigationSessions)
+                .set({ updatedAt: new Date() })
+                .where(identityWhere(identity)),
+            ]),
+          catch: (error) => databaseError('write', error),
+        }).pipe(Effect.asVoid)
+      }).pipe(Effect.withSpan('navigation.markSeen', { attributes: { slug } }))
+
+    return { neighbours, randomUnread, markSeen }
   }),
-).pipe(Layer.provide(NavigationPersistenceLayer))
+)

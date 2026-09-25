@@ -10,7 +10,7 @@ import {
   ScrapeEntityLinksResponse,
   TrackListResponse,
 } from '@gbfm/api/music'
-import { NavigationSessionResponse, Slug } from '@gbfm/api/navigation'
+import { MicroPostNeighboursResponse, MicroPostRandomUnreadResponse } from '@gbfm/api/navigation'
 import {
   CompiledMicroPostResponse,
   CompiledPostResponse,
@@ -23,7 +23,7 @@ import { SearchResults } from '@gbfm/api/search'
 import { decodeResponseBody } from '@gbfm/api/testing'
 import { SiteMetadata } from '@gbfm/site-metadata'
 import { SocialCardPresentation, TweetCardPresentation } from '@gbfm/social-card'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { Layer } from 'effect'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
@@ -50,7 +50,6 @@ import { postCreators, postsTable } from '@/db/post.schema'
 import { releasesTable } from '@/db/release.schema'
 import { showsTable } from '@/db/show.schema'
 import { entityLabelsTable } from '@/db/tags.schema'
-import { NavigationCommand as NavigationCommandData } from '@/domain/navigation'
 import { omitUndefined } from '@/lib/omit-undefined'
 import { MusicCoverImageFetcher } from '@/services/canonical-music-identity/artwork-delivery'
 import { ObjectStoreClient } from '@/services/storage/object-store-client'
@@ -4093,126 +4092,185 @@ describe('GET /api/content/posts/micro/by-id/:id', () => {
 })
 
 describe('micro post navigation', () => {
-  it('reads an anonymous navigation session without creating or changing it', async () => {
-    const emptyRes = await webHandler.handler(
-      new Request('http://localhost/api/content/posts/micro/navigation-session'),
+  const seedFeed = async () => {
+    const suffix = crypto.randomUUID()
+    const at = (day: number) => new Date(Date.UTC(2100, 0, day))
+
+    const values = [0, 1, 2, 3].map(
+      (index) =>
+        ({
+          title: null,
+          slug: `navigation-${index}-${suffix}`,
+          content: `Navigation ${index}`,
+          type: 'micro',
+          draft: false,
+          createdAt: at(index + 1),
+        }) satisfies typeof postsTable.$inferInsert,
     )
 
-    expect(emptyRes.status).toBe(200)
-    await expect(decodeResponseBody(NavigationSessionResponse, emptyRes)).resolves.toEqual({
-      slug: null,
-      capabilities: { canStepBack: false, canStepForward: false, hasUnread: false },
+    const inserted = await db.insert(postsTable).values(values).returning()
+
+    const [oldest, older, middle, newest] = values.map((value) => {
+      const post = inserted.find((row) => row.slug === value.slug)
+
+      if (!post) throw new Error('Failed to seed navigation feed')
+
+      return post
     })
 
-    const setCookie = emptyRes.headers.getSetCookie()[0]
+    if (!oldest || !older || !middle || !newest) throw new Error('Failed to seed navigation feed')
 
-    if (!setCookie) throw new Error('Expected navigation device cookie')
-    const cookie = setCookie.split(';')[0]
-
-    if (!cookie) throw new Error('Expected navigation device cookie value')
-    const deviceToken = cookie.split('=')[1]
-
-    if (!deviceToken) throw new Error('Expected navigation device token')
-    expect(
-      await db
-        .select()
-        .from(navigationSessions)
-        .where(eq(navigationSessions.deviceToken, deviceToken)),
-    ).toEqual([])
-
-    const slug = `navigation-read-${crypto.randomUUID()}`
-
-    const [post] = await db
+    const hidden = await db
       .insert(postsTable)
-      .values({ title: null, slug, content: 'Navigation test', type: 'micro', draft: false })
+      .values([
+        {
+          title: null,
+          slug: `navigation-draft-${suffix}`,
+          content: 'Draft',
+          type: 'micro',
+          draft: true,
+          createdAt: new Date(Date.UTC(2100, 0, 3, 12)),
+        },
+        {
+          title: null,
+          slug: `navigation-reply-${suffix}`,
+          content: 'Reply',
+          type: 'micro',
+          draft: false,
+          parentPostId: newest.id,
+          rootPostId: newest.id,
+          createdAt: new Date(Date.UTC(2100, 0, 3, 18)),
+        },
+      ])
       .returning()
 
-    if (!post) throw new Error('Failed to seed navigation post')
+    const ids = [...inserted, ...hidden].map((post) => post.id)
+
+    return {
+      oldest,
+      older,
+      middle,
+      newest,
+      cleanup: async () => {
+        await db.delete(postsTable).where(inArray(postsTable.id, ids))
+      },
+    }
+  }
+
+  const deviceCookie = () => `gbfm-navigation-device=navigation-device-${crypto.randomUUID()}`
+
+  const neighbours = async (slug: string, cookie: string) => {
+    const res = await webHandler.handler(
+      new Request(`http://localhost/api/content/posts/micro/${slug}/neighbours`, {
+        headers: { cookie },
+      }),
+    )
+
+    expect(res.status).toBe(200)
+
+    return decodeResponseBody(MicroPostNeighboursResponse, res)
+  }
+
+  const markSeen = (slug: string, headers: Record<string, string>) =>
+    webHandler.handler(
+      new Request(`http://localhost/api/content/posts/micro/${slug}/seen`, {
+        method: 'POST',
+        headers,
+      }),
+    )
+
+  it('orders neighbours by date and skips drafts and replies', async () => {
+    const feed = await seedFeed()
 
     try {
-      const openRes = await webHandler.handler(
-        new Request('http://localhost/api/content/posts/micro/navigate', {
-          method: 'POST',
-          headers: { cookie, 'content-type': 'application/json' },
-          body: JSON.stringify({
-            command: NavigationCommandData.Open({ slug: Slug.make(slug) }),
-            from: slug,
-            intentToken: crypto.randomUUID(),
-          }),
-        }),
-      )
-
-      expect(openRes.status).toBe(200)
-
-      const [beforeRead] = await db
-        .select()
-        .from(navigationSessions)
-        .where(eq(navigationSessions.deviceToken, deviceToken))
-
-      if (!beforeRead) throw new Error('Expected navigation session')
-
-      const resumedRes = await webHandler.handler(
-        new Request('http://localhost/api/content/posts/micro/navigation-session', {
-          headers: { cookie },
-        }),
-      )
-
-      expect(resumedRes.status).toBe(200)
-      await expect(
-        decodeResponseBody(NavigationSessionResponse, resumedRes),
-      ).resolves.toMatchObject({
-        slug,
+      await expect(neighbours(feed.middle.slug, deviceCookie())).resolves.toEqual({
+        back: feed.newest.slug,
+        forward: feed.older.slug,
+        hasUnread: true,
       })
-
-      const [afterRead] = await db
-        .select()
-        .from(navigationSessions)
-        .where(eq(navigationSessions.deviceToken, deviceToken))
-
-      expect(afterRead?.cursor).toBe(beforeRead.cursor)
-      expect(afterRead?.updatedAt).toEqual(beforeRead.updatedAt)
+      const newest = await neighbours(feed.newest.slug, deviceCookie())
+      expect(newest.back).toBeNull()
+      expect(newest.forward).toBe(feed.middle.slug)
     } finally {
-      await db.delete(postsTable).where(eq(postsTable.id, post.id))
+      await feed.cleanup()
     }
   })
 
-  it('creates an anonymous session and device cookie without authentication', async () => {
-    const slug = `navigation-anonymous-${crypto.randomUUID()}`
-
-    const [post] = await db
-      .insert(postsTable)
-      .values({ title: null, slug, content: 'Navigation test', type: 'micro', draft: false })
-      .returning()
-
-    if (!post) throw new Error('Failed to seed navigation post')
+  it('moves forward past seen tweets while back stays by date', async () => {
+    const feed = await seedFeed()
+    const cookie = deviceCookie()
 
     try {
-      const res = await webHandler.handler(
-        new Request('http://localhost/api/content/posts/micro/navigate', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            command: NavigationCommandData.Open({ slug: Slug.make(slug) }),
-            from: slug,
-            intentToken: crypto.randomUUID(),
-          }),
-        }),
-      )
+      expect((await markSeen(feed.older.slug, { cookie })).status).toBe(200)
+      expect((await markSeen(feed.newest.slug, { cookie })).status).toBe(200)
+      expect((await markSeen(feed.newest.slug, { cookie })).status).toBe(200)
 
-      expect(res.status).toBe(200)
-      expect(res.headers.getSetCookie()).toContainEqual(
-        expect.stringContaining('gbfm-navigation-device='),
-      )
+      await expect(neighbours(feed.middle.slug, cookie)).resolves.toMatchObject({
+        back: feed.newest.slug,
+        forward: feed.oldest.slug,
+      })
+      await expect(neighbours(feed.middle.slug, deviceCookie())).resolves.toMatchObject({
+        forward: feed.older.slug,
+      })
     } finally {
-      await db.delete(postsTable).where(eq(postsTable.id, post.id))
+      await feed.cleanup()
+      await db
+        .delete(navigationSessions)
+        .where(eq(navigationSessions.deviceToken, cookie.split('=')[1] ?? ''))
     }
   })
 
-  it('uses the authenticated user identity instead of a device cookie', async () => {
+  it('picks a random unread tweet other than the current one', async () => {
+    const feed = await seedFeed()
+    const cookie = deviceCookie()
+
+    try {
+      await markSeen(feed.newest.slug, { cookie })
+
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        const res = await webHandler.handler(
+          new Request(`http://localhost/api/content/posts/micro/${feed.middle.slug}/random`, {
+            headers: { cookie },
+          }),
+        )
+
+        expect(res.status).toBe(200)
+        const { slug } = await decodeResponseBody(MicroPostRandomUnreadResponse, res)
+        expect([feed.middle.slug, feed.newest.slug]).not.toContain(slug)
+      }
+    } finally {
+      await feed.cleanup()
+      await db
+        .delete(navigationSessions)
+        .where(eq(navigationSessions.deviceToken, cookie.split('=')[1] ?? ''))
+    }
+  })
+
+  it('mints a device cookie for anonymous readers', async () => {
+    const feed = await seedFeed()
+
+    try {
+      const res = await markSeen(feed.middle.slug, {})
+      expect(res.status).toBe(200)
+      const cookie = res.headers.getSetCookie()[0]?.split(';')[0]
+
+      if (!cookie) throw new Error('Expected navigation device cookie')
+      await expect(neighbours(feed.newest.slug, cookie)).resolves.toMatchObject({
+        forward: feed.older.slug,
+      })
+      await db
+        .delete(navigationSessions)
+        .where(eq(navigationSessions.deviceToken, cookie.split('=')[1] ?? ''))
+    } finally {
+      await feed.cleanup()
+    }
+  })
+
+  it('records seen tweets against the signed-in user instead of the device', async () => {
+    const feed = await seedFeed()
     const suffix = crypto.randomUUID()
     const userId = `navigation-user-${suffix}`
     const token = `navigation-token-${suffix}`
-    const slug = `navigation-user-post-${suffix}`
     await db
       .insert(user)
       .values({ id: userId, name: 'Navigation user', email: `${userId}@example.com` })
@@ -4223,29 +4281,11 @@ describe('micro post navigation', () => {
       expiresAt: new Date(Date.now() + 60_000),
     })
 
-    const [post] = await db
-      .insert(postsTable)
-      .values({ title: null, slug, content: 'Navigation test', type: 'micro', draft: false })
-      .returning()
-
-    if (!post) throw new Error('Failed to seed navigation post')
-
     try {
-      const res = await webHandler.handler(
-        new Request('http://localhost/api/content/posts/micro/navigate', {
-          method: 'POST',
-          headers: {
-            authorization: `Bearer ${token}`,
-            cookie: 'gbfm-navigation-device=ignored-device-token',
-            'content-type': 'application/json',
-          },
-          body: JSON.stringify({
-            command: NavigationCommandData.Open({ slug: Slug.make(slug) }),
-            from: slug,
-            intentToken: crypto.randomUUID(),
-          }),
-        }),
-      )
+      const res = await markSeen(feed.middle.slug, {
+        authorization: `Bearer ${token}`,
+        cookie: 'gbfm-navigation-device=ignored-device-token',
+      })
 
       expect(res.status).toBe(200)
 
@@ -4256,51 +4296,26 @@ describe('micro post navigation', () => {
 
       expect(sessions).toHaveLength(1)
       expect(sessions[0]?.deviceToken).toBeNull()
-
-      const deviceSessions = await db
-        .select()
-        .from(navigationSessions)
-        .where(eq(navigationSessions.deviceToken, 'ignored-device-token'))
-
-      expect(deviceSessions).toEqual([])
+      expect(
+        await db
+          .select()
+          .from(navigationSessions)
+          .where(eq(navigationSessions.deviceToken, 'ignored-device-token')),
+      ).toEqual([])
     } finally {
-      await db.delete(postsTable).where(eq(postsTable.id, post.id))
+      await feed.cleanup()
       await db.delete(user).where(eq(user.id, userId))
     }
   })
 
-  it('returns not found when opening an unknown tweet', async () => {
+  it('returns not found for unknown tweets', async () => {
     const slug = `navigation-missing-${crypto.randomUUID()}`
 
-    const res = await webHandler.handler(
-      new Request('http://localhost/api/content/posts/micro/navigate', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          command: NavigationCommandData.Open({ slug: Slug.make(slug) }),
-          from: slug,
-          intentToken: crypto.randomUUID(),
-        }),
-      }),
+    const neighboursRes = await webHandler.handler(
+      new Request(`http://localhost/api/content/posts/micro/${slug}/neighbours`),
     )
 
-    expect(res.status).toBe(404)
-  })
-
-  it('rejects an unknown command tag at the schema boundary', async () => {
-    const res = await webHandler.handler(
-      new Request('http://localhost/api/content/posts/micro/navigate', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          command: JSON.parse('{"_tag":"Unknown"}'),
-          from: 'navigation-unknown-command',
-          intentToken: crypto.randomUUID(),
-        }),
-      }),
-    )
-
-    expect(res.status).toBeGreaterThanOrEqual(400)
-    expect(res.status).toBeLessThan(500)
+    expect(neighboursRes.status).toBe(404)
+    expect((await markSeen(slug, {})).status).toBe(404)
   })
 })

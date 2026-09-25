@@ -15,7 +15,6 @@ import {
   RecordingEmailTransportLayer,
   type EmailTransportService,
 } from '@/services/email-transport.service'
-import { NavigationLockLocalLayer } from '@/services/navigation-lock'
 import { PlaylistEnrichmentQueueTestLayer } from '@/services/playlist-enrichment-queue'
 import { SentryServiceLayer } from '@/services/sentry.service'
 import { SitemapCacheLayer, type SitemapKv } from '@/services/sitemap-cache'
@@ -67,7 +66,6 @@ export const createTestWebHandler = (
   const baseServices = {
     database: DatabaseLayer(d1),
     sitemapCache: SitemapCacheLayer(inMemorySitemapKv()),
-    navigationLock: NavigationLockLocalLayer,
     spotifyImportResolver: SpotifyImportResolverLocalLayer,
     playlistEnrichmentQueue: PlaylistEnrichmentQueueTestLayer,
     sentry: testSentryServiceLive,

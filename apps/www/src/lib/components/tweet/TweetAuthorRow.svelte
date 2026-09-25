@@ -1,21 +1,19 @@
 <script lang="ts">
-  import { text, type PublicRecord } from '@/lib/public-content'
+  import type { PostCreator } from '@gbfm/api/post'
 
   let {
     creator,
     createdAt,
     interactive = true,
-  }: { creator: PublicRecord | null; createdAt: string; interactive?: boolean } = $props()
+  }: { creator: PostCreator | null; createdAt: string; interactive?: boolean } = $props()
 
-  const username = $derived(text(creator?.username))
+  const username = $derived(creator?.username ?? '')
 
-  const name = $derived(text(creator?.name, 'goosebumps.fm'))
+  const name = $derived(creator?.name || 'goosebumps.fm')
 
   const href = $derived(interactive && username ? `/profile/${username}` : undefined)
 
-  const image = $derived(
-    text(creator?.image, 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'),
-  )
+  const image = $derived(creator?.image || 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png')
 
   const date = $derived(
     createdAt

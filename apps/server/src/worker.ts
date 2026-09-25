@@ -43,7 +43,6 @@ import {
   UnconfiguredEmailTransportLayer,
 } from '@/services/email-transport.service'
 import { MusicEntityService } from '@/services/music-entity'
-import { canonicalNavigationLockName, NavigationLock } from '@/services/navigation-lock'
 import { NavigationRetentionService } from '@/services/navigation-retention.service'
 import {
   PlaylistEnrichmentJob,
@@ -100,55 +99,6 @@ const workerSentryServiceLive = (env: ApiEnv) =>
     Layer.provide(workerSentryEnvLive(env)),
   )
 
-const navigationLockError = (operation: string, cause: unknown) =>
-  new DatabaseError({
-    message: `Failed to ${operation} navigation lock: ${getErrorMessage(cause)}`,
-    operation,
-    table: 'navigation_sessions',
-  })
-
-const navigationLockLive = (env: ApiEnv) =>
-  Layer.succeed(NavigationLock, {
-    decide: (identity, request) =>
-      Effect.tryPromise({
-        try: async () => {
-          const canonicalName = canonicalNavigationLockName(identity)
-          const stub = env.NAVIGATION_LOCK.get(env.NAVIGATION_LOCK.idFromName(canonicalName))
-          await stub.setIdentity(canonicalName)
-
-          return await stub.decide(request)
-        },
-        catch: (error) => navigationLockError('decide', error),
-      }),
-    commit: (identity, input) =>
-      Effect.tryPromise({
-        try: async () => {
-          const canonicalName = canonicalNavigationLockName(identity)
-          const stub = env.NAVIGATION_LOCK.get(env.NAVIGATION_LOCK.idFromName(canonicalName))
-          await stub.commit(input)
-        },
-        catch: (error) => navigationLockError('commit', error),
-      }),
-    sync: (identity, input) =>
-      Effect.tryPromise({
-        try: async () => {
-          const canonicalName = canonicalNavigationLockName(identity)
-          const stub = env.NAVIGATION_LOCK.get(env.NAVIGATION_LOCK.idFromName(canonicalName))
-          await stub.sync(input)
-        },
-        catch: (error) => navigationLockError('sync', error),
-      }),
-    reset: (identity) =>
-      Effect.tryPromise({
-        try: async () => {
-          const canonicalName = canonicalNavigationLockName(identity)
-          const stub = env.NAVIGATION_LOCK.get(env.NAVIGATION_LOCK.idFromName(canonicalName))
-          await stub.reset()
-        },
-        catch: (error) => navigationLockError('reset', error),
-      }),
-  })
-
 const spotifyImportResolverError = (operation: string, cause: unknown) =>
   new DatabaseError({
     message: `Failed to ${operation} Spotify import resolver: ${getErrorMessage(cause)}`,
@@ -204,7 +154,6 @@ const appServicesLive = (env: ApiEnv, tracing: Layer.Layer<never> = WorkerTracin
   return AppLayer({
     database: DatabaseLayer(env.DB),
     sitemapCache: SitemapCacheLayer(env.SITEMAP),
-    navigationLock: navigationLockLive(env),
     spotifyImportResolver: spotifyImportResolverLive(env),
     playlistEnrichmentQueue: playlistEnrichmentQueueLive(env),
     sentry: workerSentryServiceLive(env),

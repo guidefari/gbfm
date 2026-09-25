@@ -7,7 +7,6 @@ import { DatabaseLayer } from '@/db/layer'
 import { WorkerTracingLive } from '@/runtime/sentry-worker'
 import { AppLayer } from '@/runtime/services'
 import { RecordingEmailTransportLayer } from '@/services/email-transport.service'
-import { NavigationLockLocalLayer } from '@/services/navigation-lock'
 import { PlaylistEnrichmentQueueTestLayer } from '@/services/playlist-enrichment-queue'
 import { SitemapCacheLayer } from '@/services/sitemap-cache'
 import { SpotifyImportResolverLocalLayer } from '@/services/spotify-import-resolver.service'
@@ -29,7 +28,6 @@ const testAppServicesLive = AppLayer({
     get: async () => null,
     put: async () => {},
   }),
-  navigationLock: NavigationLockLocalLayer,
   spotifyImportResolver: SpotifyImportResolverLocalLayer,
   playlistEnrichmentQueue: PlaylistEnrichmentQueueTestLayer,
   sentry: testSentryServiceLive,

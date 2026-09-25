@@ -131,7 +131,7 @@ test('creator can save and reopen a draft but cannot access admin tools', async 
   expect(response?.status()).toBe(403)
 })
 
-test('tweet detail preserves the production content hierarchy and preloads navigation', async ({
+test('tweet detail preserves the content hierarchy, navigates by link, and posts replies', async ({
   page,
   context,
 }) => {
@@ -141,10 +141,10 @@ test('tweet detail preserves the production content hierarchy and preloads navig
   const secondSlug = `e2e-tweet-second-${suffix}`
 
   await publishTweet(page, firstSlug, 'First E2E transmission', 'The first transmission is live.')
-  const browserPeekRequests: Array<string> = []
+  const browserNeighbourRequests: Array<string> = []
   page.on('request', (request) => {
-    if (new URL(request.url()).pathname === '/api/content/posts/micro/navigate/peek') {
-      browserPeekRequests.push(request.url())
+    if (new URL(request.url()).pathname.endsWith('/neighbours')) {
+      browserNeighbourRequests.push(request.url())
     }
   })
   await publishTweet(
@@ -159,15 +159,21 @@ test('tweet detail preserves the production content hierarchy and preloads navig
   await expect(page.getByRole('link', { name: '#radio' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Copy link' })).toBeVisible()
   await expect(page.getByText('"use strict"')).toHaveCount(0)
-  expect(browserPeekRequests).toEqual([])
+  expect(browserNeighbourRequests).toEqual([])
 
-  const previous = page.getByRole('button', { name: 'Previous tweet' })
-  await expect(previous).toBeEnabled()
+  await page.getByRole('button', { name: 'Reply' }).click()
+  await page.getByLabel('Write a reply').fill('E2E reply transmission')
+  await page.getByRole('button', { name: 'Post reply' }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Reply posted' })).toBeVisible()
+  await expect(page.getByText('E2E reply transmission')).toBeVisible()
+
+  const next = page.getByRole('link', { name: 'Next tweet' })
+  await expect(next).toBeVisible()
   await page.evaluate(() => {
     sessionStorage.setItem('tweet-navigation-marker', 'preserved')
     performance.mark('tweet-navigation-started')
   })
-  await previous.click()
+  await next.click()
   await expect.poll(() => new URL(page.url()).pathname).not.toBe(`/tweet/${secondSlug}`)
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   const result = await page.evaluate(() => ({

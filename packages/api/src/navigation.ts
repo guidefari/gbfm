@@ -5,98 +5,43 @@ export const Slug = Schema.String.pipe(Schema.brand('MicroPostSlug'))
 
 export type Slug = typeof Slug.Type
 
-export const IntentToken = Schema.NonEmptyString
+const SlugParam = { slug: Schema.String }
 
-export type IntentToken = typeof IntentToken.Type
-
-export const NavigationCommand = Schema.Union([
-  Schema.Struct({
-    _tag: Schema.Literal('Step'),
-    direction: Schema.Literals(['Back', 'Forward']),
-  }),
-  Schema.Struct({ _tag: Schema.Literal('Jump') }),
-  Schema.Struct({ _tag: Schema.Literal('Open'), slug: Slug }),
-])
-
-export type NavigationCommand = typeof NavigationCommand.Type
-
-export const NavigateInput = Schema.Struct({
-  command: NavigationCommand,
-  from: Slug,
-  intentToken: IntentToken,
-})
-
-export type NavigateInput = typeof NavigateInput.Type
-
-const NavigationCapabilitiesResponse = Schema.Struct({
-  canStepBack: Schema.Boolean,
-  canStepForward: Schema.Boolean,
+export const MicroPostNeighboursResponse = Schema.Struct({
+  back: Schema.NullOr(Slug),
+  forward: Schema.NullOr(Slug),
   hasUnread: Schema.Boolean,
 })
 
-export const NavigationResultResponse = Schema.Struct({
-  destination: Schema.Struct({ slug: Slug, postId: Schema.String }),
-  capabilities: NavigationCapabilitiesResponse,
-  trailPosition: Schema.Struct({ index: Schema.Number, length: Schema.Number }),
-  neighbours: Schema.Struct({ back: Schema.optional(Slug), forward: Schema.optional(Slug) }),
-  neighbourhood: Schema.optional(
-    Schema.Struct({ back: Schema.Array(Slug), forward: Schema.Array(Slug) }),
-  ),
-})
+export type MicroPostNeighboursResponse = typeof MicroPostNeighboursResponse.Type
 
-export type NavigationResultResponse = typeof NavigationResultResponse.Type
+export const MicroPostRandomUnreadResponse = Schema.Struct({ slug: Slug })
 
-export const NavigationPeekInput = Schema.Struct({
-  command: NavigationCommand,
-  from: Slug,
-})
+export type MicroPostRandomUnreadResponse = typeof MicroPostRandomUnreadResponse.Type
 
-export type NavigationPeekInput = typeof NavigationPeekInput.Type
+export const MicroPostSeenResponse = Schema.Struct({ recorded: Schema.Boolean })
 
-export const NavigationVisitInput = Schema.Struct({
-  command: NavigationCommand,
-  from: Slug,
-  intentToken: IntentToken,
-})
-
-export type NavigationVisitInput = typeof NavigationVisitInput.Type
-
-export const NavigationSessionResponse = Schema.Struct({
-  slug: Schema.NullOr(Slug),
-  capabilities: NavigationCapabilitiesResponse,
-})
-
-export type NavigationSessionResponse = typeof NavigationSessionResponse.Type
+export type MicroPostSeenResponse = typeof MicroPostSeenResponse.Type
 
 export const NavigationGroup = HttpApiGroup.make('navigation')
   .add(
-    HttpApiEndpoint.post('navigateMicroPosts', '/api/content/posts/micro/navigate', {
-      payload: NavigateInput,
-      success: NavigationResultResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Conflict, HttpApiError.InternalServerError],
+    HttpApiEndpoint.get('getMicroPostNeighbours', '/api/content/posts/micro/:slug/neighbours', {
+      params: SlugParam,
+      success: MicroPostNeighboursResponse,
+      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
     }),
   )
   .add(
-    HttpApiEndpoint.post('peekMicroPostNavigation', '/api/content/posts/micro/navigate/peek', {
-      payload: NavigationPeekInput,
-      success: NavigationResultResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Conflict, HttpApiError.InternalServerError],
+    HttpApiEndpoint.get('getRandomUnreadMicroPost', '/api/content/posts/micro/:slug/random', {
+      params: SlugParam,
+      success: MicroPostRandomUnreadResponse,
+      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
     }),
   )
   .add(
-    HttpApiEndpoint.post('recordMicroPostVisit', '/api/content/posts/micro/navigate/visit', {
-      payload: NavigationVisitInput,
-      success: Schema.Struct({ recorded: Schema.Boolean }),
-      error: [HttpApiError.NotFound, HttpApiError.Conflict, HttpApiError.InternalServerError],
+    HttpApiEndpoint.post('markMicroPostSeen', '/api/content/posts/micro/:slug/seen', {
+      params: SlugParam,
+      success: MicroPostSeenResponse,
+      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
     }),
-  )
-  .add(
-    HttpApiEndpoint.get(
-      'getMicroPostNavigationSession',
-      '/api/content/posts/micro/navigation-session',
-      {
-        success: NavigationSessionResponse,
-        error: [HttpApiError.InternalServerError],
-      },
-    ),
   )

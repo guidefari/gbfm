@@ -1,68 +1,80 @@
-import { NavigationResultResponse } from '@gbfm/api/navigation'
-import { Data, Option, Schema } from 'effect'
+import { MicroPostNeighboursResponse, MicroPostRandomUnreadResponse } from '@gbfm/api/navigation'
+import { CompiledMicroPostResponse, MicroPostScreenResponse } from '@gbfm/api/post'
+import { error, fail, redirect } from '@sveltejs/kit'
+import { Effect, Option, Result, Schema } from 'effect'
 
-import { apiRequest } from '@/lib/server/api/api-gateway'
-import { getPublicJson, record, records } from '@/lib/server/public/content'
+import { apiJson } from '@/lib/server/api/api-json'
 
-import type { PageServerLoad } from './$types'
+import type { Actions, PageServerLoad } from './$types'
 
-const NavigationCommand = Data.taggedEnum<{ readonly _tag: 'Open'; readonly slug: string }>()
+const microPost = (slug: string) => `/api/content/posts/micro/${encodeURIComponent(slug)}`
 
 export const load = (async (event) => {
-  const slug = encodeURIComponent(event.params.slug)
-  const screen = await getPublicJson(event, `/api/content/posts/micro/${slug}/screen`)
+  const path = microPost(event.params.slug)
 
-  if (!screen.ok) {
-    return {
-      item: null,
-      failure: screen.message,
-      replies: [],
-      parent: null,
-      quote: null,
-      navigation: null,
-    }
-  }
-
-  const value = record(screen.value)
-
-  if (!value) {
-    return {
-      item: null,
-      failure: 'Content is unavailable right now.',
-      replies: [],
-      parent: null,
-      quote: null,
-      navigation: null,
-    }
-  }
-
-  const item = record(value.post)
-
-  const navigationResponse = item
-    ? await apiRequest(event, '/api/content/posts/micro/navigate/peek', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          command: NavigationCommand.Open({ slug: event.params.slug }),
-          from: event.params.slug,
-        }),
-      }).catch(() => null)
-    : null
-
-  const navigationInput: unknown = navigationResponse?.ok
-    ? await navigationResponse.json().catch(() => null)
-    : null
-
-  const navigation = Option.getOrNull(
-    Schema.decodeUnknownOption(NavigationResultResponse)(navigationInput),
+  const neighbours = Effect.runPromise(
+    apiJson(event, `${path}/neighbours`, MicroPostNeighboursResponse).pipe(
+      Effect.orElseSucceed(() => null),
+    ),
   )
 
-  return {
-    item,
-    failure: null,
-    replies: records(value.replies),
-    parent: record(value.root),
-    quote: record(value.quote),
-    navigation,
+  const screen = await Effect.runPromise(
+    Effect.result(apiJson(event, `${path}/screen`, MicroPostScreenResponse)),
+  )
+
+  if (Result.isFailure(screen)) {
+    error(
+      screen.failure.status === 404 ? 404 : 503,
+      screen.failure.status === 404
+        ? 'This tweet could not be found.'
+        : 'Content is unavailable right now.',
+    )
   }
+
+  return { screen: screen.success, neighbours }
 }) satisfies PageServerLoad
+
+const replyContent = (form: FormData) =>
+  Option.getOrElse(Schema.decodeUnknownOption(Schema.String)(form.get('content')), () => '').trim()
+
+export const actions = {
+  reply: async (event) => {
+    const content = replyContent(await event.request.formData())
+
+    if (!content) return fail(400, { reply: { content, message: 'Write a reply first' } })
+
+    const posted = await Effect.runPromise(
+      Effect.result(
+        apiJson(event, `${microPost(event.params.slug)}/replies`, CompiledMicroPostResponse, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ content }),
+        }),
+      ),
+    )
+
+    if (Result.isFailure(posted)) {
+      const status = posted.failure.status === 401 ? 401 : 502
+
+      return fail(status, {
+        reply: {
+          content,
+          message: status === 401 ? 'Sign in to reply' : 'Could not post reply',
+        },
+      })
+    }
+
+    return { reply: { content: '', message: 'Reply posted' } }
+  },
+  random: async (event) => {
+    const picked = await Effect.runPromise(
+      Effect.result(
+        apiJson(event, `${microPost(event.params.slug)}/random`, MicroPostRandomUnreadResponse),
+      ),
+    )
+
+    if (Result.isFailure(picked)) return fail(404, { random: 'No unread tweets left' })
+
+    return redirect(303, `/tweet/${encodeURIComponent(picked.success.slug)}`)
+  },
+} satisfies Actions

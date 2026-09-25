@@ -21,9 +21,8 @@ import { MusicEntityServiceLayer } from '@/services/music-entity'
 import { MusicLinkScraperServiceLayer } from '@/services/music-link-scraper.service'
 import { MusicReminderServiceLayer } from '@/services/music-reminder.service'
 import { MusicBrainzIdentityLive } from '@/services/musicbrainz-identity.service'
-import type { NavigationLock } from '@/services/navigation-lock'
 import { NavigationRetentionServiceLayer } from '@/services/navigation-retention.service'
-import { NavigationSessionServiceLayer } from '@/services/navigation.service'
+import { NavigationServiceLayer } from '@/services/navigation.service'
 import type { PlaylistEnrichmentQueue } from '@/services/playlist-enrichment-queue'
 import { PostServiceLayer } from '@/services/post.service'
 import { ProfileServiceLayer } from '@/services/profile.service'
@@ -54,7 +53,6 @@ const DevToolsLive: Layer.Layer<never> = Layer.empty
 export interface AppLayerOptions {
   readonly database: Layer.Layer<Database>
   readonly sitemapCache: Layer.Layer<SitemapCache>
-  readonly navigationLock: Layer.Layer<NavigationLock>
   readonly spotifyImportResolver: Layer.Layer<SpotifyImportResolver, never, Database>
   readonly playlistEnrichmentQueue: Layer.Layer<PlaylistEnrichmentQueue>
   readonly sentry: Layer.Layer<SentryService>
@@ -69,7 +67,6 @@ export interface AppLayerOptions {
 export const AppLayer = ({
   database: databaseLive,
   sitemapCache: sitemapCacheLive,
-  navigationLock: navigationLockLive,
   spotifyImportResolver: spotifyImportResolverLive,
   playlistEnrichmentQueue: playlistEnrichmentQueueLive,
   sentry: sentryLive,
@@ -97,12 +94,7 @@ export const AppLayer = ({
     playlistEnrichmentQueueLive,
     NavigationRetentionServiceLayer,
     spotifyImportResolverLive,
-    NavigationSessionServiceLayer.pipe(
-      Layer.provide(
-        PostServiceLayer.pipe(Layer.provide(MdxServiceLayer), Layer.provide(UploadAssetDepsLive)),
-      ),
-      Layer.provide(navigationLockLive),
-    ),
+    NavigationServiceLayer,
     ReminderSignalServiceLayer,
     MusicLinkScraperServiceLayer.pipe(
       Layer.provide(
