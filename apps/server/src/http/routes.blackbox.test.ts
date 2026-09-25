@@ -1647,6 +1647,12 @@ describe('admin (HttpApiBuilder group, Step 6)', () => {
     expect(res.status).toBe(401)
   })
 
+  it('GET /api/admin/telemetry returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/api/admin/telemetry'))
+
+    expect(res.status).toBe(401)
+  })
+
   it('GET /api/admin/frontend-errors/:scenario returns 401 without a session cookie', async () => {
     const res = await webHandler.handler(
       new Request('http://localhost/api/admin/frontend-errors/ok'),

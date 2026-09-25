@@ -16,6 +16,7 @@ import { traceSampleRate } from '@gbfm/core/observability/trace-sampling'
 import * as Sentry from '@sentry/cloudflare'
 import type { ErrorEvent, TracesSamplerSamplingContext, TransactionEvent } from '@sentry/core'
 import { Effect, Layer, Predicate, Schema, Tracer } from 'effect'
+import { FetchHttpClient } from 'effect/unstable/http'
 
 import { DatabaseLayer, makeDatabaseClient } from '@/db/layer'
 import { seedLocalUsers } from '@/db/seed-local-users'
@@ -35,8 +36,13 @@ import {
 } from '@/runtime/sentry-worker'
 import { AppLayer } from '@/runtime/services'
 import { dispatchScheduledJob } from '@/scheduled'
+import {
+  AdminTelemetryServiceLive,
+  AnalyticsEngineConfig,
+} from '@/services/admin-telemetry.service'
 import { CloudflareEmailTransportLayer } from '@/services/cloudflare-email.adapter'
 import {
+  ConfigService,
   WorkerConfigServiceLayerEffect,
   type WorkerConfigBindings,
 } from '@/services/config.service'
@@ -156,6 +162,20 @@ const appServicesLive = (env: ApiEnv, tracing: Layer.Layer<never> = WorkerTracin
     mixes: env.MIXES,
   }).pipe(Layer.provide(configLive))
 
+  const analyticsConfigLive = Layer.effect(
+    AnalyticsEngineConfig,
+    Effect.map(ConfigService, (config) => ({
+      accountId: config.analytics.accountId,
+      apiToken: config.analytics.apiToken,
+      dataset: config.analytics.browserDataset,
+    })),
+  ).pipe(Layer.provide(configLive))
+
+  const adminTelemetryLive = AdminTelemetryServiceLive.pipe(
+    Layer.provide(analyticsConfigLive),
+    Layer.provide(FetchHttpClient.layer),
+  )
+
   return AppLayer({
     database: DatabaseLayer(env.DB),
     sitemapCache: SitemapCacheLayer(env.SITEMAP),
@@ -171,6 +191,7 @@ const appServicesLive = (env: ApiEnv, tracing: Layer.Layer<never> = WorkerTracin
       stage: env.APP_STAGE,
       writer: env.REQUEST_TELEMETRY,
     }),
+    adminTelemetry: adminTelemetryLive,
     emailTransport:
       env.EMAIL !== undefined
         ? CloudflareEmailTransportLayer(env.EMAIL)

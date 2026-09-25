@@ -1,4 +1,9 @@
 <script lang="ts">
+  import { AdminTelemetryResponse } from '@gbfm/api/admin'
+
+  import { dashboardJson } from '../api'
+  import { telemetryDashboardState, telemetryP75 } from './telemetry-dashboard'
+
   type Scenario = { label: string; description: string; value: string; report: boolean }
 
   const scenarios: Array<Scenario> = [
@@ -42,6 +47,19 @@
 
   let pending = $state(''),
     result = $state<{ label: string; ok: boolean; message: string }>()
+
+  let telemetry = $state<AdminTelemetryResponse>()
+
+  let telemetryFailed = $state(false)
+
+  $effect(() => {
+    dashboardJson(AdminTelemetryResponse, '/api/admin/telemetry').then(
+      (value) => (telemetry = value),
+      () => (telemetryFailed = true),
+    )
+  })
+
+  const dashboard = $derived(telemetryDashboardState(telemetry, telemetryFailed))
 
   async function run(scenario: Scenario) {
     pending = scenario.value
@@ -87,6 +105,76 @@
 </script>
 
 <div class="space-y-6">
+  <section class="rounded border p-5" aria-live="polite">
+    <h2 class="text-xl font-bold">Browser and player health</h2>
+    {#if dashboard.status === 'loading'}
+      <p class="mt-3 text-sm text-muted-foreground">Loading telemetry…</p>
+    {:else if dashboard.status === 'error'}
+      <p class="mt-3 text-sm text-destructive">{dashboard.message} Try refreshing this page.</p>
+    {:else if dashboard.status === 'empty'}
+      <p class="mt-3 text-sm text-muted-foreground">
+        No sampled browser telemetry was recorded in the last {dashboard.data.windowHours} hours.
+      </p>
+    {:else}
+      {#if dashboard.status === 'partial'}
+        <p class="mt-3 rounded border border-amber-500/50 p-3 text-sm">
+          Some telemetry queries are unavailable. Available sections remain current.
+        </p>
+      {/if}
+      <div class="mt-4 grid gap-4 xl:grid-cols-2">
+        {#each Object.entries(dashboard.data.sections) as [key, section]}
+          <article class="min-w-0 rounded border p-4">
+            <h3 class="font-semibold capitalize">{key.replace('webVitals', 'Web vitals')}</h3>
+            {#if !section.available}
+              <p class="mt-2 text-sm text-muted-foreground">Unavailable</p>
+            {:else if section.rows.length === 0}
+              <p class="mt-2 text-sm text-muted-foreground">No events in this window.</p>
+            {:else}
+              <div class="mt-3 space-y-3 md:hidden">
+                {#each section.rows as row}
+                  <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded border p-3 text-xs">
+                    <dt class="text-muted-foreground">Event</dt>
+                    <dd class="min-w-0 break-words uppercase">{row.name}</dd>
+                    <dt class="text-muted-foreground">Route</dt>
+                    <dd class="min-w-0 break-words">{row.route}</dd>
+                    <dt class="text-muted-foreground">Release</dt>
+                    <dd class="min-w-0 break-words">{row.release} / {row.browser}</dd>
+                    <dt class="text-muted-foreground">Samples</dt>
+                    <dd>{row.samples.toLocaleString()}</dd>
+                    <dt class="text-muted-foreground">p75</dt>
+                    <dd>{telemetryP75(key, row.name, row.p75)}</dd>
+                  </dl>
+                {/each}
+              </div>
+              <div class="mt-3 hidden overflow-x-auto md:block">
+                <table class="w-full text-left text-xs">
+                  <thead
+                    ><tr
+                      ><th>Event</th><th>Route</th><th>Release / browser</th><th>Samples</th><th
+                        >p75</th
+                      ></tr
+                    ></thead
+                  >
+                  <tbody>
+                    {#each section.rows as row}
+                      <tr class="border-t"
+                        ><td class="uppercase">{row.name}</td><td>{row.route}</td><td
+                          >{row.release} / {row.browser}</td
+                        ><td>{row.samples.toLocaleString()}</td><td
+                          >{telemetryP75(key, row.name, row.p75)}</td
+                        ></tr
+                      >
+                    {/each}
+                  </tbody>
+                </table>
+              </div>
+            {/if}
+          </article>
+        {/each}
+      </div>
+      <p class="mt-4 text-xs text-muted-foreground">{dashboard.data.retentionNotice}</p>
+    {/if}
+  </section>
   <section class="rounded border p-5">
     <h2 class="text-xl font-bold">API response scenarios</h2>
     <p class="mt-2 text-sm text-muted-foreground">

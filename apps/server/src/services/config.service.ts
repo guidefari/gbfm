@@ -9,6 +9,7 @@ const secretNames = [
   'OTEL_EXPORTER_OTLP_HEADERS',
   'BETTER_AUTH_SECRET',
   'BETTER_AUTH_URL',
+  'CloudflareAnalyticsApiToken',
   'StorageProvider',
   'StorageEndpoint',
   'StorageRegion',
@@ -43,6 +44,8 @@ export type WorkerConfigBindings = Readonly<
     Partial<Record<OptionalSecretName, string>> & {
       APP_STAGE: string
       APP_RELEASE?: string
+      CLOUDFLARE_ACCOUNT_ID?: string
+      BROWSER_TELEMETRY_DATASET?: string
       LOCAL_DEV?: 'true'
       CDN_ROUTER_URL?: string
       FRONTEND_URL?: string
@@ -151,6 +154,11 @@ const ConfigSchema = Schema.Struct({
     dsn: Schema.String,
     environment: Schema.String,
   }),
+  analytics: Schema.Struct({
+    accountId: Schema.String,
+    apiToken: Schema.String,
+    browserDataset: Schema.String,
+  }),
   adminEmail: Schema.String,
 })
 
@@ -186,6 +194,7 @@ export function createConfig(bindings?: WorkerConfigBindings): ConfigService {
     OTEL_EXPORTER_OTLP_HEADERS: secretString('OTEL_EXPORTER_OTLP_HEADERS', '', bindings),
     BETTER_AUTH_SECRET: secretString('BETTER_AUTH_SECRET', '', bindings),
     BETTER_AUTH_URL: secretString('BETTER_AUTH_URL', '', bindings),
+    CloudflareAnalyticsApiToken: secretString('CloudflareAnalyticsApiToken', '', bindings),
     StorageProvider: secretString('StorageProvider', '', bindings),
     StorageEndpoint: secretString('StorageEndpoint', '', bindings),
     StorageRegion: secretString('StorageRegion', 'auto', bindings),
@@ -278,6 +287,11 @@ export function createConfig(bindings?: WorkerConfigBindings): ConfigService {
     sentry: {
       dsn: secrets.SENTRY_BACKEND_DSN,
       environment: bindings?.SENTRY_ENVIRONMENT ?? (isProd ? 'production' : 'development'),
+    },
+    analytics: {
+      accountId: stringValue(bindings?.CLOUDFLARE_ACCOUNT_ID, ''),
+      apiToken: secrets.CloudflareAnalyticsApiToken,
+      browserDataset: stringValue(bindings?.BROWSER_TELEMETRY_DATASET, 'gbfm_www_dev'),
     },
     adminEmail: stringValue(bindings?.ADMIN_EMAIL, 'guidefari@icloud.com'),
     resources: {

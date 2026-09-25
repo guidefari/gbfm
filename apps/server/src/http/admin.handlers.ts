@@ -23,6 +23,7 @@ import { releasesTable } from '@/db/release.schema'
 import { showSubscriptionsTable, showsTable } from '@/db/show.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { dieOnDatabaseError } from '@/http/handler-utils'
+import { AdminTelemetryService } from '@/services/admin-telemetry.service'
 
 const dieOnAdminDatabaseError = dieOnDatabaseError('admin')
 
@@ -557,6 +558,14 @@ export const AdminHandlersLive = HttpApiBuilder.group(Api, 'admin', (handlers) =
               }),
           }),
         )
+      }),
+    )
+    .handle('getAdminTelemetry', () =>
+      Effect.gen(function* () {
+        yield* requireAdmin
+        const telemetry = yield* AdminTelemetryService
+
+        return yield* telemetry.dashboard
       }),
     )
     .handle('simulateFrontendError', ({ params }) =>

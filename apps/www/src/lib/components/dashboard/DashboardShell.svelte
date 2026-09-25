@@ -37,7 +37,9 @@
   ]
 </script>
 
-<div class="mx-auto grid min-h-[calc(100dvh-3rem)] max-w-7xl md:grid-cols-[15rem_1fr]">
+<div
+  class="mx-auto grid min-h-[calc(100dvh-3rem)] max-w-7xl grid-cols-[minmax(0,1fr)] md:grid-cols-[15rem_minmax(0,1fr)]"
+>
   <aside class="border-b p-4 md:border-r md:border-b-0">
     <a class="mb-4 block text-lg font-black no-underline" href="/dashboard">Dashboard</a>
     <nav class="flex gap-2 overflow-x-auto md:flex-col md:gap-0" aria-label="Dashboard">

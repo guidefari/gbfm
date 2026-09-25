@@ -144,6 +144,36 @@ export const AdminOverviewResponse = Schema.Struct({
 
 export type AdminOverviewResponse = typeof AdminOverviewResponse.Type
 
+const TelemetryDimension = Schema.Struct({
+  name: Schema.String,
+  route: Schema.String,
+  release: Schema.String,
+  browser: Schema.String,
+  samples: Schema.Number,
+  p75: Schema.NullOr(Schema.Number),
+})
+
+const TelemetrySection = Schema.Struct({
+  available: Schema.Boolean,
+  rows: Schema.Array(TelemetryDimension),
+})
+
+/** Curated browser/product telemetry only. Operational telemetry remains in Cloudflare. */
+export const AdminTelemetryResponse = Schema.Struct({
+  generatedAt: Schema.String,
+  windowHours: Schema.Number,
+  state: Schema.Literals(['empty', 'partial', 'complete']),
+  retentionNotice: Schema.String,
+  sections: Schema.Struct({
+    webVitals: TelemetrySection,
+    navigation: TelemetrySection,
+    errors: TelemetrySection,
+    player: TelemetrySection,
+  }),
+})
+
+export type AdminTelemetryResponse = typeof AdminTelemetryResponse.Type
+
 const FrontendErrorScenario = Schema.Literals([
   'ok',
   'bad-request',
@@ -175,6 +205,12 @@ export const AdminGroup = HttpApiGroup.make('admin')
   .add(
     HttpApiEndpoint.get('getAdminOverview', '/api/admin/overview', {
       success: AdminOverviewResponse,
+      error: HttpApiError.Forbidden,
+    }).middleware(AuthMiddleware),
+  )
+  .add(
+    HttpApiEndpoint.get('getAdminTelemetry', '/api/admin/telemetry', {
+      success: AdminTelemetryResponse,
       error: HttpApiError.Forbidden,
     }).middleware(AuthMiddleware),
   )

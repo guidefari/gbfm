@@ -80,6 +80,8 @@ export const apiWorker = ({
         ),
         APP_STAGE: config.stage,
         APP_RELEASE: config.release,
+        CLOUDFLARE_ACCOUNT_ID: process.env.CLOUDFLARE_ACCOUNT_ID ?? '',
+        BROWSER_TELEMETRY_DATASET: `gbfm_www_${config.stage}`,
         ...(config.isLocalDev ? { LOCAL_DEV: 'true' } : undefined),
         CDN_ROUTER_URL: Output.map(cdn.url, (url) => url ?? ''),
         USER_CONTENT_BUCKET_NAME: store.userContent.bucketName,

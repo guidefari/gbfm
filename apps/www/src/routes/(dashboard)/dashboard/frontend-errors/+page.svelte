@@ -5,6 +5,6 @@
 
 <Page
   title="Frontend Telemetry"
-  description="Simulate frontend-observed API failures and confirm Cloudflare telemetry behavior."
+  description="Review curated browser and player signals, or simulate frontend-observed API failures."
   ><FrontendTelemetry /></Page
 >

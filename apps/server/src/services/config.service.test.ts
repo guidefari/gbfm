@@ -24,6 +24,7 @@ const workerBindings = (): WorkerConfigBindings => ({
   VITE_PUBLIC_SENTRY_DSN: 'configured',
   OTEL_EXPORTER_OTLP_ENDPOINT: 'configured',
   OTEL_EXPORTER_OTLP_HEADERS: 'configured',
+  CloudflareAnalyticsApiToken: 'test-analytics-token',
   BETTER_AUTH_SECRET: 'configured',
   BETTER_AUTH_URL: 'configured',
   StorageProvider: 'aws',
