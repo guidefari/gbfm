@@ -1,11 +1,13 @@
 <script lang="ts">
+  import { dashboardCommand, jsonRequest } from './api'
+
   let {
     endpoint,
     method = 'PATCH',
     fields,
   }: {
     endpoint: string
-    method?: string
+    method?: 'POST' | 'PUT' | 'PATCH'
     fields: Array<{ name: string; label: string; type?: string; value?: string }>
   } = $props()
 
@@ -19,16 +21,14 @@
     pending = true
     message = ''
     const form = new FormData(formElement)
-    const body = Object.fromEntries(form.entries())
+
+    const body = Object.fromEntries(
+      [...form.entries()].map(([name, value]) => [name, String(value)]),
+    )
 
     try {
-      const response = await fetch(endpoint, {
-        method,
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-
-      message = response.ok ? 'Saved.' : `Could not save (${response.status}).`
+      await dashboardCommand(endpoint, jsonRequest(method, body))
+      message = 'Saved.'
     } catch {
       message = 'Could not save.'
     } finally {

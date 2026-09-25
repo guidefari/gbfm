@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { dashboardCommand, jsonRequest } from './api'
   import ApiTable from './ApiTable.svelte'
   import Page from './Page.svelte'
 
@@ -29,17 +30,17 @@
     if (!createEndpoint || !formElement) return
     const form = new FormData(formElement)
 
-    const response = await fetch(createEndpoint, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(Object.fromEntries(form)),
-    })
+    const body = Object.fromEntries(
+      [...form.entries()].map(([name, value]) => [name, String(value)]),
+    )
 
-    message = response.ok ? 'Created.' : `Could not create (${response.status}).`
-
-    if (response.ok) {
+    try {
+      await dashboardCommand(createEndpoint, jsonRequest('POST', body))
+      message = 'Created.'
       formElement.reset()
       refresh++
+    } catch (cause) {
+      message = cause instanceof Error ? cause.message : 'Could not create.'
     }
   }
 </script>

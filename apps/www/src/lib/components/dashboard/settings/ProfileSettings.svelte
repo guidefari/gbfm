@@ -1,6 +1,6 @@
 <script lang="ts">
   import { SocialLinksResponse, UserProfileResponse } from '@gbfm/api/user'
-  import { dashboardJson, jsonRequest } from '@/lib/components/dashboard/api'
+  import { dashboardCommand, dashboardJson, jsonRequest } from '@/lib/components/dashboard/api'
 
   type Profile = typeof UserProfileResponse.Type
 
@@ -105,15 +105,11 @@
     resetPending = true
 
     try {
-      const response = await fetch(
+      await dashboardCommand(
         '/auth/forget-password',
         jsonRequest('POST', { email, redirectTo: `${location.origin}/auth/reset-password` }),
       )
-
-      notify(
-        response.ok ? 'Reset link sent. Check your inbox.' : 'Failed to send reset link.',
-        !response.ok,
-      )
+      notify('Reset link sent. Check your inbox.')
     } catch {
       notify('Failed to send reset link. Please try again later.', true)
     } finally {

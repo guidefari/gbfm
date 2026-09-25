@@ -2,6 +2,8 @@
   import { Option, Schema } from 'effect'
   import { onMount } from 'svelte'
 
+  import { dashboardCommand, dashboardJson, jsonRequest } from './api'
+
   const Cell = Schema.Union([Schema.String, Schema.Number, Schema.Boolean, Schema.Null])
 
   const Row = Schema.Record(Schema.String, Cell)
@@ -87,10 +89,7 @@
     message = ''
 
     try {
-      const response = await fetch(requestUrl())
-
-      if (!response.ok) throw new Error(`Request failed (${response.status})`)
-      const body: Schema.Json = await response.json()
+      const body = await dashboardJson(Schema.Json, requestUrl())
       const parsed = parseResponse(body)
       rows = parsed.rows
       total =
@@ -116,20 +115,17 @@
     pendingId = id
     message = ''
 
-    const init: RequestInit = body
-      ? { method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }
-      : { method }
-
-    const response = await fetch(`${actionBase}/${encodeURIComponent(id)}`, init)
-    pendingId = ''
-
-    if (!response.ok) {
-      message = `Action failed (${response.status}).`
-
-      return
+    try {
+      await dashboardCommand(
+        `${actionBase}/${encodeURIComponent(id)}`,
+        body ? jsonRequest(method, body) : { method },
+      )
+      await load()
+    } catch (cause) {
+      message = cause instanceof Error ? cause.message : 'Action failed'
+    } finally {
+      pendingId = ''
     }
-
-    await load()
   }
 
   onMount(load)
