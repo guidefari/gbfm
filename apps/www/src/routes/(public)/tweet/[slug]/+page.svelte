@@ -7,7 +7,7 @@
   import TweetAuthorRow from '@/lib/components/public/TweetAuthorRow.svelte'
   import TweetMusicCard from '@/lib/components/public/TweetMusicCard.svelte'
   import TweetNav from '@/lib/components/public/TweetNav.svelte'
-  import { records, strings, text } from '@/lib/public-content'
+  import { record, records, strings, text } from '@/lib/public-content'
   import type { PageProps } from './$types'
 
   let { data, params }: PageProps = $props()
@@ -96,15 +96,22 @@
 {#if data.failure || !data.item}
   <PublicState message={data.failure ?? 'This tweet could not be found.'} error />
 {:else}
+  {@const itemMusic = record(data.item.music)}
   <div class="mx-auto max-w-3xl px-4 py-8">
     <div class="mb-6 lg:mb-0"><TweetNav slug={params.slug} /></div>
 
     {#if data.parent && !rootIsCurrent}
+      {@const parentMusic = record(data.parent.music)}
       <div class="pb-4">
-        <a href={`/tweet/${text(data.parent.slug)}`} class="block overflow-hidden rounded-lg border border-border/40 bg-card p-3 opacity-80 no-underline transition-opacity hover:opacity-100">
+        <article class="space-y-3 overflow-hidden rounded-lg border border-border/40 bg-card p-3 opacity-80 transition-opacity hover:opacity-100">
           <TweetAuthorRow creator={records(data.parent.creators)[0] ?? null} createdAt={text(data.parent.createdAt)} interactive={false} />
-          <p class="mt-2 truncate text-base text-muted-foreground">{text(data.parent.content, text(data.parent.title))}</p>
-        </a>
+          <a href={`/tweet/${text(data.parent.slug)}`} class="block no-underline">
+            <p class="mt-2 truncate text-base text-muted-foreground">{text(data.parent.content, text(data.parent.title))}</p>
+          </a>
+          {#if parentMusic}
+            <TweetMusicCard type={text(data.parent.musicEntityType)} entity={record(parentMusic.entity)} links={records(parentMusic.links)} />
+          {/if}
+        </article>
         <div class="relative h-2"><div class="absolute left-5 top-0 h-2 w-px bg-border/60" aria-hidden="true"></div></div>
       </div>
     {/if}
@@ -120,15 +127,21 @@
         <RichContent content={text(data.item.content)} />
       </div>
 
-      {#if text(data.item.musicEntityId)}
-        <TweetMusicCard type={text(data.item.musicEntityType)} entity={data.musicEntity} links={data.musicLinks} />
+      {#if itemMusic}
+        <TweetMusicCard type={text(data.item.musicEntityType)} entity={record(itemMusic.entity)} links={records(itemMusic.links)} />
       {/if}
 
       {#if data.quote}
-        <a href={`/tweet/${text(data.quote.slug)}`} class="not-prose block overflow-hidden rounded-md border border-border/50 bg-muted/20 p-3 no-underline transition-colors hover:bg-muted/30">
+        {@const quoteMusic = record(data.quote.music)}
+        <article class="not-prose space-y-3 overflow-hidden rounded-md border border-border/50 bg-muted/20 p-3 transition-colors hover:bg-muted/30">
           <TweetAuthorRow creator={records(data.quote.creators)[0] ?? null} createdAt={text(data.quote.createdAt)} interactive={false} />
-          <p class="mt-2 truncate text-base text-muted-foreground">{text(data.quote.content, text(data.quote.title))}</p>
-        </a>
+          <a href={`/tweet/${text(data.quote.slug)}`} class="block no-underline">
+            <p class="mt-2 truncate text-base text-muted-foreground">{text(data.quote.content, text(data.quote.title))}</p>
+          </a>
+          {#if quoteMusic}
+            <TweetMusicCard type={text(data.quote.musicEntityType)} entity={record(quoteMusic.entity)} links={records(quoteMusic.links)} />
+          {/if}
+        </article>
       {/if}
 
       {#if strings(data.item.tags).length}
@@ -173,12 +186,17 @@
 
       <div>
         {#each data.replies as reply, index}
+          {@const replyMusic = record(reply.music)}
           <div class="relative">
             {#if index < data.replies.length - 1}<div class="absolute left-[35px] top-full h-2 w-px bg-border/60" aria-hidden="true"></div>{/if}
-            <a href={`/tweet/${text(reply.slug)}`} class="mb-2 block space-y-2 rounded-lg border border-border/40 bg-card p-3 no-underline transition-colors hover:bg-card/80">
+            <article class="mb-2 space-y-3 rounded-lg border border-border/40 bg-card p-3 transition-colors hover:bg-card/80">
               <TweetAuthorRow creator={records(reply.creators)[0] ?? null} createdAt={text(reply.createdAt)} />
               <div class="prose prose-sm max-w-none text-foreground prose-p:my-0 prose-p:leading-relaxed dark:prose-invert"><RichContent content={text(reply.content)} /></div>
-            </a>
+              {#if replyMusic}
+                <TweetMusicCard type={text(reply.musicEntityType)} entity={record(replyMusic.entity)} links={records(replyMusic.links)} />
+              {/if}
+              <a href={`/tweet/${text(reply.slug)}`} class="inline-block text-xs text-muted-foreground no-underline hover:text-foreground">View reply</a>
+            </article>
           </div>
         {/each}
       </div>

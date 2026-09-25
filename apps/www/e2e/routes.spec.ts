@@ -127,3 +127,26 @@ test('home SSR includes canonical metadata and visible content', async ({ page }
     'https://goosebumps.fm/'
   )
 })
+
+test('tweet replies render hydrated music without browser-side music API requests', async ({
+  page
+}) => {
+  const musicRequests: string[] = []
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname.startsWith('/api/music/')) {
+      musicRequests.push(request.url())
+    }
+  })
+
+  const response = await page.goto('/tweet/e2e-music-thread')
+  expect(response?.status()).toBe(200)
+
+  const replies = page.locator('#replies')
+  await expect(replies.getByRole('heading', { name: 'Reply Frequency' })).toBeVisible()
+  await expect(replies.getByText('Echo Unit, Return Path')).toBeVisible()
+  await expect(replies.getByRole('link', { name: /Bandcamp/ })).toHaveAttribute(
+    'href',
+    'https://example.bandcamp.com/track/e2e-reply'
+  )
+  expect(musicRequests).toEqual([])
+})
