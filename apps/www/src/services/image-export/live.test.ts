@@ -13,7 +13,7 @@ const save = (blob: Blob, fileName: string) =>
 
 const pngBlob = () => new Blob(['png-bytes'], { type: 'image/png' })
 
-describe('ImageExport.save', () => {
+describe.sequential('ImageExport.save', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
