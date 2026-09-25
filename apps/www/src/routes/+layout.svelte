@@ -36,7 +36,7 @@
       id="main-scroll-container"
       tabindex="-1"
       style="overflow-anchor: none"
-      class="h-full min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-background pb-[calc(2.75rem+env(safe-area-inset-bottom))] focus:outline-none lg:pb-12 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
+      class="h-full min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-background pb-[calc(3.5rem+env(safe-area-inset-bottom))] focus:outline-none lg:pb-12 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
       {@render children()}
     </main>
 

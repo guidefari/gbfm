@@ -1,72 +1,52 @@
 <script lang="ts">
-  import { goto } from '$app/navigation'
-  import { page } from '$app/state'
+  import { afterNavigate } from '$app/navigation'
   import type { Principal } from '@/lib/auth/principal'
+  import { onMount } from 'svelte'
+  import DesktopBar from './nav/DesktopBar.svelte'
+  import MenuSheet from './nav/MenuSheet.svelte'
+  import MobileTabBar from './nav/MobileTabBar.svelte'
+  import SearchDialog from './nav/SearchDialog.svelte'
   import { getPlayerContext } from '@/lib/player/context'
-  import { BookOpen, Disc3, Menu, Search } from 'lucide-svelte'
-  import GoosebumpsLogo from './GoosebumpsLogo.svelte'
+  import { toNowPlaying } from './nav/now-playing'
 
   let { principal }: { principal: Principal } = $props()
-  const player = getPlayerContext()
-  const snapshot = player.snapshot
-  const fullscreen = player.fullscreen
-  const current = $derived($snapshot ? ($snapshot.queue.tracks[$snapshot.queue.currentIndex] ?? null) : null)
-  const progress = $derived($snapshot?.duration ? Math.min(100, ($snapshot.currentTime / $snapshot.duration) * 100) : 0)
-  let searchOpen = $state(false)
-  let query = $state('')
+  const snapshot = getPlayerContext().snapshot
+  const player = $derived(toNowPlaying($snapshot))
+  let search = $state<SearchDialog>()
 
-  const desktopLinks = [
-    { href: '/tweets', label: 'Tweets' },
-    { href: '/shows', label: 'Radio Shows' },
-    { href: '/editorial', label: 'Editorial' },
-    { href: '/mixes', label: 'Mixes' }
-  ]
-  const isActive = (href: string) => {
-    const path = page.url.pathname
-    if (href === '/tweets') return path === href || path.startsWith('/tweet/')
-    return path === href || path.startsWith(`${href}/`)
+  const openSearch = () => {
+    document.getElementById('mobile-menu')?.hidePopover()
+    search?.open()
   }
-  const submit = () => {
-    const value = query.trim()
-    if (!value) return
-    searchOpen = false
-    void goto(`/tweets?q=${encodeURIComponent(value)}`)
-  }
+  const isTyping = (target: EventTarget | null) =>
+    target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement || (target instanceof HTMLElement && target.isContentEditable)
 
+  afterNavigate(() => {
+    document.getElementById('mobile-menu')?.hidePopover()
+    document.getElementById('account-menu')?.hidePopover()
+    search?.close()
+  })
+
+  onMount(() => {
+    const hotkeys = (event: KeyboardEvent) => {
+      const commandK = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k'
+      if (!commandK && (event.key !== '/' || isTyping(event.target))) return
+      event.preventDefault()
+      event.stopPropagation()
+      openSearch()
+    }
+    window.addEventListener('keydown', hotkeys, { capture: true })
+    return () => {
+      window.removeEventListener('keydown', hotkeys, { capture: true })
+    }
+  })
 </script>
 
 <nav aria-label="Primary" class="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:h-12 lg:border-t-2 lg:border-foreground lg:pb-0">
-  {#if current}<div class="absolute inset-x-0 top-0 h-[3px] bg-border/60"><div class="h-full bg-highlight shadow-[0_0_6px_var(--highlight)]" style={`width:${progress}%`}></div></div>{/if}
-
-  <div class="grid h-11 grid-cols-5 lg:hidden">
-    {#if current && $snapshot}
-      <button type="button" aria-label="Now playing" class="flex items-center justify-center" onclick={() => ($fullscreen = true)}>
-        <span class="relative size-7 overflow-hidden rounded-sm border border-border">
-          {#if current.thumbnailUrl}<img src={current.thumbnailUrl} alt="" class="size-full object-cover" />{:else}<span class="grid size-full place-items-center">♪</span>{/if}
-          <span class="absolute inset-0 grid place-items-center bg-black/35 text-xs text-white">{$snapshot.playing ? 'Ⅱ' : '▶'}</span>
-        </span>
-      </button>
-    {:else}<a href="/shows" aria-label="Now playing" class="grid place-items-center no-underline"><Disc3 size={20} strokeWidth={1.75} /></a>{/if}
-    <a href="/shows" aria-label="Radio Shows" aria-current={isActive('/shows') ? 'page' : undefined} class="grid place-items-center no-underline aria-[current=page]:text-highlight"><Disc3 size={20} strokeWidth={1.75} /></a>
-    <a href="/editorial" aria-label="Editorial" aria-current={isActive('/editorial') ? 'page' : undefined} class="grid place-items-center no-underline aria-[current=page]:text-highlight"><BookOpen size={20} strokeWidth={1.75} /></a>
-    <button type="button" aria-label="Search" onclick={() => (searchOpen = true)}><Search size={20} strokeWidth={1.75} /></button>
-    <button type="button" aria-label="Menu" aria-haspopup="dialog" popovertarget="mobile-menu"><Menu size={20} strokeWidth={1.75} /></button>
-  </div>
-
-  <div class="hidden h-full items-center gap-4 px-4 lg:flex lg:pr-6">
-    <a href="/" aria-label="goosebumps.fm home" class="group flex shrink-0 items-center text-foreground no-underline transition-colors hover:text-highlight"><GoosebumpsLogo class="h-5 w-auto shrink-0" /></a>
-    <div class="flex shrink-0 items-center gap-1">{#each desktopLinks as link}<a href={link.href} aria-current={isActive(link.href) ? 'page' : undefined} class="rounded-sm px-2 py-1 text-xs font-semibold tracking-wide text-muted-foreground no-underline hover:text-foreground aria-[current=page]:text-highlight">{link.label}</a>{/each}</div>
-    <button type="button" aria-label="Search" class="grid size-7 place-items-center text-muted-foreground hover:text-foreground" onclick={() => (searchOpen = true)}><Search size={12} /></button>
-    <span class="min-w-0 flex-1"></span>
-    {#if current && $snapshot}<div class="flex min-w-0 max-w-56 items-center gap-2 border-r border-border pr-3"><button type="button" aria-label={$snapshot.playing ? 'Pause' : 'Play'} class="size-7 shrink-0 rounded-sm border border-border text-xs" onclick={player.toggle}>{$snapshot.playing ? 'Ⅱ' : '▶'}</button><button type="button" class="truncate text-left text-xs font-medium text-muted-foreground hover:text-foreground" onclick={() => ($fullscreen = true)}>{current.title}</button></div>{/if}
-    {#if principal._tag === 'Authenticated'}<a href="/dashboard" aria-label="Dashboard" class="flex size-7 items-center justify-center overflow-hidden rounded-sm border border-border bg-muted text-xs font-bold no-underline">{#if principal.imageUrl}<img src={principal.imageUrl} alt="" class="size-full object-cover" />{:else}{principal.name[0] ?? '?'}{/if}</a>{:else}<a href={`/auth/sign-in?redirect=${encodeURIComponent(page.url.pathname)}`} class="text-xs font-semibold text-highlight no-underline">Log in</a>{/if}
-  </div>
+  {#if player}<div class="absolute inset-x-0 top-0 h-[3px] bg-border/60"><div class="h-full bg-highlight shadow-[0_0_6px_var(--highlight)]" style={`width:${player.progress}%`}></div></div>{/if}
+  <MobileTabBar {player} onSearch={openSearch} />
+  <DesktopBar {principal} {player} onSearch={openSearch} />
 </nav>
 
-<div id="mobile-menu" popover="auto" role="dialog" aria-labelledby="menu-title" class="fixed inset-x-0 bottom-0 top-auto z-50 m-0 max-h-[85dvh] w-full max-w-none overflow-y-auto rounded-t-lg border-x-0 border-b-0 border-t border-border bg-background p-0 text-foreground backdrop:bg-black/60 lg:hidden">
-  <header class="flex h-12 items-center justify-between border-b border-border px-4"><h2 id="menu-title" class="font-black">Menu</h2><button aria-label="Close menu" popovertarget="mobile-menu" popovertargetaction="hide" class="p-2 text-xl">×</button></header>
-  <div class="grid gap-1 p-3"><p class="px-3 pt-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">Browse</p>{#each desktopLinks as link}<a href={link.href} aria-current={isActive(link.href) ? 'page' : undefined} class="rounded-sm px-3 py-2 font-semibold no-underline aria-[current=page]:bg-muted aria-[current=page]:text-highlight">{link.label}</a>{/each}<p class="px-3 pt-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">Follow</p><a href="/subscribe" class="rounded-sm px-3 py-2 font-semibold no-underline">Newsletter</a></div>
-  <footer class="border-t border-border p-3 pb-[calc(.75rem+env(safe-area-inset-bottom))]">{#if principal._tag === 'Authenticated'}<div class="mb-2 px-2"><strong class="block truncate">{principal.name}</strong><span class="block truncate text-xs text-muted-foreground">{principal.username ? `@${principal.username}` : principal.email}</span></div><a href="/dashboard" class="block rounded-sm bg-highlight px-3 py-2 text-center font-bold text-highlight-foreground no-underline">Dashboard</a>{:else}<a href={`/auth/sign-in?redirect=${encodeURIComponent(page.url.pathname)}`} class="block rounded-sm bg-highlight px-3 py-2 text-center font-bold text-highlight-foreground no-underline">Log in</a>{/if}</footer>
-</div>
-
-{#if searchOpen}<div class="fixed inset-0 z-50 flex items-start justify-center bg-black/70 px-4 pt-[15vh]" role="presentation" onclick={(event) => { if (event.target === event.currentTarget) searchOpen = false }}><form role="search" onsubmit={(event) => { event.preventDefault(); submit() }} class="w-full max-w-xl border-2 border-foreground bg-background p-4"><div class="mb-3 flex justify-between"><strong>Search tweets</strong><button type="button" aria-label="Close search" onclick={() => (searchOpen = false)}>×</button></div><input bind:value={query} placeholder="Search posts…" aria-label="Search query" class="w-full border border-border bg-background px-3 py-3" /><button class="mt-3 w-full bg-highlight px-4 py-2 font-bold text-highlight-foreground">Search</button></form></div>{/if}
+<MenuSheet {principal} />
+<SearchDialog bind:this={search} />
