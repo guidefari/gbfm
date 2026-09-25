@@ -12,7 +12,7 @@ import {
 } from '../apps/server/src/scheduled'
 import type { CdnRouter } from './cdn'
 import type { EmailResources } from './email'
-import { workerObservability } from './observability'
+import { privateSourceMaps, workerObservability } from './observability'
 import type { QrPdfWorker } from './qr-pdf'
 import type { SecretBindings } from './secrets'
 import { hostname, localDevPorts, type StageConfig } from './stage'
@@ -51,6 +51,7 @@ export const apiWorker = ({
       ...hostname(config, 'api.goosebumps.fm'),
       ...(config.isLocalDev ? { dev: { port: localDevPorts.api, strictPort: true } } : undefined),
       compatibility: { date: '2026-07-04', flags: ['nodejs_compat'] },
+      build: privateSourceMaps,
       crons: [reminderSweepCron, sitemapRegenerationCron, maintenanceSweepCron],
       observability: workerObservability(config.isProduction),
       env: {
@@ -74,6 +75,7 @@ export const apiWorker = ({
           },
         ),
         APP_STAGE: config.stage,
+        APP_RELEASE: config.release,
         ...(config.isLocalDev ? { LOCAL_DEV: 'true' } : undefined),
         CDN_ROUTER_URL: Output.map(cdn.url, (url) => url ?? ''),
         USER_CONTENT_BUCKET_NAME: store.userContent.bucketName,

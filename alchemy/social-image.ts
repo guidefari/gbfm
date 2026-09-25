@@ -1,7 +1,7 @@
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as Effect from 'effect/Effect'
 
-import { workerObservability } from './observability'
+import { privateSourceMaps, workerObservability } from './observability'
 import type { StageConfig } from './stage'
 import type { Storage } from './storage'
 
@@ -12,6 +12,7 @@ export const socialImageWorker = (config: StageConfig, store: Storage, api: Clou
       main: './apps/social-image/src/worker.ts',
       workersDev: false,
       compatibility: { date: '2026-07-04', flags: ['nodejs_compat'] },
+      build: privateSourceMaps,
       crons: ['17 3 * * *'],
       observability: workerObservability(config.isProduction),
       assets: {
@@ -21,6 +22,7 @@ export const socialImageWorker = (config: StageConfig, store: Storage, api: Clou
         notFoundHandling: 'none',
       },
       env: {
+        APP_RELEASE: config.release,
         API: api,
         CARDS: store.socialCards,
       },

@@ -36,6 +36,7 @@ export const website = ({ config, websiteConfig, api, socialImages }: WebsiteInp
         SOCIAL_IMAGES: socialImages,
         BROWSER_TELEMETRY: browserTelemetry,
         APP_STAGE: config.stage,
+        APP_RELEASE: config.release,
         VITE_SPOTIFY_CLIENT_ID: websiteConfig.spotifyClientId,
       },
     })

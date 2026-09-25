@@ -12,13 +12,13 @@ export function workerObservability(isProduction: boolean): WorkerObservability 
         enabled: true,
         headSamplingRate: 1,
         invocationLogs: true,
-        persist: false,
+        persist: true,
         destinations: [LOGS_DESTINATION],
       },
       traces: {
         enabled: true,
         headSamplingRate: 1,
-        persist: false,
+        persist: true,
         destinations: [TRACES_DESTINATION],
       },
     }
@@ -39,3 +39,8 @@ export function workerObservability(isProduction: boolean): WorkerObservability 
     },
   }
 }
+
+/** Upload authored-code maps as private Worker modules without publishing a sourceMappingURL. */
+export const privateSourceMaps = {
+  output: { sourcemap: 'hidden' },
+} as const
