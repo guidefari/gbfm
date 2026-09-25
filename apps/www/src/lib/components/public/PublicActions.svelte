@@ -1,8 +1,35 @@
 <script lang="ts">
+  import { GetFavoritesResponse } from '@gbfm/api/favorites'
+  import { GetUserSubscriptionsResponse } from '@gbfm/api/user'
+  import { page } from '$app/state'
+  import { Option, Schema } from 'effect'
+  import { onMount } from 'svelte'
+  import AuthPromptDialog from './AuthPromptDialog.svelte'
+
   let { id, title, kind, slug }: { id?: string; title: string; kind: 'audio' | 'show' | 'content'; slug: string } = $props()
   let busy = $state(false)
   let status = $state('')
   let active = $state(false)
+  let authOpen = $state(false)
+  let retryAfterAuthentication = false
+
+  onMount(() => {
+    if (!id || page.data.principal?._tag !== 'Authenticated') return
+    const loadActiveState = async () => {
+      const endpoint = kind === 'show' ? '/api/user/subscriptions?limit=100&offset=0' : '/api/favorites?limit=100&offset=0'
+      const response = await fetch(endpoint, { credentials: 'include' }).catch(() => null)
+      if (!response?.ok) return
+      const json: unknown = await response.json()
+      if (kind === 'show') {
+        const subscriptions = Option.getOrNull(Schema.decodeUnknownOption(GetUserSubscriptionsResponse)(json))
+        active = subscriptions?.data.some((subscription) => subscription.showId === id) ?? false
+      } else {
+        const favorites = Option.getOrNull(Schema.decodeUnknownOption(GetFavoritesResponse)(json))
+        active = favorites?.favorites.some((favorite) => favorite.audioId === id) ?? false
+      }
+    }
+    void loadActiveState()
+  })
 
   const share = async () => {
     const url = new URL(slug, window.location.origin).href
@@ -25,7 +52,7 @@
       body: !active && kind === 'audio' ? JSON.stringify({ audioId: id }) : undefined
     }).catch(() => null)
     if (response?.ok) { active = !active; status = active ? (kind === 'show' ? 'Subscribed' : 'Added to favorites') : (kind === 'show' ? 'Unsubscribed' : 'Removed from favorites') }
-    else if (response?.status === 401) { status = 'Sign in to use this action' }
+    else if (response?.status === 401) { retryAfterAuthentication = true; authOpen = true }
     else status = 'Action failed. Please try again.'
     busy = false
   }
@@ -36,3 +63,4 @@
   <button class="border border-border px-3 py-2 text-sm font-bold" onclick={share}>Share</button>
   {#if status}<span class="text-xs text-muted-foreground" role="status">{status}</span>{/if}
 </div>
+<AuthPromptDialog bind:open={authOpen} action={kind === 'show' ? 'subscribe' : 'favorite'} returnPath={slug} onAuthenticated={() => { if (retryAfterAuthentication) { retryAfterAuthentication = false; void toggle() } }} />

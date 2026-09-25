@@ -1,2 +1,2 @@
-<script lang="ts">import ContentManager from '@/lib/components/dashboard/ContentManager.svelte'</script>
-<ContentManager title="Your Tweets" description="Your short posts, replies, and drafts." contentType="micro" />
+<script lang="ts">import ContentTable from '@/lib/components/dashboard/content-tools/ContentTable.svelte'</script>
+<ContentTable title="Your Tweets" description="Your short posts, replies, and drafts." kind="micro" />

@@ -1,2 +1,2 @@
-<script lang="ts">import ContentManager from '@/lib/components/dashboard/ContentManager.svelte'</script>
-<ContentManager title="Your Mixes" description="Your drafts and published mixes." contentType="mix" />
+<script lang="ts">import ContentTable from '@/lib/components/dashboard/content-tools/ContentTable.svelte'</script>
+<ContentTable title="Your Mixes" description="Your drafts and published mixes." kind="mix" />

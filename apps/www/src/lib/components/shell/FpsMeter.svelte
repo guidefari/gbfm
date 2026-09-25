@@ -23,6 +23,6 @@
   })
 </script>
 
-<output class="fixed right-2 top-2 z-50 bg-black/75 px-2 py-1 text-[10px] font-bold text-white" aria-label="Frames per second">
+<output class="fixed right-2 top-14 z-[70] bg-black/75 px-2 py-1 text-[10px] font-bold text-white" aria-label="Frames per second">
   {fps} FPS
 </output>

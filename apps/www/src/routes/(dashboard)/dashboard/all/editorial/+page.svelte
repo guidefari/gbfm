@@ -1,2 +1,2 @@
-<script lang="ts">import ContentManager from '@/lib/components/dashboard/ContentManager.svelte'</script>
-<ContentManager title="All Editorial" description="Long form posts, drafts, and publishing state." contentType="post" scope="all" />
+<script lang="ts">import ContentTable from '@/lib/components/dashboard/content-tools/ContentTable.svelte'</script>
+<ContentTable title="All Editorial" description="Long form posts, drafts, and publishing state." kind="post" scope="all" />

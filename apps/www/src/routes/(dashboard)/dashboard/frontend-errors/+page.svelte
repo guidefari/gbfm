@@ -1,6 +1,5 @@
 <script lang="ts">
+  import FrontendTelemetry from '@/lib/components/dashboard/admin-tools/FrontendTelemetry.svelte'
   import Page from '@/lib/components/dashboard/Page.svelte'
-  const scenarios = ['ok','bad-request','not-found','rate-limit','error','unavailable']; let result = $state('')
-  async function run(scenario: string) { try { const response = await fetch(`/api/admin/frontend-errors/${scenario}`); result = `${scenario}: ${response.status} ${response.statusText}` } catch (cause) { result = cause instanceof Error ? cause.message : 'Network failure' } }
 </script>
-<Page title="Frontend Telemetry" description="Exercise Cloudflare-native browser telemetry and API failure handling."><div class="rounded border p-4 text-sm text-muted-foreground"><strong class="text-foreground">Cloudflare Analytics Engine</strong><p class="mt-2">Navigation timing, Web Vitals, browser errors, and player events are written to the stage’s <code>gbfm-www-*</code> dataset. Use these scenarios to emit known outcomes and verify dashboards and alerts.</p></div><div class="grid gap-3 sm:grid-cols-2">{#each scenarios as scenario}<button class="rounded border p-4 text-left font-semibold hover:bg-muted" onclick={() => void run(scenario)}>Run {scenario}</button>{/each}</div>{#if result}<output class="block rounded border p-4">{result}</output>{/if}</Page>
+<Page title="Frontend Telemetry" description="Simulate frontend-observed API failures and confirm Cloudflare telemetry behavior."><FrontendTelemetry /></Page>

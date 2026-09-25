@@ -24,6 +24,8 @@
     creators: Schema.optional(Schema.Array(Schema.Struct({ id: Schema.String })))
   })
   const SavedMix = Schema.Struct({ slug: Schema.String })
+  const Show = Schema.Struct({ id: Schema.String, title: Schema.String, slug: Schema.String })
+  const ShowList = Schema.Struct({ data: Schema.optional(Schema.Array(Show)), items: Schema.optional(Schema.Array(Show)) })
 
   type MixPayload = {
     title: string
@@ -40,17 +42,23 @@
     episodeNumber: number | undefined
     idempotencyKey?: string
   }
+  type EditorMixDraft = MixDraft & {
+    tracklist: Array<{ id: number; time: number; title: string }>
+  }
 
   let { userId }: { userId: string } = $props()
   const editSlug = page.url.searchParams.get('edit')
   const draftKey = `gbfm:mix:${editSlug ?? 'new'}`
-  const makeInitial = (): MixDraft => ({ title: '', slug: '', description: '', content: '', tags: '', thumbnailUrl: '', audioUrl: '', creatorId: userId, showId: '', episodeNumber: '', draft: true })
+  const makeInitial = (): EditorMixDraft => ({ title: '', slug: '', description: '', content: '', tags: '', thumbnailUrl: '', audioUrl: '', creatorId: userId, showId: '', episodeNumber: '', draft: true, tracklist: [] })
   const initial = makeInitial()
-  let form = $state<MixDraft>({ ...initial })
-  let audioFile = $state<File | null>(null), artworkFile = $state<File | null>(null), artworkPreview = $state('')
+  let form = $state<EditorMixDraft>({ ...initial })
+  let audioFile = $state<File | null>(null), audioPreview = $state(''), artworkFile = $state<File | null>(null), artworkPreview = $state('')
   let pending = $state(false), loading = $state(Boolean(editSlug)), paused = $state(false), progress = $state(0), error = $state(''), status = $state('Saved')
   let checkpoint = $state<PersistedResumableUpload | null>(null), controller = $state<AbortController | null>(null), hydrated = $state(false)
   let savedSnapshot = $state(JSON.stringify(initial))
+  let tab = $state<'details' | 'tracklist' | 'notes' | 'review'>('details')
+  let currentTime = $state(0)
+  let shows = $state<ReadonlyArray<typeof Show.Type>>([])
 
   const messageFrom = async (response: Response) => {
     const text = await response.text()
@@ -66,15 +74,20 @@
   onMount(() => {
     void (async () => {
       try {
+        const showsResponse = await fetch('/api/shows?limit=100&offset=0')
+        if (showsResponse.ok) {
+          const list = Schema.decodeUnknownSync(ShowList)(await showsResponse.json())
+          shows = list.data ?? list.items ?? []
+        }
         if (editSlug) {
           const response = await fetch(`/api/content/audio/mix/${encodeURIComponent(editSlug)}/edit`)
           if (!response.ok) throw new Error((await messageFrom(response)) || 'Could not load this mix.')
           const mix = Schema.decodeUnknownSync(EditableMix)(await response.json())
-          form = { title: mix.title, slug: mix.slug, description: mix.description ?? '', content: mix.content, tags: (mix.tags ?? []).join(', '), thumbnailUrl: mix.thumbnailUrl ?? '', audioUrl: mix.url, draft: mix.draft, showId: mix.showId ?? '', episodeNumber: mix.episodeNumber?.toString() ?? '', creatorId: mix.creators?.[0]?.id ?? userId }
+          form = { title: mix.title, slug: mix.slug, description: mix.description ?? '', content: mix.content, tags: (mix.tags ?? []).join(', '), thumbnailUrl: mix.thumbnailUrl ?? '', audioUrl: mix.url, draft: mix.draft, showId: mix.showId ?? '', episodeNumber: mix.episodeNumber?.toString() ?? '', creatorId: mix.creators?.[0]?.id ?? userId, tracklist: [] }
           artworkPreview = form.thumbnailUrl; savedSnapshot = JSON.stringify(form)
         } else {
           const recovered = readMixDraft(draftKey)
-          if (recovered && JSON.stringify(recovered) !== JSON.stringify(initial)) { form = recovered; artworkPreview = form.thumbnailUrl; status = 'Local draft recovered' }
+          if (recovered && JSON.stringify(recovered) !== JSON.stringify(initial)) { form = { ...recovered, tracklist: [] }; artworkPreview = form.thumbnailUrl; status = 'Local draft recovered' }
         }
       } catch (cause) { error = cause instanceof Error ? cause.message : 'Could not load this mix.' }
       finally { loading = false; hydrated = true }
@@ -91,10 +104,15 @@
 
   async function chooseAudio(input: HTMLInputElement) {
     audioFile = input.files?.[0] ?? null
+    if (audioFile) audioPreview = URL.createObjectURL(audioFile)
     checkpoint = audioFile ? await runAppEffect(readCheckpoint(computeFileFingerprint(audioFile))) : null
     if (checkpoint) { progress = Math.round(checkpoint.completedParts.reduce((total, part) => total + part.size, 0) / checkpoint.totalBytes * 100); status = 'Upload checkpoint found — resume when ready' }
   }
   function chooseArtwork(input: HTMLInputElement) { const file = input.files?.[0] ?? null; artworkFile = file; if (file) artworkPreview = URL.createObjectURL(file) }
+  const formatTime = (seconds: number) => `${Math.floor(seconds / 60)}:${Math.floor(seconds % 60).toString().padStart(2, '0')}`
+  function addTrack() { form = { ...form, tracklist: [...form.tracklist, { id: Date.now(), time: Math.floor(currentTime), title: `Track ${form.tracklist.length + 1}` }].toSorted((a, b) => a.time - b.time) } }
+  function updateTrack(id: number, title: string) { form = { ...form, tracklist: form.tracklist.map((track) => track.id === id ? { ...track, title } : track) } }
+  function removeTrack(id: number) { form = { ...form, tracklist: form.tracklist.filter((track) => track.id !== id) } }
 
   async function uploadAudio(): Promise<string | null> {
     if (!audioFile) return form.audioUrl || null
@@ -126,7 +144,8 @@
       let thumbnailUrl = form.thumbnailUrl.trim()
       if (artworkFile) thumbnailUrl = (await uploadImageDirectToS3(artworkFile)).url
       const slug = form.slug.trim() || slugify(form.title)
-      const payload: MixPayload = { title: form.title.trim(), slug, description: form.description, content: form.content, thumbnailUrl, url: audioUrl, type: 'mix', draft, tags: splitCommaList(form.tags), creatorIds: [form.creatorId.trim() || userId], showId: form.showId.trim() || undefined, episodeNumber: form.episodeNumber ? Number(form.episodeNumber) : undefined }
+      const tracklist = form.tracklist.length ? `\n\n## Tracklist\n${form.tracklist.map((track, index) => `${index + 1}. ${track.title} (${formatTime(track.time)})`).join('\n')}` : ''
+      const payload: MixPayload = { title: form.title.trim(), slug, description: form.description, content: form.content + tracklist, thumbnailUrl, url: audioUrl, type: 'mix', draft, tags: splitCommaList(form.tags), creatorIds: [form.creatorId.trim() || userId], showId: form.showId.trim() || undefined, episodeNumber: form.episodeNumber ? Number(form.episodeNumber) : undefined }
       if (!editSlug) payload.idempotencyKey = crypto.randomUUID()
       const response = await fetch(editSlug ? `/api/content/audio/mix/${encodeURIComponent(editSlug)}` : '/api/content/audio', { method: editSlug ? 'PATCH' : 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
       if (!response.ok) throw new Error((await messageFrom(response)) || 'The mix record could not be saved.')
@@ -141,12 +160,19 @@
 <section class="mx-auto max-w-3xl px-4 py-12">
   <h1 class="text-4xl font-black">{editSlug ? 'Edit mix' : 'Upload a mix'}</h1><p class="mt-2 text-sm text-muted-foreground">{status} · Audio uploads retain a local multipart checkpoint.</p>
   {#if loading}<p class="py-12">Loading…</p>{:else}<form class="mt-8 grid gap-4" onsubmit={(event) => event.preventDefault()}>
-    <label>Title<input class="mt-1 w-full border bg-background p-3" bind:value={form.title} required /></label><label>Slug<input class="mt-1 w-full border bg-background p-3" bind:value={form.slug} placeholder="Generated from title" /></label>
-    <label>Description<textarea class="mt-1 w-full border bg-background p-3" bind:value={form.description}></textarea></label><label>Notes / tracklist (Markdown)<textarea class="mt-1 min-h-40 w-full border bg-background p-3" bind:value={form.content}></textarea></label>
-    <label>Tags<input class="mt-1 w-full border bg-background p-3" bind:value={form.tags} placeholder="house, live" /></label><label>Creator ID<input class="mt-1 w-full border bg-background p-3" bind:value={form.creatorId} /></label>
-    <div class="grid gap-4 sm:grid-cols-2"><label>Show ID (optional)<input class="mt-1 w-full border bg-background p-3" bind:value={form.showId} /></label><label>Episode number<input class="mt-1 w-full border bg-background p-3" bind:value={form.episodeNumber} type="number" min="1" /></label></div>
-    <fieldset class="grid gap-3 border p-4"><legend>Audio</legend>{#if form.audioUrl}<audio class="w-full" controls src={form.audioUrl}></audio><input class="border bg-background p-3" bind:value={form.audioUrl} type="url" aria-label="Existing audio URL" />{/if}<input type="file" accept="audio/*" onchange={(event) => void chooseAudio(event.currentTarget)} />{#if pending || checkpoint}<progress class="w-full" max="100" value={progress}>{progress}%</progress><p>{progress}% {status}</p><div class="flex gap-2">{#if pending}<button type="button" class="border p-2" onclick={pauseUpload}>Pause</button>{:else if audioFile}<button type="button" class="border p-2" onclick={() => void uploadAudio()}>Resume upload</button>{/if}<button type="button" class="border p-2" onclick={() => void cancelUpload()}>Cancel upload</button></div>{/if}</fieldset>
-    <fieldset class="grid gap-3 border p-4"><legend>Artwork</legend><input class="border bg-background p-3" bind:value={form.thumbnailUrl} type="url" placeholder="Cover image URL" /><input type="file" accept="image/*" onchange={(event) => chooseArtwork(event.currentTarget)} />{#if artworkPreview}<img class="max-h-64 w-full object-cover" src={artworkPreview} alt="Cover preview" />{/if}</fieldset>
-    {#if error}<p role="alert" class="text-destructive">{error}</p>{/if}<div class="flex gap-3"><button type="button" class="border p-3" disabled={pending || !form.title.trim()} onclick={() => void submit(true)}>Save draft</button><button type="button" class="bg-primary p-3 font-bold text-primary-foreground" disabled={pending || !form.title.trim()} onclick={() => void submit(false)}>{pending ? 'Working…' : 'Review & publish'}</button></div>
+    <nav class="flex flex-wrap gap-2" aria-label="Mix editor sections">{#each [['details','Details'],['tracklist','Tracklist'],['notes','Blog content'],['review','Review']] as item}<button type="button" class:font-bold={tab === item[0]} class="border px-3 py-2" onclick={() => tab = item[0] as typeof tab}>{item[1]}</button>{/each}</nav>
+    {#if tab === 'details'}
+      <label>Title<input class="mt-1 w-full border bg-background p-3" bind:value={form.title} required /></label><label>Slug<input class="mt-1 w-full border bg-background p-3" bind:value={form.slug} placeholder="Generated from title" /></label>
+      <label>Description<textarea class="mt-1 w-full border bg-background p-3" bind:value={form.description}></textarea></label><label>Tags<input class="mt-1 w-full border bg-background p-3" bind:value={form.tags} placeholder="house, live" /></label><label>Creator ID<input class="mt-1 w-full border bg-background p-3" bind:value={form.creatorId} /></label>
+      <div class="grid gap-4 sm:grid-cols-2"><label>Show (optional)<select class="mt-1 w-full border bg-background p-3" bind:value={form.showId}><option value="">No show</option>{#each shows as show}<option value={show.id}>{show.title}</option>{/each}</select></label><label>Episode number<input class="mt-1 w-full border bg-background p-3" bind:value={form.episodeNumber} type="number" min="1" /></label></div>
+      <fieldset class="grid gap-3 border p-4"><legend>Audio</legend>{#if form.audioUrl}<input class="border bg-background p-3" bind:value={form.audioUrl} type="url" aria-label="Existing audio URL" />{/if}<input type="file" accept="audio/mpeg,audio/wav,audio/aiff,audio/x-aiff" onchange={(event) => void chooseAudio(event.currentTarget)} />{#if pending || checkpoint}<progress class="w-full" max="100" value={progress}>{progress}%</progress><p>{progress}% {status}</p><div class="flex gap-2">{#if pending}<button type="button" class="border p-2" onclick={pauseUpload}>Pause</button>{:else if audioFile}<button type="button" class="border p-2" onclick={() => void uploadAudio()}>Resume upload</button>{/if}<button type="button" class="border p-2" onclick={() => void cancelUpload()}>Cancel upload</button></div>{/if}</fieldset>
+      <fieldset class="grid gap-3 border p-4"><legend>Artwork</legend><input class="border bg-background p-3" bind:value={form.thumbnailUrl} type="url" placeholder="Cover image URL" /><input type="file" accept="image/*" onchange={(event) => chooseArtwork(event.currentTarget)} />{#if artworkPreview}<img class="max-h-64 w-full object-cover" src={artworkPreview} alt="Cover preview" />{/if}</fieldset>
+    {:else if tab === 'tracklist'}
+      <p class="text-muted-foreground">Play the mix and mark each track as it starts.</p>{#if audioFile || form.audioUrl}<audio class="w-full" controls src={audioPreview || form.audioUrl} ontimeupdate={(event) => currentTime = event.currentTarget.currentTime}></audio>{:else}<p role="status" class="border p-4">Choose audio in Details before building a tracklist.</p>{/if}
+      <button type="button" class="w-fit border p-3" disabled={!audioFile && !form.audioUrl} onclick={addTrack}>Mark track start at {formatTime(currentTime)}</button>
+      <ol class="grid gap-2">{#each form.tracklist as track}<li class="flex items-center gap-2"><button type="button" class="w-16 text-left underline" onclick={() => currentTime = track.time}>{formatTime(track.time)}</button><input class="min-w-0 flex-1 border bg-background p-2" value={track.title} oninput={(event) => updateTrack(track.id, event.currentTarget.value)} /><button type="button" class="text-destructive" onclick={() => removeTrack(track.id)}>Remove</button></li>{/each}</ol>
+    {:else if tab === 'notes'}<label>Blog content (Markdown)<textarea class="mt-1 min-h-80 w-full border bg-background p-3" bind:value={form.content} placeholder="# About this mix"></textarea></label>
+    {:else}<article class="grid gap-4 border p-5">{#if artworkPreview}<img class="max-h-72 w-full object-cover" src={artworkPreview} alt="Mix cover preview" />{/if}<h2 class="text-3xl font-black">{form.title || 'Untitled mix'}</h2><p>{form.description || 'No description yet.'}</p><dl class="grid grid-cols-2 gap-2 text-sm"><dt>Audio</dt><dd>{audioFile?.name ?? form.audioUrl ?? 'Missing'}</dd><dt>Tracks</dt><dd>{form.tracklist.length}</dd><dt>Show</dt><dd>{shows.find(({id}) => id === form.showId)?.title ?? 'None'}</dd><dt>Tags</dt><dd>{form.tags || 'None'}</dd></dl></article>{/if}
+    {#if error}<p role="alert" class="text-destructive">{error}</p>{/if}<div class="flex gap-3"><button type="button" class="border p-3" disabled={pending || !form.title.trim()} onclick={() => void submit(true)}>Save draft</button>{#if tab === 'review'}<button type="button" class="bg-primary p-3 font-bold text-primary-foreground" disabled={pending || !form.title.trim()} onclick={() => void submit(false)}>{pending ? 'Working…' : 'Publish mix'}</button>{:else}<button type="button" class="bg-primary p-3 font-bold text-primary-foreground" disabled={!form.title.trim()} onclick={() => tab = 'review'}>Review & publish</button>{/if}</div>
   </form>{/if}
 </section>

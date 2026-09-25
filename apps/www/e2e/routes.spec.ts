@@ -40,6 +40,7 @@ const protectedRoutes = [
   '/new',
   '/new/tweet',
   '/new/editorial',
+  '/tweet/new',
   '/mix-upload',
   '/dashboard',
   '/dashboard/profile',
@@ -96,13 +97,24 @@ test('primary tabs complete client-side navigation without a full document reloa
   await page.evaluate(() => sessionStorage.setItem('navigation-marker', 'preserved'))
 
   await page.getByRole('link', { name: 'Tweets' }).click()
-  await expect(page).toHaveURL(/\/tweets$/)
+  await expect(page).toHaveURL(/\/(?:tweets|tweet\/[^/]+)$/)
   await expect
     .poll(() => page.evaluate(() => sessionStorage.getItem('navigation-marker')))
     .toBe('preserved')
 
   await page.getByRole('link', { name: 'Radio Shows' }).click()
   await expect(page).toHaveURL(/\/shows$/)
+})
+
+test('mobile menu opens and links to the newsletter subscription page', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Menu' }).click()
+
+  const menu = page.getByRole('dialog', { name: 'Menu' })
+  await expect(menu).toBeVisible()
+  await menu.getByRole('link', { name: 'Newsletter' }).click()
+  await expect(page).toHaveURL(/\/subscribe$/)
+  await expect(page.getByRole('heading', { name: 'Stay in the loop' })).toBeVisible()
 })
 
 test('home SSR includes canonical metadata and visible content', async ({ page }) => {

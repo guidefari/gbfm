@@ -1,2 +1,2 @@
-<script lang="ts">import ListPage from '@/lib/components/public/ListPage.svelte'; import type { PublicRecord } from '@/lib/server/public/content'; import type { PageProps } from './$types'; let { data }: PageProps = $props(); const href = (item: PublicRecord) => `/shows/${item.slug}`</script>
-<ListPage {data} title="Radio Shows" description="Regular radio shows, hosts and episodes on goosebumps.fm." canonical="/shows" {href} empty="No shows are available yet." />
+<script lang="ts">import ShowsBrowser from '@/lib/components/public/ShowsBrowser.svelte'; import type { PageProps } from './$types'; let { data }: PageProps = $props()</script>
+<ShowsBrowser shows={data.shows} selected={data.selected} episodes={data.episodes} failure={data.failure} />

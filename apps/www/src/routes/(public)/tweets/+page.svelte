@@ -5,11 +5,12 @@
 
   let { data }: PageProps = $props()
   const href = (item: PublicRecord) => `/tweet/${item.slug}`
+  const query = $derived(data.query)
 </script>
 
 <ListPage
   {data}
-  title="Tweets"
+  title={query ? `Search: ${query}` : 'Tweets'}
   description="Short-form music notes and conversations from goosebumps.fm."
   canonical="/tweets"
   {href}

@@ -1,2 +1,2 @@
-<script lang="ts">import type { PageProps } from './$types'; import PreferencesPage from '@/lib/components/dashboard/PreferencesPage.svelte'; let { data }: PageProps = $props()</script>
-<PreferencesPage title={`Edit ${data.entityType}`} description={`Music catalog entity ${data.id}`} endpoint={`/api/music/${data.entityType}s/${data.id}`} fields={[{name:'name',label:'Name / title'},{name:'slug',label:'Slug'},{name:'content',label:'Description'}]} />
+<script lang="ts">import type { PageProps } from './$types'; import MusicEntityEditor from '@/lib/components/dashboard/content-tools/MusicEntityEditor.svelte'; let { data }: PageProps = $props()</script>
+<MusicEntityEditor entityType={data.entityType as 'artist' | 'album' | 'track' | 'playlist' | 'label'} id={data.id} />

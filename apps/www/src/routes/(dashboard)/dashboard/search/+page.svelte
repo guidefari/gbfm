@@ -1,5 +1,13 @@
 <script lang="ts">
-  import Page from '@/lib/components/dashboard/Page.svelte'; import ApiTable from '@/lib/components/dashboard/ApiTable.svelte'
-  let query = $state(''), submitted = $state('')
+  import { Schema } from 'effect'
+  import Page from '@/lib/components/dashboard/Page.svelte'
+  import { dashboardJson } from '@/lib/components/dashboard/api'
+  const Item = Schema.Struct({ id: Schema.String, title: Schema.NullOr(Schema.String), slug: Schema.String, type: Schema.String, thumbnailUrl: Schema.NullOr(Schema.String), description: Schema.NullOr(Schema.String) })
+  const Results = Schema.Struct({ shows: Schema.Array(Item), audio: Schema.Array(Item), posts: Schema.Array(Item) })
+  type ResultsValue = typeof Results.Type
+  let query = $state(''), results = $state<ResultsValue | null>(null), pending = $state(false), failed = $state(false)
+  async function search() { if (query.trim().length < 2) return; pending = true; failed = false; try { results = await dashboardJson(Results, `/api/search?q=${encodeURIComponent(query.trim())}&limit=50`) } catch { failed = true } finally { pending = false } }
 </script>
-<Page title="Search" description="Search shows, audio, and posts."><form class="flex gap-2" onsubmit={(event) => { event.preventDefault(); submitted = query }}><input class="min-w-0 flex-1 rounded border bg-background px-3 py-2" bind:value={query} placeholder="Search…" /><button class="rounded bg-foreground px-4 text-background">Search</button></form>{#if submitted}<ApiTable endpoint={`/api/search?q=${encodeURIComponent(submitted)}`} />{/if}</Page>
+<Page title="Search" description="Test content search across shows, audio, and posts."><form class="flex gap-2" onsubmit={(event) => { event.preventDefault(); void search() }}><label class="sr-only" for="catalog-search">Query</label><input id="catalog-search" class="min-w-0 flex-1 rounded border bg-background px-3 py-2" bind:value={query} placeholder="Search shows, audio, and posts…" /><button class="rounded bg-foreground px-4 text-background" disabled={query.trim().length < 2 || pending}>Search</button></form>
+  {#if query.trim().length < 2}<p class="text-muted-foreground">Type at least 2 characters to search.</p>{:else if pending}<p class="text-muted-foreground">Searching…</p>{:else if failed}<p class="text-destructive">Search failed.</p>{:else if results}<div class="space-y-6">{#each [['shows','Shows'],['audio','Audio'],['posts','Posts']] as group}<section><h2 class="mb-2 font-semibold tracking-widest text-muted-foreground">{group[1]} <span class="rounded bg-muted px-2 py-1 text-xs">{results[group[0] as keyof ResultsValue].length}</span></h2><ul class="divide-y rounded border">{#each results[group[0] as keyof ResultsValue] as item}<li class="flex gap-3 p-3">{#if item.thumbnailUrl}<img class="size-12 rounded object-cover" src={item.thumbnailUrl} alt="" />{/if}<div><strong>{item.title ?? '(untitled)'}</strong> <span class="rounded border px-1 text-xs">{item.type}</span><span class="block text-xs text-muted-foreground">/{item.slug}</span>{#if item.description}<p class="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.description}</p>{/if}</div></li>{/each}{#if results[group[0] as keyof ResultsValue].length === 0}<li class="p-3 text-muted-foreground">No matches.</li>{/if}</ul></section>{/each}</div>{/if}
+</Page>

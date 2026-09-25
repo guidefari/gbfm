@@ -5,6 +5,7 @@
   import BrowserTelemetry from '@/lib/components/shell/BrowserTelemetry.svelte'
   import FpsMeter from '@/lib/components/shell/FpsMeter.svelte'
   import PlayerBar from '@/lib/components/shell/PlayerBar.svelte'
+  import GlobalNav from '@/lib/components/shell/GlobalNav.svelte'
 
   let { data, children }: LayoutProps = $props()
 </script>
@@ -18,25 +19,12 @@
     <main
       id="main-scroll-container"
       tabindex="-1"
-      class="h-full min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-background pb-16 focus:outline-none">
+      style="overflow-anchor: none"
+      class="h-full min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-background pb-[calc(2.75rem+env(safe-area-inset-bottom))] focus:outline-none lg:pb-12 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
       {@render children()}
     </main>
 
-    <nav
-      aria-label="Primary"
-      class="z-40 flex h-12 shrink-0 items-center gap-4 border-t-2 border-foreground bg-background/95 px-4 backdrop-blur">
-      <a href="/" class="font-bold no-underline">gb<span class="text-highlight">fm</span></a>
-      <a href="/tweets" class="text-xs font-semibold no-underline">Tweets</a>
-      <a href="/shows" class="text-xs font-semibold no-underline">Radio Shows</a>
-      <a href="/editorial" class="text-xs font-semibold no-underline">Editorial</a>
-      <a href="/mixes" class="text-xs font-semibold no-underline">Mixes</a>
-      <span class="flex-1"></span>
-      {#if data.principal._tag === 'Authenticated'}
-        <a href="/dashboard" class="text-xs font-semibold no-underline">{data.principal.name}</a>
-      {:else}
-        <a href="/auth/sign-in" class="text-xs font-semibold text-highlight no-underline">Log in</a>
-      {/if}
-    </nav>
+    <GlobalNav principal={data.principal} />
   </div>
 </div>
 

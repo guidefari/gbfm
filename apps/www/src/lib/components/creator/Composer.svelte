@@ -52,6 +52,7 @@
   let artworkPreview = $state('')
   let pending = $state(false), loading = $state(Boolean(editSlug)), error = $state(''), status = $state('Saved')
   let hydrated = $state(false), savedSnapshot = $state(JSON.stringify(initial))
+  let reviewing = $state(false)
 
   const slugify = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
   const messageFrom = async (response: Response) => {
@@ -127,7 +128,18 @@
 <section class="mx-auto max-w-4xl px-4 py-12">
   <header class="flex flex-wrap items-center justify-between gap-4"><div><h1 class="text-4xl font-black">{editSlug ? 'Edit content' : 'New content'}</h1><p class="text-sm text-muted-foreground">{status}</p></div><select bind:value={form.type} class="border bg-background p-2" disabled={Boolean(editSlug)}><option value="micro">Tweet</option><option value="post">Editorial</option></select></header>
   {#if loading}<p class="py-12">Loading…</p>{:else}
-    <form class="mt-8 grid gap-4" onsubmit={(event) => event.preventDefault()}>
+    {#if reviewing}
+      <article class="mt-8 grid gap-5 border p-6">
+        <p class="text-xs font-bold uppercase tracking-[.2em] text-highlight">Publish review</p>
+        {#if artworkPreview}<img class="max-h-80 w-full object-cover" src={artworkPreview} alt="Cover preview" />{/if}
+        <h2 class="text-3xl font-black">{form.title || 'Untitled'}</h2>
+        {#if form.description}<p class="text-muted-foreground">{form.description}</p>{/if}
+        <div class="whitespace-pre-wrap">{form.content || 'No body content.'}</div>
+        <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm"><dt>Format</dt><dd>{form.type === 'post' ? 'Editorial' : 'Tweet'}</dd><dt>Slug</dt><dd>{form.slug || 'Generated on publish'}</dd><dt>Tags</dt><dd>{form.tags || 'None'}</dd><dt>Music</dt><dd>{form.musicEntityId ? `${form.musicEntityType}: ${form.musicEntityId}` : 'None'}</dd><dt>Quote</dt><dd>{form.quotedPostId || 'None'}</dd></dl>
+        {#if error}<p role="alert" class="text-destructive">{error}</p>{/if}
+        <div class="flex gap-3"><button type="button" class="border p-3" onclick={() => reviewing = false}>Back to editor</button><button type="button" class="bg-primary p-3 font-bold text-primary-foreground" disabled={pending} onclick={() => void submit(false)}>{pending ? 'Publishing…' : 'Publish now'}</button></div>
+      </article>
+    {:else}<form class="mt-8 grid gap-4" onsubmit={(event) => event.preventDefault()}>
       <label>Title / tweet<textarea class="mt-1 min-h-28 w-full border bg-background p-3" bind:value={form.title} maxlength={form.type === 'micro' ? 280 : undefined} placeholder={form.type === 'micro' ? 'What is happening?' : 'Title'} required></textarea></label>
       <label>Slug<input class="mt-1 w-full border bg-background p-3" bind:value={form.slug} placeholder="Generated from title when blank" /></label>
       <label>Body (Markdown)<textarea class="mt-1 min-h-64 w-full border bg-background p-3" bind:value={form.content} placeholder="Start writing…"></textarea></label>
@@ -141,7 +153,8 @@
       <fieldset class="grid gap-3 border p-4"><legend>Music entity</legend><div class="flex gap-2"><input class="min-w-0 flex-1 border bg-background p-3" bind:value={form.musicUrl} type="url" placeholder="Spotify, Apple Music, Bandcamp or Tidal URL" /><button type="button" class="border px-4" onclick={() => void resolveMusic()}>Resolve</button></div>{#if form.musicEntityId}<p class="text-sm">Attached {form.musicEntityType}: {form.musicEntityId}</p>{/if}</fieldset>
       {#if form.type === 'micro'}<label>Quoted tweet ID<input class="mt-1 w-full border bg-background p-3" bind:value={form.quotedPostId} placeholder="UUID of tweet to quote" /></label>{/if}
       {#if error}<p role="alert" class="text-destructive">{error}</p>{/if}
-      <div class="flex gap-3"><button type="button" class="border p-3" disabled={pending} onclick={() => void submit(true)}>Save draft</button><button type="button" class="bg-primary p-3 font-bold text-primary-foreground" disabled={pending || (!form.title.trim() && !form.content.trim())} onclick={() => void submit(false)}>{pending ? 'Saving…' : 'Review & publish'}</button></div>
+      <div class="flex gap-3"><button type="button" class="border p-3" disabled={pending} onclick={() => void submit(true)}>Save draft</button><button type="button" class="bg-primary p-3 font-bold text-primary-foreground" disabled={pending || (!form.title.trim() && !form.content.trim())} onclick={() => reviewing = true}>Review & publish</button></div>
     </form>
+    {/if}
   {/if}
 </section>
