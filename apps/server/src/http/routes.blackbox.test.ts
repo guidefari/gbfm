@@ -4185,16 +4185,23 @@ describe('micro post navigation', () => {
     try {
       const middle = await neighbours(feed.middle.slug, deviceCookie())
       expect(middle).toMatchObject({
-        back: feed.newest.slug,
-        forward: feed.older.slug,
+        newer: feed.newest.slug,
+        older: feed.older.slug,
+        seen: false,
+        olderUnread: feed.older.slug,
       })
       const totalFeed = middle.timeline.reduce((sum, month) => sum + month.total, 0)
       expect(middle.unreadCount).toBe(totalFeed - 1)
-      expect(middle.timeline.at(-1)).toEqual({ month: '2100-01', total: 4, unread: 4 })
+      expect(middle.timeline.at(-1)).toEqual({
+        month: '2100-01',
+        total: 4,
+        unread: 4,
+        newestSlug: feed.newest.slug,
+      })
       const newest = await neighbours(feed.newest.slug, deviceCookie())
       expect(newest).toMatchObject({
-        back: null,
-        forward: feed.middle.slug,
+        newer: null,
+        older: feed.middle.slug,
       })
     } finally {
       await feed.cleanup()
@@ -4212,14 +4219,21 @@ describe('micro post navigation', () => {
 
       const middle = await neighbours(feed.middle.slug, cookie)
       expect(middle).toMatchObject({
-        back: feed.newest.slug,
-        forward: feed.oldest.slug,
+        newer: feed.newest.slug,
+        older: feed.older.slug,
+        olderUnread: feed.oldest.slug,
       })
       const totalFeed = middle.timeline.reduce((sum, month) => sum + month.total, 0)
       expect(middle.unreadCount).toBe(totalFeed - 3)
-      expect(middle.timeline.at(-1)).toEqual({ month: '2100-01', total: 4, unread: 2 })
+      expect(middle.timeline.at(-1)).toEqual({
+        month: '2100-01',
+        total: 4,
+        unread: 2,
+        newestSlug: feed.newest.slug,
+      })
+      await expect(neighbours(feed.newest.slug, cookie)).resolves.toMatchObject({ seen: true })
       await expect(neighbours(feed.middle.slug, deviceCookie())).resolves.toMatchObject({
-        forward: feed.older.slug,
+        olderUnread: feed.older.slug,
       })
     } finally {
       await feed.cleanup()
@@ -4265,7 +4279,7 @@ describe('micro post navigation', () => {
 
       if (!cookie) throw new Error('Expected navigation device cookie')
       await expect(neighbours(feed.newest.slug, cookie)).resolves.toMatchObject({
-        forward: feed.older.slug,
+        olderUnread: feed.older.slug,
       })
       await db
         .delete(navigationSessions)

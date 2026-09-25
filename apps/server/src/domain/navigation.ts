@@ -12,11 +12,14 @@ export type MicroPostTimelineMonth = {
   readonly month: string
   readonly total: number
   readonly unread: number
+  readonly newestSlug: Slug
 }
 
 export type MicroPostNeighbours = {
-  readonly back: Slug | null
-  readonly forward: Slug | null
+  readonly newer: Slug | null
+  readonly older: Slug | null
+  readonly olderUnread: Slug | null
+  readonly seen: boolean
   readonly unreadCount: number
   readonly timeline: ReadonlyArray<MicroPostTimelineMonth>
 }

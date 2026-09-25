@@ -11,13 +11,16 @@ export const MicroPostTimelineMonth = Schema.Struct({
   month: Schema.String,
   total: Schema.Number,
   unread: Schema.Number,
+  newestSlug: Slug,
 })
 
 export type MicroPostTimelineMonth = typeof MicroPostTimelineMonth.Type
 
 export const MicroPostNeighboursResponse = Schema.Struct({
-  back: Schema.NullOr(Slug),
-  forward: Schema.NullOr(Slug),
+  newer: Schema.NullOr(Slug),
+  older: Schema.NullOr(Slug),
+  olderUnread: Schema.NullOr(Slug),
+  seen: Schema.Boolean,
   unreadCount: Schema.Number,
   timeline: Schema.Array(MicroPostTimelineMonth),
 })

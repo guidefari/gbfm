@@ -21,9 +21,9 @@
   const tweetHref = (slug: string | null | undefined) =>
     slug ? `/tweet/${encodeURIComponent(slug)}` : null
 
-  const backHref = $derived(tweetHref(neighbours?.back))
+  const backHref = $derived(tweetHref(neighbours?.newer))
 
-  const forwardHref = $derived(tweetHref(neighbours?.forward))
+  const forwardHref = $derived(tweetHref(neighbours?.olderUnread ?? neighbours?.older))
 
   const hasUnread = $derived((neighbours?.unreadCount ?? 0) > 0)
 

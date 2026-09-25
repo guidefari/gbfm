@@ -4,22 +4,22 @@ import { markerPercent, monthLabel, relativeAge, timelineMonths } from './timeli
 
 test('fills empty months between the oldest and newest tweet, newest first', () => {
   const months = timelineMonths([
-    { month: '2025-11', total: 2, unread: 1 },
-    { month: '2026-02', total: 5, unread: 0 },
+    { month: '2025-11', total: 2, unread: 1, newestSlug: 't-2025-11' },
+    { month: '2026-02', total: 5, unread: 0, newestSlug: 't-2026-02' },
   ])
 
   expect(months).toEqual([
-    { month: '2026-02', total: 5, unread: 0 },
-    { month: '2026-01', total: 0, unread: 0 },
-    { month: '2025-12', total: 0, unread: 0 },
-    { month: '2025-11', total: 2, unread: 1 },
+    { month: '2026-02', total: 5, unread: 0, newestSlug: 't-2026-02' },
+    { month: '2026-01', total: 0, unread: 0, newestSlug: null },
+    { month: '2025-12', total: 0, unread: 0, newestSlug: null },
+    { month: '2025-11', total: 2, unread: 1, newestSlug: 't-2025-11' },
   ])
 })
 
 test('places a tweet inside its month on the newest-first rail', () => {
   const months = timelineMonths([
-    { month: '2026-01', total: 1, unread: 1 },
-    { month: '2026-02', total: 1, unread: 1 },
+    { month: '2026-01', total: 1, unread: 1, newestSlug: 't-2026-01' },
+    { month: '2026-02', total: 1, unread: 1, newestSlug: 't-2026-02' },
   ])
 
   expect(markerPercent(months, '2026-02-28T12:00:00.000Z')).toBeCloseTo(0.89, 1)

@@ -1,7 +1,13 @@
 <script lang="ts">
   import type { MicroPostTimelineMonth } from '@gbfm/api/navigation'
 
-  import { markerPercent, monthLabel, relativeAge, timelineMonths } from './timeline'
+  import {
+    markerPercent,
+    monthLabel,
+    type RailMonth,
+    relativeAge,
+    timelineMonths,
+  } from './timeline'
 
   let { timeline, at }: { timeline: ReadonlyArray<MicroPostTimelineMonth> | null; at: string } =
     $props()
@@ -18,7 +24,7 @@
 
   const oldest = $derived(months.at(-1) ? monthLabel(months.at(-1)?.month ?? '') : '')
 
-  const barHeight = (entry: MicroPostTimelineMonth) =>
+  const barHeight = (entry: RailMonth) =>
     entry.total ? Math.max(entry.total / busiest, 0.12) * 100 : 0
 </script>
 

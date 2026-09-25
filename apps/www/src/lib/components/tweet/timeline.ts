@@ -1,5 +1,9 @@
 import type { MicroPostTimelineMonth } from '@gbfm/api/navigation'
 
+export type RailMonth = Omit<MicroPostTimelineMonth, 'newestSlug'> & {
+  readonly newestSlug: string | null
+}
+
 const monthKey = (year: number, monthIndex: number) =>
   `${year}-${String(monthIndex + 1).padStart(2, '0')}`
 
@@ -10,9 +14,7 @@ const parseMonth = (month: string) => {
 }
 
 /** Fills gaps so every calendar month between the oldest and newest tweet is present, newest first. */
-export const timelineMonths = (
-  timeline: ReadonlyArray<MicroPostTimelineMonth>,
-): ReadonlyArray<MicroPostTimelineMonth> => {
+export const timelineMonths = (timeline: ReadonlyArray<RailMonth>): ReadonlyArray<RailMonth> => {
   const first = timeline[0]
   const last = timeline.at(-1)
 
@@ -20,7 +22,7 @@ export const timelineMonths = (
   const byMonth = new Map(timeline.map((entry) => [entry.month, entry]))
   const start = parseMonth(first.month)
   const end = parseMonth(last.month)
-  const months: Array<MicroPostTimelineMonth> = []
+  const months: Array<RailMonth> = []
 
   for (
     let cursor = end.year * 12 + end.monthIndex;
@@ -28,14 +30,14 @@ export const timelineMonths = (
     cursor -= 1
   ) {
     const month = monthKey(Math.floor(cursor / 12), cursor % 12)
-    months.push(byMonth.get(month) ?? { month, total: 0, unread: 0 })
+    months.push(byMonth.get(month) ?? { month, total: 0, unread: 0, newestSlug: null })
   }
 
   return months
 }
 
 /** Horizontal position of a timestamp on a newest-first month rail, as a percentage. */
-export const markerPercent = (months: ReadonlyArray<MicroPostTimelineMonth>, at: string) => {
+export const markerPercent = (months: ReadonlyArray<RailMonth>, at: string) => {
   if (!months.length) return 0
   const date = new Date(at)
 

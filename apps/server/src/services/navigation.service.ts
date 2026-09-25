@@ -105,6 +105,9 @@ export const NavigationServiceLayer = Layer.effect(
           month: createdMonth,
           total: sql<number>`CAST(count(*) AS INTEGER)`,
           unread: sql<number>`CAST(sum(CASE WHEN ${navigationSeenPosts.slug} IS NULL THEN 1 ELSE 0 END) AS INTEGER)`,
+          // SQLite fills bare columns from the row that produced the query's single max().
+          newestSlug: postsTable.slug,
+          newestAt: sql<number>`max(${postsTable.createdAt})`,
         })
         .from(postsTable)
         .leftJoin(navigationSeenPosts, seenBy(identity))
@@ -140,20 +143,38 @@ export const NavigationServiceLayer = Layer.effect(
             feed(older).orderBy(desc(postsTable.createdAt), desc(postsTable.slug)).limit(1),
             unreadCount(identity, ne(postsTable.slug, slug)),
             timeline(identity),
+            db
+              .select({ slug: navigationSeenPosts.slug })
+              .from(navigationSeenPosts)
+              .where(
+                and(
+                  eq(navigationSeenPosts.slug, slug),
+                  inArray(navigationSeenPosts.sessionId, sessionIds(identity)),
+                ),
+              )
+              .limit(1),
           ]),
         catch: (error) => databaseError('read', error),
       }).pipe(
-        Effect.flatMap(([current, back, olderUnread, olderAny, unreadRows, months]) => {
-          if (!current[0]) return Effect.fail(new MicroPostMissing({ slug }))
-          const forward = olderUnread[0] ?? olderAny[0]
+        Effect.flatMap(
+          ([current, newerRows, olderUnread, olderRows, unreadRows, months, seenRows]) => {
+            if (!current[0]) return Effect.fail(new MicroPostMissing({ slug }))
 
-          return Effect.succeed({
-            back: back[0] ? asSlug(back[0].slug) : null,
-            forward: forward ? asSlug(forward.slug) : null,
-            unreadCount: unreadRows[0]?.count ?? 0,
-            timeline: months,
-          })
-        }),
+            return Effect.succeed({
+              newer: newerRows[0] ? asSlug(newerRows[0].slug) : null,
+              older: olderRows[0] ? asSlug(olderRows[0].slug) : null,
+              olderUnread: olderUnread[0] ? asSlug(olderUnread[0].slug) : null,
+              seen: seenRows.length > 0,
+              unreadCount: unreadRows[0]?.count ?? 0,
+              timeline: months.map(({ month, total, unread, newestSlug }) => ({
+                month,
+                total,
+                unread,
+                newestSlug: asSlug(newestSlug),
+              })),
+            })
+          },
+        ),
         Effect.withSpan('navigation.neighbours', { attributes: { slug } }),
       )
     }
