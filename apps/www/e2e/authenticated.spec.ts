@@ -141,6 +141,12 @@ test('tweet detail preserves the production content hierarchy and preloads navig
   const secondSlug = `e2e-tweet-second-${suffix}`
 
   await publishTweet(page, firstSlug, 'First E2E transmission', 'The first transmission is live.')
+  const browserPeekRequests: Array<string> = []
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === '/api/content/posts/micro/navigate/peek') {
+      browserPeekRequests.push(request.url())
+    }
+  })
   await publishTweet(
     page,
     secondSlug,
@@ -153,6 +159,7 @@ test('tweet detail preserves the production content hierarchy and preloads navig
   await expect(page.getByRole('link', { name: '#radio' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Copy link' })).toBeVisible()
   await expect(page.getByText('"use strict"')).toHaveCount(0)
+  expect(browserPeekRequests).toEqual([])
 
   const previous = page.getByRole('button', { name: 'Previous tweet' })
   await expect(previous).toBeEnabled()

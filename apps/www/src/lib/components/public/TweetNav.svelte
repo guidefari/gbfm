@@ -1,32 +1,20 @@
 <script lang="ts">
+  import {
+    NavigationResultResponse as NavigationResultSchema,
+    type NavigationResultResponse
+  } from '@gbfm/api/navigation'
   import { goto, preloadData } from '$app/navigation'
   import { ChevronLeft, ChevronRight } from 'lucide-svelte'
   import { Option, Schema } from 'effect'
   import { onMount } from 'svelte'
 
-  const Result = Schema.Struct({
-    destination: Schema.Struct({ slug: Schema.String }),
-    capabilities: Schema.Struct({
-      canStepBack: Schema.Boolean,
-      canStepForward: Schema.Boolean,
-      hasUnread: Schema.Boolean
-    }),
-    neighbours: Schema.Struct({
-      back: Schema.optional(Schema.String),
-      forward: Schema.optional(Schema.String)
-    }),
-    neighbourhood: Schema.optional(
-      Schema.Struct({ back: Schema.Array(Schema.String), forward: Schema.Array(Schema.String) })
-    )
-  })
-  type Result = typeof Result.Type
   type Command =
     | { _tag: 'Step'; direction: 'Back' | 'Forward' }
     | { _tag: 'Jump' }
     | { _tag: 'Open'; slug: string }
 
-  let { slug }: { slug: string } = $props()
-  let result = $state<Result | null>(null)
+  let { slug, initialResult = null }: { slug: string; initialResult?: NavigationResultResponse | null } = $props()
+  let result = $derived(initialResult)
   let busy = $state(false)
   let showStatus = $state(false)
   let message = $state('')
@@ -53,17 +41,18 @@
     if (!response.ok) throw new Error('Navigation unavailable')
     return path === 'visit'
       ? null
-      : Option.getOrNull(Schema.decodeUnknownOption(Result)(await response.json()))
+      : Option.getOrNull(Schema.decodeUnknownOption(NavigationResultSchema)(await response.json()))
   }
 
-  function accept(next: Result | null) {
+  function accept(next: NavigationResultResponse | null) {
     if (!next) return
     result = next
     const targets = next.neighbourhood
       ? [...next.neighbourhood.back.slice(0, 3), ...next.neighbourhood.forward.slice(0, 3)]
       : [next.neighbours.back, next.neighbours.forward]
-    for (const target of new Set(targets.filter((value): value is string => Boolean(value)))) {
-      void preloadData(`/tweet/${encodeURIComponent(target)}`)
+    for (const target of new Set(targets)) {
+      if (target === undefined) continue
+      void preloadData(`/tweet/${encodeURIComponent(String(target))}`)
     }
   }
 
@@ -119,8 +108,12 @@
 
   $effect(() => {
     const currentSlug = slug
-    result = null
-    void request('peek', { _tag: 'Open', slug: currentSlug }).then(accept).catch(() => undefined)
+    const serverResult = initialResult
+    if (serverResult) accept(serverResult)
+    else {
+      result = null
+      void request('peek', { _tag: 'Open', slug: currentSlug }).then(accept).catch(() => undefined)
+    }
     void request('visit', { _tag: 'Open', slug: currentSlug }).catch(() => undefined)
   })
 
