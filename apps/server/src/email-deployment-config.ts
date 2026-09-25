@@ -15,7 +15,7 @@ export interface EmailDeploymentConfigInput {
   /** The Alchemy deployment stage. */
   readonly stage: string
   /** The controlled non-production recipient from deployment configuration. */
-  readonly testRecipient?: string
+  readonly testRecipient?: string | undefined
   /** Whether Alchemy is running the Worker locally in dev mode. */
   readonly localDev?: boolean
 }
