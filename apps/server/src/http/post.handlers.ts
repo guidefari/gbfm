@@ -222,11 +222,24 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
           ).pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
         )
 
+        const screenPosts = [
+          ...new Map(
+            [result.post, related.root, related.quote, ...result.replies.data].flatMap((post) =>
+              post ? [[post.id, post] as const] : []
+            )
+          ).values()
+        ]
+        const musicByPostId = yield* dieOnDatabaseError(svc.getMicroPostScreenMusic(screenPosts))
+        const toScreenPost = (post: (typeof screenPosts)[number]) => ({
+          ...toDateStrings(post),
+          music: musicByPostId.get(post.id) ?? null
+        })
+
         return {
-          post: toDateStrings(result.post),
-          replies: result.replies.data.map(toDateStrings),
-          root: toDateStrings(related.root),
-          quote: related.quote ? toDateStrings(related.quote) : null
+          post: toScreenPost(result.post),
+          replies: result.replies.data.map(toScreenPost),
+          root: toScreenPost(related.root),
+          quote: related.quote ? toScreenPost(related.quote) : null
         }
       }).pipe(Effect.withSpan('post.getMicroPostScreen', { attributes: { slug: params.slug } }))
     )

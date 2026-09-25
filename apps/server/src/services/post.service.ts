@@ -17,6 +17,7 @@ import {
 } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { type TweetCardEntityInput, type TweetCardPresentationInput } from '@gbfm/social-card'
+import { LINK_STATUS } from '@gbfm/core/status'
 import { Database } from '@/db/layer'
 import {
   hasEntityLabel,
@@ -28,6 +29,7 @@ import {
 import { entityLabelsTable, labelsTable } from '@/db/tags.schema'
 import {
   musicAlbumsTable,
+  musicEntityLinksTable,
   musicPlaylistTracksTable,
   musicPlaylistsTable,
   musicTracksTable
@@ -66,6 +68,17 @@ import { markAttachedAssets, UploadAssetService } from '@/services/upload-asset.
 
 export const POST_SOURCE_FILTERS = ['bluesky', 'native'] as const
 export type PostSourceFilter = (typeof POST_SOURCE_FILTERS)[number]
+
+export interface MicroPostScreenMusic {
+  readonly entity: {
+    readonly id: string
+    readonly type: 'album' | 'track' | 'playlist'
+    readonly title: string
+    readonly artistNames: string[] | null
+    readonly coverImageUrl: string | null
+  }
+  readonly links: ReadonlyArray<{ readonly platform: string; readonly url: string }>
+}
 
 export interface PostService {
   readonly getAll: (options: {
@@ -132,6 +145,9 @@ export interface PostService {
   readonly getMicroPostById: (
     id: string
   ) => Effect.Effect<SelectMdxCompiledMicroPost, DatabaseError | NotFoundError>
+  readonly getMicroPostScreenMusic: (
+    posts: ReadonlyArray<SelectMdxCompiledMicroPost>
+  ) => Effect.Effect<ReadonlyMap<string, MicroPostScreenMusic>, DatabaseError>
   // oxlint-disable-next-line effecttsgo/lazy-effect -- Existing callers use the zero-argument service method contract.
   readonly getPostTags: () => Effect.Effect<string[], DatabaseError>
   // oxlint-disable-next-line effecttsgo/lazy-effect -- Existing callers use the zero-argument service method contract.
@@ -1483,6 +1499,101 @@ const getTweetCardInputEffect = (slug: string, mdx: MdxService) =>
     }
   }).pipe(Effect.withSpan('post.getTweetCardInput', { attributes: { slug } }))
 
+const getMicroPostScreenMusicEffect = (posts: ReadonlyArray<SelectMdxCompiledMicroPost>) =>
+  Effect.gen(function* () {
+    const references = posts.flatMap((post) => {
+      const { musicEntityId: id, musicEntityType: type } = post
+      return id && (type === 'album' || type === 'track' || type === 'playlist')
+        ? [{ postId: post.id, id, type } as const]
+        : []
+    })
+    if (references.length === 0) return new Map<string, MicroPostScreenMusic>()
+
+    const db = yield* Database
+    const albumIds = references.flatMap(({ id, type }) => (type === 'album' ? [id] : []))
+    const trackIds = references.flatMap(({ id, type }) => (type === 'track' ? [id] : []))
+    const playlistIds = references.flatMap(({ id, type }) => (type === 'playlist' ? [id] : []))
+    const entityIds = references.map(({ id }) => id)
+    const [albums, tracks, playlists, links] = yield* Effect.tryPromise({
+      try: () =>
+        db.batch([
+          db
+            .select({
+              id: musicAlbumsTable.id,
+              title: musicAlbumsTable.title,
+              artistNames: musicAlbumsTable.artistNames,
+              coverImageUrl: musicAlbumsTable.coverImageUrl
+            })
+            .from(musicAlbumsTable)
+            .where(inArray(musicAlbumsTable.id, albumIds.length > 0 ? albumIds : [''])),
+          db
+            .select({
+              id: musicTracksTable.id,
+              title: musicTracksTable.title,
+              artistNames: musicTracksTable.artistNames,
+              coverImageUrl: musicTracksTable.coverImageUrl
+            })
+            .from(musicTracksTable)
+            .where(inArray(musicTracksTable.id, trackIds.length > 0 ? trackIds : [''])),
+          db
+            .select({
+              id: musicPlaylistsTable.id,
+              title: musicPlaylistsTable.title,
+              coverImageUrl: musicPlaylistsTable.coverImageUrl
+            })
+            .from(musicPlaylistsTable)
+            .where(inArray(musicPlaylistsTable.id, playlistIds.length > 0 ? playlistIds : [''])),
+          db
+            .select({
+              entityType: musicEntityLinksTable.entityType,
+              entityId: musicEntityLinksTable.entityId,
+              platform: musicEntityLinksTable.platform,
+              url: musicEntityLinksTable.url
+            })
+            .from(musicEntityLinksTable)
+            .where(
+              and(
+                inArray(musicEntityLinksTable.entityId, entityIds),
+                inArray(musicEntityLinksTable.entityType, ['album', 'track', 'playlist']),
+                eq(musicEntityLinksTable.status, LINK_STATUS.VERIFIED)
+              )
+            )
+            .orderBy(musicEntityLinksTable.platform)
+        ]),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to hydrate tweet screen music: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'music_entities'
+        })
+    }).pipe(Effect.withSpan('post.getMicroPostScreenMusic.batch'))
+
+    const entities = new Map<string, MicroPostScreenMusic['entity']>()
+    for (const entity of albums) entities.set(`album:${entity.id}`, { type: 'album', ...entity })
+    for (const entity of tracks) entities.set(`track:${entity.id}`, { type: 'track', ...entity })
+    for (const entity of playlists) {
+      entities.set(`playlist:${entity.id}`, { type: 'playlist', artistNames: null, ...entity })
+    }
+
+    const linksByEntity = new Map<string, Array<{ platform: string; url: string }>>()
+    for (const { entityType, entityId, platform, url } of links) {
+      const key = `${entityType}:${entityId}`
+      const entityLinks = linksByEntity.get(key) ?? []
+      entityLinks.push({ platform, url })
+      linksByEntity.set(key, entityLinks)
+    }
+
+    const musicByPostId = new Map<string, MicroPostScreenMusic>()
+    for (const { postId, type, id } of references) {
+      const key = `${type}:${id}`
+      const entity = entities.get(key)
+      if (entity) musicByPostId.set(postId, { entity, links: linksByEntity.get(key) ?? [] })
+    }
+    return musicByPostId
+  }).pipe(
+    Effect.withSpan('post.getMicroPostScreenMusic', { attributes: { postCount: posts.length } })
+  )
+
 const getMicroPostByIdEffect = (id: string, mdx: MdxService) =>
   Effect.gen(function* () {
     const db = yield* Database
@@ -2192,6 +2303,7 @@ export const PostServiceLayer = Layer.effect(
       getTweetCardInput: (slug) => provideDb(getTweetCardInputEffect(slug, mdx)),
       getMicroPostReferenceBySlug: (slug) => provideDb(getMicroPostReferenceBySlugEffect(slug)),
       getMicroPostById: (id) => provideDb(getMicroPostByIdEffect(id, mdx)),
+      getMicroPostScreenMusic: (posts) => provideDb(getMicroPostScreenMusicEffect(posts)),
       getPostTags: () => provideDb(getPostTagsEffect()),
       getEditorialTags: () => provideDb(getEditorialTagsEffect()),
       getMicroTags: () => provideDb(getMicroTagsEffect()),
