@@ -1,38 +1,24 @@
 <script lang="ts">
-  import { Schema } from 'effect'
-  import { onMount } from 'svelte'
+  import { SocialLinksResponse, UserProfileResponse } from '@gbfm/api/user'
   import { dashboardJson, jsonRequest } from '@/lib/components/dashboard/api'
 
-  const Platform = Schema.Literals(['bandcamp', 'substack', 'soundcloud', 'instagram', 'twitter', 'tiktok'])
-  const SocialLink = Schema.Struct({ platform: Platform, url: Schema.String, position: Schema.Number })
-  const Profile = Schema.Struct({ id: Schema.String, name: Schema.String, email: Schema.String, emailVerified: Schema.Boolean, image: Schema.NullOr(Schema.String), username: Schema.NullOr(Schema.String), bio: Schema.NullOr(Schema.String), avatarUrl: Schema.NullOr(Schema.String), verified: Schema.Boolean, socialLinks: Schema.Array(SocialLink) })
-  type PlatformValue = typeof Platform.Type
-  type Link = typeof SocialLink.Type
+  type Profile = typeof UserProfileResponse.Type
+  type Link = Profile['socialLinks'][number]
+  type PlatformValue = Link['platform']
 
   const platforms: ReadonlyArray<PlatformValue> = ['bandcamp', 'substack', 'soundcloud', 'instagram', 'twitter', 'tiktok']
-  let username = $state('')
-  let email = $state('')
-  let image = $state('')
+  let { initialProfile, initialError = null }: { initialProfile: Profile | null; initialError?: string | null } = $props()
+  let username = $derived(initialProfile?.username ?? '')
+  let email = $derived(initialProfile?.email ?? '')
+  let image = $derived(initialProfile?.image ?? initialProfile?.avatarUrl ?? '')
   let imagePreview = $state('')
   let avatar: File | undefined = $state()
-  let links = $state<ReadonlyArray<Link>>([])
-  let loading = $state(true)
+  let links = $derived<ReadonlyArray<Link>>(initialProfile?.socialLinks ?? [])
   let profilePending = $state(false)
   let linksPending = $state(false)
   let resetPending = $state(false)
-  let message = $state('')
-  let failed = $state(false)
-
-  onMount(async () => {
-    try {
-      const profile = await dashboardJson(Profile, '/api/user/profile')
-      username = profile.username ?? ''
-      email = profile.email
-      image = profile.image ?? profile.avatarUrl ?? ''
-      links = profile.socialLinks
-    } catch { notify('Could not load profile.', true) }
-    finally { loading = false }
-  })
+  let message = $derived(initialError ?? '')
+  let failed = $derived(Boolean(initialError))
 
   function notify(text: string, isError = false) { message = text; failed = isError }
   function selectAvatar(file: File | undefined) {
@@ -47,7 +33,7 @@
     body.set('email', email)
     if (avatar) body.set('avatar', avatar)
     try {
-      const profile = await dashboardJson(Profile, '/api/user/profile', { method: 'PATCH', body })
+      const profile = await dashboardJson(UserProfileResponse, '/api/user/profile', { method: 'PATCH', body })
       image = profile.image ?? profile.avatarUrl ?? image
       imagePreview = ''
       avatar = undefined
@@ -58,7 +44,7 @@
   async function saveLinks() {
     linksPending = true
     const cleaned = links.filter((link) => link.url.trim()).map((link, position) => ({ ...link, position }))
-    try { links = await dashboardJson(Schema.Array(SocialLink), '/api/user/profile/social-links', jsonRequest('PUT', cleaned)); notify('Social links updated') }
+    try { links = await dashboardJson(SocialLinksResponse, '/api/user/profile/social-links', jsonRequest('PUT', cleaned)); notify('Social links updated') }
     catch { notify('Failed to update social links.', true) }
     finally { linksPending = false }
   }
@@ -85,14 +71,14 @@
       </div>
       <label class="grid gap-1.5 font-medium">Username<input class="border border-border bg-background px-3 py-2" name="username" placeholder="Choose a username" bind:value={username} /></label>
       <label class="grid gap-1.5 font-medium">Email<input class="border border-border bg-background px-3 py-2" name="email" type="email" bind:value={email} /></label>
-      <button class="w-full bg-foreground px-4 py-2 font-bold text-background disabled:opacity-50" type="submit" disabled={loading || profilePending}>{profilePending ? 'Saving...' : 'Save Profile'}</button>
+      <button class="w-full bg-foreground px-4 py-2 font-bold text-background disabled:opacity-50" type="submit" disabled={!initialProfile || profilePending}>{profilePending ? 'Saving...' : 'Save Profile'}</button>
     </form>
   </section>
 
   <section class="border border-border">
     <header class="flex items-center justify-between border-b border-border p-6"><h2 class="text-xl font-bold">Social Links</h2><button type="button" class="border border-border px-3 py-1.5 text-sm font-bold" onclick={() => links = [...links, { platform: 'bandcamp', url: '', position: links.length }]}>+ Add Link</button></header>
     <div class="space-y-4 p-6"><p class="text-xs text-muted-foreground">Use the arrows to reorder. Empty URLs are ignored on save.</p>
-      {#if loading}<p class="text-muted-foreground">Loading social links...</p>{:else if links.length === 0}<div class="border border-dashed border-border p-4 text-muted-foreground">No social links yet.</div>{/if}
+      {#if links.length === 0}<div class="border border-dashed border-border p-4 text-muted-foreground">No social links yet.</div>{/if}
       {#each links as link, index}
         <div class="grid gap-2 sm:grid-cols-[9rem_1fr_auto]">
           <select class="border border-border bg-background p-2" value={link.platform} onchange={(event) => { const platform = event.currentTarget.value as PlatformValue; links = links.map((item, itemIndex) => itemIndex === index ? { ...item, platform } : item) }}>{#each platforms as platform}<option value={platform}>{platform}</option>{/each}</select>
@@ -100,7 +86,7 @@
           <div class="flex gap-1"><button type="button" aria-label="Move link up" disabled={index === 0} onclick={() => { const next = [...links]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; links = next }}>↑</button><button type="button" aria-label="Move link down" disabled={index === links.length - 1} onclick={() => { const next = [...links]; [next[index], next[index + 1]] = [next[index + 1], next[index]]; links = next }}>↓</button><button type="button" class="ml-2 text-destructive" onclick={() => links = links.filter((_, itemIndex) => itemIndex !== index)}>Remove</button></div>
         </div>
       {/each}
-      <button class="w-full bg-foreground px-4 py-2 font-bold text-background disabled:opacity-50" type="button" disabled={linksPending} onclick={() => void saveLinks()}>{linksPending ? 'Saving...' : 'Save Social Links'}</button>
+      <button class="w-full bg-foreground px-4 py-2 font-bold text-background disabled:opacity-50" type="button" disabled={!initialProfile || linksPending} onclick={() => void saveLinks()}>{linksPending ? 'Saving...' : 'Save Social Links'}</button>
     </div>
   </section>
 

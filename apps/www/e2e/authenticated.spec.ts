@@ -55,6 +55,24 @@ test('member data is present in dashboard and reminders server responses', async
   expect(html).not.toContain('>Loading…</p>')
 })
 
+test('member settings are populated in server responses', async ({ page }) => {
+  await signIn(page, 'listener@gbfm.local')
+
+  let response = await page.goto('/dashboard/profile')
+  let html = await response?.text()
+  expect(html).toContain('value="local-listener"')
+  expect(html).toContain('value="listener@gbfm.local"')
+  expect(html).toContain(
+    'reset link to <strong class="text-foreground">listener@gbfm.local</strong>'
+  )
+  expect(html).not.toContain('Loading social links')
+
+  response = await page.goto('/dashboard/email')
+  html = await response?.text()
+  expect(html).not.toContain('Loading email preferences')
+  expect(html).toContain('New Mix &amp; Show Updates')
+})
+
 test('show subscription state is present in the server-rendered response', async ({ page }) => {
   await signIn(page, 'admin@gbfm.local')
   const suffix = `${Date.now()}-${test.info().workerIndex}`
