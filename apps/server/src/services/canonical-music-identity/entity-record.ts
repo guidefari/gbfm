@@ -230,9 +230,9 @@ export const prepareEntityRecord = (
   entityId: string,
   result: ScrapeResult,
   details?: {
-    readonly description?: string
-    readonly trackNumber?: number
-    readonly curatorId?: string | null
+    readonly description?: string | undefined
+    readonly trackNumber?: number | undefined
+    readonly curatorId?: string | null | undefined
   },
 ) =>
   Effect.gen(function* () {

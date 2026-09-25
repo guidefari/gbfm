@@ -331,7 +331,7 @@ const audioListVisibilityCondition = (
   return audioIdsForCreator(db, actor.userId)
 }
 
-const findAudioBySlug = (type: AudioType, slug: string, mdx: MdxService, where: SQL | undefined) =>
+const findAudioBySlug = (_type: AudioType, slug: string, mdx: MdxService, where: SQL | undefined) =>
   Effect.gen(function* () {
     const db = yield* Database
 

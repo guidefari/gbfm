@@ -10,6 +10,7 @@ import type {
   SelectMusicTrack,
 } from '@/db/music-entity.schema'
 import { ValidationError } from '@/errors'
+import { omitUndefined } from '@/lib/omit-undefined'
 import type {
   MusicLinkScraperService,
   MusicScraperError,
@@ -63,7 +64,7 @@ export const scrapeAndCreateEntityWithoutSourceEffect = (
   input: MusicMetadataScrapeInput,
 ) =>
   Effect.gen(function* () {
-    const result = yield* scraper.scrape({ ...input, entityType })
+    const result = yield* scraper.scrape(omitUndefined({ ...input, entityType }))
     const meta = result.entityMeta
 
     if (!hasUsableScrapeResult(result)) {
@@ -88,7 +89,7 @@ export const scrapeAndCreateEntityWithoutSourceEffect = (
         case 'artist': {
           const name = meta?.artistName ?? input.artistName ?? 'Unknown Artist'
 
-          return findOrCreateArtist(name, { imageUrl: meta?.thumbnailUrl }).pipe(
+          return findOrCreateArtist(name, omitUndefined({ imageUrl: meta?.thumbnailUrl })).pipe(
             Effect.map((entity) => scrapedEntity('artist', entity)),
           )
         }
@@ -96,35 +97,41 @@ export const scrapeAndCreateEntityWithoutSourceEffect = (
         case 'album': {
           const title = meta?.title ?? input.albumTitle ?? 'Untitled Album'
 
-          return createAlbumEffect({
-            title,
-            slug: toSlug(title),
-            artistNames,
-            artistIds,
-            coverImageUrl: meta?.thumbnailUrl,
-          }).pipe(Effect.map((entity) => scrapedEntity('album', entity)))
+          return createAlbumEffect(
+            omitUndefined({
+              title,
+              slug: toSlug(title),
+              artistNames,
+              artistIds,
+              coverImageUrl: meta?.thumbnailUrl,
+            }),
+          ).pipe(Effect.map((entity) => scrapedEntity('album', entity)))
         }
 
         case 'track': {
           const title = meta?.title ?? input.trackTitle ?? 'Untitled Track'
 
-          return createTrackEffect({
-            title,
-            slug: toSlug(title),
-            artistNames,
-            artistIds,
-            coverImageUrl: meta?.thumbnailUrl,
-          }).pipe(Effect.map((entity) => scrapedEntity('track', entity)))
+          return createTrackEffect(
+            omitUndefined({
+              title,
+              slug: toSlug(title),
+              artistNames,
+              artistIds,
+              coverImageUrl: meta?.thumbnailUrl,
+            }),
+          ).pipe(Effect.map((entity) => scrapedEntity('track', entity)))
         }
 
         case 'playlist': {
           const title = meta?.title ?? 'Untitled Playlist'
 
-          return createPlaylistEffect({
-            title,
-            slug: toSlug(title),
-            coverImageUrl: meta?.thumbnailUrl,
-          }).pipe(Effect.map((entity) => scrapedEntity('playlist', entity)))
+          return createPlaylistEffect(
+            omitUndefined({
+              title,
+              slug: toSlug(title),
+              coverImageUrl: meta?.thumbnailUrl,
+            }),
+          ).pipe(Effect.map((entity) => scrapedEntity('playlist', entity)))
         }
 
         default:
@@ -169,12 +176,14 @@ export const scrapeAndCreateEntityWithoutSourceEffect = (
 
 const hasUsableScrapeResult = (result: {
   readonly links: ReadonlyArray<unknown>
-  readonly entityMeta?: {
-    readonly title?: string
-    readonly artistName?: string
-    readonly thumbnailUrl?: string
-    readonly isrc?: string
-  }
+  readonly entityMeta?:
+    | {
+        readonly title?: string | undefined
+        readonly artistName?: string | undefined
+        readonly thumbnailUrl?: string | undefined
+        readonly isrc?: string | undefined
+      }
+    | undefined
 }): boolean =>
   result.links.length > 0 ||
   Boolean(

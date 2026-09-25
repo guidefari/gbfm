@@ -53,6 +53,8 @@ export type MixUploadDraft = {
   readonly updatedAt: number
 }
 
+type MutableMixUploadDraft = { -readonly [Key in keyof MixUploadDraft]: MixUploadDraft[Key] }
+
 export const emptyMixUploadDraft = (): MixUploadDraft => ({
   title: '',
   description: '',
@@ -61,14 +63,6 @@ export const emptyMixUploadDraft = (): MixUploadDraft => ({
   thumbnailUrl: '',
   tags: [],
   tracklist: [],
-  audioFingerprint: undefined,
-  audioFileName: undefined,
-  artworkFingerprint: undefined,
-  artworkFileName: undefined,
-  showId: undefined,
-  episodeNumber: undefined,
-  creatorId: undefined,
-  url: undefined,
   updatedAt: Date.now(),
 })
 
@@ -76,7 +70,7 @@ export const parseMixUploadDraft = (raw: StoredDraftInput): MixUploadDraft | nul
   try {
     const decoded = Schema.decodeUnknownSync(MixUploadDraftSchema)(raw)
 
-    return {
+    const draft: MutableMixUploadDraft = {
       title: decoded.title,
       description: decoded.description,
       slug: decoded.slug,
@@ -84,16 +78,27 @@ export const parseMixUploadDraft = (raw: StoredDraftInput): MixUploadDraft | nul
       thumbnailUrl: decoded.thumbnailUrl,
       tags: [...decoded.tags],
       tracklist: decoded.tracklist.map((t) => ({ id: t.id, time: t.time, title: t.title })),
-      audioFingerprint: decoded.audioFingerprint,
-      audioFileName: decoded.audioFileName,
-      artworkFingerprint: decoded.artworkFingerprint,
-      artworkFileName: decoded.artworkFileName,
-      showId: decoded.showId,
-      episodeNumber: decoded.episodeNumber,
-      creatorId: decoded.creatorId,
-      url: decoded.url,
       updatedAt: decoded.updatedAt,
     }
+
+    if (decoded.audioFingerprint !== undefined) draft.audioFingerprint = decoded.audioFingerprint
+
+    if (decoded.audioFileName !== undefined) draft.audioFileName = decoded.audioFileName
+
+    if (decoded.artworkFingerprint !== undefined)
+      draft.artworkFingerprint = decoded.artworkFingerprint
+
+    if (decoded.artworkFileName !== undefined) draft.artworkFileName = decoded.artworkFileName
+
+    if (decoded.showId !== undefined) draft.showId = decoded.showId
+
+    if (decoded.episodeNumber !== undefined) draft.episodeNumber = decoded.episodeNumber
+
+    if (decoded.creatorId !== undefined) draft.creatorId = decoded.creatorId
+
+    if (decoded.url !== undefined) draft.url = decoded.url
+
+    return draft
   } catch {
     return null
   }

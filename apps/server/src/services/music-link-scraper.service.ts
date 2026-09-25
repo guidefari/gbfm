@@ -23,6 +23,7 @@
 import { Context, Data, Effect, Layer, Match, Schedule, Schema } from 'effect'
 
 import { getErrorMessage } from '@/errors'
+import { omitUndefined } from '@/lib/omit-undefined'
 import { extractBandcampArtist, getBandcampMetadataWithSpan } from '@/services/bandcamp.service'
 import {
   DeezerService,
@@ -84,21 +85,21 @@ export interface ScrapedLink {
 }
 
 export interface EntityMeta {
-  title?: string
-  artistName?: string
-  thumbnailUrl?: string
-  type?: 'song' | 'album' | 'artist' | 'playlist'
-  isrc?: string
+  title?: string | undefined
+  artistName?: string | undefined
+  thumbnailUrl?: string | undefined
+  type?: 'song' | 'album' | 'artist' | 'playlist' | undefined
+  isrc?: string | undefined
 }
 
 export interface ProviderResult {
   links: Array<ScrapedLink>
-  entityMeta?: EntityMeta
+  entityMeta?: EntityMeta | undefined
 }
 
 export interface ScrapeResult {
   links: Array<ScrapedLink>
-  entityMeta?: EntityMeta
+  entityMeta?: EntityMeta | undefined
 }
 
 // ---------------------------------------------------------------------------
@@ -146,17 +147,17 @@ const ODESLI_PLATFORM_MAP = new Map<string, MusicPlatform>([
 interface OdesliPlatformLink {
   country: string
   url: string
-  nativeAppUriMobile?: string
-  nativeAppUriDesktop?: string
+  nativeAppUriMobile?: string | undefined
+  nativeAppUriDesktop?: string | undefined
   entityUniqueId: string
 }
 
 interface OdesliEntity {
   id: string
   type: 'song' | 'album'
-  title?: string
-  artistName?: string
-  thumbnailUrl?: string
+  title?: string | undefined
+  artistName?: string | undefined
+  thumbnailUrl?: string | undefined
   apiProvider: string
   platforms: ReadonlyArray<string>
 }
@@ -317,7 +318,7 @@ export class OdesliProvider implements CrossPlatformLinkDiscovery {
 // ---------------------------------------------------------------------------
 
 interface FirecrawlExtractResult {
-  socialLinks?: Partial<Record<string, string>>
+  socialLinks?: Partial<Record<string, string>> | undefined
 }
 
 const FirecrawlExtractResultSchema = Schema.Struct({
@@ -600,7 +601,7 @@ export const scrapeEffect = Effect.fn('musicScraper.scrape')(function* (input: M
   if (musicbrainzApplicable) attemptedProviders += 1
 
   const musicbrainzResult = yield* resolveMusicBrainzIdentity(
-    { ...input, isrc: input.isrc ?? entityMeta?.isrc },
+    omitUndefined({ ...input, isrc: input.isrc ?? entityMeta?.isrc }),
     !entityMeta?.thumbnailUrl,
   ).pipe(
     Effect.tap((value) => logProviderOutcome('musicbrainz', value ? 'succeeded' : 'not_found')),

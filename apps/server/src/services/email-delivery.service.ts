@@ -7,6 +7,7 @@ import type {
   EmailNotificationType,
 } from '@/db/email.schema'
 import { Database } from '@/db/layer'
+import { omitUndefined } from '@/lib/omit-undefined'
 import { recordEmailFail, recordEmailSend } from '@/lib/performance-monitoring'
 import {
   createPendingEmailDeliveryLog,
@@ -133,7 +134,7 @@ export const EmailDeliveryLive = Layer.effect(
         Effect.gen(function* () {
           const pending = yield* persist('create-pending', () =>
             createPendingEmailDeliveryLog(
-              {
+              omitUndefined({
                 userId: request.userId,
                 recipientEmail: request.message.to,
                 recipientName: request.recipientName,
@@ -141,7 +142,7 @@ export const EmailDeliveryLive = Layer.effect(
                 templateName: request.message.templateName,
                 subject: request.message.subject,
                 metadata: request.safeMetadata,
-              },
+              }),
               database,
             ),
           )

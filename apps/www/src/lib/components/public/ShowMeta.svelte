@@ -11,7 +11,7 @@
 </script>
 
 <header class="grid grid-cols-[6rem_minmax(0,1fr)] items-start gap-4 font-mono sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-6">
-  <Artwork src={text(show.thumbnailUrl) || undefined} alt={title} />
+  <Artwork {...(text(show.thumbnailUrl) ? { src: text(show.thumbnailUrl) } : {})} alt={title} />
   <div class="min-w-0">
     <h1 class="text-xl font-bold tracking-tight text-foreground sm:text-2xl">{title}</h1>
     {#if hosts}<p class="mt-1 text-xs text-muted-foreground">hosted by {hosts}</p>{/if}

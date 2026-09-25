@@ -23,6 +23,7 @@ import { DatabaseError, getErrorMessage } from '@/errors'
 import { createWebHandler } from '@/http/routes'
 import { sanitizeDatabaseSpan } from '@/lib/database-telemetry'
 import { localTracer, traceLocalRequest } from '@/lib/local-request-tracing'
+import { omitUndefined } from '@/lib/omit-undefined'
 import { hasLocalSentryContext, shouldEnableSentry } from '@/lib/sentry'
 import { regenerateSitemap } from '@/routes/redirect/seo/sitemap.service'
 import {
@@ -234,7 +235,7 @@ const sentryOptions = (env: ApiEnv) => {
       name,
       normalizedRequest,
     }: TracesSamplerSamplingContext) =>
-      inheritOrSampleWith(traceSampleRate({ name, url: normalizedRequest?.url })),
+      inheritOrSampleWith(traceSampleRate(omitUndefined({ name, url: normalizedRequest?.url }))),
 
     sendDefaultPii: false,
     enableLogs: true,

@@ -77,7 +77,7 @@ export interface MDXCompilationResult {
 
 export interface MDXError {
   error: string
-  details?: string
+  details?: string | undefined
 }
 
 export function isMDXCompilationResult(

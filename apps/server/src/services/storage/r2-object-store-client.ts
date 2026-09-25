@@ -1,5 +1,6 @@
 import { Effect, Layer, Redacted } from 'effect'
 
+import { omitUndefined } from '@/lib/omit-undefined'
 import { ConfigService } from '@/services/config.service'
 
 import {
@@ -127,7 +128,10 @@ export const R2ObjectStoreClientLayer = (buckets: R2ObjectStoreBuckets) =>
     Effect.gen(function* () {
       const config = yield* ConfigService
       const names = config.buckets
-      const signingConfig = (bucketName: string) => createSigningConfig(config.storage, bucketName)
+
+      const signingConfig = (bucketName: string) =>
+        createSigningConfig(omitUndefined(config.storage), bucketName)
+
       const bucket = (bucketName: string) => selectBucket(buckets, names, bucketName)
 
       return {
@@ -157,7 +161,7 @@ export const R2ObjectStoreClientLayer = (buckets: R2ObjectStoreBuckets) =>
           let cursor: string | undefined
 
           do {
-            const options = { prefix: prefix || undefined, cursor }
+            const options = omitUndefined({ prefix: prefix || undefined, cursor })
             const page = await bucket(bucketName).list(options)
             objects.push(
               ...page.objects.map((object) => ({

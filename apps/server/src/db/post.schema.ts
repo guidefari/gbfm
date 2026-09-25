@@ -69,12 +69,14 @@ export type BlueskySourceAttribution = {
 export type SelectMdxCompiledPost = SelectPost & {
   compiledContent: string
   blueskySource?: BlueskySourceAttribution
-  creators?: Array<{
-    id: string
-    name: string
-    username: string | null
-    image: string | null
-  }>
+  creators?:
+    | Array<{
+        id: string
+        name: string
+        username: string | null
+        image: string | null
+      }>
+    | undefined
   replyCount?: number
 }
 

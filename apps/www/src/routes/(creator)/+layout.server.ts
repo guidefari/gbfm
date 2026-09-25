@@ -4,7 +4,7 @@ import { Predicate } from 'effect'
 import type { LayoutServerLoad } from './$types'
 
 export const load: LayoutServerLoad = ({ locals, url }) => {
-  if (Predicate.isTagged(locals.principal, 'Anonymous')) {
+  if (!Predicate.isTagged(locals.principal, 'Authenticated')) {
     redirect(303, `/auth/sign-in?redirect=${encodeURIComponent(url.pathname + url.search)}`)
   }
 

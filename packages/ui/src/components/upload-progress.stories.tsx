@@ -5,7 +5,12 @@ export default {
   title: '@gbfm/ui/Workflows/Upload progress',
 }
 
-const steps: Array<UploadStep> = ['uploading-audio', 'uploading-image', 'creating-record', 'success']
+const steps: Array<UploadStep> = [
+  'uploading-audio',
+  'uploading-image',
+  'creating-record',
+  'success',
+]
 
 export function UploadProgressStates() {
   return (

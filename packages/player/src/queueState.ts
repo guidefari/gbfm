@@ -115,6 +115,9 @@ export const reduceQueue = (
 
       const tracks = [...state.tracks]
       const [moved] = tracks.splice(action.from, 1)
+
+      if (!moved) return state
+
       tracks.splice(action.to, 0, moved)
       const currentId = state.tracks[state.currentIndex]?.id
       const currentIndex = currentId ? tracks.findIndex((track) => track.id === currentId) : -1

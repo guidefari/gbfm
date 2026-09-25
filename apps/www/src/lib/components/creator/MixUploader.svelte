@@ -7,7 +7,7 @@
   import { computeFileFingerprint } from '@/lib/upload/resumable-upload'
   import { uploadImageDirectToS3 } from '@/lib/upload/image-upload'
   import { runAppEffect } from '@/runtime'
-  import { cancelProgram, readCheckpoint, uploadProgram, type PersistedResumableUpload } from '@/services/resumable-upload'
+  import { cancelProgram, readCheckpoint, uploadProgram, type PersistedResumableUpload, type UploadProgress } from '@/services/resumable-upload'
 
   const ErrorResponse = Schema.Struct({ message: Schema.optional(Schema.String) })
 
@@ -154,7 +154,9 @@
     paused = false; controller = new AbortController(); pending = true; status = checkpoint ? 'Resuming audio upload…' : 'Uploading audio…'
 
     try {
-      const result = await runAppEffect(uploadProgram({ file: audioFile, fileType: 'audio' }, { signal: controller.signal, checkpoint: checkpoint ?? undefined, isPaused: () => paused, onCheckpoint: (value) => { checkpoint = value }, onProgress: (value) => { progress = value.totalBytes ? Math.round(value.bytesUploaded / value.totalBytes * 100) : 0 } }))
+      const callbacks = { signal: controller.signal, isPaused: () => paused, onCheckpoint: (value: PersistedResumableUpload) => { checkpoint = value }, onProgress: (value: UploadProgress) => { progress = value.totalBytes ? Math.round(value.bytesUploaded / value.totalBytes * 100) : 0 } }
+      const options = checkpoint ? { ...callbacks, checkpoint } : callbacks
+      const result = await runAppEffect(uploadProgram({ file: audioFile, fileType: 'audio' }, options))
       form = { ...form, audioUrl: result.url }; checkpoint = null; progress = 100; status = 'Audio uploaded';
 
  return result.url

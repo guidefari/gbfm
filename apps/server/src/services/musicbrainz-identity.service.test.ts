@@ -1,6 +1,8 @@
 import { Effect } from 'effect'
 import { describe, expect, test } from 'vitest'
 
+import { omitUndefined } from '@/lib/omit-undefined'
+
 import {
   makeMusicBrainzIdentityService,
   MusicBrainzNotFound,
@@ -336,9 +338,10 @@ describe('MusicBrainzIdentityService', () => {
       makeMusicBrainzIdentityService(
         (_input, init) => {
           headers.push(
-            new Request('https://example.com', {
-              headers: init?.headers,
-            }).headers.get('User-Agent') ?? '',
+            new Request(
+              'https://example.com',
+              omitUndefined({ headers: init?.headers }),
+            ).headers.get('User-Agent') ?? '',
           )
           count += 1
 

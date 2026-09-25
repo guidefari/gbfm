@@ -157,11 +157,15 @@ type SourceSession = {
 const buildMetadata = (track: QueueTrackType): NowPlayingMetadata => {
   const artist = track.creators?.map((creator) => creator.name).join(', ') ?? ''
 
-  return {
-    title: track.title,
-    artist: artist.length > 0 ? artist : undefined,
-    artworkUrl: track.thumbnailUrl ?? undefined,
+  if (artist.length === 0) {
+    return track.thumbnailUrl
+      ? { title: track.title, artworkUrl: track.thumbnailUrl }
+      : { title: track.title }
   }
+
+  return track.thumbnailUrl
+    ? { title: track.title, artist, artworkUrl: track.thumbnailUrl }
+    : { title: track.title, artist }
 }
 
 export interface PlayerCoreController {

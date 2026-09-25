@@ -129,7 +129,7 @@ function MetadataForm<T>({
 function toDateInputValue(d: Date | string | null | undefined): string {
   if (!d) return ''
 
-  return new Date(d).toISOString().split('T')[0]
+  return new Date(d).toISOString().slice(0, 10)
 }
 
 function GenreTagInput({

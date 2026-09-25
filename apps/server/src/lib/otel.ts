@@ -7,6 +7,7 @@ import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
 import * as Sentry from '@sentry/bun'
 import { Effect, Layer } from 'effect'
 
+import { omitUndefined } from '@/lib/omit-undefined'
 import { ConfigService } from '@/services/config.service'
 import { SentryClientService } from '@/services/sentry-client.service'
 
@@ -59,10 +60,7 @@ export const OtlpLive = Effect.gen(function* () {
     exporterTargets.map(
       ({ url, headers }) =>
         new BatchSpanProcessor(
-          new OTLPTraceExporter({
-            url,
-            headers,
-          }),
+          new OTLPTraceExporter(omitUndefined({ url, headers })),
           // Keep local traces close to real time without making every span end
           // perform its own export. Production keeps the SDK batch defaults.
           isLocal ? { scheduledDelayMillis: 250 } : undefined,

@@ -19,13 +19,13 @@
   ])
 </script>
 
-<PublicHead title={text(item?.name, 'Profile')} description={text(item?.bio, `Public profile on goosebumps.fm.`)} {canonical} image={text(item?.image) || undefined} />
+<PublicHead title={text(item?.name, 'Profile')} description={text(item?.bio, `Public profile on goosebumps.fm.`)} {canonical} {...(text(item?.image) ? { image: text(item?.image) } : {})} />
 {#if failure || !item}
   <PublicState message={failure ?? 'This profile could not be found.'} error />
 {:else}
   <div class="mx-auto flex max-w-7xl flex-col gap-8 p-4 lg:flex-row lg:p-8">
     <aside class="w-full shrink-0 lg:w-80">
-      <div class="w-32"><Artwork src={text(item.image) || undefined} alt={text(item.name, 'Profile')} /></div>
+      <div class="w-32"><Artwork {...(text(item.image) ? { src: text(item.image) } : {})} alt={text(item.name, 'Profile')} /></div>
       <h1 class="mb-1 mt-4 text-3xl font-black">{text(item.name, 'Profile')}</h1>
       {#if text(item.username)}<p class="text-sm text-muted-foreground">@{text(item.username)}</p>{/if}
       {#if text(item.bio)}<p class="mt-4 whitespace-pre-wrap leading-6">{text(item.bio)}</p>{/if}

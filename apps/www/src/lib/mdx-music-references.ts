@@ -17,9 +17,14 @@ export function mdxMusicReferences(content: string | null | undefined): Array<Md
 
   return [...content.matchAll(musicComponentPattern)].flatMap((match) => {
     const component = match[1]
+    const url = match[3]
 
-    if (component !== 'Album' && component !== 'Track' && component !== 'Playlist') return []
+    if (
+      (component !== 'Album' && component !== 'Track' && component !== 'Playlist') ||
+      url === undefined
+    )
+      return []
 
-    return [{ type: componentType[component], encodedUrl: encodeURIComponent(match[3]) }]
+    return [{ type: componentType[component], encodedUrl: encodeURIComponent(url) }]
   })
 }

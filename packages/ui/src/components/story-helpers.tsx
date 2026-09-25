@@ -4,6 +4,14 @@ interface PanelHeaderProps {
   description: string
 }
 
+interface MediaExample {
+  title: string
+  eyebrow: string
+  imageUrl: string
+  description: string
+  tags: Array<string>
+}
+
 export const storyPanelClassName = 'mx-auto w-full max-w-6xl space-y-6'
 
 export const mediaExamples = [
@@ -23,7 +31,7 @@ export const mediaExamples = [
     description: 'Notes on overlooked records, room tone, and the DJs who connect scenes.',
     tags: ['essay', 'records', 'scene report'],
   },
-]
+] satisfies [MediaExample, MediaExample]
 
 export const mockLinks = [
   {

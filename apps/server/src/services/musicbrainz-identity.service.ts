@@ -117,8 +117,8 @@ export type MusicBrainzProvenance = {
   readonly source: 'musicbrainz'
   readonly confidence: MusicBrainzConfidence
   readonly lookupAt: string
-  readonly requestedMbid?: string
-  readonly matchedUrl?: string
+  readonly requestedMbid?: string | undefined
+  readonly matchedUrl?: string | undefined
   readonly canonicalMbid: string
 }
 
@@ -143,29 +143,31 @@ type MusicBrainzCandidateBase = {
 export type MusicBrainzArtistCandidate = MusicBrainzCandidateBase & {
   readonly entityType: 'artist'
   readonly artistMbid: string
-  readonly disambiguation?: string
-  readonly country?: string
+  readonly disambiguation?: string | undefined
+  readonly country?: string | undefined
 }
 
 export type MusicBrainzAlbumCandidate = MusicBrainzCandidateBase & {
   readonly entityType: 'album'
   readonly releaseGroup: {
     readonly mbid: string
-    readonly primaryType?: string
+    readonly primaryType?: string | undefined
   }
-  readonly editionRelease?: {
-    readonly mbid: string
-    readonly country?: string
-    readonly date?: string
-    readonly barcode?: string
-  }
+  readonly editionRelease?:
+    | {
+        readonly mbid: string
+        readonly country?: string | undefined
+        readonly date?: string | undefined
+        readonly barcode?: string | undefined
+      }
+    | undefined
 }
 
 export type MusicBrainzTrackCandidate = MusicBrainzCandidateBase & {
   readonly entityType: 'track'
   readonly recordingMbid: string
   readonly isrcs: ReadonlyArray<string>
-  readonly durationMs?: number
+  readonly durationMs?: number | undefined
 }
 
 export type MusicBrainzIdentityCandidate =

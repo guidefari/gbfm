@@ -31,11 +31,13 @@
     status = ''
     const endpoint = kind === 'show' && active ? `/api/shows/${id}/unsubscribe` : kind === 'show' ? `/api/shows/${id}/subscribe` : active ? `/api/favorites/${id}` : '/api/favorites'
 
-    const response = await fetch(endpoint, {
+    const init: RequestInit = {
       method: active ? 'DELETE' : 'POST', credentials: 'include',
-      headers: { 'content-type': 'application/json' },
-      body: !active && kind === 'audio' ? JSON.stringify({ audioId: id }) : undefined
-    }).catch(() => null)
+      headers: { 'content-type': 'application/json' }
+    }
+
+    if (!active && kind === 'audio') init.body = JSON.stringify({ audioId: id })
+    const response = await fetch(endpoint, init).catch(() => null)
 
     if (response?.ok) { active = !active; status = active ? (kind === 'show' ? 'Subscribed' : 'Added to favorites') : (kind === 'show' ? 'Unsubscribed' : 'Removed from favorites') }
     else if (response?.status === 401) { retryAfterAuthentication = true; authOpen = true }

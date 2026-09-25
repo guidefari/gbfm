@@ -26,9 +26,9 @@
   title={string(data.item, 'title', string(data.item, 'name', fallbackTitle))}
   description={string(data.item, 'description', `Listen to and discover ${fallbackTitle} on goosebumps.fm.`)}
   {canonical}
-  image={string(data.item, 'thumbnailUrl', string(data.item, 'imageUrl')) || undefined} />
+  {...(string(data.item, 'thumbnailUrl', string(data.item, 'imageUrl')) ? { image: string(data.item, 'thumbnailUrl', string(data.item, 'imageUrl')) } : {})} />
 {#if data.failure || !data.item}
   <PublicState message={data.failure ?? 'This page could not be found.'} error />
 {:else}
-  <ContentDetail item={data.item} {kind} {canonical} {relatedShow} actionActive={data.actionActive} />
+  <ContentDetail item={data.item} {kind} {canonical} {relatedShow} {...(data.actionActive === undefined ? {} : { actionActive: data.actionActive })} />
 {/if}

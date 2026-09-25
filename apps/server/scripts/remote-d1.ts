@@ -25,6 +25,17 @@ type ApiResponse = {
   readonly result: ReadonlyArray<QueryResult>
 }
 
+const isApiResponse = (value: unknown): value is ApiResponse => {
+  if (typeof value !== 'object' || value === null) return false
+
+  const candidate = value as Record<string, unknown>
+  return (
+    typeof candidate.success === 'boolean' &&
+    Array.isArray(candidate.errors) &&
+    Array.isArray(candidate.result)
+  )
+}
+
 type RemoteFetch = (url: string, init: RequestInit) => Promise<Response>
 
 export type RemoteD1Options = {
@@ -52,6 +63,10 @@ const post = async (
 
   /** `json()` resolves to `unknown`; this is the single HTTP decode boundary. */
   const payload = await response.json()
+
+  if (!isApiResponse(payload)) {
+    throw new Error(`D1 returned an invalid response (${response.status})`)
+  }
 
   if (!response.ok || !payload.success) {
     const detail = (payload.errors ?? []).map((e) => `${e.code}: ${e.message}`).join('; ')

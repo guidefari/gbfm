@@ -18,6 +18,10 @@ test('transforms standalone Spotify URLs, deduplicates resolution, and parses pe
     spotifyUrls: [url, otherUrl],
   })
   const [pending] = result.content.split('\n\n')
+
+  expect(pending).toBeDefined()
+
+  if (!pending) throw new Error('Expected pending music entity content')
   expect(Effect.runSync(parsePendingMusicEntityEffect(pending))).toEqual({
     provider: 'spotify',
     url,

@@ -30,6 +30,6 @@
   {#if data.failure}
     <PublicState message={data.failure} error />
   {:else}
-    <ContentGrid items={data.items} {href} {empty} />
+    <ContentGrid items={data.items} {href} {...(empty === undefined ? {} : { empty })} />
   {/if}
 </section>

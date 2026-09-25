@@ -642,6 +642,9 @@ export const makeAudioPlayback = (
         if (index < 0 || index >= queueState.tracks.length) return
         const previousCurrentId = currentTrack(queueState)?.id ?? null
         const removed = queueState.tracks[index]
+
+        if (!removed) return
+
         const action = QueueAction.remove({ index })
         const next = reduceQueue(queueState, action)
         const nextCurrent = selectQueueView(next).current
@@ -654,7 +657,7 @@ export const makeAudioPlayback = (
         yield* (
           reporter.onQueueAction?.({
             action: 'remove',
-            trackId: removed?.id,
+            trackId: removed.id,
             queueLength: queueLength(next),
           }) ?? Effect.void
         )

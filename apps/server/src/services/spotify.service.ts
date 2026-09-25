@@ -79,9 +79,9 @@ export interface EnrichedTrack {
   artist: string
   url: string
   platform: 'spotify' | 'youtube' | 'apple_music' | 'bandcamp' | 'other'
-  thumbnailUrl?: string
-  album?: string
-  duration?: number
+  thumbnailUrl?: string | undefined
+  album?: string | undefined
+  duration?: number | undefined
 }
 
 export type SpotifySourceEntityType = 'track' | 'album' | 'playlist'
@@ -103,14 +103,14 @@ type SpotifySourceCandidateBase = {
   readonly externalId: string
   readonly title: string
   readonly url: string
-  readonly imageUrl?: string
+  readonly imageUrl?: string | undefined
 }
 
 export type SpotifySourceCandidate =
   | (SpotifySourceCandidateBase & {
       readonly entityType: 'track'
       readonly artists: string
-      readonly isrc?: string
+      readonly isrc?: string | undefined
       readonly crossPlatformEnrichment: 'allowed'
     })
   | (SpotifySourceCandidateBase & {
@@ -120,8 +120,8 @@ export type SpotifySourceCandidate =
     })
   | (SpotifySourceCandidateBase & {
       readonly entityType: 'playlist'
-      readonly description?: string
-      readonly ownerName?: string
+      readonly description?: string | undefined
+      readonly ownerName?: string | undefined
       readonly crossPlatformEnrichment: 'forbidden'
     })
 

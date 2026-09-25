@@ -40,12 +40,14 @@ import {
   mapSpotifyTrackImportErrors,
   PROVIDER_UNAVAILABLE_RETRY_AFTER_SECONDS,
 } from '@/http/music-identity-http'
+import { omitUndefined } from '@/lib/omit-undefined'
 import {
   CanonicalMusicIdentity,
   type AnyResolvedMusicEntity,
 } from '@/services/canonical-music-identity'
 import {
   type CreateAlbumInput as AlbumServiceCreateInput,
+  type CreateArtistInput as ArtistServiceCreateInput,
   type CreateLabelInput as LabelServiceCreateInput,
   type CreatePlaylistInput as PlaylistServiceCreateInput,
   type CreateTrackInput as TrackServiceCreateInput,
@@ -168,88 +170,101 @@ const toScrapeMusicEntityResponse = (
   }
 }
 
-// Generic so create keeps slug/name required and update keeps them optional.
-const toServiceFields = <T extends CreateArtistInput | UpdateArtistInput>(
-  input: T,
-): Omit<T, 'genres' | 'publishedAt'> & { genres?: Array<string>; publishedAt?: Date } => ({
-  ...input,
-  genres: input.genres ? [...input.genres] : undefined,
-  publishedAt: input.publishedAt ? new Date(input.publishedAt) : undefined,
-})
+function toServiceFields(input: CreateArtistInput): ArtistServiceCreateInput
+function toServiceFields(input: UpdateArtistInput): Partial<ArtistServiceCreateInput>
+function toServiceFields(
+  input: CreateArtistInput | UpdateArtistInput,
+): Partial<ArtistServiceCreateInput> {
+  return omitUndefined({
+    ...input,
+    genres: input.genres ? [...input.genres] : undefined,
+    publishedAt: input.publishedAt ? new Date(input.publishedAt) : undefined,
+  })
+}
 
 // Create: title/slug are required NonEmptyString on the wire schema, so no
 // null-coercion is needed -- only the array/date fields need reshaping.
-const toAlbumCreateFields = (input: CreateAlbumInput): AlbumServiceCreateInput => ({
-  ...input,
-  artistNames: input.artistNames ? [...input.artistNames] : undefined,
-  artistIds: input.artistIds ? [...input.artistIds] : undefined,
-  genres: input.genres ? [...input.genres] : undefined,
-  releaseDate: input.releaseDate ? new Date(input.releaseDate) : undefined,
-  publishedAt: input.publishedAt ? new Date(input.publishedAt) : undefined,
-})
+const toAlbumCreateFields = (input: CreateAlbumInput): AlbumServiceCreateInput =>
+  omitUndefined({
+    ...input,
+    artistNames: input.artistNames ? [...input.artistNames] : undefined,
+    artistIds: input.artistIds ? [...input.artistIds] : undefined,
+    genres: input.genres ? [...input.genres] : undefined,
+    releaseDate: input.releaseDate ? new Date(input.releaseDate) : undefined,
+    publishedAt: input.publishedAt ? new Date(input.publishedAt) : undefined,
+  })
 
 // Update: every field (including title/slug) is optional+nullable on the
 // wire schema since the admin form submits full state, not a diff. The DB
 // columns are non-nullable, so a null here means "no change", not "clear
 // this field" -- coerced to undefined before reaching the service.
-const toAlbumUpdateFields = (input: UpdateAlbumInput): Partial<AlbumServiceCreateInput> => ({
-  ...input,
-  title: input.title ?? undefined,
-  slug: input.slug ?? undefined,
-  artistNames: input.artistNames ? [...input.artistNames] : undefined,
-  artistIds: input.artistIds ? [...input.artistIds] : undefined,
-  genres: input.genres ? [...input.genres] : undefined,
-  releaseDate: input.releaseDate ? new Date(input.releaseDate) : undefined,
-  publishedAt: input.publishedAt ? new Date(input.publishedAt) : undefined,
-})
+const toAlbumUpdateFields = (input: UpdateAlbumInput): Partial<AlbumServiceCreateInput> =>
+  omitUndefined({
+    ...input,
+    title: input.title ?? undefined,
+    slug: input.slug ?? undefined,
+    artistNames: input.artistNames ? [...input.artistNames] : undefined,
+    artistIds: input.artistIds ? [...input.artistIds] : undefined,
+    genres: input.genres ? [...input.genres] : undefined,
+    releaseDate: input.releaseDate ? new Date(input.releaseDate) : undefined,
+    publishedAt: input.publishedAt ? new Date(input.publishedAt) : undefined,
+  })
 
-const toTrackCreateFields = (input: CreateTrackInput): TrackServiceCreateInput => ({
-  ...input,
-  artistNames: input.artistNames ? [...input.artistNames] : undefined,
-  artistIds: input.artistIds ? [...input.artistIds] : undefined,
-  publishedAt: input.publishedAt ? new Date(input.publishedAt) : undefined,
-})
+const toTrackCreateFields = (input: CreateTrackInput): TrackServiceCreateInput =>
+  omitUndefined({
+    ...input,
+    artistNames: input.artistNames ? [...input.artistNames] : undefined,
+    artistIds: input.artistIds ? [...input.artistIds] : undefined,
+    publishedAt: input.publishedAt ? new Date(input.publishedAt) : undefined,
+  })
 
-const toTrackUpdateFields = (input: UpdateTrackInput): Partial<TrackServiceCreateInput> => ({
-  ...input,
-  title: input.title ?? undefined,
-  slug: input.slug ?? undefined,
-  artistNames: input.artistNames ? [...input.artistNames] : undefined,
-  artistIds: input.artistIds ? [...input.artistIds] : undefined,
-  publishedAt: input.publishedAt ? new Date(input.publishedAt) : undefined,
-})
+const toTrackUpdateFields = (input: UpdateTrackInput): Partial<TrackServiceCreateInput> =>
+  omitUndefined({
+    ...input,
+    title: input.title ?? undefined,
+    slug: input.slug ?? undefined,
+    artistNames: input.artistNames ? [...input.artistNames] : undefined,
+    artistIds: input.artistIds ? [...input.artistIds] : undefined,
+    publishedAt: input.publishedAt ? new Date(input.publishedAt) : undefined,
+  })
 
-const toPlaylistCreateFields = (input: CreatePlaylistInput): PlaylistServiceCreateInput => ({
-  ...input,
-  publishedAt: input.publishedAt ? new Date(input.publishedAt) : undefined,
-})
+const toPlaylistCreateFields = (input: CreatePlaylistInput): PlaylistServiceCreateInput =>
+  omitUndefined({
+    ...input,
+    publishedAt: input.publishedAt ? new Date(input.publishedAt) : undefined,
+  })
 
-const toPlaylistUpdateFields = (
-  input: UpdatePlaylistInput,
-): Partial<PlaylistServiceCreateInput> => ({
-  ...input,
-  title: input.title ?? undefined,
-  slug: input.slug ?? undefined,
-  publishedAt: input.publishedAt ? new Date(input.publishedAt) : undefined,
-})
+const toPlaylistUpdateFields = (input: UpdatePlaylistInput): Partial<PlaylistServiceCreateInput> =>
+  omitUndefined({
+    ...input,
+    title: input.title ?? undefined,
+    slug: input.slug ?? undefined,
+    publishedAt: input.publishedAt ? new Date(input.publishedAt) : undefined,
+  })
 
-const toLabelCreateFields = (input: CreateLabelInput): LabelServiceCreateInput => ({
-  ...input,
-  tags: input.tags ? [...input.tags] : undefined,
-  genres: input.genres ? [...input.genres] : undefined,
-  publishedAt: input.publishedAt ? new Date(input.publishedAt) : undefined,
-})
+const toLabelCreateFields = (input: CreateLabelInput): LabelServiceCreateInput =>
+  omitUndefined({
+    ...input,
+    tags: input.tags ? [...input.tags] : undefined,
+    genres: input.genres ? [...input.genres] : undefined,
+    publishedAt: input.publishedAt ? new Date(input.publishedAt) : undefined,
+  })
 
-const toLabelUpdateFields = (input: UpdateLabelInput): Partial<LabelServiceCreateInput> => ({
-  ...input,
-  name: input.name ?? undefined,
-  slug: input.slug ?? undefined,
-  content: input.content ?? undefined,
-  tags: input.tags ? [...input.tags] : input.tags,
-  genres: input.genres ? [...input.genres] : input.genres,
-  publishedAt:
-    input.publishedAt === null ? null : input.publishedAt ? new Date(input.publishedAt) : undefined,
-})
+const toLabelUpdateFields = (input: UpdateLabelInput): Partial<LabelServiceCreateInput> =>
+  omitUndefined({
+    ...input,
+    name: input.name ?? undefined,
+    slug: input.slug ?? undefined,
+    content: input.content ?? undefined,
+    tags: input.tags ? [...input.tags] : input.tags,
+    genres: input.genres ? [...input.genres] : input.genres,
+    publishedAt:
+      input.publishedAt === null
+        ? null
+        : input.publishedAt
+          ? new Date(input.publishedAt)
+          : undefined,
+  })
 
 const dieOnDatabaseError = makeDieOnDatabaseError('music')
 
@@ -297,7 +312,7 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         const svc = yield* MusicEntityService
 
         const row = yield* dieOnDatabaseError(
-          svc.createArtist({ ...toServiceFields(payload), createdById: user.id }),
+          svc.createArtist(omitUndefined({ ...toServiceFields(payload), createdById: user.id })),
         )
 
         return toArtistResponse(row)
@@ -323,7 +338,7 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
 
         const row = yield* dieOnDatabaseError(
           svc
-            .updateArtist(params.id, toServiceFields(payload))
+            .updateArtist(params.id, omitUndefined(toServiceFields(payload)))
             .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
         )
 
@@ -354,7 +369,9 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
       Effect.gen(function* () {
         yield* requireAdmin
         const svc = yield* MusicEntityService
-        yield* dieOnDatabaseError(svc.addArtistToAlbum(params.albumId, params.artistId, payload))
+        yield* dieOnDatabaseError(
+          svc.addArtistToAlbum(params.albumId, params.artistId, omitUndefined(payload)),
+        )
       }),
     )
     .handle('removeArtistFromAlbum', ({ params }) =>
@@ -368,7 +385,9 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
       Effect.gen(function* () {
         yield* requireAdmin
         const svc = yield* MusicEntityService
-        yield* dieOnDatabaseError(svc.addArtistToTrack(params.trackId, params.artistId, payload))
+        yield* dieOnDatabaseError(
+          svc.addArtistToTrack(params.trackId, params.artistId, omitUndefined(payload)),
+        )
       }),
     )
     .handle('removeArtistFromTrack', ({ params }) =>
@@ -989,22 +1008,24 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
               }),
             )
           : yield* dieOnDatabaseError(
-              svc.scrapeAndCreateEntityWithoutSource(params.entityType, payload).pipe(
-                Effect.catchTag('ValidationError', () =>
-                  Effect.fail(new HttpApiError.BadRequest()),
-                ),
-                Effect.catchTag('MusicScraperError', (error) =>
-                  Effect.gen(function* () {
-                    if (error.statusCode === 400 || error.statusCode === 404) {
-                      return yield* new HttpApiError.BadRequest()
-                    }
+              svc
+                .scrapeAndCreateEntityWithoutSource(params.entityType, omitUndefined(payload))
+                .pipe(
+                  Effect.catchTag('ValidationError', () =>
+                    Effect.fail(new HttpApiError.BadRequest()),
+                  ),
+                  Effect.catchTag('MusicScraperError', (error) =>
+                    Effect.gen(function* () {
+                      if (error.statusCode === 400 || error.statusCode === 404) {
+                        return yield* new HttpApiError.BadRequest()
+                      }
 
-                    return yield* new MusicServiceUnavailableResponse({
-                      retryAfterSeconds: PROVIDER_UNAVAILABLE_RETRY_AFTER_SECONDS,
-                    })
-                  }),
+                      return yield* new MusicServiceUnavailableResponse({
+                        retryAfterSeconds: PROVIDER_UNAVAILABLE_RETRY_AFTER_SECONDS,
+                      })
+                    }),
+                  ),
                 ),
-              ),
             )
 
         return {

@@ -5,6 +5,7 @@ import { projectEntityLabels, projectEntityLabelsForRows, replaceEntityLabels } 
 import { Database } from '@/db/layer'
 import { musicArtistsTable, type SelectMusicArtist } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
+import { omitUndefined } from '@/lib/omit-undefined'
 import { toSlug } from '@/services/to-slug'
 
 import {
@@ -225,11 +226,13 @@ export const findOrCreateArtist = Effect.fn('musicEntity.findOrCreateArtist')(fu
     return { ...existing, genres }
   }
 
-  return yield* createArtistEffect({
-    name,
-    slug: toSlug(name),
-    imageUrl: opts?.imageUrl,
-  })
+  return yield* createArtistEffect(
+    omitUndefined({
+      name,
+      slug: toSlug(name),
+      imageUrl: opts?.imageUrl,
+    }),
+  )
 })
 
 export const findOrCreateArtistsByName = Effect.fn('musicEntity.findOrCreateArtistsByName')(

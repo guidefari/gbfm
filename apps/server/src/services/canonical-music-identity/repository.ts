@@ -48,10 +48,10 @@ export type EntityRecord = {
   readonly title: string
   readonly artistNames: ReadonlyArray<string>
   readonly artists: ReadonlyArray<EntityArtist>
-  readonly imageUrl?: string
-  readonly description?: string
-  readonly trackNumber?: number
-  readonly curatorId?: string | null
+  readonly imageUrl?: string | undefined
+  readonly description?: string | undefined
+  readonly trackNumber?: number | undefined
+  readonly curatorId?: string | null | undefined
 }
 
 export type ClaimResult =

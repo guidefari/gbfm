@@ -17,13 +17,13 @@ export type ProviderMusicSnapshot = {
   readonly entityType: CanonicalMusicEntityType
   readonly sourceUrl: string
   readonly title: string
-  readonly artistNames?: ReadonlyArray<string>
-  readonly imageUrl?: string
-  readonly description?: string
-  readonly trackNumber?: number
-  readonly curatorId?: string | null
+  readonly artistNames?: ReadonlyArray<string> | undefined
+  readonly imageUrl?: string | undefined
+  readonly description?: string | undefined
+  readonly trackNumber?: number | undefined
+  readonly curatorId?: string | null | undefined
   readonly sourceMetadata?: MusicEntityMetadata
-  readonly links?: ReadonlyArray<ProviderMusicLink>
+  readonly links?: ReadonlyArray<ProviderMusicLink> | undefined
 }
 
 export const inferredType = (

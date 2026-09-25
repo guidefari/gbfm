@@ -76,10 +76,10 @@ type DeezerCandidateBase = {
   readonly url: string
   readonly title: string
   readonly artistNames: ReadonlyArray<string>
-  readonly thumbnailUrl?: string
+  readonly thumbnailUrl?: string | undefined
   readonly identifiers: {
     readonly deezerId: string
-    readonly isrc?: string
+    readonly isrc?: string | undefined
   }
 }
 
@@ -92,16 +92,16 @@ export type DeezerTrackCandidate = DeezerCandidateBase & {
 
 export type DeezerAlbumCandidate = DeezerCandidateBase & {
   readonly entityType: 'album'
-  readonly releaseDate?: string
-  readonly trackCount?: number
+  readonly releaseDate?: string | undefined
+  readonly trackCount?: number | undefined
   readonly match: 'exact_source' | 'exact_metadata'
 }
 
 export type DeezerPlaylistCandidate = DeezerCandidateBase & {
   readonly entityType: 'playlist'
-  readonly description?: string
-  readonly durationSeconds?: number
-  readonly trackCount?: number
+  readonly description?: string | undefined
+  readonly durationSeconds?: number | undefined
+  readonly trackCount?: number | undefined
   readonly match: 'exact_source'
   readonly crossPlatformMatching: 'prohibited'
 }

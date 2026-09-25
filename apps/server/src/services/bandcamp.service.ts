@@ -8,17 +8,19 @@ export interface BandcampAlbum {
   byArtist: { readonly name: string } | ReadonlyArray<{ readonly name: string }>
   image: string
   datePublished: string
-  isrcCode?: string
-  track?: {
-    readonly itemListElement: ReadonlyArray<{
-      readonly item: {
-        readonly name: string
-        readonly duration: string
-        readonly '@id': string
+  isrcCode?: string | undefined
+  track?:
+    | {
+        readonly itemListElement: ReadonlyArray<{
+          readonly item: {
+            readonly name: string
+            readonly duration: string
+            readonly '@id': string
+          }
+        }>
       }
-    }>
-  }
-  description?: string
+    | undefined
+  description?: string | undefined
 }
 
 const BandcampArtistSchema = Schema.Struct({ name: Schema.String })

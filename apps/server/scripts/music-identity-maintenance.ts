@@ -1,8 +1,11 @@
 import { Effect } from 'effect'
 
+import { omitUndefined } from '@/lib/omit-undefined'
+
 import { Database, DatabaseLayer } from '../src/db/layer'
 import {
   auditMusicIdentities,
+  type IdentityAuditPhase,
   runIdentityBackfillBatch,
 } from '../src/services/canonical-music-identity/identity-maintenance'
 import { createRemoteD1, remoteD1OptionsFromEnv } from './remote-d1'
@@ -115,23 +118,31 @@ const program = Effect.gen(function* () {
   const db = yield* Database
 
   if (mode === 'audit') {
-    return yield* auditMusicIdentities(db, {
-      batchSize,
-      phase:
-        auditPhase === 'links' ||
-        auditPhase === 'identities' ||
-        auditPhase === 'aliases' ||
-        auditPhase === 'conflicts' ||
-        auditPhase === 'leases' ||
-        auditPhase === 'findings'
-          ? auditPhase
-          : undefined,
-      cursor: auditCursor,
-      generationId,
-    })
+    const phase: IdentityAuditPhase | undefined =
+      auditPhase === 'links' ||
+      auditPhase === 'identities' ||
+      auditPhase === 'aliases' ||
+      auditPhase === 'conflicts' ||
+      auditPhase === 'leases' ||
+      auditPhase === 'findings'
+        ? auditPhase
+        : undefined
+
+    return yield* auditMusicIdentities(
+      db,
+      omitUndefined({
+        batchSize,
+        phase,
+        cursor: auditCursor,
+        generationId,
+      }),
+    )
   }
 
-  return yield* runIdentityBackfillBatch(db, { apply, batchSize, cursor, generationId })
+  return yield* runIdentityBackfillBatch(
+    db,
+    omitUndefined({ apply, batchSize, cursor, generationId }),
+  )
 })
 
 Effect.runPromise(

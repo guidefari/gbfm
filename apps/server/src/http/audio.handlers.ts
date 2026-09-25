@@ -9,6 +9,7 @@ import {
   dieOnDatabaseError as makeDieOnDatabaseError,
   getOptionalActor,
 } from '@/http/handler-utils'
+import { omitUndefined } from '@/lib/omit-undefined'
 import { AudioService } from '@/services/audio.service'
 import { QRCodeService } from '@/services/qrcode.service'
 
@@ -33,7 +34,7 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
         const audio = yield* dieOnDatabaseError(
           svc
             .create(
-              { ...mixData, tags: mixData.tags ? [...mixData.tags] : undefined },
+              omitUndefined({ ...mixData, tags: mixData.tags ? [...mixData.tags] : undefined }),
               finalCreatorIds,
               { actorId: user.id, idempotencyKey },
             )
@@ -61,11 +62,14 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
         const svc = yield* AudioService
 
         const result = yield* dieOnDatabaseError(
-          svc.getByType(params.type, {
-            limit: query.limit ?? 20,
-            offset: query.offset ?? 0,
-            tag: query.tag,
-          }),
+          svc.getByType(
+            params.type,
+            omitUndefined({
+              limit: query.limit ?? 20,
+              offset: query.offset ?? 0,
+              tag: query.tag,
+            }),
+          ),
         )
 
         const body = {
@@ -90,13 +94,13 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
         const result = yield* dieOnDatabaseError(
           svc.getByTypeForEdit(
             params.type,
-            {
+            omitUndefined({
               limit: query.limit ?? 20,
               offset: query.offset ?? 0,
               tag: query.tag,
               sort: query.sort,
               order: query.order,
-            },
+            }),
             user.id,
             user.role ?? 'user',
           ),
@@ -146,11 +150,17 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
 
         const audio = yield* dieOnDatabaseError(
           svc
-            .update(params.type, params.slug, user.id, user.role || 'user', {
-              ...updateData,
-              ...(tags && { tags: [...tags] }),
-              ...(creatorIds && { creatorIds: [...creatorIds] }),
-            })
+            .update(
+              params.type,
+              params.slug,
+              user.id,
+              user.role || 'user',
+              omitUndefined({
+                ...updateData,
+                ...(tags && { tags: [...tags] }),
+                ...(creatorIds && { creatorIds: [...creatorIds] }),
+              }),
+            )
             .pipe(
               Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
               Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized()),
@@ -171,7 +181,10 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
         const audio = yield* dieOnDatabaseError(
           svc
             .create(
-              { ...audioData, tags: audioData.tags ? [...audioData.tags] : undefined },
+              omitUndefined({
+                ...audioData,
+                tags: audioData.tags ? [...audioData.tags] : undefined,
+              }),
               finalCreatorIds,
               { actorId: user.id, idempotencyKey },
             )
@@ -210,12 +223,14 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
         )
 
         return yield* dieOnDatabaseError(
-          qrSvc.generateMixQRPdf({
-            slug: mix.slug,
-            title: mix.title,
-            thumbnailUrl: mix.thumbnailUrl,
-            creators: mix.creators,
-          }),
+          qrSvc.generateMixQRPdf(
+            omitUndefined({
+              slug: mix.slug,
+              title: mix.title,
+              thumbnailUrl: mix.thumbnailUrl,
+              creators: mix.creators,
+            }),
+          ),
         )
       }),
     ),

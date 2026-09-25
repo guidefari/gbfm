@@ -79,7 +79,7 @@ export function MusicCardPatterns() {
         <h2 className='text-base tracking-[0.2em] text-muted-foreground'>Show card grid</h2>
         <div className='grid gap-x-4 gap-y-6 grid-cols-2 md:grid-cols-4'>
           {[0, 1, 2, 3].map((index) => {
-            const example = mediaExamples[index % 2]
+            const example = mediaExamples[index % mediaExamples.length] ?? mediaExamples[0]
 
             return (
               <article key={index} className='group/card flex flex-col gap-3'>

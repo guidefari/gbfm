@@ -70,13 +70,16 @@ const bindingRequest = async (request: Request, requestId: string) => {
   traceHeaders(headers)
   const body = request.body === null ? undefined : await request.arrayBuffer()
 
-  return new Request(url, {
+  const init: RequestInit = {
     method: request.method,
     headers,
-    body,
     redirect: request.redirect,
     signal: request.signal,
-  })
+  }
+
+  if (body !== undefined) init.body = body
+
+  return new Request(url, init)
 }
 
 const normalizeBindingResponse = async (
@@ -106,12 +109,19 @@ const fetchBinding = async (
   })
   const body = request.body === null ? undefined : await request.arrayBuffer()
 
-  const response = await api.fetch(request.url, {
-    method: request.method,
-    headers,
-    body,
-    redirect: request.redirect,
-  })
+  const response =
+    body === undefined
+      ? await api.fetch(request.url, {
+          method: request.method,
+          headers,
+          redirect: request.redirect,
+        })
+      : await api.fetch(request.url, {
+          method: request.method,
+          headers,
+          redirect: request.redirect,
+          body,
+        })
 
   return normalizeBindingResponse(response)
 }

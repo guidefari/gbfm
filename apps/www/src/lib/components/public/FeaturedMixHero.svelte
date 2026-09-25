@@ -30,7 +30,7 @@
 
 <div class="flex w-full flex-col gap-3">
   <div class="relative aspect-square w-full overflow-hidden border-2 border-foreground bg-muted">
-    {#if mix}<Artwork src={text(mix.thumbnailUrl) || undefined} alt={title} />{:else}<div class="h-full animate-pulse bg-muted"></div>{/if}
+    {#if mix}<Artwork {...(text(mix.thumbnailUrl) ? { src: text(mix.thumbnailUrl) } : {})} alt={title} />{:else}<div class="h-full animate-pulse bg-muted"></div>{/if}
     <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent"></div>
     <div class="absolute inset-0 flex flex-col justify-between p-3">
       <span class="self-start bg-highlight px-2 py-1 text-[10px] font-bold uppercase tracking-[.25em] text-highlight-foreground">Featured</span>

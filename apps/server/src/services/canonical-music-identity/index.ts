@@ -1,6 +1,7 @@
 import { Context, Effect, Fiber, Layer, Predicate } from 'effect'
 
 import { Database } from '@/db/layer'
+import { omitUndefined } from '@/lib/omit-undefined'
 import { ConfigService } from '@/services/config.service'
 import {
   MusicLinkScraperService,
@@ -384,9 +385,9 @@ export const CanonicalMusicIdentityLayer = Layer.effect(
       initial: ParsedMusicSource,
       resultEffect: Effect.Effect<ScrapeResult, E, R>,
       entityDetails?: {
-        readonly description?: string
-        readonly trackNumber?: number
-        readonly curatorId?: string | null
+        readonly description?: string | undefined
+        readonly trackNumber?: number | undefined
+        readonly curatorId?: string | null | undefined
       },
       fallbackType?: CanonicalMusicEntityType,
     ): Effect.Effect<AnyResolvedMusicEntity, MusicIdentityError | E, R> =>
@@ -541,17 +542,19 @@ export const CanonicalMusicIdentityLayer = Layer.effect(
           }
 
           const committed = yield* repository
-            .commit({
-              ownedSources,
-              allSources: sources,
-              reference,
-              entity,
-              slug,
-              links,
-              ownerToken,
-              scrapedAt,
-              now: new Date(),
-            })
+            .commit(
+              omitUndefined({
+                ownedSources,
+                allSources: sources,
+                reference,
+                entity,
+                slug,
+                links,
+                ownerToken,
+                scrapedAt,
+                now: new Date(),
+              }),
+            )
             .pipe(
               Effect.tap((didCommit) =>
                 Effect.gen(function* () {
@@ -596,23 +599,25 @@ export const CanonicalMusicIdentityLayer = Layer.effect(
         const resolved = yield* resolvePrepared(
           source,
           Effect.suspend(() =>
-            scraper.scrape({ url: source.canonicalUrl, entityType: input.expectedType }).pipe(
-              Effect.mapError(providerError),
-              Effect.tapError((error) =>
-                Effect.annotateCurrentSpan({ provider: error.provider, outcome: 'failure' }),
+            scraper
+              .scrape(omitUndefined({ url: source.canonicalUrl, entityType: input.expectedType }))
+              .pipe(
+                Effect.mapError(providerError),
+                Effect.tapError((error) =>
+                  Effect.annotateCurrentSpan({ provider: error.provider, outcome: 'failure' }),
+                ),
+                Effect.tap((result) =>
+                  Effect.gen(function* () {
+                    candidateArtworkUrl = result.entityMeta?.thumbnailUrl
+                    yield* annotateSource(source)
+                    yield* Effect.annotateCurrentSpan({
+                      provider: source.platform,
+                      outcome: 'success',
+                    })
+                  }),
+                ),
+                withSafeTypedSpan('musicIdentity.scrape'),
               ),
-              Effect.tap((result) =>
-                Effect.gen(function* () {
-                  candidateArtworkUrl = result.entityMeta?.thumbnailUrl
-                  yield* annotateSource(source)
-                  yield* Effect.annotateCurrentSpan({
-                    provider: source.platform,
-                    outcome: 'success',
-                  })
-                }),
-              ),
-              withSafeTypedSpan('musicIdentity.scrape'),
-            ),
           ),
           undefined,
           legacyFallbackType(source, input.expectedType),

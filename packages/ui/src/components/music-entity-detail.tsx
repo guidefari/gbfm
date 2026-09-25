@@ -130,7 +130,11 @@ export function MusicEntityDetail({
         )}
 
         <TabsContent value='audit' className='mt-6'>
-          <MusicEntityAudit createdAt={createdAt} updatedAt={updatedAt} createdBy={createdBy} />
+          <MusicEntityAudit
+            createdAt={createdAt}
+            updatedAt={updatedAt}
+            {...(createdBy === undefined ? {} : { createdBy })}
+          />
         </TabsContent>
       </Tabs>
     </div>

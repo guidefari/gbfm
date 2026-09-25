@@ -78,6 +78,18 @@
     } catch { notify('Failed to send reset link. Please try again later.', true) }
     finally { resetPending = false }
   }
+
+  function moveLink(index: number, offset: -1 | 1) {
+    const target = index + offset
+    const currentLink = links[index]
+    const targetLink = links[target]
+
+    if (!currentLink || !targetLink) return
+    const next = [...links]
+    next[index] = targetLink
+    next[target] = currentLink
+    links = next
+  }
 </script>
 
 <div class="max-w-2xl space-y-6">
@@ -105,7 +117,7 @@
         <div class="grid gap-2 sm:grid-cols-[9rem_1fr_auto]">
           <select class="border border-border bg-background p-2" value={link.platform} onchange={(event) => { const platform = event.currentTarget.value as PlatformValue; links = links.map((item, itemIndex) => itemIndex === index ? { ...item, platform } : item) }}>{#each platforms as platform}<option value={platform}>{platform}</option>{/each}</select>
           <input class="min-w-0 border border-border bg-background p-2" type="url" placeholder="https://…" value={link.url} oninput={(event) => links = links.map((item, itemIndex) => itemIndex === index ? { ...item, url: event.currentTarget.value } : item)} />
-          <div class="flex gap-1"><button type="button" aria-label="Move link up" disabled={index === 0} onclick={() => { const next = [...links]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; links = next }}>↑</button><button type="button" aria-label="Move link down" disabled={index === links.length - 1} onclick={() => { const next = [...links]; [next[index], next[index + 1]] = [next[index + 1], next[index]]; links = next }}>↓</button><button type="button" class="ml-2 text-destructive" onclick={() => links = links.filter((_, itemIndex) => itemIndex !== index)}>Remove</button></div>
+          <div class="flex gap-1"><button type="button" aria-label="Move link up" disabled={index === 0} onclick={() => moveLink(index, -1)}>↑</button><button type="button" aria-label="Move link down" disabled={index === links.length - 1} onclick={() => moveLink(index, 1)}>↓</button><button type="button" class="ml-2 text-destructive" onclick={() => links = links.filter((_, itemIndex) => itemIndex !== index)}>Remove</button></div>
         </div>
       {/each}
       <button class="w-full bg-foreground px-4 py-2 font-bold text-background disabled:opacity-50" type="button" disabled={!initialProfile || linksPending} onclick={() => void saveLinks()}>{linksPending ? 'Saving...' : 'Save Social Links'}</button>

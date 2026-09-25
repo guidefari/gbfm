@@ -14,7 +14,7 @@
   const heading = 'mb-2 border-b border-border/60 pb-2 text-xs font-semibold tracking-wider text-muted-foreground'
 </script>
 
-<PublicHead title={selected ? text(selected.title, 'Radio Shows') : 'Radio Shows'} description={selected ? text(selected.description, 'Listen to radio shows on goosebumps.fm.') : 'Regular radio shows, hosts and episodes on goosebumps.fm.'} canonical={selected ? `/shows/${text(selected.slug)}` : '/shows'} image={selected ? text(selected.thumbnailUrl) || undefined : undefined} />
+<PublicHead title={selected ? text(selected.title, 'Radio Shows') : 'Radio Shows'} description={selected ? text(selected.description, 'Listen to radio shows on goosebumps.fm.') : 'Regular radio shows, hosts and episodes on goosebumps.fm.'} canonical={selected ? `/shows/${text(selected.slug)}` : '/shows'} {...(selected && text(selected.thumbnailUrl) ? { image: text(selected.thumbnailUrl) } : {})} />
 {#if failure}
   <PublicState message={failure} error />
 {:else if shows.length === 0 && !selected}

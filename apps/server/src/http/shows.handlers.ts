@@ -7,6 +7,7 @@ import {
   dieOnDatabaseError as makeDieOnDatabaseError,
   getOptionalActor,
 } from '@/http/handler-utils'
+import { omitUndefined } from '@/lib/omit-undefined'
 import { QRCodeService } from '@/services/qrcode.service'
 import { ShowService, ShowSubscriptionService } from '@/services/show.service'
 
@@ -104,7 +105,10 @@ export const ShowsHandlersLive = HttpApiBuilder.group(Api, 'shows', (handlers) =
 
         const show = yield* dieOnDatabaseError(
           svc
-            .create({ ...showData, tags: tags ? [...tags] : undefined }, finalHostIds)
+            .create(
+              omitUndefined({ ...showData, tags: tags ? [...tags] : undefined }),
+              finalHostIds,
+            )
             .pipe(Effect.catchTag('ConflictError', () => new HttpApiError.Conflict())),
         )
 
@@ -123,11 +127,16 @@ export const ShowsHandlersLive = HttpApiBuilder.group(Api, 'shows', (handlers) =
 
         const show = yield* dieOnDatabaseError(
           svc
-            .update(params.slug, user.id, user.role ?? 'user', {
-              ...updateData,
-              ...(tags && { tags: [...tags] }),
-              ...(hostIds && { hostIds: [...hostIds] }),
-            })
+            .update(
+              params.slug,
+              user.id,
+              user.role ?? 'user',
+              omitUndefined({
+                ...updateData,
+                ...(tags && { tags: [...tags] }),
+                ...(hostIds && { hostIds: [...hostIds] }),
+              }),
+            )
             .pipe(
               Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
               Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized()),
@@ -218,12 +227,14 @@ export const ShowsHandlersLive = HttpApiBuilder.group(Api, 'shows', (handlers) =
         )
 
         return yield* dieOnDatabaseError(
-          qrSvc.generateShowQRPdf({
-            slug: show.slug,
-            title: show.title,
-            thumbnailUrl: show.thumbnailUrl,
-            hosts: show.hosts,
-          }),
+          qrSvc.generateShowQRPdf(
+            omitUndefined({
+              slug: show.slug,
+              title: show.title,
+              thumbnailUrl: show.thumbnailUrl,
+              hosts: show.hosts,
+            }),
+          ),
         )
       }),
     ),

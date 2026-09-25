@@ -1,9 +1,11 @@
+import { CryptoDigestAlgorithm } from 'expo-crypto'
 import { afterEach, expect, test } from 'vitest'
 
 const cryptoPrimitives = {
-  getRandomValues: (bytes: Uint8Array) => bytes,
-  digest: async (_algorithm: AlgorithmIdentifier, bytes: Uint8Array) => bytes.buffer,
-  CryptoDigestAlgorithm: { SHA256: 'SHA256' },
+  getRandomValues: <Value extends ArrayBufferView>(bytes: Value): Value => bytes,
+  digest: async (_algorithm: CryptoDigestAlgorithm, bytes: BufferSource): Promise<ArrayBuffer> =>
+    bytes instanceof ArrayBuffer ? bytes : bytes.buffer,
+  CryptoDigestAlgorithm,
 }
 
 import { installSpotifyCryptoPolyfill } from './cryptoPolyfill'

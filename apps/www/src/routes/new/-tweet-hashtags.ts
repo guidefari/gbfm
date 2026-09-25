@@ -26,7 +26,9 @@ export function extractHashtags(...fields: Array<string>): Array<string> {
 
   for (const field of fields) {
     for (const match of field.matchAll(HASHTAG_GLOBAL)) {
-      const tag = match[2].toLowerCase()
+      const tag = match[2]?.toLowerCase()
+
+      if (tag === undefined) continue
 
       if (!seen.has(tag)) {
         seen.add(tag)
@@ -50,10 +52,14 @@ export function activeFragment(text: string, caret: number): HashtagFragment | n
   const match = TRAILING_FRAGMENT.exec(upToCaret)
 
   if (!match) return null
+  const prefix = match[1]
+  const query = match[2]
+
+  if (prefix === undefined || query === undefined) return null
 
   return {
-    query: match[2].toLowerCase(),
-    start: match.index + match[1].length,
+    query: query.toLowerCase(),
+    start: match.index + prefix.length,
   }
 }
 

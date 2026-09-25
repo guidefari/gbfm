@@ -39,7 +39,7 @@ export async function uploadImageDirectToS3(
   file: File,
   signal?: AbortSignal,
 ): Promise<ImageUploadResult> {
-  const presignResponse = await fetch(apiUrl('/upload/image/presign'), {
+  const presignInit: RequestInit = {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
@@ -48,8 +48,10 @@ export async function uploadImageDirectToS3(
       contentType: file.type,
       fileSize: file.size,
     }),
-    signal,
-  })
+  }
+
+  if (signal !== undefined) presignInit.signal = signal
+  const presignResponse = await fetch(apiUrl('/upload/image/presign'), presignInit)
 
   if (!presignResponse.ok) {
     const errorText = await presignResponse.text()
@@ -62,12 +64,14 @@ export async function uploadImageDirectToS3(
   const raw = await presignResponse.json()
   const { uploadUrl, publicUrl, key } = parsePresignImageResponse(raw)
 
-  const putResponse = await fetch(uploadUrl, {
+  const putInit: RequestInit = {
     method: 'PUT',
     body: file,
     headers: { 'Content-Type': file.type },
-    signal,
-  })
+  }
+
+  if (signal !== undefined) putInit.signal = signal
+  const putResponse = await fetch(uploadUrl, putInit)
 
   if (!putResponse.ok) {
     throw new HttpStatusError(

@@ -10,7 +10,10 @@
 
     for (const match of value.matchAll(pattern)) {
       if (match.index > cursor) output.push({ text: value.slice(cursor, match.index) })
-      output.push({ text: match[1] ?? match[3], href: match[2] ?? match[3] })
+      const text = match[1] ?? match[3]
+      const href = match[2] ?? match[3]
+
+      if (text && href) output.push({ text, href })
       cursor = match.index + match[0].length
     }
 

@@ -3,6 +3,7 @@ import { Effect } from 'effect'
 import type { DatabaseClient } from '@/db/layer'
 import { Database } from '@/db/layer'
 import type { MusicPlatform, SelectMusicEntityLink } from '@/db/music-entity.schema'
+import { omitUndefined } from '@/lib/omit-undefined'
 import type {
   MusicLinkScraperService,
   MusicScraperError,
@@ -332,12 +333,14 @@ export const buildEntityOperations = (
       const result = yield* (
         explicitRefresh
           ? scraper.scrape({ entityType: input.entityType, url: source.canonicalUrl })
-          : scraper.discoverCrossPlatformLinks({
-              entityType: input.entityType,
-              url: source.canonicalUrl,
-              trackTitle: title,
-              artistName,
-            })
+          : scraper.discoverCrossPlatformLinks(
+              omitUndefined({
+                entityType: input.entityType,
+                url: source.canonicalUrl,
+                trackTitle: title,
+                artistName,
+              }),
+            )
       ).pipe(
         Effect.mapError(providerError),
         Effect.tapError((error) =>
@@ -540,15 +543,17 @@ export const buildEntityOperations = (
             )
           : undefined
 
-      const released = yield* repository.releaseLink({
-        reference,
-        linkId: input.linkId,
-        source,
-        action: input.action,
-        verifiedBy: input.verifiedBy,
-        metadata: input.metadata ?? link.metadata ?? undefined,
-        now: new Date(),
-      })
+      const released = yield* repository.releaseLink(
+        omitUndefined({
+          reference,
+          linkId: input.linkId,
+          source,
+          action: input.action,
+          verifiedBy: input.verifiedBy,
+          metadata: input.metadata ?? link.metadata ?? undefined,
+          now: new Date(),
+        }),
+      )
 
       if (input.action === 'reject' && !released) {
         return yield* storageError('releaseLink', 'Rejected link was not persisted')

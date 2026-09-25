@@ -15,6 +15,7 @@ import type {
   SelectMusicTrack,
 } from '@/db/music-entity.schema'
 import { type DatabaseError, NotFoundError, type ValidationError } from '@/errors'
+import { omitUndefined } from '@/lib/omit-undefined'
 import {
   CanonicalMusicIdentity,
   type MusicIdentityError,
@@ -362,14 +363,18 @@ export const MusicEntityServiceLayer = Layer.effect(
       verifiedBy?: string,
       metadata?: InsertMusicEntityLink['metadata'],
     ) =>
-      identity.releaseLink({ entityType, entityId, linkId, action, verifiedBy, metadata }).pipe(
-        Effect.catchTags({
-          MusicIdentityEntityNotFound: () =>
-            Effect.fail(new NotFoundError({ message: 'Music entity not found', id: entityId })),
-          MusicIdentitySourceLinkNotFound: () =>
-            Effect.fail(new NotFoundError({ message: 'Music entity link not found', id: linkId })),
-        }),
-      )
+      identity
+        .releaseLink(omitUndefined({ entityType, entityId, linkId, action, verifiedBy, metadata }))
+        .pipe(
+          Effect.catchTags({
+            MusicIdentityEntityNotFound: () =>
+              Effect.fail(new NotFoundError({ message: 'Music entity not found', id: entityId })),
+            MusicIdentitySourceLinkNotFound: () =>
+              Effect.fail(
+                new NotFoundError({ message: 'Music entity link not found', id: linkId }),
+              ),
+          }),
+        )
 
     const verifyIdentityLink = (
       entityType: ScrapeableMusicEntityType,

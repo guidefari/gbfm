@@ -4,6 +4,8 @@ export namespace Cookies {
   export function get(key: string): string | undefined {
     const cookies = document.cookie.split('; ').reduce((acc: Record<string, string>, cookie) => {
       const [k, v] = cookie.split('=')
+
+      if (k === undefined || v === undefined) return acc
       acc[k] = v
 
       return acc

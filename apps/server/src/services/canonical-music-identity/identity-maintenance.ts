@@ -101,10 +101,10 @@ export type IdentityMaintenanceIssue = {
     | 'candidate_overflow'
     | 'resolving_lease'
     | 'expired_lease'
-  readonly sourceKey?: string
-  readonly linkId?: string
-  readonly entityType?: string
-  readonly entityId?: string
+  readonly sourceKey?: string | undefined
+  readonly linkId?: string | undefined
+  readonly entityType?: string | undefined
+  readonly entityId?: string | undefined
   readonly detail: string
 }
 
@@ -152,7 +152,7 @@ export type IdentityAuditSummary = {
 export type IdentityBackfillOptions = {
   readonly apply?: boolean
   readonly batchSize?: number
-  readonly generationId?: string
+  readonly generationId?: string | undefined
   readonly cursor?: { readonly createdAt: number; readonly id: string }
   readonly now?: Date
 }
@@ -160,8 +160,8 @@ export type IdentityBackfillOptions = {
 export type IdentityAuditOptions = {
   readonly batchSize?: number
   readonly phase?: IdentityAuditPhase
-  readonly cursor?: string
-  readonly generationId?: string
+  readonly cursor?: string | undefined
+  readonly generationId?: string | undefined
   readonly now?: Date
 }
 
@@ -1151,7 +1151,7 @@ const readFindingIssues = (
 
 type AuditPageRow = {
   readonly key: string
-  readonly issue?: IdentityMaintenanceIssue
+  readonly issue?: IdentityMaintenanceIssue | undefined
 }
 
 const auditSimplePage = (

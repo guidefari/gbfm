@@ -33,6 +33,8 @@
 
   const pageSize = 50
 
+  const columns = $derived(rows[0] ? Object.keys(rows[0]).slice(0, 6) : [])
+
   const display = (value: CellValue | undefined) => value == null ? '—' : String(value)
 
   const requestUrl = () => { const url = new URL(endpoint, location.origin); url.searchParams.set('offset', String(offset));
@@ -76,7 +78,12 @@
 
     if (method === 'DELETE' && !confirm(`Delete ${display(row.title ?? row.name ?? id)}?`)) return
     pendingId = id; message = ''
-    const response = await fetch(`${actionBase}/${encodeURIComponent(id)}`, { method, headers: body ? { 'content-type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined })
+
+    const init: RequestInit = body
+      ? { method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }
+      : { method }
+
+    const response = await fetch(`${actionBase}/${encodeURIComponent(id)}`, init)
     pendingId = ''
 
     if (!response.ok) { message = `Action failed (${response.status}).`;
@@ -94,6 +101,6 @@
 {:else if message}<p class="rounded border border-destructive p-4 text-destructive">{message}</p>
 {:else if rows.length === 0}<p class="rounded border p-6 text-muted-foreground">{empty}</p>
 {:else}
-  <div class="overflow-x-auto rounded border"><table class="w-full text-left text-sm"><thead class="bg-muted"><tr>{#each Object.keys(rows[0]).slice(0, 6) as key}<th class="p-3">{key}</th>{/each}{#if actionBase}<th class="p-3">Actions</th>{/if}</tr></thead><tbody>{#each rows as row}<tr class="border-t">{#each Object.keys(rows[0]).slice(0, 6) as key}<td class="max-w-64 truncate p-3">{display(row[key])}</td>{/each}{#if actionBase}<td class="whitespace-nowrap p-3"><button class="mr-3 underline" disabled={pendingId === row[idKey]} onclick={() => void act(row, 'PATCH', { draft: !row.draft })}>{row.draft === true ? 'Publish' : 'Draft'}</button><button class="text-destructive underline" disabled={pendingId === row[idKey]} onclick={() => void act(row, 'DELETE')}>Delete</button></td>{/if}</tr>{/each}</tbody></table></div>
+  <div class="overflow-x-auto rounded border"><table class="w-full text-left text-sm"><thead class="bg-muted"><tr>{#each columns as key}<th class="p-3">{key}</th>{/each}{#if actionBase}<th class="p-3">Actions</th>{/if}</tr></thead><tbody>{#each rows as row}<tr class="border-t">{#each columns as key}<td class="max-w-64 truncate p-3">{display(row[key])}</td>{/each}{#if actionBase}<td class="whitespace-nowrap p-3"><button class="mr-3 underline" disabled={pendingId === row[idKey]} onclick={() => void act(row, 'PATCH', { draft: !row.draft })}>{row.draft === true ? 'Publish' : 'Draft'}</button><button class="text-destructive underline" disabled={pendingId === row[idKey]} onclick={() => void act(row, 'DELETE')}>Delete</button></td>{/if}</tr>{/each}</tbody></table></div>
   <div class="mt-4 flex items-center justify-between"><button class="rounded border px-3 py-2 disabled:opacity-40" disabled={offset === 0} onclick={() => { offset = Math.max(0, offset - pageSize); void load() }}>Previous</button><span class="text-sm text-muted-foreground">{offset + 1}–{offset + rows.length}{total ? ` of ${total}` : ''}</span><button class="rounded border px-3 py-2 disabled:opacity-40" disabled={offset + rows.length >= total} onclick={() => { offset += pageSize; void load() }}>Next</button></div>
 {/if}

@@ -17,6 +17,7 @@ import {
 import { Database } from '@/db/layer'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
+import { omitUndefined } from '@/lib/omit-undefined'
 import { getAdminEmailLogs } from '@/repositories/email-delivery-log.repository'
 import {
   canEmailReceive,
@@ -179,30 +180,34 @@ const sendMixNotification = (input: SendMixNotificationInput) =>
 
           const mixTitle = input.metadata?.mixTitle || mix.title
 
-          const message = yield* buildNewMixNotificationEmail({
-            to: recipient,
-            username,
-            mixTitle,
-            artistName: input.metadata?.artistName || 'Guide Fari',
-            mixUrl,
-            coverImageUrl,
-            releaseDate,
-          })
-
-          const receipt = yield* delivery.deliver({
-            message,
-            emailType: EMAIL_NOTIFICATION_TYPES.MIX_RELEASE,
-            userId: user?.id,
-            recipientName: username,
-            safeMetadata: {
-              kind: 'mix-notification',
-              mixId: mix.id,
-              mixSlug: mix.slug,
+          const message = yield* buildNewMixNotificationEmail(
+            omitUndefined({
+              to: recipient,
+              username,
               mixTitle,
               artistName: input.metadata?.artistName || 'Guide Fari',
+              mixUrl,
+              coverImageUrl,
               releaseDate,
-            },
-          })
+            }),
+          )
+
+          const receipt = yield* delivery.deliver(
+            omitUndefined({
+              message,
+              emailType: EMAIL_NOTIFICATION_TYPES.MIX_RELEASE,
+              userId: user?.id,
+              recipientName: username,
+              safeMetadata: {
+                kind: 'mix-notification' as const,
+                mixId: mix.id,
+                mixSlug: mix.slug,
+                mixTitle,
+                artistName: input.metadata?.artistName || 'Guide Fari',
+                releaseDate,
+              },
+            }),
+          )
 
           return MixNotificationRecipientOutcome.sent({
             recipient,
@@ -278,7 +283,7 @@ export const EmailHandlersLive = HttpApiBuilder.group(Api, 'email', (handlers) =
         const db = yield* Database
 
         const result = yield* Effect.tryPromise({
-          try: () => getAdminEmailLogs(query, db),
+          try: () => getAdminEmailLogs(omitUndefined(query), db),
           catch: (cause) =>
             new DatabaseError({
               message: `Failed to fetch email logs: ${getErrorMessage(cause)}`,

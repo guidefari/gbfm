@@ -31,7 +31,11 @@
 
       const heading = /^(#{1,6})\s+(.+)$/.exec(line)
 
-      if (heading) { flush(); result.push({ type: 'heading', text: heading[2], level: heading[1].length }); continue }
+      if (heading) {
+        const [, marker, text] = heading
+
+        if (marker && text) { flush(); result.push({ type: 'heading', text, level: marker.length }); continue }
+      }
 
       if (line.startsWith('> ')) { flush(); result.push({ type: 'quote', text: line.slice(2) }); continue }
 

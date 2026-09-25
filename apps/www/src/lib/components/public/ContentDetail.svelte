@@ -106,7 +106,7 @@
 
   <div class="mb-8 flex flex-wrap gap-3">
     {#if value('url')}<button class="border-2 border-foreground bg-highlight px-5 py-3 font-bold text-highlight-foreground" onclick={play}>{isCurrent && $snapshot?.playing ? 'Ⅱ Pause' : '▶ Play'}</button>{/if}
-    <PublicActions id={value('id') || undefined} {title} kind={actionKind} slug={canonical} initialActive={actionActive} />
+    <PublicActions {...(value('id') ? { id: value('id') } : {})} {title} kind={actionKind} slug={canonical} initialActive={actionActive} />
     {#if isMix && value('url')}<button class="border border-border px-3 py-2 text-sm font-bold" onclick={enqueue}>Add to queue</button>{/if}
     {#if isMix && ['creator', 'admin'].includes(role)}<button class="border border-border px-3 py-2 text-sm font-bold" disabled={qrBusy} onclick={downloadQr}>{qrBusy ? 'Generating…' : 'Download QR'}</button>{/if}
     {#if isMix && role === 'admin'}<a class="border border-border px-3 py-2 text-sm font-bold no-underline" href={`/mix-upload?edit=${encodeURIComponent(value('slug'))}`}>Edit</a>{/if}

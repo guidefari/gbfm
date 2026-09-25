@@ -122,7 +122,9 @@ export function MixDetailsForm({
         {isAdmin && usersList && (
           <div className='space-y-2'>
             <Label className='text-gb-pastel-green-1'>Creator</Label>
-            <Select value={creatorId} onValueChange={onCreatorChange}>
+            <Select
+              {...(creatorId === undefined ? {} : { value: creatorId })}
+              onValueChange={onCreatorChange}>
               <SelectTrigger className='bg-gb-bg border-gb-pastel-green-2/30'>
                 <SelectValue placeholder='Select creator' />
               </SelectTrigger>
@@ -146,7 +148,7 @@ export function MixDetailsForm({
           <div className='space-y-2'>
             <Label className='text-gb-pastel-green-1'>Radio Show (Optional)</Label>
             <Select
-              value={showId}
+              {...(showId === undefined ? {} : { value: showId })}
               onValueChange={(value) => onShowChange(value === 'none' ? '' : value)}>
               <SelectTrigger className='bg-gb-bg border-gb-pastel-green-2/30'>
                 <SelectValue placeholder='Select show' />

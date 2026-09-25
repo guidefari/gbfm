@@ -8,6 +8,7 @@ import { EMAIL_NOTIFICATION_TYPES } from '@/db/email.schema'
 import { Database } from '@/db/layer'
 import { musicReminder } from '@/db/music-reminder.schema'
 import { getErrorMessage, ReminderProcessingError } from '@/errors'
+import { omitUndefined } from '@/lib/omit-undefined'
 
 import { EmailDelivery } from './email-delivery.service'
 
@@ -62,13 +63,15 @@ const deliverReminderEmail = (reminder: typeof musicReminder.$inferSelect) =>
     )
 
     yield* delivery
-      .deliver({
-        message,
-        emailType: EMAIL_NOTIFICATION_TYPES.MIX_RELEASE,
-        userId: reminder.userId,
-        recipientName: recipient.name || undefined,
-        safeMetadata: { kind: 'music-reminder', reminderId: reminder.id },
-      })
+      .deliver(
+        omitUndefined({
+          message,
+          emailType: EMAIL_NOTIFICATION_TYPES.MIX_RELEASE,
+          userId: reminder.userId,
+          recipientName: recipient.name || undefined,
+          safeMetadata: { kind: 'music-reminder' as const, reminderId: reminder.id },
+        }),
+      )
       .pipe(
         Effect.mapError(
           () =>

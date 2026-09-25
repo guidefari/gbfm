@@ -13,6 +13,7 @@ import { HttpServerResponse } from 'effect/unstable/http'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
 
 import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
+import { omitUndefined } from '@/lib/omit-undefined'
 import { PostService } from '@/services/post.service'
 
 const dieOnDatabaseError = makeDieOnDatabaseError('post')
@@ -63,7 +64,13 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
         const svc = yield* PostService
 
         const result = yield* dieOnDatabaseError(
-          svc.getAll({ limit: query.limit ?? 20, offset: query.offset ?? 0, type: query.type }),
+          svc.getAll(
+            omitUndefined({
+              limit: query.limit ?? 20,
+              offset: query.offset ?? 0,
+              type: query.type,
+            }),
+          ),
         )
 
         return {
@@ -79,14 +86,14 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
 
         const result = yield* dieOnDatabaseError(
           svc.getAllForEdit(
-            {
+            omitUndefined({
               limit: query.limit ?? 20,
               offset: query.offset ?? 0,
               type: query.type,
               source: query.source,
               draft: query.status === undefined ? undefined : query.status === 'draft',
               q: query.q,
-            },
+            }),
             user.id,
             user.role ?? 'user',
           ),
@@ -126,11 +133,13 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
         const svc = yield* PostService
 
         const result = yield* dieOnDatabaseError(
-          svc.getEditorials({
-            limit: query.limit ?? 20,
-            offset: query.offset ?? 0,
-            tag: query.tag,
-          }),
+          svc.getEditorials(
+            omitUndefined({
+              limit: query.limit ?? 20,
+              offset: query.offset ?? 0,
+              tag: query.tag,
+            }),
+          ),
         )
 
         const body = {
@@ -167,11 +176,13 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
         const svc = yield* PostService
 
         const result = yield* dieOnDatabaseError(
-          svc.getMicroPosts({
-            limit: query.limit ?? 20,
-            offset: query.offset ?? 0,
-            tag: query.tag,
-          }),
+          svc.getMicroPosts(
+            omitUndefined({
+              limit: query.limit ?? 20,
+              offset: query.offset ?? 0,
+              tag: query.tag,
+            }),
+          ),
         )
 
         return {
@@ -291,15 +302,17 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
 
         const reply = yield* dieOnDatabaseError(
           svc
-            .createMicroPostReply({
-              parentSlug: params.parentSlug,
-              actorUserId: user.id,
-              title: payload.title,
-              content: payload.content,
-              musicEntityType: payload.musicEntityType,
-              musicEntityId: payload.musicEntityId,
-              quotedPostId: payload.quotedPostId,
-            })
+            .createMicroPostReply(
+              omitUndefined({
+                parentSlug: params.parentSlug,
+                actorUserId: user.id,
+                title: payload.title,
+                content: payload.content,
+                musicEntityType: payload.musicEntityType,
+                musicEntityId: payload.musicEntityId,
+                quotedPostId: payload.quotedPostId,
+              }),
+            )
             .pipe(
               Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
               Effect.catchTag('ConflictError', () => new HttpApiError.Conflict()),
@@ -396,7 +409,7 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
         const post = yield* dieOnDatabaseError(
           svc
             .create(
-              { ...postData, tags: postData.tags ? [...postData.tags] : undefined },
+              omitUndefined({ ...postData, tags: postData.tags ? [...postData.tags] : undefined }),
               finalCreatorIds,
             )
             .pipe(
@@ -419,11 +432,16 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
 
         const post = yield* dieOnDatabaseError(
           svc
-            .update(params.slug, user.id, user.role || 'user', {
-              ...updateData,
-              ...(tags && { tags: [...tags] }),
-              ...(creatorIds && { creatorIds: [...creatorIds] }),
-            })
+            .update(
+              params.slug,
+              user.id,
+              user.role || 'user',
+              omitUndefined({
+                ...updateData,
+                ...(tags && { tags: [...tags] }),
+                ...(creatorIds && { creatorIds: [...creatorIds] }),
+              }),
+            )
             .pipe(
               Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
               Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized()),

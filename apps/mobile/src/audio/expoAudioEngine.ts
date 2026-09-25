@@ -6,7 +6,7 @@ import {
   type PlaybackCommandHandlers,
 } from '@gbfm/player'
 import { Effect, Layer, Queue, Stream } from 'effect'
-import type { AudioPlayer, AudioStatus } from 'expo-audio'
+import type { AudioMetadata, AudioPlayer, AudioStatus } from 'expo-audio'
 
 import { subscribeToPlaybackStatus } from './audioPlayerAdapter'
 
@@ -82,15 +82,16 @@ const makeExpoAudioEngine = (player: ExpoAudioEnginePlayer, platform: 'native' |
             return
           }
 
-          player.setActiveForLockScreen(
-            true,
-            {
-              title: metadata.title,
-              artist: metadata.artist,
-              artworkUrl: metadata.artworkUrl,
-            },
-            { showSeekForward: true, showSeekBackward: true },
-          )
+          const lockScreenMetadata: AudioMetadata = { title: metadata.title }
+
+          if (metadata.artist !== undefined) lockScreenMetadata.artist = metadata.artist
+
+          if (metadata.artworkUrl !== undefined) lockScreenMetadata.artworkUrl = metadata.artworkUrl
+
+          player.setActiveForLockScreen(true, lockScreenMetadata, {
+            showSeekForward: true,
+            showSeekBackward: true,
+          })
         }),
 
       setPositionState: () => Effect.void,

@@ -4,6 +4,7 @@ import { Effect } from 'effect'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
 
 import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
+import { omitUndefined } from '@/lib/omit-undefined'
 import { MusicReminderService } from '@/services/music-reminder.service'
 import { ReminderSignalService } from '@/services/reminder-signal.service'
 
@@ -79,14 +80,18 @@ export const MusicRemindersHandlersLive = HttpApiBuilder.group(Api, 'music-remin
 
         const reminder = yield* dieOnDatabaseError(
           svc
-            .update(params.id, user.id, {
-              musicTitle: payload.musicTitle,
-              artistName: payload.artistName,
-              musicUrl: payload.musicUrl,
-              albumCoverUrl: payload.albumCoverUrl,
-              reminderDate: payload.reminderDate ? new Date(payload.reminderDate) : undefined,
-              notes: payload.notes,
-            })
+            .update(
+              params.id,
+              user.id,
+              omitUndefined({
+                musicTitle: payload.musicTitle,
+                artistName: payload.artistName,
+                musicUrl: payload.musicUrl,
+                albumCoverUrl: payload.albumCoverUrl,
+                reminderDate: payload.reminderDate ? new Date(payload.reminderDate) : undefined,
+                notes: payload.notes,
+              }),
+            )
             .pipe(
               Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
               Effect.catchTag('UnauthorizedError', () => new HttpApiError.Forbidden()),

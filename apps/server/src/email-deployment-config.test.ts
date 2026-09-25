@@ -46,7 +46,7 @@ describe('emailDeploymentConfig', () => {
   test.each([
     { stage: '', testRecipient: 'listener@example.com' },
     { stage: '!!!', testRecipient: 'listener@example.com' },
-    { stage: 'staging', testRecipient: undefined },
+    { stage: 'staging' },
     { stage: 'staging', testRecipient: '   ' },
   ])('rejects empty or invalid stage configuration %#', (input) => {
     expect(() => emailDeploymentConfig(input)).toThrow()

@@ -1,3 +1,5 @@
+import { omitUndefined } from '@/lib/omit-undefined'
+
 export interface R2SigningConfig {
   readonly accountId: string
   readonly accessKeyId: string
@@ -120,11 +122,14 @@ export const signedRequest = async (input: {
   const authorization = `AWS4-HMAC-SHA256 Credential=${input.config.accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`
   const url = `https://${host}${path}${query ? `?${query}` : ''}`
 
-  return fetch(url, {
-    method: input.method,
-    headers: { ...headers, authorization },
-    body: input.body,
-  })
+  return fetch(
+    url,
+    omitUndefined({
+      method: input.method,
+      headers: { ...headers, authorization },
+      body: input.body,
+    }),
+  )
 }
 
 export const presignedUrl = async (input: {

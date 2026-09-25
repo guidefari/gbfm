@@ -403,13 +403,20 @@ export class PersistentPlayer {
 
   #setMetadata(track: QueueTrackType | null) {
     if (!('mediaSession' in navigator)) return
-    navigator.mediaSession.metadata = track
-      ? new MediaMetadata({
-          title: track.title,
-          artist: track.creators?.map((creator) => creator.name).join(', '),
-          artwork: track.thumbnailUrl ? [{ src: track.thumbnailUrl }] : undefined,
-        })
-      : null
+
+    if (!track) {
+      navigator.mediaSession.metadata = null
+
+      return
+    }
+
+    const metadata: MediaMetadataInit = { title: track.title }
+
+    if (track.creators) metadata.artist = track.creators.map((creator) => creator.name).join(', ')
+
+    if (track.thumbnailUrl) metadata.artwork = [{ src: track.thumbnailUrl }]
+
+    navigator.mediaSession.metadata = new MediaMetadata(metadata)
   }
 
   #installMediaSession() {

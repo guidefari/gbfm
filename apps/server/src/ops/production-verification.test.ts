@@ -1,6 +1,7 @@
 import { Cause, Effect, Exit, Layer } from 'effect'
 import { describe, expect, test } from 'vitest'
 
+import { omitUndefined } from '@/lib/omit-undefined'
 import { withTestLayer } from '@/test/effect'
 
 import {
@@ -151,7 +152,7 @@ const makeTestLayer = (overrides: TestOverrides = {}) => {
     describeTaskDefinition: () =>
       Effect.succeed(overrides.taskDefinitionResponse ?? taskDefinition()),
     probe: ({ traceparent, url }) => {
-      probes.push({ url: url.toString(), traceparent })
+      probes.push(omitUndefined({ url: url.toString(), traceparent }))
 
       return Effect.succeed({
         status: 200,

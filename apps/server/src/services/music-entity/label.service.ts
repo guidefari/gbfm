@@ -17,6 +17,7 @@ import {
 } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
+import { omitUndefined } from '@/lib/omit-undefined'
 import { toSlug } from '@/services/to-slug'
 
 import { deleteEntityLabels, deleteLinksForEntity, requireInserted, requireOne } from './shared'
@@ -61,7 +62,7 @@ export const createLabelEffect = Effect.fn('musicEntity.createLabel')(function* 
         .limit(1)
 
       if (rows[0] && (tags !== undefined || genres !== undefined)) {
-        await replaceEntityLabels(db, 'musicLabel', id, { tags, genres })
+        await replaceEntityLabels(db, 'musicLabel', id, omitUndefined({ tags, genres }))
       }
 
       return rows

@@ -51,6 +51,7 @@ import { releasesTable } from '@/db/release.schema'
 import { showsTable } from '@/db/show.schema'
 import { entityLabelsTable } from '@/db/tags.schema'
 import { NavigationCommand as NavigationCommandData } from '@/domain/navigation'
+import { omitUndefined } from '@/lib/omit-undefined'
 import { MusicCoverImageFetcher } from '@/services/canonical-music-identity/artwork-delivery'
 import { ObjectStoreClient } from '@/services/storage/object-store-client'
 import { d1, db } from '@/test/database'
@@ -115,7 +116,10 @@ describe('Effect router (Step 8: HonoFallback removed)', () => {
       ['PATCH', '/api/integrations/bluesky/sources/source-id'],
       ['DELETE', '/api/integrations/bluesky/account-id'],
     ]) {
-      const res = await webHandler.handler(new Request(`http://localhost${path}`, { method }))
+      const res = await webHandler.handler(
+        new Request(`http://localhost${path}`, method === undefined ? {} : { method }),
+      )
+
       expect(res.status, `${method} ${path}`).toBe(404)
     }
   })
@@ -893,11 +897,14 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
       if (body) headers.set('content-type', 'application/json')
 
       return webHandler.handler(
-        new Request(`http://localhost${path}`, {
-          method,
-          headers,
-          body: body ? JSON.stringify(body) : undefined,
-        }),
+        new Request(
+          `http://localhost${path}`,
+          omitUndefined({
+            method,
+            headers,
+            body: body ? JSON.stringify(body) : undefined,
+          }),
+        ),
       )
     }
 
