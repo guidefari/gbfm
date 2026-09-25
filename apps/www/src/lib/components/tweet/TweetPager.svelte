@@ -6,11 +6,17 @@
   import { ChevronLeft, ChevronRight } from 'lucide-svelte'
   import { Match } from 'effect'
 
+  import type { ReadMode } from './read-mode'
+
   let {
     neighbours,
+    readMode,
     randomMessage,
-  }: { neighbours: MicroPostNeighboursResponse | null; randomMessage: string | undefined } =
-    $props()
+  }: {
+    neighbours: MicroPostNeighboursResponse | null
+    readMode: ReadMode
+    randomMessage: string | undefined
+  } = $props()
 
   let randomForm: HTMLFormElement | undefined = $state()
 
@@ -23,7 +29,11 @@
 
   const backHref = $derived(tweetHref(neighbours?.newer))
 
-  const forwardHref = $derived(tweetHref(neighbours?.olderUnread ?? neighbours?.older))
+  const forwardHref = $derived(
+    tweetHref(
+      readMode === 'all' ? neighbours?.older : (neighbours?.olderUnread ?? neighbours?.older),
+    ),
+  )
 
   const hasUnread = $derived((neighbours?.unreadCount ?? 0) > 0)
 

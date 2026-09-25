@@ -3,6 +3,7 @@
   import ReplyForm from '@/lib/components/tweet/ReplyForm.svelte'
   import ReplyList from '@/lib/components/tweet/ReplyList.svelte'
   import TweetCard from '@/lib/components/tweet/TweetCard.svelte'
+  import ReadModeToggle from '@/lib/components/tweet/ReadModeToggle.svelte'
   import TweetPager from '@/lib/components/tweet/TweetPager.svelte'
   import TweetPreview from '@/lib/components/tweet/TweetPreview.svelte'
   import TweetTimeline from '@/lib/components/tweet/TweetTimeline.svelte'
@@ -20,6 +21,8 @@
 
   const slug = $derived(post.slug)
 
+  const readMode = $derived(form?.readMode ?? data.readMode)
+
   $effect(() => {
     navigator.sendBeacon(`/api/content/posts/micro/${encodeURIComponent(slug)}/seen`)
   })
@@ -28,11 +31,13 @@
 <PublicHead {title} {description} canonical={`/tweet/${slug}`} />
 
 <div class="mx-auto max-w-3xl px-4 py-8">
+  <div class="mb-4 flex justify-end"><ReadModeToggle {readMode} /></div>
+
   {#await data.neighbours}
-    <TweetPager neighbours={null} randomMessage={undefined} />
+    <TweetPager neighbours={null} {readMode} randomMessage={undefined} />
     <TweetTimeline timeline={null} at={post.createdAt} />
   {:then neighbours}
-    <TweetPager {neighbours} randomMessage={form?.random} />
+    <TweetPager {neighbours} {readMode} randomMessage={form?.random} />
     <TweetTimeline timeline={neighbours?.timeline ?? null} at={post.createdAt} />
   {/await}
 

@@ -3,6 +3,7 @@ import { CompiledMicroPostResponse, MicroPostScreenResponse } from '@gbfm/api/po
 import { error, fail, redirect } from '@sveltejs/kit'
 import { Effect, Option, Result, Schema } from 'effect'
 
+import { parseReadMode, READ_MODE_COOKIE } from '@/lib/components/tweet/read-mode'
 import { apiJson } from '@/lib/server/api/api-json'
 
 import type { Actions, PageServerLoad } from './$types'
@@ -31,13 +32,29 @@ export const load = (async (event) => {
     )
   }
 
-  return { screen: screen.success, neighbours }
+  return {
+    screen: screen.success,
+    neighbours,
+    readMode: parseReadMode(event.cookies.get(READ_MODE_COOKIE)),
+  }
 }) satisfies PageServerLoad
 
 const replyContent = (form: FormData) =>
   Option.getOrElse(Schema.decodeUnknownOption(Schema.String)(form.get('content')), () => '').trim()
 
 export const actions = {
+  readMode: async (event) => {
+    const readMode = parseReadMode((await event.request.formData()).get('mode'))
+
+    event.cookies.set(READ_MODE_COOKIE, readMode, {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 365,
+    })
+
+    return { readMode }
+  },
   reply: async (event) => {
     const content = replyContent(await event.request.formData())
 
