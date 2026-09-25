@@ -137,8 +137,13 @@ describe('post hydration through the service interface', () => {
   const replyId = randomUUID()
   const emptyId = randomUUID()
   const invalidId = randomUUID()
-  const creator = { id: randomUUID(), name: 'Hydration author', username: null }
-  const coauthor = { id: randomUUID(), name: 'Coauthor', username: 'hydration-coauthor' }
+  const creator = { id: randomUUID(), name: 'Hydration author', username: null, image: null }
+  const coauthor = {
+    id: randomUUID(),
+    name: 'Coauthor',
+    username: 'hydration-coauthor',
+    image: null
+  }
   const rootSlug = `hydration-${rootId}`
   const replySlug = `hydration-${replyId}`
   const source = {
