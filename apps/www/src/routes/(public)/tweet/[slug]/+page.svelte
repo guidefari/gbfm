@@ -1,56 +1,187 @@
 <script lang="ts">
   import { invalidateAll } from '$app/navigation'
+  import { ImageDown, Link2, MessageSquareQuote } from 'lucide-svelte'
   import PublicHead from '@/lib/components/public/PublicHead.svelte'
   import PublicState from '@/lib/components/public/PublicState.svelte'
   import RichContent from '@/lib/components/public/RichContent.svelte'
+  import TweetAuthorRow from '@/lib/components/public/TweetAuthorRow.svelte'
+  import TweetMusicCard from '@/lib/components/public/TweetMusicCard.svelte'
   import TweetNav from '@/lib/components/public/TweetNav.svelte'
-  import { records, text } from '@/lib/public-content'
+  import { records, strings, text } from '@/lib/public-content'
   import type { PageProps } from './$types'
 
   let { data, params }: PageProps = $props()
   let draft = $state('')
+  let replyOpen = $state(false)
   let posting = $state(false)
   let status = $state('')
+  let copied = $state(false)
+
   const title = $derived(text(data.item?.title, text(data.item?.content, 'Tweet')).slice(0, 120))
-  const author = $derived(records(data.item?.creators)[0])
+  const author = $derived(records(data.item?.creators)[0] ?? null)
+  const rootIsCurrent = $derived(text(data.parent?.slug) === params.slug)
+
   const postReply = async () => {
     if (!draft.trim() || posting) return
     posting = true
-    const response = await fetch(`/api/content/posts/micro/${encodeURIComponent(params.slug)}/replies`, { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ content: draft.trim() }) }).catch(() => null)
-    if (response?.ok) { draft = ''; status = 'Reply posted'; await invalidateAll() }
-    else status = response?.status === 401 ? 'Sign in to reply' : 'Could not post reply'
+    const response = await fetch(
+      `/api/content/posts/micro/${encodeURIComponent(params.slug)}/replies`,
+      {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ content: draft.trim() })
+      }
+    ).catch(() => null)
+    if (response?.ok) {
+      draft = ''
+      replyOpen = false
+      status = 'Reply posted'
+      await invalidateAll()
+    } else status = response?.status === 401 ? 'Sign in to reply' : 'Could not post reply'
     posting = false
   }
+
+  const copyLink = async () => {
+    await navigator.clipboard.writeText(window.location.href)
+    copied = true
+    setTimeout(() => (copied = false), 1800)
+  }
+
   const download = async () => {
     if (!data.item) return
-    const canvas = document.createElement('canvas'); canvas.width = 1200; canvas.height = 630
-    const context = canvas.getContext('2d'); if (!context) return
-    context.fillStyle = '#080d0b'; context.fillRect(0, 0, canvas.width, canvas.height); context.fillStyle = '#f4f7f5'; context.font = 'bold 44px sans-serif'
-    const words = text(data.item.content, title).split(/\s+/); let line = ''; let y = 120
-    for (const word of words) { const next = `${line}${word} `; if (context.measureText(next).width > 1000) { context.fillText(line, 100, y); line = `${word} `; y += 62 } else line = next }
-    context.fillText(line, 100, y); context.fillStyle = '#7ec8da'; context.font = 'bold 30px sans-serif'; context.fillText('goosebumps.fm', 100, 560)
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png')); if (!blob) return
+    const canvas = document.createElement('canvas')
+    canvas.width = 1200
+    canvas.height = 630
+    const context = canvas.getContext('2d')
+    if (!context) return
+    context.fillStyle = '#16415a'
+    context.fillRect(0, 0, canvas.width, canvas.height)
+    context.fillStyle = '#9bd8e8'
+    context.font = 'bold 44px JetBrainsMono, monospace'
+    const words = text(data.item.content, title).split(/\s+/)
+    let line = ''
+    let y = 120
+    for (const word of words) {
+      const next = `${line}${word} `
+      if (context.measureText(next).width > 1000) {
+        context.fillText(line, 100, y)
+        line = `${word} `
+        y += 62
+      } else line = next
+    }
+    context.fillText(line, 100, y)
+    context.fillStyle = '#55cef6'
+    context.font = 'bold 30px JetBrainsMono, monospace'
+    context.fillText('goosebumps.fm', 100, 560)
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
+    if (!blob) return
     const file = new File([blob], `${params.slug}.png`, { type: 'image/png' })
-    if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], title }) }
-    else { const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = file.name; link.click(); URL.revokeObjectURL(link.href) }
+    if (navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], title })
+    else {
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob)
+      link.download = file.name
+      link.click()
+      URL.revokeObjectURL(link.href)
+    }
   }
 </script>
 
-<PublicHead {title} description={text(data.item?.description, text(data.item?.content, 'A tweet on goosebumps.fm')).slice(0, 160)} canonical={`/tweet/${params.slug}`} />
-{#if data.failure || !data.item}<PublicState message={data.failure ?? 'This tweet could not be found.'} error />{:else}
+<PublicHead
+  {title}
+  description={text(data.item?.description, text(data.item?.content, 'A tweet on goosebumps.fm')).slice(0, 160)}
+  canonical={`/tweet/${params.slug}`} />
+
+{#if data.failure || !data.item}
+  <PublicState message={data.failure ?? 'This tweet could not be found.'} error />
+{:else}
   <div class="mx-auto max-w-3xl px-4 py-8">
-    <div class="flex items-start justify-between"><TweetNav slug={params.slug} /><a href="/tweet/new" class="mt-2 text-sm font-bold text-highlight no-underline">Write a tweet</a></div>
-    {#if data.parent && text(data.parent.slug) !== params.slug}<a href={`/tweet/${text(data.parent.slug)}`} class="mb-3 block border-l-2 border-highlight px-4 py-3 text-sm text-muted-foreground no-underline"><strong class="text-foreground">Part of a conversation</strong><span class="mt-1 line-clamp-2 block">{text(data.parent.content)}</span></a>{/if}
-    <article class="space-y-4 border border-border/60 bg-card/60 p-4 shadow-sm sm:p-5">
-      <header class="flex items-center gap-3">{#if text(author?.image, text(author?.imageUrl))}<img src={text(author?.image, text(author?.imageUrl))} alt="" class="h-10 w-10 object-cover" />{/if}<div class="min-w-0"><a href={text(author?.username) ? `/profile/${text(author?.username)}` : undefined} class="block truncate font-bold">{text(author?.name, 'goosebumps.fm')}</a><time class="text-xs text-muted-foreground" datetime={text(data.item.createdAt)}>{text(data.item.createdAt) ? new Date(text(data.item.createdAt)).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : ''}</time></div></header>
-      {#if text(data.item.title)}<h1 class="text-xl font-bold">{text(data.item.title)}</h1>{/if}<RichContent content={text(data.item.compiledContent, text(data.item.content))} />
-      {#if text(data.item.musicEntityId)}<section class="border border-border bg-background p-4"><p class="text-[10px] font-bold uppercase tracking-widest text-highlight">{text(data.item.musicEntityType, 'Music')}</p><strong class="mt-1 block">Music attached to this tweet</strong><a href={`/tracks/${text(data.item.musicEntityId)}`} class="mt-2 inline-block text-sm">Open music ↗</a></section>{/if}
-      {#if data.quote}<a href={`/tweet/${text(data.quote.slug)}`} class="block border border-border p-4 no-underline"><p class="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">Quoted tweet</p><RichContent content={text(data.quote.content)} /></a>{/if}
-      <footer class="flex flex-wrap gap-3 border-t border-border/40 pt-3">{#each Array.isArray(data.item.tags) ? data.item.tags : [] as tag}<a href={`/tags/${encodeURIComponent(String(tag))}`} class="text-sm text-highlight">#{String(tag)}</a>{/each}<button class="ml-auto text-sm font-bold" onclick={download}>Share / image</button></footer>
+    <div class="mb-6 lg:mb-0"><TweetNav slug={params.slug} /></div>
+
+    {#if data.parent && !rootIsCurrent}
+      <div class="pb-4">
+        <a href={`/tweet/${text(data.parent.slug)}`} class="block overflow-hidden rounded-lg border border-border/40 bg-card p-3 opacity-80 no-underline transition-opacity hover:opacity-100">
+          <TweetAuthorRow creator={records(data.parent.creators)[0] ?? null} createdAt={text(data.parent.createdAt)} interactive={false} />
+          <p class="mt-2 truncate text-base text-muted-foreground">{text(data.parent.content, text(data.parent.title))}</p>
+        </a>
+        <div class="relative h-2"><div class="absolute left-5 top-0 h-2 w-px bg-border/60" aria-hidden="true"></div></div>
+      </div>
+    {/if}
+
+    <article class="space-y-4 rounded-lg border border-border/60 bg-card/60 p-4 shadow-sm sm:p-5">
+      <TweetAuthorRow creator={author} createdAt={text(data.item.createdAt)} />
+
+      {#if text(data.item.title)}
+        <h1 class="text-lg font-medium leading-snug tracking-tight">{text(data.item.title)}</h1>
+      {/if}
+
+      <div class="prose prose-base max-w-none text-foreground prose-headings:font-black prose-headings:tracking-tighter prose-p:my-0 prose-p:leading-relaxed prose-a:text-foreground prose-a:underline dark:prose-invert">
+        <RichContent content={text(data.item.content)} />
+      </div>
+
+      {#if text(data.item.musicEntityId)}
+        <TweetMusicCard type={text(data.item.musicEntityType)} entity={data.musicEntity} links={data.musicLinks} />
+      {/if}
+
+      {#if data.quote}
+        <a href={`/tweet/${text(data.quote.slug)}`} class="not-prose block overflow-hidden rounded-md border border-border/50 bg-muted/20 p-3 no-underline transition-colors hover:bg-muted/30">
+          <TweetAuthorRow creator={records(data.quote.creators)[0] ?? null} createdAt={text(data.quote.createdAt)} interactive={false} />
+          <p class="mt-2 truncate text-base text-muted-foreground">{text(data.quote.content, text(data.quote.title))}</p>
+        </a>
+      {/if}
+
+      {#if strings(data.item.tags).length}
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1">
+          {#each strings(data.item.tags) as tag}
+            <a href={`/tags/${encodeURIComponent(tag)}`} class="text-xs font-medium text-muted-foreground no-underline transition-colors hover:text-foreground">#{tag}</a>
+          {/each}
+        </div>
+      {/if}
+
+      <div class="flex flex-wrap items-center gap-4 border-t border-border/40 pt-3">
+        <button type="button" class="inline-flex min-h-8 items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground" onclick={() => void copyLink()}>
+          <Link2 size={14} /> {copied ? 'Copied' : 'Copy link'}
+        </button>
+        <button type="button" class="inline-flex min-h-8 items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground" onclick={() => void download()}>
+          <ImageDown size={14} /> Download
+        </button>
+        {#if data.replies.length}
+          <button type="button" class="inline-flex min-h-8 items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground" onclick={() => document.getElementById('replies')?.scrollIntoView({ behavior: 'smooth' })}>
+            <MessageSquareQuote size={14} /> {data.replies.length} {data.replies.length === 1 ? 'reply' : 'replies'}
+          </button>
+        {/if}
+      </div>
     </article>
-    <section id="replies" class="border-t border-border pt-6"><h2 class="text-xl font-black">Replies ({data.replies.length})</h2>
-      <form class="my-4" onsubmit={(event) => { event.preventDefault(); void postReply() }}><label class="sr-only" for="reply">Write a reply</label><textarea id="reply" bind:value={draft} class="min-h-24 w-full border border-border bg-background p-3" placeholder="Write a reply…"></textarea><div class="mt-2 flex items-center gap-3"><button disabled={posting || !draft.trim()} class="bg-highlight px-4 py-2 font-bold text-highlight-foreground">{posting ? 'Posting…' : 'Post reply'}</button>{#if status}<span role="status" class="text-sm text-muted-foreground">{status}</span>{/if}</div></form>
-      <div class="space-y-4">{#each data.replies as reply}<article class="border border-border p-4"><p class="mb-2 text-sm font-bold">{text(records(reply.creators)[0]?.name, 'Listener')} <time class="font-normal text-muted-foreground" datetime={text(reply.createdAt)}>{text(reply.createdAt) ? new Date(text(reply.createdAt)).toLocaleDateString() : ''}</time></p><RichContent content={text(reply.content)} /></article>{/each}</div>
+
+    <section id="replies" class="mt-6 scroll-mt-4 space-y-4">
+      {#if data.principal._tag === 'Anonymous'}
+        <p class="text-base text-muted-foreground"><a href={`/auth/sign-in?redirect=${encodeURIComponent(`/tweet/${params.slug}`)}`} class="underline">Sign in</a> to reply</p>
+      {:else if !replyOpen}
+        <button type="button" class="min-h-9 rounded-sm border border-border px-3 text-sm font-medium transition-colors hover:bg-muted" onclick={() => (replyOpen = true)}>Reply</button>
+      {:else}
+        <form class="space-y-2 rounded-lg border border-border/60 bg-card/60 p-3" onsubmit={(event) => { event.preventDefault(); void postReply() }}>
+          <label class="sr-only" for="reply">Write a reply</label>
+          <textarea id="reply" bind:value={draft} class="h-20 w-full rounded-sm border border-border bg-background p-3 text-base" placeholder="Write a reply…"></textarea>
+          <div class="flex items-center justify-end gap-2">
+            <button type="button" class="min-h-9 px-3 text-sm text-muted-foreground" onclick={() => (replyOpen = false)}>Cancel</button>
+            <button disabled={posting || !draft.trim()} class="min-h-9 bg-primary px-3 text-sm font-bold text-primary-foreground disabled:opacity-50">{posting ? 'Posting…' : 'Post reply'}</button>
+          </div>
+        </form>
+      {/if}
+      {#if status}<p role="status" class="text-sm text-muted-foreground">{status}</p>{/if}
+
+      <div>
+        {#each data.replies as reply, index}
+          <div class="relative">
+            {#if index < data.replies.length - 1}<div class="absolute left-[35px] top-full h-2 w-px bg-border/60" aria-hidden="true"></div>{/if}
+            <a href={`/tweet/${text(reply.slug)}`} class="mb-2 block space-y-2 rounded-lg border border-border/40 bg-card p-3 no-underline transition-colors hover:bg-card/80">
+              <TweetAuthorRow creator={records(reply.creators)[0] ?? null} createdAt={text(reply.createdAt)} />
+              <div class="prose prose-sm max-w-none text-foreground prose-p:my-0 prose-p:leading-relaxed dark:prose-invert"><RichContent content={text(reply.content)} /></div>
+            </a>
+          </div>
+        {/each}
+      </div>
     </section>
   </div>
 {/if}
