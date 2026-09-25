@@ -96,20 +96,24 @@ test('primary tabs complete client-side navigation without a full document reloa
   await page.goto('/')
   await page.evaluate(() => sessionStorage.setItem('navigation-marker', 'preserved'))
 
-  await page.getByRole('button', { name: 'Menu' }).click()
+  await page.getByRole('button', { name: 'Menu', exact: true }).click()
   await page.getByRole('dialog', { name: 'Menu' }).getByRole('link', { name: 'Tweets' }).click()
   await expect(page).toHaveURL(/\/(?:tweets|tweet\/[^/]+)$/)
   await expect
     .poll(() => page.evaluate(() => sessionStorage.getItem('navigation-marker')))
     .toBe('preserved')
 
-  await page.getByRole('link', { name: 'Radio Shows', exact: true }).click()
+  await page.getByRole('button', { name: 'Menu', exact: true }).click()
+  await page
+    .getByRole('dialog', { name: 'Menu' })
+    .getByRole('link', { name: 'Radio Shows', exact: true })
+    .click()
   await expect(page).toHaveURL(/\/shows$/)
 })
 
 test('mobile menu opens and links to the newsletter subscription page', async ({ page }) => {
   await page.goto('/')
-  await page.getByRole('button', { name: 'Menu' }).click()
+  await page.getByRole('button', { name: 'Menu', exact: true }).click()
 
   const menu = page.getByRole('dialog', { name: 'Menu' })
   await expect(menu).toBeVisible()
