@@ -64,7 +64,7 @@ const createPendingEffect = (input: CreatePendingAssetInput) =>
       catch: (error) =>
         new DatabaseError({
           message: `Failed to create pending upload asset: ${getErrorMessage(error)}`,
-          operation: 'insert',
+          operation: 'create_pending_upload',
           table: 'upload_assets',
         }),
     })
@@ -74,7 +74,7 @@ const createPendingEffect = (input: CreatePendingAssetInput) =>
     if (!asset) {
       return yield* new DatabaseError({
         message: 'Failed to create pending upload asset: no row returned',
-        operation: 'insert',
+        operation: 'create_pending_upload',
         table: 'upload_assets',
       })
     }
