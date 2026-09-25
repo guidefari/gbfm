@@ -70,20 +70,34 @@ export const NavigationServiceLayer = Layer.effect(
         )
         .limit(1)
 
+    const slugColumn = { slug: postsTable.slug }
+
+    const countColumn = { count: sql<number>`CAST(count(*) AS INTEGER)` }
+
+    const seenBy = (identity: NavigationIdentity) =>
+      and(
+        eq(navigationSeenPosts.slug, postsTable.slug),
+        inArray(navigationSeenPosts.sessionId, sessionIds(identity)),
+      )
+
     const feed = (condition: ReturnType<typeof and>) =>
-      db.select({ slug: postsTable.slug }).from(postsTable).where(and(feedPost, condition))
+      db.select(slugColumn).from(postsTable).where(and(feedPost, condition))
+
+    const feedCount = (condition: ReturnType<typeof and>) =>
+      db.select(countColumn).from(postsTable).where(and(feedPost, condition))
 
     const unreadFeed = (identity: NavigationIdentity, condition: ReturnType<typeof and>) =>
       db
-        .select({ slug: postsTable.slug })
+        .select(slugColumn)
         .from(postsTable)
-        .leftJoin(
-          navigationSeenPosts,
-          and(
-            eq(navigationSeenPosts.slug, postsTable.slug),
-            inArray(navigationSeenPosts.sessionId, sessionIds(identity)),
-          ),
-        )
+        .leftJoin(navigationSeenPosts, seenBy(identity))
+        .where(and(feedPost, isNull(navigationSeenPosts.slug), condition))
+
+    const unreadCount = (identity: NavigationIdentity, condition: ReturnType<typeof and>) =>
+      db
+        .select(countColumn)
+        .from(postsTable)
+        .leftJoin(navigationSeenPosts, seenBy(identity))
         .where(and(feedPost, isNull(navigationSeenPosts.slug), condition))
 
     const neighbours = (identity: NavigationIdentity, slug: string) => {
@@ -112,20 +126,26 @@ export const NavigationServiceLayer = Layer.effect(
               .orderBy(desc(postsTable.createdAt), desc(postsTable.slug))
               .limit(1),
             feed(older).orderBy(desc(postsTable.createdAt), desc(postsTable.slug)).limit(1),
-            unreadFeed(identity, ne(postsTable.slug, slug)).limit(1),
+            feedCount(newer),
+            feedCount(undefined),
+            unreadCount(identity, ne(postsTable.slug, slug)),
           ]),
         catch: (error) => databaseError('read', error),
       }).pipe(
-        Effect.flatMap(([current, back, olderUnread, olderAny, anyUnread]) => {
-          if (!current[0]) return Effect.fail(new MicroPostMissing({ slug }))
-          const forward = olderUnread[0] ?? olderAny[0]
+        Effect.flatMap(
+          ([current, back, olderUnread, olderAny, newerRows, totalRows, unreadRows]) => {
+            if (!current[0]) return Effect.fail(new MicroPostMissing({ slug }))
+            const forward = olderUnread[0] ?? olderAny[0]
 
-          return Effect.succeed({
-            back: back[0] ? asSlug(back[0].slug) : null,
-            forward: forward ? asSlug(forward.slug) : null,
-            hasUnread: anyUnread.length > 0,
-          })
-        }),
+            return Effect.succeed({
+              back: back[0] ? asSlug(back[0].slug) : null,
+              forward: forward ? asSlug(forward.slug) : null,
+              position: newerRows[0]?.count ?? 0,
+              total: totalRows[0]?.count ?? 0,
+              unreadCount: unreadRows[0]?.count ?? 0,
+            })
+          },
+        ),
         Effect.withSpan('navigation.neighbours', { attributes: { slug } }),
       )
     }

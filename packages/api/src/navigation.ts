@@ -10,7 +10,9 @@ const SlugParam = { slug: Schema.String }
 export const MicroPostNeighboursResponse = Schema.Struct({
   back: Schema.NullOr(Slug),
   forward: Schema.NullOr(Slug),
-  hasUnread: Schema.Boolean,
+  position: Schema.Number,
+  total: Schema.Number,
+  unreadCount: Schema.Number,
 })
 
 export type MicroPostNeighboursResponse = typeof MicroPostNeighboursResponse.Type

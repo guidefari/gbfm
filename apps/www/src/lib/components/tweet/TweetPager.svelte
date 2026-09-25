@@ -25,16 +25,16 @@
 
   const forwardHref = $derived(tweetHref(neighbours?.forward))
 
-  const forwardLabel = $derived(
-    neighbours?.hasUnread ? 'Next tweet (hold for random)' : 'Next tweet',
-  )
+  const hasUnread = $derived((neighbours?.unreadCount ?? 0) > 0)
+
+  const forwardLabel = $derived(hasUnread ? 'Next tweet (hold for random)' : 'Next tweet')
 
   const loading = $derived(navigating.to?.route.id === '/(public)/tweet/[slug]')
 
   const startHold = () => {
     held = false
 
-    if (!neighbours?.hasUnread) return
+    if (!hasUnread) return
     holdTimer = setTimeout(() => {
       held = true
       randomForm?.requestSubmit()

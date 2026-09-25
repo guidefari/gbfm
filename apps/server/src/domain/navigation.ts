@@ -11,7 +11,9 @@ export type NavigationIdentity =
 export type MicroPostNeighbours = {
   readonly back: Slug | null
   readonly forward: Slug | null
-  readonly hasUnread: boolean
+  readonly position: number
+  readonly total: number
+  readonly unreadCount: number
 }
 
 export class MicroPostMissing extends Schema.TaggedError<MicroPostMissing>()('MicroPostMissing', {

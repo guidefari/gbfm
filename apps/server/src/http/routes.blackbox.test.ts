@@ -4183,14 +4183,20 @@ describe('micro post navigation', () => {
     const feed = await seedFeed()
 
     try {
-      await expect(neighbours(feed.middle.slug, deviceCookie())).resolves.toEqual({
+      const middle = await neighbours(feed.middle.slug, deviceCookie())
+      expect(middle).toMatchObject({
         back: feed.newest.slug,
         forward: feed.older.slug,
-        hasUnread: true,
+        position: 1,
+        unreadCount: middle.total - 1,
       })
       const newest = await neighbours(feed.newest.slug, deviceCookie())
-      expect(newest.back).toBeNull()
-      expect(newest.forward).toBe(feed.middle.slug)
+      expect(newest).toMatchObject({
+        back: null,
+        forward: feed.middle.slug,
+        position: 0,
+        total: middle.total,
+      })
     } finally {
       await feed.cleanup()
     }
@@ -4205,9 +4211,11 @@ describe('micro post navigation', () => {
       expect((await markSeen(feed.newest.slug, { cookie })).status).toBe(200)
       expect((await markSeen(feed.newest.slug, { cookie })).status).toBe(200)
 
-      await expect(neighbours(feed.middle.slug, cookie)).resolves.toMatchObject({
+      const middle = await neighbours(feed.middle.slug, cookie)
+      expect(middle).toMatchObject({
         back: feed.newest.slug,
         forward: feed.oldest.slug,
+        unreadCount: middle.total - 3,
       })
       await expect(neighbours(feed.middle.slug, deviceCookie())).resolves.toMatchObject({
         forward: feed.older.slug,

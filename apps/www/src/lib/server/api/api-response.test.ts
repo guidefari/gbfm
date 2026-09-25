@@ -8,8 +8,13 @@ const decode = (response: Response) =>
   Effect.runPromise(Effect.result(decodeApiResponse(MicroPostNeighboursResponse)(response)))
 
 test('decodes a successful response with the published schema', async () => {
-  const result = await decode(Response.json({ back: null, forward: 'next-tweet', hasUnread: true }))
-  expect(result).toEqual(Result.succeed({ back: null, forward: 'next-tweet', hasUnread: true }))
+  const result = await decode(
+    Response.json({ back: null, forward: 'next-tweet', position: 3, total: 9, unreadCount: 4 }),
+  )
+
+  expect(result).toEqual(
+    Result.succeed({ back: null, forward: 'next-tweet', position: 3, total: 9, unreadCount: 4 }),
+  )
 })
 
 test('fails with the upstream status when the API rejects the request', async () => {
