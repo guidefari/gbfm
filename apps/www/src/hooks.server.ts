@@ -8,8 +8,12 @@ export const handle: Handle = async ({ event, resolve }) => {
     incomingRequestId && /^[a-zA-Z0-9_-]{1,128}$/.test(incomingRequestId)
       ? incomingRequestId
       : crypto.randomUUID()
-  if (event.tracing.enabled)
+  if (event.tracing.enabled) {
     event.tracing.root.setAttribute('gbfm.request_id', event.locals.requestId)
+    if (import.meta.env.DEV) {
+      event.tracing.root.updateName(`www ${event.request.method} ${event.route.id ?? 'unknown'}`)
+    }
+  }
   event.locals.principal = await resolvePrincipal(event)
 
   const resolved = await resolve(event)

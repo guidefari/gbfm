@@ -29,16 +29,18 @@ export const traceLocalRequest = (
 ) => {
   const requestId = request.headers.get('x-request-id')
   const parent = remoteParent(request.headers.get('traceparent'))
+  const path = new URL(request.url).pathname
 
   const response = runtime.runPromise(
     Effect.promise(run).pipe(
       Effect.tap((response) =>
         Effect.annotateCurrentSpan('http.response.status_code', response.status)
       ),
-      Effect.withSpan('gbfm.api.local-request', {
+      Effect.withSpan(`api ${request.method} ${path}`, {
         ...(parent ? { parent } : undefined),
         attributes: {
           'http.request.method': request.method,
+          'url.path': path,
           ...(requestId && /^[a-zA-Z0-9_-]{1,128}$/.test(requestId)
             ? { 'gbfm.request_id': requestId }
             : undefined)

@@ -17,6 +17,7 @@ const traceHeaders = (headers: Headers) => {
 const profileApiRequest = async (
   event: Pick<RequestEvent, 'locals'> & { route?: RequestEvent['route'] },
   operation: string,
+  path: string,
   run: () => Promise<Response>
 ): Promise<Response> => {
   if (!import.meta.env.DEV) return run()
@@ -25,6 +26,7 @@ const profileApiRequest = async (
     const startedAt = performance.now()
     span.setAttribute('gbfm.request_id', event.locals.requestId)
     span.setAttribute('gbfm.www.route', event.route?.id ?? 'unknown')
+    span.setAttribute('url.path', path)
     try {
       const response = await run()
       span.setAttribute('http.response.status_code', response.status)
@@ -32,6 +34,7 @@ const profileApiRequest = async (
         requestId: event.locals.requestId,
         route: event.route?.id,
         operation,
+        path,
         status: response.status,
         durationMs: Math.round(performance.now() - startedAt)
       })
@@ -42,6 +45,7 @@ const profileApiRequest = async (
         requestId: event.locals.requestId,
         route: event.route?.id,
         operation,
+        path,
         durationMs: Math.round(performance.now() - startedAt)
       })
       throw error
@@ -103,15 +107,20 @@ const fetchBinding = async (
 
 /** Forwards a SvelteKit request to the API Worker binding or local API server. */
 export async function forwardApiRequest(event: RequestEvent): Promise<Response> {
-  return profileApiRequest(event, 'www.api.forward', async () => {
-    const request = await bindingRequest(event.request, event.locals.requestId)
-    const bindingResponse = await fetchBinding(event, request)
-    if (bindingResponse) return bindingResponse
+  return profileApiRequest(
+    event,
+    'www.api.forward',
+    new URL(event.request.url).pathname,
+    async () => {
+      const request = await bindingRequest(event.request, event.locals.requestId)
+      const bindingResponse = await fetchBinding(event, request)
+      if (bindingResponse) return bindingResponse
 
-    const url = new URL(event.request.url)
-    const target = new URL(`${url.pathname}${url.search}`, localApiOrigin())
-    return fetch(new Request(target, request))
-  })
+      const url = new URL(event.request.url)
+      const target = new URL(`${url.pathname}${url.search}`, localApiOrigin())
+      return fetch(new Request(target, request))
+    }
+  )
 }
 
 /** Performs a server-side request through the same API boundary as browser traffic. */
@@ -120,24 +129,29 @@ export async function apiRequest(
   path: string,
   init: RequestInit = {}
 ): Promise<Response> {
-  return profileApiRequest(event, 'www.api.request', async () => {
-    const url = new URL(path, event.request.url)
-    const headers = new Headers(init.headers)
-    const cookie = event.request.headers.get('cookie')
-    if (cookie) headers.set('cookie', cookie)
-    headers.set('x-request-id', event.locals.requestId)
-    traceHeaders(headers)
+  return profileApiRequest(
+    event,
+    'www.api.request',
+    new URL(path, event.request.url).pathname,
+    async () => {
+      const url = new URL(path, event.request.url)
+      const headers = new Headers(init.headers)
+      const cookie = event.request.headers.get('cookie')
+      if (cookie) headers.set('cookie', cookie)
+      headers.set('x-request-id', event.locals.requestId)
+      traceHeaders(headers)
 
-    const request = new Request(url, { ...init, headers })
-    if (event.platform?.env.API) {
-      const internal = new URL(request.url)
-      internal.protocol = 'https:'
-      internal.host = 'api.internal'
-      const bindingResponse = await fetchBinding(event, new Request(internal, request))
-      if (bindingResponse) return bindingResponse
+      const request = new Request(url, { ...init, headers })
+      if (event.platform?.env.API) {
+        const internal = new URL(request.url)
+        internal.protocol = 'https:'
+        internal.host = 'api.internal'
+        const bindingResponse = await fetchBinding(event, new Request(internal, request))
+        if (bindingResponse) return bindingResponse
+      }
+
+      const target = new URL(`${url.pathname}${url.search}`, localApiOrigin())
+      return fetch(new Request(target, request))
     }
-
-    const target = new URL(`${url.pathname}${url.search}`, localApiOrigin())
-    return fetch(new Request(target, request))
-  })
+  )
 }
