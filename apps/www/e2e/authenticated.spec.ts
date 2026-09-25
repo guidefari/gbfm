@@ -39,6 +39,22 @@ test('listener can use member settings but cannot access creator or admin tools'
   expect(response?.status()).toBe(403)
 })
 
+test('member data is present in dashboard and reminders server responses', async ({ page }) => {
+  await signIn(page, 'listener@gbfm.local')
+
+  let response = await page.goto('/dashboard')
+  let html = await response?.text()
+  expect(html).toContain('No favorites yet')
+  expect(html).toContain('No reminders yet')
+  expect(html).not.toContain('Loading favorites')
+  expect(html).not.toContain('Loading reminders')
+
+  response = await page.goto('/reminders')
+  html = await response?.text()
+  expect(html).toContain('No reminders yet.')
+  expect(html).not.toContain('>Loading…</p>')
+})
+
 test('show subscription state is present in the server-rendered response', async ({ page }) => {
   await signIn(page, 'admin@gbfm.local')
   const suffix = `${Date.now()}-${test.info().workerIndex}`

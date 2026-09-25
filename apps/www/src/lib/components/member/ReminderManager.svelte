@@ -1,18 +1,18 @@
 <script lang="ts">
+  import { GetMusicRemindersResponse } from '@gbfm/api/music-reminders'
   import { Option, Schema } from 'effect'
 
-  const Reminder = Schema.Struct({ id: Schema.String, musicTitle: Schema.String, artistName: Schema.String, musicUrl: Schema.String, albumCoverUrl: Schema.NullOr(Schema.String), reminderDate: Schema.String, notes: Schema.NullOr(Schema.String), isSent: Schema.Boolean, createdAt: Schema.String, updatedAt: Schema.String })
-  const ReminderList = Schema.Struct({ reminders: Schema.Array(Reminder) })
   const EnrichedTrack = Schema.Struct({ title: Schema.String, artist: Schema.String, thumbnailUrl: Schema.optional(Schema.NullOr(Schema.String)), album: Schema.optional(Schema.NullOr(Schema.String)), platform: Schema.String })
-  type Reminder = typeof Reminder.Type
+  type Reminder = typeof GetMusicRemindersResponse.Type.reminders[number]
 
-  let reminders = $state<ReadonlyArray<Reminder>>([]), loading = $state(true), pending = $state(false), enriching = $state(false), error = $state(''), success = $state('')
+  let { initialReminders, initialError = null }: { initialReminders: ReadonlyArray<Reminder>; initialError?: string | null } = $props()
+  let reminders = $derived(initialReminders), loading = $state(false), pending = $state(false), enriching = $state(false), error = $derived(initialError ?? ''), success = $state('')
   let musicUrl = $state(''), musicTitle = $state(''), artistName = $state(''), albumCoverUrl = $state(''), reminderDate = $state(''), notes = $state('')
   let enrichment = $state<typeof EnrichedTrack.Type | null>(null), enrichmentSequence = 0
 
   async function load() {
     loading = true
-    try { const response = await fetch('/api/music-reminders'); if (!response.ok) throw new Error(); reminders = Schema.decodeUnknownSync(ReminderList)(await response.json()).reminders }
+    try { const response = await fetch('/api/music-reminders'); if (!response.ok) throw new Error(); reminders = Schema.decodeUnknownSync(GetMusicRemindersResponse)(await response.json()).reminders }
     catch { error = 'Could not load reminders.' }
     finally { loading = false }
   }
@@ -51,7 +51,6 @@
     if (!response.ok) { error = 'Could not delete reminder.'; return }
     reminders = reminders.filter(({ id }) => id !== reminder.id); success = 'Reminder deleted.'
   }
-  $effect(() => { void load() })
 </script>
 
 <section class="mx-auto max-w-4xl px-4 py-12">

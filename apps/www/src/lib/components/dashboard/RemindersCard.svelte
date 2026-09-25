@@ -1,13 +1,9 @@
 <script lang="ts">
   import { GetMusicRemindersResponse } from '@gbfm/api/music-reminders'
   import { Bell, Plus } from 'lucide-svelte'
-  import { onMount } from 'svelte'
-  import { dashboardJson } from './api'
 
   type Reminder = typeof GetMusicRemindersResponse.Type.reminders[number]
-  let reminders = $state<ReadonlyArray<Reminder>>([])
-  let loading = $state(true)
-  let error = $state('')
+  let { reminders, error = null }: { reminders: ReadonlyArray<Reminder>; error?: string | null } = $props()
   const upcoming = $derived(reminders.filter((item) => !item.isSent).toSorted((a, b) => Date.parse(a.reminderDate) - Date.parse(b.reminderDate)))
   const recent = $derived(reminders.filter((item) => item.isSent).toSorted((a, b) => Date.parse(b.reminderDate) - Date.parse(a.reminderDate)))
   const sections = $derived([
@@ -15,18 +11,12 @@
     { label: 'Recent', reminders: recent.slice(0, 4) }
   ])
 
-  onMount(async () => {
-    try { reminders = (await dashboardJson(GetMusicRemindersResponse, '/api/music-reminders')).reminders }
-    catch { error = 'Could not load reminders.' }
-    finally { loading = false }
-  })
 </script>
 
 <section class="overflow-hidden rounded bg-card/15" aria-labelledby="reminders-heading">
   <header class="flex items-center justify-between bg-muted/20 p-5"><h2 id="reminders-heading" class="flex items-center gap-2 text-xs font-bold tracking-widest"><Bell class="size-3.5 text-primary" /> Reminders</h2><div class="flex gap-3 text-xs font-bold"><a class="flex items-center gap-1 no-underline" href="/reminders"><Plus class="size-3" /> New</a><a class="text-muted-foreground no-underline" href="/reminders">Manage</a></div></header>
   <div class="p-5">
-    {#if loading}<div class="space-y-3" aria-label="Loading reminders">{#each Array(3) as _}<div class="h-14 animate-pulse bg-muted"></div>{/each}</div>
-    {:else if error}<p class="text-sm text-destructive">{error}</p>
+    {#if error}<p class="text-sm text-destructive">{error}</p>
     {:else if reminders.length === 0}<div class="py-10 text-center"><p class="mb-4 text-sm text-muted-foreground">No reminders yet</p><a class="rounded border border-primary px-5 py-2 text-xs font-bold no-underline" href="/reminders">Create</a></div>
     {:else}
       {#each sections as section}
