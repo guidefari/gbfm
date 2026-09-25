@@ -1,6 +1,13 @@
 import { expect, test } from 'vitest'
 
-import { markerPercent, monthLabel, relativeAge, timelineMonths } from './timeline'
+import {
+  markerPercent,
+  monthLabel,
+  monthOf,
+  relativeAge,
+  timelineMonths,
+  yearGroups,
+} from './timeline'
 
 test('fills empty months between the oldest and newest tweet, newest first', () => {
   const months = timelineMonths([
@@ -35,4 +42,17 @@ test('describes months and ages loosely', () => {
   expect(relativeAge('2026-09-20T08:00:00.000Z', now)).toBe('5 days ago')
   expect(relativeAge('2026-06-01T08:00:00.000Z', now)).toBe('3 months ago')
   expect(relativeAge('2024-09-01T08:00:00.000Z', now)).toBe('2 years ago')
+})
+
+test('groups months under their year and locates a tweet month', () => {
+  const months = timelineMonths([
+    { month: '2025-12', total: 1, unread: 0, newestSlug: 'december' },
+    { month: '2026-01', total: 2, unread: 1, newestSlug: 'january' },
+  ])
+
+  expect(yearGroups(months).map((group) => [group.year, group.months.length])).toEqual([
+    ['2026', 1],
+    ['2025', 1],
+  ])
+  expect(monthOf('2026-01-31T23:00:00.000Z')).toBe('2026-01')
 })

@@ -81,3 +81,24 @@ export const relativeAge = (at: string, now: number) => {
 
   return format.format(-Math.floor(days / 365), 'year')
 }
+
+/** Groups newest-first months under their year, newest year first. */
+export const yearGroups = (months: ReadonlyArray<RailMonth>) => {
+  const groups: Array<{ year: string; months: Array<RailMonth> }> = []
+
+  for (const entry of months) {
+    const year = entry.month.slice(0, 4)
+    const group = groups.at(-1)
+
+    if (group?.year === year) group.months.push(entry)
+    else groups.push({ year, months: [entry] })
+  }
+
+  return groups
+}
+
+export const monthOf = (at: string) => {
+  const date = new Date(at)
+
+  return monthKey(date.getUTCFullYear(), date.getUTCMonth())
+}
