@@ -27,6 +27,9 @@ export const website = ({ config, websiteConfig, api, socialImages }: WebsiteInp
         notFoundHandling: '404-page'
       },
       observability: workerObservability(config.isProduction),
+      ...(config.isLocalDev
+        ? { dev: { mode: 'external', url: 'https://gbfm.localhost' } }
+        : undefined),
       env: {
         API: api,
         SOCIAL_IMAGES: socialImages,
