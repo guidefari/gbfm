@@ -3,7 +3,7 @@ import { ScrollArea } from './scroll-area'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Primitives/Scroll area'
+  title: '@gbfm/ui/Primitives/Scroll area',
 }
 
 export function ScrollAreas() {
@@ -25,7 +25,7 @@ export function ScrollAreas() {
               {['Dub report', 'Ambient dispatch', 'Label notes', 'Club memo', 'Release scan'].map(
                 (item) => (
                   <p key={item}>{item}</p>
-                )
+                ),
               )}
             </div>
           </ScrollArea>

@@ -1,16 +1,19 @@
 import { Schema } from 'effect'
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/unstable/httpapi'
+
 import { AuthMiddleware } from './middleware/auth'
 
 const UrlPattern = /^https?:\/\/.+/i
+
 const UrlString = Schema.String.pipe(Schema.check(Schema.isPattern(UrlPattern)))
 
 const UuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 const Uuid = Schema.String.pipe(Schema.check(Schema.isPattern(UuidPattern)))
 
 const StreamingLink = Schema.Struct({
   platform: Schema.String,
-  url: UrlString
+  url: UrlString,
 })
 
 export const ReleaseResponse = Schema.Struct({
@@ -26,12 +29,12 @@ export const ReleaseResponse = Schema.Struct({
   releaseDate: Schema.NullOr(Schema.String),
   streamingLinks: Schema.NullOr(Schema.Array(StreamingLink)),
   createdAt: Schema.String,
-  updatedAt: Schema.String
+  updatedAt: Schema.String,
 })
 
 export const CompiledReleaseResponse = Schema.Struct({
   ...ReleaseResponse.fields,
-  compiledContent: Schema.String
+  compiledContent: Schema.String,
 })
 
 const baseReleaseFields = {
@@ -43,7 +46,7 @@ const baseReleaseFields = {
   draft: Schema.optional(Schema.Boolean),
   tags: Schema.optional(Schema.Array(Schema.String)),
   labelId: Uuid,
-  streamingLinks: Schema.optional(Schema.Array(StreamingLink))
+  streamingLinks: Schema.optional(Schema.Array(StreamingLink)),
 }
 
 // releaseDate travels the wire as an ISO string in both directions (old
@@ -52,8 +55,9 @@ const baseReleaseFields = {
 // migration (createdAt/updatedAt).
 export const CreateReleaseInput = Schema.Struct({
   ...baseReleaseFields,
-  releaseDate: Schema.String
+  releaseDate: Schema.String,
 })
+
 export type CreateReleaseInput = typeof CreateReleaseInput.Type
 
 export const UpdateReleaseInput = Schema.Struct({
@@ -66,12 +70,13 @@ export const UpdateReleaseInput = Schema.Struct({
   tags: Schema.optional(Schema.Array(Schema.String)),
   labelId: Schema.optional(Uuid),
   streamingLinks: Schema.optional(Schema.Array(StreamingLink)),
-  releaseDate: Schema.optional(Schema.String)
+  releaseDate: Schema.optional(Schema.String),
 })
+
 export type UpdateReleaseInput = typeof UpdateReleaseInput.Type
 
 export const DeleteReleaseResponse = Schema.Struct({
-  message: Schema.String
+  message: Schema.String,
 })
 
 export const ReleaseGroup = HttpApiGroup.make('release')
@@ -83,36 +88,36 @@ export const ReleaseGroup = HttpApiGroup.make('release')
         HttpApiError.Conflict,
         HttpApiError.NotFound,
         HttpApiError.Unauthorized,
-        HttpApiError.InternalServerError
-      ]
-    }).middleware(AuthMiddleware)
+        HttpApiError.InternalServerError,
+      ],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.get('getReleaseBySlug', '/api/content/releases/:slug', {
       params: { slug: Schema.String },
       success: CompiledReleaseResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
-    })
+      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+    }),
   )
   .add(
     HttpApiEndpoint.get('getReleaseBySlugForEdit', '/api/content/releases/:slug/edit', {
       params: { slug: Schema.String },
       success: CompiledReleaseResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError]
-    }).middleware(AuthMiddleware)
+      error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.patch('updateReleaseBySlug', '/api/content/releases/:slug', {
       params: { slug: Schema.String },
       payload: UpdateReleaseInput,
       success: CompiledReleaseResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError]
-    }).middleware(AuthMiddleware)
+      error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.delete('deleteReleaseBySlug', '/api/content/releases/:slug', {
       params: { slug: Schema.String },
       success: DeleteReleaseResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError]
-    }).middleware(AuthMiddleware)
+      error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError],
+    }).middleware(AuthMiddleware),
   )

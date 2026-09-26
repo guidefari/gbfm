@@ -1,0 +1,77 @@
+import { expect, test } from 'vitest'
+
+import {
+  markerPercent,
+  monthLabel,
+  monthOf,
+  monthShort,
+  relativeAge,
+  timelineMonths,
+  yearGroups,
+  yearJumps,
+} from './timeline'
+
+test('fills empty months between the oldest and newest tweet, newest first', () => {
+  const months = timelineMonths([
+    { month: '2025-11', total: 2, unread: 1, newestSlug: 't-2025-11' },
+    { month: '2026-02', total: 5, unread: 0, newestSlug: 't-2026-02' },
+  ])
+
+  expect(months).toEqual([
+    { month: '2026-02', total: 5, unread: 0, newestSlug: 't-2026-02' },
+    { month: '2026-01', total: 0, unread: 0, newestSlug: null },
+    { month: '2025-12', total: 0, unread: 0, newestSlug: null },
+    { month: '2025-11', total: 2, unread: 1, newestSlug: 't-2025-11' },
+  ])
+})
+
+test('places a tweet inside its month on the newest-first rail', () => {
+  const months = timelineMonths([
+    { month: '2026-01', total: 1, unread: 1, newestSlug: 't-2026-01' },
+    { month: '2026-02', total: 1, unread: 1, newestSlug: 't-2026-02' },
+  ])
+
+  expect(markerPercent(months, '2026-02-28T12:00:00.000Z')).toBeCloseTo(0.89, 1)
+  expect(markerPercent(months, '2026-01-01T12:00:00.000Z')).toBeCloseTo(99.19, 1)
+  expect(markerPercent(months, '2020-01-01T00:00:00.000Z')).toBe(0)
+})
+
+test('describes months and ages loosely', () => {
+  const now = Date.parse('2026-09-25T12:00:00.000Z')
+
+  expect(monthLabel('2024-03')).toBe('Mar 2024')
+  expect(relativeAge('2026-09-25T08:00:00.000Z', now)).toBe('today')
+  expect(relativeAge('2026-09-20T08:00:00.000Z', now)).toBe('5 days ago')
+  expect(relativeAge('2026-06-01T08:00:00.000Z', now)).toBe('3 months ago')
+  expect(relativeAge('2024-09-01T08:00:00.000Z', now)).toBe('2 years ago')
+})
+
+test('groups months under their year and locates a tweet month', () => {
+  const months = timelineMonths([
+    { month: '2025-12', total: 1, unread: 0, newestSlug: 'december' },
+    { month: '2026-01', total: 2, unread: 1, newestSlug: 'january' },
+  ])
+
+  expect(yearGroups(months).map((group) => [group.year, group.months.length])).toEqual([
+    ['2026', 1],
+    ['2025', 1],
+  ])
+  expect(monthOf('2026-01-31T23:00:00.000Z')).toBe('2026-01')
+})
+
+test('jumps to the newest tweet of each year and skips empty years', () => {
+  const months = timelineMonths([
+    { month: '2023-12', total: 2, unread: 0, newestSlug: 't-2023-12' },
+    { month: '2025-02', total: 1, unread: 1, newestSlug: 't-2025-02' },
+    { month: '2025-06', total: 3, unread: 2, newestSlug: 't-2025-06' },
+  ])
+
+  expect(yearJumps(months)).toEqual([
+    { year: '2025', newestSlug: 't-2025-06', total: 4, unread: 3 },
+    { year: '2023', newestSlug: 't-2023-12', total: 2, unread: 0 },
+  ])
+})
+
+test('names a month without its year', () => {
+  expect(monthShort('2026-09')).toBe('Sep')
+})

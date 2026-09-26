@@ -1,8 +1,10 @@
 import { Effect } from 'effect'
+
 import { ConfigService } from '@/services/config.service'
 import { S3Service } from '@/services/s3.service'
 
 const QR_PDFS_PREFIX = 'qr-pdfs/'
+
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
 
 export const cleanupExpiredQrPdfs = Effect.gen(function* () {
@@ -18,6 +20,7 @@ export const cleanupExpiredQrPdfs = Effect.gen(function* () {
 
   if (objects.length === 0) {
     yield* Effect.logInfo('No QR PDFs found to clean up')
+
     return { deleted: 0 }
   }
 
@@ -26,6 +29,7 @@ export const cleanupExpiredQrPdfs = Effect.gen(function* () {
 
   if (expiredObjects.length === 0) {
     yield* Effect.logInfo(`Found ${objects.length} QR PDFs, none expired`)
+
     return { deleted: 0 }
   }
 
@@ -38,15 +42,15 @@ export const cleanupExpiredQrPdfs = Effect.gen(function* () {
         .deleteFile(obj.key, bucketName)
         .pipe(
           Effect.catch((error) =>
-            Effect.logWarning(`Failed to delete ${obj.key}: ${error.message}`)
-          )
+            Effect.logWarning(`Failed to delete ${obj.key}: ${error.message}`),
+          ),
         ),
-    { concurrency: 5 }
+    { concurrency: 5 },
   )
 
   return { deleted: expiredObjects.length }
 }).pipe(
   Effect.withSpan('qr-cache-cleanup', {
-    attributes: { prefix: QR_PDFS_PREFIX }
-  })
+    attributes: { prefix: QR_PDFS_PREFIX },
+  }),
 )

@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm'
-import { Effect } from 'effect'
-import type { DatabaseClient } from '@/db/layer'
-import { Database } from '@/db/layer'
+import { Effect, Match } from 'effect'
+
+import type { Database, DatabaseClient } from '@/db/layer'
 import {
   musicAlbumsTable,
   musicArtistsTable,
@@ -10,7 +10,7 @@ import {
   type SelectMusicAlbum,
   type SelectMusicArtist,
   type SelectMusicPlaylist,
-  type SelectMusicTrack
+  type SelectMusicTrack,
 } from '@/db/music-entity.schema'
 import { getAlbumByIdEffect } from '@/services/music-entity/album.service'
 import { getArtistByIdEffect } from '@/services/music-entity/artist.service'
@@ -18,15 +18,16 @@ import { getPlaylistByIdEffect } from '@/services/music-entity/playlist.service'
 import { uniqueSlug } from '@/services/music-entity/shared'
 import { getTrackByIdEffect } from '@/services/music-entity/track.service'
 import type { ScrapeResult } from '@/services/music-link-scraper.service'
-import type { AnyResolvedMusicEntity } from './contract'
 import { parseArtistNames } from '@/services/parse-artist-names'
 import { toSlug } from '@/services/to-slug'
+
+import type { AnyResolvedMusicEntity } from './contract'
 import { MusicIdentityEntityNotFound, MusicIdentityStorageError } from './errors'
 import type {
   CanonicalMusicIdentityRepository,
   EntityArtist,
   EntityRecord,
-  EntityReference
+  EntityReference,
 } from './repository'
 
 export type ResolvedEntity =
@@ -44,44 +45,45 @@ const storageError = (operation: string, message: string) =>
 
 const translateEntityError = (reference: EntityReference) =>
   Effect.mapError((error: { readonly _tag: string; readonly message: string }) =>
-    error._tag === 'NotFoundError'
-      ? new MusicIdentityEntityNotFound(reference)
-      : storageError('loadEntity', error.message)
+    Match.value(error).pipe(
+      Match.when({ _tag: 'NotFoundError' }, () => new MusicIdentityEntityNotFound(reference)),
+      Match.orElse((failure) => storageError('loadEntity', failure.message)),
+    ),
   )
 
 export function loadEntity(
-  reference: EntityReference & { readonly entityType: 'artist' }
+  reference: EntityReference & { readonly entityType: 'artist' },
 ): Effect.Effect<
   SelectMusicArtist,
   MusicIdentityEntityNotFound | MusicIdentityStorageError,
   Database
 >
 export function loadEntity(
-  reference: EntityReference & { readonly entityType: 'album' }
+  reference: EntityReference & { readonly entityType: 'album' },
 ): Effect.Effect<
   SelectMusicAlbum,
   MusicIdentityEntityNotFound | MusicIdentityStorageError,
   Database
 >
 export function loadEntity(
-  reference: EntityReference & { readonly entityType: 'track' }
+  reference: EntityReference & { readonly entityType: 'track' },
 ): Effect.Effect<
   SelectMusicTrack,
   MusicIdentityEntityNotFound | MusicIdentityStorageError,
   Database
 >
 export function loadEntity(
-  reference: EntityReference & { readonly entityType: 'playlist' }
+  reference: EntityReference & { readonly entityType: 'playlist' },
 ): Effect.Effect<
   SelectMusicPlaylist & { readonly spotifyUrl?: string | null },
   MusicIdentityEntityNotFound | MusicIdentityStorageError,
   Database
 >
 export function loadEntity(
-  reference: EntityReference
+  reference: EntityReference,
 ): Effect.Effect<ResolvedEntity, MusicIdentityEntityNotFound | MusicIdentityStorageError, Database>
 export function loadEntity(
-  reference: EntityReference
+  reference: EntityReference,
 ): Effect.Effect<
   ResolvedEntity,
   MusicIdentityEntityNotFound | MusicIdentityStorageError,
@@ -104,7 +106,7 @@ export function loadEntity(
 export const loadResolvedEntity = (
   repository: CanonicalMusicIdentityRepository,
   reference: EntityReference,
-  created: boolean
+  created: boolean,
 ): Effect.Effect<
   AnyResolvedMusicEntity,
   MusicIdentityStorageError | MusicIdentityEntityNotFound,
@@ -112,34 +114,35 @@ export const loadResolvedEntity = (
 > =>
   Effect.gen(function* () {
     const links = yield* repository.linksFor(reference)
+
     switch (reference.entityType) {
       case 'artist':
         return {
           entityType: 'artist',
           entity: yield* loadEntity({ entityType: 'artist', entityId: reference.entityId }),
           links,
-          created
+          created,
         }
       case 'album':
         return {
           entityType: 'album',
           entity: yield* loadEntity({ entityType: 'album', entityId: reference.entityId }),
           links,
-          created
+          created,
         }
       case 'track':
         return {
           entityType: 'track',
           entity: yield* loadEntity({ entityType: 'track', entityId: reference.entityId }),
           links,
-          created
+          created,
         }
       case 'playlist':
         return {
           entityType: 'playlist',
           entity: yield* loadEntity({ entityType: 'playlist', entityId: reference.entityId }),
           links,
-          created
+          created,
         }
       default:
         return unreachable(reference.entityType)
@@ -149,22 +152,24 @@ export const loadResolvedEntity = (
 const titleFor = (
   entityType: EntityReference['entityType'],
   result: ScrapeResult,
-  fallback?: ResolvedEntity
+  fallback?: ResolvedEntity,
 ) => {
   const fallbackTitle = fallback ? ('name' in fallback ? fallback.name : fallback.title) : undefined
+
   if (entityType === 'artist') {
     return (
       result.entityMeta?.artistName ?? result.entityMeta?.title ?? fallbackTitle ?? 'Unknown Artist'
     )
   }
+
   return (
     result.entityMeta?.title ??
     fallbackTitle ??
-    (entityType === 'album'
-      ? 'Untitled Album'
-      : entityType === 'track'
-        ? 'Untitled Track'
-        : 'Untitled Playlist')
+    Match.value(entityType).pipe(
+      Match.when('album', () => 'Untitled Album'),
+      Match.when('track', () => 'Untitled Track'),
+      Match.orElse(() => 'Untitled Playlist'),
+    )
   )
 }
 
@@ -179,38 +184,44 @@ const storedArtistNamesFor = (entity: ResolvedEntity) =>
 
 const artistNamesFor = (result: ScrapeResult, fallback?: ResolvedEntity) => {
   if (result.entityMeta?.artistName) return parseArtistNames(result.entityMeta.artistName)
+
   return fallback ? storedArtistNamesFor(fallback) : []
 }
 
-const prepareArtists = (db: DatabaseClient, names: readonly string[]) =>
+const prepareArtists = (db: DatabaseClient, names: ReadonlyArray<string>) =>
   Effect.tryPromise({
     try: async () => {
-      const artists: EntityArtist[] = []
+      const artists: Array<EntityArtist> = []
+
       for (const name of names) {
         const rows = await db
           .select({ id: musicArtistsTable.id, name: musicArtistsTable.name })
           .from(musicArtistsTable)
           .where(sql`lower(${musicArtistsTable.name}) = lower(${name})`)
           .limit(1)
+
         const existing = rows[0]
+
         if (existing) {
           artists.push({ id: existing.id, name: existing.name, isNew: false })
           continue
         }
+
         artists.push({
           id: crypto.randomUUID(),
           name,
           slug: await uniqueSlug(db, musicArtistsTable, toSlug(name)),
-          isNew: true
+          isNew: true,
         })
       }
+
       return artists
     },
     catch: (cause) =>
       storageError(
         'prepareArtists',
-        cause instanceof Error ? cause.message : 'Artist lookup failed'
-      )
+        cause instanceof Error ? cause.message : 'Artist lookup failed',
+      ),
   })
 
 export const prepareEntityRecord = (
@@ -219,15 +230,17 @@ export const prepareEntityRecord = (
   entityId: string,
   result: ScrapeResult,
   details?: {
-    readonly description?: string
-    readonly trackNumber?: number
-    readonly curatorId?: string | null
-  }
+    readonly description?: string | undefined
+    readonly trackNumber?: number | undefined
+    readonly curatorId?: string | null | undefined
+  },
 ) =>
   Effect.gen(function* () {
     const artistNames = artistNamesFor(result)
+
     const artists =
       entityType === 'album' || entityType === 'track' ? yield* prepareArtists(db, artistNames) : []
+
     return {
       entityType,
       entityId,
@@ -237,7 +250,7 @@ export const prepareEntityRecord = (
       imageUrl: imageFor(result),
       description: details?.description,
       trackNumber: details?.trackNumber,
-      curatorId: details?.curatorId
+      curatorId: details?.curatorId,
     } satisfies EntityRecord
   })
 
@@ -246,7 +259,7 @@ export const refreshedEntityRecord = (
   entityId: string,
   result: ScrapeResult,
   fallback: ResolvedEntity,
-  metadataPolicy: 'preserve_canonical' | 'replace_canonical'
+  metadataPolicy: 'preserve_canonical' | 'replace_canonical',
 ): EntityRecord => ({
   entityType,
   entityId,
@@ -263,11 +276,12 @@ export const refreshedEntityRecord = (
   artists: [],
   imageUrl: storedImageFor(fallback),
   description:
-    fallback && 'description' in fallback ? (fallback.description ?? undefined) : undefined
+    fallback && 'description' in fallback ? (fallback.description ?? undefined) : undefined,
 })
 
 export const slugFor = (db: DatabaseClient, entity: EntityRecord) => {
   const base = toSlug(entity.title)
+
   switch (entity.entityType) {
     case 'artist':
       return uniqueSlug(db, musicArtistsTable, base)

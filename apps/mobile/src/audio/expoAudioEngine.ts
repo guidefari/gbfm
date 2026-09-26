@@ -3,10 +3,11 @@ import {
   PlaybackRejected,
   type EngineStatus,
   type NowPlayingMetadata,
-  type PlaybackCommandHandlers
+  type PlaybackCommandHandlers,
 } from '@gbfm/player'
 import { Effect, Layer, Queue, Stream } from 'effect'
-import type { AudioPlayer, AudioStatus } from 'expo-audio'
+import type { AudioMetadata, AudioPlayer, AudioStatus } from 'expo-audio'
+
 import { subscribeToPlaybackStatus } from './audioPlayerAdapter'
 
 const toEngineStatus = (status: AudioStatus, sourceGeneration: number | null): EngineStatus => ({
@@ -16,7 +17,7 @@ const toEngineStatus = (status: AudioStatus, sourceGeneration: number | null): E
   didJustFinish: status.didJustFinish,
   currentTime: status.currentTime,
   duration: status.duration,
-  isBuffering: status.isBuffering
+  isBuffering: status.isBuffering,
 })
 
 export type ExpoAudioEnginePlayer = Pick<
@@ -49,7 +50,7 @@ const makeExpoAudioEngine = (player: ExpoAudioEnginePlayer, platform: 'native' |
       }),
       play: Effect.try({
         try: () => player.play(),
-        catch: (cause: unknown) => new PlaybackRejected({ cause })
+        catch: (cause: unknown) => new PlaybackRejected({ cause }),
       }),
       pause: Effect.sync(() => player.pause()),
       setVolume: (volume: number) =>
@@ -68,32 +69,36 @@ const makeExpoAudioEngine = (player: ExpoAudioEnginePlayer, platform: 'native' |
           const subscription = subscribeToPlaybackStatus(player, platform, (status) => {
             Queue.offerUnsafe(queue, toEngineStatus(status, sourceGeneration))
           })
+
           yield* Effect.addFinalizer(() => Effect.sync(() => subscription.remove()))
-        })
+        }),
       ),
 
       setNowPlaying: (metadata: NowPlayingMetadata | null) =>
         Effect.sync(() => {
           if (!metadata) {
             player.clearLockScreenControls()
+
             return
           }
-          player.setActiveForLockScreen(
-            true,
-            {
-              title: metadata.title,
-              artist: metadata.artist,
-              artworkUrl: metadata.artworkUrl
-            },
-            { showSeekForward: true, showSeekBackward: true }
-          )
+
+          const lockScreenMetadata: AudioMetadata = { title: metadata.title }
+
+          if (metadata.artist !== undefined) lockScreenMetadata.artist = metadata.artist
+
+          if (metadata.artworkUrl !== undefined) lockScreenMetadata.artworkUrl = metadata.artworkUrl
+
+          player.setActiveForLockScreen(true, lockScreenMetadata, {
+            showSeekForward: true,
+            showSeekBackward: true,
+          })
         }),
 
       setPositionState: () => Effect.void,
 
       // expo-audio exposes lock-screen activation/metadata but no JS remote
       // next/previous callback surface, so we keep this seam a no-op here.
-      setCommandHandlers: (_handlers: PlaybackCommandHandlers | null) => Effect.void
+      setCommandHandlers: (_handlers: PlaybackCommandHandlers | null) => Effect.void,
     }
   })
 

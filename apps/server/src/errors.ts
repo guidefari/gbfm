@@ -1,13 +1,16 @@
 import { Data, Option, Schema } from 'effect'
 
 const DRIZZLE_QUERY_FAILURE = /^Failed query:/i
+
 const PostgresFailureCause = Schema.Struct({
-  code: Schema.String.pipe(Schema.check(Schema.isPattern(/^[A-Z0-9]{5}$/)))
+  code: Schema.String.pipe(Schema.check(Schema.isPattern(/^[A-Z0-9]{5}$/))),
 })
+
 const decodePostgresFailureCause = Schema.decodeUnknownOption(PostgresFailureCause)
 
 function databaseFailureSummary(error: Error): string {
   const cause = Option.getOrUndefined(decodePostgresFailureCause(error.cause))
+
   if (cause) return `Database query failed (${cause.code})`
 
   return 'Database query failed'
@@ -37,8 +40,11 @@ export function getErrorMessage(cause: unknown): string {
       ? databaseFailureSummary(cause)
       : cause.message.replace(/\nparams:[\s\S]*$/i, '')
   }
+
   const message = Schema.decodeUnknownOption(Schema.String)(cause)
+
   if (Option.isSome(message)) return message.value
+
   return 'Unknown error'
 }
 
@@ -69,7 +75,7 @@ export class ReminderQueueUnavailable extends Data.TaggedError('ReminderQueueUna
 }> {}
 
 export class PlaylistEnrichmentQueueUnavailable extends Data.TaggedError(
-  'PlaylistEnrichmentQueueUnavailable'
+  'PlaylistEnrichmentQueueUnavailable',
 )<{
   readonly playlistId: string
 }> {}

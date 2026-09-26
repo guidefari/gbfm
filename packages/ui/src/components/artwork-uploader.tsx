@@ -1,6 +1,7 @@
 import { ImageIcon, Upload, X } from 'lucide-react'
 import type { ChangeEvent } from 'react'
 import { useId } from 'react'
+
 import { Button } from './button'
 import { Card, CardContent, CardHeader, CardTitle } from './card'
 
@@ -17,7 +18,7 @@ export function ArtworkUploader({
   artworkPreview,
   onFileChange,
   onRemove,
-  fallbackImageUrl = 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'
+  fallbackImageUrl = 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png',
 }: ArtworkUploaderProps) {
   const inputId = useId()
 

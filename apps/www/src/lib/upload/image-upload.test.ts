@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, test, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
+
 import { HttpStatusError, uploadImageDirectToS3 } from './image-upload'
 import { parsePresignImageResponse } from './image-upload-response'
 
@@ -8,7 +9,7 @@ describe('parsePresignImageResponse', () => {
       uploadUrl: 'https://bucket.s3.amazonaws.com/key?X-Amz-Signature=abc',
       publicUrl: 'https://cdn.goosebumps.fm/user-content/key.png',
       key: 'user123/image/abc-def/artwork.png',
-      expiresInSeconds: 300
+      expiresInSeconds: 300,
     }
 
     expect(parsePresignImageResponse(response)).toEqual(response)
@@ -18,10 +19,6 @@ describe('parsePresignImageResponse', () => {
 })
 
 describe('uploadImageDirectToS3', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
   const makeFile = () => new File(['abc'], 'artwork.png', { type: 'image/png' })
 
   // Regression coverage for the retry-classification bug: a permanent 4xx
@@ -32,11 +29,13 @@ describe('uploadImageDirectToS3', () => {
     const fetchMock = vi
       .fn()
       .mockImplementation(
-        async () => new Response('File too large', { status: 413, statusText: 'Payload Too Large' })
+        async () =>
+          new Response('File too large', { status: 413, statusText: 'Payload Too Large' }),
       )
-    vi.stubGlobal('fetch', fetchMock)
 
-    const error = await uploadImageDirectToS3(makeFile()).catch((cause: unknown) => cause)
+    const error = await uploadImageDirectToS3(makeFile(), undefined, fetchMock).catch(
+      (cause: unknown) => cause,
+    )
 
     expect(error).toBeInstanceOf(HttpStatusError)
     expect(error).toMatchObject({ status: 413 })
@@ -48,15 +47,17 @@ describe('uploadImageDirectToS3', () => {
       uploadUrl: 'https://bucket.s3.amazonaws.com/key?X-Amz-Signature=abc',
       publicUrl: 'https://cdn.goosebumps.fm/user-content/key.png',
       key: 'user123/image/abc-def/artwork.png',
-      expiresInSeconds: 300
+      expiresInSeconds: 300,
     }
+
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(new Response(JSON.stringify(presignBody), { status: 200 }))
       .mockResolvedValueOnce(new Response('', { status: 500, statusText: 'Internal Server Error' }))
-    vi.stubGlobal('fetch', fetchMock)
 
-    await expect(uploadImageDirectToS3(makeFile())).rejects.toMatchObject({ status: 500 })
+    await expect(uploadImageDirectToS3(makeFile(), undefined, fetchMock)).rejects.toMatchObject({
+      status: 500,
+    })
     expect(fetchMock).toHaveBeenCalledTimes(2)
     expect(fetchMock.mock.calls[1]?.[0]).toBe(presignBody.uploadUrl)
     expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({ method: 'PUT' })
@@ -67,18 +68,18 @@ describe('uploadImageDirectToS3', () => {
       uploadUrl: 'https://bucket.s3.amazonaws.com/key?X-Amz-Signature=abc',
       publicUrl: 'https://cdn.goosebumps.fm/user-content/key.png',
       key: 'user123/image/abc-def/artwork.png',
-      expiresInSeconds: 300
+      expiresInSeconds: 300,
     }
+
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(new Response(JSON.stringify(presignBody), { status: 200 }))
       .mockResolvedValueOnce(new Response('', { status: 200 }))
-    vi.stubGlobal('fetch', fetchMock)
 
     const file = makeFile()
-    await expect(uploadImageDirectToS3(file)).resolves.toEqual({
+    await expect(uploadImageDirectToS3(file, undefined, fetchMock)).resolves.toEqual({
       url: presignBody.publicUrl,
-      key: presignBody.key
+      key: presignBody.key,
     })
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
@@ -89,14 +90,14 @@ describe('uploadImageDirectToS3', () => {
         body: JSON.stringify({
           fileName: 'artwork.png',
           contentType: 'image/png',
-          fileSize: 3
-        })
-      })
+          fileSize: 3,
+        }),
+      }),
     )
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
       presignBody.uploadUrl,
-      expect.objectContaining({ method: 'PUT', body: file })
+      expect.objectContaining({ method: 'PUT', body: file }),
     )
   })
 })

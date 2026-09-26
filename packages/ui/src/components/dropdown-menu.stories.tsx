@@ -6,12 +6,12 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from './dropdown-menu'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Primitives/Dropdown menu'
+  title: '@gbfm/ui/Primitives/Dropdown menu',
 }
 
 export function DropdownMenus() {

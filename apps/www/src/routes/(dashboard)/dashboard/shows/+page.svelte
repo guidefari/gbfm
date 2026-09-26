@@ -1,0 +1,201 @@
+<script lang="ts">
+  import { Schema } from 'effect'
+  import { onMount } from 'svelte'
+  import Page from '@/lib/components/dashboard/Page.svelte'
+  import { dashboardCommand, dashboardJson, jsonRequest } from '@/lib/components/dashboard/api'
+
+  const Show = Schema.Struct({
+    id: Schema.String,
+    title: Schema.String,
+    slug: Schema.String,
+    description: Schema.NullOr(Schema.String),
+    content: Schema.String,
+    thumbnailUrl: Schema.NullOr(Schema.String),
+    bannerImageUrl: Schema.NullOr(Schema.String),
+    draft: Schema.Boolean,
+    tags: Schema.NullOr(Schema.Array(Schema.String)),
+    createdAt: Schema.String,
+    updatedAt: Schema.String,
+  })
+
+  const List = Schema.Struct({
+    data: Schema.Array(Show),
+    pagination: Schema.Struct({
+      total: Schema.Number,
+      limit: Schema.Number,
+      offset: Schema.Number,
+      hasMore: Schema.Boolean,
+    }),
+  })
+
+  type ShowValue = typeof Show.Type
+
+  let shows = $state<ReadonlyArray<ShowValue>>([]),
+    editing = $state<ShowValue | null>(null),
+    title = $state(''),
+    slug = $state(''),
+    description = $state(''),
+    content = $state(''),
+    thumbnailUrl = $state(''),
+    bannerImageUrl = $state(''),
+    tags = $state(''),
+    draft = $state(true),
+    message = $state('')
+
+  async function load() {
+    try {
+      shows = (await dashboardJson(List, '/api/shows/manage?limit=50&offset=0')).data
+    } catch {
+      message = 'Could not load shows.'
+    }
+  }
+
+  function edit(show: ShowValue) {
+    editing = show
+    title = show.title
+    slug = show.slug
+    description = show.description ?? ''
+    content = show.content
+    thumbnailUrl = show.thumbnailUrl ?? ''
+    bannerImageUrl = show.bannerImageUrl ?? ''
+    tags = show.tags?.join(', ') ?? ''
+    draft = show.draft
+  }
+
+  function clear() {
+    editing = null
+    title = ''
+    slug = ''
+    description = ''
+    content = ''
+    thumbnailUrl = ''
+    bannerImageUrl = ''
+    tags = ''
+    draft = true
+  }
+
+  async function save() {
+    const body = {
+      title,
+      slug,
+      content,
+      draft,
+      description,
+      thumbnailUrl,
+      bannerImageUrl,
+      tags: tags
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter(Boolean),
+    }
+
+    try {
+      if (editing)
+        await dashboardJson(Show, `/api/shows/${editing.slug}`, jsonRequest('PATCH', body))
+      else await dashboardJson(Show, '/api/shows', jsonRequest('POST', body))
+      message = 'Show saved.'
+      clear()
+      await load()
+    } catch {
+      message = 'Could not save show.'
+    }
+  }
+
+  async function remove(show: ShowValue) {
+    if (!confirm(`Delete ${show.title}? This cannot be undone.`)) return
+
+    try {
+      await dashboardCommand(`/api/shows/${show.slug}`, { method: 'DELETE' })
+      await load()
+    } catch {
+      message = 'Could not delete show.'
+    }
+  }
+
+  onMount(load)
+</script>
+
+<Page title="Shows" description="Create, edit, publish, and delete shows."
+  ><form
+    class="grid gap-3 rounded border p-4 sm:grid-cols-2"
+    onsubmit={(e) => {
+      e.preventDefault()
+      void save()
+    }}
+  >
+    <h2 class="sm:col-span-2 font-bold">{editing ? 'Edit show' : 'Create show'}</h2>
+    <label
+      >Title<input
+        required
+        class="block w-full rounded border bg-background p-2"
+        bind:value={title}
+      /></label
+    ><label
+      >Slug<input
+        required
+        class="block w-full rounded border bg-background p-2"
+        bind:value={slug}
+      /></label
+    ><label class="sm:col-span-2"
+      >Description<textarea
+        class="block w-full rounded border bg-background p-2"
+        bind:value={description}></textarea></label
+    ><label class="sm:col-span-2"
+      >Content<textarea
+        class="block min-h-32 w-full rounded border bg-background p-2 font-mono"
+        bind:value={content}></textarea></label
+    ><label
+      >Thumbnail URL<input
+        class="block w-full rounded border bg-background p-2"
+        bind:value={thumbnailUrl}
+      /></label
+    ><label
+      >Banner URL<input
+        class="block w-full rounded border bg-background p-2"
+        bind:value={bannerImageUrl}
+      /></label
+    ><label
+      >Tags<input
+        class="block w-full rounded border bg-background p-2"
+        placeholder="house, ambient"
+        bind:value={tags}
+      /></label
+    ><label class="flex items-center gap-2"
+      ><input type="checkbox" bind:checked={draft} /> Draft</label
+    >
+    <div class="space-x-2">
+      <button class="rounded bg-foreground px-4 py-2 text-background"
+        >{editing ? 'Save changes' : 'Create show'}</button
+      >{#if editing}<button type="button" class="rounded border px-4 py-2" onclick={clear}
+          >Cancel</button
+        >{/if}
+    </div>
+  </form>
+  <div class="overflow-x-auto rounded border">
+    <table class="w-full text-left text-sm">
+      <thead
+        ><tr class="bg-muted"
+          ><th class="p-3">Title</th><th>Slug</th><th>Status</th><th>Created</th><th></th></tr
+        ></thead
+      ><tbody
+        >{#each shows as show}<tr class="border-t"
+            ><td class="p-3">{show.title}</td><td>{show.slug}</td><td
+              >{show.draft ? 'Draft' : 'Published'}</td
+            ><td>{new Date(show.createdAt).toLocaleDateString()}</td><td class="space-x-3"
+              ><button class="underline" onclick={() => edit(show)}>Edit</button><button
+                class="underline"
+                onclick={() => {
+                  edit(show)
+                  draft = !show.draft
+                  void save()
+                }}>{show.draft ? 'Publish' : 'Draft'}</button
+              ><button class="text-destructive underline" onclick={() => void remove(show)}
+                >Delete</button
+              ></td
+            ></tr
+          >{/each}</tbody
+      >
+    </table>
+  </div>
+  {#if message}<p>{message}</p>{/if}</Page
+>

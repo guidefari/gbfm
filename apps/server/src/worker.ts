@@ -1,4 +1,5 @@
 import type {
+  AnalyticsEngineDataset,
   D1Database,
   DurableObjectNamespace,
   ExecutionContext,
@@ -8,62 +9,74 @@ import type {
   Queue,
   R2Bucket,
   ScheduledController,
-  SendEmail
+  SendEmail,
 } from '@cloudflare/workers-types'
+import { resolveRequestId } from '@gbfm/core/observability/request-id'
+import { traceSampleRate } from '@gbfm/core/observability/trace-sampling'
 import * as Sentry from '@sentry/cloudflare'
 import type { ErrorEvent, TracesSamplerSamplingContext, TransactionEvent } from '@sentry/core'
-import { traceSampleRate } from '@gbfm/core/observability/trace-sampling'
-import { Effect, Layer, Schema } from 'effect'
+import { Effect, Layer, Predicate, Schema, Tracer } from 'effect'
+import { FetchHttpClient } from 'effect/unstable/http'
+
+import { DatabaseLayer, makeDatabaseClient } from '@/db/layer'
+import { seedLocalUsers } from '@/db/seed-local-users'
 import type { NavigationLockDurableObject } from '@/durable-objects/navigation-lock.do'
 import type { SpotifyImportResolverDurableObject } from '@/durable-objects/spotify-import-resolver.do'
-import { DatabaseLayer } from '@/db/layer'
 import { DatabaseError, getErrorMessage } from '@/errors'
-import { sanitizeDatabaseSpan } from '@/lib/database-telemetry'
-import { hasLocalSentryContext, shouldEnableSentry } from '@/lib/sentry'
 import { createWebHandler } from '@/http/routes'
+import { sanitizeDatabaseSpan } from '@/lib/database-telemetry'
+import { localTracer, traceLocalRequest } from '@/lib/local-request-tracing'
+import { omitUndefined } from '@/lib/omit-undefined'
+import { hasLocalSentryContext, shouldEnableSentry } from '@/lib/sentry'
 import { regenerateSitemap } from '@/routes/redirect/seo/sitemap.service'
-import { AppLayer } from '@/runtime/services'
 import {
   WorkerSentryEnabledLive,
   WorkerSentryEnv,
-  WorkerTracingLive
+  WorkerTracingLive,
 } from '@/runtime/sentry-worker'
-import { canonicalNavigationLockName, NavigationLock } from '@/services/navigation-lock'
+import { AppLayer } from '@/runtime/services'
+import { dispatchScheduledJob } from '@/scheduled'
 import {
-  canonicalSpotifyImportResolverName,
-  SpotifyImportResolver
-} from '@/services/spotify-import-resolver.service'
+  AdminTelemetryServiceLive,
+  AnalyticsEngineConfig,
+} from '@/services/admin-telemetry.service'
+import { CloudflareEmailTransportLayer } from '@/services/cloudflare-email.adapter'
+import {
+  ConfigService,
+  WorkerConfigServiceLayerEffect,
+  type WorkerConfigBindings,
+} from '@/services/config.service'
+import {
+  RecordingEmailTransportLayer,
+  UnconfiguredEmailTransportLayer,
+} from '@/services/email-transport.service'
+import { MusicEntityService } from '@/services/music-entity'
+import { NavigationRetentionService } from '@/services/navigation-retention.service'
+import {
+  PlaylistEnrichmentJob,
+  PlaylistEnrichmentQueueLayer,
+} from '@/services/playlist-enrichment-queue'
+import { cleanupExpiredQrPdfs } from '@/services/qr-cache-cleanup'
+import { QRCodeServiceLayer } from '@/services/qrcode.service'
 import {
   claimReminder,
   findReminderById,
   queryDueReminders,
-  sendClaimedReminder
+  sendClaimedReminder,
 } from '@/services/reminder-processor'
 import { ReminderQueue, ReminderQueueLayer, type ReminderJob } from '@/services/reminder-queue'
-import {
-  PlaylistEnrichmentJob,
-  PlaylistEnrichmentQueueLayer
-} from '@/services/playlist-enrichment-queue'
-import { cleanupExpiredQrPdfs } from '@/services/qr-cache-cleanup'
-import { SitemapCacheLayer } from '@/services/sitemap-cache'
-import { dispatchScheduledJob } from '@/scheduled'
-import { NavigationRetentionService } from '@/services/navigation-retention.service'
-import { MusicEntityService } from '@/services/music-entity'
-import { SentryServiceLayer } from '@/services/sentry.service'
-import { CloudflareEmailTransportLayer } from '@/services/cloudflare-email.adapter'
-import {
-  RecordingEmailTransportLayer,
-  UnconfiguredEmailTransportLayer
-} from '@/services/email-transport.service'
-import { QRCodeServiceLayer } from '@/services/qrcode.service'
-import { R2ObjectStoreClientLayer } from '@/services/storage/r2-object-store-client'
-import {
-  WorkerConfigServiceLayerEffect,
-  type WorkerConfigBindings
-} from '@/services/config.service'
+import { RequestTelemetryLive } from '@/services/request-telemetry.service'
 import { resolveSecretBindings } from '@/services/secrets-store.service'
+import { SentryServiceLayer } from '@/services/sentry.service'
+import { SitemapCacheLayer } from '@/services/sitemap-cache'
+import {
+  canonicalSpotifyImportResolverName,
+  SpotifyImportResolver,
+} from '@/services/spotify-import-resolver.service'
+import { R2ObjectStoreClientLayer } from '@/services/storage/r2-object-store-client'
 
 export { NavigationLockDurableObject } from '@/durable-objects/navigation-lock.do'
+
 export { SpotifyImportResolverDurableObject } from '@/durable-objects/spotify-import-resolver.do'
 
 // The only file that sees env, ExecutionContext, or a Cloudflare binding
@@ -71,7 +84,9 @@ export { SpotifyImportResolverDurableObject } from '@/durable-objects/spotify-im
 // (Database, SitemapCache, ReminderQueue), never D1Database/KVNamespace/Queue
 // directly.
 export type ApiEnv = WorkerConfigBindings & {
+  readonly APP_RELEASE: string
   readonly DB: D1Database
+  readonly REQUEST_TELEMETRY: AnalyticsEngineDataset
   readonly USER_CONTENT: R2Bucket
   readonly MIXES: R2Bucket
   readonly SITEMAP: KVNamespace
@@ -92,62 +107,14 @@ const workerSentryEnvLive = (env: ApiEnv) =>
 const workerSentryServiceLive = (env: ApiEnv) =>
   SentryServiceLayer.pipe(
     Layer.provide(WorkerSentryEnabledLive),
-    Layer.provide(workerSentryEnvLive(env))
+    Layer.provide(workerSentryEnvLive(env)),
   )
-
-const navigationLockError = (operation: string, cause: unknown) =>
-  new DatabaseError({
-    message: `Failed to ${operation} navigation lock: ${getErrorMessage(cause)}`,
-    operation,
-    table: 'navigation_sessions'
-  })
-
-const navigationLockLive = (env: ApiEnv) =>
-  Layer.succeed(NavigationLock, {
-    decide: (identity, request) =>
-      Effect.tryPromise({
-        try: async () => {
-          const canonicalName = canonicalNavigationLockName(identity)
-          const stub = env.NAVIGATION_LOCK.get(env.NAVIGATION_LOCK.idFromName(canonicalName))
-          await stub.setIdentity(canonicalName)
-          return await stub.decide(request)
-        },
-        catch: (error) => navigationLockError('decide', error)
-      }),
-    commit: (identity, input) =>
-      Effect.tryPromise({
-        try: async () => {
-          const canonicalName = canonicalNavigationLockName(identity)
-          const stub = env.NAVIGATION_LOCK.get(env.NAVIGATION_LOCK.idFromName(canonicalName))
-          await stub.commit(input)
-        },
-        catch: (error) => navigationLockError('commit', error)
-      }),
-    sync: (identity, input) =>
-      Effect.tryPromise({
-        try: async () => {
-          const canonicalName = canonicalNavigationLockName(identity)
-          const stub = env.NAVIGATION_LOCK.get(env.NAVIGATION_LOCK.idFromName(canonicalName))
-          await stub.sync(input)
-        },
-        catch: (error) => navigationLockError('sync', error)
-      }),
-    reset: (identity) =>
-      Effect.tryPromise({
-        try: async () => {
-          const canonicalName = canonicalNavigationLockName(identity)
-          const stub = env.NAVIGATION_LOCK.get(env.NAVIGATION_LOCK.idFromName(canonicalName))
-          await stub.reset()
-        },
-        catch: (error) => navigationLockError('reset', error)
-      })
-  })
 
 const spotifyImportResolverError = (operation: string, cause: unknown) =>
   new DatabaseError({
     message: `Failed to ${operation} Spotify import resolver: ${getErrorMessage(cause)}`,
     operation,
-    table: 'music_entity_links'
+    table: 'music_entity_links',
   })
 
 const spotifyImportResolverLive = (env: ApiEnv) =>
@@ -156,57 +123,81 @@ const spotifyImportResolverLive = (env: ApiEnv) =>
       Effect.tryPromise({
         try: async () => {
           const canonicalName = canonicalSpotifyImportResolverName('track', track.trackUrl)
+
           const stub = env.SPOTIFY_IMPORT_RESOLVER.get(
-            env.SPOTIFY_IMPORT_RESOLVER.idFromName(canonicalName)
+            env.SPOTIFY_IMPORT_RESOLVER.idFromName(canonicalName),
           )
+
           return await stub.resolveTrack(track)
         },
-        catch: (error) => spotifyImportResolverError('resolve track', error)
+        catch: (error) => spotifyImportResolverError('resolve track', error),
       }),
     resolvePlaylist: (playlist, coverImageUrl, curatorId) =>
       Effect.tryPromise({
         try: async () => {
           const canonicalName = canonicalSpotifyImportResolverName('playlist', playlist.playlistUrl)
+
           const stub = env.SPOTIFY_IMPORT_RESOLVER.get(
-            env.SPOTIFY_IMPORT_RESOLVER.idFromName(canonicalName)
+            env.SPOTIFY_IMPORT_RESOLVER.idFromName(canonicalName),
           )
+
           return await stub.resolvePlaylist(playlist, coverImageUrl, curatorId)
         },
-        catch: (error) => spotifyImportResolverError('resolve playlist', error)
-      })
+        catch: (error) => spotifyImportResolverError('resolve playlist', error),
+      }),
   })
 
-const appServicesLive = (env: ApiEnv) => {
+const appServicesLive = (env: ApiEnv, tracing: Layer.Layer<never> = WorkerTracingLive) => {
   const configLive = WorkerConfigServiceLayerEffect(
     resolveSecretBindings(env).pipe(
       Effect.map((secrets) => ({ ...env, ...secrets })),
       // An unreadable secret cannot degrade to blank config: that would boot a
       // Worker with no database password and surface as confusing auth errors.
-      Effect.orDie
-    )
+      Effect.orDie,
+    ),
   )
+
   const objectStoreLive = R2ObjectStoreClientLayer({
     userContent: env.USER_CONTENT,
-    mixes: env.MIXES
+    mixes: env.MIXES,
   }).pipe(Layer.provide(configLive))
+
+  const analyticsConfigLive = Layer.effect(
+    AnalyticsEngineConfig,
+    Effect.map(ConfigService, (config) => ({
+      accountId: config.analytics.accountId,
+      apiToken: config.analytics.apiToken,
+      dataset: config.analytics.browserDataset,
+    })),
+  ).pipe(Layer.provide(configLive))
+
+  const adminTelemetryLive = AdminTelemetryServiceLive.pipe(
+    Layer.provide(analyticsConfigLive),
+    Layer.provide(FetchHttpClient.layer),
+  )
 
   return AppLayer({
     database: DatabaseLayer(env.DB),
     sitemapCache: SitemapCacheLayer(env.SITEMAP),
-    navigationLock: navigationLockLive(env),
     spotifyImportResolver: spotifyImportResolverLive(env),
     playlistEnrichmentQueue: playlistEnrichmentQueueLive(env),
     sentry: workerSentryServiceLive(env),
-    tracing: WorkerTracingLive,
+    tracing,
     config: configLive,
     objectStore: objectStoreLive,
     qrCode: QRCodeServiceLayer({ fetch: (request) => env.QR_PDF.fetch(request) }),
+    requestTelemetry: RequestTelemetryLive({
+      release: env.APP_RELEASE,
+      stage: env.APP_STAGE,
+      writer: env.REQUEST_TELEMETRY,
+    }),
+    adminTelemetry: adminTelemetryLive,
     emailTransport:
       env.EMAIL !== undefined
         ? CloudflareEmailTransportLayer(env.EMAIL)
         : env.EMAIL_TRANSPORT_MODE === 'recording'
           ? RecordingEmailTransportLayer
-          : UnconfiguredEmailTransportLayer
+          : UnconfiguredEmailTransportLayer,
   })
 }
 
@@ -222,20 +213,21 @@ const sentryOptions = (env: ApiEnv) => {
     tracesSampler: ({
       inheritOrSampleWith,
       name,
-      normalizedRequest
+      normalizedRequest,
     }: TracesSamplerSamplingContext) =>
-      inheritOrSampleWith(traceSampleRate({ name, url: normalizedRequest?.url })),
+      inheritOrSampleWith(traceSampleRate(omitUndefined({ name, url: normalizedRequest?.url }))),
 
     sendDefaultPii: false,
     enableLogs: true,
     beforeSendSpan: sanitizeDatabaseSpan,
     beforeSend: (event: ErrorEvent) => (hasLocalSentryContext(event) ? null : event),
     beforeSendTransaction: (event: TransactionEvent) =>
-      hasLocalSentryContext(event) ? null : event
+      hasLocalSentryContext(event) ? null : event,
   }
 }
 
 const reminderQueueLive = (env: ApiEnv) => ReminderQueueLayer(env.REMINDERS)
+
 const playlistEnrichmentQueueLive = (env: ApiEnv) =>
   PlaylistEnrichmentQueueLayer(env.PLAYLIST_ENRICHMENT)
 
@@ -249,19 +241,19 @@ const enqueueDueReminders = Effect.gen(function* () {
       reminderQueue.enqueue({
         reminderId: reminder.id,
         idempotencyKey: reminder.id,
-        dueAt: reminder.reminderDate.getTime()
+        dueAt: reminder.reminderDate.getTime(),
       }),
-    { concurrency: 5 }
+    { concurrency: 5 },
   )
 }).pipe(
-  Effect.catch((error) => Effect.logError('[worker.scheduled] reminder sweep failed', { error }))
+  Effect.catch((error) => Effect.logError('[worker.scheduled] reminder sweep failed', { error })),
 )
 
 const runReminderSweep = (env: ApiEnv) =>
   // oxlint-disable-next-line effecttsgo/strict-effect-provide -- Scheduled dispatch is an Effect application entry point.
   Effect.provide(enqueueDueReminders, appServicesLive(env)).pipe(
     // oxlint-disable-next-line effecttsgo/strict-effect-provide -- Scheduled dispatch is an Effect application entry point.
-    Effect.provide(reminderQueueLive(env))
+    Effect.provide(reminderQueueLive(env)),
   )
 
 const runSitemapRegeneration = (env: ApiEnv) =>
@@ -270,8 +262,8 @@ const runSitemapRegeneration = (env: ApiEnv) =>
     // oxlint-disable-next-line effecttsgo/strict-effect-provide -- Scheduled dispatch is an Effect application entry point.
     Effect.provide(appServicesLive(env)),
     Effect.catch((error) =>
-      Effect.logError('[worker.scheduled] sitemap regeneration failed', { error })
-    )
+      Effect.logError('[worker.scheduled] sitemap regeneration failed', { error }),
+    ),
   )
 
 const runMaintenanceSweep = (env: ApiEnv) =>
@@ -281,23 +273,23 @@ const runMaintenanceSweep = (env: ApiEnv) =>
     yield* Effect.logInfo('[worker.scheduled] navigation retention sweep finished', report)
   }).pipe(
     Effect.catch((error) =>
-      Effect.logError('[worker.scheduled] navigation retention sweep failed', { error })
+      Effect.logError('[worker.scheduled] navigation retention sweep failed', { error }),
     ),
     // Replaces the S3 lifecycle rule that expired `qr-pdfs/` after a day. R2
     // lifecycle rules cannot target a prefix, so the sweep does it instead.
     Effect.andThen(
       cleanupExpiredQrPdfs.pipe(
         Effect.tap((report) =>
-          Effect.logInfo('[worker.scheduled] qr pdf cleanup finished', report)
+          Effect.logInfo('[worker.scheduled] qr pdf cleanup finished', report),
         ),
         Effect.catch((error) =>
-          Effect.logError('[worker.scheduled] qr pdf cleanup failed', { error })
+          Effect.logError('[worker.scheduled] qr pdf cleanup failed', { error }),
         ),
-        Effect.asVoid
-      )
+        Effect.asVoid,
+      ),
     ),
     // oxlint-disable-next-line effecttsgo/strict-effect-provide -- Scheduled dispatch is an Effect application entry point.
-    Effect.provide(appServicesLive(env))
+    Effect.provide(appServicesLive(env)),
   )
 
 // Claims a reminder with a guarded UPDATE from PENDING or FAILED. FAILED is
@@ -306,11 +298,13 @@ const runMaintenanceSweep = (env: ApiEnv) =>
 const processReminderMessage = (env: ApiEnv, job: ReminderJob) =>
   Effect.gen(function* () {
     const claim = yield* claimReminder(job.reminderId)
+
     if (!claim.claimed) {
       return
     }
 
     const reminder = yield* findReminderById(job.reminderId)
+
     if (!reminder) {
       return
     }
@@ -328,9 +322,10 @@ const processPlaylistEnrichmentMessage = (env: ApiEnv, payload: PlaylistEnrichme
     const result = yield* job.reason === 'manual'
       ? music.syncPlaylistLinks(job.playlistId)
       : music.enrichPlaylistLinks(job.playlistId)
+
     yield* Effect.logInfo('[worker.queue] Playlist link enrichment finished', {
       ...result,
-      durationMs: Date.now() - startedAt
+      durationMs: Date.now() - startedAt,
     })
     // oxlint-disable-next-line effecttsgo/strict-effect-provide -- Queue dispatch is an Effect application entry point.
   }).pipe(Effect.provide(appServicesLive(env)))
@@ -340,12 +335,45 @@ type ApiQueueJob = ReminderJob | PlaylistEnrichmentJob
 export default Sentry.withSentry<ApiEnv, ApiQueueJob>(sentryOptions, {
   async fetch(request: Request, env: ApiEnv, ctx: ExecutionContext): Promise<Response> {
     return ctx.tracing.enterSpan('gbfm.api.request', async (span): Promise<Response> => {
-      span.setAttribute('http.request.method', request.method)
-      span.setAttribute('url.path', new URL(request.url).pathname)
+      const incomingRequestId = request.headers.get('x-request-id')
+      const requestId = resolveRequestId(incomingRequestId)
+      const headers = new Headers(request.headers)
+      headers.set('x-request-id', requestId)
+      const correlatedRequest = new Request(request, { headers })
 
-      const webHandler = createWebHandler({ appServicesLive: appServicesLive(env) })
+      span.setAttribute('http.request.method', correlatedRequest.method)
+      span.setAttribute('gbfm.request_id', requestId)
+      span.setAttribute('gbfm.release', env.APP_RELEASE)
+      span.setAttribute('service.name', 'api')
+      const url = new URL(request.url)
+
+      if (correlatedRequest.method === 'POST' && url.pathname === '/api/dev/seed') {
+        if (env.LOCAL_DEV !== 'true') return new Response('Not Found', { status: 404 })
+        const result = await seedLocalUsers(makeDatabaseClient(env.DB))
+
+        return Response.json(result, { headers: { 'x-request-id': requestId } })
+      }
+
+      const local = env.LOCAL_DEV === 'true'
+      const tracing = local ? Layer.succeed(Tracer.Tracer, await localTracer()) : WorkerTracingLive
+
+      const webHandler = createWebHandler({
+        appServicesLive: appServicesLive(env, tracing),
+        localTracing: local,
+      })
+
       try {
-        return await webHandler.handler(request)
+        const response = await (local
+          ? traceLocalRequest(
+              () => webHandler.handler(correlatedRequest),
+              (promise) => ctx.waitUntil(promise),
+            )
+          : webHandler.handler(correlatedRequest))
+
+        const output = new Response(response.body, response)
+        output.headers.set('x-request-id', requestId)
+
+        return output
       } finally {
         await webHandler.dispose()
       }
@@ -356,27 +384,29 @@ export default Sentry.withSentry<ApiEnv, ApiQueueJob>(sentryOptions, {
     return dispatchScheduledJob(controller.cron, {
       regenerateSitemap: () => Effect.runPromise(runSitemapRegeneration(env)),
       sweepReminders: () => Effect.runPromise(runReminderSweep(env)),
-      runMaintenance: () => Effect.runPromise(runMaintenanceSweep(env))
+      runMaintenance: () => Effect.runPromise(runMaintenanceSweep(env)),
     })
   },
 
   async queue(batch: MessageBatch<ApiQueueJob>, env: ApiEnv): Promise<void> {
     for (const message of batch.messages) {
       const job = message.body
+
       const exit =
         '_tag' in job
           ? await Effect.runPromiseExit(processPlaylistEnrichmentMessage(env, job))
           : await Effect.runPromiseExit(processReminderMessage(env, job))
-      if (exit._tag === 'Success') {
+
+      if (Predicate.isTagged('Success')(exit)) {
         message.ack()
       } else {
         await Effect.runPromise(
           Effect.logError('[worker.queue] Job failed; requesting retry', {
-            jobType: '_tag' in job ? 'playlist_enrichment' : 'reminder'
-          })
+            jobType: '_tag' in job ? 'playlist_enrichment' : 'reminder',
+          }),
         )
         message.retry()
       }
     }
-  }
+  },
 })

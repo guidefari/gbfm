@@ -5,10 +5,10 @@ export interface EditorialPost {
   slug: string
   content: string | null
   thumbnailUrl: string | null
-  tags: string[] | null
+  tags: Array<string> | null
   draft: boolean
   type: 'post' | 'micro' | null
-  creators?: EditorialCreator[]
+  creators?: Array<EditorialCreator>
 }
 
 export interface EditorialCreator {
@@ -22,7 +22,7 @@ export interface EditorialFormData {
   slug: string
   content: string
   thumbnailUrl: string
-  tags: string[]
+  tags: Array<string>
   draft: boolean
 }
 

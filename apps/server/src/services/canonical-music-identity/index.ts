@@ -1,21 +1,24 @@
-import { Context, Effect, Fiber, Layer } from 'effect'
+import { Context, Effect, Fiber, Layer, Predicate } from 'effect'
+
 import { Database } from '@/db/layer'
+import { omitUndefined } from '@/lib/omit-undefined'
 import { ConfigService } from '@/services/config.service'
 import {
   MusicLinkScraperService,
   type MusicScraperError,
-  type ScrapeResult
+  type ScrapeResult,
 } from '@/services/music-link-scraper.service'
 import { S3Service } from '@/services/s3.service'
-import { makeDeliverMusicArtwork, MusicCoverImageFetcher } from './artwork-delivery'
+
+import { buildDeliverMusicArtwork, MusicCoverImageFetcher } from './artwork-delivery'
 import type {
   AnyResolvedMusicEntity,
   CanonicalMusicIdentityService,
   ImportProviderMusicEntity,
   ImportProviderMusicEntityLazy,
-  ResolveMusicSource
+  ResolveMusicSource,
 } from './contract'
-import { makeEntityOperations } from './entity-operations'
+import { buildEntityOperations } from './entity-operations'
 import { loadEntity, loadResolvedEntity, prepareEntityRecord, slugFor } from './entity-record'
 import {
   MusicIdentityBusy,
@@ -24,26 +27,25 @@ import {
   MusicIdentityInvalidSnapshot,
   MusicIdentityProviderRejected,
   MusicIdentityProviderUnavailable,
-  MusicIdentityStorageError
+  MusicIdentityStorageError,
 } from './errors'
 import {
   type CanonicalMusicEntityType,
   parseMusicSource,
-  type ParsedMusicSource
+  type ParsedMusicSource,
 } from './music-source'
 import {
   asResolvedReference,
   CanonicalMusicIdentityRepository,
   type ClaimResult,
-  type EntityReference
+  type EntityReference,
 } from './repository'
 import {
   hasUsableResult,
   inferredType,
   parseDiscoveredSources,
-  type ProviderMusicSnapshot,
   snapshotResult,
-  uniqueLinks
+  uniqueLinks,
 } from './source-result'
 import { annotateEntity, annotateSource, withSafeSpan, withSafeTypedSpan } from './telemetry'
 
@@ -58,11 +60,15 @@ export type {
   MusicEntityByType,
   ResolutionOrigin,
   ResolvedMusicEntity,
-  ResolveMusicSource
+  ResolveMusicSource,
 } from './contract'
+
 export type { ResolvedEntity } from './entity-record'
+
 export type { MusicIdentityError } from './errors'
+
 export type { CanonicalMusicEntityType } from './music-source'
+
 export type { ProviderMusicLink, ProviderMusicSnapshot } from './source-result'
 
 export const CanonicalMusicIdentity =
@@ -76,7 +82,7 @@ export type CanonicalMusicIdentityLeaseTimingConfig = {
 
 export const CanonicalMusicIdentityLeaseTiming =
   Context.Reference<CanonicalMusicIdentityLeaseTimingConfig>('CanonicalMusicIdentityLeaseTiming', {
-    defaultValue: () => ({ leaseMs: 30_000, waitAttempts: 40, waitMs: 25 })
+    defaultValue: () => ({ leaseMs: 30_000, waitAttempts: 40, waitMs: 25 }),
   })
 
 const providerError = (error: MusicScraperError) => {
@@ -84,26 +90,29 @@ const providerError = (error: MusicScraperError) => {
     return new MusicIdentityProviderRejected({
       provider: error.provider,
       reason: 'invalid_request',
-      message: error.message
+      message: error.message,
     })
   }
+
   if (error.statusCode === 404) {
     return new MusicIdentityProviderRejected({
       provider: error.provider,
       reason: 'not_found',
-      message: error.message
+      message: error.message,
     })
   }
+
   if (error.statusCode === undefined) {
     return new MusicIdentityProviderUnavailable({
       provider: error.provider,
-      message: error.message
+      message: error.message,
     })
   }
+
   return new MusicIdentityProviderUnavailable({
     provider: error.provider,
     statusCode: error.statusCode,
-    message: error.message
+    message: error.message,
   })
 }
 
@@ -115,6 +124,7 @@ const referenceKey = (reference: EntityReference) => `${reference.entityType}:${
 const legacyFallbackType = (source: ParsedMusicSource, expectedType?: CanonicalMusicEntityType) => {
   if (expectedType) return expectedType
   const type = source.sourceEntityType
+
   return type === 'artist' || type === 'album' || type === 'track' || type === 'playlist'
     ? type
     : undefined
@@ -135,89 +145,109 @@ export const CanonicalMusicIdentityLayer = Layer.effect(
     const heartbeatMs = Math.max(1, Math.floor(leaseTiming.leaseMs / 3))
     const repository = new CanonicalMusicIdentityRepository(db)
     const provideDb = Effect.provideService(Database, db)
-    const deliverMusicArtwork = makeDeliverMusicArtwork({
+
+    const deliverMusicArtwork = buildDeliverMusicArtwork({
       s3,
       config,
       fetcher,
       repository,
       reload: (reference, created) =>
-        loadResolvedEntity(repository, reference, created).pipe(provideDb)
+        loadResolvedEntity(repository, reference, created).pipe(provideDb),
     })
 
     const readReference = (source: ParsedMusicSource) =>
       Effect.gen(function* () {
         yield* annotateSource(source)
         const identity = yield* repository.lookup(source)
+
         if (!identity) {
           yield* Effect.annotateCurrentSpan({ result: 'miss', outcome: 'success' })
+
           return undefined
         }
+
         const reference = asResolvedReference(identity)
+
         if (!reference) {
           yield* Effect.annotateCurrentSpan({ result: 'miss', outcome: 'success' })
+
           return undefined
         }
+
         const entity = yield* loadEntity(reference).pipe(
           provideDb,
-          Effect.catchTag('MusicIdentityEntityNotFound', () => Effect.succeed(undefined))
+          Effect.catchTag('MusicIdentityEntityNotFound', () => Effect.succeed(undefined)),
         )
+
         if (entity) {
           yield* repository.touchAlias(source, reference, new Date())
           yield* annotateEntity(reference)
           yield* Effect.annotateCurrentSpan({ result: 'hit', outcome: 'success' })
+
           return reference
         }
+
         yield* repository.removeOrphan(reference)
         yield* Effect.annotateCurrentSpan({
           result: 'miss',
           outcome: 'success',
-          orphanCount: 1
+          orphanCount: 1,
         })
+
         return undefined
       }).pipe(withSafeTypedSpan('musicIdentity.lookup'))
 
     const findLegacyReference = (source: ParsedMusicSource, entityType: CanonicalMusicEntityType) =>
       Effect.gen(function* () {
         const candidates = yield* repository.legacyCandidates(source, entityType)
+
         for (const candidate of candidates) {
           const parsed = yield* parseMusicSource(candidate.url, entityType).pipe(
-            Effect.catchTag('MusicSourceInvalid', () => Effect.succeed(undefined))
+            Effect.catchTag('MusicSourceInvalid', () => Effect.succeed(undefined)),
           )
+
           if (!parsed || parsed.sourceKey !== source.sourceKey) continue
           const reference = { entityType, entityId: candidate.entityId }
+
           const entity = yield* loadEntity(reference).pipe(
             provideDb,
-            Effect.catchTag('MusicIdentityEntityNotFound', () => Effect.succeed(undefined))
+            Effect.catchTag('MusicIdentityEntityNotFound', () => Effect.succeed(undefined)),
           )
+
           if (entity) return reference
         }
+
         return undefined
       })
 
     const claimSource = (
       source: ParsedMusicSource,
       ownerToken: string,
-      retryCount: number
+      retryCount: number,
     ): Effect.Effect<ClaimResult, MusicIdentityError> =>
       Effect.gen(function* () {
         yield* annotateSource(source)
         yield* Effect.annotateCurrentSpan('retryCount', retryCount)
         const claim = yield* repository.claim(source, ownerToken, new Date(), leaseTiming.leaseMs)
-        if (claim._tag === 'owned') {
+
+        if (Predicate.isTagged(claim, 'owned')) {
           yield* Effect.annotateCurrentSpan('result', claim.result)
+
           if (claim.claimAgeMs !== undefined) {
             yield* Effect.annotateCurrentSpan('claimAgeMs', claim.claimAgeMs)
           }
-        } else if (claim._tag === 'resolved') {
+        } else if (Predicate.isTagged(claim, 'resolved')) {
           yield* annotateEntity(claim.reference)
           yield* Effect.annotateCurrentSpan('result', 'hit')
         } else {
           yield* Effect.annotateCurrentSpan({
             result: 'wait',
-            claimAgeMs: claim.claimAgeMs
+            claimAgeMs: claim.claimAgeMs,
           })
         }
+
         yield* Effect.annotateCurrentSpan('outcome', 'success')
+
         return claim
       }).pipe(withSafeTypedSpan('musicIdentity.claim'))
 
@@ -225,47 +255,60 @@ export const CanonicalMusicIdentityLayer = Layer.effect(
       source: ParsedMusicSource,
       ownerToken: string,
       attempt = 0,
-      observedClaim?: ClaimResult
+      observedClaim?: ClaimResult,
     ): Effect.Effect<EntityReference | 'owned', MusicIdentityError> =>
       Effect.gen(function* () {
         const claim = observedClaim ?? (yield* claimSource(source, ownerToken, attempt))
-        if (claim._tag === 'owned') return 'owned' as const
-        if (claim._tag === 'resolved') return claim.reference
+
+        if (Predicate.isTagged(claim, 'owned')) return 'owned' as const
+
+        if (Predicate.isTagged(claim, 'resolved')) return claim.reference
+
         if (attempt >= leaseTiming.waitAttempts) {
           return yield* new MusicIdentityBusy({ retryAfterMs: claim.retryAfterMs })
         }
+
         yield* Effect.sleep(`${leaseTiming.waitMs} millis`)
         const reference = yield* readReference(source)
+
         if (reference) return reference
+
         return yield* claimWithWait(source, ownerToken, attempt + 1)
       })
 
     const waitForResolved = (
       source: ParsedMusicSource,
-      attempt = 0
+      attempt = 0,
     ): Effect.Effect<EntityReference, MusicIdentityError> =>
       Effect.gen(function* () {
         const reference = yield* readReference(source)
+
         if (reference) return reference
+
         if (attempt >= leaseTiming.waitAttempts) {
           return yield* new MusicIdentityBusy({ retryAfterMs: leaseTiming.leaseMs })
         }
+
         yield* Effect.sleep(`${leaseTiming.waitMs} millis`)
+
         return yield* waitForResolved(source, attempt + 1)
       })
 
     const adoptLegacy = (
       source: ParsedMusicSource,
-      entityType: CanonicalMusicEntityType
+      entityType: CanonicalMusicEntityType,
     ): Effect.Effect<AnyResolvedMusicEntity | undefined, MusicIdentityError> =>
       Effect.gen(function* () {
         const legacy = yield* findLegacyReference(source, entityType)
+
         if (!legacy) return undefined
         const ownerToken = crypto.randomUUID()
         const claim = yield* claimWithWait(source, ownerToken)
+
         if (claim !== 'owned') {
           return yield* loadResolvedEntity(repository, claim, false).pipe(provideDb)
         }
+
         const adopted = yield* repository
           .commit({
             ownedSources: [source],
@@ -276,12 +319,12 @@ export const CanonicalMusicIdentityLayer = Layer.effect(
                 platform: source.platform,
                 url: source.canonicalUrl,
                 scrapedAt: new Date(),
-                metadata: { discoveredBy: 'legacy_adoption', confidence: 'exact_source' }
-              }
+                metadata: { discoveredBy: 'legacy_adoption', confidence: 'exact_source' },
+              },
             ],
             ownerToken,
             scrapedAt: new Date(),
-            now: new Date()
+            now: new Date(),
           })
           .pipe(
             Effect.tap((committed) =>
@@ -291,83 +334,100 @@ export const CanonicalMusicIdentityLayer = Layer.effect(
                 yield* Effect.annotateCurrentSpan({
                   outcome: committed ? 'success' : 'lost_claim',
                   linkCount: 1,
-                  aliasCount: 1
+                  aliasCount: 1,
                 })
-              })
+              }),
             ),
-            withSafeTypedSpan('musicIdentity.commit')
+            withSafeTypedSpan('musicIdentity.commit'),
           )
+
         if (adopted) return yield* loadResolvedEntity(repository, legacy, false).pipe(provideDb)
         yield* repository.release([source.sourceKey], ownerToken)
         const winner = yield* readReference(source)
+
         if (winner) return yield* loadResolvedEntity(repository, winner, false).pipe(provideDb)
+
         return yield* new MusicIdentityBusy({ retryAfterMs: leaseTiming.leaseMs })
       })
 
     const withClaimHeartbeat = <A, E, R>(
-      ownedSources: readonly ParsedMusicSource[],
+      ownedSources: ReadonlyArray<ParsedMusicSource>,
       ownerToken: string,
-      effect: Effect.Effect<A, E, R>
+      effect: Effect.Effect<A, E, R>,
     ): Effect.Effect<A, MusicIdentityError | E, R> =>
       Effect.scoped(
         Effect.gen(function* () {
           const heartbeat = Effect.gen(function* () {
             yield* Effect.sleep(`${heartbeatMs} millis`)
             const sourceKeys = ownedSources.map((source) => source.sourceKey)
+
             const renewed = yield* repository.renew(
               sourceKeys,
               ownerToken,
               new Date(),
-              leaseTiming.leaseMs
+              leaseTiming.leaseMs,
             )
+
             if (renewed.length !== sourceKeys.length) {
               return yield* new MusicIdentityBusy({ retryAfterMs: leaseTiming.leaseMs })
             }
+
             return undefined
           }).pipe(Effect.forever)
+
           const heartbeatFiber = yield* Effect.forkScoped(heartbeat)
+
           return yield* Effect.raceFirst(effect, Fiber.join(heartbeatFiber))
-        })
+        }),
       )
 
     const resolvePrepared = <E, R>(
       initial: ParsedMusicSource,
       resultEffect: Effect.Effect<ScrapeResult, E, R>,
       entityDetails?: {
-        readonly description?: string
-        readonly trackNumber?: number
-        readonly curatorId?: string | null
+        readonly description?: string | undefined
+        readonly trackNumber?: number | undefined
+        readonly curatorId?: string | null | undefined
       },
-      fallbackType?: CanonicalMusicEntityType
+      fallbackType?: CanonicalMusicEntityType,
     ): Effect.Effect<AnyResolvedMusicEntity, MusicIdentityError | E, R> =>
       Effect.gen(function* () {
         const hit = yield* readReference(initial)
+
         if (hit) return yield* loadResolvedEntity(repository, hit, false).pipe(provideDb)
+
         if (fallbackType) {
           const adopted = yield* adoptLegacy(initial, fallbackType)
+
           if (adopted) return adopted
         }
 
         const ownerToken = crypto.randomUUID()
         const firstClaim = yield* claimWithWait(initial, ownerToken)
+
         if (firstClaim !== 'owned') {
           return yield* loadResolvedEntity(repository, firstClaim, false).pipe(provideDb)
         }
 
-        const ownedSources: ParsedMusicSource[] = [initial]
+        const ownedSources: Array<ParsedMusicSource> = [initial]
+
         return yield* Effect.gen(function* () {
           const result = yield* withClaimHeartbeat(ownedSources, ownerToken, resultEffect)
+
           if (!hasUsableResult(result)) {
             return yield* new MusicIdentityInvalidSnapshot({
-              message: 'Music source resolution returned no metadata or links'
+              message: 'Music source resolution returned no metadata or links',
             })
           }
+
           const entityType = inferredType(initial, result)
+
           if (!entityType) {
             return yield* new MusicIdentityInvalidSnapshot({
-              message: 'Music entity type could not be inferred'
+              message: 'Music entity type could not be inferred',
             })
           }
+
           const scrapedAt = new Date()
           const links = uniqueLinks(initial, result, scrapedAt)
           const sources = yield* parseDiscoveredSources(initial, links, entityType)
@@ -376,28 +436,36 @@ export const CanonicalMusicIdentityLayer = Layer.effect(
           for (const source of sources) {
             if (source.sourceKey === initial.sourceKey) continue
             const existing = yield* readReference(source)
+
             if (existing) {
               incumbents.set(referenceKey(existing), existing)
               continue
             }
+
             const attempted = yield* claimSource(source, ownerToken, 0)
-            if (attempted._tag === 'owned') {
+
+            if (Predicate.isTagged(attempted, 'owned')) {
               ownedSources.push(source)
               continue
             }
-            if (attempted._tag === 'resolved') {
+
+            if (Predicate.isTagged(attempted, 'resolved')) {
               incumbents.set(referenceKey(attempted.reference), attempted.reference)
               continue
             }
+
             if (source.sourceKey < initial.sourceKey) {
               yield* repository.release(
                 ownedSources.map((owned) => owned.sourceKey),
-                ownerToken
+                ownerToken,
               )
               const winner = yield* waitForResolved(initial)
+
               return yield* loadResolvedEntity(repository, winner, false).pipe(provideDb)
             }
+
             const claim = yield* claimWithWait(source, ownerToken, 0, attempted)
+
             if (claim === 'owned') ownedSources.push(source)
             else incumbents.set(referenceKey(claim), claim)
           }
@@ -406,73 +474,87 @@ export const CanonicalMusicIdentityLayer = Layer.effect(
             const values = [...incumbents.values()]
             const incumbent = values[0]
             const candidate = values[1]
+
             if (!incumbent || !candidate) {
               return yield* storageError('collision', 'Identity collision references are missing')
             }
+
             let conflictSourceKey = initial.sourceKey
+
             for (const source of sources) {
               const identity = yield* repository.lookup(source)
               const reference = identity ? asResolvedReference(identity) : undefined
+
               if (reference && referenceKey(reference) === referenceKey(candidate)) {
                 conflictSourceKey = source.sourceKey
                 break
               }
             }
+
             yield* repository.recordConflict(
               conflictSourceKey,
               incumbent,
               candidate,
               'discovered_sources_disagree',
-              new Date()
+              new Date(),
             )
+
             return yield* new MusicIdentityConflict({
               sourceKey: conflictSourceKey,
               incumbentEntityType: incumbent.entityType,
               incumbentEntityId: incumbent.entityId,
               candidateEntityType: candidate.entityType,
-              candidateEntityId: candidate.entityId
+              candidateEntityId: candidate.entityId,
             })
           }
 
           const incumbent = [...incumbents.values()][0]
+
           const reference: EntityReference = incumbent ?? {
             entityType,
-            entityId: crypto.randomUUID()
+            entityId: crypto.randomUUID(),
           }
+
           const entity = incumbent
             ? undefined
             : yield* prepareEntityRecord(db, entityType, reference.entityId, result, entityDetails)
+
           const slug = entity
             ? yield* Effect.tryPromise({
                 try: () => slugFor(db, entity),
                 catch: (cause) =>
                   storageError(
                     'slug',
-                    cause instanceof Error ? cause.message : 'Slug lookup failed'
-                  )
+                    cause instanceof Error ? cause.message : 'Slug lookup failed',
+                  ),
               })
             : undefined
+
           const renewed = yield* repository.renew(
             ownedSources.map((source) => source.sourceKey),
             ownerToken,
             new Date(),
-            leaseTiming.leaseMs
+            leaseTiming.leaseMs,
           )
+
           if (renewed.length !== ownedSources.length) {
             return yield* new MusicIdentityBusy({ retryAfterMs: leaseTiming.leaseMs })
           }
+
           const committed = yield* repository
-            .commit({
-              ownedSources,
-              allSources: sources,
-              reference,
-              entity,
-              slug,
-              links,
-              ownerToken,
-              scrapedAt,
-              now: new Date()
-            })
+            .commit(
+              omitUndefined({
+                ownedSources,
+                allSources: sources,
+                reference,
+                entity,
+                slug,
+                links,
+                ownerToken,
+                scrapedAt,
+                now: new Date(),
+              }),
+            )
             .pipe(
               Effect.tap((didCommit) =>
                 Effect.gen(function* () {
@@ -481,73 +563,84 @@ export const CanonicalMusicIdentityLayer = Layer.effect(
                   yield* Effect.annotateCurrentSpan({
                     outcome: didCommit ? 'success' : 'lost_claim',
                     linkCount: links.length,
-                    aliasCount: sources.length
+                    aliasCount: sources.length,
                   })
-                })
+                }),
               ),
-              withSafeTypedSpan('musicIdentity.commit')
+              withSafeTypedSpan('musicIdentity.commit'),
             )
+
           if (!committed) {
             const winner = yield* readReference(initial)
+
             if (winner) return yield* loadResolvedEntity(repository, winner, false).pipe(provideDb)
+
             return yield* new MusicIdentityBusy({ retryAfterMs: leaseTiming.leaseMs })
           }
+
           return yield* loadResolvedEntity(repository, reference, !incumbent).pipe(provideDb)
         }).pipe(
           Effect.tapError(() =>
             repository.release(
               ownedSources.map((source) => source.sourceKey),
-              ownerToken
-            )
-          )
+              ownerToken,
+            ),
+          ),
         )
       })
 
     const resolveSource = (input: ResolveMusicSource) => {
       let candidateArtworkUrl: string | undefined
+
       return Effect.gen(function* () {
         const source = yield* parseMusicSource(input.url, input.expectedType)
         yield* annotateSource(source)
+
         const resolved = yield* resolvePrepared(
           source,
           Effect.suspend(() =>
-            scraper.scrape({ url: source.canonicalUrl, entityType: input.expectedType }).pipe(
-              Effect.mapError(providerError),
-              Effect.tapError((error) =>
-                Effect.annotateCurrentSpan({ provider: error.provider, outcome: 'failure' })
+            scraper
+              .scrape(omitUndefined({ url: source.canonicalUrl, entityType: input.expectedType }))
+              .pipe(
+                Effect.mapError(providerError),
+                Effect.tapError((error) =>
+                  Effect.annotateCurrentSpan({ provider: error.provider, outcome: 'failure' }),
+                ),
+                Effect.tap((result) =>
+                  Effect.gen(function* () {
+                    candidateArtworkUrl = result.entityMeta?.thumbnailUrl
+                    yield* annotateSource(source)
+                    yield* Effect.annotateCurrentSpan({
+                      provider: source.platform,
+                      outcome: 'success',
+                    })
+                  }),
+                ),
+                withSafeTypedSpan('musicIdentity.scrape'),
               ),
-              Effect.tap((result) =>
-                Effect.gen(function* () {
-                  candidateArtworkUrl = result.entityMeta?.thumbnailUrl
-                  yield* annotateSource(source)
-                  yield* Effect.annotateCurrentSpan({
-                    provider: source.platform,
-                    outcome: 'success'
-                  })
-                })
-              ),
-              withSafeTypedSpan('musicIdentity.scrape')
-            )
           ),
           undefined,
-          legacyFallbackType(source, input.expectedType)
+          legacyFallbackType(source, input.expectedType),
         )
+
         const delivered = yield* deliverMusicArtwork({
           resolved,
           candidateUrl: candidateArtworkUrl ?? persistedArtwork(resolved),
-          delivery: input.artworkDelivery
+          delivery: input.artworkDelivery,
         })
+
         yield* annotateEntity({ entityType: delivered.entityType, entityId: delivered.entity.id })
         yield* Effect.annotateCurrentSpan({
           outcome: 'success',
           linkCount: delivered.links.length,
-          explicitRefresh: false
+          explicitRefresh: false,
         })
+
         return delivered
       }).pipe(
         withSafeTypedSpan('musicIdentity.resolveSource', {
-          attributes: { origin: input.origin }
-        })
+          attributes: { origin: input.origin },
+        }),
       )
     }
 
@@ -556,89 +649,102 @@ export const CanonicalMusicIdentityLayer = Layer.effect(
         if (!input.snapshot.title.trim()) {
           return yield* new MusicIdentityInvalidSnapshot({ message: 'Snapshot title is required' })
         }
+
         const source = yield* parseMusicSource(input.snapshot.sourceUrl, input.snapshot.entityType)
         yield* annotateSource(source)
+
         const resolved = yield* resolvePrepared(
           source,
           Effect.succeed(snapshotResult(input.snapshot, source)),
           input.snapshot,
-          input.snapshot.entityType
+          input.snapshot.entityType,
         )
+
         const delivered = yield* deliverMusicArtwork({
           resolved,
           candidateUrl: input.snapshot.imageUrl ?? persistedArtwork(resolved),
-          delivery: input.artworkDelivery
+          delivery: input.artworkDelivery,
         })
+
         yield* annotateEntity({ entityType: delivered.entityType, entityId: delivered.entity.id })
         yield* Effect.annotateCurrentSpan({
           outcome: 'success',
           linkCount: delivered.links.length,
-          explicitRefresh: false
+          explicitRefresh: false,
         })
+
         return delivered
       }).pipe(
         withSafeTypedSpan('musicIdentity.importProviderEntity', {
-          attributes: { origin: input.origin, entityType: input.snapshot.entityType }
-        })
+          attributes: { origin: input.origin, entityType: input.snapshot.entityType },
+        }),
       )
 
     const importProviderEntityLazy = <E, R>(input: ImportProviderMusicEntityLazy<E, R>) => {
       let candidateArtworkUrl: string | undefined
+
       return Effect.gen(function* () {
         const source = yield* parseMusicSource(input.sourceUrl, input.entityType)
         yield* annotateSource(source)
+
         const resolved = yield* resolvePrepared(
           source,
           Effect.gen(function* () {
             yield* annotateSource(source)
             yield* Effect.annotateCurrentSpan('provider', source.platform)
+
             return yield* input.loadSnapshot
           }).pipe(
             Effect.tap(() => Effect.annotateCurrentSpan('outcome', 'success')),
             withSafeSpan('musicIdentity.scrape'),
             Effect.flatMap((loaded) => {
               candidateArtworkUrl = loaded.imageUrl
+
               if (!loaded.title.trim()) {
                 return Effect.fail(
-                  new MusicIdentityInvalidSnapshot({ message: 'Snapshot title is required' })
+                  new MusicIdentityInvalidSnapshot({ message: 'Snapshot title is required' }),
                 )
               }
+
               return parseMusicSource(loaded.sourceUrl, loaded.entityType).pipe(
                 Effect.flatMap((loadedSource) =>
                   loadedSource.sourceKey === source.sourceKey
                     ? Effect.succeed(snapshotResult(loaded, source))
                     : Effect.fail(
                         new MusicIdentityInvalidSnapshot({
-                          message: 'Loaded snapshot does not match the requested source'
-                        })
-                      )
-                )
+                          message: 'Loaded snapshot does not match the requested source',
+                        }),
+                      ),
+                ),
               )
-            })
+            }),
           ),
           undefined,
-          input.entityType
+          input.entityType,
         )
+
         const delivered = yield* deliverMusicArtwork({
           resolved,
           candidateUrl: candidateArtworkUrl ?? persistedArtwork(resolved),
-          delivery: input.artworkDelivery
+          delivery: input.artworkDelivery,
         })
+
         yield* annotateEntity({ entityType: delivered.entityType, entityId: delivered.entity.id })
         yield* Effect.annotateCurrentSpan({
           outcome: 'success',
           linkCount: delivered.links.length,
-          explicitRefresh: false
+          explicitRefresh: false,
         })
+
         return delivered
       }).pipe(
         withSafeSpan('musicIdentity.importProviderEntityLazy', {
-          attributes: { origin: input.origin, entityType: input.entityType }
-        })
+          attributes: { origin: input.origin, entityType: input.entityType },
+        }),
       )
     }
 
-    const { attachLink, enrichEntity, refreshEntity, releaseLink } = makeEntityOperations(
+    const { attachLink, enrichEntity, refreshEntity, releaseLink } = buildEntityOperations(
       db,
       scraper,
       repository,
@@ -646,7 +752,7 @@ export const CanonicalMusicIdentityLayer = Layer.effect(
       claimWithWait,
       providerError,
       leaseTiming.leaseMs,
-      deliverMusicArtwork
+      deliverMusicArtwork,
     )
 
     return {
@@ -656,7 +762,7 @@ export const CanonicalMusicIdentityLayer = Layer.effect(
       attachLink,
       releaseLink,
       enrichEntity,
-      refreshEntity
+      refreshEntity,
     } satisfies CanonicalMusicIdentityService
-  })
+  }),
 )

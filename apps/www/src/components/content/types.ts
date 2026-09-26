@@ -1,6 +1,6 @@
 import type {
   SelectMdxCompiledEditorialPost,
-  SelectMdxCompiledMicroPost
+  SelectMdxCompiledMicroPost,
 } from '@gbfm/server/schemas'
 
 export type ContentScope = 'all' | 'mine'
@@ -26,7 +26,7 @@ export const defaultContentView: ContentView = {
   tab: 'mixes',
   offset: 0,
   sort: 'created',
-  order: 'desc'
+  order: 'desc',
 }
 
 export interface AudioItem {
@@ -43,7 +43,7 @@ export interface AudioItem {
   episodeNumber: number | null
   createdAt: string
   playCount: number
-  tags?: string[] | null
+  tags?: Array<string> | null
   creators?: Array<{ id: string; name: string }>
 }
 
@@ -72,7 +72,7 @@ export type PostListItem = {
   content: string | null
   draft: boolean
   type: 'post' | 'micro' | null
-  tags?: string[] | null
+  tags?: Array<string> | null
   creators?: Array<{ id: string; name: string }>
   createdAt: string
 }
@@ -84,7 +84,7 @@ export interface AudioEditValues {
   content: string
   thumbnailUrl: string
   url: string
-  tags: string[]
+  tags: Array<string>
   draft: boolean
   episodeNumber: string
 }
@@ -95,7 +95,7 @@ export interface PostEditValues {
   slug: string
   content: string
   thumbnailUrl: string
-  tags: string[]
+  tags: Array<string>
   draft: boolean
 }
 
@@ -121,7 +121,7 @@ export const emptyAudioEditValues: AudioEditValues = {
   url: '',
   tags: [],
   draft: false,
-  episodeNumber: ''
+  episodeNumber: '',
 }
 
 export const emptyPostEditValues: PostEditValues = {
@@ -131,7 +131,7 @@ export const emptyPostEditValues: PostEditValues = {
   content: '',
   thumbnailUrl: '',
   tags: [],
-  draft: false
+  draft: false,
 }
 
 export function toAudioEditValues(mix: AudioItem): AudioEditValues {
@@ -144,7 +144,7 @@ export function toAudioEditValues(mix: AudioItem): AudioEditValues {
     url: mix.url || '',
     tags: mix.tags || [],
     draft: mix.draft ?? false,
-    episodeNumber: mix.episodeNumber ? String(mix.episodeNumber) : ''
+    episodeNumber: mix.episodeNumber ? String(mix.episodeNumber) : '',
   }
 }
 
@@ -156,6 +156,6 @@ export function toPostEditValues(post: PostListItem): PostEditValues {
     content: post.content || '',
     thumbnailUrl: post.thumbnailUrl || '',
     tags: post.tags || [],
-    draft: post.draft ?? false
+    draft: post.draft ?? false,
   }
 }

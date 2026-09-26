@@ -1,10 +1,12 @@
 import { randomUUID } from 'node:crypto'
+
 import { and, asc, desc, eq, like, or, sql } from 'drizzle-orm'
 import { describe, expect, test } from 'vitest'
-import { db } from '@/test/database'
+
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { audioIdsForCreator, showIdsForCreator } from '@/db/creator-membership'
 import { showCreators, showsTable } from '@/db/show.schema'
+import { db } from '@/test/database'
 
 /**
  * Every db.query.* shape in the codebase, executed against real D1 (via Miniflare).
@@ -27,15 +29,15 @@ describe('relational query smoke matrix', () => {
         orderBy: desc(audioTable.createdAt),
         with: {
           audioCreators: { with: { creator: true } },
-          show: { columns: { thumbnailUrl: true } }
-        }
+          show: { columns: { thumbnailUrl: true } },
+        },
       })
 
     await expect(
-      query(and(eq(audioTable.type, 'mix'), eq(audioTable.draft, false)))
+      query(and(eq(audioTable.type, 'mix'), eq(audioTable.draft, false))),
     ).resolves.toBeDefined()
     await expect(
-      query(and(eq(audioTable.type, 'mix'), audioIdsForCreator(db, actorId)))
+      query(and(eq(audioTable.type, 'mix'), audioIdsForCreator(db, actorId))),
     ).resolves.toBeDefined()
   })
 
@@ -45,9 +47,9 @@ describe('relational query smoke matrix', () => {
         where: and(eq(audioTable.type, 'mix'), eq(audioTable.slug, 'smoke-missing')),
         with: {
           audioCreators: { with: { creator: true } },
-          show: { columns: { thumbnailUrl: true } }
-        }
-      })
+          show: { columns: { thumbnailUrl: true } },
+        },
+      }),
     ).resolves.toBeUndefined()
   })
 
@@ -55,15 +57,15 @@ describe('relational query smoke matrix', () => {
     await expect(
       db.query.audioCreators.findMany({
         where: eq(audioCreators.creatorId, actorId),
-        with: { creator: true }
-      })
+        with: { creator: true },
+      }),
     ).resolves.toBeDefined()
 
     await expect(
       db.query.showsTable.findFirst({
         where: eq(showsTable.slug, 'smoke-missing'),
-        columns: { thumbnailUrl: true }
-      })
+        columns: { thumbnailUrl: true },
+      }),
     ).resolves.toBeUndefined()
   })
 
@@ -76,12 +78,12 @@ describe('relational query smoke matrix', () => {
           slug: true,
           thumbnailUrl: true,
           type: true,
-          showId: true
+          showId: true,
         },
         with: { show: { columns: { thumbnailUrl: true } } },
         where: and(audioIdsForCreator(db, actorId), eq(audioTable.draft, false)),
-        orderBy: asc(audioTable.createdAt)
-      })
+        orderBy: asc(audioTable.createdAt),
+      }),
     ).resolves.toBeDefined()
   })
 
@@ -92,7 +94,7 @@ describe('relational query smoke matrix', () => {
         limit: 1,
         offset: 0,
         orderBy: [desc(showsTable.createdAt), asc(showsTable.title)],
-        with: { showCreators: { with: { creator: true } } }
+        with: { showCreators: { with: { creator: true } } },
       })
 
     await expect(query(eq(showsTable.draft, false))).resolves.toBeDefined()
@@ -103,8 +105,8 @@ describe('relational query smoke matrix', () => {
     await expect(
       db.query.showsTable.findFirst({
         where: and(eq(showsTable.slug, 'smoke-missing'), eq(showsTable.draft, false)),
-        with: { showCreators: { with: { creator: true } } }
-      })
+        with: { showCreators: { with: { creator: true } } },
+      }),
     ).resolves.toBeUndefined()
 
     await expect(
@@ -115,16 +117,16 @@ describe('relational query smoke matrix', () => {
         orderBy: desc(audioTable.createdAt),
         with: {
           audioCreators: { with: { creator: true } },
-          show: { columns: { thumbnailUrl: true } }
-        }
-      })
+          show: { columns: { thumbnailUrl: true } },
+        },
+      }),
     ).resolves.toBeDefined()
 
     await expect(
       db.query.showCreators.findMany({
         where: eq(showCreators.creatorId, actorId),
-        with: { creator: true }
-      })
+        with: { creator: true },
+      }),
     ).resolves.toBeDefined()
   })
 
@@ -136,11 +138,11 @@ describe('relational query smoke matrix', () => {
           eq(audioTable.draft, false),
           or(
             like(sql`lower(${audioTable.title})`, '%smoke%'),
-            like(sql`lower(${audioTable.slug})`, '%smoke%')
-          )
+            like(sql`lower(${audioTable.slug})`, '%smoke%'),
+          ),
         ),
-        limit: 1
-      })
+        limit: 1,
+      }),
     ).resolves.toBeDefined()
   })
 
@@ -150,17 +152,17 @@ describe('relational query smoke matrix', () => {
         where: and(
           eq(audioTable.type, 'mix'),
           eq(audioTable.slug, 'smoke-missing'),
-          eq(audioTable.draft, false)
+          eq(audioTable.draft, false),
         ),
-        with: { show: { columns: { thumbnailUrl: true } } }
-      })
+        with: { show: { columns: { thumbnailUrl: true } } },
+      }),
     ).resolves.toBeUndefined()
 
     await expect(
       db.query.audioTable.findFirst({
         where: and(eq(audioTable.id, randomUUID()), eq(audioTable.draft, false)),
-        with: { show: { columns: { thumbnailUrl: true } } }
-      })
+        with: { show: { columns: { thumbnailUrl: true } } },
+      }),
     ).resolves.toBeUndefined()
   })
 })

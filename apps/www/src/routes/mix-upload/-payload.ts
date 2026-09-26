@@ -1,4 +1,5 @@
 import { formatTime, generateSlug } from '@gbfm/ui'
+
 import type { SubmitRecordInput } from './-program'
 
 export const buildRecordPayload = (input: SubmitRecordInput) => {
@@ -22,9 +23,9 @@ export const buildRecordPayload = (input: SubmitRecordInput) => {
     creatorIds: [
       input.formData.creatorId === 'current'
         ? input.userId
-        : input.formData.creatorId || input.userId
+        : input.formData.creatorId || input.userId,
     ].filter(Boolean),
-    showId: input.formData.showId
+    showId: input.formData.showId,
   }
 
   return input.formData.episodeNumber

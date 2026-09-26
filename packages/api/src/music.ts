@@ -1,29 +1,30 @@
 import { Schema } from 'effect'
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup, HttpApiSchema } from 'effect/unstable/httpapi'
+
 import { AuthMiddleware } from './middleware/auth'
 
 export class MusicServiceUnavailableResponse extends Schema.Error<MusicServiceUnavailableResponse>(
-  'MusicServiceUnavailableResponse'
+  'MusicServiceUnavailableResponse',
 )({
   _tag: Schema.tag('ServiceUnavailable'),
-  retryAfterSeconds: Schema.optional(Schema.Number)
+  retryAfterSeconds: Schema.optional(Schema.Number),
 }) {}
 
 export const MusicServiceUnavailableHttpError = MusicServiceUnavailableResponse.pipe(
   HttpApiSchema.encodeToWithHeaders(
     {
       body: HttpApiError.ServiceUnavailable,
-      headers: { 'retry-after': Schema.optional(Schema.Number) }
+      headers: { 'retry-after': Schema.optional(Schema.Number) },
     },
     {
       decode: ({ headers }) =>
         new MusicServiceUnavailableResponse({ retryAfterSeconds: headers['retry-after'] }),
       encode: (error) => ({
         body: new HttpApiError.ServiceUnavailable(),
-        headers: { 'retry-after': error.retryAfterSeconds }
-      })
-    }
-  )
+        headers: { 'retry-after': error.retryAfterSeconds },
+      }),
+    },
+  ),
 )
 
 // Mirrors apps/server/src/db/music-entity.schema.ts's selectMusicArtistSchema
@@ -39,8 +40,9 @@ export const ArtistResponse = Schema.Struct({
   publishedAt: Schema.NullOr(Schema.String),
   createdById: Schema.NullOr(Schema.String),
   createdAt: Schema.String,
-  updatedAt: Schema.String
+  updatedAt: Schema.String,
 })
+
 export type ArtistResponse = typeof ArtistResponse.Type
 
 export const ArtistListResponse = Schema.Array(ArtistResponse)
@@ -54,8 +56,9 @@ export const CreateArtistInput = Schema.Struct({
   imageUrl: Schema.optional(Schema.String),
   genres: Schema.optional(Schema.Array(Schema.String)),
   slug: Schema.String,
-  publishedAt: Schema.optional(Schema.String)
+  publishedAt: Schema.optional(Schema.String),
 })
+
 export type CreateArtistInput = typeof CreateArtistInput.Type
 
 // All fields optional (mirrors updateMusicArtistSchema = insert.partial()).
@@ -67,15 +70,16 @@ export const UpdateArtistInput = Schema.Struct({
   imageUrl: Schema.optional(Schema.String),
   genres: Schema.optional(Schema.Array(Schema.String)),
   slug: Schema.optional(Schema.String),
-  publishedAt: Schema.optional(Schema.String)
+  publishedAt: Schema.optional(Schema.String),
 })
+
 export type UpdateArtistInput = typeof UpdateArtistInput.Type
 
 const artistIdParam = { id: Schema.String }
 
 const ArtistJunctionInput = Schema.Struct({
   role: Schema.optional(Schema.String),
-  displayOrder: Schema.optional(Schema.Number)
+  displayOrder: Schema.optional(Schema.Number),
 })
 
 // Mirrors apps/server/src/db/music-entity.schema.ts's selectMusicAlbumSchema.
@@ -91,8 +95,9 @@ export const AlbumResponse = Schema.Struct({
   publishedAt: Schema.NullOr(Schema.String),
   createdById: Schema.NullOr(Schema.String),
   createdAt: Schema.String,
-  updatedAt: Schema.String
+  updatedAt: Schema.String,
 })
+
 export type AlbumResponse = typeof AlbumResponse.Type
 
 export const AlbumListResponse = Schema.Array(AlbumResponse)
@@ -108,8 +113,9 @@ export const CreateAlbumInput = Schema.Struct({
   genres: Schema.optional(Schema.Array(Schema.String)),
   albumType: Schema.optional(Schema.String),
   slug: NonEmptyString,
-  publishedAt: Schema.optional(Schema.String)
+  publishedAt: Schema.optional(Schema.String),
 })
+
 export type CreateAlbumInput = typeof CreateAlbumInput.Type
 
 // Admin UI submits full form state on every save (not a diff), so an unset
@@ -124,8 +130,9 @@ export const UpdateAlbumInput = Schema.Struct({
   genres: Schema.optional(Schema.NullOr(Schema.Array(Schema.String))),
   albumType: Schema.optional(Schema.NullOr(Schema.String)),
   slug: Schema.optional(Schema.NullOr(Schema.String)),
-  publishedAt: Schema.optional(Schema.NullOr(Schema.String))
+  publishedAt: Schema.optional(Schema.NullOr(Schema.String)),
 })
+
 export type UpdateAlbumInput = typeof UpdateAlbumInput.Type
 
 // Mirrors selectMusicTrackSchema.
@@ -140,8 +147,9 @@ export const TrackResponse = Schema.Struct({
   publishedAt: Schema.NullOr(Schema.String),
   createdById: Schema.NullOr(Schema.String),
   createdAt: Schema.String,
-  updatedAt: Schema.String
+  updatedAt: Schema.String,
 })
+
 export type TrackResponse = typeof TrackResponse.Type
 
 export const TrackListResponse = Schema.Array(TrackResponse)
@@ -154,8 +162,9 @@ export const CreateTrackInput = Schema.Struct({
   albumId: Schema.optional(Schema.String),
   trackNumber: Schema.optional(Schema.Number),
   slug: NonEmptyString,
-  publishedAt: Schema.optional(Schema.String)
+  publishedAt: Schema.optional(Schema.String),
 })
+
 export type CreateTrackInput = typeof CreateTrackInput.Type
 
 // See UpdateAlbumInput for why NullOr wraps every optional field.
@@ -167,8 +176,9 @@ export const UpdateTrackInput = Schema.Struct({
   albumId: Schema.optional(Schema.NullOr(Schema.String)),
   trackNumber: Schema.optional(Schema.NullOr(Schema.Number)),
   slug: Schema.optional(Schema.NullOr(Schema.String)),
-  publishedAt: Schema.optional(Schema.NullOr(Schema.String))
+  publishedAt: Schema.optional(Schema.NullOr(Schema.String)),
 })
+
 export type UpdateTrackInput = typeof UpdateTrackInput.Type
 
 // Mirrors selectMusicPlaylistSchema -- spotifyUrl is optional+nullable in the
@@ -184,8 +194,9 @@ export const PlaylistResponse = Schema.Struct({
   createdById: Schema.NullOr(Schema.String),
   createdAt: Schema.String,
   updatedAt: Schema.String,
-  spotifyUrl: Schema.optional(Schema.NullOr(Schema.String))
+  spotifyUrl: Schema.optional(Schema.NullOr(Schema.String)),
 })
+
 export type PlaylistResponse = typeof PlaylistResponse.Type
 
 export const PlaylistListResponse = Schema.Array(PlaylistResponse)
@@ -196,8 +207,9 @@ export const CreatePlaylistInput = Schema.Struct({
   coverImageUrl: Schema.optional(Schema.String),
   curatorId: Schema.optional(Schema.String),
   slug: NonEmptyString,
-  publishedAt: Schema.optional(Schema.String)
+  publishedAt: Schema.optional(Schema.String),
 })
+
 export type CreatePlaylistInput = typeof CreatePlaylistInput.Type
 
 // See UpdateAlbumInput for why NullOr wraps every optional field.
@@ -207,13 +219,14 @@ export const UpdatePlaylistInput = Schema.Struct({
   coverImageUrl: Schema.optional(Schema.NullOr(Schema.String)),
   curatorId: Schema.optional(Schema.NullOr(Schema.String)),
   slug: Schema.optional(Schema.NullOr(Schema.String)),
-  publishedAt: Schema.optional(Schema.NullOr(Schema.String))
+  publishedAt: Schema.optional(Schema.NullOr(Schema.String)),
 })
+
 export type UpdatePlaylistInput = typeof UpdatePlaylistInput.Type
 
 export const LabelCreatorResponse = Schema.Struct({
   id: Schema.String,
-  name: Schema.String
+  name: Schema.String,
 })
 
 export const LabelResponse = Schema.Struct({
@@ -233,8 +246,9 @@ export const LabelResponse = Schema.Struct({
   compiledContent: Schema.optional(Schema.String),
   creators: Schema.optional(Schema.Array(LabelCreatorResponse)),
   affiliatedArtists: Schema.optional(Schema.Array(ArtistResponse)),
-  affiliatedAlbums: Schema.optional(Schema.Array(AlbumResponse))
+  affiliatedAlbums: Schema.optional(Schema.Array(AlbumResponse)),
 })
+
 export type LabelResponse = typeof LabelResponse.Type
 
 export const LabelListResponse = Schema.Array(LabelResponse)
@@ -248,8 +262,9 @@ export const CreateLabelInput = Schema.Struct({
   content: Schema.String,
   tags: Schema.optional(Schema.Array(Schema.String)),
   genres: Schema.optional(Schema.Array(Schema.String)),
-  publishedAt: Schema.optional(Schema.String)
+  publishedAt: Schema.optional(Schema.String),
 })
+
 export type CreateLabelInput = typeof CreateLabelInput.Type
 
 export const UpdateLabelInput = Schema.Struct({
@@ -261,48 +276,50 @@ export const UpdateLabelInput = Schema.Struct({
   content: Schema.optional(Schema.NullOr(Schema.String)),
   tags: Schema.optional(Schema.NullOr(Schema.Array(Schema.String))),
   genres: Schema.optional(Schema.NullOr(Schema.Array(Schema.String))),
-  publishedAt: Schema.optional(Schema.NullOr(Schema.String))
+  publishedAt: Schema.optional(Schema.NullOr(Schema.String)),
 })
+
 export type UpdateLabelInput = typeof UpdateLabelInput.Type
 
 export const PlaylistTrackEntry = Schema.Struct({
   track: TrackResponse,
   position: Schema.Number,
   addedAt: Schema.String,
-  links: Schema.Array(Schema.Unknown)
+  links: Schema.Array(Schema.Unknown),
 })
 
 export const AddTrackToPlaylistInput = Schema.Struct({
   trackId: Schema.String,
-  position: Schema.Number
+  position: Schema.Number,
 })
 
 export const AddTrackToPlaylistResponse = Schema.Struct({
   playlistId: Schema.String,
   trackId: Schema.String,
   position: Schema.Number,
-  addedAt: Schema.String
+  addedAt: Schema.String,
 })
 
 export const ReorderPlaylistTracksInput = Schema.Struct({
-  trackIds: Schema.Array(Schema.String)
+  trackIds: Schema.Array(Schema.String),
 })
 
 const UrlPattern = /^https?:\/\/.+/i
+
 const UrlString = Schema.String.pipe(Schema.check(Schema.isPattern(UrlPattern)))
 
 export const AddSpotifyTrackToPlaylistInput = Schema.Struct({
-  url: UrlString
+  url: UrlString,
 })
 
 export const AddSpotifyTrackResultResponse = Schema.Struct({
   trackId: Schema.String,
   position: Schema.Number,
-  created: Schema.Boolean
+  created: Schema.Boolean,
 })
 
 export const ImportSpotifyPlaylistInput = Schema.Struct({
-  url: UrlString
+  url: UrlString,
 })
 
 export const ImportSpotifyPlaylistResponse = Schema.Struct({
@@ -311,23 +328,28 @@ export const ImportSpotifyPlaylistResponse = Schema.Struct({
   trackCount: Schema.Number,
   createdTrackCount: Schema.Number,
   reusedTrackCount: Schema.Number,
-  enrichmentStatus: Schema.Literals(['Accepted', 'Unavailable'])
+  enrichmentStatus: Schema.Literals(['Accepted', 'Unavailable']),
 })
 
 export const SyncPlaylistLinksResponse = Schema.Struct({
   playlistId: Schema.String,
-  status: Schema.Literal('Accepted')
+  status: Schema.Literal('Accepted'),
 })
 
 const albumIdParam = { id: Schema.String }
+
 const trackIdParam = { id: Schema.String }
+
 const playlistIdParam = { id: Schema.String }
+
 const labelIdParam = { id: Schema.String }
 
 // Mirrors apps/server/src/db/music-entity.schema.ts's MUSIC_ENTITY_TYPES,
 // MUSIC_PLATFORMS, LINK_STATUSES.
 export const EntityType = Schema.Literals(['artist', 'album', 'track', 'playlist', 'label'])
+
 export const ScrapeEntityType = Schema.Literals(['artist', 'album', 'track', 'playlist'])
+
 export const MusicPlatform = Schema.Literals([
   'spotify',
   'youtube',
@@ -344,8 +366,9 @@ export const MusicPlatform = Schema.Literals([
   'twitter',
   'musicbrainz',
   'discogs',
-  'other'
+  'other',
 ])
+
 export const LinkStatus = Schema.Literals(['verified', 'rejected'])
 
 // Mirrors selectMusicEntityLinkSchema -- entityType/platform/status use plain
@@ -364,8 +387,9 @@ export const EntityLinkResponse = Schema.Struct({
   verifiedBy: Schema.NullOr(Schema.String),
   metadata: Schema.NullOr(Schema.Record(Schema.String, Schema.Unknown)),
   createdAt: Schema.String,
-  updatedAt: Schema.String
+  updatedAt: Schema.String,
 })
+
 export type EntityLinkResponse = typeof EntityLinkResponse.Type
 
 export const EntityLinkListResponse = Schema.Array(EntityLinkResponse)
@@ -375,53 +399,54 @@ const entityLinkParams = { entityType: EntityType, entityId: Schema.String }
 export const AddEntityLinkInput = Schema.Struct({
   platform: MusicPlatform,
   url: UrlString,
-  status: Schema.optional(LinkStatus)
+  status: Schema.optional(LinkStatus),
 })
 
 export const UpdateEntityLinkStatusInput = Schema.Struct({
   status: LinkStatus,
-  metadata: Schema.optional(Schema.NullOr(Schema.Record(Schema.String, Schema.Unknown)))
+  metadata: Schema.optional(Schema.NullOr(Schema.Record(Schema.String, Schema.Unknown))),
 })
 
 export const ResolveMusicEntityInput = Schema.Struct({
   url: UrlString,
-  origin: Schema.optional(Schema.Literals(['editorial', 'tweet', 'reply']))
+  origin: Schema.optional(Schema.Literals(['editorial', 'tweet', 'reply'])),
 })
 
 export const ResolvedArtistResponse = Schema.Struct({
   entityType: Schema.Literal('artist'),
   entity: ArtistResponse,
   links: EntityLinkListResponse,
-  coverImageUrl: Schema.NullOr(Schema.String)
+  coverImageUrl: Schema.NullOr(Schema.String),
 })
 
 export const ResolvedAlbumResponse = Schema.Struct({
   entityType: Schema.Literal('album'),
   entity: AlbumResponse,
   links: EntityLinkListResponse,
-  coverImageUrl: Schema.NullOr(Schema.String)
+  coverImageUrl: Schema.NullOr(Schema.String),
 })
 
 export const ResolvedTrackResponse = Schema.Struct({
   entityType: Schema.Literal('track'),
   entity: TrackResponse,
   links: EntityLinkListResponse,
-  coverImageUrl: Schema.NullOr(Schema.String)
+  coverImageUrl: Schema.NullOr(Schema.String),
 })
 
 export const ResolvedPlaylistResponse = Schema.Struct({
   entityType: Schema.Literal('playlist'),
   entity: PlaylistResponse,
   links: EntityLinkListResponse,
-  coverImageUrl: Schema.NullOr(Schema.String)
+  coverImageUrl: Schema.NullOr(Schema.String),
 })
 
 export const ResolvedMusicEntityResponse = Schema.Union([
   ResolvedArtistResponse,
   ResolvedAlbumResponse,
   ResolvedTrackResponse,
-  ResolvedPlaylistResponse
+  ResolvedPlaylistResponse,
 ])
+
 export type ResolvedMusicEntityResponse = typeof ResolvedMusicEntityResponse.Type
 
 export type EmbeddableResolvedMusicEntityResponse = Exclude<
@@ -435,7 +460,7 @@ export const ScrapeEntityLinksInput = Schema.Struct({
   albumTitle: Schema.optional(Schema.String),
   trackTitle: Schema.optional(Schema.String),
   mbid: Schema.optional(Schema.String),
-  isrc: Schema.optional(Schema.String)
+  isrc: Schema.optional(Schema.String),
 })
 
 export type ScrapeMusicEntityResponse =
@@ -446,11 +471,11 @@ export type ScrapeMusicEntityResponse =
 
 export const ScrapeEntityLinksResponse = Schema.Struct({
   entity: Schema.Union([ArtistResponse, AlbumResponse, TrackResponse, PlaylistResponse]),
-  links: EntityLinkListResponse
+  links: EntityLinkListResponse,
 })
 
 export const RescrapeEntityLinksResponse = Schema.Struct({
-  links: EntityLinkListResponse
+  links: EntityLinkListResponse,
 })
 
 export const MusicGroup = HttpApiGroup.make('music')
@@ -459,45 +484,45 @@ export const MusicGroup = HttpApiGroup.make('music')
     HttpApiEndpoint.post('createArtist', '/api/music/artists', {
       payload: CreateArtistInput,
       success: ArtistResponse,
-      error: HttpApiError.Forbidden
-    }).middleware(AuthMiddleware)
+      error: HttpApiError.Forbidden,
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.get('getArtist', '/api/music/artists/:id', {
       params: artistIdParam,
       success: ArtistResponse,
-      error: HttpApiError.NotFound
-    })
+      error: HttpApiError.NotFound,
+    }),
   )
   .add(
     HttpApiEndpoint.patch('updateArtist', '/api/music/artists/:id', {
       params: artistIdParam,
       payload: UpdateArtistInput,
       success: ArtistResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden]
-    }).middleware(AuthMiddleware)
+      error: [HttpApiError.NotFound, HttpApiError.Forbidden],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.delete('deleteArtist', '/api/music/artists/:id', {
       params: artistIdParam,
       success: HttpApiSchema.NoContent,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden]
-    }).middleware(AuthMiddleware)
+      error: [HttpApiError.NotFound, HttpApiError.Forbidden],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.get('listArtistLabels', '/api/music/artists/:artistId/labels', {
       params: { artistId: Schema.String },
       success: LabelListResponse,
-      error: HttpApiError.Forbidden
-    }).middleware(AuthMiddleware)
+      error: HttpApiError.Forbidden,
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.put('addArtistToAlbum', '/api/music/albums/:albumId/artists/:artistId', {
       params: { albumId: Schema.String, artistId: Schema.String },
       payload: ArtistJunctionInput,
       success: HttpApiSchema.NoContent,
-      error: HttpApiError.Forbidden
-    }).middleware(AuthMiddleware)
+      error: HttpApiError.Forbidden,
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.delete(
@@ -506,17 +531,17 @@ export const MusicGroup = HttpApiGroup.make('music')
       {
         params: { albumId: Schema.String, artistId: Schema.String },
         success: HttpApiSchema.NoContent,
-        error: HttpApiError.Forbidden
-      }
-    ).middleware(AuthMiddleware)
+        error: HttpApiError.Forbidden,
+      },
+    ).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.put('addArtistToTrack', '/api/music/tracks/:trackId/artists/:artistId', {
       params: { trackId: Schema.String, artistId: Schema.String },
       payload: ArtistJunctionInput,
       success: HttpApiSchema.NoContent,
-      error: HttpApiError.Forbidden
-    }).middleware(AuthMiddleware)
+      error: HttpApiError.Forbidden,
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.delete(
@@ -525,9 +550,9 @@ export const MusicGroup = HttpApiGroup.make('music')
       {
         params: { trackId: Schema.String, artistId: Schema.String },
         success: HttpApiSchema.NoContent,
-        error: HttpApiError.Forbidden
-      }
-    ).middleware(AuthMiddleware)
+        error: HttpApiError.Forbidden,
+      },
+    ).middleware(AuthMiddleware),
   )
   // ---------------------------------------------------------------------
   // Albums
@@ -537,37 +562,37 @@ export const MusicGroup = HttpApiGroup.make('music')
     HttpApiEndpoint.post('createAlbum', '/api/music/albums', {
       payload: CreateAlbumInput,
       success: AlbumResponse,
-      error: HttpApiError.Forbidden
-    }).middleware(AuthMiddleware)
+      error: HttpApiError.Forbidden,
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.get('getAlbum', '/api/music/albums/:id', {
       params: albumIdParam,
       success: AlbumResponse,
-      error: HttpApiError.NotFound
-    })
+      error: HttpApiError.NotFound,
+    }),
   )
   .add(
     HttpApiEndpoint.patch('updateAlbum', '/api/music/albums/:id', {
       params: albumIdParam,
       payload: UpdateAlbumInput,
       success: AlbumResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden]
-    }).middleware(AuthMiddleware)
+      error: [HttpApiError.NotFound, HttpApiError.Forbidden],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.delete('deleteAlbum', '/api/music/albums/:id', {
       params: albumIdParam,
       success: HttpApiSchema.NoContent,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden]
-    }).middleware(AuthMiddleware)
+      error: [HttpApiError.NotFound, HttpApiError.Forbidden],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.get('listAlbumLabels', '/api/music/albums/:albumId/labels', {
       params: { albumId: Schema.String },
       success: LabelListResponse,
-      error: HttpApiError.Forbidden
-    }).middleware(AuthMiddleware)
+      error: HttpApiError.Forbidden,
+    }).middleware(AuthMiddleware),
   )
   // ---------------------------------------------------------------------
   // Tracks
@@ -577,122 +602,122 @@ export const MusicGroup = HttpApiGroup.make('music')
     HttpApiEndpoint.post('createTrack', '/api/music/tracks', {
       payload: CreateTrackInput,
       success: TrackResponse,
-      error: HttpApiError.Forbidden
-    }).middleware(AuthMiddleware)
+      error: HttpApiError.Forbidden,
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.get('getTrack', '/api/music/tracks/:id', {
       params: trackIdParam,
       success: TrackResponse,
-      error: HttpApiError.NotFound
-    })
+      error: HttpApiError.NotFound,
+    }),
   )
   .add(
     HttpApiEndpoint.patch('updateTrack', '/api/music/tracks/:id', {
       params: trackIdParam,
       payload: UpdateTrackInput,
       success: TrackResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden]
-    }).middleware(AuthMiddleware)
+      error: [HttpApiError.NotFound, HttpApiError.Forbidden],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.delete('deleteTrack', '/api/music/tracks/:id', {
       params: trackIdParam,
       success: HttpApiSchema.NoContent,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden]
-    }).middleware(AuthMiddleware)
+      error: [HttpApiError.NotFound, HttpApiError.Forbidden],
+    }).middleware(AuthMiddleware),
   )
   // ---------------------------------------------------------------------
   // Playlists
   // ---------------------------------------------------------------------
   .add(
-    HttpApiEndpoint.get('listPlaylists', '/api/music/playlists', { success: PlaylistListResponse })
+    HttpApiEndpoint.get('listPlaylists', '/api/music/playlists', { success: PlaylistListResponse }),
   )
   .add(
     HttpApiEndpoint.post('createPlaylist', '/api/music/playlists', {
       payload: CreatePlaylistInput,
       success: PlaylistResponse,
-      error: HttpApiError.Forbidden
-    }).middleware(AuthMiddleware)
+      error: HttpApiError.Forbidden,
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.get('getPlaylist', '/api/music/playlists/:id', {
       params: playlistIdParam,
       success: PlaylistResponse,
-      error: HttpApiError.NotFound
-    })
+      error: HttpApiError.NotFound,
+    }),
   )
   .add(
     HttpApiEndpoint.patch('updatePlaylist', '/api/music/playlists/:id', {
       params: playlistIdParam,
       payload: UpdatePlaylistInput,
       success: PlaylistResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden]
-    }).middleware(AuthMiddleware)
+      error: [HttpApiError.NotFound, HttpApiError.Forbidden],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.delete('deletePlaylist', '/api/music/playlists/:id', {
       params: playlistIdParam,
       success: HttpApiSchema.NoContent,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden]
-    }).middleware(AuthMiddleware)
+      error: [HttpApiError.NotFound, HttpApiError.Forbidden],
+    }).middleware(AuthMiddleware),
   )
   .add(HttpApiEndpoint.get('listLabels', '/api/music/labels', { success: LabelListResponse }))
   .add(
     HttpApiEndpoint.get('listLabelsForAdmin', '/api/music/labels/manage', {
       success: LabelListResponse,
-      error: HttpApiError.Forbidden
-    }).middleware(AuthMiddleware)
+      error: HttpApiError.Forbidden,
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.post('createLabel', '/api/music/labels', {
       payload: CreateLabelInput,
       success: LabelResponse,
-      error: HttpApiError.Forbidden
-    }).middleware(AuthMiddleware)
+      error: HttpApiError.Forbidden,
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.get('getLabelBySlug', '/api/music/labels/slug/:slug', {
       params: { slug: Schema.String },
       success: LabelResponse,
-      error: HttpApiError.NotFound
-    })
+      error: HttpApiError.NotFound,
+    }),
   )
   .add(
     HttpApiEndpoint.get('getLabel', '/api/music/labels/:id', {
       params: labelIdParam,
       success: LabelResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden]
-    }).middleware(AuthMiddleware)
+      error: [HttpApiError.NotFound, HttpApiError.Forbidden],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.patch('updateLabel', '/api/music/labels/:id', {
       params: labelIdParam,
       payload: UpdateLabelInput,
       success: LabelResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden]
-    }).middleware(AuthMiddleware)
+      error: [HttpApiError.NotFound, HttpApiError.Forbidden],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.delete('deleteLabel', '/api/music/labels/:id', {
       params: labelIdParam,
       success: HttpApiSchema.NoContent,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden]
-    }).middleware(AuthMiddleware)
+      error: [HttpApiError.NotFound, HttpApiError.Forbidden],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.get('listLabelArtists', '/api/music/labels/:labelId/artists', {
       params: { labelId: Schema.String },
       success: ArtistListResponse,
-      error: HttpApiError.Forbidden
-    }).middleware(AuthMiddleware)
+      error: HttpApiError.Forbidden,
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.get('listLabelAlbums', '/api/music/labels/:labelId/albums', {
       params: { labelId: Schema.String },
       success: AlbumListResponse,
-      error: HttpApiError.Forbidden
-    }).middleware(AuthMiddleware)
+      error: HttpApiError.Forbidden,
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.put(
@@ -701,9 +726,9 @@ export const MusicGroup = HttpApiGroup.make('music')
       {
         params: { labelId: Schema.String, artistId: Schema.String },
         success: HttpApiSchema.NoContent,
-        error: [HttpApiError.NotFound, HttpApiError.Forbidden]
-      }
-    ).middleware(AuthMiddleware)
+        error: [HttpApiError.NotFound, HttpApiError.Forbidden],
+      },
+    ).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.delete(
@@ -712,16 +737,16 @@ export const MusicGroup = HttpApiGroup.make('music')
       {
         params: { labelId: Schema.String, artistId: Schema.String },
         success: HttpApiSchema.NoContent,
-        error: HttpApiError.Forbidden
-      }
-    ).middleware(AuthMiddleware)
+        error: HttpApiError.Forbidden,
+      },
+    ).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.put('affiliateAlbumWithLabel', '/api/music/labels/:labelId/albums/:albumId', {
       params: { labelId: Schema.String, albumId: Schema.String },
       success: HttpApiSchema.NoContent,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden]
-    }).middleware(AuthMiddleware)
+      error: [HttpApiError.NotFound, HttpApiError.Forbidden],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.delete(
@@ -730,9 +755,9 @@ export const MusicGroup = HttpApiGroup.make('music')
       {
         params: { labelId: Schema.String, albumId: Schema.String },
         success: HttpApiSchema.NoContent,
-        error: HttpApiError.Forbidden
-      }
-    ).middleware(AuthMiddleware)
+        error: HttpApiError.Forbidden,
+      },
+    ).middleware(AuthMiddleware),
   )
   // ---------------------------------------------------------------------
   // Playlist tracks
@@ -740,31 +765,31 @@ export const MusicGroup = HttpApiGroup.make('music')
   .add(
     HttpApiEndpoint.get('getPlaylistTracks', '/api/music/playlists/:id/tracks', {
       params: playlistIdParam,
-      success: Schema.Array(PlaylistTrackEntry)
-    })
+      success: Schema.Array(PlaylistTrackEntry),
+    }),
   )
   .add(
     HttpApiEndpoint.post('addTrackToPlaylist', '/api/music/playlists/:id/tracks', {
       params: playlistIdParam,
       payload: AddTrackToPlaylistInput,
       success: AddTrackToPlaylistResponse,
-      error: HttpApiError.Forbidden
-    }).middleware(AuthMiddleware)
+      error: HttpApiError.Forbidden,
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.delete('removeTrackFromPlaylist', '/api/music/playlists/:id/tracks/:trackId', {
       params: { id: Schema.String, trackId: Schema.String },
       success: HttpApiSchema.NoContent,
-      error: HttpApiError.Forbidden
-    }).middleware(AuthMiddleware)
+      error: HttpApiError.Forbidden,
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.put('reorderPlaylistTracks', '/api/music/playlists/:id/tracks/order', {
       params: playlistIdParam,
       payload: ReorderPlaylistTracksInput,
       success: HttpApiSchema.NoContent,
-      error: [HttpApiError.BadRequest, HttpApiError.Forbidden]
-    }).middleware(AuthMiddleware)
+      error: [HttpApiError.BadRequest, HttpApiError.Forbidden],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.post('addSpotifyTrackToPlaylist', '/api/music/playlists/:id/tracks/spotify', {
@@ -776,9 +801,9 @@ export const MusicGroup = HttpApiGroup.make('music')
         HttpApiError.NotFound,
         HttpApiError.Conflict,
         HttpApiError.Forbidden,
-        MusicServiceUnavailableHttpError
-      ]
-    }).middleware(AuthMiddleware)
+        MusicServiceUnavailableHttpError,
+      ],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.post('importSpotifyPlaylist', '/api/music/playlists/import/spotify', {
@@ -789,9 +814,9 @@ export const MusicGroup = HttpApiGroup.make('music')
         HttpApiError.NotFound,
         HttpApiError.Conflict,
         HttpApiError.Forbidden,
-        MusicServiceUnavailableHttpError
-      ]
-    }).middleware(AuthMiddleware)
+        MusicServiceUnavailableHttpError,
+      ],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.post('syncPlaylistLinks', '/api/music/playlists/:id/sync-links', {
@@ -802,9 +827,9 @@ export const MusicGroup = HttpApiGroup.make('music')
         HttpApiError.NotFound,
         HttpApiError.Conflict,
         HttpApiError.Forbidden,
-        MusicServiceUnavailableHttpError
-      ]
-    }).middleware(AuthMiddleware)
+        MusicServiceUnavailableHttpError,
+      ],
+    }).middleware(AuthMiddleware),
   )
   // ---------------------------------------------------------------------
   // Resolve a pasted URL into a music entity
@@ -818,9 +843,9 @@ export const MusicGroup = HttpApiGroup.make('music')
         HttpApiError.NotFound,
         HttpApiError.Conflict,
         HttpApiError.Forbidden,
-        MusicServiceUnavailableHttpError
-      ]
-    }).middleware(AuthMiddleware)
+        MusicServiceUnavailableHttpError,
+      ],
+    }).middleware(AuthMiddleware),
   )
   // ---------------------------------------------------------------------
   // Links -- per entity
@@ -829,8 +854,8 @@ export const MusicGroup = HttpApiGroup.make('music')
     HttpApiEndpoint.get('listEntityLinks', '/api/music/:entityType/:entityId/links', {
       params: entityLinkParams,
       query: Schema.Struct({ status: Schema.optional(LinkStatus) }),
-      success: EntityLinkListResponse
-    })
+      success: EntityLinkListResponse,
+    }),
   )
   .add(
     HttpApiEndpoint.post('addEntityLink', '/api/music/:entityType/:entityId/links', {
@@ -842,9 +867,9 @@ export const MusicGroup = HttpApiGroup.make('music')
         HttpApiError.NotFound,
         HttpApiError.Conflict,
         HttpApiError.Forbidden,
-        MusicServiceUnavailableHttpError
-      ]
-    }).middleware(AuthMiddleware)
+        MusicServiceUnavailableHttpError,
+      ],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.patch(
@@ -859,10 +884,10 @@ export const MusicGroup = HttpApiGroup.make('music')
           HttpApiError.NotFound,
           HttpApiError.Conflict,
           HttpApiError.Forbidden,
-          MusicServiceUnavailableHttpError
-        ]
-      }
-    ).middleware(AuthMiddleware)
+          MusicServiceUnavailableHttpError,
+        ],
+      },
+    ).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.delete('deleteEntityLink', '/api/music/:entityType/:entityId/links/:linkId', {
@@ -873,9 +898,9 @@ export const MusicGroup = HttpApiGroup.make('music')
         HttpApiError.NotFound,
         HttpApiError.Conflict,
         HttpApiError.Forbidden,
-        MusicServiceUnavailableHttpError
-      ]
-    }).middleware(AuthMiddleware)
+        MusicServiceUnavailableHttpError,
+      ],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.post('rescrapeEntityLinks', '/api/music/:entityType/:entityId/links/rescrape', {
@@ -886,9 +911,9 @@ export const MusicGroup = HttpApiGroup.make('music')
         HttpApiError.NotFound,
         HttpApiError.Conflict,
         HttpApiError.Forbidden,
-        MusicServiceUnavailableHttpError
-      ]
-    }).middleware(AuthMiddleware)
+        MusicServiceUnavailableHttpError,
+      ],
+    }).middleware(AuthMiddleware),
   )
   // ---------------------------------------------------------------------
   // Scrape -- trigger link discovery for an entity
@@ -903,8 +928,8 @@ export const MusicGroup = HttpApiGroup.make('music')
         HttpApiError.NotFound,
         HttpApiError.Conflict,
         HttpApiError.Forbidden,
-        MusicServiceUnavailableHttpError
-      ]
-    }).middleware(AuthMiddleware)
+        MusicServiceUnavailableHttpError,
+      ],
+    }).middleware(AuthMiddleware),
   )
 // ---------------------------------------------------------------------

@@ -1,9 +1,12 @@
-import { SpanStatusCode, trace } from '@opentelemetry/api'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { isPromise } from 'node:util/types'
+
+import { SpanStatusCode, trace } from '@opentelemetry/api'
+
 import { extractDatabaseQueryText, summarizeDatabaseQuery } from './database-telemetry'
 
 const INSTRUMENTED_DATABASE_CLIENT = Symbol('instrumented-database-client')
+
 const activeDatabaseQuery = new AsyncLocalStorage<boolean>()
 
 export type DatabaseSpanOptions = {
@@ -14,10 +17,13 @@ export type DatabaseSpanOptions = {
 
 type DatabaseInstrumentation = {
   readonly hasActiveSpan: () => boolean
-  readonly runSpan: (options: DatabaseSpanOptions, evaluate: () => unknown) => unknown
+  readonly runSpan: (options: DatabaseSpanOptions, evaluate: () => QueryResult) => QueryResult
 }
 
-type QueryFunction = (...arguments_: never[]) => unknown
+type QueryResult = object | string | number | boolean | bigint | symbol | null | undefined
+
+type QueryFunction = (...arguments_: Array<never>) => QueryResult
+
 type QueryableClient = {
   readonly query: QueryFunction
   readonly [INSTRUMENTED_DATABASE_CLIENT]?: true
@@ -25,17 +31,21 @@ type QueryableClient = {
 
 const databaseTracer = trace.getTracer('gbfm.database')
 
-function runOpenTelemetrySpan(options: DatabaseSpanOptions, evaluate: () => unknown): unknown {
+function runOpenTelemetrySpan(
+  options: DatabaseSpanOptions,
+  evaluate: () => QueryResult,
+): QueryResult {
   return databaseTracer.startActiveSpan(
     options.name,
     {
       attributes: {
         ...options.attributes,
-        'sentry.op': options.op
-      }
+        'sentry.op': options.op,
+      },
     },
-    (span) => {
-      let result: unknown
+    (span): QueryResult => {
+      let result: QueryResult
+
       try {
         result = evaluate()
       } catch (error) {
@@ -48,25 +58,27 @@ function runOpenTelemetrySpan(options: DatabaseSpanOptions, evaluate: () => unkn
         return Promise.resolve(result).then(
           (value) => {
             span.end()
+
             return value
           },
           (error) => {
             span.setStatus({ code: SpanStatusCode.ERROR })
             span.end()
             throw error
-          }
+          },
         )
       }
 
       span.end()
+
       return result
-    }
+    },
   )
 }
 
 const openTelemetryDatabaseInstrumentation: DatabaseInstrumentation = {
   hasActiveSpan: () => trace.getActiveSpan()?.isRecording() === true,
-  runSpan: runOpenTelemetrySpan
+  runSpan: runOpenTelemetrySpan,
 }
 
 /**
@@ -80,21 +92,20 @@ const openTelemetryDatabaseInstrumentation: DatabaseInstrumentation = {
  */
 export function instrumentDatabaseClient<T extends QueryableClient>(
   client: T,
-  instrumentation: DatabaseInstrumentation = openTelemetryDatabaseInstrumentation
+  instrumentation: DatabaseInstrumentation = openTelemetryDatabaseInstrumentation,
 ): T {
   if (client[INSTRUMENTED_DATABASE_CLIENT]) return client
 
-  const originalQuery = client.query
-  const instrumentedQuery = function (
-    this: T,
-    queryConfig: Parameters<T['query']>[0],
-    ...arguments_: readonly unknown[]
-  ): unknown {
+  const originalQuery = client.query.bind(client)
+
+  const instrumentedQuery = function (this: T, ...arguments_: Parameters<T['query']>): QueryResult {
     if (activeDatabaseQuery.getStore() || !instrumentation.hasActiveSpan()) {
-      return Reflect.apply(originalQuery, this, [queryConfig, ...arguments_])
+      return originalQuery(...arguments_)
     }
 
+    const queryConfig = arguments_[0]
     const summary = summarizeDatabaseQuery(extractDatabaseQueryText(queryConfig) ?? '')
+
     return instrumentation.runSpan(
       {
         name: summary.description,
@@ -104,13 +115,10 @@ export function instrumentDatabaseClient<T extends QueryableClient>(
           'db.system.name': 'postgresql',
           'db.operation.name': summary.operation,
           'db.collection.name': summary.table,
-          'db.query.summary': summary.description
-        }
+          'db.query.summary': summary.description,
+        },
       },
-      () =>
-        activeDatabaseQuery.run(true, () =>
-          Reflect.apply(originalQuery, this, [queryConfig, ...arguments_])
-        )
+      () => activeDatabaseQuery.run(true, () => originalQuery(...arguments_)),
     )
   }
 
@@ -118,11 +126,11 @@ export function instrumentDatabaseClient<T extends QueryableClient>(
     query: {
       configurable: true,
       value: instrumentedQuery,
-      writable: true
+      writable: true,
     },
     [INSTRUMENTED_DATABASE_CLIENT]: {
-      value: true
-    }
+      value: true,
+    },
   })
 
   return client

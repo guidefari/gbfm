@@ -1,4 +1,5 @@
-import { Data } from 'effect'
+import { Data, Match } from 'effect'
+
 import type { PersistedResumableUpload } from '@/lib/upload/resumable-upload'
 
 export class NetworkError extends Data.TaggedError('NetworkError')<{
@@ -16,7 +17,7 @@ export class InvalidResponseError extends Data.TaggedError('InvalidResponseError
   readonly message: string
 }> {}
 
-export class UploadAborted extends Data.TaggedError('UploadAborted')<{}> {}
+export class UploadAborted extends Data.TaggedError('UploadAborted') {}
 
 export class UploadPaused extends Data.TaggedError('UploadPaused')<{
   readonly checkpoint: PersistedResumableUpload
@@ -51,21 +52,20 @@ export type ResumableUploadError =
   | StorageQuotaError
   | UnknownError
 
-export const isRetryableError = (error: ResumableUploadError): boolean => {
-  if (error._tag === 'NetworkError') return true
-  if (error._tag === 'HttpError') {
-    const s = error.status
-    return s === 408 || s === 429 || (s >= 500 && s < 600)
-  }
-  return false
-}
+export const isRetryableError = Match.type<ResumableUploadError>().pipe(
+  Match.tag('NetworkError', () => true),
+  Match.tag(
+    'HttpError',
+    ({ status }) => status === 408 || status === 429 || (status >= 500 && status < 600),
+  ),
+  Match.orElse(() => false),
+)
 
-export const isFatalError = (error: ResumableUploadError): boolean => {
-  if (error._tag === 'UploadAborted' || error._tag === 'UploadPaused') return true
-  if (error._tag === 'HttpError') {
-    const s = error.status
-    if (s === 408 || s === 429) return false
-    if (s >= 400 && s < 500) return true
-  }
-  return false
-}
+export const isFatalError = Match.type<ResumableUploadError>().pipe(
+  Match.tags({ UploadAborted: () => true, UploadPaused: () => true }),
+  Match.tag(
+    'HttpError',
+    ({ status }) => status !== 408 && status !== 429 && status >= 400 && status < 500,
+  ),
+  Match.orElse(() => false),
+)

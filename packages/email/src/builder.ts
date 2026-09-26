@@ -1,5 +1,6 @@
-import { Effect } from 'effect'
+import type { Effect } from 'effect'
 import React from 'react'
+
 import { InviteEmail } from '../emails/invite'
 import { MusicReminderEmail } from '../emails/music-reminder'
 import { NewMixNotification } from '../emails/new-mix-notification'
@@ -11,7 +12,8 @@ import { PasswordResetEmail } from '../emails/password-reset'
 import { TestEmail } from '../emails/test-email'
 import { WelcomeEmail } from '../emails/welcome'
 import type { RenderedEmail } from './message'
-import { EmailRenderError, renderEmail } from './render'
+import { renderEmail } from './render'
+import type { EmailRenderError } from './render'
 
 /** The addressing fields shared by every email builder. */
 export interface EmailRecipientInput {
@@ -33,10 +35,12 @@ export interface BuildTestEmailInput extends EmailRecipientInput {
 
 /** Builds the development test email without sending it. */
 export function buildTestEmail(
-  input: BuildTestEmailInput
+  input: BuildTestEmailInput,
 ): Effect.Effect<RenderedEmail<'test'>, EmailRenderError> {
   const componentProperties = { sentAt: input.sentAt }
+
   if (input.name !== undefined) Object.assign(componentProperties, { name: input.name })
+
   if (input.message !== undefined) Object.assign(componentProperties, { message: input.message })
 
   return renderEmail({
@@ -44,7 +48,7 @@ export function buildTestEmail(
     to: input.to,
     replyTo: input.replyTo,
     subject: '🧪 Test Email from goosebumps.fm',
-    component: React.createElement(TestEmail, componentProperties)
+    component: React.createElement(TestEmail, componentProperties),
   })
 }
 
@@ -58,7 +62,7 @@ export interface BuildWelcomeEmailInput extends EmailRecipientInput {
 
 /** Builds the welcome email without sending it. */
 export function buildWelcomeEmail(
-  input: BuildWelcomeEmailInput
+  input: BuildWelcomeEmailInput,
 ): Effect.Effect<RenderedEmail<'welcome'>, EmailRenderError> {
   return renderEmail({
     templateName: 'welcome',
@@ -67,8 +71,8 @@ export function buildWelcomeEmail(
     subject: `Welcome to goosebumps.fm, ${input.username}, verify your email`,
     component: React.createElement(WelcomeEmail, {
       username: input.username,
-      verificationUrl: input.verificationUrl
-    })
+      verificationUrl: input.verificationUrl,
+    }),
   })
 }
 
@@ -82,9 +86,10 @@ export interface BuildPasswordResetEmailInput extends EmailRecipientInput {
 
 /** Builds the password reset email without sending it. */
 export function buildPasswordResetEmail(
-  input: BuildPasswordResetEmailInput
+  input: BuildPasswordResetEmailInput,
 ): Effect.Effect<RenderedEmail<'password-reset'>, EmailRenderError> {
   const componentProperties = { resetUrl: input.resetUrl }
+
   if (input.expiresIn !== undefined) {
     Object.assign(componentProperties, { expiresIn: input.expiresIn })
   }
@@ -94,7 +99,7 @@ export function buildPasswordResetEmail(
     to: input.to,
     replyTo: input.replyTo,
     subject: 'Reset your goosebumps.fm password',
-    component: React.createElement(PasswordResetEmail, componentProperties)
+    component: React.createElement(PasswordResetEmail, componentProperties),
   })
 }
 
@@ -112,10 +117,12 @@ export interface BuildInviteEmailInput extends EmailRecipientInput {
 
 /** Builds the invitation email without sending it. */
 export function buildInviteEmail(
-  input: BuildInviteEmailInput
+  input: BuildInviteEmailInput,
 ): Effect.Effect<RenderedEmail<'invite'>, EmailRenderError> {
   const componentProperties = { name: input.name, inviteUrl: input.inviteUrl }
+
   if (input.role !== undefined) Object.assign(componentProperties, { role: input.role })
+
   if (input.expiresIn !== undefined) {
     Object.assign(componentProperties, { expiresIn: input.expiresIn })
   }
@@ -125,7 +132,7 @@ export function buildInviteEmail(
     to: input.to,
     replyTo: input.replyTo,
     subject: "You've been invited to goosebumps.fm",
-    component: React.createElement(InviteEmail, componentProperties)
+    component: React.createElement(InviteEmail, componentProperties),
   })
 }
 
@@ -149,18 +156,20 @@ export interface BuildMusicReminderEmailInput extends EmailRecipientInput {
 
 /** Builds the music reminder email without sending it. */
 export function buildMusicReminderEmail(
-  input: BuildMusicReminderEmailInput
+  input: BuildMusicReminderEmailInput,
 ): Effect.Effect<RenderedEmail<'music-reminder'>, EmailRenderError> {
   const componentProperties = {
     username: input.username,
     musicTitle: input.musicTitle,
     artistName: input.artistName,
     musicUrl: input.musicUrl,
-    reminderDate: input.reminderDate
+    reminderDate: input.reminderDate,
   }
+
   if (input.notes !== null && input.notes !== undefined) {
     Object.assign(componentProperties, { notes: input.notes })
   }
+
   if (input.albumCoverUrl !== null && input.albumCoverUrl !== undefined) {
     Object.assign(componentProperties, { albumCoverUrl: input.albumCoverUrl })
   }
@@ -170,7 +179,7 @@ export function buildMusicReminderEmail(
     to: input.to,
     replyTo: input.replyTo,
     subject: `🎵 Time to listen: ${input.musicTitle} by ${input.artistName}`,
-    component: React.createElement(MusicReminderEmail, componentProperties)
+    component: React.createElement(MusicReminderEmail, componentProperties),
   })
 }
 
@@ -192,17 +201,19 @@ export interface BuildNewMixNotificationEmailInput extends EmailRecipientInput {
 
 /** Builds the new-mix notification email without sending it. */
 export function buildNewMixNotificationEmail(
-  input: BuildNewMixNotificationEmailInput
+  input: BuildNewMixNotificationEmailInput,
 ): Effect.Effect<RenderedEmail<'mix-notification'>, EmailRenderError> {
   const componentProperties = {
     username: input.username,
     mixTitle: input.mixTitle,
     artistName: input.artistName,
-    mixUrl: input.mixUrl
+    mixUrl: input.mixUrl,
   }
+
   if (input.coverImageUrl !== undefined) {
     Object.assign(componentProperties, { coverImageUrl: input.coverImageUrl })
   }
+
   if (input.releaseDate !== undefined) {
     Object.assign(componentProperties, { releaseDate: input.releaseDate })
   }
@@ -212,7 +223,7 @@ export function buildNewMixNotificationEmail(
     to: input.to,
     replyTo: input.replyTo,
     subject: `New mix: ${input.mixTitle}`,
-    component: React.createElement(NewMixNotification, componentProperties)
+    component: React.createElement(NewMixNotification, componentProperties),
   })
 }
 
@@ -228,7 +239,7 @@ export interface BuildNewUserNotificationEmailInput extends EmailRecipientInput 
 
 /** Builds the new-user notification email without sending it. */
 export function buildNewUserNotificationEmail(
-  input: BuildNewUserNotificationEmailInput
+  input: BuildNewUserNotificationEmailInput,
 ): Effect.Effect<RenderedEmail<'new-user-notification'>, EmailRenderError> {
   return renderEmail({
     templateName: 'new-user-notification',
@@ -238,8 +249,8 @@ export function buildNewUserNotificationEmail(
     component: React.createElement(NewUserNotification, {
       name: input.name,
       email: input.email,
-      timestamp: input.timestamp
-    })
+      timestamp: input.timestamp,
+    }),
   })
 }
 
@@ -255,7 +266,7 @@ export interface BuildNewsletterAdminNotificationEmailInput extends EmailRecipie
 
 /** Builds the newsletter admin notification email without sending it. */
 export function buildNewsletterAdminNotificationEmail(
-  input: BuildNewsletterAdminNotificationEmailInput
+  input: BuildNewsletterAdminNotificationEmailInput,
 ): Effect.Effect<RenderedEmail<'newsletter-admin-notification'>, EmailRenderError> {
   return renderEmail({
     templateName: 'newsletter-admin-notification',
@@ -268,8 +279,8 @@ export function buildNewsletterAdminNotificationEmail(
     component: React.createElement(NewsletterAdminNotification, {
       event: input.event,
       email: input.email,
-      timestamp: input.timestamp
-    })
+      timestamp: input.timestamp,
+    }),
   })
 }
 
@@ -281,7 +292,7 @@ export interface BuildNewsletterUnsubscribeLinkEmailInput extends EmailRecipient
 
 /** Builds the newsletter unsubscribe-link email without sending it. */
 export function buildNewsletterUnsubscribeLinkEmail(
-  input: BuildNewsletterUnsubscribeLinkEmailInput
+  input: BuildNewsletterUnsubscribeLinkEmailInput,
 ): Effect.Effect<RenderedEmail<'newsletter-unsubscribe-link'>, EmailRenderError> {
   return renderEmail({
     templateName: 'newsletter-unsubscribe-link',
@@ -289,8 +300,8 @@ export function buildNewsletterUnsubscribeLinkEmail(
     replyTo: input.replyTo,
     subject: 'Your unsubscribe link',
     component: React.createElement(NewsletterUnsubscribeLink, {
-      unsubscribeUrl: input.unsubscribeUrl
-    })
+      unsubscribeUrl: input.unsubscribeUrl,
+    }),
   })
 }
 
@@ -302,7 +313,7 @@ export interface BuildNewsletterWelcomeEmailInput extends EmailRecipientInput {
 
 /** Builds the newsletter welcome email without sending it. */
 export function buildNewsletterWelcomeEmail(
-  input: BuildNewsletterWelcomeEmailInput
+  input: BuildNewsletterWelcomeEmailInput,
 ): Effect.Effect<RenderedEmail<'newsletter-welcome'>, EmailRenderError> {
   return renderEmail({
     templateName: 'newsletter-welcome',
@@ -310,7 +321,7 @@ export function buildNewsletterWelcomeEmail(
     replyTo: input.replyTo,
     subject: "You're subscribed to goosebumps.fm",
     component: React.createElement(NewsletterWelcomeEmail, {
-      unsubscribeUrl: input.unsubscribeUrl
-    })
+      unsubscribeUrl: input.unsubscribeUrl,
+    }),
   })
 }

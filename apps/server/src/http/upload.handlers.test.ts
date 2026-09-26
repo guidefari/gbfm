@@ -1,42 +1,43 @@
 import { Effect } from 'effect'
 import { HttpApiError } from 'effect/unstable/httpapi'
 import { describe, expect, test } from 'vitest'
+
 import {
   assertContiguousParts,
   assertKeyOwnership,
   expectedMultipartPartSize,
   matchesCompletedObject,
-  validateMultipartParts
+  validateMultipartParts,
 } from './upload.handlers'
 
 describe('assertKeyOwnership', () => {
   test('accepts a key prefixed with the requesting user id', () => {
     expect(assertKeyOwnership('user-1', 'user-1/multipart/uuid/1024/audio_test.mp3')).toBe(
-      Effect.void
+      Effect.void,
     )
   })
 
   test('rejects a key prefixed with a different user id', () => {
     expect(
-      assertKeyOwnership('user-1', 'user-2/multipart/uuid/1024/audio_test.mp3')
+      assertKeyOwnership('user-1', 'user-2/multipart/uuid/1024/audio_test.mp3'),
     ).toBeInstanceOf(HttpApiError.BadRequest)
   })
 
   test('rejects a key with no matching prefix segment at all', () => {
     expect(assertKeyOwnership('user-1', 'not-a-scoped-key.mp3')).toBeInstanceOf(
-      HttpApiError.BadRequest
+      HttpApiError.BadRequest,
     )
   })
 
   test('sanitizes the user id the same way keys are built, so ownership matches sanitized ids', () => {
     expect(assertKeyOwnership('user 1!', 'user_1_/multipart/uuid/1024/audio_test.mp3')).toBe(
-      Effect.void
+      Effect.void,
     )
   })
 
   test('rejects a prefix match that stops short of the path separator', () => {
     expect(
-      assertKeyOwnership('user-1', 'user-12/multipart/uuid/1024/audio_test.mp3')
+      assertKeyOwnership('user-1', 'user-12/multipart/uuid/1024/audio_test.mp3'),
     ).toBeInstanceOf(HttpApiError.BadRequest)
   })
 })
@@ -44,7 +45,7 @@ describe('assertKeyOwnership', () => {
 describe('assertContiguousParts', () => {
   test('accepts a complete contiguous sequence', () => {
     expect(
-      assertContiguousParts([{ partNumber: 1 }, { partNumber: 2 }, { partNumber: 3 }])
+      assertContiguousParts([{ partNumber: 1 }, { partNumber: 2 }, { partNumber: 3 }]),
     ).toBeNull()
   })
 
@@ -54,7 +55,7 @@ describe('assertContiguousParts', () => {
 
   test('sorts before checking', () => {
     expect(
-      assertContiguousParts([{ partNumber: 3 }, { partNumber: 1 }, { partNumber: 2 }])
+      assertContiguousParts([{ partNumber: 3 }, { partNumber: 1 }, { partNumber: 2 }]),
     ).toBeNull()
   })
 
@@ -64,13 +65,13 @@ describe('assertContiguousParts', () => {
 
   test('rejects when a middle part is missing', () => {
     expect(
-      assertContiguousParts([{ partNumber: 1 }, { partNumber: 2 }, { partNumber: 4 }])
+      assertContiguousParts([{ partNumber: 1 }, { partNumber: 2 }, { partNumber: 4 }]),
     ).not.toBeNull()
   })
 
   test('rejects duplicate part numbers', () => {
     expect(
-      assertContiguousParts([{ partNumber: 1 }, { partNumber: 2 }, { partNumber: 2 }])
+      assertContiguousParts([{ partNumber: 1 }, { partNumber: 2 }, { partNumber: 2 }]),
     ).not.toBeNull()
   })
 })
@@ -84,15 +85,15 @@ describe('multipart size validation', () => {
       validateMultipartParts(expectedSize, [
         { partNumber: 1, size: chunkSize },
         { partNumber: 2, size: chunkSize },
-        { partNumber: 3, size: 17 }
-      ])
+        { partNumber: 3, size: 17 },
+      ]),
     ).toBeNull()
     expect(
       validateMultipartParts(expectedSize, [
         { partNumber: 1, size: chunkSize },
         { partNumber: 2, size: chunkSize },
-        { partNumber: 3, size: 18 }
-      ])
+        { partNumber: 3, size: 18 },
+      ]),
     ).not.toBeNull()
   })
 
@@ -100,8 +101,8 @@ describe('multipart size validation', () => {
     expect(
       validateMultipartParts(chunkSize, [
         { partNumber: 1, size: chunkSize },
-        { partNumber: 2, size: 1 }
-      ])
+        { partNumber: 2, size: 1 },
+      ]),
     ).not.toBeNull()
   })
 

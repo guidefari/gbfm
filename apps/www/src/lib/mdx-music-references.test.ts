@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+
 import { mdxMusicReferences } from './mdx-music-references'
 
 describe('mdxMusicReferences', () => {
@@ -10,20 +11,20 @@ describe('mdxMusicReferences', () => {
 />
 <Track url='https://open.spotify.com/track/two' />
 <Playlist title="ignored" url = "https://open.spotify.com/playlist/three" />
-`)
+`),
     ).toEqual([
       {
         type: 'album',
-        encodedUrl: encodeURIComponent('https://open.spotify.com/album/one?si=abc')
+        encodedUrl: encodeURIComponent('https://open.spotify.com/album/one?si=abc'),
       },
       {
         type: 'track',
-        encodedUrl: encodeURIComponent('https://open.spotify.com/track/two')
+        encodedUrl: encodeURIComponent('https://open.spotify.com/track/two'),
       },
       {
         type: 'playlist',
-        encodedUrl: encodeURIComponent('https://open.spotify.com/playlist/three')
-      }
+        encodedUrl: encodeURIComponent('https://open.spotify.com/playlist/three'),
+      },
     ])
   })
 

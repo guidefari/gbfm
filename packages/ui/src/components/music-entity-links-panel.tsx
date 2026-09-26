@@ -1,5 +1,6 @@
 import { Loader2, MoreHorizontal, Plus, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
+
 import { Button } from './button'
 import { Card, CardContent, CardHeader } from './card'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from './dialog'
@@ -7,7 +8,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from './dropdown-menu'
 import { Input } from './input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select'
@@ -46,7 +47,7 @@ export interface MusicEntityLink {
   updatedAt: Date | string
 }
 
-const PLATFORMS: MusicPlatform[] = [
+const PLATFORMS: Array<MusicPlatform> = [
   'spotify',
   'youtube',
   'youtube_music',
@@ -62,17 +63,19 @@ const PLATFORMS: MusicPlatform[] = [
   'twitter',
   'musicbrainz',
   'discogs',
-  'other'
+  'other',
 ]
 
 function getStatusDot(status: string): string {
   if (status === 'verified') return 'bg-gb-pastel-green-1'
+
   if (status === 'rejected') return 'bg-destructive'
+
   return 'bg-muted-foreground/40'
 }
 
 export interface MusicEntityLinksPanelProps {
-  links: MusicEntityLink[]
+  links: Array<MusicEntityLink>
   onAdd?: (platform: MusicPlatform, url: string) => void
   onEdit?: (linkId: string, platform: MusicPlatform, url: string) => void
   onUpdateStatus?: (linkId: string, status: LinkStatus) => void
@@ -85,6 +88,7 @@ export interface MusicEntityLinksPanelProps {
 
 function toMusicPlatform(value: string): MusicPlatform {
   const match = PLATFORMS.find((platform) => platform === value)
+
   return match ?? 'other'
 }
 
@@ -97,7 +101,7 @@ export function MusicEntityLinksPanel({
   onRescrape,
   isRescraping = false,
   readOnly = false,
-  embedded = false
+  embedded = false,
 }: MusicEntityLinksPanelProps) {
   const [dialogMode, setDialogMode] = useState<'add' | 'edit' | null>(null)
   const [activeLinkId, setActiveLinkId] = useState<string | null>(null)
@@ -126,11 +130,14 @@ export function MusicEntityLinksPanel({
 
   function handleSave() {
     if (!draftUrl.trim()) return
+
     if (dialogMode === 'add') {
       onAdd?.(draftPlatform, draftUrl.trim())
       closeDialog()
+
       return
     }
+
     if (dialogMode === 'edit' && activeLinkId) {
       onEdit?.(activeLinkId, draftPlatform, draftUrl.trim())
       closeDialog()

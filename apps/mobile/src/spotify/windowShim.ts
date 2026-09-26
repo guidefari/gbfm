@@ -5,10 +5,12 @@ import { hasGlobal, setGlobal } from './globalPolyfill'
 export const installSpotifyWindowShim = () => {
   if (!hasGlobal('window')) {
     setGlobal('window', { location: { href: SPOTIFY_REDIRECT_URI } })
+
     return
   }
 
   const existingWindow = globalThis.window
+
   if (!existingWindow.location) {
     Reflect.set(existingWindow, 'location', { href: SPOTIFY_REDIRECT_URI })
   }

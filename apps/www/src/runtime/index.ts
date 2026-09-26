@@ -1,96 +1,51 @@
+import { VITE_SPOTIFY_CLIENT_ID } from '$app/env/public'
 import { SpotifyBrowser } from '@spotify-effect/browser'
-import { Data, Effect, Layer, Scope } from 'effect'
-import { env } from '@/env'
+import { type Effect, Layer, ManagedRuntime } from 'effect'
+
 import { getSpotifyRedirectUri } from '@/lib/spotify-pkce'
-import { type Analytics, SentryAnalyticsLayer, NoopAnalyticsLayer } from '@/services/analytics'
-import { ImageExport, ImageExportLive } from '@/services/image-export'
-import { type MediaSessionService, MediaSessionServiceLayer } from '@/services/media-session'
-import { PlayerStorage, type PersistedQueueType } from '@gbfm/player'
-import { PlayerStorageLive } from '@/services/player/storage'
-import { log, type Logger, LoggerLive, NoopLogger } from '@/services/logger'
-import { SentryTracerLive } from '@/services/sentry-tracer'
+import { type ImageExport, ImageExportLive } from '@/services/image-export'
+import { log } from '@/services/logger'
 import { type MixUploadDraftStorage, MixUploadDraftStorageLive } from '@/services/mix-upload-draft'
 import {
   type ResumableUploadStorage,
-  ResumableUploadStorageLive
+  ResumableUploadStorageLive,
 } from '@/services/resumable-upload'
-
-const enableSentry = Boolean(env.sentryDsn) && (!env.isDev || env.sentryEnableLocal)
-
-const analyticsLayer = enableSentry ? SentryAnalyticsLayer : NoopAnalyticsLayer
 
 const spotifyLayer = Layer.suspend(() =>
   SpotifyBrowser.layer({
-    clientId: env.spotifyClientId,
+    clientId: VITE_SPOTIFY_CLIENT_ID ?? '',
     redirectUri: getSpotifyRedirectUri(),
     session: {
       sessionStorage: window.sessionStorage,
       localStorage: window.localStorage,
-      history: window.history
-    }
-  })
+      history: window.history,
+    },
+  }),
 )
 
-const playerStorageLayer = PlayerStorageLive
-const mediaSessionLayer = MediaSessionServiceLayer
 const imageExportLayer = ImageExportLive
+
 const resumableUploadStorageLayer = ResumableUploadStorageLive
+
 const mixUploadDraftStorageLayer = MixUploadDraftStorageLive
-const loggerLayer = enableSentry ? LoggerLive : NoopLogger
-const tracerLayer = enableSentry ? SentryTracerLive : Layer.empty
 
 const mainLayer = Layer.mergeAll(
-  analyticsLayer,
   spotifyLayer,
-  playerStorageLayer,
-  mediaSessionLayer,
   imageExportLayer,
   resumableUploadStorageLayer,
   mixUploadDraftStorageLayer,
-  loggerLayer,
-  tracerLayer
 )
 
-type AppServices =
-  | Analytics
-  | SpotifyBrowser
-  | PlayerStorage
-  | MediaSessionService
-  | ImageExport
-  | ResumableUploadStorage
-  | MixUploadDraftStorage
-  | Logger
+type AppServices = SpotifyBrowser | ImageExport | ResumableUploadStorage | MixUploadDraftStorage
 
-class AppEffectFailure extends Data.TaggedError('AppEffectFailure')<{
-  readonly cause: unknown
-}> {}
+const appRuntime = ManagedRuntime.make(mainLayer)
 
-const appScope = Scope.makeUnsafe()
-const appContextPromise = Effect.runPromise(Layer.buildWithScope(mainLayer, appScope))
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => void appRuntime.dispose())
+}
 
 export const runAppEffect = <A, E>(effect: Effect.Effect<A, E, AppServices>) =>
-  appContextPromise
-    .then((context) => Effect.runPromiseWith(context)(effect))
-    .catch((error) => {
-      log('error', 'App effect failed', { error })
-      throw error
-    })
-
-export const RuntimeClient = {
-  runPromise: runAppEffect
-}
-
-const useStorage = <A, E>(
-  operation: (storage: PlayerStorage['Service']) => Effect.Effect<A, E>
-): Effect.Effect<A, AppEffectFailure> =>
-  Effect.tryPromise({
-    try: () => runAppEffect(Effect.flatMap(PlayerStorage, operation)),
-    catch: (cause) => new AppEffectFailure({ cause })
+  appRuntime.runPromise(effect).catch((error) => {
+    log('error', 'App effect failed', { error })
+    throw error
   })
-
-/** Queue persistence bound to the app context, for the queue atom, which runs
- *  outside React and so cannot use the player's per-mount runtime. */
-export const queuePersistence = {
-  loadQueue: () => useStorage((storage) => storage.loadQueue),
-  saveQueue: (queue: PersistedQueueType) => useStorage((storage) => storage.saveQueue(queue))
-}

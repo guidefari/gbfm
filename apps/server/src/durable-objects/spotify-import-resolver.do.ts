@@ -1,16 +1,17 @@
+import type { D1Database } from '@cloudflare/workers-types'
 import { DurableObject } from 'cloudflare:workers'
 import { drizzle } from 'drizzle-orm/d1'
-import type { D1Database } from '@cloudflare/workers-types'
+
 import * as schema from '@/db/exports'
 import type { DatabaseClient } from '@/db/layer'
 import type { SelectMusicPlaylist } from '@/db/music-entity.schema'
-import type { SpotifyImportPlaylist, SpotifyImportTrack } from '@/services/spotify.service'
 import {
   canonicalSpotifyImportResolverName,
   resolveSpotifyPlaylist,
   resolveSpotifyTrack,
-  type ResolvedSpotifyTrack
+  type ResolvedSpotifyTrack,
 } from '@/services/spotify-import-resolver.service'
+import type { SpotifyImportPlaylist, SpotifyImportTrack } from '@/services/spotify.service'
 
 type SpotifyImportResolverEnv = {
   readonly DB: D1Database
@@ -46,9 +47,10 @@ export class SpotifyImportResolverDurableObject extends DurableObject<SpotifyImp
   private getIdentity(): IdentityRow | null {
     const row = [
       ...this.ctx.storage.sql.exec<IdentityRow>(
-        'SELECT canonical_name as canonicalName, created_at_ms as createdAtMs FROM _identity LIMIT 1'
-      )
+        'SELECT canonical_name as canonicalName, created_at_ms as createdAtMs FROM _identity LIMIT 1',
+      ),
     ][0]
+
     return row ?? null
   }
 
@@ -57,21 +59,23 @@ export class SpotifyImportResolverDurableObject extends DurableObject<SpotifyImp
     this.ctx.storage.sql.exec(
       'INSERT INTO _identity (canonical_name, created_at_ms) VALUES (?, ?)',
       canonicalName,
-      Date.now()
+      Date.now(),
     )
   }
 
   async resolveTrack(track: SpotifyImportTrack): Promise<ResolvedSpotifyTrack> {
     this.setIdentity(canonicalSpotifyImportResolverName('track', track.trackUrl))
+
     return resolveSpotifyTrack(this.db, track)
   }
 
   async resolvePlaylist(
     playlist: SpotifyImportPlaylist,
     coverImageUrl: string | null,
-    curatorId: string | null | undefined
+    curatorId: string | null | undefined,
   ): Promise<SelectMusicPlaylist> {
     this.setIdentity(canonicalSpotifyImportResolverName('playlist', playlist.playlistUrl))
+
     return resolveSpotifyPlaylist(this.db, playlist, coverImageUrl, curatorId)
   }
 

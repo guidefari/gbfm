@@ -1,5 +1,6 @@
 import { CheckCircle2, ExternalLink, Loader2, Music, XCircle } from 'lucide-react'
 import type { RefObject } from 'react'
+
 import { Button } from './button'
 import type { TrackEntry } from './tracklist-editor'
 
@@ -7,8 +8,8 @@ interface UploadSummaryCardProps {
   audioRef: RefObject<HTMLAudioElement | null>
   audioUrl: string | null
   title: string
-  tags: string[]
-  tracklist: TrackEntry[]
+  tags: Array<string>
+  tracklist: Array<TrackEntry>
   onTimeUpdate: (currentTime: number) => void
   onPublish: () => void
   onSaveDraft: () => void
@@ -30,7 +31,7 @@ export function UploadSummaryCard({
   onCancelUpload,
   onDiscard,
   isUploading,
-  uploadStep
+  uploadStep,
 }: UploadSummaryCardProps) {
   const isSuccess = uploadStep === 'success'
 

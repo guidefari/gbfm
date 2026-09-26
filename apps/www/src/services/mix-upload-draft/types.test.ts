@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+
 import { parseMixUploadDraft } from './types'
 
 describe('parseMixUploadDraft', () => {
@@ -19,8 +20,9 @@ describe('parseMixUploadDraft', () => {
       episodeNumber: '12',
       creatorId: 'user-1',
       url: 'https://example.com/audio.mp3',
-      updatedAt: 1234
+      updatedAt: 1234,
     }
+
     const minimal = {
       title: 'Mix 2',
       description: '',
@@ -29,7 +31,7 @@ describe('parseMixUploadDraft', () => {
       thumbnailUrl: '',
       tags: [],
       tracklist: [],
-      updatedAt: 1
+      updatedAt: 1,
     }
 
     expect(parseMixUploadDraft(complete)).toEqual(complete)
@@ -42,7 +44,7 @@ describe('parseMixUploadDraft', () => {
       showId: undefined,
       episodeNumber: undefined,
       creatorId: undefined,
-      url: undefined
+      url: undefined,
     })
   })
 
@@ -59,8 +61,8 @@ describe('parseMixUploadDraft', () => {
         thumbnailUrl: '',
         tags: ['house'],
         tracklist: [{ id: 'wrong', time: 30, title: 'Track' }],
-        updatedAt: 1
-      })
+        updatedAt: 1,
+      }),
     ).toBeNull()
   })
 })

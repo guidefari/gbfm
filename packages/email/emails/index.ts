@@ -1,7 +1,13 @@
 export { MusicReminderEmail } from './music-reminder'
+
 export { NewMixNotification } from './new-mix-notification'
+
 export { NewUserNotification } from './new-user-notification'
+
 export { PasswordResetEmail } from './password-reset'
+
 export { TestEmail } from './test-email'
+
 export { emailTheme } from './theme'
+
 export { WelcomeEmail } from './welcome'

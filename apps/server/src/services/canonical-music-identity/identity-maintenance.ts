@@ -1,28 +1,35 @@
 import type { D1Database, D1PreparedStatement } from '@cloudflare/workers-types'
-import { Effect } from 'effect'
+import { Effect, Match, Predicate } from 'effect'
+
 import type { DatabaseClient } from '@/db/layer'
 import { getErrorMessage } from '@/errors'
-import { MusicIdentityStorageError, MusicSourceInvalid } from './errors'
+
+import { MusicIdentityStorageError, type MusicSourceInvalid } from './errors'
 import {
   CANONICAL_MUSIC_ENTITY_TYPES,
   parseMusicSource,
   type CanonicalMusicEntityType,
-  type ParsedMusicSource
+  type ParsedMusicSource,
 } from './music-source'
 import { withSafeTypedSpan } from './telemetry'
 
 const BACKFILL_OPERATION = 'canonical_music_identity_v2'
+
 const DEFAULT_BATCH_SIZE = 25
+
 const MAX_BATCH_SIZE = 50
+
 const MAX_APPLY_SOURCE_KEYS = 5
+
 const MAX_CANDIDATES_PER_SOURCE_KEY = 100
 
 type Phase = 'scan_links' | 'scan_claims' | 'apply' | 'complete'
+
 type Origin = 'link' | 'legacy_claim'
 
 const CONFLICT_CATEGORIES: ReadonlySet<IdentityMaintenanceIssue['category']> = new Set([
   'collision',
-  'duplicate_ownership_candidate'
+  'duplicate_ownership_candidate',
 ])
 
 type LinkRow = {
@@ -94,10 +101,10 @@ export type IdentityMaintenanceIssue = {
     | 'candidate_overflow'
     | 'resolving_lease'
     | 'expired_lease'
-  readonly sourceKey?: string
-  readonly linkId?: string
-  readonly entityType?: string
-  readonly entityId?: string
+  readonly sourceKey?: string | undefined
+  readonly linkId?: string | undefined
+  readonly entityType?: string | undefined
+  readonly entityId?: string | undefined
   readonly detail: string
 }
 
@@ -145,7 +152,7 @@ export type IdentityAuditSummary = {
 export type IdentityBackfillOptions = {
   readonly apply?: boolean
   readonly batchSize?: number
-  readonly generationId?: string
+  readonly generationId?: string | undefined
   readonly cursor?: { readonly createdAt: number; readonly id: string }
   readonly now?: Date
 }
@@ -153,8 +160,8 @@ export type IdentityBackfillOptions = {
 export type IdentityAuditOptions = {
   readonly batchSize?: number
   readonly phase?: IdentityAuditPhase
-  readonly cursor?: string
-  readonly generationId?: string
+  readonly cursor?: string | undefined
+  readonly generationId?: string | undefined
   readonly now?: Date
 }
 
@@ -169,14 +176,16 @@ const canonicalEntityType = (value: string): CanonicalMusicEntityType | undefine
 
 const validatedBatchSize = (value: number | undefined) => {
   const size = value ?? DEFAULT_BATCH_SIZE
+
   if (!Number.isInteger(size) || size < 1 || size > MAX_BATCH_SIZE) {
     return Effect.fail(
       new MusicIdentityStorageError({
         operation: 'validateBatchSize',
-        message: `Batch size must be an integer between 1 and ${MAX_BATCH_SIZE}`
-      })
+        message: `Batch size must be an integer between 1 and ${MAX_BATCH_SIZE}`,
+      }),
     )
   }
+
   return Effect.succeed(size)
 }
 
@@ -191,19 +200,21 @@ const readLinkPage = (
   database: D1Database,
   cursor: { readonly createdAt: number; readonly id: string },
   highWater: { readonly createdAt: number; readonly id: string } | null,
-  batchSize: number
+  batchSize: number,
 ) =>
   attempt('readLinkPage', async () => {
     const highWaterClause = highWater
       ? 'AND (l.createdAt < ? OR (l.createdAt = ? AND l.id <= ?))'
       : ''
+
     const statement = database.prepare(
       `SELECT l.id, l.entity_type AS entityType, l.entityId, l.platform, l.url, l.status,
          l.scrapedAt, l.verifiedAt, l.createdAt, ${entityExistsSql('l', 'entityId')} AS entityExists
        FROM music_entity_links l
        WHERE (l.createdAt > ? OR (l.createdAt = ? AND l.id > ?)) ${highWaterClause}
-       ORDER BY l.createdAt, l.id LIMIT ?`
+       ORDER BY l.createdAt, l.id LIMIT ?`,
     )
+
     const bound = highWater
       ? statement.bind(
           cursor.createdAt,
@@ -212,9 +223,10 @@ const readLinkPage = (
           highWater.createdAt,
           highWater.createdAt,
           highWater.id,
-          batchSize
+          batchSize,
         )
       : statement.bind(cursor.createdAt, cursor.createdAt, cursor.id, batchSize)
+
     return (await bound.all<LinkRow>()).results
   })
 
@@ -234,7 +246,7 @@ const readClaimPage = (database: D1Database, run: RunRow, batchSize: number) =>
                (c.updated_at = ? AND c.entity_type = ? AND c.canonical_url > ?))
              AND (c.updated_at < ? OR (c.updated_at = ? AND c.entity_type < ?) OR
                (c.updated_at = ? AND c.entity_type = ? AND c.canonical_url <= ?))
-           ORDER BY c.updated_at, c.entity_type, c.canonical_url LIMIT ?`
+           ORDER BY c.updated_at, c.entity_type, c.canonical_url LIMIT ?`,
           )
           .bind(
             run.claimCursorUpdatedAt,
@@ -249,27 +261,27 @@ const readClaimPage = (database: D1Database, run: RunRow, batchSize: number) =>
             run.claimHighWaterUpdatedAt,
             run.claimHighWaterEntityType,
             run.claimHighWaterCanonicalUrl,
-            batchSize
+            batchSize,
           )
           .all<ClaimRow>()
-      ).results
+      ).results,
   )
 
 const parseSourceResult = (url: string, entityType: CanonicalMusicEntityType) =>
   parseMusicSource(url, entityType).pipe(
     Effect.map((source) => ({ _tag: 'valid' as const, source })),
     Effect.catchTag('MusicSourceInvalid', (error) =>
-      Effect.succeed({ _tag: 'invalid' as const, error })
-    )
+      Effect.succeed({ _tag: 'invalid' as const, error }),
+    ),
   )
 
 const parseCandidate = (input: Omit<StagedCandidate, 'source'> & { readonly sourceUrl: string }) =>
   parseSourceResult(input.sourceUrl, input.entityType).pipe(
     Effect.map((result) =>
-      result._tag === 'valid'
+      Predicate.isTagged(result, 'valid')
         ? { _tag: 'candidate' as const, candidate: { ...input, source: result.source } }
-        : { _tag: 'invalid' as const, error: result.error }
-    )
+        : { _tag: 'invalid' as const, error: result.error },
+    ),
   )
 
 const readRun = (database: D1Database, generationId?: string) =>
@@ -290,8 +302,9 @@ const readRun = (database: D1Database, generationId?: string) =>
          attempted_count AS attemptedCount, invalid_count AS invalidCount,
          orphan_count AS orphanCount
        FROM music_identity_maintenance_runs
-       WHERE ${generationId ? 'generation_id = ?' : 'operation = ? AND active = 1'} LIMIT 1`
+       WHERE ${generationId ? 'generation_id = ?' : 'operation = ? AND active = 1'} LIMIT 1`,
     )
+
     return statement.bind(generationId ?? BACKFILL_OPERATION).first<RunRow>()
   })
 
@@ -300,23 +313,25 @@ const initializeRun = (database: D1Database, now: number) =>
     const linkHighWater = yield* attempt('readLinkHighWater', () =>
       database
         .prepare(
-          'SELECT createdAt, id FROM music_entity_links ORDER BY createdAt DESC, id DESC LIMIT 1'
+          'SELECT createdAt, id FROM music_entity_links ORDER BY createdAt DESC, id DESC LIMIT 1',
         )
-        .first<{ readonly createdAt: number; readonly id: string }>()
+        .first<{ readonly createdAt: number; readonly id: string }>(),
     )
+
     const claimHighWater = yield* attempt('readClaimHighWater', () =>
       database
         .prepare(
           `SELECT updated_at AS updatedAt, entity_type AS entityType, canonical_url AS canonicalUrl
            FROM music_entity_resolution_claims WHERE entity_id IS NOT NULL
-           ORDER BY updated_at DESC, entity_type DESC, canonical_url DESC LIMIT 1`
+           ORDER BY updated_at DESC, entity_type DESC, canonical_url DESC LIMIT 1`,
         )
         .first<{
           readonly updatedAt: number
           readonly entityType: string
           readonly canonicalUrl: string
-        }>()
+        }>(),
     )
+
     const generationId = crypto.randomUUID()
     yield* attempt('initializeMaintenanceRun', () =>
       database
@@ -327,7 +342,7 @@ const initializeRun = (database: D1Database, now: number) =>
              claim_high_water_canonical_url, cursor_created_at, cursor_id,
              claim_cursor_updated_at, claim_cursor_entity_type, claim_cursor_canonical_url,
              apply_cursor_source_key, created_at, updated_at
-           ) VALUES (?, ?, 'scan_links', 1, ?, ?, ?, ?, ?, -1, '', -1, '', '', '', ?, ?)`
+           ) VALUES (?, ?, 'scan_links', 1, ?, ?, ?, ?, ?, -1, '', -1, '', '', '', ?, ?)`,
         )
         .bind(
           generationId,
@@ -338,12 +353,14 @@ const initializeRun = (database: D1Database, now: number) =>
           claimHighWater?.entityType ?? '',
           claimHighWater?.canonicalUrl ?? '',
           now,
-          now
+          now,
         )
-        .run()
+        .run(),
     )
     const run = yield* readRun(database, generationId)
+
     if (!run) return yield* Effect.fail(storageError('initializeMaintenanceRun', 'Run missing'))
+
     return run
   })
 
@@ -352,14 +369,14 @@ const findingStatement = (
   generationId: string,
   findingKey: string,
   issue: IdentityMaintenanceIssue,
-  now: number
+  now: number,
 ) =>
   database
     .prepare(
       `INSERT OR IGNORE INTO music_identity_maintenance_findings (
          generation_id, finding_key, category, source_key, origin_key,
          entity_type, entity_id, detail, detected_at
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
       generationId,
@@ -370,7 +387,7 @@ const findingStatement = (
       issue.entityType ?? null,
       issue.entityId ?? null,
       issue.detail,
-      now
+      now,
     )
 
 const stageStatement = (database: D1Database, generationId: string, candidate: StagedCandidate) =>
@@ -380,7 +397,7 @@ const stageStatement = (database: D1Database, generationId: string, candidate: S
          generation_id, source_key, origin, origin_key, platform, source_entity_type,
          external_id, canonical_url, source_url, normalized_url, entity_type, entity_id,
          status, verified_at, scraped_at, created_at
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
       generationId,
@@ -398,14 +415,14 @@ const stageStatement = (database: D1Database, generationId: string, candidate: S
       candidate.status,
       candidate.verifiedAt,
       candidate.scrapedAt,
-      candidate.createdAt
+      candidate.createdAt,
     )
 
 const sourceKeyStatement = (database: D1Database, generationId: string, sourceKey: string) =>
   database
     .prepare(
       `INSERT OR IGNORE INTO music_identity_maintenance_source_keys
-         (generation_id, source_key) VALUES (?, ?)`
+         (generation_id, source_key) VALUES (?, ?)`,
     )
     .bind(generationId, sourceKey)
 
@@ -413,13 +430,13 @@ const issueForInvalid = (
   originKey: string,
   entityType: string,
   entityId: string,
-  error: MusicSourceInvalid
+  error: MusicSourceInvalid,
 ): IdentityMaintenanceIssue => ({
   category: error.reason === 'type_mismatch' ? 'mismatched_entity_type' : 'invalid_source',
   linkId: originKey,
   entityType,
   entityId,
-  detail: error.reason
+  detail: error.reason,
 })
 
 const scanLinks = (database: D1Database, run: RunRow, batchSize: number, now: number) =>
@@ -428,30 +445,35 @@ const scanLinks = (database: D1Database, run: RunRow, batchSize: number, now: nu
       database,
       { createdAt: run.cursorCreatedAt, id: run.cursorId },
       { createdAt: run.linkHighWaterCreatedAt, id: run.linkHighWaterId },
-      batchSize
+      batchSize,
     )
-    const statements: D1PreparedStatement[] = []
-    const issues: IdentityMaintenanceIssue[] = []
+
+    const statements: Array<D1PreparedStatement> = []
+    const issues: Array<IdentityMaintenanceIssue> = []
     let candidateCount = 0
     let invalidCount = 0
     let orphanCount = 0
+
     for (const row of rows) {
       const entityType = canonicalEntityType(row.entityType)
+
       if (!entityType) {
         const issue: IdentityMaintenanceIssue = {
           category: 'invalid_source',
           linkId: row.id,
           entityType: row.entityType,
           entityId: row.entityId,
-          detail: 'Unsupported canonical music entity type'
+          detail: 'Unsupported canonical music entity type',
         }
+
         issues.push(issue)
         statements.push(
-          findingStatement(database, run.generationId, `invalid:${row.id}`, issue, now)
+          findingStatement(database, run.generationId, `invalid:${row.id}`, issue, now),
         )
         invalidCount += 1
         continue
       }
+
       const parsed = yield* parseCandidate({
         origin: 'link',
         originKey: row.id,
@@ -462,56 +484,65 @@ const scanLinks = (database: D1Database, run: RunRow, batchSize: number, now: nu
         verifiedAt: row.verifiedAt,
         scrapedAt: row.scrapedAt,
         createdAt: row.createdAt,
-        entityExists: row.entityExists === 1
+        entityExists: row.entityExists === 1,
       })
-      if (parsed._tag === 'invalid' || parsed.candidate.source.platform !== row.platform) {
-        const issue =
-          parsed._tag === 'invalid'
-            ? issueForInvalid(row.id, row.entityType, row.entityId, parsed.error)
-            : {
-                category: 'invalid_source' as const,
-                linkId: row.id,
-                entityType: row.entityType,
-                entityId: row.entityId,
-                detail: 'platform_mismatch'
-              }
+
+      if (
+        Predicate.isTagged(parsed, 'invalid') ||
+        parsed.candidate.source.platform !== row.platform
+      ) {
+        const issue = Predicate.isTagged(parsed, 'invalid')
+          ? issueForInvalid(row.id, row.entityType, row.entityId, parsed.error)
+          : {
+              category: 'invalid_source' as const,
+              linkId: row.id,
+              entityType: row.entityType,
+              entityId: row.entityId,
+              detail: 'platform_mismatch',
+            }
+
         issues.push(issue)
         statements.push(
-          findingStatement(database, run.generationId, `invalid:${row.id}`, issue, now)
+          findingStatement(database, run.generationId, `invalid:${row.id}`, issue, now),
         )
         invalidCount += 1
       } else {
         statements.push(
           sourceKeyStatement(database, run.generationId, parsed.candidate.source.sourceKey),
-          stageStatement(database, run.generationId, parsed.candidate)
+          stageStatement(database, run.generationId, parsed.candidate),
         )
         candidateCount += 1
       }
+
       if (row.entityExists !== 1) {
         const issue: IdentityMaintenanceIssue = {
           category: 'orphaned_link',
           linkId: row.id,
           entityType: row.entityType,
           entityId: row.entityId,
-          detail: 'Link references a missing music entity'
+          detail: 'Link references a missing music entity',
         }
+
         issues.push(issue)
         statements.push(
-          findingStatement(database, run.generationId, `orphan:${row.id}`, issue, now)
+          findingStatement(database, run.generationId, `orphan:${row.id}`, issue, now),
         )
         orphanCount += 1
       }
     }
+
     const last = rows.at(-1)
+
     const reachedHighWater =
       !last || (last.createdAt === run.linkHighWaterCreatedAt && last.id === run.linkHighWaterId)
+
     statements.push(
       database
         .prepare(
           `UPDATE music_identity_maintenance_runs SET phase = ?, cursor_created_at = ?,
              cursor_id = ?, scanned_count = scanned_count + ?,
              candidate_count = candidate_count + ?, invalid_count = invalid_count + ?,
-             orphan_count = orphan_count + ?, updated_at = ? WHERE generation_id = ?`
+             orphan_count = orphan_count + ?, updated_at = ? WHERE generation_id = ?`,
         )
         .bind(
           reachedHighWater ? 'scan_claims' : 'scan_links',
@@ -522,25 +553,29 @@ const scanLinks = (database: D1Database, run: RunRow, batchSize: number, now: nu
           invalidCount,
           orphanCount,
           now,
-          run.generationId
-        )
+          run.generationId,
+        ),
     )
     yield* attempt('stageLinkPage', () => database.batch(statements))
+
     return issues
   })
 
 const scanClaims = (database: D1Database, run: RunRow, batchSize: number, now: number) =>
   Effect.gen(function* () {
     const rows = yield* readClaimPage(database, run, batchSize)
-    const statements: D1PreparedStatement[] = []
-    const issues: IdentityMaintenanceIssue[] = []
+    const statements: Array<D1PreparedStatement> = []
+    const issues: Array<IdentityMaintenanceIssue> = []
     let candidateCount = 0
     let invalidCount = 0
     let orphanCount = 0
+
     for (const row of rows) {
       const entityType = canonicalEntityType(row.entityType)
+
       if (!entityType) continue
       const originKey = `${row.entityType}:${row.canonicalUrl}`
+
       const parsed = yield* parseCandidate({
         origin: 'legacy_claim',
         originKey,
@@ -551,43 +586,49 @@ const scanClaims = (database: D1Database, run: RunRow, batchSize: number, now: n
         verifiedAt: null,
         scrapedAt: null,
         createdAt: row.createdAt,
-        entityExists: row.entityExists === 1
+        entityExists: row.entityExists === 1,
       })
-      if (parsed._tag === 'invalid') {
+
+      if (Predicate.isTagged(parsed, 'invalid')) {
         const issue = issueForInvalid(originKey, row.entityType, row.entityId, parsed.error)
         issues.push(issue)
         statements.push(
-          findingStatement(database, run.generationId, `invalid-claim:${originKey}`, issue, now)
+          findingStatement(database, run.generationId, `invalid-claim:${originKey}`, issue, now),
         )
         invalidCount += 1
       } else {
         statements.push(
           sourceKeyStatement(database, run.generationId, parsed.candidate.source.sourceKey),
-          stageStatement(database, run.generationId, parsed.candidate)
+          stageStatement(database, run.generationId, parsed.candidate),
         )
         candidateCount += 1
       }
+
       if (row.entityExists !== 1) {
         const issue: IdentityMaintenanceIssue = {
           category: 'orphaned_link',
           linkId: originKey,
           entityType: row.entityType,
           entityId: row.entityId,
-          detail: 'Completed legacy claim references a missing music entity'
+          detail: 'Completed legacy claim references a missing music entity',
         }
+
         issues.push(issue)
         statements.push(
-          findingStatement(database, run.generationId, `orphan-claim:${originKey}`, issue, now)
+          findingStatement(database, run.generationId, `orphan-claim:${originKey}`, issue, now),
         )
         orphanCount += 1
       }
     }
+
     const last = rows.at(-1)
+
     const reachedHighWater =
       !last ||
       (last.updatedAt === run.claimHighWaterUpdatedAt &&
         last.entityType === run.claimHighWaterEntityType &&
         last.canonicalUrl === run.claimHighWaterCanonicalUrl)
+
     statements.push(
       database
         .prepare(
@@ -595,7 +636,7 @@ const scanClaims = (database: D1Database, run: RunRow, batchSize: number, now: n
              claim_cursor_entity_type = ?, claim_cursor_canonical_url = ?,
              scanned_count = scanned_count + ?, candidate_count = candidate_count + ?,
              invalid_count = invalid_count + ?, orphan_count = orphan_count + ?, updated_at = ?
-           WHERE generation_id = ?`
+           WHERE generation_id = ?`,
         )
         .bind(
           reachedHighWater ? 'apply' : 'scan_claims',
@@ -607,10 +648,11 @@ const scanClaims = (database: D1Database, run: RunRow, batchSize: number, now: n
           invalidCount,
           orphanCount,
           now,
-          run.generationId
-        )
+          run.generationId,
+        ),
     )
     yield* attempt('stageClaimPage', () => database.batch(statements))
+
     return issues
   })
 
@@ -650,10 +692,11 @@ const applyStatementsForKey = (
   database: D1Database,
   generationId: string,
   sourceKey: string,
-  now: number
+  now: number,
 ): ReadonlyArray<D1PreparedStatement> => {
   const bindWinner = (sql: string, ...params: ReadonlyArray<unknown>) =>
     database.prepare(`${eligibleWinnerCte} ${sql}`).bind(generationId, sourceKey, ...params)
+
   return [
     database
       .prepare(
@@ -662,7 +705,7 @@ const applyStatementsForKey = (
          ) SELECT ?, 'lease:' || source_key,
            CASE WHEN lease_expires_at <= ? THEN 'expired_lease' ELSE 'resolving_lease' END,
            source_key, CASE WHEN lease_expires_at <= ? THEN 'Expired resolving lease blocks maintenance ownership' ELSE 'Active resolving lease blocks maintenance ownership' END, ?
-         FROM music_source_identities WHERE source_key = ? AND state = 'resolving'`
+         FROM music_source_identities WHERE source_key = ? AND state = 'resolving'`,
       )
       .bind(generationId, now, now, now, sourceKey),
     bindWinner(
@@ -674,7 +717,7 @@ const applyStatementsForKey = (
       generationId,
       sourceKey,
       sourceKey,
-      now
+      now,
     ),
     bindWinner(
       `INSERT OR IGNORE INTO music_identity_maintenance_findings (
@@ -686,7 +729,7 @@ const applyStatementsForKey = (
            (winner.external_id IS NOT NULL AND i.platform = winner.platform
              AND i.source_entity_type = winner.source_entity_type AND i.external_id = winner.external_id))`,
       generationId,
-      now
+      now,
     ),
     bindWinner(
       `INSERT OR IGNORE INTO music_identity_maintenance_actions
@@ -697,7 +740,7 @@ const applyStatementsForKey = (
          (winner.external_id IS NOT NULL AND i.platform = winner.platform
            AND i.source_entity_type = winner.source_entity_type AND i.external_id = winner.external_id))`,
       generationId,
-      now
+      now,
     ),
     bindWinner(
       `INSERT INTO music_source_identities (
@@ -712,7 +755,7 @@ const applyStatementsForKey = (
       now,
       now,
       now,
-      generationId
+      generationId,
     ),
     bindWinner(
       `INSERT OR IGNORE INTO music_identity_maintenance_findings (
@@ -724,7 +767,7 @@ const applyStatementsForKey = (
          AND e.state = 'resolved'
        WHERE c.entity_type <> e.entity_type OR c.entity_id <> e.entity_id`,
       generationId,
-      now
+      now,
     ),
     bindWinner(
       `INSERT OR IGNORE INTO music_source_identity_conflicts (
@@ -735,7 +778,7 @@ const applyStatementsForKey = (
        FROM eligible c JOIN music_source_identities e ON e.source_key = c.source_key
          AND e.state = 'resolved'
        WHERE c.entity_type <> e.entity_type OR c.entity_id <> e.entity_id`,
-      now
+      now,
     ),
     bindWinner(
       `INSERT OR IGNORE INTO music_identity_maintenance_findings (
@@ -745,7 +788,7 @@ const applyStatementsForKey = (
        JOIN music_source_aliases a ON a.normalized_url = c.normalized_url
        WHERE a.source_key <> c.source_key`,
       generationId,
-      now
+      now,
     ),
     bindWinner(
       `INSERT OR IGNORE INTO music_identity_maintenance_actions
@@ -754,7 +797,7 @@ const applyStatementsForKey = (
        JOIN music_source_identities i ON i.source_key = c.source_key AND i.state = 'resolved'
        WHERE NOT EXISTS (SELECT 1 FROM music_source_aliases a WHERE a.normalized_url = c.normalized_url)`,
       generationId,
-      now
+      now,
     ),
     bindWinner(
       `INSERT OR IGNORE INTO music_source_aliases
@@ -764,7 +807,7 @@ const applyStatementsForKey = (
          WHERE a.generation_id = ? AND a.action_key = 'alias-created:' || c.normalized_url)`,
       now,
       now,
-      generationId
+      generationId,
     ),
     bindWinner(
       `INSERT OR IGNORE INTO music_identity_maintenance_actions
@@ -774,7 +817,7 @@ const applyStatementsForKey = (
          AND a.source_key = c.source_key WHERE a.last_seen_at < ?`,
       generationId,
       now,
-      now
+      now,
     ),
     bindWinner(
       `UPDATE music_source_aliases SET last_seen_at = ? WHERE normalized_url IN (
@@ -782,49 +825,55 @@ const applyStatementsForKey = (
            ON a.generation_id = ? AND a.action_key = 'alias-touched:' || c.normalized_url
        )`,
       now,
-      generationId
-    )
+      generationId,
+    ),
   ]
 }
 
 const applyPage = (database: D1Database, run: RunRow, batchSize: number, now: number) =>
   Effect.gen(function* () {
     const applyPageSize = Math.min(batchSize, MAX_APPLY_SOURCE_KEYS)
+
     const sourceKeys = yield* attempt('readSourceKeyPage', async () => {
       const rows = (
         await database
           .prepare(
             `SELECT source_key AS sourceKey FROM music_identity_maintenance_source_keys
              WHERE generation_id = ? AND source_key > ?
-             ORDER BY source_key LIMIT ?`
+             ORDER BY source_key LIMIT ?`,
           )
           .bind(run.generationId, run.applyCursorSourceKey, applyPageSize)
           .all<{ readonly sourceKey: string }>()
       ).results
+
       return rows.map((row) => row.sourceKey)
     })
+
     if (sourceKeys.length === 0) {
       yield* attempt('completeMaintenanceRun', () =>
         database
           .prepare(
             `UPDATE music_identity_maintenance_runs SET phase = 'complete', active = 0,
-               updated_at = ? WHERE generation_id = ?`
+               updated_at = ? WHERE generation_id = ?`,
           )
           .bind(now, run.generationId)
-          .run()
+          .run(),
       )
+
       return
     }
+
     const statements = sourceKeys.flatMap((sourceKey) =>
-      applyStatementsForKey(database, run.generationId, sourceKey, now)
+      applyStatementsForKey(database, run.generationId, sourceKey, now),
     )
+
     statements.push(
       database
         .prepare(
           `UPDATE music_identity_maintenance_runs SET apply_cursor_source_key = ?,
-             attempted_count = attempted_count + ?, updated_at = ? WHERE generation_id = ?`
+             attempted_count = attempted_count + ?, updated_at = ? WHERE generation_id = ?`,
         )
-        .bind(sourceKeys.at(-1), sourceKeys.length, now, run.generationId)
+        .bind(sourceKeys.at(-1), sourceKeys.length, now, run.generationId),
     )
     yield* attempt('applySourceKeyPage', () => database.batch(statements))
   })
@@ -832,7 +881,9 @@ const applyPage = (database: D1Database, run: RunRow, batchSize: number, now: nu
 const readSummary = (database: D1Database, generationId: string, batchSize: number) =>
   Effect.gen(function* () {
     const run = yield* readRun(database, generationId)
+
     if (!run) return yield* Effect.fail(storageError('readSummary', 'Run missing'))
+
     const actionCounts = yield* attempt(
       'readActionCounts',
       async () =>
@@ -840,28 +891,31 @@ const readSummary = (database: D1Database, generationId: string, batchSize: numb
           await database
             .prepare(
               `SELECT kind, COUNT(*) AS count FROM music_identity_maintenance_actions
-             WHERE generation_id = ? GROUP BY kind`
+             WHERE generation_id = ? GROUP BY kind`,
             )
             .bind(generationId)
             .all<{ readonly kind: string; readonly count: number }>()
-        ).results
+        ).results,
     )
+
     const proposed = yield* attempt('readProposedCount', async () => {
       const row = await database
         .prepare(
           `SELECT COUNT(*) AS count
-           FROM music_identity_maintenance_source_keys WHERE generation_id = ?`
+           FROM music_identity_maintenance_source_keys WHERE generation_id = ?`,
         )
         .bind(generationId)
         .first<{ readonly count: number }>()
+
       return row?.count ?? 0
     })
+
     const findingCounts = yield* attempt('readFindingCounts', async () => {
       const rows = (
         await database
           .prepare(
             `SELECT category, COUNT(*) AS count FROM music_identity_maintenance_findings
-             WHERE generation_id = ? GROUP BY category`
+             WHERE generation_id = ? GROUP BY category`,
           )
           .bind(generationId)
           .all<{
@@ -869,16 +923,19 @@ const readSummary = (database: D1Database, generationId: string, batchSize: numb
             readonly count: number
           }>()
       ).results
+
       return {
         detected: rows.reduce((total, row) => total + row.count, 0),
         conflicted: rows.reduce(
           (total, row) => total + (CONFLICT_CATEGORIES.has(row.category) ? row.count : 0),
-          0
-        )
+          0,
+        ),
       }
     })
+
     const findingPage = yield* readFindingIssues(database, generationId, '', batchSize)
     const count = (kind: string) => actionCounts.find((row) => row.kind === kind)?.count ?? 0
+
     return {
       mode: 'backfill' as const,
       dryRun: false,
@@ -886,12 +943,15 @@ const readSummary = (database: D1Database, generationId: string, batchSize: numb
       phase: run.phase,
       batchSize,
       complete: run.phase === 'complete',
-      cursor:
-        run.phase === 'scan_links'
-          ? `${run.cursorCreatedAt}:${run.cursorId}`
-          : run.phase === 'scan_claims'
-            ? `${run.claimCursorUpdatedAt}:${run.claimCursorEntityType}:${run.claimCursorCanonicalUrl}`
-            : run.applyCursorSourceKey || null,
+      cursor: Match.value(run.phase).pipe(
+        Match.when('scan_links', () => `${run.cursorCreatedAt}:${run.cursorId}`),
+        Match.when(
+          'scan_claims',
+          () =>
+            `${run.claimCursorUpdatedAt}:${run.claimCursorEntityType}:${run.claimCursorCanonicalUrl}`,
+        ),
+        Match.orElse(() => run.applyCursorSourceKey || null),
+      ),
       scanned: run.scannedCount,
       candidates: run.candidateCount,
       proposed,
@@ -903,24 +963,26 @@ const readSummary = (database: D1Database, generationId: string, batchSize: numb
       aliasesTouched: count('alias_touched'),
       invalid: run.invalidCount,
       orphaned: run.orphanCount,
-      issues: findingPage.map((row) => row.issue)
+      issues: findingPage.map((row) => row.issue),
     }
   })
 
 const preview = (
   database: D1Database,
   batchSize: number,
-  cursor: { readonly createdAt: number; readonly id: string }
+  cursor: { readonly createdAt: number; readonly id: string },
 ) =>
   Effect.gen(function* () {
     const rows = yield* readLinkPage(database, cursor, null, batchSize)
-    const issues: IdentityMaintenanceIssue[] = []
+    const issues: Array<IdentityMaintenanceIssue> = []
     const sources = new Set<string>()
     let candidates = 0
     let invalid = 0
     let orphaned = 0
+
     for (const row of rows) {
       const entityType = canonicalEntityType(row.entityType)
+
       if (!entityType) {
         invalid += 1
         issues.push({
@@ -928,28 +990,31 @@ const preview = (
           linkId: row.id,
           entityType: row.entityType,
           entityId: row.entityId,
-          detail: 'Unsupported canonical music entity type'
+          detail: 'Unsupported canonical music entity type',
         })
         continue
       }
+
       const parsed = yield* parseSourceResult(row.url, entityType)
-      if (parsed._tag === 'invalid' || parsed.source.platform !== row.platform) {
+
+      if (Predicate.isTagged(parsed, 'invalid') || parsed.source.platform !== row.platform) {
         invalid += 1
         issues.push(
-          parsed._tag === 'invalid'
+          Predicate.isTagged(parsed, 'invalid')
             ? issueForInvalid(row.id, row.entityType, row.entityId, parsed.error)
             : {
                 category: 'invalid_source',
                 linkId: row.id,
                 entityType: row.entityType,
                 entityId: row.entityId,
-                detail: 'platform_mismatch'
-              }
+                detail: 'platform_mismatch',
+              },
         )
       } else {
         candidates += 1
         sources.add(parsed.source.sourceKey)
       }
+
       if (row.entityExists !== 1) {
         orphaned += 1
         issues.push({
@@ -957,11 +1022,13 @@ const preview = (
           linkId: row.id,
           entityType: row.entityType,
           entityId: row.entityId,
-          detail: 'Link references a missing music entity'
+          detail: 'Link references a missing music entity',
         })
       }
     }
+
     const last = rows.at(-1)
+
     return {
       mode: 'backfill' as const,
       dryRun: true,
@@ -981,44 +1048,51 @@ const preview = (
       aliasesTouched: 0,
       invalid,
       orphaned,
-      issues
+      issues,
     }
   })
 
 export const runIdentityBackfillBatch = (
   db: DatabaseClient,
-  options: IdentityBackfillOptions = {}
+  options: IdentityBackfillOptions = {},
 ): Effect.Effect<IdentityBackfillSummary, MusicIdentityStorageError> =>
   Effect.gen(function* () {
     const batchSize = yield* validatedBatchSize(options.batchSize)
     const database = db.$client
     const now = (options.now ?? new Date()).getTime()
+
     if (!options.apply) {
       return yield* preview(database, batchSize, options.cursor ?? { createdAt: -1, id: '' })
     }
+
     if (options.cursor) {
       return yield* Effect.fail(
         new MusicIdentityStorageError({
           operation: 'validateCursor',
-          message: 'Applied runs use only their durable generation cursor'
-        })
+          message: 'Applied runs use only their durable generation cursor',
+        }),
       )
     }
+
     let run = yield* readRun(database, options.generationId)
+
     if (!run) {
       if (options.generationId) {
         return yield* Effect.fail(
           new MusicIdentityStorageError({
             operation: 'validateGeneration',
-            message: 'The requested maintenance generation does not exist'
-          })
+            message: 'The requested maintenance generation does not exist',
+          }),
         )
       }
+
       run = yield* initializeRun(database, now)
     }
+
     if (run.phase === 'scan_links') yield* scanLinks(database, run, batchSize, now)
     else if (run.phase === 'scan_claims') yield* scanClaims(database, run, batchSize, now)
     else if (run.phase === 'apply') yield* applyPage(database, run, batchSize, now)
+
     return yield* readSummary(database, run.generationId, batchSize)
   }).pipe(
     Effect.tap((summary) =>
@@ -1029,17 +1103,17 @@ export const runIdentityBackfillBatch = (
         conflictedCount: summary.conflicted,
         invalidCount: summary.invalid,
         orphanCount: summary.orphaned,
-        aliasCount: summary.aliasesCreated + summary.aliasesTouched
-      })
+        aliasCount: summary.aliasesCreated + summary.aliasesTouched,
+      }),
     ),
-    withSafeTypedSpan('musicIdentity.backfillBatch')
+    withSafeTypedSpan('musicIdentity.backfillBatch'),
   )
 
 const readFindingIssues = (
   database: D1Database,
   generationId: string,
   cursor: string,
-  batchSize: number
+  batchSize: number,
 ) =>
   attempt('readMaintenanceFindings', async () => {
     const rows = (
@@ -1048,7 +1122,7 @@ const readFindingIssues = (
           `SELECT finding_key AS findingKey, category, source_key AS sourceKey,
              origin_key AS originKey, entity_type AS entityType, entity_id AS entityId, detail
            FROM music_identity_maintenance_findings
-           WHERE generation_id = ? AND finding_key > ? ORDER BY finding_key LIMIT ?`
+           WHERE generation_id = ? AND finding_key > ? ORDER BY finding_key LIMIT ?`,
         )
         .bind(generationId, cursor, batchSize)
         .all<{
@@ -1061,6 +1135,7 @@ const readFindingIssues = (
           readonly detail: string
         }>()
     ).results
+
     return rows.map((row) => ({
       key: row.findingKey,
       issue: {
@@ -1069,14 +1144,14 @@ const readFindingIssues = (
         linkId: row.originKey ?? undefined,
         entityType: row.entityType ?? undefined,
         entityId: row.entityId ?? undefined,
-        detail: row.detail
-      }
+        detail: row.detail,
+      },
     }))
   })
 
 type AuditPageRow = {
   readonly key: string
-  readonly issue?: IdentityMaintenanceIssue
+  readonly issue?: IdentityMaintenanceIssue | undefined
 }
 
 const auditSimplePage = (
@@ -1084,7 +1159,7 @@ const auditSimplePage = (
   phase: Exclude<IdentityAuditPhase, 'links' | 'findings'>,
   cursor: string,
   batchSize: number,
-  now: number
+  now: number,
 ): Effect.Effect<ReadonlyArray<AuditPageRow>, MusicIdentityStorageError> =>
   attempt(`audit.${phase}`, async () => {
     if (phase === 'identities') {
@@ -1094,7 +1169,7 @@ const auditSimplePage = (
             `SELECT source_key AS sourceKey, entity_type AS entityType, entity_id AS entityId,
                ${entityExistsSql('i')} AS entityExists
              FROM music_source_identities i WHERE i.source_key > ? AND i.state = 'resolved'
-             ORDER BY i.source_key LIMIT ?`
+             ORDER BY i.source_key LIMIT ?`,
           )
           .bind(cursor, batchSize)
           .all<{
@@ -1104,6 +1179,7 @@ const auditSimplePage = (
             readonly entityExists: number
           }>()
       ).results
+
       return rows.map((row) => ({
         key: row.sourceKey,
         issue:
@@ -1114,10 +1190,11 @@ const auditSimplePage = (
                 sourceKey: row.sourceKey,
                 entityType: row.entityType,
                 entityId: row.entityId,
-                detail: 'Resolved identity references a missing music entity'
-              }
+                detail: 'Resolved identity references a missing music entity',
+              },
       }))
     }
+
     if (phase === 'aliases') {
       const rows = (
         await database
@@ -1126,7 +1203,7 @@ const auditSimplePage = (
                i.source_key IS NOT NULL AS identityExists
              FROM music_source_aliases a LEFT JOIN music_source_identities i
                ON i.source_key = a.source_key
-             WHERE a.normalized_url > ? ORDER BY a.normalized_url LIMIT ?`
+             WHERE a.normalized_url > ? ORDER BY a.normalized_url LIMIT ?`,
           )
           .bind(cursor, batchSize)
           .all<{
@@ -1135,6 +1212,7 @@ const auditSimplePage = (
             readonly identityExists: number
           }>()
       ).results
+
       return rows.map((row) => ({
         key: row.normalizedUrl,
         issue:
@@ -1143,21 +1221,23 @@ const auditSimplePage = (
             : {
                 category: 'orphaned_alias' as const,
                 sourceKey: row.sourceKey,
-                detail: 'Alias references a missing identity'
-              }
+                detail: 'Alias references a missing identity',
+              },
       }))
     }
+
     if (phase === 'leases') {
       const rows = (
         await database
           .prepare(
             `SELECT source_key AS sourceKey, lease_expires_at AS leaseExpiresAt
              FROM music_source_identities WHERE state = 'resolving' AND source_key > ?
-             ORDER BY source_key LIMIT ?`
+             ORDER BY source_key LIMIT ?`,
           )
           .bind(cursor, batchSize)
           .all<{ readonly sourceKey: string; readonly leaseExpiresAt: number }>()
       ).results
+
       return rows.map((row) => ({
         key: row.sourceKey,
         issue: {
@@ -1167,13 +1247,15 @@ const auditSimplePage = (
           detail:
             row.leaseExpiresAt <= now
               ? 'Expired resolving lease requires recovery'
-              : 'Active resolving lease is still in progress'
-        }
+              : 'Active resolving lease is still in progress',
+        },
       }))
     }
+
     const separator = cursor.indexOf(':')
     const detectedAt = separator < 0 ? -1 : Number(cursor.slice(0, separator))
     const id = separator < 0 ? '' : cursor.slice(separator + 1)
+
     const rows = (
       await database
         .prepare(
@@ -1182,7 +1264,7 @@ const auditSimplePage = (
            FROM music_source_identity_conflicts
            WHERE status = 'open' AND
              (detected_at > ? OR (detected_at = ? AND id > ?))
-           ORDER BY detected_at, id LIMIT ?`
+           ORDER BY detected_at, id LIMIT ?`,
         )
         .bind(detectedAt, detectedAt, id, batchSize)
         .all<{
@@ -1193,6 +1275,7 @@ const auditSimplePage = (
           readonly entityId: string
         }>()
     ).results
+
     return rows.map((row) => ({
       key: `${String(row.detectedAt).padStart(20, '0')}:${row.id}`,
       issue: {
@@ -1200,22 +1283,24 @@ const auditSimplePage = (
         sourceKey: row.sourceKey,
         entityType: row.entityType,
         entityId: row.entityId,
-        detail: 'Open canonical identity conflict'
-      }
+        detail: 'Open canonical identity conflict',
+      },
     }))
   })
 
 export const auditMusicIdentities = (
   db: DatabaseClient,
-  options: IdentityAuditOptions = {}
+  options: IdentityAuditOptions = {},
 ): Effect.Effect<IdentityAuditSummary, MusicIdentityStorageError> =>
   Effect.gen(function* () {
     const batchSize = yield* validatedBatchSize(options.batchSize)
     const database = db.$client
     const phase = options.phase ?? 'links'
     const cursor = options.cursor ?? ''
+
     if (phase === 'findings') {
       const run = yield* readRun(database, options.generationId)
+
       if (!run) {
         return {
           mode: 'audit' as const,
@@ -1225,10 +1310,12 @@ export const auditMusicIdentities = (
           cursor: null,
           scanned: 0,
           detected: 0,
-          issues: []
+          issues: [],
         }
       }
+
       const rows = yield* readFindingIssues(database, run.generationId, cursor, batchSize)
+
       return {
         mode: 'audit' as const,
         phase,
@@ -1237,50 +1324,57 @@ export const auditMusicIdentities = (
         cursor: rows.at(-1)?.key ?? null,
         scanned: rows.length,
         detected: rows.length,
-        issues: rows.map((row) => row.issue)
+        issues: rows.map((row) => row.issue),
       }
     }
+
     if (phase === 'links') {
       const separator = cursor.indexOf(':')
       const createdAt = separator < 0 ? -1 : Number(cursor.slice(0, separator))
       const id = separator < 0 ? '' : cursor.slice(separator + 1)
       const rows = yield* readLinkPage(database, { createdAt, id }, null, batchSize)
-      const issues: IdentityMaintenanceIssue[] = []
+      const issues: Array<IdentityMaintenanceIssue> = []
+
       for (const row of rows) {
         const entityType = canonicalEntityType(row.entityType)
+
         if (!entityType) {
           issues.push({
             category: 'invalid_source',
             linkId: row.id,
             entityType: row.entityType,
             entityId: row.entityId,
-            detail: 'Unsupported canonical music entity type'
+            detail: 'Unsupported canonical music entity type',
           })
         } else {
           const parsed = yield* parseSourceResult(row.url, entityType)
-          if (parsed._tag === 'invalid' || parsed.source.platform !== row.platform)
+
+          if (Predicate.isTagged(parsed, 'invalid') || parsed.source.platform !== row.platform)
             issues.push(
-              parsed._tag === 'invalid'
+              Predicate.isTagged(parsed, 'invalid')
                 ? issueForInvalid(row.id, row.entityType, row.entityId, parsed.error)
                 : {
                     category: 'invalid_source',
                     linkId: row.id,
                     entityType: row.entityType,
                     entityId: row.entityId,
-                    detail: 'platform_mismatch'
-                  }
+                    detail: 'platform_mismatch',
+                  },
             )
         }
+
         if (row.entityExists !== 1)
           issues.push({
             category: 'orphaned_link',
             linkId: row.id,
             entityType: row.entityType,
             entityId: row.entityId,
-            detail: 'Link references a missing music entity'
+            detail: 'Link references a missing music entity',
           })
       }
+
       const last = rows.at(-1)
+
       return {
         mode: 'audit' as const,
         phase,
@@ -1289,17 +1383,20 @@ export const auditMusicIdentities = (
         cursor: last ? `${last.createdAt}:${last.id}` : null,
         scanned: rows.length,
         detected: issues.length,
-        issues
+        issues,
       }
     }
+
     const rows = yield* auditSimplePage(
       database,
       phase,
       cursor,
       batchSize,
-      (options.now ?? new Date()).getTime()
+      (options.now ?? new Date()).getTime(),
     )
+
     const issues = rows.flatMap((row) => (row.issue ? [row.issue] : []))
+
     return {
       mode: 'audit' as const,
       phase,
@@ -1308,15 +1405,15 @@ export const auditMusicIdentities = (
       cursor: rows.at(-1)?.key ?? null,
       scanned: rows.length,
       detected: issues.length,
-      issues
+      issues,
     }
   }).pipe(
     Effect.tap((summary) =>
       Effect.annotateCurrentSpan({
         outcome: summary.complete ? 'complete' : summary.phase,
         scannedCount: summary.scanned,
-        detectedCount: summary.detected
-      })
+        detectedCount: summary.detected,
+      }),
     ),
-    withSafeTypedSpan('musicIdentity.audit')
+    withSafeTypedSpan('musicIdentity.audit'),
   )

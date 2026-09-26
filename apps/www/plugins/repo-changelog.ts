@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+
 import type { Plugin } from 'vite'
 
 export function repoChangelogPlugin(): Plugin {
@@ -18,6 +19,6 @@ export function repoChangelogPlugin(): Plugin {
       this.addWatchFile(changelogPath)
 
       return `export default ${JSON.stringify(readFileSync(changelogPath, 'utf8'))}`
-    }
+    },
   }
 }

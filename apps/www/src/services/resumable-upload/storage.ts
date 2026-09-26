@@ -1,8 +1,9 @@
 import * as Context from 'effect/Context'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
-import { log } from '@/services/logger'
+
 import { parsePersistedUpload, type PersistedResumableUpload } from '@/lib/upload/resumable-upload'
+import { log } from '@/services/logger'
 
 const KEY = (fingerprint: string) => `gbfm:resumable-upload:${fingerprint}`
 
@@ -22,7 +23,9 @@ export const ResumableUploadStorageLive = Layer.sync(ResumableUploadStorage, () 
     Effect.sync(() => {
       try {
         const raw = window.localStorage.getItem(KEY(fingerprint))
+
         if (!raw) return null
+
         return parsePersistedUpload(JSON.parse(raw))
       } catch {
         return null
@@ -43,17 +46,18 @@ export const ResumableUploadStorageLive = Layer.sync(ResumableUploadStorage, () 
       } catch {
         // ignored
       }
-    })
+    }),
 }))
 
 export const ResumableUploadStorageTest = Layer.succeed(ResumableUploadStorage, {
   read: () => Effect.succeed(null),
   write: () => Effect.void,
-  clear: () => Effect.void
+  clear: () => Effect.void,
 })
 
 export const ResumableUploadStorageInMemory = Layer.sync(ResumableUploadStorage, () => {
   const store = new Map<string, PersistedResumableUpload>()
+
   return {
     read: (fingerprint: string) => Effect.sync(() => store.get(fingerprint) ?? null),
     write: (value: PersistedResumableUpload) =>
@@ -63,7 +67,7 @@ export const ResumableUploadStorageInMemory = Layer.sync(ResumableUploadStorage,
     clear: (fingerprint: string) =>
       Effect.sync(() => {
         store.delete(fingerprint)
-      })
+      }),
   }
 })
 

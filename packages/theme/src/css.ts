@@ -3,6 +3,7 @@ import { dark, light, type SemanticTokens, studio } from './tokens/shadcn'
 
 export function toKebab(s: string): string {
   if (s.includes('-')) return s
+
   return s.replace(/([A-Z])/g, (m) => `-${m.toLowerCase()}`)
 }
 
@@ -13,7 +14,8 @@ export function toVars<T extends Record<string, string>>(obj: T, indent = '    '
 }
 
 export function semanticToVars(tokens: SemanticTokens, indent = '    '): string {
-  const { radius, backgroundHex, ...rest } = tokens
+  const { radius, backgroundHex: _backgroundHex, ...rest } = tokens
+
   return `${toVars(rest, indent)}\n${indent}--radius: ${radius};`
 }
 

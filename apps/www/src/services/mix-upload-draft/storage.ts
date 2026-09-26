@@ -1,7 +1,9 @@
 import * as Context from 'effect/Context'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
+
 import { log } from '@/services/logger'
+
 import { type MixUploadDraft, parseMixUploadDraft } from './types'
 
 const STORAGE_KEY = 'gbfm:mix-upload-draft:v1'
@@ -21,7 +23,9 @@ export const MixUploadDraftStorageLive = Layer.sync(MixUploadDraftStorage, () =>
   read: Effect.sync(() => {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY)
+
       if (!raw) return null
+
       return parseMixUploadDraft(JSON.parse(raw))
     } catch {
       return null
@@ -39,17 +43,18 @@ export const MixUploadDraftStorageLive = Layer.sync(MixUploadDraftStorage, () =>
     try {
       window.localStorage.removeItem(STORAGE_KEY)
     } catch {}
-  })
+  }),
 }))
 
 export const MixUploadDraftStorageTest = Layer.succeed(MixUploadDraftStorage, {
   read: Effect.succeed(null),
   write: () => Effect.void,
-  clear: Effect.void
+  clear: Effect.void,
 })
 
 export const MixUploadDraftStorageInMemory = Layer.sync(MixUploadDraftStorage, () => {
   let stored: MixUploadDraft | null = null
+
   return {
     read: Effect.sync(() => stored),
     write: (value: MixUploadDraft) =>
@@ -58,7 +63,7 @@ export const MixUploadDraftStorageInMemory = Layer.sync(MixUploadDraftStorage, (
       }),
     clear: Effect.sync(() => {
       stored = null
-    })
+    }),
   }
 })
 

@@ -1,23 +1,24 @@
 import { and, asc, count, desc, eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
-import { Database } from '@/db/layer'
-import { projectEntityLabels, projectEntityLabelsForRows, replaceEntityLabels } from '@/db/labels'
-import { entityLabelsTable } from '@/db/tags.schema'
+
 import { audioTable, type SelectAudio } from '@/db/audio.schema'
 import { showIdsForCreator } from '@/db/creator-membership'
+import { projectEntityLabels, projectEntityLabelsForRows, replaceEntityLabels } from '@/db/labels'
+import { Database } from '@/db/layer'
 import {
   type InsertShow,
   type SelectMdxCompiledShow,
   type SelectShow,
   showCreators,
-  showsTable
+  showsTable,
 } from '@/db/show.schema'
+import { entityLabelsTable } from '@/db/tags.schema'
 import {
   ConflictError,
   DatabaseError,
   getErrorMessage,
   NotFoundError,
-  type UnauthorizedError
+  type UnauthorizedError,
 } from '@/errors'
 import { requireCreatorOrAdmin } from '@/lib/authorization'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
@@ -33,42 +34,42 @@ export interface ShowService {
   readonly getAll: (options: {
     limit: number
     offset: number
-  }) => Effect.Effect<{ data: ShowWithHosts[]; pagination: PaginationMetadata }, DatabaseError>
+  }) => Effect.Effect<{ data: Array<ShowWithHosts>; pagination: PaginationMetadata }, DatabaseError>
   readonly getAllForEdit: (
     options: { limit: number; offset: number },
     userId: string,
-    userRole: string
-  ) => Effect.Effect<{ data: ShowWithHosts[]; pagination: PaginationMetadata }, DatabaseError>
+    userRole: string,
+  ) => Effect.Effect<{ data: Array<ShowWithHosts>; pagination: PaginationMetadata }, DatabaseError>
   readonly getBySlug: (
-    slug: string
+    slug: string,
   ) => Effect.Effect<SelectMdxCompiledShow, DatabaseError | NotFoundError>
   readonly getBySlugForEdit: (
     slug: string,
     userId: string,
-    userRole: string
+    userRole: string,
   ) => Effect.Effect<SelectMdxCompiledShow, DatabaseError | NotFoundError | UnauthorizedError>
   readonly create: (
     data: InsertShow,
-    hostIds: string[]
+    hostIds: Array<string>,
   ) => Effect.Effect<SelectShow, DatabaseError | ConflictError>
   readonly update: (
     slug: string,
     userId: string,
     userRole: string,
-    data: Partial<InsertShow> & { hostIds?: string[] }
+    data: Partial<InsertShow> & { hostIds?: Array<string> },
   ) => Effect.Effect<SelectMdxCompiledShow, DatabaseError | NotFoundError | UnauthorizedError>
   readonly delete: (
     slug: string,
     userId: string,
-    userRole: string
+    userRole: string,
   ) => Effect.Effect<void, DatabaseError | NotFoundError | UnauthorizedError>
   readonly getEpisodes: (
     showSlug: string,
     options: { limit: number; offset: number },
-    actor?: { userId: string; userRole: string }
+    actor?: { userId: string; userRole: string },
   ) => Effect.Effect<
     {
-      data: SelectAudio[]
+      data: Array<SelectAudio>
       pagination: PaginationMetadata
     },
     DatabaseError | NotFoundError
@@ -79,69 +80,82 @@ export const ShowService = Context.Service<ShowService>('ShowService')
 
 const getAllEffect = (
   options: { limit: number; offset: number },
-  actor?: { userId: string; userRole: string }
+  actor?: { userId: string; userRole: string },
 ) =>
   Effect.gen(function* () {
     const db = yield* Database
     const { limit, offset } = options
+
     const whereCondition = actor
       ? actor.userRole === 'admin'
         ? undefined
         : showIdsForCreator(db, actor.userId)
       : eq(showsTable.draft, false)
 
-    const countResult = yield* Effect.tryPromise({
-      try: () => db.select({ total: count() }).from(showsTable).where(whereCondition),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to count shows: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'shows'
-        })
-    })
+    const [countResult, shows] = yield* Effect.all(
+      [
+        Effect.tryPromise({
+          try: () => db.select({ total: count() }).from(showsTable).where(whereCondition),
+          catch: (error) =>
+            new DatabaseError({
+              message: `Failed to count shows: ${getErrorMessage(error)}`,
+              operation: 'select',
+              table: 'shows',
+            }),
+        }).pipe(Effect.withSpan('show.getAll.count')),
+        Effect.tryPromise({
+          try: () =>
+            db.query.showsTable.findMany({
+              where: whereCondition,
+              limit,
+              offset,
+              orderBy: [desc(showsTable.createdAt), asc(showsTable.title)],
+              with: {
+                showCreators: {
+                  with: { creator: true },
+                },
+              },
+            }),
+          catch: (error) =>
+            new DatabaseError({
+              message: `Failed to fetch shows: ${getErrorMessage(error)}`,
+              operation: 'select',
+              table: 'shows',
+            }),
+        }).pipe(Effect.withSpan('show.getAll.list')),
+      ],
+      { concurrency: 'unbounded' },
+    )
 
     const total = countResult[0]?.total ?? 0
-
-    const shows = yield* Effect.tryPromise({
-      try: () =>
-        db.query.showsTable.findMany({
-          where: whereCondition,
-          limit,
-          offset,
-          orderBy: [desc(showsTable.createdAt), asc(showsTable.title)],
-          with: {
-            showCreators: {
-              with: { creator: true }
-            }
-          }
-        }),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to fetch shows: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'shows'
-        })
-    })
 
     const projectedShows = yield* Effect.tryPromise({
       try: () => projectEntityLabelsForRows(db, 'show', shows),
       catch: (error) =>
-        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
-    })
+        new DatabaseError({
+          message: getErrorMessage(error),
+          operation: 'select',
+          table: 'labels',
+        }),
+    }).pipe(Effect.withSpan('show.getAll.labels'))
+
+    yield* Effect.annotateCurrentSpan({ resultCount: shows.length, totalCount: total })
+
     const data = projectedShows.map(({ showCreators: hosts, ...show }) => ({
       ...show,
-      hosts: hosts.map(({ creator }) => ({ id: creator.id, name: creator.name }))
+      hosts: hosts.map(({ creator }) => ({ id: creator.id, name: creator.name })),
     }))
 
     return {
       data,
-      pagination: createPaginationMetadata(total, limit, offset)
+      pagination: createPaginationMetadata(total, limit, offset),
     }
   })
 
 const getBySlugEffect = (slug: string, includeDrafts = false) =>
   Effect.gen(function* () {
     const db = yield* Database
+
     const show = yield* Effect.tryPromise({
       try: () =>
         db.query.showsTable.findFirst({
@@ -150,31 +164,36 @@ const getBySlugEffect = (slug: string, includeDrafts = false) =>
             : and(eq(showsTable.slug, slug), eq(showsTable.draft, false)),
           with: {
             showCreators: {
-              with: { creator: true }
-            }
-          }
+              with: { creator: true },
+            },
+          },
         }),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to fetch show: ${getErrorMessage(error)}`,
           operation: 'select',
-          table: 'shows'
-        })
+          table: 'shows',
+        }),
     })
 
     if (!show) {
       return yield* new NotFoundError({
         message: 'Show not found',
         resource: 'show',
-        id: slug
+        id: slug,
       })
     }
 
     const { showCreators: hosts, ...showFields } = show
+
     const { tags } = yield* Effect.tryPromise({
       try: () => projectEntityLabels(db, 'show', showFields),
       catch: (error) =>
-        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+        new DatabaseError({
+          message: getErrorMessage(error),
+          operation: 'select',
+          table: 'labels',
+        }),
     })
 
     let processedShow: SelectMdxCompiledShow = {
@@ -183,8 +202,8 @@ const getBySlugEffect = (slug: string, includeDrafts = false) =>
       compiledContent: '',
       hosts: hosts.map(({ creator }) => ({
         id: creator.id,
-        name: creator.name
-      }))
+        name: creator.name,
+      })),
     }
 
     if (show.content) {
@@ -194,14 +213,14 @@ const getBySlugEffect = (slug: string, includeDrafts = false) =>
           new DatabaseError({
             message: `Failed to compile MDX: ${getErrorMessage(error)}`,
             operation: 'mdx_compile',
-            table: 'shows'
-          })
+            table: 'shows',
+          }),
       })
 
       if (isMDXCompilationResult(mdxResult)) {
         processedShow = {
           ...processedShow,
-          compiledContent: mdxResult.compiled
+          compiledContent: mdxResult.compiled,
         }
       }
     }
@@ -209,11 +228,12 @@ const getBySlugEffect = (slug: string, includeDrafts = false) =>
     return processedShow
   })
 
-const createEffect = (data: InsertShow, hostIds: string[]) =>
+const createEffect = (data: InsertShow, hostIds: Array<string>) =>
   Effect.gen(function* () {
     const db = yield* Database
     const { tags, ...showData } = data
     const id = crypto.randomUUID()
+
     const result = yield* Effect.tryPromise({
       try: async () => {
         await db.batch([
@@ -222,43 +242,54 @@ const createEffect = (data: InsertShow, hostIds: string[]) =>
             ? [
                 db
                   .insert(showCreators)
-                  .values(hostIds.map((creatorId) => ({ showId: id, creatorId })))
+                  .values(hostIds.map((creatorId) => ({ showId: id, creatorId }))),
               ]
-            : [])
+            : []),
         ])
         const rows = await db.select().from(showsTable).where(eq(showsTable.id, id)).limit(1)
         const show = rows[0]
+
         if (!show) throw new Error('Failed to create show')
+
         if (tags !== undefined) await replaceEntityLabels(db, 'show', show.id, { tags })
+
         return show
       },
       catch: (error) => {
         const errorMessage = getErrorMessage(error)
+
         if (errorMessage.includes('unique constraint')) {
           return new ConflictError({
             message: 'Show with this slug already exists',
-            resource: 'show'
+            resource: 'show',
           })
         }
+
         if (errorMessage.includes('foreign key constraint')) {
           return new ConflictError({
             message: 'You may have entered a non-existent host id',
-            resource: 'show'
+            resource: 'show',
           })
         }
+
         return new DatabaseError({
           message: `Failed to create show: ${errorMessage}`,
           operation: 'transaction',
-          table: 'shows'
+          table: 'shows',
         })
-      }
+      },
     })
 
     const { tags: projectedTags } = yield* Effect.tryPromise({
       try: () => projectEntityLabels(db, 'show', result),
       catch: (error) =>
-        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+        new DatabaseError({
+          message: getErrorMessage(error),
+          operation: 'select',
+          table: 'labels',
+        }),
     })
+
     return { ...result, tags: projectedTags }
   })
 
@@ -266,7 +297,7 @@ const updateEffect = (
   slug: string,
   userId: string,
   userRole: string,
-  data: Partial<InsertShow> & { hostIds?: string[] }
+  data: Partial<InsertShow> & { hostIds?: Array<string> },
 ) =>
   Effect.gen(function* () {
     const db = yield* Database
@@ -278,16 +309,17 @@ const updateEffect = (
         new DatabaseError({
           message: `Failed to check show existence: ${getErrorMessage(error)}`,
           operation: 'select',
-          table: 'shows'
-        })
+          table: 'shows',
+        }),
     })
 
     const existingShow = existingRecords[0]
+
     if (!existingShow) {
       return yield* new NotFoundError({
         message: 'Show not found',
         resource: 'show',
-        id: slug
+        id: slug,
       })
     }
 
@@ -308,9 +340,9 @@ const updateEffect = (
               ? [
                   db
                     .insert(showCreators)
-                    .values(hostIds.map((creatorId) => ({ showId: existingShow.id, creatorId })))
+                    .values(hostIds.map((creatorId) => ({ showId: existingShow.id, creatorId }))),
                 ]
-              : [])
+              : []),
           ])
         } else {
           await db.batch([update])
@@ -322,16 +354,17 @@ const updateEffect = (
         new DatabaseError({
           message: `Failed to update show: ${getErrorMessage(error)}`,
           operation: 'update',
-          table: 'shows'
-        })
+          table: 'shows',
+        }),
     })
 
     const updatedShow = updatedRecords[0]
+
     if (!updatedShow) {
       return yield* new DatabaseError({
         message: 'Failed to update show',
         operation: 'update',
-        table: 'shows'
+        table: 'shows',
       })
     }
 
@@ -342,8 +375,8 @@ const updateEffect = (
           new DatabaseError({
             message: getErrorMessage(error),
             operation: 'update',
-            table: 'labels'
-          })
+            table: 'labels',
+          }),
       })
     }
 
@@ -351,29 +384,34 @@ const updateEffect = (
       try: () =>
         db.query.showCreators.findMany({
           where: eq(showCreators.showId, updatedShow.id),
-          with: { creator: true }
+          with: { creator: true },
         }),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to fetch hosts: ${getErrorMessage(error)}`,
           operation: 'select',
-          table: 'show_creators'
-        })
+          table: 'show_creators',
+        }),
     })
 
     const { tags: projectedTags } = yield* Effect.tryPromise({
       try: () => projectEntityLabels(db, 'show', updatedShow),
       catch: (error) =>
-        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+        new DatabaseError({
+          message: getErrorMessage(error),
+          operation: 'select',
+          table: 'labels',
+        }),
     })
+
     const baseProcessedShow: SelectMdxCompiledShow = {
       ...updatedShow,
       tags: projectedTags,
       compiledContent: '',
       hosts: hostRows.map(({ creator }) => ({
         id: creator.id,
-        name: creator.name
-      }))
+        name: creator.name,
+      })),
     }
 
     if (updatedShow.content) {
@@ -383,14 +421,14 @@ const updateEffect = (
           new DatabaseError({
             message: `Failed to compile MDX: ${getErrorMessage(error)}`,
             operation: 'mdx_compile',
-            table: 'shows'
-          })
+            table: 'shows',
+          }),
       })
 
       if (isMDXCompilationResult(mdxResult)) {
         return {
           ...baseProcessedShow,
-          compiledContent: mdxResult.compiled
+          compiledContent: mdxResult.compiled,
         }
       }
     }
@@ -401,22 +439,24 @@ const updateEffect = (
 const deleteEffect = (slug: string, userId: string, userRole: string) =>
   Effect.gen(function* () {
     const db = yield* Database
+
     const existingRecords = yield* Effect.tryPromise({
       try: () => db.select().from(showsTable).where(eq(showsTable.slug, slug)).limit(1),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to check show existence: ${getErrorMessage(error)}`,
           operation: 'select',
-          table: 'shows'
-        })
+          table: 'shows',
+        }),
     })
 
     const existingShow = existingRecords[0]
+
     if (!existingShow) {
       return yield* new NotFoundError({
         message: 'Show not found',
         resource: 'show',
-        id: slug
+        id: slug,
       })
     }
 
@@ -430,17 +470,17 @@ const deleteEffect = (slug: string, userId: string, userRole: string) =>
             .where(
               and(
                 eq(entityLabelsTable.entityType, 'show'),
-                eq(entityLabelsTable.entityId, existingShow.id)
-              )
+                eq(entityLabelsTable.entityId, existingShow.id),
+              ),
             ),
-          db.delete(showsTable).where(eq(showsTable.id, existingShow.id))
+          db.delete(showsTable).where(eq(showsTable.id, existingShow.id)),
         ]),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to delete show: ${getErrorMessage(error)}`,
           operation: 'delete',
-          table: 'shows'
-        })
+          table: 'shows',
+        }),
     })
 
     return undefined
@@ -449,7 +489,7 @@ const deleteEffect = (slug: string, userId: string, userRole: string) =>
 const getEpisodesEffect = (
   showSlug: string,
   options: { limit: number; offset: number },
-  actor?: { userId: string; userRole: string }
+  actor?: { userId: string; userRole: string },
 ) =>
   Effect.gen(function* () {
     const db = yield* Database
@@ -466,63 +506,73 @@ const getEpisodesEffect = (
         new DatabaseError({
           message: `Failed to fetch show: ${getErrorMessage(error)}`,
           operation: 'select',
-          table: 'shows'
-        })
+          table: 'shows',
+        }),
     })
 
     const show = showRecords[0]
+
     if (!show) {
       return yield* new NotFoundError({
         message: 'Show not found',
         resource: 'show',
-        id: showSlug
+        id: showSlug,
       })
     }
 
     const draftCondition = actor?.userRole === 'admin' ? undefined : eq(audioTable.draft, false)
     const whereCondition = and(eq(audioTable.showId, show.id), draftCondition)
 
-    const countResult = yield* Effect.tryPromise({
-      try: () => db.select({ total: count() }).from(audioTable).where(whereCondition),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to count episodes: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'audio'
-        })
-    })
+    const [countResult, episodes] = yield* Effect.all(
+      [
+        Effect.tryPromise({
+          try: () => db.select({ total: count() }).from(audioTable).where(whereCondition),
+          catch: (error) =>
+            new DatabaseError({
+              message: `Failed to count episodes: ${getErrorMessage(error)}`,
+              operation: 'select',
+              table: 'audio',
+            }),
+        }),
+        Effect.tryPromise({
+          try: () =>
+            db.query.audioTable.findMany({
+              where: whereCondition,
+              limit,
+              offset,
+              orderBy: desc(audioTable.createdAt),
+              with: {
+                audioCreators: {
+                  with: { creator: true },
+                },
+                show: {
+                  columns: { thumbnailUrl: true },
+                },
+              },
+            }),
+          catch: (error) =>
+            new DatabaseError({
+              message: `Failed to fetch episodes: ${getErrorMessage(error)}`,
+              operation: 'select',
+              table: 'audio',
+            }),
+        }),
+      ],
+      { concurrency: 'unbounded' },
+    )
 
     const total = countResult[0]?.total ?? 0
-
-    const episodes = yield* Effect.tryPromise({
-      try: () =>
-        db.query.audioTable.findMany({
-          where: whereCondition,
-          limit,
-          offset,
-          orderBy: desc(audioTable.createdAt),
-          with: {
-            audioCreators: {
-              with: { creator: true }
-            },
-            show: {
-              columns: { thumbnailUrl: true }
-            }
-          }
-        }),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to fetch episodes: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'audio'
-        })
-    })
 
     const projectedEpisodes = yield* Effect.tryPromise({
       try: () => projectEntityLabelsForRows(db, 'audio', episodes),
       catch: (error) =>
-        new DatabaseError({ message: getErrorMessage(error), operation: 'select', table: 'labels' })
+        new DatabaseError({
+          message: getErrorMessage(error),
+          operation: 'select',
+          table: 'labels',
+        }),
     })
+
     const data = projectedEpisodes.map(
       ({ audioCreators: creators, show: episodeShow, ...episode }) => ({
         ...episode,
@@ -530,14 +580,14 @@ const getEpisodesEffect = (
         creators: creators.map(({ creator }) => ({
           id: creator.id,
           name: creator.name,
-          username: creator.username
-        }))
-      })
+          username: creator.username,
+        })),
+      }),
     )
 
     return {
       data,
-      pagination: createPaginationMetadata(total, limit, offset)
+      pagination: createPaginationMetadata(total, limit, offset),
     }
   })
 
@@ -546,38 +596,47 @@ export const ShowServiceLayer = Layer.effect(
   Effect.gen(function* () {
     const db = yield* Database
     const provideDb = Effect.provideService(Database, db)
+
     return {
-      getAll: (options) => provideDb(getAllEffect(options)).pipe(Effect.withSpan('show.getAll')),
+      getAll: (options) =>
+        provideDb(getAllEffect(options)).pipe(
+          Effect.withSpan('show.getAll', {
+            attributes: { limit: options.limit, offset: options.offset },
+          }),
+        ),
       getAllForEdit: (options, userId, userRole) =>
         provideDb(getAllEffect(options, { userId, userRole })).pipe(
-          Effect.withSpan('show.getAllForEdit')
+          Effect.withSpan('show.getAllForEdit', {
+            attributes: { limit: options.limit, offset: options.offset },
+          }),
         ),
       getBySlug: (slug) =>
         provideDb(getBySlugEffect(slug)).pipe(
-          Effect.withSpan('show.getBySlug', { attributes: { slug } })
+          Effect.withSpan('show.getBySlug', { attributes: { slug } }),
         ),
       getBySlugForEdit: (slug, userId, userRole) =>
         provideDb(
           Effect.gen(function* () {
             const show = yield* getBySlugEffect(slug, true)
             yield* requireCreatorOrAdmin('show', show.id, userId, userRole)
+
             return show
-          })
+          }),
         ).pipe(Effect.withSpan('show.getBySlugForEdit', { attributes: { slug } })),
       create: (data, hostIds) =>
         provideDb(createEffect(data, hostIds)).pipe(Effect.withSpan('show.create')),
       update: (slug, userId, userRole, data) =>
         provideDb(updateEffect(slug, userId, userRole, data)).pipe(
-          Effect.withSpan('show.update', { attributes: { slug } })
+          Effect.withSpan('show.update', { attributes: { slug } }),
         ),
       delete: (slug, userId, userRole) =>
         provideDb(deleteEffect(slug, userId, userRole)).pipe(
-          Effect.withSpan('show.delete', { attributes: { slug } })
+          Effect.withSpan('show.delete', { attributes: { slug } }),
         ),
       getEpisodes: (showSlug, options, actor) =>
         provideDb(getEpisodesEffect(showSlug, options, actor)).pipe(
-          Effect.withSpan('show.getEpisodes', { attributes: { showSlug } })
-        )
+          Effect.withSpan('show.getEpisodes', { attributes: { showSlug } }),
+        ),
     }
-  })
+  }),
 )

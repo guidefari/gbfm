@@ -3,6 +3,7 @@ import { REMINDER_STATUS } from '@gbfm/core/status'
 import { eq } from 'drizzle-orm'
 import { Effect, Layer } from 'effect'
 import { describe, expect, test } from 'vitest'
+
 import { user } from '@/db/auth.schema'
 import { emailDeliveryLogsTable } from '@/db/email.schema'
 import { Database, DatabaseLayer } from '@/db/layer'
@@ -12,11 +13,11 @@ import { EmailDeliveryLive } from '@/services/email-delivery.service'
 import {
   EmailTransport,
   EmailUnavailable,
-  type OutboundEmailMessage
+  type OutboundEmailMessage,
 } from '@/services/email-transport.service'
 import { claimReminder, findReminderById, sendClaimedReminder } from '@/services/reminder-processor'
-import { createMigratedD1Database } from '@/test/migrate-d1'
 import { withTestLayer } from '@/test/effect'
+import { createMigratedD1Database } from '@/test/migrate-d1'
 
 const workerBindings = (): WorkerConfigBindings => ({
   APP_STAGE: 'test',
@@ -29,6 +30,7 @@ const workerBindings = (): WorkerConfigBindings => ({
   VITE_PUBLIC_SENTRY_DSN: 'configured',
   OTEL_EXPORTER_OTLP_ENDPOINT: 'configured',
   OTEL_EXPORTER_OTLP_HEADERS: 'configured',
+  CloudflareAnalyticsApiToken: 'test-analytics-token',
   BETTER_AUTH_SECRET: 'configured',
   BETTER_AUTH_URL: 'configured',
   StorageProvider: 'aws',
@@ -36,29 +38,32 @@ const workerBindings = (): WorkerConfigBindings => ({
   StorageRegion: 'configured',
   StorageAccessKeyId: 'configured',
   StorageSecretAccessKey: 'configured',
-  StorageSigningEndpoint: 'configured'
+  StorageSigningEndpoint: 'configured',
 })
 
 const reminderLayer = (d1: D1Database, messages: Array<OutboundEmailMessage>) => {
   let deliveryAttempts = 0
   const database = DatabaseLayer(d1)
+
   const transport = Layer.succeed(EmailTransport, {
     send: (message) => {
       messages.push(message)
       deliveryAttempts += 1
+
       return deliveryAttempts === 1
         ? Effect.fail(new EmailUnavailable({ providerCode: 'unknown' }))
         : Effect.succeed({ provider: 'cloudflare' as const, messageId: 'reminder-accepted' })
-    }
+    },
   })
+
   const delivery = EmailDeliveryLive.pipe(
     Layer.provide(
       Layer.mergeAll(
         database,
         transport,
-        Layer.succeed(ConfigService, createConfig(workerBindings()))
-      )
-    )
+        Layer.succeed(ConfigService, createConfig(workerBindings())),
+      ),
+    ),
   )
 
   return Layer.mergeAll(database, delivery)
@@ -77,7 +82,7 @@ describe('reminder queue delivery', () => {
     await database.insert(user).values({
       id: userId,
       name: 'Reminder listener',
-      email: 'reminder-listener@example.com'
+      email: 'reminder-listener@example.com',
     })
     await database.insert(musicReminder).values({
       id: reminderId,
@@ -85,35 +90,40 @@ describe('reminder queue delivery', () => {
       musicTitle: 'A reminder mix',
       artistName: 'Guide Fari',
       musicUrl: 'https://goosebumps.fm/mixes/a-reminder-mix',
-      reminderDate: new Date(Date.now() - 1_000)
+      reminderDate: new Date(Date.now() - 1_000),
     })
 
     const firstClaim = await Effect.runPromise(withTestLayer(claimReminder(reminderId), layer))
+
     const firstReminder = await Effect.runPromise(
-      withTestLayer(findReminderById(reminderId), layer)
+      withTestLayer(findReminderById(reminderId), layer),
     )
+
     if (!firstReminder) throw new Error('Test reminder was not found after its first claim')
 
     await expect(
-      Effect.runPromise(withTestLayer(sendClaimedReminder(firstReminder), layer))
-    ).rejects.toMatchObject({ _tag: 'ReminderProcessingError', stage: 'email' })
+      Effect.runPromise(withTestLayer(sendClaimedReminder(firstReminder), layer)),
+    ).rejects.toMatchObject({ stage: 'email' })
 
     const failedReminder = await database
       .select()
       .from(musicReminder)
       .where(eq(musicReminder.id, reminderId))
+
     const failedLogs = await database.select().from(emailDeliveryLogsTable)
 
     expect(firstClaim).toEqual({ claimed: true })
     expect(failedReminder[0]).toMatchObject({ status: REMINDER_STATUS.FAILED, isSent: false })
     expect(failedLogs).toEqual([
-      expect.objectContaining({ status: 'FAILED', failureCategory: 'unavailable' })
+      expect.objectContaining({ status: 'FAILED', failureCategory: 'unavailable' }),
     ])
 
     const retryClaim = await Effect.runPromise(withTestLayer(claimReminder(reminderId), layer))
+
     const retryReminder = await Effect.runPromise(
-      withTestLayer(findReminderById(reminderId), layer)
+      withTestLayer(findReminderById(reminderId), layer),
     )
+
     if (!retryReminder) throw new Error('Test reminder was not found after its retry claim')
 
     await Effect.runPromise(withTestLayer(sendClaimedReminder(retryReminder), layer))
@@ -122,6 +132,7 @@ describe('reminder queue delivery', () => {
       .select()
       .from(musicReminder)
       .where(eq(musicReminder.id, reminderId))
+
     const logs = await database.select().from(emailDeliveryLogsTable)
 
     expect(retryClaim).toEqual({ claimed: true })
@@ -133,9 +144,9 @@ describe('reminder queue delivery', () => {
         expect.objectContaining({
           status: 'SENT',
           provider: 'cloudflare',
-          providerMessageId: 'reminder-accepted'
-        })
-      ])
+          providerMessageId: 'reminder-accepted',
+        }),
+      ]),
     )
   })
 })

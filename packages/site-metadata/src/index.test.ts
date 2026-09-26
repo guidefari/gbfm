@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+
 import {
   getStaticSiteMetadata,
   makeAudioSiteMetadata,
@@ -6,7 +7,7 @@ import {
   renderDocumentHead,
   renderMetadataHtml,
   SITE_DEFAULT_IMAGE,
-  type SiteMetadata
+  type SiteMetadata,
 } from './index'
 
 const metadata: SiteMetadata = {
@@ -19,12 +20,12 @@ const metadata: SiteMetadata = {
     url: SITE_DEFAULT_IMAGE,
     alt: 'A strange post',
     width: 1200,
-    height: 630
+    height: 630,
   },
   creators: ['Guide Fari'],
   publishedAt: '2026-09-01T00:00:00.000Z',
   modifiedAt: '2026-09-12T00:00:00.000Z',
-  audio: null
+  audio: null,
 }
 
 describe('site metadata', () => {
@@ -37,7 +38,7 @@ describe('site metadata', () => {
     expect(JSON.parse(head.scripts[0]?.children ?? '')).toMatchObject({
       '@type': 'Article',
       headline: metadata.title,
-      datePublished: metadata.publishedAt
+      datePublished: metadata.publishedAt,
     })
   })
 
@@ -54,14 +55,14 @@ describe('site metadata', () => {
       ...metadata,
       kind: 'track',
       image: { ...metadata.image, width: null, height: null },
-      audio: { url: 'https://audio.example.com/track', mimeType: null }
+      audio: { url: 'https://audio.example.com/track', mimeType: null },
     })
 
     expect(head.meta).not.toContainEqual(expect.objectContaining({ property: 'og:image:width' }))
     expect(head.meta).not.toContainEqual(expect.objectContaining({ property: 'og:audio:type' }))
     expect(head.meta).toContainEqual({
       property: 'og:audio',
-      content: 'https://audio.example.com/track'
+      content: 'https://audio.example.com/track',
     })
   })
 
@@ -75,14 +76,14 @@ describe('site metadata', () => {
       creators: [],
       publishedAt: null,
       modifiedAt: null,
-      audioUrl: 'https://audio.example.com/deep-cut.mp3'
+      audioUrl: 'https://audio.example.com/deep-cut.mp3',
     })
 
     expect(audio).toMatchObject({
       title: 'deep-cut',
       description: 'Listen to deep-cut on goosebumps.fm',
       canonicalUrl: 'https://goosebumps.fm/tracks/deep-cut',
-      image: { url: SITE_DEFAULT_IMAGE, width: 1200, height: 630 }
+      image: { url: SITE_DEFAULT_IMAGE, width: 1200, height: 630 },
     })
   })
 
@@ -92,8 +93,8 @@ describe('site metadata', () => {
       makeStaticSiteMetadata(
         '#deep house',
         'Posts tagged #deep house on goosebumps.fm',
-        '/tags/deep%20house'
-      )
+        '/tags/deep%20house',
+      ),
     )
     expect(getStaticSiteMetadata('/dashboard')).toBeNull()
   })

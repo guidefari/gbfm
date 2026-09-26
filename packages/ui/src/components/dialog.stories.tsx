@@ -6,12 +6,12 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger
+  DialogTrigger,
 } from './dialog'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Primitives/Dialog'
+  title: '@gbfm/ui/Primitives/Dialog',
 }
 
 export function Dialogs() {

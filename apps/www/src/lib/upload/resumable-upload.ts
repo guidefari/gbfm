@@ -30,7 +30,7 @@ export interface PersistedResumableUpload {
   totalParts: number
   contentType: string
   fileName: string
-  completedParts: ResumablePart[]
+  completedParts: Array<ResumablePart>
   createdAt: number
   updatedAt: number
 }
@@ -48,7 +48,7 @@ export interface PresignPartResponse {
 }
 
 export interface MultipartStatusResponse {
-  parts: ResumablePart[]
+  parts: Array<ResumablePart>
 }
 
 export interface MultipartAbortResponse {
@@ -58,13 +58,13 @@ export interface MultipartAbortResponse {
 const multipartInitResponseSchema = Schema.Struct({
   uploadId: Schema.String,
   key: Schema.String,
-  chunkSize: Schema.Number
+  chunkSize: Schema.Number,
 })
 
 const presignPartResponseSchema = Schema.Struct({
   url: Schema.String,
   partNumber: Schema.Number,
-  expiresInSeconds: Schema.Number
+  expiresInSeconds: Schema.Number,
 })
 
 const multipartStatusResponseSchema = Schema.Struct({
@@ -72,18 +72,18 @@ const multipartStatusResponseSchema = Schema.Struct({
     Schema.Struct({
       partNumber: Schema.Number,
       etag: Schema.String,
-      size: Schema.Number
-    })
-  )
+      size: Schema.Number,
+    }),
+  ),
 })
 
 const multipartAbortResponseSchema = Schema.Struct({
-  ok: Schema.Literal(true)
+  ok: Schema.Literal(true),
 })
 
 const multipartCompleteResponseSchema = Schema.Struct({
   url: Schema.String,
-  key: Schema.String
+  key: Schema.String,
 })
 
 const persistedUploadSchema = Schema.Struct({
@@ -99,11 +99,11 @@ const persistedUploadSchema = Schema.Struct({
     Schema.Struct({
       partNumber: Schema.Number,
       etag: Schema.String,
-      size: Schema.Number
-    })
+      size: Schema.Number,
+    }),
   ),
   createdAt: Schema.Number,
-  updatedAt: Schema.Number
+  updatedAt: Schema.Number,
 })
 
 export type JsonInput =
@@ -111,7 +111,7 @@ export type JsonInput =
   | number
   | boolean
   | null
-  | readonly JsonInput[]
+  | ReadonlyArray<JsonInput>
   | { readonly [key: string]: JsonInput }
 
 export const parseInitResponse = (raw: JsonInput): MultipartInitResponse =>
@@ -122,8 +122,9 @@ export const parsePresignPartResponse = (raw: JsonInput): PresignPartResponse =>
 
 export const parseStatusResponse = (raw: JsonInput): MultipartStatusResponse => {
   const decoded = Schema.decodeUnknownSync(multipartStatusResponseSchema)(raw)
+
   return {
-    parts: decoded.parts.map((p) => ({ partNumber: p.partNumber, etag: p.etag, size: p.size }))
+    parts: decoded.parts.map((p) => ({ partNumber: p.partNumber, etag: p.etag, size: p.size })),
   }
 }
 
@@ -136,13 +137,14 @@ export const parseCompleteResponse = (raw: JsonInput): { url: string; key: strin
 export const parsePersistedUpload = (raw: JsonInput): PersistedResumableUpload | null => {
   try {
     const decoded = Schema.decodeUnknownSync(persistedUploadSchema)(raw)
+
     return {
       ...decoded,
       completedParts: decoded.completedParts.map((p) => ({
         partNumber: p.partNumber,
         etag: p.etag,
-        size: p.size
-      }))
+        size: p.size,
+      })),
     }
   } catch {
     return null
@@ -154,7 +156,7 @@ export const computeFileFingerprint = (file: File): string =>
 
 export const splitFileIntoChunks = (
   file: File,
-  chunkSize: number
+  chunkSize: number,
 ): Array<{ partNumber: number; blob: Blob; start: number; end: number }> => {
   if (chunkSize <= 0) {
     throw new Error('chunkSize must be positive')
@@ -163,17 +165,19 @@ export const splitFileIntoChunks = (
   const chunks: Array<{ partNumber: number; blob: Blob; start: number; end: number }> = []
   let offset = 0
   let partNumber = 1
+
   while (offset < file.size) {
     const end = Math.min(offset + chunkSize, file.size)
     chunks.push({
       partNumber,
       blob: file.slice(offset, end),
       start: offset,
-      end
+      end,
     })
     offset = end
     partNumber += 1
   }
+
   return chunks
 }
 
@@ -181,37 +185,44 @@ export const totalParts = (fileSize: number, chunkSize: number): number => {
   if (chunkSize <= 0) {
     throw new Error('chunkSize must be positive')
   }
+
   if (fileSize === 0) return 0
+
   return Math.ceil(fileSize / chunkSize)
 }
 
 export const mergeCompletedParts = (
-  ...sources: ReadonlyArray<ResumablePart[]>
-): ResumablePart[] => {
+  ...sources: ReadonlyArray<Array<ResumablePart>>
+): Array<ResumablePart> => {
   const byPartNumber = new Map<number, ResumablePart>()
+
   for (const source of sources) {
     for (const part of source) {
       byPartNumber.set(part.partNumber, part)
     }
   }
+
   return Array.from(byPartNumber.values()).toSorted((a, b) => a.partNumber - b.partNumber)
 }
 
 export const missingPartNumbers = (
   totalParts: number,
-  completed: ReadonlyArray<ResumablePart>
-): number[] => {
+  completed: ReadonlyArray<ResumablePart>,
+): Array<number> => {
   const have = new Set(completed.map((p) => p.partNumber))
-  const missing: number[] = []
+  const missing: Array<number> = []
+
   for (let i = 1; i <= totalParts; i += 1) {
     if (!have.has(i)) missing.push(i)
   }
+
   return missing
 }
 
 export const computeBackoff = (attempt: number, baseMs = 1000, maxMs = 30000): number => {
   const exponential = baseMs * 2 ** Math.max(0, attempt - 1)
   const jitter = Math.random() * baseMs
+
   return Math.min(exponential + jitter, maxMs)
 }
 
@@ -219,16 +230,20 @@ export const sleep = (ms: number, signal?: AbortSignal): Promise<void> =>
   new Promise((resolve, reject) => {
     if (signal?.aborted) {
       reject(new DOMException('Aborted', 'AbortError'))
+
       return
     }
+
     const timer = setTimeout(() => {
       signal?.removeEventListener('abort', onAbort)
       resolve()
     }, ms)
+
     const onAbort = () => {
       clearTimeout(timer)
       reject(new DOMException('Aborted', 'AbortError'))
     }
+
     signal?.addEventListener('abort', onAbort, { once: true })
   })
 
@@ -242,6 +257,7 @@ export const createPersistedUpload = (input: {
   now?: number
 }): PersistedResumableUpload => {
   const now = input.now ?? Date.now()
+
   return {
     fileFingerprint: input.fileFingerprint,
     uploadId: input.init.uploadId,
@@ -253,16 +269,17 @@ export const createPersistedUpload = (input: {
     fileName: input.file.name,
     completedParts: [],
     createdAt: now,
-    updatedAt: now
+    updatedAt: now,
   }
 }
 
 export const withUpdatedPart = (
   persisted: PersistedResumableUpload,
   part: ResumablePart,
-  now?: number
+  now?: number,
 ): PersistedResumableUpload => {
   const existingIndex = persisted.completedParts.findIndex((p) => p.partNumber === part.partNumber)
+
   const completedParts =
     existingIndex === -1
       ? [...persisted.completedParts, part]
@@ -271,6 +288,6 @@ export const withUpdatedPart = (
   return {
     ...persisted,
     completedParts: completedParts.toSorted((a, b) => a.partNumber - b.partNumber),
-    updatedAt: now ?? Date.now()
+    updatedAt: now ?? Date.now(),
   }
 }

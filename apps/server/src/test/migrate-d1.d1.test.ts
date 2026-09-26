@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+
 import { createMigratedD1Database } from './migrate-d1'
 
 describe('migrated D1 test database', () => {

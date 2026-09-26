@@ -2,7 +2,7 @@ import { MixesListSkeleton, MixesSkeleton } from './mixes-skeleton'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Media/Mixes skeleton'
+  title: '@gbfm/ui/Media/Mixes skeleton',
 }
 
 export function MixesSkeletons() {

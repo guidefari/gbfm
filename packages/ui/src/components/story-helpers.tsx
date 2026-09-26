@@ -4,6 +4,14 @@ interface PanelHeaderProps {
   description: string
 }
 
+interface MediaExample {
+  title: string
+  eyebrow: string
+  imageUrl: string
+  description: string
+  tags: Array<string>
+}
+
 export const storyPanelClassName = 'mx-auto w-full max-w-6xl space-y-6'
 
 export const mediaExamples = [
@@ -13,7 +21,7 @@ export const mediaExamples = [
     imageUrl:
       'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=900&q=80',
     description: 'Dubwise pressure, loose percussion, and slow-burning warehouse records.',
-    tags: ['dub', 'leftfield', 'club']
+    tags: ['dub', 'leftfield', 'club'],
   },
   {
     title: 'Signals From The Green Room',
@@ -21,9 +29,9 @@ export const mediaExamples = [
     imageUrl:
       'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=900&q=80',
     description: 'Notes on overlooked records, room tone, and the DJs who connect scenes.',
-    tags: ['essay', 'records', 'scene report']
-  }
-]
+    tags: ['essay', 'records', 'scene report'],
+  },
+] satisfies [MediaExample, MediaExample]
 
 export const mockLinks = [
   {
@@ -38,7 +46,7 @@ export const mockLinks = [
     verifiedBy: null,
     metadata: null,
     createdAt: new Date('2024-01-01'),
-    updatedAt: new Date('2024-03-01')
+    updatedAt: new Date('2024-03-01'),
   },
   {
     id: 'link-2',
@@ -52,13 +60,13 @@ export const mockLinks = [
     verifiedBy: null,
     metadata: null,
     createdAt: new Date('2024-02-15'),
-    updatedAt: new Date('2024-02-15')
-  }
+    updatedAt: new Date('2024-02-15'),
+  },
 ]
 
 export const mockArtists = [
   { artistId: 'a-1', artistName: 'Burial', role: 'primary', displayOrder: 0 },
-  { artistId: 'a-2', artistName: 'Four Tet', role: 'featured', displayOrder: 1 }
+  { artistId: 'a-2', artistName: 'Four Tet', role: 'featured', displayOrder: 1 },
 ]
 
 export function StoryPanelHeader({ eyebrow, title, description }: PanelHeaderProps) {

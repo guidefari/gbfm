@@ -1,20 +1,24 @@
-import { Clock, Context, Effect, Layer, Schema, Semaphore } from 'effect'
+import { Clock, Context, Effect, Layer, Match, Schema, Semaphore } from 'effect'
 
 const MUSICBRAINZ_API_URL = 'https://musicbrainz.org/ws/2'
+
 const COVER_ART_ARCHIVE_API_URL = 'https://coverartarchive.org'
+
 const DEFAULT_USER_AGENT = 'gbfm/1.0 (https://github.com/guidefari/gbfm)'
+
 const MBID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
 const MbidSchema = Schema.String.pipe(Schema.check(Schema.isPattern(MBID_PATTERN)))
 
 const ArtistCreditSchema = Schema.Struct({
   name: Schema.String,
-  artist: Schema.optional(Schema.Struct({ id: MbidSchema, name: Schema.String }))
+  artist: Schema.optional(Schema.Struct({ id: MbidSchema, name: Schema.String })),
 })
 
 const ReleaseGroupSummarySchema = Schema.Struct({
   id: MbidSchema,
   title: Schema.String,
-  'primary-type': Schema.optional(Schema.String)
+  'primary-type': Schema.optional(Schema.String),
 })
 
 const ReleaseSummarySchema = Schema.Struct({
@@ -23,21 +27,21 @@ const ReleaseSummarySchema = Schema.Struct({
   country: Schema.optional(Schema.String),
   date: Schema.optional(Schema.String),
   barcode: Schema.optional(Schema.String),
-  'release-group': Schema.optional(ReleaseGroupSummarySchema)
+  'release-group': Schema.optional(ReleaseGroupSummarySchema),
 })
 
 const ArtistSchema = Schema.Struct({
   id: Schema.String,
   name: Schema.String,
   disambiguation: Schema.optional(Schema.String),
-  country: Schema.optional(Schema.String)
+  country: Schema.optional(Schema.String),
 })
 
 const ReleaseGroupSchema = Schema.Struct({
   id: Schema.String,
   title: Schema.String,
   'primary-type': Schema.optional(Schema.String),
-  'artist-credit': Schema.optional(Schema.Array(ArtistCreditSchema))
+  'artist-credit': Schema.optional(Schema.Array(ArtistCreditSchema)),
 })
 
 const ReleaseSchema = Schema.Struct({
@@ -47,7 +51,7 @@ const ReleaseSchema = Schema.Struct({
   date: Schema.optional(Schema.String),
   barcode: Schema.optional(Schema.String),
   'artist-credit': Schema.optional(Schema.Array(ArtistCreditSchema)),
-  'release-group': ReleaseGroupSummarySchema
+  'release-group': ReleaseGroupSummarySchema,
 })
 
 const RecordingSchema = Schema.Struct({
@@ -56,33 +60,35 @@ const RecordingSchema = Schema.Struct({
   length: Schema.optional(Schema.Number),
   isrcs: Schema.optional(Schema.Array(Schema.String)),
   'artist-credit': Schema.optional(Schema.Array(ArtistCreditSchema)),
-  releases: Schema.optional(Schema.Array(ReleaseSummarySchema))
+  releases: Schema.optional(Schema.Array(ReleaseSummarySchema)),
 })
 
 const IsrcResponseSchema = Schema.Struct({
-  recordings: Schema.optional(Schema.Array(RecordingSchema))
+  recordings: Schema.optional(Schema.Array(RecordingSchema)),
 })
 
 const ArtistSearchSchema = Schema.Struct({
-  artists: Schema.optional(Schema.Array(ArtistSchema))
+  artists: Schema.optional(Schema.Array(ArtistSchema)),
 })
+
 const ReleaseGroupSearchSchema = Schema.Struct({
-  'release-groups': Schema.optional(Schema.Array(ReleaseGroupSchema))
+  'release-groups': Schema.optional(Schema.Array(ReleaseGroupSchema)),
 })
+
 const RecordingSearchSchema = Schema.Struct({
-  recordings: Schema.optional(Schema.Array(RecordingSchema))
+  recordings: Schema.optional(Schema.Array(RecordingSchema)),
 })
 
 const UrlRelationshipSchema = Schema.Struct({
   artist: Schema.optional(ArtistSchema),
   recording: Schema.optional(RecordingSchema),
   release: Schema.optional(Schema.Struct({ id: MbidSchema, title: Schema.String })),
-  'release-group': Schema.optional(ReleaseGroupSchema)
+  'release-group': Schema.optional(ReleaseGroupSchema),
 })
 
 const UrlLookupSchema = Schema.Struct({
   resource: Schema.String,
-  relations: Schema.optional(Schema.Array(UrlRelationshipSchema))
+  relations: Schema.optional(Schema.Array(UrlRelationshipSchema)),
 })
 
 const CoverArtArchiveSchema = Schema.Struct({
@@ -95,22 +101,24 @@ const CoverArtArchiveSchema = Schema.Struct({
       thumbnails: Schema.Struct({
         '250': Schema.optional(Schema.String),
         '500': Schema.optional(Schema.String),
-        '1200': Schema.optional(Schema.String)
-      })
-    })
-  )
+        '1200': Schema.optional(Schema.String),
+      }),
+    }),
+  ),
 })
 
 export type MusicBrainzEntityType = 'artist' | 'album' | 'track'
+
 export type MusicBrainzMbidType = 'artist' | 'release-group' | 'release' | 'recording'
+
 export type MusicBrainzConfidence = 'exact_mbid' | 'exact_isrc' | 'exact_url' | 'candidate'
 
 export type MusicBrainzProvenance = {
   readonly source: 'musicbrainz'
   readonly confidence: MusicBrainzConfidence
   readonly lookupAt: string
-  readonly requestedMbid?: string
-  readonly matchedUrl?: string
+  readonly requestedMbid?: string | undefined
+  readonly matchedUrl?: string | undefined
   readonly canonicalMbid: string
 }
 
@@ -128,36 +136,38 @@ export type CoverArtArchiveReference = {
 type MusicBrainzCandidateBase = {
   readonly source: 'musicbrainz'
   readonly title: string
-  readonly artistNames: readonly string[]
+  readonly artistNames: ReadonlyArray<string>
   readonly provenance: MusicBrainzProvenance
 }
 
 export type MusicBrainzArtistCandidate = MusicBrainzCandidateBase & {
   readonly entityType: 'artist'
   readonly artistMbid: string
-  readonly disambiguation?: string
-  readonly country?: string
+  readonly disambiguation?: string | undefined
+  readonly country?: string | undefined
 }
 
 export type MusicBrainzAlbumCandidate = MusicBrainzCandidateBase & {
   readonly entityType: 'album'
   readonly releaseGroup: {
     readonly mbid: string
-    readonly primaryType?: string
+    readonly primaryType?: string | undefined
   }
-  readonly editionRelease?: {
-    readonly mbid: string
-    readonly country?: string
-    readonly date?: string
-    readonly barcode?: string
-  }
+  readonly editionRelease?:
+    | {
+        readonly mbid: string
+        readonly country?: string | undefined
+        readonly date?: string | undefined
+        readonly barcode?: string | undefined
+      }
+    | undefined
 }
 
 export type MusicBrainzTrackCandidate = MusicBrainzCandidateBase & {
   readonly entityType: 'track'
   readonly recordingMbid: string
-  readonly isrcs: readonly string[]
-  readonly durationMs?: number
+  readonly isrcs: ReadonlyArray<string>
+  readonly durationMs?: number | undefined
 }
 
 export type MusicBrainzIdentityCandidate =
@@ -190,12 +200,12 @@ export type MusicBrainzSearchInput =
 
 export class MusicBrainzInvalidInput extends Schema.TaggedError<MusicBrainzInvalidInput>()(
   'MusicBrainzInvalidInput',
-  { operation: Schema.String, message: Schema.String }
+  { operation: Schema.String, message: Schema.String },
 ) {}
 
 export class MusicBrainzNotFound extends Schema.TaggedError<MusicBrainzNotFound>()(
   'MusicBrainzNotFound',
-  { operation: Schema.String, identifier: Schema.String }
+  { operation: Schema.String, identifier: Schema.String },
 ) {}
 
 export class MusicBrainzRequestFailed extends Schema.TaggedError<MusicBrainzRequestFailed>()(
@@ -203,13 +213,13 @@ export class MusicBrainzRequestFailed extends Schema.TaggedError<MusicBrainzRequ
   {
     operation: Schema.String,
     statusCode: Schema.optional(Schema.Number),
-    cause: Schema.Unknown
-  }
+    cause: Schema.Unknown,
+  },
 ) {}
 
 export class MusicBrainzResponseInvalid extends Schema.TaggedError<MusicBrainzResponseInvalid>()(
   'MusicBrainzResponseInvalid',
-  { operation: Schema.String, message: Schema.String }
+  { operation: Schema.String, message: Schema.String },
 ) {}
 
 export type MusicBrainzIdentityError =
@@ -220,25 +230,25 @@ export type MusicBrainzIdentityError =
 
 export type MusicBrainzFetch = (
   input: string | URL | Request,
-  init?: RequestInit
+  init?: RequestInit,
 ) => Promise<Response>
 
 export interface MusicBrainzIdentityServiceContract {
   readonly lookupByMbid: (
-    input: MusicBrainzLookupInput
+    input: MusicBrainzLookupInput,
   ) => Effect.Effect<MusicBrainzIdentityCandidate, MusicBrainzIdentityError>
   readonly lookupRecordingByIsrc: (
-    isrc: string
+    isrc: string,
   ) => Effect.Effect<MusicBrainzTrackCandidate, MusicBrainzIdentityError>
   readonly lookupByExternalUrl: (
-    input: MusicBrainzExternalUrlLookupInput
+    input: MusicBrainzExternalUrlLookupInput,
   ) => Effect.Effect<MusicBrainzIdentityCandidate, MusicBrainzIdentityError>
   readonly lookupCoverArt: (
-    releaseMbid: string
+    releaseMbid: string,
   ) => Effect.Effect<CoverArtArchiveReference, MusicBrainzIdentityError>
   readonly searchCandidates: (
-    input: MusicBrainzSearchInput
-  ) => Effect.Effect<readonly MusicBrainzIdentityCandidate[], MusicBrainzIdentityError>
+    input: MusicBrainzSearchInput,
+  ) => Effect.Effect<ReadonlyArray<MusicBrainzIdentityCandidate>, MusicBrainzIdentityError>
 }
 
 export class MusicBrainzIdentityService extends Context.Service<
@@ -259,7 +269,7 @@ type CacheEntry<A> = {
   readonly value: A
 }
 
-const artistNames = (credits: readonly (typeof ArtistCreditSchema.Type)[] | undefined) =>
+const artistNames = (credits: ReadonlyArray<typeof ArtistCreditSchema.Type> | undefined) =>
   credits?.map((credit) => credit.name) ?? []
 
 const normalizeIsrc = (isrc: string) => isrc.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
@@ -269,21 +279,21 @@ const provenance = (
   confidence: MusicBrainzConfidence,
   lookupAt: string,
   requestedMbid?: string,
-  matchedUrl?: string
+  matchedUrl?: string,
 ): MusicBrainzProvenance => ({
   source: 'musicbrainz',
   confidence,
   lookupAt,
   canonicalMbid,
   requestedMbid: requestedMbid === canonicalMbid ? undefined : requestedMbid,
-  matchedUrl
+  matchedUrl,
 })
 
 const artistCandidate = (
   artist: typeof ArtistSchema.Type,
   confidence: MusicBrainzConfidence,
   lookupAt: string,
-  requestedMbid?: string
+  requestedMbid?: string,
 ): MusicBrainzArtistCandidate => ({
   source: 'musicbrainz',
   entityType: 'artist',
@@ -292,16 +302,16 @@ const artistCandidate = (
   artistMbid: artist.id,
   disambiguation: artist.disambiguation,
   country: artist.country,
-  provenance: provenance(artist.id, confidence, lookupAt, requestedMbid)
+  provenance: provenance(artist.id, confidence, lookupAt, requestedMbid),
 })
 
 const albumCandidate = (
   releaseGroup: typeof ReleaseGroupSummarySchema.Type,
-  credits: readonly (typeof ArtistCreditSchema.Type)[] | undefined,
+  credits: ReadonlyArray<typeof ArtistCreditSchema.Type> | undefined,
   confidence: MusicBrainzConfidence,
   lookupAt: string,
   requestedMbid?: string,
-  edition?: typeof ReleaseSummarySchema.Type
+  edition?: typeof ReleaseSummarySchema.Type,
 ): MusicBrainzAlbumCandidate => ({
   source: 'musicbrainz',
   entityType: 'album',
@@ -309,24 +319,24 @@ const albumCandidate = (
   artistNames: artistNames(credits),
   releaseGroup: {
     mbid: releaseGroup.id,
-    primaryType: releaseGroup['primary-type']
+    primaryType: releaseGroup['primary-type'],
   },
   editionRelease: edition
     ? {
         mbid: edition.id,
         country: edition.country,
         date: edition.date,
-        barcode: edition.barcode
+        barcode: edition.barcode,
       }
     : undefined,
-  provenance: provenance(releaseGroup.id, confidence, lookupAt, requestedMbid)
+  provenance: provenance(releaseGroup.id, confidence, lookupAt, requestedMbid),
 })
 
 const trackCandidate = (
   recording: typeof RecordingSchema.Type,
   confidence: MusicBrainzConfidence,
   lookupAt: string,
-  requestedMbid?: string
+  requestedMbid?: string,
 ): MusicBrainzTrackCandidate => ({
   source: 'musicbrainz',
   entityType: 'track',
@@ -335,51 +345,61 @@ const trackCandidate = (
   recordingMbid: recording.id,
   isrcs: recording.isrcs ?? [],
   durationMs: recording.length,
-  provenance: provenance(recording.id, confidence, lookupAt, requestedMbid)
+  provenance: provenance(recording.id, confidence, lookupAt, requestedMbid),
 })
 
 const canonicalMbidFromResponse = (response: Response, fallback: string) => {
   const segments = URL.parse(response.url)?.pathname.split('/').filter(Boolean) ?? []
   const candidate = segments.at(-1)
+
   return candidate && MBID_PATTERN.test(candidate) ? candidate : fallback
 }
 
 const canonicalExternalUrl = (source: string, entityType: MusicBrainzEntityType) => {
   const parsed = URL.parse(source)
+
   if (!parsed) return null
   const host = parsed.hostname.toLowerCase()
   const segments = parsed.pathname.split('/').filter(Boolean)
+
   if (host === 'open.spotify.com') {
     const [type, id] = segments
+
     if (type !== entityType || !id || segments.length !== 2) return null
+
     return `https://open.spotify.com/${type}/${id}`
   }
+
   if (host === 'deezer.com' || host === 'www.deezer.com') {
     const typeIndex = segments.findIndex((segment) => segment === entityType)
     const id = typeIndex < 0 ? undefined : segments[typeIndex + 1]
+
     if (!id || !/^\d+$/.test(id) || typeIndex + 2 !== segments.length) return null
+
     return `https://www.deezer.com/${entityType}/${id}`
   }
+
   return null
 }
 
 const withExactUrlProvenance = (
   candidate: MusicBrainzIdentityCandidate,
   matchedUrl: string,
-  lookupAt: string
+  lookupAt: string,
 ): MusicBrainzIdentityCandidate => ({
   ...candidate,
   provenance: {
     ...candidate.provenance,
     confidence: 'exact_url',
     lookupAt,
-    matchedUrl
-  }
+    matchedUrl,
+  },
 })
 
 // Shared by all service instances in this JavaScript process or Worker isolate.
 // Separate processes and isolates still require an external egress coordinator.
 const sharedMusicBrainzSemaphore = Semaphore.makeUnsafe(1)
+
 let sharedLastMusicBrainzRequestAt = Number.NEGATIVE_INFINITY
 
 interface MusicBrainzCaches {
@@ -387,22 +407,26 @@ interface MusicBrainzCaches {
   readonly isrc: Map<string, CacheEntry<MusicBrainzTrackCandidate | null>>
   readonly externalUrl: Map<string, CacheEntry<MusicBrainzIdentityCandidate | null>>
   readonly coverArt: Map<string, CacheEntry<CoverArtArchiveReference | null>>
-  readonly search: Map<string, CacheEntry<readonly MusicBrainzIdentityCandidate[]>>
+  readonly search: Map<string, CacheEntry<ReadonlyArray<MusicBrainzIdentityCandidate>>>
 }
 
 const sharedMusicBrainzCaches = new WeakMap<MusicBrainzFetch, MusicBrainzCaches>()
 
 const cachesFor = (fetcher: MusicBrainzFetch): MusicBrainzCaches => {
   const existing = sharedMusicBrainzCaches.get(fetcher)
+
   if (existing) return existing
+
   const caches: MusicBrainzCaches = {
     mbid: new Map(),
     isrc: new Map(),
     externalUrl: new Map(),
     coverArt: new Map(),
-    search: new Map()
+    search: new Map(),
   }
+
   sharedMusicBrainzCaches.set(fetcher, caches)
+
   return caches
 }
 
@@ -422,7 +446,7 @@ export const makeMusicBrainzIdentityService = Effect.fn('MusicBrainzIdentityServ
 
     const fetchJson = (
       url: string,
-      operation: string
+      operation: string,
     ): Effect.Effect<
       { readonly payload: unknown; readonly response: Response },
       MusicBrainzIdentityError
@@ -431,9 +455,11 @@ export const makeMusicBrainzIdentityService = Effect.fn('MusicBrainzIdentityServ
         Effect.gen(function* () {
           let attempt = 0
           let response: Response | undefined
+
           while (!response) {
             const now = yield* Clock.currentTimeMillis
             const waitMs = Math.max(0, requestIntervalMs - (now - sharedLastMusicBrainzRequestAt))
+
             if (waitMs > 0) yield* Effect.sleep(`${waitMs} millis`)
             sharedLastMusicBrainzRequestAt = yield* Clock.currentTimeMillis
 
@@ -442,18 +468,21 @@ export const makeMusicBrainzIdentityService = Effect.fn('MusicBrainzIdentityServ
                 fetcher(url, {
                   headers: {
                     Accept: 'application/json',
-                    'User-Agent': userAgent
+                    'User-Agent': userAgent,
                   },
-                  signal
+                  signal,
                 }),
-              catch: (cause) => new MusicBrainzRequestFailed({ operation, cause })
+              catch: (cause) => new MusicBrainzRequestFailed({ operation, cause }),
             })
+
             if ((current.status === 429 || current.status === 503) && attempt < maxRetries) {
               const retryAfter = current.headers.get('Retry-After')
               const retryAfterSeconds = retryAfter === null ? Number.NaN : Number(retryAfter)
+
               const backoffMs = Number.isFinite(retryAfterSeconds)
                 ? Math.min(5000, Math.max(0, retryAfterSeconds * 1000))
                 : Math.min(2000, 250 * 2 ** attempt)
+
               if (backoffMs > 0) yield* Effect.sleep(`${backoffMs} millis`)
               attempt += 1
             } else {
@@ -465,37 +494,40 @@ export const makeMusicBrainzIdentityService = Effect.fn('MusicBrainzIdentityServ
             return yield* new MusicBrainzRequestFailed({
               operation,
               statusCode: response.status,
-              cause: `MusicBrainz returned HTTP ${response.status}`
+              cause: `MusicBrainz returned HTTP ${response.status}`,
             })
           }
 
           const payload = yield* Effect.tryPromise({
-            try: (): Promise<unknown> => response.json(),
+            try: () => response.json(),
             catch: () =>
               new MusicBrainzResponseInvalid({
                 operation,
-                message: 'MusicBrainz returned invalid JSON'
-              })
+                message: 'MusicBrainz returned invalid JSON',
+              }),
           })
+
           return { payload, response }
-        })
+        }),
       )
 
     const cached = <A, E>(
       cache: Map<string, CacheEntry<A>>,
       key: string,
       effect: Effect.Effect<A, E>,
-      isNegative: (value: A) => boolean
+      isNegative: (value: A) => boolean,
     ): Effect.Effect<A, E> =>
       Effect.gen(function* () {
         const now = yield* Clock.currentTimeMillis
         const entry = cache.get(key)
+
         if (entry && entry.expiresAt > now) return entry.value
         const value = yield* effect
         cache.set(key, {
           value,
-          expiresAt: now + (isNegative(value) ? negativeCacheTtlMs : positiveCacheTtlMs)
+          expiresAt: now + (isNegative(value) ? negativeCacheTtlMs : positiveCacheTtlMs),
         })
+
         return value
       })
 
@@ -504,72 +536,82 @@ export const makeMusicBrainzIdentityService = Effect.fn('MusicBrainzIdentityServ
         () =>
           new MusicBrainzResponseInvalid({
             operation,
-            message: 'MusicBrainz response did not match the expected shape'
-          })
+            message: 'MusicBrainz response did not match the expected shape',
+          }),
       )
 
     const lookupByMbid = Effect.fn('MusicBrainzIdentityService.lookupByMbid')(function* (
-      input: MusicBrainzLookupInput
+      input: MusicBrainzLookupInput,
     ) {
       if (!MBID_PATTERN.test(input.mbid)) {
         return yield* new MusicBrainzInvalidInput({
           operation: 'lookupByMbid',
-          message: 'A valid MusicBrainz identifier is required'
+          message: 'A valid MusicBrainz identifier is required',
         })
       }
+
       const key = `mbid:${input.mbidType}:${input.mbid.toLowerCase()}`
+
       const found = yield* cached(
         mbidCache,
         key,
         Effect.gen(function* () {
-          const includes =
-            input.mbidType === 'recording'
-              ? '&inc=artist-credits+isrcs'
-              : input.mbidType === 'release'
-                ? '&inc=artist-credits+release-groups'
-                : input.mbidType === 'release-group'
-                  ? '&inc=artist-credits'
-                  : ''
+          const includes = Match.value(input.mbidType).pipe(
+            Match.when('recording', () => '&inc=artist-credits+isrcs'),
+            Match.when('release', () => '&inc=artist-credits+release-groups'),
+            Match.when('release-group', () => '&inc=artist-credits'),
+            Match.orElse(() => ''),
+          )
+
           const result = yield* fetchJson(
             `${MUSICBRAINZ_API_URL}/${input.mbidType}/${input.mbid}?fmt=json${includes}`,
-            'lookupByMbid'
+            'lookupByMbid',
           ).pipe(
             Effect.catchTag('MusicBrainzRequestFailed', (error) =>
-              error.statusCode === 404 ? Effect.succeed(null) : Effect.fail(error)
-            )
+              error.statusCode === 404 ? Effect.succeed(null) : Effect.fail(error),
+            ),
           )
+
           if (!result) return null
           const lookupAt = new Date(yield* Clock.currentTimeMillis).toISOString()
+
           switch (input.mbidType) {
             case 'artist': {
               const value = yield* Schema.decodeUnknownEffect(ArtistSchema)(result.payload).pipe(
-                invalidResponse('lookupByMbid')
+                invalidResponse('lookupByMbid'),
               )
+
               const canonicalId = canonicalMbidFromResponse(result.response, value.id)
+
               return artistCandidate(
                 { ...value, id: canonicalId },
                 'exact_mbid',
                 lookupAt,
-                input.mbid
+                input.mbid,
               )
             }
+
             case 'release-group': {
               const value = yield* Schema.decodeUnknownEffect(ReleaseGroupSchema)(
-                result.payload
+                result.payload,
               ).pipe(invalidResponse('lookupByMbid'))
+
               const canonicalId = canonicalMbidFromResponse(result.response, value.id)
+
               return albumCandidate(
                 { ...value, id: canonicalId },
                 value['artist-credit'],
                 'exact_mbid',
                 lookupAt,
-                input.mbid
+                input.mbid,
               )
             }
+
             case 'release': {
               const value = yield* Schema.decodeUnknownEffect(ReleaseSchema)(result.payload).pipe(
-                invalidResponse('lookupByMbid')
+                invalidResponse('lookupByMbid'),
               )
+
               return albumCandidate(
                 value['release-group'],
                 value['artist-credit'],
@@ -578,227 +620,270 @@ export const makeMusicBrainzIdentityService = Effect.fn('MusicBrainzIdentityServ
                 input.mbid,
                 {
                   ...value,
-                  id: canonicalMbidFromResponse(result.response, value.id)
-                }
+                  id: canonicalMbidFromResponse(result.response, value.id),
+                },
               )
             }
+
             case 'recording': {
               const value = yield* Schema.decodeUnknownEffect(RecordingSchema)(result.payload).pipe(
-                invalidResponse('lookupByMbid')
+                invalidResponse('lookupByMbid'),
               )
+
               const canonicalId = canonicalMbidFromResponse(result.response, value.id)
+
               return trackCandidate(
                 { ...value, id: canonicalId },
                 'exact_mbid',
                 lookupAt,
-                input.mbid
+                input.mbid,
               )
             }
           }
+
           return yield* Effect.die('Unsupported MusicBrainz identifier type')
         }),
-        (value) => value === null
+        (value) => value === null,
       )
+
       if (!found) {
         return yield* new MusicBrainzNotFound({
           operation: 'lookupByMbid',
-          identifier: input.mbid
+          identifier: input.mbid,
         })
       }
+
       return found
     })
 
     const lookupRecordingByIsrc = Effect.fn('MusicBrainzIdentityService.lookupRecordingByIsrc')(
       function* (isrc: string) {
         const normalized = normalizeIsrc(isrc)
+
         if (!normalized) {
           return yield* new MusicBrainzInvalidInput({
             operation: 'lookupRecordingByIsrc',
-            message: 'ISRC is required'
+            message: 'ISRC is required',
           })
         }
+
         const found = yield* cached(
           isrcCache,
           `isrc:${normalized}`,
           Effect.gen(function* () {
             const result = yield* fetchJson(
               `${MUSICBRAINZ_API_URL}/isrc/${normalized}?fmt=json&inc=artist-credits+isrcs`,
-              'lookupRecordingByIsrc'
+              'lookupRecordingByIsrc',
             ).pipe(
               Effect.catchTag('MusicBrainzRequestFailed', (error) =>
-                error.statusCode === 404 ? Effect.succeed(null) : Effect.fail(error)
-              )
+                error.statusCode === 404 ? Effect.succeed(null) : Effect.fail(error),
+              ),
             )
+
             if (!result) return null
+
             const decoded = yield* Schema.decodeUnknownEffect(IsrcResponseSchema)(
-              result.payload
+              result.payload,
             ).pipe(invalidResponse('lookupRecordingByIsrc'))
+
             const exact = decoded.recordings?.find((recording) =>
-              recording.isrcs?.some((candidate) => normalizeIsrc(candidate) === normalized)
+              recording.isrcs?.some((candidate) => normalizeIsrc(candidate) === normalized),
             )
+
             if (!exact) return null
             const lookupAt = new Date(yield* Clock.currentTimeMillis).toISOString()
+
             return trackCandidate(exact, 'exact_isrc', lookupAt)
           }),
-          (value) => value === null
+          (value) => value === null,
         )
+
         if (!found) {
           return yield* new MusicBrainzNotFound({
             operation: 'lookupRecordingByIsrc',
-            identifier: normalized
+            identifier: normalized,
           })
         }
+
         return found
-      }
+      },
     )
 
     const lookupByExternalUrl = Effect.fn('MusicBrainzIdentityService.lookupByExternalUrl')(
       function* (input: MusicBrainzExternalUrlLookupInput) {
         const canonicalUrl = canonicalExternalUrl(input.url, input.entityType)
+
         if (!canonicalUrl) {
           return yield* new MusicBrainzInvalidInput({
             operation: 'lookupByExternalUrl',
-            message: 'A canonical Spotify or Deezer entity URL is required'
+            message: 'A canonical Spotify or Deezer entity URL is required',
           })
         }
+
         const found = yield* cached(
           externalUrlCache,
           `url:${input.entityType}:${canonicalUrl}`,
           Effect.gen(function* () {
-            const includes =
-              input.entityType === 'artist'
-                ? 'artist-rels'
-                : input.entityType === 'album'
-                  ? 'release-rels+release-group-rels'
-                  : 'recording-rels'
+            const includes = Match.value(input.entityType).pipe(
+              Match.when('artist', () => 'artist-rels'),
+              Match.when('album', () => 'release-rels+release-group-rels'),
+              Match.orElse(() => 'recording-rels'),
+            )
+
             const result = yield* fetchJson(
               `${MUSICBRAINZ_API_URL}/url?fmt=json&resource=${encodeURIComponent(canonicalUrl)}&inc=${includes}`,
-              'lookupByExternalUrl'
+              'lookupByExternalUrl',
             ).pipe(
               Effect.catchTag('MusicBrainzRequestFailed', (error) =>
-                error.statusCode === 404 ? Effect.succeed(null) : Effect.fail(error)
-              )
+                error.statusCode === 404 ? Effect.succeed(null) : Effect.fail(error),
+              ),
             )
+
             if (!result) return null
+
             const decoded = yield* Schema.decodeUnknownEffect(UrlLookupSchema)(result.payload).pipe(
-              invalidResponse('lookupByExternalUrl')
+              invalidResponse('lookupByExternalUrl'),
             )
+
             const lookupAt = new Date(yield* Clock.currentTimeMillis).toISOString()
             const relations = decoded.relations ?? []
 
             if (input.entityType === 'artist') {
               const targets = relations.flatMap((relation) =>
-                relation.artist ? [relation.artist] : []
+                relation.artist ? [relation.artist] : [],
               )
+
               const target = targets[0]
+
               return targets.length === 1 && target
                 ? withExactUrlProvenance(
                     artistCandidate(target, 'exact_url', lookupAt),
                     canonicalUrl,
-                    lookupAt
+                    lookupAt,
                   )
                 : null
             }
+
             if (input.entityType === 'track') {
               const targets = relations.flatMap((relation) =>
-                relation.recording ? [relation.recording] : []
+                relation.recording ? [relation.recording] : [],
               )
+
               const target = targets[0]
+
               return targets.length === 1 && target
                 ? withExactUrlProvenance(
                     trackCandidate(target, 'exact_url', lookupAt),
                     canonicalUrl,
-                    lookupAt
+                    lookupAt,
                   )
                 : null
             }
 
             const releaseGroups = relations.flatMap((relation) =>
-              relation['release-group'] ? [relation['release-group']] : []
+              relation['release-group'] ? [relation['release-group']] : [],
             )
+
             const releases = relations.flatMap((relation) =>
-              relation.release ? [relation.release] : []
+              relation.release ? [relation.release] : [],
             )
+
             const releaseGroup = releaseGroups[0]
+
             if (releaseGroups.length === 1 && releaseGroup && releases.length === 0) {
               return withExactUrlProvenance(
                 albumCandidate(releaseGroup, releaseGroup['artist-credit'], 'exact_url', lookupAt),
                 canonicalUrl,
-                lookupAt
+                lookupAt,
               )
             }
+
             const release = releases[0]
+
             if (releases.length === 1 && release && releaseGroups.length === 0) {
               const candidate = yield* lookupByMbid({
                 mbidType: 'release',
-                mbid: release.id
+                mbid: release.id,
               })
+
               return withExactUrlProvenance(candidate, canonicalUrl, lookupAt)
             }
+
             return null
           }),
-          (value) => value === null
+          (value) => value === null,
         )
+
         if (!found) {
           return yield* new MusicBrainzNotFound({
             operation: 'lookupByExternalUrl',
-            identifier: canonicalUrl
+            identifier: canonicalUrl,
           })
         }
+
         return found
-      }
+      },
     )
 
     const lookupCoverArt = Effect.fn('MusicBrainzIdentityService.lookupCoverArt')(function* (
-      releaseMbid: string
+      releaseMbid: string,
     ) {
       if (!MBID_PATTERN.test(releaseMbid)) {
         return yield* new MusicBrainzInvalidInput({
           operation: 'lookupCoverArt',
-          message: 'A valid MusicBrainz release identifier is required'
+          message: 'A valid MusicBrainz release identifier is required',
         })
       }
+
       const found = yield* cached(
         coverArtCache,
         `cover:${releaseMbid.toLowerCase()}`,
         Effect.gen(function* () {
           const archiveUrl = `${COVER_ART_ARCHIVE_API_URL}/release/${releaseMbid}`
+
           const response = yield* Effect.tryPromise({
             try: (signal) =>
               fetcher(archiveUrl, {
                 headers: {
                   Accept: 'application/json',
-                  'User-Agent': userAgent
+                  'User-Agent': userAgent,
                 },
-                signal
+                signal,
               }),
             catch: (cause) =>
               new MusicBrainzRequestFailed({
                 operation: 'lookupCoverArt',
-                cause
-              })
+                cause,
+              }),
           })
+
           if (response.status === 404) return null
+
           if (!response.ok) {
             return yield* new MusicBrainzRequestFailed({
               operation: 'lookupCoverArt',
               statusCode: response.status,
-              cause: `Cover Art Archive returned HTTP ${response.status}`
+              cause: `Cover Art Archive returned HTTP ${response.status}`,
             })
           }
+
           const payload = yield* Effect.tryPromise({
-            try: (): Promise<unknown> => response.json(),
+            try: () => response.json(),
             catch: () =>
               new MusicBrainzResponseInvalid({
                 operation: 'lookupCoverArt',
-                message: 'Cover Art Archive returned invalid JSON'
-              })
+                message: 'Cover Art Archive returned invalid JSON',
+              }),
           })
+
           const decoded = yield* Schema.decodeUnknownEffect(CoverArtArchiveSchema)(payload).pipe(
-            invalidResponse('lookupCoverArt')
+            invalidResponse('lookupCoverArt'),
           )
+
           const image = decoded.images.find((candidate) => candidate.front)
+
           if (!image) return null
+
           return {
             imageUrl: image.thumbnails['1200'] ?? image.thumbnails['500'] ?? image.image,
             source: 'cover_art_archive',
@@ -807,82 +892,96 @@ export const makeMusicBrainzIdentityService = Effect.fn('MusicBrainzIdentityServ
             lookupAt: new Date(yield* Clock.currentTimeMillis).toISOString(),
             approved: image.approved,
             rights: 'not_asserted',
-            storage: 'remote_reference'
+            storage: 'remote_reference',
           } satisfies CoverArtArchiveReference
         }),
-        (value) => value === null
+        (value) => value === null,
       )
+
       if (!found) {
         return yield* new MusicBrainzNotFound({
           operation: 'lookupCoverArt',
-          identifier: releaseMbid
+          identifier: releaseMbid,
         })
       }
+
       return found
     })
 
     const searchCandidates = Effect.fn('MusicBrainzIdentityService.searchCandidates')(function* (
-      input: MusicBrainzSearchInput
+      input: MusicBrainzSearchInput,
     ) {
       const hasRequiredMetadata =
         input.entityType === 'artist'
           ? input.name.trim().length > 0
           : input.title.trim().length > 0 && input.artistName.trim().length > 0
+
       if (!hasRequiredMetadata) {
         return yield* new MusicBrainzInvalidInput({
           operation: 'searchCandidates',
-          message: 'Search metadata is required'
+          message: 'Search metadata is required',
         })
       }
+
       const query =
         input.entityType === 'artist'
           ? `artist:${JSON.stringify(input.name.trim())}`
           : `${input.entityType === 'album' ? 'releasegroup' : 'recording'}:${JSON.stringify(input.title.trim())} AND artist:${JSON.stringify(input.artistName.trim())}`
-      const endpoint =
-        input.entityType === 'artist'
-          ? 'artist'
-          : input.entityType === 'album'
-            ? 'release-group'
-            : 'recording'
+
+      const endpoint = Match.value(input.entityType).pipe(
+        Match.when('artist', () => 'artist'),
+        Match.when('album', () => 'release-group'),
+        Match.orElse(() => 'recording'),
+      )
+
       const key = `search:${endpoint}:${query.toLocaleLowerCase('en')}`
+
       return yield* cached(
         searchCache,
         key,
         Effect.gen(function* () {
           const { payload } = yield* fetchJson(
             `${MUSICBRAINZ_API_URL}/${endpoint}?fmt=json&limit=10&query=${encodeURIComponent(query)}`,
-            'searchCandidates'
+            'searchCandidates',
           )
+
           const lookupAt = new Date(yield* Clock.currentTimeMillis).toISOString()
+
           switch (input.entityType) {
             case 'artist': {
               const value = yield* Schema.decodeUnknownEffect(ArtistSearchSchema)(payload).pipe(
-                invalidResponse('searchCandidates')
+                invalidResponse('searchCandidates'),
               )
+
               return (value.artists ?? []).map((artist) =>
-                artistCandidate(artist, 'candidate', lookupAt)
+                artistCandidate(artist, 'candidate', lookupAt),
               )
             }
+
             case 'album': {
               const value = yield* Schema.decodeUnknownEffect(ReleaseGroupSearchSchema)(
-                payload
+                payload,
               ).pipe(invalidResponse('searchCandidates'))
+
               return (value['release-groups'] ?? []).map((releaseGroup) =>
-                albumCandidate(releaseGroup, releaseGroup['artist-credit'], 'candidate', lookupAt)
+                albumCandidate(releaseGroup, releaseGroup['artist-credit'], 'candidate', lookupAt),
               )
             }
+
             case 'track': {
               const value = yield* Schema.decodeUnknownEffect(RecordingSearchSchema)(payload).pipe(
-                invalidResponse('searchCandidates')
+                invalidResponse('searchCandidates'),
               )
+
               return (value.recordings ?? []).map((recording) =>
-                trackCandidate(recording, 'candidate', lookupAt)
+                trackCandidate(recording, 'candidate', lookupAt),
               )
             }
           }
+
           return yield* Effect.die('Unsupported MusicBrainz entity type')
         }),
-        (value) => value.length === 0
+        (value) => value.length === 0,
       )
     })
 
@@ -891,12 +990,12 @@ export const makeMusicBrainzIdentityService = Effect.fn('MusicBrainzIdentityServ
       lookupRecordingByIsrc,
       lookupByExternalUrl,
       lookupCoverArt,
-      searchCandidates
+      searchCandidates,
     })
-  }
+  },
 )
 
 export const MusicBrainzIdentityLive = Layer.effect(
   MusicBrainzIdentityService,
-  makeMusicBrainzIdentityService()
+  makeMusicBrainzIdentityService(),
 )

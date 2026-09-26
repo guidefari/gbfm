@@ -25,10 +25,12 @@ export {
   type SpotifyEntityRef,
   type SpotifyProfile,
   type SpotifyRequestError,
-  type SpotifyWebScope
+  type SpotifyWebScope,
 } from '@gbfm/spotify'
 
-export const clearAuthorizationCallback = (url: URL) => {
+type AuthorizationCallbackUrl = Pick<URL, 'origin' | 'pathname'>
+
+export const clearAuthorizationCallback = (url: AuthorizationCallbackUrl) => {
   window.history.replaceState({}, '', `${url.origin}${url.pathname}`)
 }
 
@@ -42,7 +44,9 @@ export const storeSpotifyReturnPath = (path: string) => {
 export const takeSpotifyReturnPath = (): string => {
   const stored = window.sessionStorage.getItem(RETURN_PATH_KEY)
   window.sessionStorage.removeItem(RETURN_PATH_KEY)
+
   if (!stored || !stored.startsWith('/') || stored.startsWith('//')) return '/dashboard/player'
+
   return stored
 }
 

@@ -1,9 +1,13 @@
-export const env = {
-  isDev: import.meta.env.DEV,
-  spotifyClientId: import.meta.env.VITE_SPOTIFY_CLIENT_ID,
-  sentryDsn: import.meta.env.VITE_PUBLIC_SENTRY_DSN,
-  /** Local frontend Sentry is opt-in to keep dev traces out of prod dashboards. */
-  sentryEnableLocal: import.meta.env.VITE_PUBLIC_SENTRY_ENABLE_LOCAL === 'true',
-  sentryEnvironment: import.meta.env.VITE_PUBLIC_SENTRY_ENVIRONMENT,
-  sentryRelease: import.meta.env.VITE_PUBLIC_SENTRY_RELEASE || undefined
-}
+import { defineEnvVars } from '@sveltejs/kit/env'
+
+export const variables = defineEnvVars({
+  VPS_PROXY_TARGET: {
+    schema: (value) => value,
+    description: 'Local development API proxy origin',
+  },
+  VITE_SPOTIFY_CLIENT_ID: {
+    public: true,
+    schema: (value) => value,
+    description: 'Spotify OAuth client ID',
+  },
+})

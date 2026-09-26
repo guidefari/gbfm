@@ -19,7 +19,7 @@ export interface ApiResponse {
 export async function apiRequest(
   method: string,
   endpoint: string,
-  options?: RequestInit
+  options?: RequestInit,
 ): Promise<ApiResponse> {
   const url = `${API_URL}${endpoint}`
   const response = await fetch(url, { method, ...options })
@@ -27,7 +27,7 @@ export async function apiRequest(
   return {
     status: response.status,
     headers: response.headers,
-    body
+    body,
   }
 }
 
@@ -38,7 +38,7 @@ export async function apiGet(endpoint: string): Promise<ApiResponse> {
 export async function apiPost(endpoint: string, data: unknown): Promise<ApiResponse> {
   return apiRequest('POST', endpoint, {
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   })
 }
 

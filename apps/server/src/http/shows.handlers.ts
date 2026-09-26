@@ -2,10 +2,12 @@ import { Api } from '@gbfm/api/api'
 import { AuthSession } from '@gbfm/api/middleware/auth'
 import { Effect } from 'effect'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
+
 import {
   dieOnDatabaseError as makeDieOnDatabaseError,
-  getOptionalActor
+  getOptionalActor,
 } from '@/http/handler-utils'
+import { omitUndefined } from '@/lib/omit-undefined'
 import { QRCodeService } from '@/services/qrcode.service'
 import { ShowService, ShowSubscriptionService } from '@/services/show.service'
 
@@ -16,76 +18,82 @@ export const ShowsHandlersLive = HttpApiBuilder.group(Api, 'shows', (handlers) =
     .handle('getAllShows', ({ query }) =>
       Effect.gen(function* () {
         const svc = yield* ShowService
+
         const result = yield* dieOnDatabaseError(
           svc.getAll({
             limit: query.limit ?? 20,
-            offset: query.offset ?? 0
-          })
+            offset: query.offset ?? 0,
+          }),
         )
 
         return {
           data: result.data.map((show) => ({
             ...show,
             createdAt: show.createdAt.toISOString(),
-            updatedAt: show.updatedAt.toISOString()
+            updatedAt: show.updatedAt.toISOString(),
           })),
-          pagination: result.pagination
+          pagination: result.pagination,
         }
-      })
+      }),
     )
     .handle('getShowsForEdit', ({ query }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
         const svc = yield* ShowService
+
         const result = yield* dieOnDatabaseError(
           svc.getAllForEdit(
             { limit: query.limit ?? 20, offset: query.offset ?? 0 },
             user.id,
-            user.role ?? 'user'
-          )
+            user.role ?? 'user',
+          ),
         )
+
         return {
           data: result.data.map((show) => ({
             ...show,
             createdAt: show.createdAt.toISOString(),
-            updatedAt: show.updatedAt.toISOString()
+            updatedAt: show.updatedAt.toISOString(),
           })),
-          pagination: result.pagination
+          pagination: result.pagination,
         }
-      })
+      }),
     )
     .handle('getShowBySlug', ({ params }) =>
       Effect.gen(function* () {
         const svc = yield* ShowService
+
         const show = yield* dieOnDatabaseError(
           svc
             .getBySlug(params.slug)
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
         )
 
         return {
           ...show,
           createdAt: show.createdAt.toISOString(),
-          updatedAt: show.updatedAt.toISOString()
+          updatedAt: show.updatedAt.toISOString(),
         }
-      })
+      }),
     )
     .handle('getShowBySlugForEdit', ({ params }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
         const svc = yield* ShowService
+
         const show = yield* dieOnDatabaseError(
           svc.getBySlugForEdit(params.slug, user.id, user.role ?? 'user').pipe(
             Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
-            Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized())
-          )
+            Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized()),
+          ),
         )
+
         return {
           ...show,
           createdAt: show.createdAt.toISOString(),
-          updatedAt: show.updatedAt.toISOString()
+          updatedAt: show.updatedAt.toISOString(),
         }
-      })
+      }),
     )
     .handle('createShow', ({ payload }) =>
       Effect.gen(function* () {
@@ -94,43 +102,53 @@ export const ShowsHandlersLive = HttpApiBuilder.group(Api, 'shows', (handlers) =
         const finalHostIds = hostIds?.length ? [...hostIds] : [user.id]
 
         const svc = yield* ShowService
+
         const show = yield* dieOnDatabaseError(
           svc
-            .create({ ...showData, tags: tags ? [...tags] : undefined }, finalHostIds)
-            .pipe(Effect.catchTag('ConflictError', () => new HttpApiError.Conflict()))
+            .create(
+              omitUndefined({ ...showData, tags: tags ? [...tags] : undefined }),
+              finalHostIds,
+            )
+            .pipe(Effect.catchTag('ConflictError', () => new HttpApiError.Conflict())),
         )
 
         return {
           ...show,
           createdAt: show.createdAt.toISOString(),
-          updatedAt: show.updatedAt.toISOString()
+          updatedAt: show.updatedAt.toISOString(),
         }
-      })
+      }),
     )
     .handle('updateShowBySlug', ({ params, payload }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
         const { hostIds, tags, ...updateData } = payload
         const svc = yield* ShowService
+
         const show = yield* dieOnDatabaseError(
           svc
-            .update(params.slug, user.id, user.role ?? 'user', {
-              ...updateData,
-              ...(tags && { tags: [...tags] }),
-              ...(hostIds && { hostIds: [...hostIds] })
-            })
+            .update(
+              params.slug,
+              user.id,
+              user.role ?? 'user',
+              omitUndefined({
+                ...updateData,
+                ...(tags && { tags: [...tags] }),
+                ...(hostIds && { hostIds: [...hostIds] }),
+              }),
+            )
             .pipe(
               Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
-              Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized())
-            )
+              Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized()),
+            ),
         )
 
         return {
           ...show,
           createdAt: show.createdAt.toISOString(),
-          updatedAt: show.updatedAt.toISOString()
+          updatedAt: show.updatedAt.toISOString(),
         }
-      })
+      }),
     )
     .handle('deleteShowBySlug', ({ params }) =>
       Effect.gen(function* () {
@@ -139,50 +157,52 @@ export const ShowsHandlersLive = HttpApiBuilder.group(Api, 'shows', (handlers) =
         yield* dieOnDatabaseError(
           svc.delete(params.slug, user.id, user.role ?? 'user').pipe(
             Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
-            Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized())
-          )
+            Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized()),
+          ),
         )
-      })
+      }),
     )
     .handle('getShowEpisodes', ({ params, query }) =>
       Effect.gen(function* () {
         const actor = yield* getOptionalActor
         const svc = yield* ShowService
+
         const result = yield* dieOnDatabaseError(
           svc
             .getEpisodes(
               params.slug,
               { limit: query.limit ?? 20, offset: query.offset ?? 0 },
-              actor
+              actor,
             )
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
         )
 
         return {
           data: result.data.map((episode) => ({
             ...episode,
             createdAt: episode.createdAt.toISOString(),
-            updatedAt: episode.updatedAt.toISOString()
+            updatedAt: episode.updatedAt.toISOString(),
           })),
-          pagination: result.pagination
+          pagination: result.pagination,
         }
-      })
+      }),
     )
     .handle('subscribeToShow', ({ params }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
         const svc = yield* ShowSubscriptionService
+
         const subscription = yield* dieOnDatabaseError(
           svc
             .subscribe(user.id, params.id)
-            .pipe(Effect.catchTag('ConflictError', () => new HttpApiError.Conflict()))
+            .pipe(Effect.catchTag('ConflictError', () => new HttpApiError.Conflict())),
         )
 
         return {
           ...subscription,
-          createdAt: subscription.createdAt.toISOString()
+          createdAt: subscription.createdAt.toISOString(),
         }
-      })
+      }),
     )
     .handle('unsubscribeFromShow', ({ params }) =>
       Effect.gen(function* () {
@@ -191,28 +211,31 @@ export const ShowsHandlersLive = HttpApiBuilder.group(Api, 'shows', (handlers) =
         yield* dieOnDatabaseError(
           svc
             .unsubscribe(user.id, params.id)
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
         )
-      })
+      }),
     )
     .handle('getShowQRPdf', ({ params }) =>
       Effect.gen(function* () {
         const showSvc = yield* ShowService
         const qrSvc = yield* QRCodeService
+
         const show = yield* dieOnDatabaseError(
           showSvc
             .getBySlug(params.slug)
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
         )
 
         return yield* dieOnDatabaseError(
-          qrSvc.generateShowQRPdf({
-            slug: show.slug,
-            title: show.title,
-            thumbnailUrl: show.thumbnailUrl,
-            hosts: show.hosts
-          })
+          qrSvc.generateShowQRPdf(
+            omitUndefined({
+              slug: show.slug,
+              title: show.title,
+              thumbnailUrl: show.thumbnailUrl,
+              hosts: show.hosts,
+            }),
+          ),
         )
-      })
-    )
+      }),
+    ),
 )

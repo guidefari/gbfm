@@ -1,5 +1,7 @@
 export const reminderSweepCron = '* * * * *'
+
 export const sitemapRegenerationCron = '0 * * * *'
+
 export const maintenanceSweepCron = '17 * * * *'
 
 export interface ScheduledJobs {
@@ -12,11 +14,14 @@ export const dispatchScheduledJob = (cron: string, jobs: ScheduledJobs): Promise
   if (cron === sitemapRegenerationCron) {
     return jobs.regenerateSitemap()
   }
+
   if (cron === reminderSweepCron) {
     return jobs.sweepReminders()
   }
+
   if (cron === maintenanceSweepCron) {
     return jobs.runMaintenance()
   }
+
   return Promise.resolve()
 }

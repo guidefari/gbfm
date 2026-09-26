@@ -1,5 +1,6 @@
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
+
 import { ImageRenderError, ImageSaveError, ImageShareDismissed } from './errors'
 import { ImageExport, type ImageSaveOutcome } from './service'
 
@@ -13,10 +14,12 @@ const load = (url: string) =>
   Effect.tryPromise({
     try: async () => {
       const response = await fetch(url)
+
       if (!response.ok) throw new Error(`Image request returned ${response.status}`)
+
       return response.blob()
     },
-    catch: (cause) => new ImageRenderError({ message: 'image request failed', cause })
+    catch: (cause) => new ImageRenderError({ message: 'image request failed', cause }),
   })
 
 /** Data URLs above a small cap are silently dropped by iOS Safari, so the
@@ -31,10 +34,10 @@ const save = (blob: Blob, fileName: string): Effect.Effect<ImageSaveOutcome, Ima
         catch: (cause) =>
           isAbort(cause)
             ? new ImageShareDismissed()
-            : new ImageSaveError({ message: 'share failed', cause })
+            : new ImageSaveError({ message: 'share failed', cause }),
       }).pipe(
         Effect.as<ImageSaveOutcome>('shared'),
-        Effect.catchTag('ImageShareDismissed', () => Effect.succeed<ImageSaveOutcome>('dismissed'))
+        Effect.catchTag('ImageShareDismissed', () => Effect.succeed<ImageSaveOutcome>('dismissed')),
       )
     }
 
@@ -49,14 +52,15 @@ const save = (blob: Blob, fileName: string): Effect.Effect<ImageSaveOutcome, Ima
         link.click()
         link.remove()
         setTimeout(() => URL.revokeObjectURL(objectUrl), OBJECT_URL_TTL_MS)
+
         return 'downloaded'
       },
-      catch: (cause) => new ImageSaveError({ message: 'download failed', cause })
+      catch: (cause) => new ImageSaveError({ message: 'download failed', cause }),
     })
   })
 
 export const ImageExportLive = Layer.sync(ImageExport, () => ({
   load,
   save,
-  canShareFiles
+  canShareFiles,
 }))

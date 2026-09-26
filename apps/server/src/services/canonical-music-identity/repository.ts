@@ -1,6 +1,7 @@
-import { and, eq, inArray, lt, or } from 'drizzle-orm'
-import { Effect } from 'effect'
 import { LINK_STATUS } from '@gbfm/core/status'
+import { and, eq, inArray, lt, or } from 'drizzle-orm'
+import { Data, Effect } from 'effect'
+
 import type { DatabaseClient } from '@/db/layer'
 import {
   musicAlbumsTable,
@@ -11,10 +12,11 @@ import {
   musicSourceIdentitiesTable,
   musicSourceIdentityConflictsTable,
   musicTracksTable,
-  type SelectMusicSourceIdentity
+  type SelectMusicSourceIdentity,
 } from '@/db/music-entity.schema'
 import { getErrorMessage } from '@/errors'
 import type { ScrapedLink } from '@/services/music-link-scraper.service'
+
 import { MusicIdentityAliasCollision, MusicIdentityStorageError } from './errors'
 import type { CanonicalMusicEntityType, ParsedMusicSource } from './music-source'
 import {
@@ -25,7 +27,7 @@ import {
   existingEntityLinkStatement,
   linkStatement,
   type WriteFence,
-  writeFenceGuard
+  writeFenceGuard,
 } from './repository-statements'
 
 export type EntityReference = {
@@ -44,12 +46,12 @@ export type EntityRecord = {
   readonly entityType: CanonicalMusicEntityType
   readonly entityId: string
   readonly title: string
-  readonly artistNames: readonly string[]
-  readonly artists: readonly EntityArtist[]
-  readonly imageUrl?: string
-  readonly description?: string
-  readonly trackNumber?: number
-  readonly curatorId?: string | null
+  readonly artistNames: ReadonlyArray<string>
+  readonly artists: ReadonlyArray<EntityArtist>
+  readonly imageUrl?: string | undefined
+  readonly description?: string | undefined
+  readonly trackNumber?: number | undefined
+  readonly curatorId?: string | null | undefined
 }
 
 export type ClaimResult =
@@ -57,10 +59,12 @@ export type ClaimResult =
   | { readonly _tag: 'resolved'; readonly reference: EntityReference }
   | { readonly _tag: 'busy'; readonly retryAfterMs: number; readonly claimAgeMs: number }
 
+export const ClaimResult = Data.taggedEnum<ClaimResult>()
+
 const storageError = (operation: string, cause: unknown) =>
   new MusicIdentityStorageError({
     operation,
-    message: getErrorMessage(cause)
+    message: getErrorMessage(cause),
   })
 
 const unreachableEntityType = (entityType: never): never => {
@@ -76,7 +80,9 @@ const resolvedReference = (identity: SelectMusicSourceIdentity): EntityReference
   ) {
     return undefined
   }
+
   const entityType = identity.entityType
+
   if (
     entityType === 'artist' ||
     entityType === 'album' ||
@@ -85,6 +91,7 @@ const resolvedReference = (identity: SelectMusicSourceIdentity): EntityReference
   ) {
     return { entityType, entityId: identity.entityId }
   }
+
   return undefined
 }
 
@@ -99,20 +106,24 @@ export class CanonicalMusicIdentityRepository {
           .from(musicSourceAliasesTable)
           .innerJoin(
             musicSourceIdentitiesTable,
-            eq(musicSourceAliasesTable.sourceKey, musicSourceIdentitiesTable.sourceKey)
+            eq(musicSourceAliasesTable.sourceKey, musicSourceIdentitiesTable.sourceKey),
           )
           .where(eq(musicSourceAliasesTable.normalizedUrl, source.normalizedUrl))
           .limit(1)
+
         const aliasIdentity = aliases[0]?.identity
+
         if (aliasIdentity) return { aliasIdentity }
+
         const identities = await this.db
           .select()
           .from(musicSourceIdentitiesTable)
           .where(eq(musicSourceIdentitiesTable.sourceKey, source.sourceKey))
           .limit(1)
+
         return { identity: identities[0] }
       },
-      catch: (cause) => storageError('lookup', cause)
+      catch: (cause) => storageError('lookup', cause),
     }).pipe(
       Effect.flatMap(({ aliasIdentity, identity }) =>
         aliasIdentity && aliasIdentity.sourceKey !== source.sourceKey
@@ -120,22 +131,23 @@ export class CanonicalMusicIdentityRepository {
               new MusicIdentityAliasCollision({
                 normalizedUrl: source.normalizedUrl,
                 expectedSourceKey: source.sourceKey,
-                storedSourceKey: aliasIdentity.sourceKey
-              })
+                storedSourceKey: aliasIdentity.sourceKey,
+              }),
             )
-          : Effect.succeed(aliasIdentity ?? identity)
-      )
+          : Effect.succeed(aliasIdentity ?? identity),
+      ),
     )
 
   readonly claim = (
     source: ParsedMusicSource,
     ownerToken: string,
     now: Date,
-    leaseMs: number
+    leaseMs: number,
   ): Effect.Effect<ClaimResult, MusicIdentityStorageError> =>
     Effect.tryPromise({
       try: async () => {
         const leaseExpiresAt = new Date(now.getTime() + leaseMs)
+
         const inserted = await this.db
           .insert(musicSourceIdentitiesTable)
           .values({
@@ -148,11 +160,12 @@ export class CanonicalMusicIdentityRepository {
             ownerToken,
             leaseExpiresAt,
             createdAt: now,
-            updatedAt: now
+            updatedAt: now,
           })
           .onConflictDoNothing()
           .returning({ sourceKey: musicSourceIdentitiesTable.sourceKey })
-        if (inserted.length > 0) return { _tag: 'owned', result: 'miss' } as const
+
+        if (inserted.length > 0) return ClaimResult.owned({ result: 'miss' })
 
         const reclaimed = await this.db
           .update(musicSourceIdentitiesTable)
@@ -161,17 +174,18 @@ export class CanonicalMusicIdentityRepository {
             and(
               eq(musicSourceIdentitiesTable.sourceKey, source.sourceKey),
               eq(musicSourceIdentitiesTable.state, 'resolving'),
-              lt(musicSourceIdentitiesTable.leaseExpiresAt, now)
-            )
+              lt(musicSourceIdentitiesTable.leaseExpiresAt, now),
+            ),
           )
           .returning()
+
         const reclaimedIdentity = reclaimed[0]
+
         if (reclaimedIdentity) {
-          return {
-            _tag: 'owned',
+          return ClaimResult.owned({
             result: 'reclaimed',
-            claimAgeMs: Math.max(0, now.getTime() - reclaimedIdentity.createdAt.getTime())
-          } as const
+            claimAgeMs: Math.max(0, now.getTime() - reclaimedIdentity.createdAt.getTime()),
+          })
         }
 
         const rows = await this.db
@@ -179,30 +193,35 @@ export class CanonicalMusicIdentityRepository {
           .from(musicSourceIdentitiesTable)
           .where(eq(musicSourceIdentitiesTable.sourceKey, source.sourceKey))
           .limit(1)
+
         const identity = rows[0]
+
         if (!identity) {
-          return { _tag: 'busy', retryAfterMs: leaseMs, claimAgeMs: 0 } as const
+          return ClaimResult.busy({ retryAfterMs: leaseMs, claimAgeMs: 0 })
         }
+
         const reference = resolvedReference(identity)
-        if (reference) return { _tag: 'resolved', reference } as const
+
+        if (reference) return ClaimResult.resolved({ reference })
+
         const retryAfterMs = Math.max(
           1,
-          (identity.leaseExpiresAt?.getTime() ?? now.getTime() + leaseMs) - now.getTime()
+          (identity.leaseExpiresAt?.getTime() ?? now.getTime() + leaseMs) - now.getTime(),
         )
-        return {
-          _tag: 'busy',
+
+        return ClaimResult.busy({
           retryAfterMs,
-          claimAgeMs: Math.max(0, now.getTime() - identity.createdAt.getTime())
-        } as const
+          claimAgeMs: Math.max(0, now.getTime() - identity.createdAt.getTime()),
+        })
       },
-      catch: (cause) => storageError('claim', cause)
+      catch: (cause) => storageError('claim', cause),
     })
 
   readonly renew = (
-    sourceKeys: readonly string[],
+    sourceKeys: ReadonlyArray<string>,
     ownerToken: string,
     now: Date,
-    leaseMs: number
+    leaseMs: number,
   ) =>
     Effect.tryPromise({
       try: () =>
@@ -213,15 +232,16 @@ export class CanonicalMusicIdentityRepository {
             and(
               inArray(musicSourceIdentitiesTable.sourceKey, sourceKeys),
               eq(musicSourceIdentitiesTable.state, 'resolving'),
-              eq(musicSourceIdentitiesTable.ownerToken, ownerToken)
-            )
+              eq(musicSourceIdentitiesTable.ownerToken, ownerToken),
+            ),
           )
           .returning({ sourceKey: musicSourceIdentitiesTable.sourceKey }),
-      catch: (cause) => storageError('renew', cause)
+      catch: (cause) => storageError('renew', cause),
     })
 
-  readonly release = (sourceKeys: readonly string[], ownerToken: string) => {
+  readonly release = (sourceKeys: ReadonlyArray<string>, ownerToken: string) => {
     if (sourceKeys.length === 0) return Effect.void
+
     return Effect.tryPromise({
       try: () =>
         this.db
@@ -230,10 +250,10 @@ export class CanonicalMusicIdentityRepository {
             and(
               inArray(musicSourceIdentitiesTable.sourceKey, sourceKeys),
               eq(musicSourceIdentitiesTable.state, 'resolving'),
-              eq(musicSourceIdentitiesTable.ownerToken, ownerToken)
-            )
+              eq(musicSourceIdentitiesTable.ownerToken, ownerToken),
+            ),
           ),
-      catch: (cause) => storageError('release', cause)
+      catch: (cause) => storageError('release', cause),
     })
   }
 
@@ -246,10 +266,10 @@ export class CanonicalMusicIdentityRepository {
             and(
               eq(musicSourceIdentitiesTable.state, 'resolved'),
               eq(musicSourceIdentitiesTable.entityType, reference.entityType),
-              eq(musicSourceIdentitiesTable.entityId, reference.entityId)
-            )
+              eq(musicSourceIdentitiesTable.entityId, reference.entityId),
+            ),
           ),
-      catch: (cause) => storageError('removeOrphan', cause)
+      catch: (cause) => storageError('removeOrphan', cause),
     })
 
   readonly touchAlias = (source: ParsedMusicSource, reference: EntityReference, now: Date) =>
@@ -257,6 +277,7 @@ export class CanonicalMusicIdentityRepository {
       Effect.tryPromise({
         try: () => {
           const target = entityExistenceGuard(reference)
+
           return this.db.$client
             .prepare(`INSERT INTO music_source_aliases (
               normalized_url, source_key, first_seen_at, last_seen_at
@@ -268,12 +289,12 @@ export class CanonicalMusicIdentityRepository {
               source.sourceKey,
               now.getTime(),
               now.getTime(),
-              ...target.values
+              ...target.values,
             )
             .run()
         },
-        catch: (cause) => storageError('touchAlias', cause)
-      })
+        catch: (cause) => storageError('touchAlias', cause),
+      }),
     )
 
   readonly legacyCandidates = (source: ParsedMusicSource, entityType: CanonicalMusicEntityType) =>
@@ -288,12 +309,12 @@ export class CanonicalMusicIdentityRepository {
               source.platform === 'other'
                 ? or(
                     eq(musicEntityLinksTable.url, source.normalizedUrl),
-                    eq(musicEntityLinksTable.url, source.canonicalUrl)
+                    eq(musicEntityLinksTable.url, source.canonicalUrl),
                   )
-                : eq(musicEntityLinksTable.platform, source.platform)
-            )
+                : eq(musicEntityLinksTable.platform, source.platform),
+            ),
           ),
-      catch: (cause) => storageError('legacyCandidates', cause)
+      catch: (cause) => storageError('legacyCandidates', cause),
     })
 
   readonly linksFor = (reference: EntityReference) =>
@@ -305,11 +326,11 @@ export class CanonicalMusicIdentityRepository {
           .where(
             and(
               eq(musicEntityLinksTable.entityType, reference.entityType),
-              eq(musicEntityLinksTable.entityId, reference.entityId)
-            )
+              eq(musicEntityLinksTable.entityId, reference.entityId),
+            ),
           )
           .orderBy(musicEntityLinksTable.platform),
-      catch: (cause) => storageError('linksFor', cause)
+      catch: (cause) => storageError('linksFor', cause),
     })
 
   readonly linkById = (reference: EntityReference, linkId: string) =>
@@ -322,13 +343,14 @@ export class CanonicalMusicIdentityRepository {
             and(
               eq(musicEntityLinksTable.entityType, reference.entityType),
               eq(musicEntityLinksTable.entityId, reference.entityId),
-              eq(musicEntityLinksTable.id, linkId)
-            )
+              eq(musicEntityLinksTable.id, linkId),
+            ),
           )
           .limit(1)
+
         return rows[0]
       },
-      catch: (cause) => storageError('linkById', cause)
+      catch: (cause) => storageError('linkById', cause),
     })
 
   readonly releaseLink = (input: {
@@ -342,21 +364,23 @@ export class CanonicalMusicIdentityRepository {
   }) =>
     Effect.tryPromise({
       try: async () => {
-        const statements: D1PreparedStatement[] = []
+        const statements: Array<D1PreparedStatement> = []
+
         if (input.source) {
           statements.push(
             this.db.$client
               .prepare(`DELETE FROM music_source_identities
                 WHERE source_key = ? AND state = 'resolved' AND entity_type = ? AND entity_id = ?`)
-              .bind(input.source.sourceKey, input.reference.entityType, input.reference.entityId)
+              .bind(input.source.sourceKey, input.reference.entityType, input.reference.entityId),
           )
         }
+
         if (input.action === 'delete') {
           statements.push(
             this.db.$client
               .prepare(`DELETE FROM music_entity_links
                 WHERE id = ? AND entity_type = ? AND entityId = ?`)
-              .bind(input.linkId, input.reference.entityType, input.reference.entityId)
+              .bind(input.linkId, input.reference.entityType, input.reference.entityId),
           )
         } else {
           statements.push(
@@ -370,26 +394,31 @@ export class CanonicalMusicIdentityRepository {
                 input.now.getTime(),
                 input.linkId,
                 input.reference.entityType,
-                input.reference.entityId
-              )
+                input.reference.entityId,
+              ),
           )
         }
+
         await this.db.$client.batch(statements)
+
         if (input.action === 'delete') return undefined
+
         const rows = await this.db
           .select()
           .from(musicEntityLinksTable)
           .where(eq(musicEntityLinksTable.id, input.linkId))
           .limit(1)
+
         return rows[0]
       },
-      catch: (cause) => storageError('releaseLink', cause)
+      catch: (cause) => storageError('releaseLink', cause),
     })
 
   readonly upsertLink = (reference: EntityReference, link: ScrapedLink, now: Date) =>
     Effect.tryPromise({
       try: async () => {
         const target = entityExistenceGuard(reference)
+
         const result = await this.db.$client
           .prepare(`INSERT INTO music_entity_links (
             id, entity_type, entityId, platform, url, status, scrapedAt, verifiedAt, metadata, createdAt, updatedAt
@@ -409,10 +438,12 @@ export class CanonicalMusicIdentityRepository {
             link.metadata ? JSON.stringify(link.metadata) : null,
             now.getTime(),
             now.getTime(),
-            ...target.values
+            ...target.values,
           )
           .run()
+
         if ((result.meta.changes ?? 0) === 0) return []
+
         return this.db
           .select()
           .from(musicEntityLinksTable)
@@ -420,21 +451,21 @@ export class CanonicalMusicIdentityRepository {
             and(
               eq(musicEntityLinksTable.entityType, reference.entityType),
               eq(musicEntityLinksTable.entityId, reference.entityId),
-              eq(musicEntityLinksTable.platform, link.platform)
-            )
+              eq(musicEntityLinksTable.platform, link.platform),
+            ),
           )
           .limit(1)
       },
-      catch: (cause) => storageError('upsertLink', cause)
+      catch: (cause) => storageError('upsertLink', cause),
     })
 
   readonly commit = (input: {
-    readonly ownedSources: readonly ParsedMusicSource[]
-    readonly allSources: readonly ParsedMusicSource[]
+    readonly ownedSources: ReadonlyArray<ParsedMusicSource>
+    readonly allSources: ReadonlyArray<ParsedMusicSource>
     readonly reference: EntityReference
     readonly entity?: EntityRecord
     readonly slug?: string
-    readonly links: readonly ScrapedLink[]
+    readonly links: ReadonlyArray<ScrapedLink>
     readonly ownerToken: string
     readonly scrapedAt: Date
     readonly now: Date
@@ -442,36 +473,44 @@ export class CanonicalMusicIdentityRepository {
     Effect.tryPromise({
       try: async () => {
         if (input.ownedSources.length === 0) return true
+
         const fence: WriteFence = {
           ownedSources: input.ownedSources,
           aliases: input.allSources,
           ownerToken: input.ownerToken,
-          reference: input.reference
+          reference: input.reference,
         }
-        const statements: D1PreparedStatement[] = []
+
+        const statements: Array<D1PreparedStatement> = []
+
         if (input.entity && input.slug) {
           statements.push(
-            ...entityInsertStatements(this.db, input.entity, input.slug, fence, input.now)
+            ...entityInsertStatements(this.db, input.entity, input.slug, fence, input.now),
           )
         }
+
         for (const link of input.links) {
           statements.push(linkStatement(this.db, input.reference, link, fence, input.now))
         }
+
         for (const source of input.allSources) {
           statements.push(aliasStatement(this.db, source, fence, input.now))
         }
+
         statements.push(completionStatement(this.db, fence, input.scrapedAt, input.now))
         const results = await this.db.$client.batch(statements)
         const completion = results.at(-1)
+
         return (completion?.meta.changes ?? 0) === input.ownedSources.length
       },
-      catch: (cause) => storageError('commit', cause)
+      catch: (cause) => storageError('commit', cause),
     })
 
   readonly updateArtwork = (reference: EntityReference, artworkUrl: string) =>
     Effect.tryPromise({
       try: () => {
         const updatedAt = new Date()
+
         switch (reference.entityType) {
           case 'artist':
             return this.db
@@ -497,7 +536,7 @@ export class CanonicalMusicIdentityRepository {
             return unreachableEntityType(reference.entityType)
         }
       },
-      catch: (cause) => storageError('updateArtwork', cause)
+      catch: (cause) => storageError('updateArtwork', cause),
     })
 
   readonly recordConflict = (
@@ -505,7 +544,7 @@ export class CanonicalMusicIdentityRepository {
     incumbent: EntityReference,
     candidate: EntityReference,
     reason: string,
-    now: Date
+    now: Date,
   ) =>
     Effect.tryPromise({
       try: () =>
@@ -519,17 +558,17 @@ export class CanonicalMusicIdentityRepository {
             candidateEntityType: candidate.entityType,
             candidateEntityId: candidate.entityId,
             reason,
-            detectedAt: now
+            detectedAt: now,
           })
           .onConflictDoNothing(),
-      catch: (cause) => storageError('recordConflict', cause)
+      catch: (cause) => storageError('recordConflict', cause),
     })
 
   readonly updateEntityMetadata = (input: {
     readonly entity: EntityRecord
-    readonly links: readonly ScrapedLink[]
-    readonly sources: readonly ParsedMusicSource[]
-    readonly ownedSources: readonly ParsedMusicSource[]
+    readonly links: ReadonlyArray<ScrapedLink>
+    readonly sources: ReadonlyArray<ParsedMusicSource>
+    readonly ownedSources: ReadonlyArray<ParsedMusicSource>
     readonly ownerToken: string
     readonly now: Date
   }): Effect.Effect<boolean, MusicIdentityStorageError> =>
@@ -537,14 +576,18 @@ export class CanonicalMusicIdentityRepository {
       try: async () => {
         const { entity, links, sources, ownedSources, ownerToken, now } = input
         const reference: EntityReference = entity
+
         const fence: WriteFence | undefined =
           ownedSources.length > 0
             ? { ownedSources, aliases: sources, ownerToken, reference }
             : undefined
+
         const guard = fence ? writeFenceGuard(fence, true) : entityExistenceGuard(reference)
-        const statements: D1PreparedStatement[] = []
+        const statements: Array<D1PreparedStatement> = []
+
         const artistNames =
           entity.artistNames.length > 0 ? JSON.stringify(entity.artistNames) : null
+
         switch (entity.entityType) {
           case 'artist':
             statements.push(
@@ -556,8 +599,8 @@ export class CanonicalMusicIdentityRepository {
                   entity.imageUrl ?? null,
                   now.getTime(),
                   entity.entityId,
-                  ...guard.values
-                )
+                  ...guard.values,
+                ),
             )
             break
           case 'album':
@@ -571,8 +614,8 @@ export class CanonicalMusicIdentityRepository {
                   entity.imageUrl ?? null,
                   now.getTime(),
                   entity.entityId,
-                  ...guard.values
-                )
+                  ...guard.values,
+                ),
             )
             break
           case 'track':
@@ -586,8 +629,8 @@ export class CanonicalMusicIdentityRepository {
                   entity.imageUrl ?? null,
                   now.getTime(),
                   entity.entityId,
-                  ...guard.values
-                )
+                  ...guard.values,
+                ),
             )
             break
           case 'playlist':
@@ -601,23 +644,26 @@ export class CanonicalMusicIdentityRepository {
                   entity.imageUrl ?? null,
                   now.getTime(),
                   entity.entityId,
-                  ...guard.values
-                )
+                  ...guard.values,
+                ),
             )
             break
         }
+
         for (const link of links) {
           statements.push(
             fence
               ? linkStatement(this.db, reference, link, fence, now)
-              : existingEntityLinkStatement(this.db, reference, link, now)
+              : existingEntityLinkStatement(this.db, reference, link, now),
           )
         }
+
         if (fence) {
           for (const source of sources) {
             statements.push(aliasStatement(this.db, source, fence, now))
           }
         }
+
         for (const source of sources) {
           statements.push(
             this.db.$client
@@ -630,16 +676,19 @@ export class CanonicalMusicIdentityRepository {
                 source.sourceKey,
                 entity.entityType,
                 entity.entityId,
-                ...guard.values
-              )
+                ...guard.values,
+              ),
           )
         }
+
         if (fence) statements.push(completionStatement(this.db, fence, now, now))
         const results = await this.db.$client.batch(statements)
+
         if (!fence) return (results[0]?.meta.changes ?? 0) > 0
+
         return (results.at(-1)?.meta.changes ?? 0) === ownedSources.length
       },
-      catch: (cause) => storageError('refresh', cause)
+      catch: (cause) => storageError('refresh', cause),
     })
 }
 

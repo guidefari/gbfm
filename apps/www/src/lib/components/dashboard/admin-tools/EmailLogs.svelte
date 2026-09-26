@@ -1,0 +1,167 @@
+<script lang="ts">
+  import { EmailLogsResponse } from '@gbfm/api/email'
+  import { onMount } from 'svelte'
+  import { dashboardJson } from '../api'
+
+  const statuses = ['PENDING', 'SENT', 'DELIVERED', 'BOUNCED', 'COMPLAINED', 'FAILED'] as const
+
+  const limit = 20
+
+  let logs = $state<typeof EmailLogsResponse.Type.data>([]),
+    pagination = $state<typeof EmailLogsResponse.Type.pagination>(),
+    status = $state('ALL'),
+    recipient = $state(''),
+    dateFrom = $state(''),
+    dateTo = $state(''),
+    offset = $state(0),
+    loading = $state(true),
+    message = $state('')
+
+  const format = (value: string | null) => (value ? new Date(value).toLocaleString() : '—')
+
+  async function load() {
+    loading = true
+    message = ''
+
+    try {
+      const query = new URLSearchParams({ limit: String(limit), offset: String(offset) })
+
+      if (status !== 'ALL') query.set('status', status)
+
+      if (recipient.trim()) query.set('recipientEmail', recipient.trim())
+
+      if (dateFrom) query.set('dateFrom', dateFrom)
+
+      if (dateTo) query.set('dateTo', dateTo)
+      const result = await dashboardJson(EmailLogsResponse, `/api/email/logs?${query}`)
+      logs = result.data
+      pagination = result.pagination
+    } catch (cause) {
+      message = cause instanceof Error ? cause.message : 'Failed to load email logs.'
+    } finally {
+      loading = false
+    }
+  }
+
+  function reset() {
+    status = 'ALL'
+    recipient = ''
+    dateFrom = ''
+    dateTo = ''
+    offset = 0
+    void load()
+  }
+
+  onMount(load)
+</script>
+
+<div class="space-y-4">
+  <form
+    class="grid gap-4 md:grid-cols-2 lg:grid-cols-5"
+    onsubmit={(e) => {
+      e.preventDefault()
+      offset = 0
+      void load()
+    }}
+  >
+    <label class="text-sm"
+      >Status<select class="mt-1 w-full rounded border bg-background p-2" bind:value={status}
+        ><option>ALL</option>{#each statuses as item}<option>{item}</option>{/each}</select
+      ></label
+    ><label class="text-sm lg:col-span-2"
+      >Recipient email<input
+        class="mt-1 w-full rounded border bg-background p-2"
+        type="search"
+        bind:value={recipient}
+      /></label
+    ><label class="text-sm"
+      >Date from (UTC)<input
+        class="mt-1 w-full rounded border bg-background p-2"
+        type="date"
+        bind:value={dateFrom}
+      /></label
+    ><label class="text-sm"
+      >Date to (UTC)<input
+        class="mt-1 w-full rounded border bg-background p-2"
+        type="date"
+        bind:value={dateTo}
+      /></label
+    >
+    <div class="flex gap-2 lg:col-span-5">
+      <button class="rounded bg-foreground px-4 py-2 text-background">Apply filters</button><button
+        type="button"
+        class="rounded border px-4 py-2"
+        onclick={reset}>Reset filters</button
+      >
+    </div>
+  </form>
+  {#if message}<p class="rounded border border-destructive/50 p-4 text-destructive">
+      {message}
+    </p>{/if}
+  <div class="overflow-x-auto rounded border">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-muted/50"
+        ><tr
+          >{#each ['Created', 'Recipient', 'Type', 'Template', 'Subject', 'Status', 'Provider receipt', 'Failure'] as heading}<th
+              class="p-3">{heading}</th
+            >{/each}</tr
+        ></thead
+      ><tbody
+        >{#if loading}<tr
+            ><td colspan="8" class="p-8 text-center text-muted-foreground">Loading email logs…</td
+            ></tr
+          >{:else if logs.length === 0}<tr
+            ><td colspan="8" class="p-8 text-center text-muted-foreground"
+              >No email logs match the filters.</td
+            ></tr
+          >{:else}{#each logs as log}<tr class="border-t"
+              ><td class="p-3 text-muted-foreground">{format(log.createdAt)}</td><td class="p-3"
+                >{log.recipientEmail}</td
+              ><td class="p-3 text-muted-foreground">{log.emailType}</td><td
+                class="p-3 text-muted-foreground">{log.templateName}</td
+              ><td class="max-w-64 truncate p-3" title={log.subject}>{log.subject}</td><td
+                class="p-3"
+                ><span
+                  class={`rounded-full border px-2 py-1 text-xs ${['FAILED', 'BOUNCED', 'COMPLAINED'].includes(log.status) ? 'border-destructive text-destructive' : ''}`}
+                  >{log.status}</span
+                ></td
+              ><td
+                class="max-w-56 truncate p-3 text-muted-foreground"
+                title={log.providerMessageId ?? undefined}
+                >{log.provider && log.providerMessageId
+                  ? `${log.provider}: ${log.providerMessageId}`
+                  : '—'}</td
+              ><td
+                class="max-w-64 truncate p-3 text-muted-foreground"
+                title={log.errorMessage ?? undefined}
+                >{log.failureCategory ?? log.errorMessage ?? '—'}</td
+              ></tr
+            >{/each}{/if}</tbody
+      >
+    </table>
+  </div>
+  <div class="flex justify-between">
+    <span class="text-sm text-muted-foreground"
+      >Page {Math.floor(offset / limit) + 1}{pagination
+        ? ` of ${Math.max(1, Math.ceil(pagination.total / limit))}`
+        : ''}</span
+    >
+    <div class="space-x-2">
+      <button
+        class="rounded border px-3 py-2 disabled:opacity-40"
+        disabled={offset === 0 || loading}
+        onclick={() => {
+          offset = Math.max(0, offset - limit)
+          void load()
+        }}>Previous</button
+      ><button
+        class="rounded border px-3 py-2 disabled:opacity-40"
+        disabled={!pagination?.hasMore || loading}
+        onclick={() => {
+          offset += limit
+          void load()
+        }}>Next</button
+      >
+    </div>
+  </div>
+</div>

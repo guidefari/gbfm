@@ -9,7 +9,7 @@ export const SocialCardKind = Schema.Literals([
   'label',
   'profile',
   'editorial',
-  'tweet'
+  'tweet',
 ])
 
 /** A content kind with a generated social-card presentation. */
@@ -28,55 +28,51 @@ export const TWEET_CARD_FORMATS = SOCIAL_CARD_FORMATS
 export const SOCIAL_CARD_DIMENSIONS = {
   poster: [1080, 1350],
   sleeve: [1080, 1920],
-  openGraph: [1200, 630]
+  openGraph: [1200, 630],
 } as const satisfies Readonly<Record<SocialCardFormat, readonly [number, number]>>
 
 const NullableString = Schema.NullOr(Schema.String)
 
 /** Runtime contract for an artwork-led Open Graph card. */
-export const ArtworkCardModel = Schema.Struct({
-  _tag: Schema.Literal('ArtworkCard'),
+export const ArtworkCardModel = Schema.TaggedStruct('ArtworkCard', {
   kind: Schema.Literals(['mix', 'track', 'release']),
   eyebrow: Schema.String,
   title: Schema.String,
   creators: Schema.Array(Schema.String),
-  artworkUrl: NullableString
+  artworkUrl: NullableString,
 })
 
 /** Parsed artwork-led card model. */
 export type ArtworkCardModel = typeof ArtworkCardModel.Type
 
 /** Runtime contract for a show, label, or profile identity card. */
-export const IdentityCardModel = Schema.Struct({
-  _tag: Schema.Literal('IdentityCard'),
+export const IdentityCardModel = Schema.TaggedStruct('IdentityCard', {
   kind: Schema.Literals(['show', 'label', 'profile']),
   eyebrow: Schema.String,
   title: Schema.String,
   description: Schema.String,
   detail: NullableString,
-  imageUrl: NullableString
+  imageUrl: NullableString,
 })
 
 /** Parsed identity-led card model. */
 export type IdentityCardModel = typeof IdentityCardModel.Type
 
 /** Runtime contract for a text-led editorial card. */
-export const EditorialCardModel = Schema.Struct({
-  _tag: Schema.Literal('EditorialCard'),
+export const EditorialCardModel = Schema.TaggedStruct('EditorialCard', {
   kind: Schema.Literal('editorial'),
   title: Schema.String,
   description: Schema.String,
   authors: Schema.Array(Schema.String),
   imageUrl: NullableString,
-  publishedLabel: NullableString
+  publishedLabel: NullableString,
 })
 
 /** Parsed editorial card model. */
 export type EditorialCardModel = typeof EditorialCardModel.Type
 
 /** Runtime contract consumed by every tweet card renderer. */
-export const TweetCardModel = Schema.Struct({
-  _tag: Schema.Literal('TweetCard'),
+export const TweetCardModel = Schema.TaggedStruct('TweetCard', {
   kind: Schema.Literal('tweet'),
   commentary: Schema.String,
   authorName: NullableString,
@@ -87,7 +83,7 @@ export const TweetCardModel = Schema.Struct({
   entityTitle: NullableString,
   entityArtists: NullableString,
   coverImageUrl: NullableString,
-  url: Schema.String
+  url: Schema.String,
 })
 
 /** Parsed tweet card model. */
@@ -98,7 +94,7 @@ export const SocialCardModel = Schema.Union([
   ArtworkCardModel,
   IdentityCardModel,
   EditorialCardModel,
-  TweetCardModel
+  TweetCardModel,
 ])
 
 /** Parsed social-card model. */
@@ -108,7 +104,7 @@ const OpenGraphPresentation = Schema.Struct({
   schemaVersion: Schema.Literal(1),
   revision: Schema.String,
   model: Schema.Union([ArtworkCardModel, IdentityCardModel, EditorialCardModel]),
-  images: Schema.Struct({ openGraph: Schema.String })
+  images: Schema.Struct({ openGraph: Schema.String }),
 })
 
 /** Runtime response contract for a tweet presentation with download formats. */
@@ -119,8 +115,8 @@ export const TweetCardPresentation = Schema.Struct({
   images: Schema.Struct({
     poster: Schema.String,
     sleeve: Schema.String,
-    openGraph: Schema.String
-  })
+    openGraph: Schema.String,
+  }),
 })
 
 /** Parsed tweet share presentation. */
@@ -187,11 +183,12 @@ export type TweetCardPresentationInput = {
 }
 
 const SITE_URL = 'https://goosebumps.fm'
+
 const templateVersions = {
   ArtworkCard: 'artwork-card-v1',
   IdentityCard: 'identity-card-v1',
   EditorialCard: 'editorial-card-v1',
-  TweetCard: 'tweet-card-v2'
+  TweetCard: 'tweet-card-v2',
 } as const satisfies Readonly<Record<SocialCardModel['_tag'], string>>
 
 const eyebrowByKind = {
@@ -200,25 +197,26 @@ const eyebrowByKind = {
   release: 'Release',
   show: 'Radio show',
   label: 'Record label',
-  profile: 'Contributor'
+  profile: 'Contributor',
 } as const
 
 const entityLabels = {
   album: 'Album',
   track: 'Track',
-  playlist: 'Playlist'
+  playlist: 'Playlist',
 } as const satisfies Readonly<Record<TweetCardEntityInput['type'], string>>
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   year: 'numeric',
   month: 'short',
   day: 'numeric',
-  timeZone: 'UTC'
+  timeZone: 'UTC',
 })
 
 const revisionFor = async (model: SocialCardModel) => {
   const encoded = new TextEncoder().encode(JSON.stringify([templateVersions[model._tag], model]))
   const digest = await crypto.subtle.digest('SHA-256', encoded)
+
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0'))
     .join('')
     .slice(0, 16)
@@ -229,64 +227,65 @@ const baseUrlFor = (kind: SocialCardKind, slug: string, revision: string) =>
 
 /** Normalizes non-tweet content and derives its immutable Open Graph URL. */
 export const buildSocialCardPresentation = async (
-  input: SocialCardInput
+  input: SocialCardInput,
 ): Promise<SocialCardPresentation> => {
   let model: ArtworkCardModel | IdentityCardModel | EditorialCardModel
+
   switch (input.kind) {
     case 'mix':
     case 'track':
     case 'release':
-      model = {
-        _tag: 'ArtworkCard',
+      model = ArtworkCardModel.make({
         kind: input.kind,
         eyebrow: eyebrowByKind[input.kind],
         title: input.title,
         creators: [...input.creators],
-        artworkUrl: input.imageUrl
-      }
+        artworkUrl: input.imageUrl,
+      })
       break
     case 'show':
     case 'label':
     case 'profile':
-      model = {
-        _tag: 'IdentityCard',
+      model = IdentityCardModel.make({
         kind: input.kind,
         eyebrow: eyebrowByKind[input.kind],
         title: input.title,
         description: input.description,
         detail: input.detail,
-        imageUrl: input.imageUrl
-      }
+        imageUrl: input.imageUrl,
+      })
       break
     case 'editorial':
-      model = {
-        _tag: 'EditorialCard',
+      model = EditorialCardModel.make({
         kind: 'editorial',
         title: input.title,
         description: input.description,
         authors: [...input.authors],
         imageUrl: input.imageUrl,
-        publishedLabel: input.publishedAt ? dateFormatter.format(new Date(input.publishedAt)) : null
-      }
+        publishedLabel: input.publishedAt
+          ? dateFormatter.format(new Date(input.publishedAt))
+          : null,
+      })
       break
   }
 
   const revision = await revisionFor(model)
+
   return {
     schemaVersion: 1,
     revision,
     model,
-    images: { openGraph: `${baseUrlFor(input.kind, input.slug, revision)}/open-graph.png` }
+    images: { openGraph: `${baseUrlFor(input.kind, input.slug, revision)}/open-graph.png` },
   }
 }
 
 /** Normalizes tweet source data and derives immutable URLs for all image formats. */
 export const buildTweetCardPresentation = async (
-  input: TweetCardPresentationInput
+  input: TweetCardPresentationInput,
 ): Promise<TweetCardPresentation> => {
   const entity = input.entity
-  const model: TweetCardModel = {
-    _tag: 'TweetCard',
+
+  const model: TweetCardModel = TweetCardModel.make({
     kind: 'tweet',
     commentary: input.commentary,
     authorName: input.creator?.name ?? null,
@@ -297,8 +296,9 @@ export const buildTweetCardPresentation = async (
     entityTitle: entity?.title ?? null,
     entityArtists: entity?.artists?.length ? entity.artists.join(', ') : null,
     coverImageUrl: entity?.coverImageUrl ?? null,
-    url: `${SITE_URL}/tweet/${encodeURIComponent(input.slug)}`
-  }
+    url: `${SITE_URL}/tweet/${encodeURIComponent(input.slug)}`,
+  })
+
   const revision = await revisionFor(model)
   const base = baseUrlFor('tweet', input.slug, revision)
 
@@ -309,7 +309,7 @@ export const buildTweetCardPresentation = async (
     images: {
       poster: `${base}/poster.png`,
       sleeve: `${base}/sleeve.png`,
-      openGraph: `${base}/open-graph.png`
-    }
+      openGraph: `${base}/open-graph.png`,
+    },
   }
 }

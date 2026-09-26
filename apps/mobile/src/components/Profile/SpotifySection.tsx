@@ -1,20 +1,25 @@
 import { Text, TouchableOpacity, View } from 'react-native'
-import { SPOTIFY_GREEN, SpotifyIcon } from '@/spotify/SpotifyIcon'
+
 import {
   SpotifyConnectionState,
   useConnectSpotify,
   useDisconnectSpotify,
-  useSpotifyConnection
+  useSpotifyConnection,
 } from '@/spotify/connection'
+import { SPOTIFY_GREEN, SpotifyIcon } from '@/spotify/SpotifyIcon'
 import { SpotifyToast, useSpotifyToast } from '@/spotify/SpotifyToast'
 import { useThemeColors } from '@/theme/colors'
+
 import { SpotifyPasteAndPlay } from './SpotifyPasteAndPlay'
 
 const formatExpiresIn = (expiresAt: number) => {
   const diff = expiresAt - Date.now()
+
   if (diff <= 0) return 'expired'
   const minutes = Math.floor(diff / 60_000)
+
   if (minutes < 60) return `~${minutes}m`
+
   return `~${Math.floor(minutes / 60)}h ${minutes % 60}m`
 }
 
@@ -40,7 +45,7 @@ export function SpotifySection() {
             backgroundColor: colors.surface,
             borderRadius: 4,
             padding: 16,
-            gap: 12
+            gap: 12,
           }}>
           <View>
             <Text style={{ color: colors.strong, fontSize: 16, fontWeight: '600' }}>
@@ -59,7 +64,7 @@ export function SpotifySection() {
               borderWidth: 1,
               borderRadius: 4,
               paddingVertical: 10,
-              alignItems: 'center'
+              alignItems: 'center',
             }}>
             <Text style={{ color: colors.error, fontSize: 14, fontWeight: '600' }}>Disconnect</Text>
           </TouchableOpacity>
@@ -77,7 +82,7 @@ export function SpotifySection() {
             borderRadius: 4,
             paddingVertical: 14,
             alignItems: 'center',
-            opacity: SpotifyConnectionState.$is('Connecting')(connection) ? 0.6 : 1
+            opacity: SpotifyConnectionState.$is('Connecting')(connection) ? 0.6 : 1,
           }}>
           <Text style={{ color: '#000', fontSize: 15, fontWeight: '700' }}>
             {SpotifyConnectionState.$is('Connecting')(connection)

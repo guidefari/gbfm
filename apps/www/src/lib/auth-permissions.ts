@@ -7,7 +7,7 @@ export const statement = {
   post: ['create', 'read', 'update', 'delete', 'publish', 'manage'],
   mix: ['create', 'read', 'update', 'delete', 'publish', 'manage'],
   release: ['create', 'read', 'update', 'delete', 'publish', 'manage'],
-  label: ['create', 'read', 'update', 'delete', 'publish', 'manage']
+  label: ['create', 'read', 'update', 'delete', 'publish', 'manage'],
 } as const
 
 export const ac = createAccessControl(statement)
@@ -17,7 +17,7 @@ export const userRole = ac.newRole({
   post: ['read'],
   mix: ['read'],
   release: ['read'],
-  label: ['read']
+  label: ['read'],
 })
 
 export const creator = ac.newRole({
@@ -25,7 +25,7 @@ export const creator = ac.newRole({
   post: ['create', 'read', 'update', 'delete'],
   mix: ['create', 'read', 'update', 'delete'],
   release: ['create', 'read', 'update', 'delete'],
-  label: ['create', 'read', 'update', 'delete']
+  label: ['create', 'read', 'update', 'delete'],
 })
 
 export const editor = ac.newRole({
@@ -33,7 +33,7 @@ export const editor = ac.newRole({
   post: ['create', 'read', 'update', 'delete', 'publish'],
   mix: ['create', 'read', 'update', 'delete', 'publish'],
   release: ['create', 'read', 'update', 'delete', 'publish'],
-  label: ['create', 'read', 'update', 'delete', 'publish']
+  label: ['create', 'read', 'update', 'delete', 'publish'],
 })
 
 export const admin = ac.newRole({
@@ -42,5 +42,5 @@ export const admin = ac.newRole({
   post: ['manage'],
   mix: ['manage'],
   release: ['manage'],
-  label: ['manage']
+  label: ['manage'],
 })

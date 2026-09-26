@@ -205,5 +205,5 @@ export const Icons = {
         strokeWidth='16'
       />
     </svg>
-  )
+  ),
 }

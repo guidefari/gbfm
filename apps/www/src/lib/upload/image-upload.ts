@@ -4,6 +4,7 @@
 // non-browser test environment. http-url.ts only touches `window` lazily
 // inside functions this module never calls.
 import { apiUrl } from '@/lib/http-url'
+
 import { parsePresignImageResponse } from './image-upload-response'
 
 export interface ImageUploadResult {
@@ -36,42 +37,47 @@ export class HttpStatusError extends Error {
 // httpRequest.
 export async function uploadImageDirectToS3(
   file: File,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  request: typeof fetch = fetch,
 ): Promise<ImageUploadResult> {
-  const presignResponse = await fetch(apiUrl('/upload/image/presign'), {
+  const presignInit: RequestInit = {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
     body: JSON.stringify({
       fileName: file.name,
       contentType: file.type,
-      fileSize: file.size
+      fileSize: file.size,
     }),
-    signal
-  })
+  }
+
+  if (signal !== undefined) presignInit.signal = signal
+  const presignResponse = await request(apiUrl('/upload/image/presign'), presignInit)
 
   if (!presignResponse.ok) {
     const errorText = await presignResponse.text()
     throw new HttpStatusError(
       presignResponse.status,
-      `Image presign failed (${presignResponse.status}): ${errorText || presignResponse.statusText}`
+      `Image presign failed (${presignResponse.status}): ${errorText || presignResponse.statusText}`,
     )
   }
 
   const raw = await presignResponse.json()
   const { uploadUrl, publicUrl, key } = parsePresignImageResponse(raw)
 
-  const putResponse = await fetch(uploadUrl, {
+  const putInit: RequestInit = {
     method: 'PUT',
     body: file,
     headers: { 'Content-Type': file.type },
-    signal
-  })
+  }
+
+  if (signal !== undefined) putInit.signal = signal
+  const putResponse = await request(uploadUrl, putInit)
 
   if (!putResponse.ok) {
     throw new HttpStatusError(
       putResponse.status,
-      `Image upload to S3 failed (${putResponse.status})`
+      `Image upload to S3 failed (${putResponse.status})`,
     )
   }
 

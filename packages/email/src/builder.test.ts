@@ -1,6 +1,7 @@
 import { Effect } from 'effect'
 import React, { type ReactElement } from 'react'
 import { expect, test } from 'vitest'
+
 import {
   buildInviteEmail,
   buildMusicReminderEmail,
@@ -14,11 +15,13 @@ import {
   buildWelcomeEmail,
   EmailRenderError,
   type RenderedEmail,
-  renderEmail
+  renderEmail,
 } from './index'
 
 const recipient = 'listener@example.com'
+
 const replyTo = 'help@goosebumps.fm'
+
 const sentAt = '2026-07-12T00:00:00.000Z'
 
 async function render(message: Effect.Effect<RenderedEmail, EmailRenderError>) {
@@ -42,7 +45,7 @@ test('builds the complete email catalog with the correct envelope and user-visib
     newUserNotificationEmail,
     newsletterAdminNotificationEmail,
     newsletterUnsubscribeLinkEmail,
-    newsletterWelcomeEmail
+    newsletterWelcomeEmail,
   ] = await Promise.all([
     render(buildTestEmail({ to: recipient, replyTo, sentAt })),
     render(
@@ -50,8 +53,8 @@ test('builds the complete email catalog with the correct envelope and user-visib
         to: recipient,
         replyTo,
         username: 'Listener',
-        verificationUrl
-      })
+        verificationUrl,
+      }),
     ),
     render(buildPasswordResetEmail({ to: recipient, replyTo, resetUrl })),
     render(buildInviteEmail({ to: recipient, replyTo, name: 'Listener', inviteUrl })),
@@ -63,8 +66,8 @@ test('builds the complete email catalog with the correct envelope and user-visib
         musicTitle: 'Night Drive',
         artistName: 'The Artists',
         musicUrl: 'https://goosebumps.fm/music/night-drive',
-        reminderDate: 'July 12, 2026'
-      })
+        reminderDate: 'July 12, 2026',
+      }),
     ),
     render(
       buildNewMixNotificationEmail({
@@ -74,8 +77,8 @@ test('builds the complete email catalog with the correct envelope and user-visib
         mixTitle: 'Summer Mix',
         artistName: 'The Artists',
         mixUrl: 'https://goosebumps.fm/mixes/summer-mix',
-        releaseDate: 'July 12, 2026'
-      })
+        releaseDate: 'July 12, 2026',
+      }),
     ),
     render(
       buildNewUserNotificationEmail({
@@ -83,8 +86,8 @@ test('builds the complete email catalog with the correct envelope and user-visib
         replyTo,
         name: 'Listener',
         email: recipient,
-        timestamp: sentAt
-      })
+        timestamp: sentAt,
+      }),
     ),
     render(
       buildNewsletterAdminNotificationEmail({
@@ -92,23 +95,23 @@ test('builds the complete email catalog with the correct envelope and user-visib
         replyTo,
         event: 'subscribed',
         email: recipient,
-        timestamp: sentAt
-      })
+        timestamp: sentAt,
+      }),
     ),
     render(
       buildNewsletterUnsubscribeLinkEmail({
         to: recipient,
         replyTo,
-        unsubscribeUrl
-      })
+        unsubscribeUrl,
+      }),
     ),
     render(
       buildNewsletterWelcomeEmail({
         to: recipient,
         replyTo,
-        unsubscribeUrl: newsletterWelcomeUrl
-      })
-    )
+        unsubscribeUrl: newsletterWelcomeUrl,
+      }),
+    ),
   ])
 
   const messages = [
@@ -121,66 +124,66 @@ test('builds the complete email catalog with the correct envelope and user-visib
     newUserNotificationEmail,
     newsletterAdminNotificationEmail,
     newsletterUnsubscribeLinkEmail,
-    newsletterWelcomeEmail
+    newsletterWelcomeEmail,
   ]
 
   expect(
     messages.map(({ templateName, to, replyTo: messageReplyTo }) => ({
       templateName,
       to,
-      replyTo: messageReplyTo
-    }))
+      replyTo: messageReplyTo,
+    })),
   ).toEqual([
     {
       templateName: 'test',
       to: recipient,
-      replyTo
+      replyTo,
     },
     {
       templateName: 'welcome',
       to: recipient,
-      replyTo
+      replyTo,
     },
     {
       templateName: 'password-reset',
       to: recipient,
-      replyTo
+      replyTo,
     },
     {
       templateName: 'invite',
       to: recipient,
-      replyTo
+      replyTo,
     },
     {
       templateName: 'music-reminder',
       to: recipient,
-      replyTo
+      replyTo,
     },
     {
       templateName: 'mix-notification',
       to: recipient,
-      replyTo
+      replyTo,
     },
     {
       templateName: 'new-user-notification',
       to: recipient,
-      replyTo
+      replyTo,
     },
     {
       templateName: 'newsletter-admin-notification',
       to: recipient,
-      replyTo
+      replyTo,
     },
     {
       templateName: 'newsletter-unsubscribe-link',
       to: recipient,
-      replyTo
+      replyTo,
     },
     {
       templateName: 'newsletter-welcome',
       to: recipient,
-      replyTo
-    }
+      replyTo,
+    },
   ])
 
   for (const message of messages) expect(message.html).not.toBe('')
@@ -191,7 +194,7 @@ test('builds the complete email catalog with the correct envelope and user-visib
     [musicReminderEmail, 'Night Drive'],
     [mixNotificationEmail, 'Summer Mix'],
     [newUserNotificationEmail, recipient],
-    [newsletterAdminNotificationEmail, recipient]
+    [newsletterAdminNotificationEmail, recipient],
   ] as const) {
     expect(message.text.toLowerCase()).toContain(content.toLowerCase())
   }
@@ -201,7 +204,7 @@ test('builds the complete email catalog with the correct envelope and user-visib
     [passwordResetEmail, resetUrl],
     [inviteEmail, inviteUrl],
     [newsletterUnsubscribeLinkEmail, unsubscribeUrl],
-    [newsletterWelcomeEmail, newsletterWelcomeUrl]
+    [newsletterWelcomeEmail, newsletterWelcomeUrl],
   ] as const) {
     expect(message.html).toContain(url)
     expect(message.text).toContain(url)
@@ -219,17 +222,18 @@ test('returns a typed render failure without leaking renderer or recipient detai
         templateName: 'test',
         to: recipient,
         subject: 'Broken email',
-        component: React.createElement(BrokenEmail)
+        component: React.createElement(BrokenEmail),
       }),
       {
         onFailure: (error) => error,
-        onSuccess: () => undefined
-      }
-    )
+        onSuccess: () => undefined,
+      },
+    ),
   )
 
   expect(outcome).toBeInstanceOf(EmailRenderError)
-  expect(outcome).toMatchObject({ _tag: 'EmailRenderError', templateName: 'test' })
+  expect(outcome?._tag).toBe('EmailRenderError')
+  expect(outcome?.templateName).toBe('test')
   expect(JSON.stringify(outcome)).not.toContain('renderer broke')
   expect(JSON.stringify(outcome)).not.toContain(recipient)
   expect(JSON.stringify(outcome)).not.toContain('Broken email')

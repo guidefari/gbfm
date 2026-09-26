@@ -1,5 +1,6 @@
 import { Exit, Schema } from 'effect'
 import { describe, expect, it } from 'vitest'
+
 import { CompleteMultipartUploadInput, InitMultipartUploadInput } from './upload'
 
 describe('upload API contract', () => {
@@ -8,7 +9,7 @@ describe('upload API contract', () => {
       fileName: 'test.mp3',
       contentType: 'image/png',
       fileSize: 1024,
-      fileType: 'audio'
+      fileType: 'audio',
     })
 
     expect(Exit.isFailure(result)).toBe(true)
@@ -19,13 +20,14 @@ describe('upload API contract', () => {
       fileName: 'test.mp3',
       contentType: 'audio/mpeg',
       fileSize: 1024.5,
-      fileType: 'audio'
+      fileType: 'audio',
     })
+
     const nonPositive = Schema.decodeUnknownExit(InitMultipartUploadInput)({
       fileName: 'test.mp3',
       contentType: 'audio/mpeg',
       fileSize: 0,
-      fileType: 'audio'
+      fileType: 'audio',
     })
 
     expect(Exit.isFailure(nonInteger)).toBe(true)
@@ -38,8 +40,8 @@ describe('upload API contract', () => {
       uploadId: 'upload-id',
       parts: [
         { partNumber: 1, etag: 'etag-1' },
-        { partNumber: 2, etag: 'etag-2' }
-      ]
+        { partNumber: 2, etag: 'etag-2' },
+      ],
     })
 
     expect(result.parts).toHaveLength(2)
@@ -49,7 +51,7 @@ describe('upload API contract', () => {
     const result = Schema.decodeUnknownExit(CompleteMultipartUploadInput)({
       key: 'user123/audio_1_test.mp3',
       uploadId: 'upload-id',
-      parts: []
+      parts: [],
     })
 
     expect(Exit.isFailure(result)).toBe(true)

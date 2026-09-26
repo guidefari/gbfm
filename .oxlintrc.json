@@ -3,13 +3,21 @@
   "extends": ["./node_modules/@effect/tsgo/oxlint-presets/correctness.json"],
   "categories": {
     "correctness": "error",
-    "suspicious": "error"
+    "suspicious": "error",
+    "perf": "error",
+    "style": "off",
+    "pedantic": "off",
+    "restriction": "off"
   },
-  "plugins": ["typescript", "unicorn", "oxc", "jsx-a11y", "react", "vitest"],
+  "plugins": ["typescript", "import", "unicorn", "oxc", "eslint", "jsx-a11y", "react", "vitest"],
   "jsPlugins": [
     {
       "name": "anti-slop",
       "specifier": "./tools/oxlint/anti-slop/index.ts"
+    },
+    {
+      "name": "anti-slop-effect",
+      "specifier": "./tools/oxlint/anti-slop/effect/index.ts"
     }
   ],
   "ignorePatterns": [
@@ -18,34 +26,59 @@
     "**/build/**",
     "**/.next/**",
     "**/coverage/**",
+    "**/.turbo/**",
     "apps/www/src/routeTree.gen.ts",
     "**/*.gen.ts",
     "**/*.generated.ts",
     "**/*sst-env.d.ts"
   ],
   "rules": {
+    "anti-slop/no-array-filter-map": "error",
     "anti-slop/no-chained-type-assertions": "error",
     "anti-slop/no-conditional-empty-object-spread": "error",
     "anti-slop/no-known-value-widening": "error",
+    "anti-slop/no-module-mocking": "error",
     "anti-slop/no-object-parameters": "error",
+    "anti-slop/no-reduce-accumulator-copy": "error",
+    "anti-slop/no-reflect-apply": "error",
+    "anti-slop/no-reflect-get": "error",
     "anti-slop/no-runtime-typeof": "error",
     "anti-slop/no-shape-in-symbol-names": "error",
     "anti-slop/no-unknown-parameters": "error",
+    "anti-slop/no-unknown-returns": "error",
     "anti-slop/no-unknown-type-aliases": "error",
     "anti-slop/no-unsafe-dictionary-type": "error",
     "anti-slop/no-widen-then-assert": "error",
+    "anti-slop/require-readable-spacing": "error",
+    "anti-slop/require-safety-comment-for-type-assertion": "error",
+    "anti-slop-effect/no-manual-effect-error-tag": "error",
+    "anti-slop-effect/no-manual-tag-comparison": "error",
+    "anti-slop-effect/no-manual-tagged-construction": "error",
+    "anti-slop-effect/no-service-constructor-imports": "error",
+    "anti-slop-effect/prefer-effect-match": "error",
     "eqeqeq": "off",
+    "eslint/no-console": "error",
+    "eslint/no-unneeded-ternary": "error",
+    "eslint/no-useless-concat": "error",
+    "eslint/no-useless-constructor": "error",
+    "eslint/no-var": "error",
+    "eslint/object-shorthand": "off",
+    "import/no-commonjs": "error",
+    "import/no-duplicates": "error",
+    "import/no-empty-named-blocks": "error",
+    "import/no-self-import": "error",
     "no-const-assign": "error",
     "no-constant-condition": "error",
-    "no-fallthrough": "error",
+    "no-fallthrough": "off",
     "no-implicit-coercion": "error",
     "no-new": "off",
-    "no-underscore-dangle": "off",
+    "no-underscore-dangle": ["error", { "allow": ["_tag"] }],
     "no-shadow": "off",
     "no-unused-expressions": "off",
     "no-unsafe-negation": "error",
     "no-unsafe-optional-chaining": "error",
     "no-unused-vars": "off",
+    "no-await-in-loop": "off",
     "require-yield": "off",
     "jsx-a11y/control-has-associated-label": "off",
     "jsx-a11y/heading-has-content": "off",
@@ -55,9 +88,35 @@
     "react/iframe-missing-sandbox": "off",
     "react/no-unstable-nested-components": "off",
     "react/react-in-jsx-scope": "off",
-    "typescript/no-empty-object-type": "off",
-    "typescript/no-unnecessary-type-arguments": "off",
+    "typescript/no-empty-object-type": "error",
+    "typescript/array-type": [
+      "error",
+      {
+        "default": "generic",
+        "readonly": "generic"
+      }
+    ],
+    "typescript/consistent-type-imports": [
+      "error",
+      {
+        "fixStyle": "inline-type-imports"
+      }
+    ],
+    "typescript/no-confusing-non-null-assertion": "error",
+    "typescript/no-dynamic-delete": "error",
+    "typescript/no-import-type-side-effects": "error",
+    "typescript/no-unnecessary-type-arguments": "error",
+    "typescript/no-unnecessary-type-assertion": "error",
     "typescript/no-unnecessary-type-parameters": "off",
+    "typescript/no-unsafe-function-type": "error",
+    "typescript/no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_"
+      }
+    ],
+    "typescript/no-useless-empty-export": "error",
     "typescript/no-useless-default-assignment": "off",
     "typescript/restrict-template-expressions": "off",
     "typescript/consistent-type-assertions": [
@@ -72,11 +131,56 @@
     "typescript/no-unsafe-declaration-merging": "error",
     "typescript/triple-slash-reference": "off",
     "unicorn/consistent-function-scoping": "off",
+    "unicorn/no-accessor-recursion": "error",
+    "unicorn/no-array-reverse": "off",
     "unicorn/no-array-sort": "off",
     "unicorn/no-empty-file": "off",
     "unicorn/no-new-array": "off",
     "unicorn/prefer-add-event-listener": "off",
+    "unicorn/prefer-array-flat-map": "error",
+    "oxc/no-map-spread": "off",
+    "oxc/no-accumulating-spread": "error",
     "vitest/require-mock-type-parameters": "off",
     "vitest/require-to-throw-message": "off"
-  }
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/test/**"],
+      "rules": {
+        "eslint/no-console": "off",
+        "require-yield": "off",
+        "unicorn/consistent-function-scoping": "off",
+        "unicorn/no-array-sort": "off",
+        "typescript/no-explicit-any": "off",
+        "typescript/no-non-null-assertion": "off",
+        "typescript/consistent-type-assertions": "off"
+      }
+    },
+    {
+      "files": ["**/*.d.ts"],
+      "rules": {
+        "typescript/consistent-type-imports": "off",
+        "typescript/consistent-type-assertions": "off",
+        "typescript/no-explicit-any": "off"
+      }
+    },
+    {
+      "files": ["**/*.gen.*", "**/*.generated.*", "**/routeTree.gen.ts", "**/*sst-env.d.ts"],
+      "rules": {
+        "typescript/no-unused-vars": "off",
+        "typescript/no-explicit-any": "off",
+        "typescript/no-non-null-assertion": "off",
+        "typescript/consistent-type-assertions": "off",
+        "unicorn/consistent-function-scoping": "off",
+        "import/no-commonjs": "off",
+        "eslint/no-console": "off"
+      }
+    },
+    {
+      "files": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts"],
+      "rules": {
+        "eslint/no-console": "off"
+      }
+    }
+  ]
 }

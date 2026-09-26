@@ -3,9 +3,9 @@ import { Schema } from 'effect'
 export class ReadinessCheckFailedError extends Schema.TaggedError<ReadinessCheckFailedError>()(
   'ReadinessCheckFailedError',
   {
-    dbConnected: Schema.Literal(false)
+    dbConnected: Schema.Literal(false),
   },
-  { httpApiStatus: 500 }
+  { httpApiStatus: 500 },
 ) {}
 
 // No built-in HttpApiError class maps to 413 -- HttpApiError.ts only goes up
@@ -16,7 +16,7 @@ export class FileTooLargeError extends Schema.TaggedError<FileTooLargeError>()(
   'FileTooLargeError',
   {
     message: Schema.String,
-    maxBytes: Schema.Number
+    maxBytes: Schema.Number,
   },
-  { httpApiStatus: 413 }
+  { httpApiStatus: 413 },
 ) {}

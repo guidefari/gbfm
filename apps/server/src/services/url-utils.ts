@@ -1,6 +1,7 @@
 export const getIdFromSpotifyUrl = (url: string): string | null => {
   const regex = /\/(\w+)\?/
   const match = url.match(regex)
+
   return match?.[1] || null
 }
 
@@ -8,8 +9,9 @@ export const cleanId = (id: string): string | null => {
   try {
     const decodedUrl = decodeURIComponent(id)
     new URL(decodedUrl)
+
     return getIdFromSpotifyUrl(decodedUrl)
-  } catch (_error) {
+  } catch {
     return id
   }
 }
@@ -29,11 +31,12 @@ export const extractSpotifyId = (url: string): string | null => {
     /spotify\.com\/track\/([a-zA-Z0-9]+)/,
     /spotify\.com\/album\/([a-zA-Z0-9]+)/,
     /spotify\.com\/playlist\/([a-zA-Z0-9]+)/,
-    /spotify\.link\/([a-zA-Z0-9]+)/
+    /spotify\.link\/([a-zA-Z0-9]+)/,
   ]
 
   for (const pattern of patterns) {
     const match = url.match(pattern)
+
     if (match?.[1]) {
       return match[1]
     }
@@ -45,11 +48,12 @@ export const extractSpotifyId = (url: string): string | null => {
 export const extractYouTubeId = (url: string): string | null => {
   const patterns = [
     /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/,
-    /youtube\.com\/embed\/([a-zA-Z0-9_-]+)/
+    /youtube\.com\/embed\/([a-zA-Z0-9_-]+)/,
   ]
 
   for (const pattern of patterns) {
     const match = url.match(pattern)
+
     if (match?.[1]) {
       return match[1]
     }
@@ -61,5 +65,6 @@ export const extractYouTubeId = (url: string): string | null => {
 export const extractBandcampId = (url: string): string | null => {
   const match =
     url.match(/bandcamp\.com\/album\/([^/?]+)/) || url.match(/bandcamp\.com\/track\/([^/?]+)/)
+
   return match?.[1] || null
 }

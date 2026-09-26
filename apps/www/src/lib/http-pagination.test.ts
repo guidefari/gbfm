@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+
 import { DEFAULT_PAGE_SIZE, getNextOffsetPageParam, setPaginationParams } from './http-pagination'
 
 describe('http pagination helpers', () => {
@@ -19,14 +20,14 @@ describe('http pagination helpers', () => {
     expect(
       getNextOffsetPageParam({
         data: ['mix'],
-        pagination: { total: 10, limit: 5, offset: 5, hasMore: true }
-      })
+        pagination: { total: 10, limit: 5, offset: 5, hasMore: true },
+      }),
     ).toBe(10)
     expect(
       getNextOffsetPageParam({
         data: ['mix'],
-        pagination: { total: 5, limit: 5, offset: 0, hasMore: false }
-      })
+        pagination: { total: 5, limit: 5, offset: 0, hasMore: false },
+      }),
     ).toBeUndefined()
   })
 })

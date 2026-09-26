@@ -57,5 +57,5 @@ export interface AudioEngineContract {
  *  layer is built per mount, since both platforms tie the underlying object to
  *  a React lifecycle. */
 export class AudioEngine extends Context.Service<AudioEngine, AudioEngineContract>()(
-  '@gbfm/player/AudioEngine'
+  '@gbfm/player/AudioEngine',
 ) {}

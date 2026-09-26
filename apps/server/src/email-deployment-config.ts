@@ -15,7 +15,7 @@ export interface EmailDeploymentConfigInput {
   /** The Alchemy deployment stage. */
   readonly stage: string
   /** The controlled non-production recipient from deployment configuration. */
-  readonly testRecipient?: string
+  readonly testRecipient?: string | undefined
   /** Whether Alchemy is running the Worker locally in dev mode. */
   readonly localDev?: boolean
 }
@@ -24,14 +24,14 @@ export interface EmailDeploymentConfigInput {
 export function emailDeploymentConfig({
   stage,
   testRecipient,
-  localDev = false
+  localDev = false,
 }: EmailDeploymentConfigInput): EmailDeploymentConfig {
   if (stage === 'prod') {
     return {
       sendingDomain: 'mail.goosebumps.fm',
       emailSender: 'noreply@mail.goosebumps.fm',
       destinationAddress: undefined,
-      transport: localDev ? 'recording' : 'cloudflare'
+      transport: localDev ? 'recording' : 'cloudflare',
     }
   }
 
@@ -40,21 +40,24 @@ export function emailDeploymentConfig({
     .replace(/[^a-z0-9-]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 58)
+
   if (stageLabel.length === 0) {
     throw new Error('Non-production stage must produce a DNS-safe sending subdomain label')
   }
 
   const sendingDomain = `mail-${stageLabel}.goosebumps.fm`
+
   if (localDev) {
     return {
       sendingDomain,
       emailSender: `noreply@${sendingDomain}`,
       destinationAddress: undefined,
-      transport: 'recording'
+      transport: 'recording',
     }
   }
 
   const destinationAddress = testRecipient?.trim()
+
   if (destinationAddress === undefined || destinationAddress.length === 0) {
     throw new Error('EMAIL_TEST_RECIPIENT is required for non-production email sending')
   }
@@ -63,6 +66,6 @@ export function emailDeploymentConfig({
     sendingDomain,
     emailSender: `noreply@${sendingDomain}`,
     destinationAddress,
-    transport: 'cloudflare'
+    transport: 'cloudflare',
   }
 }

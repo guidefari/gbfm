@@ -1,12 +1,14 @@
 import { appendFile } from 'node:fs/promises'
+
 import { PUBLIC_PROFILE_PATH } from '@gbfm/api/profile'
 import { Cause, Effect, Exit, Schema } from 'effect'
+
 import {
   ProductionVerificationError,
   type ProductionVerificationConfig,
   type ProductionVerificationReport,
   summarizeProductionVerificationFailure,
-  verifyProductionDeployment
+  verifyProductionDeployment,
 } from '../src/ops/production-verification'
 import { makeProductionVerificationLive } from './production-verification-live'
 
@@ -19,7 +21,7 @@ const Environment = Schema.Struct({
   SENTRY_PROJECT_ID: Schema.NonEmptyString,
   SENTRY_RELEASE: Schema.NonEmptyString,
   SST_APP: Schema.NonEmptyString,
-  SST_STAGE: Schema.NonEmptyString
+  SST_STAGE: Schema.NonEmptyString,
 })
 
 const VERIFICATION_REQUEST_HEADROOM_MS = 5 * 60_000
@@ -51,6 +53,7 @@ const appendSummary = (markdown: string) =>
   Effect.tryPromise({
     try: async () => {
       const summaryPath = process.env.GITHUB_STEP_SUMMARY
+
       if (summaryPath !== undefined && summaryPath.length > 0) {
         await appendFile(summaryPath, markdown)
       }
@@ -58,8 +61,8 @@ const appendSummary = (markdown: string) =>
     catch: () =>
       new ProductionVerificationError({
         phase: 'configuration',
-        summary: 'Could not write the GitHub Actions step summary'
-      })
+        summary: 'Could not write the GitHub Actions step summary',
+      }),
   })
 
 const program = Effect.gen(function* () {
@@ -68,13 +71,14 @@ const program = Effect.gen(function* () {
       () =>
         new ProductionVerificationError({
           phase: 'configuration',
-          summary: 'Production verification environment is missing or invalid'
-        })
-    )
+          summary: 'Production verification environment is missing or invalid',
+        }),
+    ),
   )
 
   const traceId = crypto.randomUUID().replaceAll('-', '')
   const parentSpanId = crypto.randomUUID().replaceAll('-', '').slice(0, 16)
+
   const config: ProductionVerificationConfig = {
     app: environment.SST_APP,
     stage: environment.SST_STAGE,
@@ -87,14 +91,15 @@ const program = Effect.gen(function* () {
     parentSpanId,
     ecs: {
       attempts: 28,
-      intervalMs: 15_000
+      intervalMs: 15_000,
     },
     sentry: {
       ingestionAttempts: 16,
       intervalMs: 15_000,
-      settlementAttempts: 8
-    }
+      settlementAttempts: 8,
+    },
   }
+
   const timeoutMs = verificationTimeoutMs(config)
 
   const report = yield* verifyProductionDeployment(config).pipe(
@@ -103,8 +108,8 @@ const program = Effect.gen(function* () {
         awsRegion: environment.AWS_REGION,
         sentryOrg: environment.SENTRY_ORG,
         sentryProjectId: environment.SENTRY_PROJECT_ID,
-        sentryToken: environment.SENTRY_AUTH_TOKEN
-      })
+        sentryToken: environment.SENTRY_AUTH_TOKEN,
+      }),
     ),
     Effect.timeout(timeoutMs),
     Effect.mapError((error) =>
@@ -112,18 +117,19 @@ const program = Effect.gen(function* () {
         ? error
         : new ProductionVerificationError({
             phase: 'verification-timeout',
-            summary: `Production verification exceeded its ${timeoutMs}ms internal timeout`
-          })
-    )
+            summary: `Production verification exceeded its ${timeoutMs}ms internal timeout`,
+          }),
+    ),
   )
 
   yield* Effect.logInfo('Production verification passed', {
     release: report.release,
     taskDefinition: report.taskDefinition,
     traceId: report.traceId,
-    databaseSpanCount: report.databaseSpanCount
+    databaseSpanCount: report.databaseSpanCount,
   })
   yield* appendSummary(reportMarkdown(report))
+
   return report
 })
 
@@ -135,6 +141,7 @@ const reportFailure = async (error: unknown) => {
 }
 
 const exit = await Effect.runPromiseExit(program)
+
 if (Exit.isFailure(exit)) {
   const failure = exit.cause.reasons.find(Cause.isFailReason)
   await reportFailure(failure?.error)

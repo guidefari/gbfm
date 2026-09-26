@@ -12,6 +12,6 @@ export class ImageSaveError extends Data.TaggedError('ImageSaveError')<{
 
 /** The user closed the share sheet. Not a failure, but it travels the error
  *  channel so the save path stays a single expression. */
-export class ImageShareDismissed extends Data.TaggedError('ImageShareDismissed')<{}> {}
+export class ImageShareDismissed extends Data.TaggedError('ImageShareDismissed') {}
 
 export type ImageExportError = ImageRenderError | ImageSaveError

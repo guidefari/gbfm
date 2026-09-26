@@ -2,6 +2,7 @@ import { AudioEngine, PlaybackRejected } from '@gbfm/player'
 import { Effect, ManagedRuntime } from 'effect'
 import type { AudioStatus } from 'expo-audio'
 import { expect, test } from 'vitest'
+
 import { ExpoAudioEngineLayer, type ExpoAudioEnginePlayer } from './expoAudioEngine'
 
 const currentStatus: AudioStatus = {
@@ -21,7 +22,7 @@ const currentStatus: AudioStatus = {
   loop: false,
   isLive: false,
   currentOffsetFromLive: null,
-  error: null
+  error: null,
 }
 
 const makePlayer = (play: () => void): ExpoAudioEnginePlayer => {
@@ -46,7 +47,7 @@ const makePlayer = (play: () => void): ExpoAudioEnginePlayer => {
           didJustFinish: false,
           currentTime: 0,
           duration: 0,
-          isBuffering: false
+          isBuffering: false,
         }
       }
     },
@@ -65,23 +66,27 @@ const makePlayer = (play: () => void): ExpoAudioEnginePlayer => {
     },
     clearLockScreenControls: () => undefined,
     setActiveForLockScreen: () => undefined,
-    addListener: () => ({ remove: () => undefined })
+    addListener: () => ({ remove: () => undefined }),
   }
 }
 
 test('translates a platform play failure into PlaybackRejected without hiding its cause', async () => {
   const failure = new Error('audio session unavailable')
+
   const player = makePlayer(() => {
     throw failure
   })
 
   const runtime = ManagedRuntime.make(ExpoAudioEngineLayer(player, 'native'))
+
   const error = await runtime.runPromise(
     Effect.gen(function* () {
       const engine = yield* AudioEngine
+
       return yield* Effect.flip(engine.play)
-    })
+    }),
   )
+
   await runtime.dispose()
 
   expect(error).toBeInstanceOf(PlaybackRejected)
@@ -92,6 +97,7 @@ test('drives player settings and source state through a complete replace-and-res
   const player = makePlayer(() => undefined)
 
   const runtime = ManagedRuntime.make(ExpoAudioEngineLayer(player, 'native'))
+
   const statuses = await runtime.runPromise(
     Effect.gen(function* () {
       const engine = yield* AudioEngine
@@ -101,9 +107,11 @@ test('drives player settings and source state through a complete replace-and-res
       const loaded = yield* engine.currentStatus
       yield* engine.clearSource
       const cleared = yield* engine.currentStatus
+
       return { loaded, cleared }
-    })
+    }),
   )
+
   await runtime.dispose()
 
   expect(player.volume).toBe(0.25)

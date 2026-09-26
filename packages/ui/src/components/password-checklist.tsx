@@ -1,4 +1,5 @@
 import { Check, Circle } from 'lucide-react'
+
 import { cn } from '../lib/cn'
 
 export type PasswordRule = {
@@ -6,8 +7,8 @@ export type PasswordRule = {
   test: (password: string) => boolean
 }
 
-const defaultPasswordRules: PasswordRule[] = [
-  { label: 'At least 8 characters', test: (p) => p.length >= 8 }
+const defaultPasswordRules: Array<PasswordRule> = [
+  { label: 'At least 8 characters', test: (p) => p.length >= 8 },
 ]
 
 export function isPasswordValid(password: string, rules = defaultPasswordRules) {
@@ -16,22 +17,23 @@ export function isPasswordValid(password: string, rules = defaultPasswordRules) 
 
 export function PasswordChecklist({
   password,
-  rules = defaultPasswordRules
+  rules = defaultPasswordRules,
 }: {
   password: string
-  rules?: PasswordRule[]
+  rules?: Array<PasswordRule>
 }) {
   return (
     <ul className='mt-2 space-y-1 text-xs'>
       {rules.map((rule) => {
         const ok = rule.test(password)
         const Icon = ok ? Check : Circle
+
         return (
           <li
             key={rule.label}
             className={cn(
               'flex items-center gap-2 transition-colors',
-              ok ? 'text-gb-pastel-green-1' : 'text-muted-foreground'
+              ok ? 'text-gb-pastel-green-1' : 'text-muted-foreground',
             )}>
             <Icon className='h-3 w-3' />
             <span>{rule.label}</span>

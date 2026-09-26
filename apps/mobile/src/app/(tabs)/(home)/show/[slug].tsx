@@ -2,6 +2,7 @@ import { useAtomRefresh, useAtomValue } from '@effect/atom-react'
 import { AsyncResult } from 'effect/unstable/reactivity'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { ActivityIndicator, FlatList, Image, Pressable, Text, View } from 'react-native'
+
 import type { ShowEpisode } from '@/api/shows'
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
 import { Screen } from '@/components/Screen'
@@ -18,8 +19,10 @@ function EpisodeRow({ episode, onEnqueue }: { episode: ShowEpisode; onEnqueue: (
   const handlePress = () => {
     if (isCurrent) {
       togglePlayback()
+
       return
     }
+
     loadAndPlay(episode)
     router.push('/now-playing')
   }
@@ -30,7 +33,7 @@ function EpisodeRow({ episode, onEnqueue }: { episode: ShowEpisode; onEnqueue: (
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        paddingVertical: 4
+        paddingVertical: 4,
       }}>
       <Pressable
         accessibilityRole='button'
@@ -41,7 +44,7 @@ function EpisodeRow({ episode, onEnqueue }: { episode: ShowEpisode; onEnqueue: (
           alignItems: 'center',
           gap: 12,
           paddingVertical: 6,
-          opacity: pressed ? 0.8 : 1
+          opacity: pressed ? 0.8 : 1,
         })}>
         {episode.thumbnailUrl ? (
           <Image
@@ -59,7 +62,7 @@ function EpisodeRow({ episode, onEnqueue }: { episode: ShowEpisode; onEnqueue: (
             style={{
               color: isCurrent ? colors.accent : colors.overlayText,
               fontFamily: fonts.monoSemiBold,
-              fontSize: 14
+              fontSize: 14,
             }}
             numberOfLines={2}>
             {episode.title}
@@ -84,7 +87,7 @@ function EpisodeRow({ episode, onEnqueue }: { episode: ShowEpisode; onEnqueue: (
           borderRadius: 4,
           borderWidth: 1,
           borderColor: `${colors.muted}55`,
-          opacity: pressed ? 0.6 : 1
+          opacity: pressed ? 0.6 : 1,
         })}>
         <Text style={{ color: colors.accent, fontFamily: fonts.monoSemiBold, fontSize: 16 }}>
           +
@@ -143,14 +146,14 @@ export default function ShowScreen() {
                     justifyContent: 'center',
                     borderRadius: 4,
                     backgroundColor: colors.accent,
-                    opacity: pressed ? 0.85 : 1
+                    opacity: pressed ? 0.85 : 1,
                   })}>
                   <Text
                     style={{
                       color: colors.surface,
                       fontFamily: fonts.monoSemiBold,
                       fontSize: 14,
-                      letterSpacing: 0.5
+                      letterSpacing: 0.5,
                     }}>
                     Play all
                   </Text>
@@ -166,14 +169,14 @@ export default function ShowScreen() {
                     borderRadius: 4,
                     borderWidth: 1,
                     borderColor: colors.accent,
-                    opacity: pressed ? 0.85 : 1
+                    opacity: pressed ? 0.85 : 1,
                   })}>
                   <Text
                     style={{
                       color: colors.accent,
                       fontFamily: fonts.monoSemiBold,
                       fontSize: 14,
-                      letterSpacing: 0.5
+                      letterSpacing: 0.5,
                     }}>
                     Queue all
                   </Text>
@@ -203,7 +206,7 @@ export default function ShowScreen() {
                 borderRadius: 4,
                 paddingHorizontal: 20,
                 paddingVertical: 10,
-                opacity: pressed ? 0.7 : 1
+                opacity: pressed ? 0.7 : 1,
               })}>
               <Text style={{ color: colors.accent, fontFamily: fonts.monoSemiBold, fontSize: 14 }}>
                 retry

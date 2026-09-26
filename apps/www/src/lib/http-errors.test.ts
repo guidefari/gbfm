@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
 import { HttpApiError } from 'effect/unstable/httpapi'
+import { describe, expect, it } from 'vitest'
+
 import { isNotFoundError } from './http-errors'
 
 describe('isNotFoundError', () => {

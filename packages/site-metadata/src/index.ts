@@ -16,7 +16,7 @@ export const SiteMetadataKind = Schema.Literals([
   'profile',
   'editorial',
   'tweet',
-  'page'
+  'page',
 ])
 
 /** Runtime-safe metadata contract crossing the API-to-WWW Worker binding. */
@@ -30,7 +30,7 @@ export const SiteMetadata = Schema.Struct({
     url: Schema.String,
     alt: Schema.String,
     width: Schema.NullOr(Schema.Number),
-    height: Schema.NullOr(Schema.Number)
+    height: Schema.NullOr(Schema.Number),
   }),
   creators: Schema.Array(Schema.String),
   publishedAt: Schema.NullOr(Schema.String),
@@ -38,9 +38,9 @@ export const SiteMetadata = Schema.Struct({
   audio: Schema.NullOr(
     Schema.Struct({
       url: Schema.String,
-      mimeType: Schema.NullOr(Schema.String)
-    })
-  )
+      mimeType: Schema.NullOr(Schema.String),
+    }),
+  ),
 })
 
 /** Parsed site metadata. */
@@ -65,9 +65,13 @@ const titleWithSite = (title: string) =>
 
 const openGraphType = (kind: SiteMetadata['kind']) => {
   if (kind === 'mix' || kind === 'track') return 'music.song'
+
   if (kind === 'release') return 'music.album'
+
   if (kind === 'profile') return 'profile'
+
   if (kind === 'editorial' || kind === 'tweet') return 'article'
+
   return 'website'
 }
 
@@ -77,31 +81,34 @@ const jsonLdFor = (metadata: SiteMetadata) => {
     name: metadata.title,
     description: metadata.description,
     image: metadata.image.url,
-    url: metadata.canonicalUrl
+    url: metadata.canonicalUrl,
   }
+
   if (metadata.kind === 'mix' || metadata.kind === 'track') {
     return {
       ...base,
       '@type': 'MusicRecording',
       ...(metadata.creators.length > 0
         ? {
-            byArtist: metadata.creators.map((name) => ({ '@type': 'Person', name }))
+            byArtist: metadata.creators.map((name) => ({ '@type': 'Person', name })),
           }
         : undefined),
       ...(metadata.audio
         ? { audio: { '@type': 'AudioObject', contentUrl: metadata.audio.url } }
-        : undefined)
+        : undefined),
     }
   }
+
   if (metadata.kind === 'release') {
     return {
       ...base,
       '@type': 'MusicAlbum',
       ...(metadata.creators.length > 0
         ? { byArtist: metadata.creators.map((name) => ({ '@type': 'MusicGroup', name })) }
-        : undefined)
+        : undefined),
     }
   }
+
   if (metadata.kind === 'editorial' || metadata.kind === 'tweet') {
     return {
       ...base,
@@ -112,20 +119,23 @@ const jsonLdFor = (metadata: SiteMetadata) => {
         ? { author: metadata.creators.map((name) => ({ '@type': 'Person', name })) }
         : undefined),
       ...(metadata.publishedAt ? { datePublished: metadata.publishedAt } : undefined),
-      ...(metadata.modifiedAt ? { dateModified: metadata.modifiedAt } : undefined)
+      ...(metadata.modifiedAt ? { dateModified: metadata.modifiedAt } : undefined),
     }
   }
+
   if (metadata.kind === 'profile') return { ...base, '@type': 'Person' }
+
   return {
     ...base,
     '@type': 'WebPage',
-    isPartOf: { '@type': 'WebSite', name: 'goosebumps.fm', url: SITE_URL }
+    isPartOf: { '@type': 'WebSite', name: 'goosebumps.fm', url: SITE_URL },
   }
 }
 
 /** Projects the canonical model into framework-neutral head entries. */
 export const renderDocumentHead = (metadata: SiteMetadata): DocumentHead => {
   const title = titleWithSite(metadata.title)
+
   const meta: Array<HeadMeta> = [
     { title },
     { name: 'description', content: metadata.description },
@@ -141,30 +151,37 @@ export const renderDocumentHead = (metadata: SiteMetadata): DocumentHead => {
     { name: 'twitter:title', content: title },
     { name: 'twitter:description', content: metadata.description },
     { name: 'twitter:image', content: metadata.image.url },
-    { name: 'twitter:image:alt', content: metadata.image.alt }
+    { name: 'twitter:image:alt', content: metadata.image.alt },
   ]
+
   if (metadata.image.width !== null) {
     meta.push({ property: 'og:image:width', content: String(metadata.image.width) })
   }
+
   if (metadata.image.height !== null) {
     meta.push({ property: 'og:image:height', content: String(metadata.image.height) })
   }
+
   if (metadata.audio) {
     meta.push({ property: 'og:audio', content: metadata.audio.url })
+
     if (metadata.audio.mimeType) {
       meta.push({ property: 'og:audio:type', content: metadata.audio.mimeType })
     }
   }
+
   if (metadata.publishedAt && (metadata.kind === 'editorial' || metadata.kind === 'tweet')) {
     meta.push({ property: 'article:published_time', content: metadata.publishedAt })
   }
+
   if (metadata.modifiedAt && (metadata.kind === 'editorial' || metadata.kind === 'tweet')) {
     meta.push({ property: 'article:modified_time', content: metadata.modifiedAt })
   }
+
   return {
     meta,
     links: [{ rel: 'canonical', href: metadata.canonicalUrl }],
-    scripts: [{ type: 'application/ld+json', children: JSON.stringify(jsonLdFor(metadata)) }]
+    scripts: [{ type: 'application/ld+json', children: JSON.stringify(jsonLdFor(metadata)) }],
   }
 }
 
@@ -173,26 +190,31 @@ const escapeHtml = (value: string) =>
     /[&<>"']/g,
     (character) =>
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[character] ??
-      character
+      character,
   )
 
 /** Renders safe HTML tags for edge insertion and share documents. */
 export const renderMetadataHtml = (metadata: SiteMetadata) => {
   const head = renderDocumentHead(metadata)
+
   const tags = head.meta.map((entry) => {
     if ('title' in entry) return `<title>${escapeHtml(entry.title)}</title>`
+
     if ('property' in entry) {
       return `<meta property="${entry.property}" content="${escapeHtml(entry.content)}">`
     }
+
     return `<meta name="${entry.name}" content="${escapeHtml(entry.content)}">`
   })
+
   tags.push(...head.links.map((link) => `<link rel="canonical" href="${escapeHtml(link.href)}">`))
   tags.push(
     ...head.scripts.map(
       (script) =>
-        `<script type="application/ld+json">${script.children.replace(/</g, String.raw`\u003c`)}</script>`
-    )
+        `<script type="application/ld+json">${script.children.replace(/</g, String.raw`\u003c`)}</script>`,
+    ),
   )
+
   return tags.join('\n    ')
 }
 
@@ -203,7 +225,7 @@ export const makeSiteMetadata = (
     readonly imageAlt: string
     readonly imageWidth?: number | null
     readonly imageHeight?: number | null
-  }
+  },
 ): SiteMetadata => ({
   schemaVersion: 1,
   kind: input.kind,
@@ -214,12 +236,12 @@ export const makeSiteMetadata = (
     url: input.imageUrl ?? SITE_DEFAULT_IMAGE,
     alt: input.imageAlt,
     width: input.imageUrl === null ? 1200 : (input.imageWidth ?? null),
-    height: input.imageUrl === null ? 630 : (input.imageHeight ?? null)
+    height: input.imageUrl === null ? 630 : (input.imageHeight ?? null),
   },
   creators: input.creators,
   publishedAt: input.publishedAt,
   modifiedAt: input.modifiedAt,
-  audio: input.audio
+  audio: input.audio,
 })
 
 type ContentMetadataInput = {
@@ -242,9 +264,10 @@ export const makeAudioSiteMetadata = (
     readonly kind: 'mix' | 'track'
     readonly audioUrl: string
     readonly audioMimeType?: string | null
-  }
+  },
 ) => {
   const title = input.title || input.slug
+
   return makeSiteMetadata({
     kind: input.kind,
     title,
@@ -255,13 +278,14 @@ export const makeAudioSiteMetadata = (
     creators: [...input.creators],
     publishedAt: input.publishedAt,
     modifiedAt: input.modifiedAt,
-    audio: { url: input.audioUrl, mimeType: input.audioMimeType ?? null }
+    audio: { url: input.audioUrl, mimeType: input.audioMimeType ?? null },
   })
 }
 
 /** Builds canonical metadata for a public show. */
 export const makeShowSiteMetadata = (input: ContentMetadataInput) => {
   const title = input.title || input.slug
+
   return makeSiteMetadata({
     kind: 'show',
     title,
@@ -276,13 +300,14 @@ export const makeShowSiteMetadata = (input: ContentMetadataInput) => {
     creators: [...input.creators],
     publishedAt: input.publishedAt,
     modifiedAt: input.modifiedAt,
-    audio: null
+    audio: null,
   })
 }
 
 /** Builds canonical metadata for a public release. */
 export const makeReleaseSiteMetadata = (input: ContentMetadataInput) => {
   const title = input.title || input.slug
+
   return makeSiteMetadata({
     kind: 'release',
     title,
@@ -293,13 +318,14 @@ export const makeReleaseSiteMetadata = (input: ContentMetadataInput) => {
     creators: [...input.creators],
     publishedAt: input.publishedAt,
     modifiedAt: input.modifiedAt,
-    audio: null
+    audio: null,
   })
 }
 
 /** Builds canonical metadata for a public label. */
 export const makeLabelSiteMetadata = (input: ContentMetadataInput) => {
   const title = input.title || input.slug
+
   return makeSiteMetadata({
     kind: 'label',
     title,
@@ -310,7 +336,7 @@ export const makeLabelSiteMetadata = (input: ContentMetadataInput) => {
     creators: [...input.creators],
     publishedAt: input.publishedAt,
     modifiedAt: input.modifiedAt,
-    audio: null
+    audio: null,
   })
 }
 
@@ -318,9 +344,10 @@ export const makeLabelSiteMetadata = (input: ContentMetadataInput) => {
 export const makeProfileSiteMetadata = (
   input: Omit<ContentMetadataInput, 'description' | 'creators' | 'modifiedAt'> & {
     readonly contributionCount: number
-  }
+  },
 ) => {
   const title = input.title || input.slug
+
   return makeSiteMetadata({
     kind: 'profile',
     title,
@@ -334,7 +361,7 @@ export const makeProfileSiteMetadata = (
     creators: [],
     publishedAt: input.publishedAt,
     modifiedAt: null,
-    audio: null
+    audio: null,
   })
 }
 
@@ -344,9 +371,10 @@ export const makePostSiteMetadata = (
     readonly kind: 'editorial' | 'tweet'
     readonly imageWidth?: number | null
     readonly imageHeight?: number | null
-  }
+  },
 ) => {
   const title = input.title || input.slug
+
   return makeSiteMetadata({
     kind: input.kind,
     title,
@@ -359,7 +387,7 @@ export const makePostSiteMetadata = (
     creators: [...input.creators],
     publishedAt: input.publishedAt,
     modifiedAt: input.modifiedAt,
-    audio: null
+    audio: null,
   })
 }
 
@@ -375,7 +403,7 @@ export const makeStaticSiteMetadata = (title: string, description: string, path:
     creators: [],
     publishedAt: null,
     modifiedAt: null,
-    audio: null
+    audio: null,
   })
 
 /** Shared metadata for public pages that do not require server data. */
@@ -383,54 +411,54 @@ export const STATIC_SITE_METADATA = {
   home: makeStaticSiteMetadata(
     'goosebumps.fm',
     'Discover curated music mixes, tracks, and releases. Your destination for deep house, electronic, and soulful sounds.',
-    '/'
+    '/',
   ),
   labels: makeStaticSiteMetadata(
     'Record Labels',
     'Discover independent record labels and their music catalogs on goosebumps.fm.',
-    '/labels'
+    '/labels',
   ),
   shows: makeStaticSiteMetadata(
     'Radio Shows',
     'Discover radio shows and residencies on goosebumps.fm. Subscribe to get notified of new episodes.',
-    '/shows'
+    '/shows',
   ),
   editorial: makeStaticSiteMetadata(
     'Editorial',
     'Long-form posts, essays, and deep dives on goosebumps.fm.',
-    '/editorial'
+    '/editorial',
   ),
   djs: makeStaticSiteMetadata(
     'DJs & Residents',
     'Browse the DJs and residents who have published mixes on goosebumps.fm.',
-    '/djs'
+    '/djs',
   ),
   tags: makeStaticSiteMetadata('Tags', 'Browse posts by tag on goosebumps.fm', '/tags'),
   changelog: makeStaticSiteMetadata(
     'Changelog',
     'Latest updates and fixes from goosebumps.fm.',
-    '/changelog'
+    '/changelog',
   ),
   privacy: makeStaticSiteMetadata(
     'Privacy Policy',
     'Privacy information for goosebumps.fm.',
-    '/privacy'
+    '/privacy',
   ),
   terms: makeStaticSiteMetadata(
     'Terms of Service',
     'Terms of service for goosebumps.fm.',
-    '/terms'
+    '/terms',
   ),
   subscribe: makeStaticSiteMetadata(
     'Newsletter',
     'Get notified when new mixes and updates land on goosebumps.fm.',
-    '/subscribe'
+    '/subscribe',
   ),
   inviteCharlie3000: makeStaticSiteMetadata(
     'An invite for Charlie3000',
     'A personal invitation to Charlie3000 to record a guest mix for goosebumps.fm',
-    '/invite/charlie3000'
-  )
+    '/invite/charlie3000',
+  ),
 } as const
 
 const staticMetadataByPath = new Map<string, SiteMetadata>([
@@ -444,23 +472,27 @@ const staticMetadataByPath = new Map<string, SiteMetadata>([
   ['/privacy', STATIC_SITE_METADATA.privacy],
   ['/terms', STATIC_SITE_METADATA.terms],
   ['/subscribe', STATIC_SITE_METADATA.subscribe],
-  ['/invite/charlie3000', STATIC_SITE_METADATA.inviteCharlie3000]
+  ['/invite/charlie3000', STATIC_SITE_METADATA.inviteCharlie3000],
 ])
 
 /** Returns shared metadata for an exact public static path. */
 export const getStaticSiteMetadata = (pathname: string) => {
   const normalizedPath = pathname.replace(/\/$/, '') || '/'
   const metadata = staticMetadataByPath.get(normalizedPath)
+
   if (metadata) return metadata
 
   const tagMatch = /^\/tags\/([^/]+)$/.exec(normalizedPath)
+
   if (!tagMatch?.[1]) return null
+
   try {
     const tag = decodeURIComponent(tagMatch[1])
+
     return makeStaticSiteMetadata(
       `#${tag}`,
       `Posts tagged #${tag} on goosebumps.fm`,
-      `/tags/${encodeURIComponent(tag)}`
+      `/tags/${encodeURIComponent(tag)}`,
     )
   } catch {
     return null

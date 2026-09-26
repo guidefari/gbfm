@@ -4,14 +4,17 @@ import * as Sentry from '@sentry/bun'
 type Client = Sentry.NodeClient
 
 import { Context, Effect, Layer } from 'effect'
+
 import { sanitizeDatabaseSpan } from '@/lib/database-telemetry'
+import { omitUndefined } from '@/lib/omit-undefined'
 import {
   hasLocalSentryContext,
   shouldEnableSentry,
-  withoutDatabaseAutoInstrumentation
+  withoutDatabaseAutoInstrumentation,
 } from '@/lib/sentry'
-import { SentryEnabled } from './sentry.service'
+
 import { ConfigService } from './config.service'
+import { SentryEnabled } from './sentry.service'
 
 export interface SentryClientService {
   readonly client: Client | undefined
@@ -24,25 +27,29 @@ export const SentryClientServiceLayer = Layer.effect(
   SentryClientService,
   Effect.gen(function* () {
     const { sentry } = yield* ConfigService
+
     const enabled = shouldEnableSentry(
       sentry.dsn,
       sentry.environment,
-      process.env.SENTRY_ENABLED === 'true'
+      process.env.SENTRY_ENABLED === 'true',
     )
 
     if (!enabled) {
       yield* Effect.logWarning(
-        `[sentry] disabled (dsn=${sentry.dsn ? 'set' : 'missing'}, env=${sentry.environment}, set SENTRY_ENABLED=true to force)`
+        `[sentry] disabled (dsn=${sentry.dsn ? 'set' : 'missing'}, env=${sentry.environment}, set SENTRY_ENABLED=true to force)`,
       )
+
       return { client: undefined, enabled: false }
     }
 
     const existingClient = Sentry.getClient<Client>()
+
     if (existingClient) {
       return { client: existingClient, enabled: true }
     }
 
     const debugSentry = process.env.SENTRY_DEBUG === 'true'
+
     const client = yield* Effect.acquireRelease(
       Effect.sync(() =>
         Sentry.init({
@@ -52,7 +59,9 @@ export const SentryClientServiceLayer = Layer.effect(
           skipOpenTelemetrySetup: true,
           integrations: withoutDatabaseAutoInstrumentation,
           tracesSampler: ({ inheritOrSampleWith, name, normalizedRequest }) =>
-            inheritOrSampleWith(traceSampleRate({ name, url: normalizedRequest?.url })),
+            inheritOrSampleWith(
+              traceSampleRate(omitUndefined({ name, url: normalizedRequest?.url })),
+            ),
           sendDefaultPii: false,
           enableLogs: true,
           debug: debugSentry,
@@ -62,14 +71,14 @@ export const SentryClientServiceLayer = Layer.effect(
           },
           beforeSendTransaction: (event) => {
             return hasLocalSentryContext(event) ? null : event
-          }
-        })
+          },
+        }),
       ),
       () =>
         Effect.promise(async () => {
           await Sentry.flush(2000)
           await Sentry.close(2000)
-        })
+        }),
     )
 
     if (debugSentry) {
@@ -79,13 +88,14 @@ export const SentryClientServiceLayer = Layer.effect(
     }
 
     return { client, enabled: true }
-  })
+  }),
 )
 
 export const SentryEnabledLive = Layer.effect(
   SentryEnabled,
   Effect.gen(function* () {
     const { enabled } = yield* SentryClientService
+
     return { enabled }
-  })
+  }),
 )

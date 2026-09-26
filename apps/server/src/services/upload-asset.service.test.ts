@@ -1,15 +1,18 @@
 import { randomUUID } from 'node:crypto'
+
 import { eq } from 'drizzle-orm'
 import { Effect, Layer } from 'effect'
 import { describe, expect, test } from 'vitest'
-import { DatabaseTestLayer, db } from '@/test/database'
-import { withTestLayer } from '@/test/effect'
+
 import { user } from '@/db/auth.schema'
 import { uploadAssetsTable } from '@/db/upload-asset.schema'
+import { DatabaseTestLayer, db } from '@/test/database'
+import { withTestLayer } from '@/test/effect'
+
 import {
   keyFromAssetUrl,
   UploadAssetService,
-  UploadAssetServiceLayer
+  UploadAssetServiceLayer,
 } from './upload-asset.service'
 
 const createActor = async () => {
@@ -17,8 +20,9 @@ const createActor = async () => {
   await db.insert(user).values({
     id: actorId,
     name: 'Upload asset test actor',
-    email: `${actorId}@example.com`
+    email: `${actorId}@example.com`,
   })
+
   return actorId
 }
 
@@ -28,8 +32,8 @@ const getService = () =>
       Effect.gen(function* () {
         return yield* UploadAssetService
       }),
-      UploadAssetServiceLayer.pipe(Layer.provide(DatabaseTestLayer))
-    )
+      UploadAssetServiceLayer.pipe(Layer.provide(DatabaseTestLayer)),
+    ),
   )
 
 const makePendingInput = (actorId: string, key: string) => ({
@@ -38,11 +42,12 @@ const makePendingInput = (actorId: string, key: string) => ({
   bucket: 'test-bucket',
   assetType: 'image' as const,
   expectedSize: 1024,
-  expiresInSeconds: 3600
+  expiresInSeconds: 3600,
 })
 
 const selectByKey = async (key: string) => {
   const rows = await db.select().from(uploadAssetsTable).where(eq(uploadAssetsTable.key, key))
+
   return rows[0]
 }
 
@@ -53,8 +58,8 @@ describe('keyFromAssetUrl', () => {
     expect(
       keyFromAssetUrl(
         'https://cdn.goosebumps.fm/user-content/user123/image/abc-def/artwork.png',
-        bucketRouterUrl
-      )
+        bucketRouterUrl,
+      ),
     ).toBe('user123/image/abc-def/artwork.png')
   })
 
@@ -85,7 +90,7 @@ describe('UploadAssetService state machine', () => {
     expect(await selectByKey(key)).toMatchObject({
       status: 'pending',
       attachedToTable: null,
-      attachedToId: null
+      attachedToId: null,
     })
 
     await Effect.runPromise(service.markUploaded(key))
@@ -97,19 +102,19 @@ describe('UploadAssetService state machine', () => {
     expect(await selectByKey(key)).toMatchObject({
       status: 'attached',
       attachedToTable: 'audio',
-      attachedToId
+      attachedToId,
     })
     await Effect.runPromise(service.markUploaded(key))
     expect(await selectByKey(key)).toMatchObject({
       status: 'attached',
       attachedToTable: 'audio',
-      attachedToId
+      attachedToId,
     })
     await Effect.runPromise(service.markAttached(key, 'posts', randomUUID()))
     expect(await selectByKey(key)).toMatchObject({
       status: 'attached',
       attachedToTable: 'audio',
-      attachedToId
+      attachedToId,
     })
   })
 
@@ -121,8 +126,8 @@ describe('UploadAssetService state machine', () => {
     await Effect.runPromise(service.createPending(makePendingInput(actorId, key)))
 
     await expect(
-      Effect.runPromise(service.createPending(makePendingInput(actorId, key)))
-    ).rejects.toMatchObject({ _tag: 'DatabaseError' })
+      Effect.runPromise(service.createPending(makePendingInput(actorId, key))),
+    ).rejects.toMatchObject({ operation: 'create_pending_upload' })
 
     const rows = await db.select().from(uploadAssetsTable).where(eq(uploadAssetsTable.key, key))
     expect(rows).toHaveLength(1)

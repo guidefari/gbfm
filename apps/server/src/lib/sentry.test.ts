@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+
 import { withoutDatabaseAutoInstrumentation } from './sentry'
 
 describe('withoutDatabaseAutoInstrumentation', () => {
@@ -7,12 +8,12 @@ describe('withoutDatabaseAutoInstrumentation', () => {
       { name: 'Http' },
       { name: 'Postgres' },
       { name: 'PostgresJs' },
-      { name: 'OnUncaughtException' }
+      { name: 'OnUncaughtException' },
     ]
 
     expect(withoutDatabaseAutoInstrumentation(integrations)).toEqual([
       { name: 'Http' },
-      { name: 'OnUncaughtException' }
+      { name: 'OnUncaughtException' },
     ])
   })
 })

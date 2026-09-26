@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+
 import { ImageUploadError, isPageRetryable, MissingAudioError, RecordSaveError } from './-errors'
 
 describe('isPageRetryable', () => {
@@ -17,7 +18,7 @@ describe('isPageRetryable', () => {
       [new ImageUploadError({ message: 'network error' }), true],
       [new RecordSaveError({ message: 'conflict', status: 409 }), false],
       [new RecordSaveError({ message: 'server error', status: 502 }), true],
-      [new MissingAudioError({ message: 'select a file' }), false]
+      [new MissingAudioError({ message: 'select a file' }), false],
     ] as const
 
     for (const [error, retryable] of cases) {

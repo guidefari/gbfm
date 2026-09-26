@@ -1,4 +1,5 @@
 import { Effect } from 'effect'
+
 import type { MusicEntityReference } from '@/components/editor/music-entity/music-entity-markdown'
 
 export type MusicEntityResolution =
@@ -16,7 +17,7 @@ export type ResolveMusicEntity<E> = (url: string) => Effect.Effect<MusicEntityRe
 
 export const resolveMusicEntityBatchEffect = <E>(
   urls: ReadonlyArray<string>,
-  resolve: ResolveMusicEntity<E>
+  resolve: ResolveMusicEntity<E>,
 ): Effect.Effect<ReadonlyArray<MusicEntityResolution>> =>
   Effect.forEach(
     Array.from(new Set(urls)),
@@ -27,9 +28,9 @@ export const resolveMusicEntityBatchEffect = <E>(
           onSuccess: (reference): MusicEntityResolution => ({
             status: 'resolved',
             url,
-            reference
-          })
-        })
+            reference,
+          }),
+        }),
       ),
-    { concurrency: 3 }
+    { concurrency: 3 },
   )

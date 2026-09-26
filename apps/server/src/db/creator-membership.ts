@@ -1,6 +1,7 @@
 import { eq, inArray } from 'drizzle-orm'
-import type { Database } from '@/db/layer'
+
 import { audioCreators, audioTable } from '@/db/audio.schema'
+import type { Database } from '@/db/layer'
 import { postCreators, postsTable } from '@/db/post.schema'
 import { showCreators, showsTable } from '@/db/show.schema'
 
@@ -17,7 +18,7 @@ export const audioIdsForCreator = (db: Database['Service'], creatorId: string) =
     db
       .select({ id: audioCreators.audioId })
       .from(audioCreators)
-      .where(eq(audioCreators.creatorId, creatorId))
+      .where(eq(audioCreators.creatorId, creatorId)),
   )
 
 export const showIdsForCreator = (db: Database['Service'], creatorId: string) =>
@@ -26,7 +27,7 @@ export const showIdsForCreator = (db: Database['Service'], creatorId: string) =>
     db
       .select({ id: showCreators.showId })
       .from(showCreators)
-      .where(eq(showCreators.creatorId, creatorId))
+      .where(eq(showCreators.creatorId, creatorId)),
   )
 
 export const postIdsForCreator = (db: Database['Service'], creatorId: string) =>
@@ -35,5 +36,5 @@ export const postIdsForCreator = (db: Database['Service'], creatorId: string) =>
     db
       .select({ id: postCreators.postId })
       .from(postCreators)
-      .where(eq(postCreators.creatorId, creatorId))
+      .where(eq(postCreators.creatorId, creatorId)),
   )

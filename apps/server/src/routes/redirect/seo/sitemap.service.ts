@@ -1,8 +1,9 @@
 import { and, eq, exists, lte } from 'drizzle-orm'
 import { Effect, Option } from 'effect'
-import { Database } from '@/db/layer'
+
 import { audioTable } from '@/db/audio.schema'
 import { user as usersTable } from '@/db/auth.schema'
+import { Database } from '@/db/layer'
 import { musicLabelsTable } from '@/db/music-entity.schema'
 import { postsTable } from '@/db/post.schema'
 import { releasesTable } from '@/db/release.schema'
@@ -10,15 +11,18 @@ import { showsTable } from '@/db/show.schema'
 import { DatabaseError } from '@/errors'
 import { ConfigService } from '@/services/config.service'
 import { SitemapCache } from '@/services/sitemap-cache'
+
 import { buildSitemapXml, type SitemapData } from './sitemap.utils'
 
 // Re-export types and pure functions from utils
 export type { PostEntry, ProfileEntry, SitemapData, SitemapEntry } from './sitemap.utils'
+
 export { buildSitemapIndexXml, buildSitemapXml, buildUrlEntry, formatDate } from './sitemap.utils'
 
 // Database fetchers
 const fetchMixes = Effect.gen(function* () {
   const db = yield* Database
+
   return yield* Effect.tryPromise({
     try: () =>
       db
@@ -29,13 +33,14 @@ const fetchMixes = Effect.gen(function* () {
       new DatabaseError({
         message: String(error),
         operation: 'select',
-        table: 'audio'
-      })
+        table: 'audio',
+      }),
   })
 })
 
 const fetchTracks = Effect.gen(function* () {
   const db = yield* Database
+
   return yield* Effect.tryPromise({
     try: () =>
       db
@@ -43,12 +48,13 @@ const fetchTracks = Effect.gen(function* () {
         .from(audioTable)
         .where(and(eq(audioTable.draft, false), eq(audioTable.type, 'track'))),
     catch: (error) =>
-      new DatabaseError({ message: String(error), operation: 'select', table: 'audio' })
+      new DatabaseError({ message: String(error), operation: 'select', table: 'audio' }),
   })
 })
 
 const fetchShows = Effect.gen(function* () {
   const db = yield* Database
+
   return yield* Effect.tryPromise({
     try: () =>
       db
@@ -59,19 +65,20 @@ const fetchShows = Effect.gen(function* () {
       new DatabaseError({
         message: String(error),
         operation: 'select',
-        table: 'shows'
-      })
+        table: 'shows',
+      }),
   })
 })
 
 const fetchReleases = Effect.gen(function* () {
   const db = yield* Database
+
   return yield* Effect.tryPromise({
     try: () =>
       db
         .select({
           slug: releasesTable.slug,
-          updatedAt: releasesTable.updatedAt
+          updatedAt: releasesTable.updatedAt,
         })
         .from(releasesTable)
         .where(
@@ -84,23 +91,24 @@ const fetchReleases = Effect.gen(function* () {
                 .where(
                   and(
                     eq(musicLabelsTable.id, releasesTable.labelId),
-                    lte(musicLabelsTable.publishedAt, new Date())
-                  )
-                )
-            )
-          )
+                    lte(musicLabelsTable.publishedAt, new Date()),
+                  ),
+                ),
+            ),
+          ),
         ),
     catch: (error) =>
       new DatabaseError({
         message: String(error),
         operation: 'select',
-        table: 'releases'
-      })
+        table: 'releases',
+      }),
   })
 })
 
 const fetchLabels = Effect.gen(function* () {
   const db = yield* Database
+
   return yield* Effect.tryPromise({
     try: () =>
       db
@@ -111,19 +119,20 @@ const fetchLabels = Effect.gen(function* () {
       new DatabaseError({
         message: String(error),
         operation: 'select',
-        table: 'music_labels'
-      })
+        table: 'music_labels',
+      }),
   })
 })
 
 const fetchProfiles = Effect.gen(function* () {
   const db = yield* Database
+
   return yield* Effect.tryPromise({
     try: () =>
       db
         .select({
           username: usersTable.username,
-          updatedAt: usersTable.updatedAt
+          updatedAt: usersTable.updatedAt,
         })
         .from(usersTable)
         .where(eq(usersTable.banned, false)),
@@ -131,20 +140,21 @@ const fetchProfiles = Effect.gen(function* () {
       new DatabaseError({
         message: String(error),
         operation: 'select',
-        table: 'user'
-      })
+        table: 'user',
+      }),
   })
 })
 
 const fetchPosts = Effect.gen(function* () {
   const db = yield* Database
+
   return yield* Effect.tryPromise({
     try: () =>
       db
         .select({
           slug: postsTable.slug,
           updatedAt: postsTable.updatedAt,
-          type: postsTable.type
+          type: postsTable.type,
         })
         .from(postsTable)
         .where(eq(postsTable.draft, false)),
@@ -152,8 +162,8 @@ const fetchPosts = Effect.gen(function* () {
       new DatabaseError({
         message: String(error),
         operation: 'select',
-        table: 'posts'
-      })
+        table: 'posts',
+      }),
   })
 })
 
@@ -166,9 +176,11 @@ export const fetchSitemapData = Effect.gen(function* () {
     fetchReleases,
     fetchLabels,
     fetchProfiles,
-    fetchPosts
+    fetchPosts,
   ])
+
   const sitemapData: SitemapData = { mixes, tracks, shows, releases, labels, profiles, posts }
+
   return sitemapData
 })
 
@@ -184,7 +196,7 @@ export const regenerateSitemap = Effect.gen(function* () {
   yield* cache.write(sitemap)
 
   yield* Effect.log(
-    `✅ Sitemap regenerated with ${data.mixes.length} mixes, ${data.tracks.length} tracks, ${data.shows.length} shows, ${data.releases.length} releases, ${data.labels.length} labels, ${data.profiles.filter((p) => p.username).length} profiles, ${data.posts.length} posts`
+    `✅ Sitemap regenerated with ${data.mixes.length} mixes, ${data.tracks.length} tracks, ${data.shows.length} shows, ${data.releases.length} releases, ${data.labels.length} labels, ${data.profiles.filter((p) => p.username).length} profiles, ${data.posts.length} posts`,
   )
 
   return sitemap
@@ -194,8 +206,10 @@ export const regenerateSitemap = Effect.gen(function* () {
 export const getCachedSitemap = Effect.gen(function* () {
   const cache = yield* SitemapCache
   const cached = yield* cache.read
+
   if (Option.isSome(cached)) {
     return cached.value
   }
+
   return yield* regenerateSitemap
 })

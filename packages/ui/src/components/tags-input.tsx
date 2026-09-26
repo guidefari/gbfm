@@ -1,13 +1,14 @@
 import { X } from 'lucide-react'
 import { useId, useState } from 'react'
+
 import { Badge } from './badge'
 import { Button } from './button'
 import { Input } from './input'
 import { Label } from './label'
 
 interface TagsInputProps {
-  tags: string[]
-  availableTags?: readonly string[]
+  tags: Array<string>
+  availableTags?: ReadonlyArray<string>
   label?: string
   onAddTag: (tag: string) => void
   onRemoveTag: (tag: string) => void
@@ -15,42 +16,51 @@ interface TagsInputProps {
   showSelectedTags?: boolean
 }
 
+const emptyAvailableTags: ReadonlyArray<string> = []
+
 export function TagsInput({
   tags,
-  availableTags = [],
+  availableTags = emptyAvailableTags,
   label = 'Tags',
   onAddTag,
   onRemoveTag,
   contentTypeLabel,
-  showSelectedTags = true
+  showSelectedTags = true,
 }: TagsInputProps) {
   const [newTag, setNewTag] = useState('')
   const [showAllSuggestions, setShowAllSuggestions] = useState(false)
   const inputId = useId()
   const searchTerm = newTag.trim().toLocaleLowerCase()
   const selectedTagNames = new Set(tags.map((tag) => tag.toLocaleLowerCase()))
+
   const matchingSuggestions = availableTags
     .filter((tag) => !selectedTagNames.has(tag.toLocaleLowerCase()))
     .filter((tag) => !searchTerm || tag.toLocaleLowerCase().includes(searchTerm))
+
   const suggestions =
     searchTerm || showAllSuggestions ? matchingSuggestions : matchingSuggestions.slice(0, 8)
+
   const hiddenSuggestionCount = matchingSuggestions.length - suggestions.length
 
   const addTag = (tag: string) => {
     const existingTag = availableTags.find(
-      (availableTag) => availableTag.toLocaleLowerCase() === tag.toLocaleLowerCase()
+      (availableTag) => availableTag.toLocaleLowerCase() === tag.toLocaleLowerCase(),
     )
+
     const nextTag = existingTag ?? tag
+
     if (
       !tags.some((selectedTag) => selectedTag.toLocaleLowerCase() === nextTag.toLocaleLowerCase())
     ) {
       onAddTag(nextTag)
     }
+
     setNewTag('')
   }
 
   const handleAddTag = () => {
     const trimmed = newTag.trim()
+
     if (trimmed) addTag(trimmed)
   }
 

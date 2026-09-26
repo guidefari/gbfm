@@ -1,5 +1,6 @@
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
 import { index, integer, sqliteTable, primaryKey, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
+
 import { user } from './auth.schema'
 import { showsTable } from './show.schema'
 import { defaultContentFields } from './util'
@@ -17,24 +18,26 @@ export const audioTable = sqliteTable(
     idempotencyFingerprint: text(),
     showId: text().references(() => showsTable.id, { onDelete: 'set null' }),
     episodeNumber: integer(),
-    playCount: integer().notNull().default(0)
+    playCount: integer().notNull().default(0),
   },
   (table) => [
     index('audio_slug_idx').on(table.slug),
     uniqueIndex('audio_type_slug_unique').on(table.type, table.slug),
     uniqueIndex('audio_actor_idempotency_unique').on(
       table.idempotencyActorId,
-      table.idempotencyKey
+      table.idempotencyKey,
     ),
     index('audio_show_idx').on(table.showId),
-    index('audio_type_created_idx').on(table.type, table.createdAt)
-  ]
+    index('audio_type_created_idx').on(table.type, table.createdAt),
+  ],
 )
 
 type AudioPersistenceFields = 'idempotencyKey' | 'idempotencyActorId' | 'idempotencyFingerprint'
+
 type BaseSelectAudio = Omit<InferSelectModel<typeof audioTable>, AudioPersistenceFields>
+
 export type InsertAudio = Omit<InferInsertModel<typeof audioTable>, AudioPersistenceFields> & {
-  tags?: string[]
+  tags?: Array<string>
 }
 
 export type Creator = {
@@ -44,8 +47,8 @@ export type Creator = {
 }
 
 export type SelectAudio = BaseSelectAudio & {
-  tags: string[] | null
-  creators?: Creator[]
+  tags: Array<string> | null
+  creators?: Array<Creator>
 }
 
 export type SelectMdxCompiledAudio = SelectAudio & {
@@ -60,29 +63,29 @@ export const audioCreators = sqliteTable(
       .references(() => audioTable.id),
     creatorId: text()
       .notNull()
-      .references(() => user.id, { onDelete: 'cascade' })
+      .references(() => user.id, { onDelete: 'cascade' }),
   },
   (t) => [
     primaryKey({ columns: [t.audioId, t.creatorId] }),
-    index('audio_creators_creatorId_idx').on(t.creatorId)
-  ]
+    index('audio_creators_creatorId_idx').on(t.creatorId),
+  ],
 )
 
 export const audioRelations = relations(audioTable, ({ many, one }) => ({
   audioCreators: many(audioCreators),
   show: one(showsTable, {
     fields: [audioTable.showId],
-    references: [showsTable.id]
-  })
+    references: [showsTable.id],
+  }),
 }))
 
 export const audioCreatorsRelations = relations(audioCreators, ({ one }) => ({
   audio: one(audioTable, {
     fields: [audioCreators.audioId],
-    references: [audioTable.id]
+    references: [audioTable.id],
   }),
   creator: one(user, {
     fields: [audioCreators.creatorId],
-    references: [user.id]
-  })
+    references: [user.id],
+  }),
 }))

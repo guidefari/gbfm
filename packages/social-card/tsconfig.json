@@ -10,6 +10,8 @@
     "exactOptionalPropertyTypes": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "noUncheckedSideEffectImports": true,
     "noFallthroughCasesInSwitch": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -17,6 +19,7 @@
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
     "noEmit": true,
+    "plugins": [{ "name": "@effect/language-service", "diagnostics": true }],
     "types": ["@cloudflare/workers-types", "@types/bun"]
   },
   "include": ["src/**/*.ts"]

@@ -3,7 +3,7 @@ import { Schema } from 'effect'
 export const DraftTrackEntrySchema = Schema.Struct({
   id: Schema.Number,
   time: Schema.Number,
-  title: Schema.String
+  title: Schema.String,
 })
 
 export const MixUploadDraftSchema = Schema.Struct({
@@ -22,7 +22,7 @@ export const MixUploadDraftSchema = Schema.Struct({
   episodeNumber: Schema.optional(Schema.String),
   creatorId: Schema.optional(Schema.String),
   url: Schema.optional(Schema.String),
-  updatedAt: Schema.Number
+  updatedAt: Schema.Number,
 })
 
 type StoredDraftInput =
@@ -31,7 +31,7 @@ type StoredDraftInput =
   | boolean
   | null
   | undefined
-  | readonly StoredDraftInput[]
+  | ReadonlyArray<StoredDraftInput>
   | { readonly [key: string]: StoredDraftInput }
 
 export type MixUploadDraft = {
@@ -40,7 +40,7 @@ export type MixUploadDraft = {
   readonly slug: string
   readonly content: string
   readonly thumbnailUrl: string
-  readonly tags: string[]
+  readonly tags: Array<string>
   readonly tracklist: Array<{ readonly id: number; readonly time: number; readonly title: string }>
   readonly audioFingerprint?: string
   readonly audioFileName?: string
@@ -53,6 +53,8 @@ export type MixUploadDraft = {
   readonly updatedAt: number
 }
 
+type MutableMixUploadDraft = { -readonly [Key in keyof MixUploadDraft]: MixUploadDraft[Key] }
+
 export const emptyMixUploadDraft = (): MixUploadDraft => ({
   title: '',
   description: '',
@@ -61,21 +63,14 @@ export const emptyMixUploadDraft = (): MixUploadDraft => ({
   thumbnailUrl: '',
   tags: [],
   tracklist: [],
-  audioFingerprint: undefined,
-  audioFileName: undefined,
-  artworkFingerprint: undefined,
-  artworkFileName: undefined,
-  showId: undefined,
-  episodeNumber: undefined,
-  creatorId: undefined,
-  url: undefined,
-  updatedAt: Date.now()
+  updatedAt: Date.now(),
 })
 
 export const parseMixUploadDraft = (raw: StoredDraftInput): MixUploadDraft | null => {
   try {
     const decoded = Schema.decodeUnknownSync(MixUploadDraftSchema)(raw)
-    return {
+
+    const draft: MutableMixUploadDraft = {
       title: decoded.title,
       description: decoded.description,
       slug: decoded.slug,
@@ -83,16 +78,27 @@ export const parseMixUploadDraft = (raw: StoredDraftInput): MixUploadDraft | nul
       thumbnailUrl: decoded.thumbnailUrl,
       tags: [...decoded.tags],
       tracklist: decoded.tracklist.map((t) => ({ id: t.id, time: t.time, title: t.title })),
-      audioFingerprint: decoded.audioFingerprint,
-      audioFileName: decoded.audioFileName,
-      artworkFingerprint: decoded.artworkFingerprint,
-      artworkFileName: decoded.artworkFileName,
-      showId: decoded.showId,
-      episodeNumber: decoded.episodeNumber,
-      creatorId: decoded.creatorId,
-      url: decoded.url,
-      updatedAt: decoded.updatedAt
+      updatedAt: decoded.updatedAt,
     }
+
+    if (decoded.audioFingerprint !== undefined) draft.audioFingerprint = decoded.audioFingerprint
+
+    if (decoded.audioFileName !== undefined) draft.audioFileName = decoded.audioFileName
+
+    if (decoded.artworkFingerprint !== undefined)
+      draft.artworkFingerprint = decoded.artworkFingerprint
+
+    if (decoded.artworkFileName !== undefined) draft.artworkFileName = decoded.artworkFileName
+
+    if (decoded.showId !== undefined) draft.showId = decoded.showId
+
+    if (decoded.episodeNumber !== undefined) draft.episodeNumber = decoded.episodeNumber
+
+    if (decoded.creatorId !== undefined) draft.creatorId = decoded.creatorId
+
+    if (decoded.url !== undefined) draft.url = decoded.url
+
+    return draft
   } catch {
     return null
   }

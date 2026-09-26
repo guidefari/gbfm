@@ -1,10 +1,13 @@
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
+
 import { user } from './auth.schema'
 import { postsTable } from './post.schema'
 
 export const externalAccountProviderEnum = ['bluesky'] as const
+
 export const externalAccountStatusEnum = ['active', 'needs_reconnect', 'revoked', 'error'] as const
+
 export const blueskySourceStatusEnum = [
   'active',
   'edited',
@@ -12,8 +15,9 @@ export const blueskySourceStatusEnum = [
   'unavailable',
   'error',
   'dismissed',
-  'conflict'
+  'conflict',
 ] as const
+
 export const blueskySyncRunStatusEnum = ['running', 'succeeded', 'failed'] as const
 
 /** The encrypted envelope persisted by the application crypto service. */
@@ -49,16 +53,16 @@ export const externalAccounts = sqliteTable(
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
       .$defaultFn(() => new Date())
       .$onUpdate(() => new Date())
-      .notNull()
+      .notNull(),
   },
   (table) => [
     uniqueIndex('external_accounts_identity_idx').on(
       table.userId,
       table.provider,
-      table.providerAccountId
+      table.providerAccountId,
     ),
-    index('external_accounts_owner_idx').on(table.userId, table.provider, table.status)
-  ]
+    index('external_accounts_owner_idx').on(table.userId, table.provider, table.status),
+  ],
 )
 
 /** Secrets are isolated from presentation queries and encrypted before insertion. */
@@ -75,7 +79,7 @@ export const externalAccountSessions = sqliteTable('external_account_sessions', 
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
     .$defaultFn(() => new Date())
     .$onUpdate(() => new Date())
-    .notNull()
+    .notNull(),
 })
 
 export const blueskySyncStates = sqliteTable('bluesky_sync_states', {
@@ -92,7 +96,7 @@ export const blueskySyncStates = sqliteTable('bluesky_sync_states', {
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
     .$defaultFn(() => new Date())
     .$onUpdate(() => new Date())
-    .notNull()
+    .notNull(),
 })
 
 export const blueskySyncRuns = sqliteTable(
@@ -118,11 +122,11 @@ export const blueskySyncRuns = sqliteTable(
     startedAt: integer('started_at', { mode: 'timestamp_ms' })
       .$defaultFn(() => new Date())
       .notNull(),
-    finishedAt: integer('finished_at', { mode: 'timestamp_ms' })
+    finishedAt: integer('finished_at', { mode: 'timestamp_ms' }),
   },
   (table) => [
-    index('bluesky_sync_runs_account_started_idx').on(table.externalAccountId, table.startedAt)
-  ]
+    index('bluesky_sync_runs_account_started_idx').on(table.externalAccountId, table.startedAt),
+  ],
 )
 
 export const blueskyPostSources = sqliteTable(
@@ -132,7 +136,7 @@ export const blueskyPostSources = sqliteTable(
       .$defaultFn(() => crypto.randomUUID())
       .primaryKey(),
     externalAccountId: text('external_account_id').references(() => externalAccounts.id, {
-      onDelete: 'set null'
+      onDelete: 'set null',
     }),
     postId: text('post_id').references(() => postsTable.id, { onDelete: 'set null' }),
     authorDid: text('author_did').notNull(),
@@ -157,16 +161,16 @@ export const blueskyPostSources = sqliteTable(
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
       .$defaultFn(() => new Date())
       .$onUpdate(() => new Date())
-      .notNull()
+      .notNull(),
   },
   (table) => [
     uniqueIndex('bluesky_post_sources_at_uri_idx').on(table.atUri),
     index('bluesky_post_sources_account_status_idx').on(
       table.externalAccountId,
-      table.sourceStatus
+      table.sourceStatus,
     ),
-    index('bluesky_post_sources_post_idx').on(table.postId)
-  ]
+    index('bluesky_post_sources_post_idx').on(table.postId),
+  ],
 )
 
 export const externalAccountsRelations = relations(externalAccounts, ({ one, many }) => ({
@@ -174,46 +178,53 @@ export const externalAccountsRelations = relations(externalAccounts, ({ one, man
   session: one(externalAccountSessions),
   syncState: one(blueskySyncStates),
   syncRuns: many(blueskySyncRuns),
-  postSources: many(blueskyPostSources)
+  postSources: many(blueskyPostSources),
 }))
 
 export const externalAccountSessionsRelations = relations(externalAccountSessions, ({ one }) => ({
   externalAccount: one(externalAccounts, {
     fields: [externalAccountSessions.externalAccountId],
-    references: [externalAccounts.id]
-  })
+    references: [externalAccounts.id],
+  }),
 }))
 
 export const blueskySyncStatesRelations = relations(blueskySyncStates, ({ one }) => ({
   externalAccount: one(externalAccounts, {
     fields: [blueskySyncStates.externalAccountId],
-    references: [externalAccounts.id]
-  })
+    references: [externalAccounts.id],
+  }),
 }))
 
 export const blueskySyncRunsRelations = relations(blueskySyncRuns, ({ one }) => ({
   externalAccount: one(externalAccounts, {
     fields: [blueskySyncRuns.externalAccountId],
-    references: [externalAccounts.id]
-  })
+    references: [externalAccounts.id],
+  }),
 }))
 
 export const blueskyPostSourcesRelations = relations(blueskyPostSources, ({ one }) => ({
   externalAccount: one(externalAccounts, {
     fields: [blueskyPostSources.externalAccountId],
-    references: [externalAccounts.id]
+    references: [externalAccounts.id],
   }),
   post: one(postsTable, {
     fields: [blueskyPostSources.postId],
-    references: [postsTable.id]
-  })
+    references: [postsTable.id],
+  }),
 }))
 
 export type SelectExternalAccount = InferSelectModel<typeof externalAccounts>
+
 export type InsertExternalAccount = InferInsertModel<typeof externalAccounts>
+
 export type SelectExternalAccountSession = InferSelectModel<typeof externalAccountSessions>
+
 export type InsertExternalAccountSession = InferInsertModel<typeof externalAccountSessions>
+
 export type SelectBlueskyPostSource = InferSelectModel<typeof blueskyPostSources>
+
 export type InsertBlueskyPostSource = InferInsertModel<typeof blueskyPostSources>
+
 export type SelectBlueskySyncRun = InferSelectModel<typeof blueskySyncRuns>
+
 export type BlueskySourceStatus = SelectBlueskyPostSource['sourceStatus']

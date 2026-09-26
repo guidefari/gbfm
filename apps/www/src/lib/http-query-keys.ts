@@ -3,7 +3,7 @@ export type AudioContentType = 'mix' | 'track' | 'misc'
 export function audioListQueryKey(
   type: AudioContentType,
   tag: string | undefined,
-  limit: number
+  limit: number,
 ): ['audio', AudioContentType, string | null, number] {
   return ['audio', type, tag ?? null, limit]
 }
@@ -14,7 +14,7 @@ export function audioTagsQueryKey(type: AudioContentType): ['audio-tags', AudioC
 
 export function audioSlugQueryKey(
   type: AudioContentType,
-  slug: string
+  slug: string,
 ): ['audio', AudioContentType, string] {
   return ['audio', type, slug]
 }

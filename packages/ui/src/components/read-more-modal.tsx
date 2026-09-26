@@ -1,5 +1,6 @@
 import type React from 'react'
 import { useEffect, useState } from 'react'
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './dialog'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from './sheet'
 
@@ -18,6 +19,7 @@ function useMediaQuery(query: string) {
 
     const listener = (e: MediaQueryListEvent) => setMatches(e.matches)
     media.addEventListener('change', listener)
+
     return () => media.removeEventListener('change', listener)
   }, [query])
 

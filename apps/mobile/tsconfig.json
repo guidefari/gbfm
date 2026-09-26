@@ -1,9 +1,19 @@
 {
   "compilerOptions": {
+    "strict": true,
+    "exactOptionalPropertyTypes": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitReturns": true,
+    "noUncheckedSideEffectImports": true,
     "paths": {
       "@/*": ["./src/*"]
     },
-    "types": ["node", "nativewind/types"]
+    "types": ["node", "nativewind/types"],
+    "plugins": [{ "name": "@effect/language-service", "diagnostics": true }]
   },
   "extends": "expo/tsconfig.base",
   "include": [

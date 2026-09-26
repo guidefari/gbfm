@@ -1,14 +1,16 @@
 import type { D1Database } from '@cloudflare/workers-types'
 import { Clock, Effect, Layer } from 'effect'
 import { describe, expect, test } from 'vitest'
+
 import { user } from '@/db/auth.schema'
 import { emailDeliveryLogsTable } from '@/db/email.schema'
 import { Database, DatabaseLayer } from '@/db/layer'
 import { ConfigService, createConfig, type WorkerConfigBindings } from '@/services/config.service'
 import { EmailDeliveryLive } from '@/services/email-delivery.service'
 import { EmailTransport, type OutboundEmailMessage } from '@/services/email-transport.service'
-import { createMigratedD1Database } from '@/test/migrate-d1'
 import { withTestLayer } from '@/test/effect'
+import { createMigratedD1Database } from '@/test/migrate-d1'
+
 import { Auth, AuthLive } from './auth'
 
 const workerBindings = (): WorkerConfigBindings => ({
@@ -22,6 +24,7 @@ const workerBindings = (): WorkerConfigBindings => ({
   VITE_PUBLIC_SENTRY_DSN: 'configured',
   OTEL_EXPORTER_OTLP_ENDPOINT: 'configured',
   OTEL_EXPORTER_OTLP_HEADERS: 'configured',
+  CloudflareAnalyticsApiToken: 'test-analytics-token',
   BETTER_AUTH_SECRET: 'configured',
   BETTER_AUTH_URL: 'http://localhost',
   StorageProvider: 'aws',
@@ -29,16 +32,18 @@ const workerBindings = (): WorkerConfigBindings => ({
   StorageRegion: 'configured',
   StorageAccessKeyId: 'configured',
   StorageSecretAccessKey: 'configured',
-  StorageSigningEndpoint: 'configured'
+  StorageSigningEndpoint: 'configured',
 })
 
 const makeDeferredTransport = () => {
   const messages: Array<OutboundEmailMessage> = []
   let resolveStarted: (() => void) | undefined
   let resolveDelivery: (() => void) | undefined
+
   const started = new Promise<void>((resolve) => {
     resolveStarted = resolve
   })
+
   const delivered = new Promise<void>((resolve) => {
     resolveDelivery = resolve
   })
@@ -54,21 +59,24 @@ const makeDeferredTransport = () => {
       send: (message) =>
         Effect.promise(async () => {
           messages.push(message)
+
           if (resolveStarted === undefined) throw new Error('Email delivery started more than once')
           resolveStarted()
           await delivered
+
           return { provider: 'cloudflare' as const, messageId: 'password-reset-receipt' }
-        })
-    })
+        }),
+    }),
   }
 }
 
 const authLayer = (
   d1: D1Database,
-  transport: ReturnType<typeof makeDeferredTransport>['layer']
+  transport: ReturnType<typeof makeDeferredTransport>['layer'],
 ) => {
   const database = DatabaseLayer(d1)
   const config = Layer.succeed(ConfigService, createConfig(workerBindings()))
+
   const clock = Layer.succeed(Clock.Clock, {
     currentTimeMillis: Effect.sync(Date.now),
     currentTimeMillisUnsafe: Date.now,
@@ -76,11 +84,13 @@ const authLayer = (
     currentTimeNanosUnsafe: () => BigInt(Date.now()) * 1_000_000n,
     monotonicTimeNanos: Effect.sync(() => BigInt(Date.now()) * 1_000_000n),
     monotonicTimeNanosUnsafe: () => BigInt(Date.now()) * 1_000_000n,
-    sleep: () => Effect.void
+    sleep: () => Effect.void,
   })
+
   const delivery = EmailDeliveryLive.pipe(
-    Layer.provide(Layer.mergeAll(database, config, transport, clock))
+    Layer.provide(Layer.mergeAll(database, config, transport, clock)),
   )
+
   return AuthLive.pipe(Layer.provide(Layer.mergeAll(database, config, delivery, clock)))
 }
 
@@ -95,7 +105,7 @@ describe('AuthLive password-reset delivery', () => {
     await database.insert(user).values({
       id: crypto.randomUUID(),
       name: 'Reset listener',
-      email: 'reset-listener@example.com'
+      email: 'reset-listener@example.com',
     })
 
     const response = auth.handler(
@@ -104,14 +114,14 @@ describe('AuthLive password-reset delivery', () => {
         headers: { 'content-type': 'application/json', origin: 'http://localhost' },
         body: JSON.stringify({
           email: 'reset-listener@example.com',
-          redirectTo: 'http://localhost/reset-password'
-        })
-      })
+          redirectTo: 'http://localhost/reset-password',
+        }),
+      }),
     )
 
     await transport.started
     await expect(
-      Promise.race([response.then(() => 'resolved' as const), Promise.resolve('pending' as const)])
+      Promise.race([response.then(() => 'resolved' as const), Promise.resolve('pending' as const)]),
     ).resolves.toBe('pending')
 
     transport.release()
@@ -122,7 +132,7 @@ describe('AuthLive password-reset delivery', () => {
     expect(log).toMatchObject({
       status: 'SENT',
       provider: 'cloudflare',
-      providerMessageId: 'password-reset-receipt'
+      providerMessageId: 'password-reset-receipt',
     })
   })
 })

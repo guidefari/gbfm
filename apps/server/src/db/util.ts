@@ -4,7 +4,7 @@ export const defaultAuditFields = {
   createdBy: text(),
   updatedBy: text(),
   deletedAt: integer({ mode: 'timestamp_ms' }),
-  deletedBy: text()
+  deletedBy: text(),
 }
 
 export const defaultContentFields = {
@@ -23,5 +23,5 @@ export const defaultContentFields = {
     .notNull()
     .$defaultFn(() => new Date()),
   draft: integer({ mode: 'boolean' }).notNull().default(false),
-  content: text().notNull()
+  content: text().notNull(),
 }

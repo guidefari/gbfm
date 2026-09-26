@@ -1,6 +1,7 @@
 import { Music, Trash2, Upload } from 'lucide-react'
 import type { ChangeEvent } from 'react'
 import { useId } from 'react'
+
 import { Button } from './button'
 import { Card, CardContent, CardHeader, CardTitle } from './card'
 
@@ -15,7 +16,7 @@ export function AudioUploader({
   audioFile,
   audioPreview,
   onFileChange,
-  onRemove
+  onRemove,
 }: AudioUploaderProps) {
   const inputId = useId()
 

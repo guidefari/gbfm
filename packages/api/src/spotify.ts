@@ -7,14 +7,14 @@ const SpotifyTrackResponse = Schema.Struct({
   title: Schema.String,
   artists: Schema.String,
   trackUrl: Schema.String,
-  previewUrl: Schema.optional(Schema.NullOr(Schema.String))
+  previewUrl: Schema.optional(Schema.NullOr(Schema.String)),
 })
 
 const SpotifyAlbumTrack = Schema.Struct({
   title: Schema.String,
   artists: Schema.String,
   previewUrl: Schema.optional(Schema.NullOr(Schema.String)),
-  trackUrl: Schema.String
+  trackUrl: Schema.String,
 })
 
 const SpotifyAlbumResponse = Schema.Struct({
@@ -23,7 +23,7 @@ const SpotifyAlbumResponse = Schema.Struct({
   title: Schema.String,
   artists: Schema.String,
   tracks: Schema.Array(SpotifyAlbumTrack),
-  albumUrl: Schema.String
+  albumUrl: Schema.String,
 })
 
 const SpotifyPlaylistResponse = Schema.Struct({
@@ -32,7 +32,7 @@ const SpotifyPlaylistResponse = Schema.Struct({
   description: Schema.optional(Schema.String),
   tracks: Schema.Array(SpotifyAlbumTrack),
   ownerName: Schema.optional(Schema.String),
-  playlistUrl: Schema.String
+  playlistUrl: Schema.String,
 })
 
 const SpotifyAlbumSearchResult = Schema.Struct({
@@ -43,36 +43,39 @@ const SpotifyAlbumSearchResult = Schema.Struct({
   releaseDate: Schema.String,
   albumImageUrl: Schema.optional(Schema.String),
   albumUrl: Schema.String,
-  totalTracks: Schema.Number
+  totalTracks: Schema.Number,
 })
 
 export const SearchAlbumsResponse = Schema.Struct({
   albums: Schema.Array(SpotifyAlbumSearchResult),
   total: Schema.Number,
   limit: Schema.Number,
-  offset: Schema.Number
+  offset: Schema.Number,
 })
 
 export const SpotifyIdInput = Schema.Struct({
-  id: Schema.NonEmptyString
+  id: Schema.NonEmptyString,
 })
+
 export type SpotifyIdInput = typeof SpotifyIdInput.Type
 
 export const SearchAlbumsInput = Schema.Struct({
   query: Schema.NonEmptyString,
   limit: Schema.optional(
-    Schema.Number.pipe(Schema.check(Schema.isBetween({ minimum: 1, maximum: 50 })))
+    Schema.Number.pipe(Schema.check(Schema.isBetween({ minimum: 1, maximum: 50 }))),
   ),
-  offset: Schema.optional(Schema.Number.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(0))))
+  offset: Schema.optional(Schema.Number.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(0)))),
 })
+
 export type SearchAlbumsInput = typeof SearchAlbumsInput.Type
 
 // Schema.URLFromString decodes through a real WHATWG URL parse (matching
 // the old z.string().url()), not a regex -- a looser regex here was flagged
 // in review as accepting malformed strings the old validator rejected.
 export const EnrichTrackInput = Schema.Struct({
-  url: Schema.URLFromString
+  url: Schema.URLFromString,
 })
+
 export type EnrichTrackInput = typeof EnrichTrackInput.Type
 
 export const EnrichTrackResponse = Schema.Struct({
@@ -82,7 +85,7 @@ export const EnrichTrackResponse = Schema.Struct({
   platform: Schema.Literals(['spotify', 'youtube', 'apple_music', 'bandcamp', 'other']),
   thumbnailUrl: Schema.optional(Schema.String),
   duration: Schema.optional(Schema.Number),
-  album: Schema.optional(Schema.String)
+  album: Schema.optional(Schema.String),
 })
 
 // The old Hono handler's generic error mapper hard-coded every SpotifyError
@@ -97,34 +100,34 @@ export const SpotifyGroup = HttpApiGroup.make('spotify')
     HttpApiEndpoint.post('getSpotifyTrack', '/api/spotify/track', {
       payload: SpotifyIdInput,
       success: SpotifyTrackResponse,
-      error: [HttpApiError.BadRequest, HttpApiError.InternalServerError]
-    })
+      error: [HttpApiError.BadRequest, HttpApiError.InternalServerError],
+    }),
   )
   .add(
     HttpApiEndpoint.post('getSpotifyAlbum', '/api/spotify/album', {
       payload: SpotifyIdInput,
       success: SpotifyAlbumResponse,
-      error: [HttpApiError.BadRequest, HttpApiError.InternalServerError]
-    })
+      error: [HttpApiError.BadRequest, HttpApiError.InternalServerError],
+    }),
   )
   .add(
     HttpApiEndpoint.post('getSpotifyPlaylist', '/api/spotify/playlist', {
       payload: SpotifyIdInput,
       success: SpotifyPlaylistResponse,
-      error: [HttpApiError.BadRequest, HttpApiError.InternalServerError]
-    })
+      error: [HttpApiError.BadRequest, HttpApiError.InternalServerError],
+    }),
   )
   .add(
     HttpApiEndpoint.post('searchSpotifyAlbums', '/api/spotify/search/albums', {
       payload: SearchAlbumsInput,
       success: SearchAlbumsResponse,
-      error: [HttpApiError.BadRequest, HttpApiError.InternalServerError]
-    })
+      error: [HttpApiError.BadRequest, HttpApiError.InternalServerError],
+    }),
   )
   .add(
     HttpApiEndpoint.post('enrichSpotifyTrackFromUrl', '/api/spotify/enrich', {
       payload: EnrichTrackInput,
       success: EnrichTrackResponse,
-      error: [HttpApiError.BadRequest, HttpApiError.InternalServerError]
-    })
+      error: [HttpApiError.BadRequest, HttpApiError.InternalServerError],
+    }),
   )

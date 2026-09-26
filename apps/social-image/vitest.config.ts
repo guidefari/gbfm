@@ -3,7 +3,7 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
-    include: ['src/**/*.test.{ts,tsx}', 'test/**/*.test.ts']
+    include: ['src/**/*.test.{ts,tsx}', 'test/**/*.test.ts'],
   },
   plugins: [
     cloudflareTest({
@@ -15,9 +15,9 @@ export default defineConfig({
         assets: {
           directory: './assets',
           binding: 'ASSETS',
-          routerConfig: { invoke_user_worker_ahead_of_assets: true }
-        }
-      }
-    })
-  ]
+          routerConfig: { invoke_user_worker_ahead_of_assets: true },
+        },
+      },
+    }),
+  ],
 })

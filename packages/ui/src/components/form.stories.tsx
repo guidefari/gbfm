@@ -1,4 +1,5 @@
 import { useForm } from 'react-hook-form'
+
 import { Button } from './button'
 import {
   Form,
@@ -7,13 +8,13 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage
+  FormMessage,
 } from './form'
 import { Input } from './input'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Forms/Form'
+  title: '@gbfm/ui/Forms/Form',
 }
 
 type FormValues = {
@@ -23,11 +24,11 @@ type FormValues = {
 
 export function FormWithValidation() {
   const methods = useForm<FormValues>({
-    defaultValues: { email: '', username: '' }
+    defaultValues: { email: '', username: '' },
   })
 
   const onSubmit = (data: FormValues) => {
-    console.log('submitted', data)
+    void data
   }
 
   return (
@@ -44,7 +45,7 @@ export function FormWithValidation() {
             name='email'
             rules={{
               required: 'Email is required',
-              pattern: { value: /\S+@\S+\.\S+/, message: 'Invalid email' }
+              pattern: { value: /\S+@\S+\.\S+/, message: 'Invalid email' },
             }}
             render={({ field }) => (
               <FormItem>
@@ -62,7 +63,7 @@ export function FormWithValidation() {
             name='username'
             rules={{
               required: 'Username is required',
-              minLength: { value: 3, message: 'Min 3 characters' }
+              minLength: { value: 3, message: 'Min 3 characters' },
             }}
             render={({ field }) => (
               <FormItem>

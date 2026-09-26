@@ -5,12 +5,12 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
-  CommandList
+  CommandList,
 } from './command'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Primitives/Command'
+  title: '@gbfm/ui/Primitives/Command',
 }
 
 export function Commands() {

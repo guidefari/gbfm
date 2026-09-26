@@ -3,8 +3,9 @@ export {
   MixUploadDraftSchema,
   DraftTrackEntrySchema,
   emptyMixUploadDraft,
-  parseMixUploadDraft
+  parseMixUploadDraft,
 } from './types'
+
 export {
   MixUploadDraftStorage,
   MixUploadDraftStorageInMemory,
@@ -12,5 +13,5 @@ export {
   MixUploadDraftStorageTest,
   clearMixUploadDraft,
   readMixUploadDraft,
-  writeMixUploadDraft
+  writeMixUploadDraft,
 } from './storage'

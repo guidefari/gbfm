@@ -1,4 +1,5 @@
 import { Context, Layer } from 'effect'
+
 import type { StorageProvider } from './provider'
 
 export interface StoredObjectMetadata {
@@ -34,8 +35,8 @@ export interface ObjectStoreClient {
   }) => Promise<string>
   readonly deleteObject: (bucketName: string, key: string) => Promise<void>
   readonly headObject: (bucketName: string, key: string) => Promise<StoredObjectMetadata | null>
-  readonly listObjects: (bucketName: string, prefix: string) => Promise<StoredObject[]>
-  readonly listBuckets: () => Promise<string[]>
+  readonly listObjects: (bucketName: string, prefix: string) => Promise<Array<StoredObject>>
+  readonly listBuckets: () => Promise<Array<string>>
   readonly createMultipartUpload: (input: {
     readonly bucketName: string
     readonly key: string
@@ -58,13 +59,13 @@ export interface ObjectStoreClient {
   readonly abortMultipartUpload: (
     bucketName: string,
     key: string,
-    uploadId: string
+    uploadId: string,
   ) => Promise<void>
   readonly listMultipartParts: (
     bucketName: string,
     key: string,
-    uploadId: string
-  ) => Promise<MultipartPart[]>
+    uploadId: string,
+  ) => Promise<Array<MultipartPart>>
 }
 
 export const ObjectStoreClient = Context.Service<ObjectStoreClient>('ObjectStoreClient')
@@ -83,5 +84,5 @@ export const UnavailableObjectStoreClientLayer = Layer.succeed(ObjectStoreClient
   presignUploadPart: unavailable,
   completeMultipartUpload: unavailable,
   abortMultipartUpload: unavailable,
-  listMultipartParts: unavailable
+  listMultipartParts: unavailable,
 } satisfies ObjectStoreClient)

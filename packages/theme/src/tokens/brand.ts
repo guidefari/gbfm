@@ -11,7 +11,7 @@ export const brandDark = {
   success: '#4ADE80',
   warning: '#FACC15',
   accentSurface: '#7DD3FC',
-  shadow: '#000000'
+  shadow: '#000000',
 } as const
 
 export const brandLight = {
@@ -27,7 +27,7 @@ export const brandLight = {
   success: '#15803D',
   warning: '#A16207',
   accentSurface: '#7DD3FC',
-  shadow: '#000000'
+  shadow: '#000000',
 } as const
 
 export const brand = brandDark

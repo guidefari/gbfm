@@ -1,17 +1,18 @@
-import { Context, Effect, Layer, Schema } from 'effect'
+import { Context, Effect, Layer, Match, Schema } from 'effect'
 
 const DEEZER_API_URL = 'https://api.deezer.com'
+
 const DEEZER_REQUEST_TIMEOUT = '10 seconds'
 
 const DeezerArtistSchema = Schema.Struct({
   id: Schema.Number,
-  name: Schema.String
+  name: Schema.String,
 })
 
 const DeezerAlbumSummarySchema = Schema.Struct({
   id: Schema.Number,
   title: Schema.String,
-  cover_xl: Schema.optional(Schema.String)
+  cover_xl: Schema.optional(Schema.String),
 })
 
 const DeezerTrackSchema = Schema.Struct({
@@ -21,7 +22,7 @@ const DeezerTrackSchema = Schema.Struct({
   link: Schema.String,
   isrc: Schema.optional(Schema.String),
   artist: DeezerArtistSchema,
-  album: DeezerAlbumSummarySchema
+  album: DeezerAlbumSummarySchema,
 })
 
 const DeezerAlbumSchema = Schema.Struct({
@@ -31,7 +32,7 @@ const DeezerAlbumSchema = Schema.Struct({
   cover_xl: Schema.optional(Schema.String),
   release_date: Schema.optional(Schema.String),
   nb_tracks: Schema.optional(Schema.Number),
-  artist: DeezerArtistSchema
+  artist: DeezerArtistSchema,
 })
 
 const DeezerPlaylistSchema = Schema.Struct({
@@ -44,23 +45,27 @@ const DeezerPlaylistSchema = Schema.Struct({
   nb_tracks: Schema.optional(Schema.Number),
   creator: Schema.optional(
     Schema.Struct({
-      name: Schema.String
-    })
-  )
+      name: Schema.String,
+    }),
+  ),
 })
 
 const DeezerTrackSearchSchema = Schema.Struct({
-  data: Schema.Array(DeezerTrackSchema)
+  data: Schema.Array(DeezerTrackSchema),
 })
 
 const DeezerAlbumSearchSchema = Schema.Struct({
-  data: Schema.Array(DeezerAlbumSchema)
+  data: Schema.Array(DeezerAlbumSchema),
 })
 
 const decodeTrack = Schema.decodeUnknownEffect(DeezerTrackSchema)
+
 const decodeAlbum = Schema.decodeUnknownEffect(DeezerAlbumSchema)
+
 const decodePlaylist = Schema.decodeUnknownEffect(DeezerPlaylistSchema)
+
 const decodeTrackSearch = Schema.decodeUnknownEffect(DeezerTrackSearchSchema)
+
 const decodeAlbumSearch = Schema.decodeUnknownEffect(DeezerAlbumSearchSchema)
 
 export type DeezerEntityType = 'track' | 'album' | 'playlist'
@@ -70,11 +75,11 @@ type DeezerCandidateBase = {
   readonly externalId: string
   readonly url: string
   readonly title: string
-  readonly artistNames: readonly string[]
-  readonly thumbnailUrl?: string
+  readonly artistNames: ReadonlyArray<string>
+  readonly thumbnailUrl?: string | undefined
   readonly identifiers: {
     readonly deezerId: string
-    readonly isrc?: string
+    readonly isrc?: string | undefined
   }
 }
 
@@ -87,16 +92,16 @@ export type DeezerTrackCandidate = DeezerCandidateBase & {
 
 export type DeezerAlbumCandidate = DeezerCandidateBase & {
   readonly entityType: 'album'
-  readonly releaseDate?: string
-  readonly trackCount?: number
+  readonly releaseDate?: string | undefined
+  readonly trackCount?: number | undefined
   readonly match: 'exact_source' | 'exact_metadata'
 }
 
 export type DeezerPlaylistCandidate = DeezerCandidateBase & {
   readonly entityType: 'playlist'
-  readonly description?: string
-  readonly durationSeconds?: number
-  readonly trackCount?: number
+  readonly description?: string | undefined
+  readonly durationSeconds?: number | undefined
+  readonly trackCount?: number | undefined
   readonly match: 'exact_source'
   readonly crossPlatformMatching: 'prohibited'
 }
@@ -117,13 +122,13 @@ export class DeezerInvalidInput extends Schema.TaggedError<DeezerInvalidInput>()
   'DeezerInvalidInput',
   {
     operation: Schema.String,
-    message: Schema.String
-  }
+    message: Schema.String,
+  },
 ) {}
 
 export class DeezerNotFound extends Schema.TaggedError<DeezerNotFound>()('DeezerNotFound', {
   entityType: Schema.String,
-  externalId: Schema.String
+  externalId: Schema.String,
 }) {}
 
 export class DeezerRequestFailed extends Schema.TaggedError<DeezerRequestFailed>()(
@@ -131,20 +136,20 @@ export class DeezerRequestFailed extends Schema.TaggedError<DeezerRequestFailed>
   {
     operation: Schema.String,
     statusCode: Schema.optional(Schema.Number),
-    cause: Schema.Unknown
-  }
+    cause: Schema.Unknown,
+  },
 ) {}
 
 export class DeezerResponseInvalid extends Schema.TaggedError<DeezerResponseInvalid>()(
   'DeezerResponseInvalid',
   {
     operation: Schema.String,
-    message: Schema.String
-  }
+    message: Schema.String,
+  },
 ) {}
 
 export class DeezerTimeout extends Schema.TaggedError<DeezerTimeout>()('DeezerTimeout', {
-  operation: Schema.String
+  operation: Schema.String,
 }) {}
 
 export type DeezerError =
@@ -159,11 +164,11 @@ export type DeezerFetch = (input: string | URL | Request, init?: RequestInit) =>
 export interface DeezerService {
   readonly resolve: (input: DeezerResolveInput) => Effect.Effect<DeezerSourceCandidate, DeezerError>
   readonly searchTrackByIsrc: (
-    isrc: string
+    isrc: string,
   ) => Effect.Effect<DeezerTrackCandidate | null, DeezerError>
   readonly searchAlbumByTitleArtist: (
     title: string,
-    artist: string
+    artist: string,
   ) => Effect.Effect<DeezerAlbumCandidate | null, DeezerError>
 }
 
@@ -173,11 +178,13 @@ const parseExternalId = (source: string, expectedType: DeezerEntityType): string
   if (/^\d+$/.test(source)) return source
 
   const url = URL.parse(source)
+
   if (!url || !['deezer.com', 'www.deezer.com'].includes(url.hostname.toLowerCase())) return null
 
   const segments = url.pathname.split('/').filter(Boolean)
   const typeIndex = segments.findIndex((segment) => segment === expectedType)
   const id = typeIndex === -1 ? undefined : segments[typeIndex + 1]
+
   return id && /^\d+$/.test(id) ? id : null
 }
 
@@ -198,30 +205,30 @@ const requestJson = (fetcher: DeezerFetch, url: string, operation: DeezerOperati
       try: (signal) =>
         fetcher(url, {
           headers: { Accept: 'application/json' },
-          signal
+          signal,
         }),
-      catch: (cause) => new DeezerRequestFailed({ operation, cause })
+      catch: (cause) => new DeezerRequestFailed({ operation, cause }),
     })
 
     if (!response.ok) {
       return yield* new DeezerRequestFailed({
         operation,
         statusCode: response.status,
-        cause: `Deezer returned HTTP ${response.status}`
+        cause: `Deezer returned HTTP ${response.status}`,
       })
     }
 
     return yield* Effect.tryPromise({
-      try: (): Promise<unknown> => response.json(),
+      try: () => response.json(),
       catch: () =>
         new DeezerResponseInvalid({
           operation,
-          message: 'Deezer returned invalid JSON'
-        })
+          message: 'Deezer returned invalid JSON',
+        }),
     })
   }).pipe(
     Effect.timeout(DEEZER_REQUEST_TIMEOUT),
-    Effect.catchTag('TimeoutError', () => Effect.fail(new DeezerTimeout({ operation })))
+    Effect.catchTag('TimeoutError', () => Effect.fail(new DeezerTimeout({ operation }))),
   )
 
 const invalidResponse = (operation: DeezerOperation) =>
@@ -229,13 +236,13 @@ const invalidResponse = (operation: DeezerOperation) =>
     () =>
       new DeezerResponseInvalid({
         operation,
-        message: 'Deezer response did not match the expected shape'
-      })
+        message: 'Deezer response did not match the expected shape',
+      }),
   )
 
 const trackCandidate = (
   track: typeof DeezerTrackSchema.Type,
-  match: DeezerTrackCandidate['match']
+  match: DeezerTrackCandidate['match'],
 ): DeezerTrackCandidate => ({
   platform: 'deezer',
   entityType: 'track',
@@ -247,12 +254,12 @@ const trackCandidate = (
   albumTitle: track.album.title,
   durationSeconds: track.duration,
   identifiers: { deezerId: String(track.id), isrc: track.isrc },
-  match
+  match,
 })
 
 const albumCandidate = (
   album: typeof DeezerAlbumSchema.Type,
-  match: DeezerAlbumCandidate['match']
+  match: DeezerAlbumCandidate['match'],
 ): DeezerAlbumCandidate => ({
   platform: 'deezer',
   entityType: 'album',
@@ -264,11 +271,11 @@ const albumCandidate = (
   releaseDate: album.release_date,
   trackCount: album.nb_tracks,
   identifiers: { deezerId: String(album.id) },
-  match
+  match,
 })
 
 const playlistCandidate = (
-  playlist: typeof DeezerPlaylistSchema.Type
+  playlist: typeof DeezerPlaylistSchema.Type,
 ): DeezerPlaylistCandidate => ({
   platform: 'deezer',
   entityType: 'playlist',
@@ -282,41 +289,46 @@ const playlistCandidate = (
   trackCount: playlist.nb_tracks,
   identifiers: { deezerId: String(playlist.id) },
   match: 'exact_source',
-  crossPlatformMatching: 'prohibited'
+  crossPlatformMatching: 'prohibited',
 })
 
 export const makeDeezerService = (fetcher: DeezerFetch = fetch): DeezerService => {
   const resolve = Effect.fn('deezer.resolve')(function* (input: DeezerResolveInput) {
     const externalId = parseExternalId(input.source, input.entityType)
+
     if (!externalId) {
       return yield* new DeezerInvalidInput({
         operation: 'resolve',
-        message: `Invalid Deezer ${input.entityType} URL or ID`
+        message: `Invalid Deezer ${input.entityType} URL or ID`,
       })
     }
 
     const payload = yield* requestJson(
       fetcher,
       `${DEEZER_API_URL}/${input.entityType}/${externalId}`,
-      'resolve'
+      'resolve',
     ).pipe(
       Effect.mapError((error) =>
-        error._tag === 'DeezerRequestFailed' && error.statusCode === 404
-          ? new DeezerNotFound({ entityType: input.entityType, externalId })
-          : error
-      )
+        Match.value(error).pipe(
+          Match.when(
+            { _tag: 'DeezerRequestFailed', statusCode: 404 },
+            () => new DeezerNotFound({ entityType: input.entityType, externalId }),
+          ),
+          Match.orElse((failure) => failure),
+        ),
+      ),
     )
 
     switch (input.entityType) {
       case 'track':
         return trackCandidate(
           yield* decodeTrack(payload).pipe(invalidResponse('resolve')),
-          'exact_source'
+          'exact_source',
         )
       case 'album':
         return albumCandidate(
           yield* decodeAlbum(payload).pipe(invalidResponse('resolve')),
-          'exact_source'
+          'exact_source',
         )
       case 'playlist':
         return playlistCandidate(yield* decodePlaylist(payload).pipe(invalidResponse('resolve')))
@@ -327,52 +339,61 @@ export const makeDeezerService = (fetcher: DeezerFetch = fetch): DeezerService =
 
   const searchTrackByIsrc = Effect.fn('deezer.searchTrackByIsrc')(function* (isrc: string) {
     const normalizedIsrc = isrc.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
+
     if (!normalizedIsrc) {
       return yield* new DeezerInvalidInput({
         operation: 'searchTrackByIsrc',
-        message: 'ISRC is required'
+        message: 'ISRC is required',
       })
     }
 
     const payload = yield* requestJson(
       fetcher,
       `${DEEZER_API_URL}/search/track?q=${encodeURIComponent(`isrc:"${normalizedIsrc}"`)}`,
-      'searchTrackByIsrc'
+      'searchTrackByIsrc',
     )
+
     const result = yield* decodeTrackSearch(payload).pipe(invalidResponse('searchTrackByIsrc'))
+
     const exact = result.data.find(
-      (track) => track.isrc?.replace(/[^a-zA-Z0-9]/g, '').toUpperCase() === normalizedIsrc
+      (track) => track.isrc?.replace(/[^a-zA-Z0-9]/g, '').toUpperCase() === normalizedIsrc,
     )
+
     return exact ? trackCandidate(exact, 'exact_isrc') : null
   })
 
   const searchAlbumByTitleArtist = Effect.fn('deezer.searchAlbumByTitleArtist')(function* (
     title: string,
-    artist: string
+    artist: string,
   ) {
     const normalizedTitle = normalizeForMatch(title)
     const normalizedArtist = normalizeForMatch(artist)
+
     if (!normalizedTitle || !normalizedArtist) {
       return yield* new DeezerInvalidInput({
         operation: 'searchAlbumByTitleArtist',
-        message: 'Album title and artist are required'
+        message: 'Album title and artist are required',
       })
     }
 
     const query = `album:"${title.trim()}" artist:"${artist.trim()}"`
+
     const payload = yield* requestJson(
       fetcher,
       `${DEEZER_API_URL}/search/album?q=${encodeURIComponent(query)}`,
-      'searchAlbumByTitleArtist'
+      'searchAlbumByTitleArtist',
     )
+
     const result = yield* decodeAlbumSearch(payload).pipe(
-      invalidResponse('searchAlbumByTitleArtist')
+      invalidResponse('searchAlbumByTitleArtist'),
     )
+
     const exact = result.data.find(
       (album) =>
         normalizeForMatch(album.title) === normalizedTitle &&
-        normalizeForMatch(album.artist.name) === normalizedArtist
+        normalizeForMatch(album.artist.name) === normalizedArtist,
     )
+
     return exact ? albumCandidate(exact, 'exact_metadata') : null
   })
 

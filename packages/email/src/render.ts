@@ -1,6 +1,7 @@
 import { render } from '@react-email/components'
 import { Data, Effect } from 'effect'
 import type { ReactElement } from 'react'
+
 import type { EmailTemplateName, RenderedEmail } from './message'
 
 /** A safe, typed failure produced while rendering an email template. */
@@ -25,11 +26,11 @@ export interface RenderEmailInput<T extends EmailTemplateName> {
 function renderBody(
   component: ReactElement,
   templateName: EmailTemplateName,
-  plainText: boolean
+  plainText: boolean,
 ): Effect.Effect<string, EmailRenderError> {
   return Effect.tryPromise({
     try: () => (plainText ? render(component, { plainText: true }) : render(component)),
-    catch: () => new EmailRenderError({ templateName })
+    catch: () => new EmailRenderError({ templateName }),
   })
 }
 
@@ -39,7 +40,7 @@ function renderBody(
  * @returns An Effect that fails with `EmailRenderError` when rendering fails.
  */
 export function renderEmail<T extends EmailTemplateName>(
-  input: RenderEmailInput<T>
+  input: RenderEmailInput<T>,
 ): Effect.Effect<RenderedEmail<T>, EmailRenderError> {
   return Effect.gen(function* () {
     const html = yield* renderBody(input.component, input.templateName, false)
@@ -51,10 +52,10 @@ export function renderEmail<T extends EmailTemplateName>(
       subject: input.subject,
       html,
       text,
-      replyTo: input.replyTo
+      replyTo: input.replyTo,
     }
   }).pipe(
     Effect.tapError(() => Effect.annotateCurrentSpan('email.render_failure', true)),
-    Effect.withSpan('email.render', { attributes: { 'email.template': input.templateName } })
+    Effect.withSpan('email.render', { attributes: { 'email.template': input.templateName } }),
   )
 }

@@ -6,7 +6,7 @@ export const EMAIL_DELIVERY_STATUSES = {
   DELIVERED: 'DELIVERED',
   BOUNCED: 'BOUNCED',
   COMPLAINED: 'COMPLAINED',
-  FAILED: 'FAILED'
+  FAILED: 'FAILED',
 } as const
 
 export const EMAIL_DELIVERY_STATUS_VALUES = [
@@ -15,7 +15,7 @@ export const EMAIL_DELIVERY_STATUS_VALUES = [
   'DELIVERED',
   'BOUNCED',
   'COMPLAINED',
-  'FAILED'
+  'FAILED',
 ] as const
 
 export const emailDeliveryStatusSchema = Schema.Literals(EMAIL_DELIVERY_STATUS_VALUES)

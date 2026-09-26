@@ -1,4 +1,5 @@
 import { Context, Effect, Layer } from 'effect'
+
 import { ReminderQueueUnavailable } from '@/errors'
 
 export interface ReminderJob {
@@ -14,7 +15,7 @@ export interface ReminderQueue {
 export const ReminderQueue = Context.Service<ReminderQueue>('ReminderQueue')
 
 export interface ReminderQueueSender {
-  send(message: ReminderJob): Promise<unknown>
+  send(message: ReminderJob): Promise<object | void>
 }
 
 export const ReminderQueueLayer = (queue: ReminderQueueSender) =>
@@ -22,6 +23,6 @@ export const ReminderQueueLayer = (queue: ReminderQueueSender) =>
     enqueue: (job) =>
       Effect.tryPromise({
         try: () => queue.send(job),
-        catch: () => new ReminderQueueUnavailable({ reminderId: job.reminderId })
-      }).pipe(Effect.asVoid)
+        catch: () => new ReminderQueueUnavailable({ reminderId: job.reminderId }),
+      }).pipe(Effect.asVoid),
   })

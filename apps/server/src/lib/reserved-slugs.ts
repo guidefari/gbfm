@@ -26,7 +26,7 @@ const ROUTE_SLUGS = [
   'subscribe',
   'tracks',
   'upload',
-  'upload-old'
+  'upload-old',
 ] as const
 
 // Additional reserved words
@@ -59,7 +59,7 @@ const ADDITIONAL_RESERVED = [
   'undefined',
   'user',
   'users',
-  'www'
+  'www',
 ] as const
 
 export const RESERVED_SLUGS: Set<string> = new Set([...ROUTE_SLUGS, ...ADDITIONAL_RESERVED])

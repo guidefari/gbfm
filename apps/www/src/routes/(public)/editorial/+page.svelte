@@ -1,0 +1,18 @@
+<script lang="ts">
+  import ListPage from '@/lib/components/public/ListPage.svelte'
+  import type { PublicRecord } from '@/lib/server/public/content'
+  import type { PageProps } from './$types'
+
+  let { data }: PageProps = $props()
+
+  const href = (item: PublicRecord) => `/editorial/${item.slug}`
+</script>
+
+<ListPage
+  {data}
+  title="Editorial"
+  description="Stories, interviews and music writing from goosebumps.fm."
+  canonical="/editorial"
+  {href}
+  empty="No editorial posts yet."
+/>

@@ -6,7 +6,7 @@ export type PaginationMetadata = {
 }
 
 export type PaginatedResponse<T> = {
-  data: T[]
+  data: Array<T>
   pagination: PaginationMetadata
 }
 
@@ -19,7 +19,7 @@ export const DEFAULT_PAGE_SIZE = 5
 export function setPaginationParams(
   url: URL,
   pageParam: number,
-  { limit = DEFAULT_PAGE_SIZE }: PaginationOptions = {}
+  { limit = DEFAULT_PAGE_SIZE }: PaginationOptions = {},
 ) {
   url.searchParams.set('limit', String(limit))
   url.searchParams.set('offset', String(pageParam))

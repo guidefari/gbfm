@@ -12,12 +12,14 @@ export const SearchCacheHeaderLive = HttpRouter.middleware(
       const request = yield* HttpServerRequest.HttpServerRequest
       const response = yield* httpEffect
       const path = new URL(request.url, 'http://localhost').pathname
+
       if (path !== '/api/search') return response
+
       return HttpServerResponse.setHeader(
         response,
         'cache-control',
-        'public, max-age=60, stale-while-revalidate=300'
+        'public, max-age=60, stale-while-revalidate=300',
       )
     }),
-  { global: true }
+  { global: true },
 )

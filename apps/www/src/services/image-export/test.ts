@@ -1,5 +1,6 @@
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
+
 import type { ImageRenderError, ImageSaveError } from './errors'
 import { ImageExport, type ImageSaveOutcome } from './service'
 
@@ -15,7 +16,8 @@ export const ImageExportStubLayer = (stub: ImageExportStub = {}) =>
     load: () => stub.load ?? Effect.succeed(new Blob()),
     save: (_blob: Blob, fileName: string) => {
       stub.onSave?.(fileName)
+
       return stub.save ?? Effect.succeed<ImageSaveOutcome>('downloaded')
     },
-    canShareFiles: Effect.succeed(stub.canShareFiles ?? false)
+    canShareFiles: Effect.succeed(stub.canShareFiles ?? false),
   }))

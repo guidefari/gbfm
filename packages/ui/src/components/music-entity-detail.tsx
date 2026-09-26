@@ -25,7 +25,7 @@ const TYPE_LABELS = {
   album: 'Album',
   track: 'Track',
   playlist: 'Playlist',
-  label: 'Label'
+  label: 'Label',
 } satisfies Record<MusicEntityType, string>
 
 const TYPE_GLYPHS = {
@@ -33,7 +33,7 @@ const TYPE_GLYPHS = {
   album: '💿',
   track: '🎵',
   playlist: '📋',
-  label: '🏷️'
+  label: '🏷️',
 } satisfies Record<MusicEntityType, string>
 
 function Separator() {
@@ -48,7 +48,7 @@ function formatDay(value: Date | string) {
   return new Date(value).toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'short',
-    day: 'numeric'
+    day: 'numeric',
   })
 }
 
@@ -63,7 +63,7 @@ export function MusicEntityDetail({
   metadataSlot,
   linksSlot,
   relationshipsSlot,
-  actionsSlot
+  actionsSlot,
 }: MusicEntityDetailProps) {
   const isPublished = publishedAt != null && new Date(publishedAt) <= new Date()
 
@@ -130,7 +130,11 @@ export function MusicEntityDetail({
         )}
 
         <TabsContent value='audit' className='mt-6'>
-          <MusicEntityAudit createdAt={createdAt} updatedAt={updatedAt} createdBy={createdBy} />
+          <MusicEntityAudit
+            createdAt={createdAt}
+            updatedAt={updatedAt}
+            {...(createdBy === undefined ? {} : { createdBy })}
+          />
         </TabsContent>
       </Tabs>
     </div>
@@ -158,5 +162,5 @@ export type {
   MusicEntityArtistsPanelProps,
   MusicEntityLinksPanelProps,
   MusicEntityMetadataFormProps,
-  MusicEntityType
+  MusicEntityType,
 }

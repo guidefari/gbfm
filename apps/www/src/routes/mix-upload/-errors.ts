@@ -1,4 +1,4 @@
-import { Data } from 'effect'
+import { Data, Match } from 'effect'
 
 export class AudioUploadAborted extends Data.TaggedError('AudioUploadAborted')<{
   readonly message: string
@@ -45,16 +45,14 @@ export type MixUploadPageError =
   | NotSignedInError
   | MissingAudioError
 
-export const isPageRetryable = (error: MixUploadPageError): boolean => {
-  if (
-    error._tag === 'AudioUploadError' ||
-    error._tag === 'ImageUploadError' ||
-    error._tag === 'RecordSaveError'
-  ) {
-    if (error.status === undefined) return true
-    return (
-      error.status === 408 || error.status === 429 || (error.status >= 500 && error.status < 600)
-    )
-  }
-  return false
-}
+export const isPageRetryable = Match.type<MixUploadPageError>().pipe(
+  Match.tags({
+    AudioUploadError: ({ status }) => retryableStatus(status),
+    ImageUploadError: ({ status }) => retryableStatus(status),
+    RecordSaveError: ({ status }) => retryableStatus(status),
+  }),
+  Match.orElse(() => false),
+)
+
+const retryableStatus = (status: number | undefined): boolean =>
+  status === undefined || status === 408 || status === 429 || (status >= 500 && status < 600)

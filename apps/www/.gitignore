@@ -26,3 +26,6 @@ dist-ssr
 .env.*
 
 .tanstack
+.svelte-kit
+test-results
+playwright-report

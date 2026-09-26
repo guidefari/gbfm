@@ -13,7 +13,7 @@ export const CryptoLive = Layer.succeed(
     randomBytes: (size) => crypto.getRandomValues(new Uint8Array(size)),
     digest: (algorithm, data) =>
       Effect.orDie(
-        Effect.promise(async () => new Uint8Array(await crypto.subtle.digest(algorithm, data)))
-      )
-  })
+        Effect.promise(async () => new Uint8Array(await crypto.subtle.digest(algorithm, data))),
+      ),
+  }),
 )

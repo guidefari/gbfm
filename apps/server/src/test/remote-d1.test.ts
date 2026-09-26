@@ -1,11 +1,12 @@
 import { describe, expect, test } from 'vitest'
+
 import { createRemoteD1, type RemoteD1Options } from '../../scripts/remote-d1'
 
 const options = (fetchImplementation: NonNullable<RemoteD1Options['fetch']>) => ({
   accountId: 'account',
   apiToken: 'token',
   databaseId: 'database',
-  fetch: fetchImplementation
+  fetch: fetchImplementation,
 })
 
 type RemoteResult = {
@@ -18,7 +19,7 @@ type RemoteResult = {
 const response = (result: ReadonlyArray<RemoteResult>) =>
   new Response(JSON.stringify({ success: true, errors: [], result }), {
     status: 200,
-    headers: { 'Content-Type': 'application/json' }
+    headers: { 'Content-Type': 'application/json' },
   })
 
 describe('remote D1 adapter', () => {
@@ -30,6 +31,7 @@ describe('remote D1 adapter', () => {
       readonly contentType: string | null
       readonly body: string
     }> = []
+
     const recordingFetch: NonNullable<RemoteD1Options['fetch']> = async (url, init) => {
       const headers = new Headers(init.headers)
       requests.push({
@@ -37,18 +39,20 @@ describe('remote D1 adapter', () => {
         method: init.method,
         authorization: headers.get('Authorization'),
         contentType: headers.get('Content-Type'),
-        body: await new Response(init.body).text()
+        body: await new Response(init.body).text(),
       })
+
       return response([
         { success: true, results: [], meta: { changes: 1 } },
-        { success: true, results: [], meta: { changes: 1 } }
+        { success: true, results: [], meta: { changes: 1 } },
       ])
     }
+
     const database = createRemoteD1(options(recordingFetch))
 
     await database.batch([
       database.prepare('INSERT INTO one VALUES (?)').bind('one'),
-      database.prepare('INSERT INTO two VALUES (?)').bind('two')
+      database.prepare('INSERT INTO two VALUES (?)').bind('two'),
     ])
 
     expect(requests).toEqual([
@@ -60,10 +64,10 @@ describe('remote D1 adapter', () => {
         body: JSON.stringify({
           batch: [
             { sql: 'INSERT INTO one VALUES (?)', params: ['one'] },
-            { sql: 'INSERT INTO two VALUES (?)', params: ['two'] }
-          ]
-        })
-      }
+            { sql: 'INSERT INTO two VALUES (?)', params: ['two'] },
+          ],
+        }),
+      },
     ])
   })
 
@@ -71,6 +75,7 @@ describe('remote D1 adapter', () => {
     const unexpectedFetch: NonNullable<RemoteD1Options['fetch']> = async () => {
       throw new Error('fetch must not be called')
     }
+
     const database = createRemoteD1(options(unexpectedFetch))
 
     await expect(database.batch([])).resolves.toEqual([])
@@ -80,22 +85,24 @@ describe('remote D1 adapter', () => {
     const failedFetch: NonNullable<RemoteD1Options['fetch']> = async () =>
       response([
         { success: true, results: [], meta: {} },
-        { success: false, error: 'second failed', results: [], meta: {} }
+        { success: false, error: 'second failed', results: [], meta: {} },
       ])
+
     const database = createRemoteD1(options(failedFetch))
 
     await expect(
-      database.batch([database.prepare('SELECT 1'), database.prepare('SELECT 2')])
+      database.batch([database.prepare('SELECT 1'), database.prepare('SELECT 2')]),
     ).rejects.toThrow('D1 statement 1 failed: second failed')
   })
 
   test('rejects when the batch result count does not match the statement count', async () => {
     const incompleteFetch: NonNullable<RemoteD1Options['fetch']> = async () =>
       response([{ success: true, results: [], meta: {} }])
+
     const database = createRemoteD1(options(incompleteFetch))
 
     await expect(
-      database.batch([database.prepare('SELECT 1'), database.prepare('SELECT 2')])
+      database.batch([database.prepare('SELECT 1'), database.prepare('SELECT 2')]),
     ).rejects.toThrow('D1 batch returned 1 results for 2 statements')
   })
 })
