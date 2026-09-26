@@ -207,7 +207,7 @@ describe('evaluation and scheduled runtime', () => {
     await Effect.runPromise(
       runDrill(production.kv, production.email, 'drill-2', {
         ...config,
-        environment: 'production',
+        environment: 'prod',
       }),
     )
     expect(production.messages).toEqual([])

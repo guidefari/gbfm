@@ -112,7 +112,7 @@ export const runDrill = Effect.fn('TelemetryEvaluator.runDrill')(function* (
   evaluationId: string,
   config: AlertConfig,
 ) {
-  if (config.environment === 'production') return
+  if (config.environment === 'prod') return
 
   const completionKey = `drill:completed:${config.release}`
 
