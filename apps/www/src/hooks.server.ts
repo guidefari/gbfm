@@ -6,10 +6,12 @@ import { anonymousPrincipal } from '@/lib/auth/principal'
 import { resolvePrincipal } from '@/lib/server/auth/session'
 import { log } from '@/services/logger'
 
-const gatewayPrefixes = ['/api/', '/auth/', '/telemetry/'] as const
+const gatewayPrefixes = ['/api/', '/auth/'] as const
 
 const isGatewayRequest = (pathname: string) =>
-  pathname === '/rss.xml' || gatewayPrefixes.some((prefix) => pathname.startsWith(prefix))
+  pathname === '/rss.xml' ||
+  pathname === '/telemetry/browser' ||
+  gatewayPrefixes.some((prefix) => pathname.startsWith(prefix))
 
 export const handle: Handle = async ({ event, resolve }) => {
   const startedAt = performance.now()

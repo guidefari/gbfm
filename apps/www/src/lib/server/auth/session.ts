@@ -9,10 +9,27 @@ type SessionResolution = {
   readonly setCookies: ReadonlyArray<string>
 }
 
+const sessionTokenNames = new Set([
+  'better-auth.session_token',
+  '__Secure-better-auth.session_token',
+])
+
+const hasSessionToken = (cookieHeader: string | null): boolean =>
+  cookieHeader
+    ?.split(';')
+    .some((cookie) => sessionTokenNames.has(cookie.trim().split('=', 1)[0] ?? '')) ?? false
+
 /** Resolves a request's Better Auth session without leaking API response shapes. */
 export async function resolvePrincipal(
   event: Parameters<typeof apiRequest>[0],
 ): Promise<SessionResolution> {
+  if (
+    !hasSessionToken(event.request.headers.get('cookie')) &&
+    !event.request.headers.has('authorization')
+  ) {
+    return { principal: anonymousPrincipal, setCookies: [] }
+  }
+
   try {
     const response = await apiRequest(event, '/auth/get-session')
     const setCookies = response.headers.getSetCookie()
