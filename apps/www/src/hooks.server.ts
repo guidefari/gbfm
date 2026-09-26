@@ -2,8 +2,14 @@ import { VPS_PROXY_TARGET } from '$app/env/private'
 import { resolveRequestId } from '@gbfm/core/observability/request-id'
 import type { Handle, HandleServerError } from '@sveltejs/kit/hooks'
 
+import { anonymousPrincipal } from '@/lib/auth/principal'
 import { resolvePrincipal } from '@/lib/server/auth/session'
 import { log } from '@/services/logger'
+
+const gatewayPrefixes = ['/api/', '/auth/', '/telemetry/'] as const
+
+const isGatewayRequest = (pathname: string) =>
+  pathname === '/rss.xml' || gatewayPrefixes.some((prefix) => pathname.startsWith(prefix))
 
 export const handle: Handle = async ({ event, resolve }) => {
   const startedAt = performance.now()
@@ -22,10 +28,16 @@ export const handle: Handle = async ({ event, resolve }) => {
     }
   }
 
-  event.locals.principal = await resolvePrincipal(event)
+  const session = isGatewayRequest(event.url.pathname)
+    ? { principal: anonymousPrincipal, setCookies: [] }
+    : await resolvePrincipal(event)
+
+  event.locals.principal = session.principal
 
   const resolved = await resolve(event)
   const response = new Response(resolved.body, resolved)
+
+  for (const cookie of session.setCookies) response.headers.append('set-cookie', cookie)
   response.headers.set('x-request-id', event.locals.requestId)
   response.headers.append(
     'server-timing',
