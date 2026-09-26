@@ -12,10 +12,16 @@ export const storage = (config: StageConfig) =>
           stage: 'prod'
         })).pipe(Output.map(({ databaseName }) => databaseName))
       : undefined
-    const db = yield* Cloudflare.D1.Database('Database', {
+
+    const databaseConfig: Alchemy.PropsInput<Cloudflare.D1.DatabaseProps> = {
       ...(productionD1DatabaseName ? { name: productionD1DatabaseName } : undefined),
-      ...(config.isLocalDev ? undefined : { migrationsDir: './apps/server/drizzle-d1' })
-    }).pipe(adopt(config.isLocalDev), Alchemy.remote(config.isLocalDev))
+      ...(config.isLocalDev ? undefined : { migrations: './apps/server/drizzle-d1' })
+    }
+
+    const db = yield* Cloudflare.D1.Database('Database', databaseConfig).pipe(
+      adopt(config.isLocalDev),
+      Alchemy.remote(config.isLocalDev)
+    )
 
     // The browser PUTs image and audio bytes straight to the bucket with a
     // presigned URL, so the bucket itself has to allow the cross-origin PUT.
