@@ -9,18 +9,21 @@ export const load = (async (event) => {
     `/api/content/audio/mix/${encodeURIComponent(event.params.mixId)}`,
   )
 
-  const actionActive = detail.item
-    ? await loadPublicActionState(event, 'audio', text(detail.item.id))
-    : false
-
   const showId = detail.item ? text(detail.item.showId) : ''
 
-  if (!showId) return { ...detail, relatedShow: null, actionActive }
-  const shows = await getPublicJson(event, '/api/shows?limit=100&offset=0')
+  const actionActive = detail.item
+    ? loadPublicActionState(event, 'audio', text(detail.item.id))
+    : Promise.resolve(false)
 
-  const relatedShow = shows.ok
-    ? (records(shows.value).find((show) => text(show.id) === showId) ?? null)
+  const shows = showId
+    ? getPublicJson(event, '/api/shows?limit=100&offset=0')
+    : Promise.resolve(null)
+
+  const [active, showResult] = await Promise.all([actionActive, shows])
+
+  const relatedShow = showResult?.ok
+    ? (records(showResult.value).find((show) => text(show.id) === showId) ?? null)
     : null
 
-  return { ...detail, relatedShow, actionActive }
+  return { ...detail, relatedShow, actionActive: active }
 }) satisfies PageServerLoad
