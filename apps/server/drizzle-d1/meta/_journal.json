@@ -57,6 +57,13 @@
       "when": 1786872800000,
       "tag": "0007_music_identity_backfill_checkpoint",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790435613938,
+      "tag": "0008_canonical_audio_urls",
+      "breakpoints": true
     }
   ]
 }
