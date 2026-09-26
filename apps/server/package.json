@@ -9,7 +9,6 @@
     "test:d1": "vitest run --config vitest.d1.config.ts",
     "test:watch": "vitest --config vitest.d1.config.ts",
     "typecheck": "tsgo --noEmit",
-    "db:gen": "drizzle-kit generate --config drizzle.d1.config.ts",
     "db:seed:music-lookups": "bun run scripts/seed-music-lookups.ts",
     "identity:maintain": "bun run scripts/music-identity-maintenance.ts"
   },
