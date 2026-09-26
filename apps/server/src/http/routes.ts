@@ -33,7 +33,7 @@ import { SpotifyHandlersLive } from '@/http/spotify.handlers'
 import { UploadHandlersLive } from '@/http/upload.handlers'
 import { UserHandlersLive } from '@/http/user.handlers'
 import { Auth } from '@/lib/auth'
-import { localRequestMiddleware } from '@/lib/local-request-tracing'
+import { LocalRouteTracingLive, localRequestMiddleware } from '@/lib/local-request-tracing'
 import { AuthMiddlewareLive } from '@/middleware/auth.impl'
 import { IdentityResolverLive } from '@/middleware/optional-auth.impl'
 import { prepareAuthRequest } from '@/routes/user/better-auth.routes'
@@ -127,6 +127,7 @@ export const createWebHandler = (options: {
       RequestLoggerLive,
       SentryDefectLive,
     ).pipe(
+      Layer.provide(options.localTracing ? LocalRouteTracingLive : Layer.empty),
       Layer.provideMerge(appServices),
       // RequestLoggerLive is the single structured request event; disable
       // Effect HttpMiddleware.logger to avoid a second response log line.

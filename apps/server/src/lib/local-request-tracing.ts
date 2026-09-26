@@ -1,5 +1,5 @@
 import { Effect, Layer, ManagedRuntime, Tracer } from 'effect'
-import { FetchHttpClient, HttpServerRequest } from 'effect/unstable/http'
+import { FetchHttpClient, HttpRouter, HttpServerRequest } from 'effect/unstable/http'
 import type { HttpServerResponse } from 'effect/unstable/http'
 import { OtlpExporter, OtlpSerialization, OtlpTracer } from 'effect/unstable/observability'
 
@@ -48,7 +48,6 @@ export const localRequestMiddleware = <E, R>(
 ) =>
   Effect.gen(function* () {
     const request = yield* HttpServerRequest.HttpServerRequest
-    const path = new URL(request.url, 'http://localhost').pathname
     const requestId = request.headers['x-request-id']
     const parent = remoteParent(request.headers.traceparent ?? null)
 
@@ -56,11 +55,10 @@ export const localRequestMiddleware = <E, R>(
       Effect.tap((response) =>
         Effect.annotateCurrentSpan('http.response.status_code', response.status),
       ),
-      Effect.withSpan(`api ${request.method} ${path}`, {
+      Effect.withSpan('api.request', {
         ...(parent ? { parent } : undefined),
         attributes: {
           'http.request.method': request.method,
-          'url.path': path,
           ...(requestId && /^[a-zA-Z0-9_-]{1,128}$/.test(requestId)
             ? { 'gbfm.request_id': requestId }
             : undefined),
@@ -68,3 +66,22 @@ export const localRequestMiddleware = <E, R>(
       }),
     )
   })
+
+export const LocalRouteTracingLive = HttpRouter.middleware((effect) =>
+  Effect.gen(function* () {
+    const request = yield* HttpServerRequest.HttpServerRequest
+    const { route } = yield* HttpRouter.RouteContext
+
+    return yield* effect.pipe(
+      Effect.tap((response) =>
+        Effect.annotateCurrentSpan('http.response.status_code', response.status),
+      ),
+      Effect.withSpan(`api ${request.method} ${route.path}`, {
+        attributes: {
+          'http.request.method': request.method,
+          'http.route': route.path,
+        },
+      }),
+    )
+  }),
+).layer
