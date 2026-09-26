@@ -1,3 +1,10 @@
+## [2.100.2](https://github.com/guidefari/gbfm/compare/v2.100.1...v2.100.2) (2026-09-26)
+
+
+### Bug Fixes
+
+* **alchemy:** apply D1 migrations on deploy ([#354](https://github.com/guidefari/gbfm/issues/354)) ([d8bffbd](https://github.com/guidefari/gbfm/commit/d8bffbd7de14469f57364a417f2870b4514c3022))
+
 ## [2.100.1](https://github.com/guidefari/gbfm/compare/v2.100.0...v2.100.1) (2026-09-26)
 
 
