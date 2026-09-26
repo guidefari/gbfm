@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { buttonVariants } from '@gbfm/ui/button-variants'
+  import { Bell, BellOff, Heart, Loader2, Share2 } from 'lucide-svelte'
+  import { cn } from '@/lib/utils'
   import AuthPromptDialog from './AuthPromptDialog.svelte'
 
   let {
@@ -7,12 +10,14 @@
     kind,
     slug,
     initialActive = false,
+    compact = false,
   }: {
     id?: string
     title: string
     kind: 'audio' | 'show' | 'content'
     slug: string
     initialActive?: boolean
+    compact?: boolean
   } = $props()
 
   let busy = $state(false)
@@ -24,6 +29,25 @@
   let authOpen = $state(false)
 
   let retryAfterAuthentication = false
+
+  const buttonClass = $derived(
+    compact
+      ? cn(
+          buttonVariants({ variant: 'ghost', size: 'icon' }),
+          'size-7 rounded-none border-0 bg-transparent p-0 text-muted-foreground hover:bg-transparent hover:text-highlight hover:shadow-none',
+        )
+      : buttonVariants({ variant: 'outline', size: 'sm' }),
+  )
+
+  const toggleLabel = $derived(
+    kind === 'show'
+      ? active
+        ? 'Unsubscribe'
+        : 'Subscribe'
+      : active
+        ? 'Remove from favorites'
+        : 'Add to favorites',
+  )
 
   const share = async () => {
     const url = new URL(slug, window.location.origin).href
@@ -80,22 +104,24 @@
   }
 </script>
 
-<div class="flex flex-wrap items-center gap-2">
+<div class={cn('flex flex-wrap items-center', compact ? 'gap-1' : 'gap-2')}>
   {#if kind !== 'content' && id}<button
-      class="border border-border px-3 py-2 text-sm font-bold"
+      type="button"
+      class={buttonClass}
       disabled={busy}
+      aria-label={toggleLabel}
+      title={toggleLabel}
       onclick={toggle}
-      >{busy
-        ? 'Working…'
-        : active
-          ? kind === 'show'
-            ? 'Subscribed'
-            : 'Favorited'
-          : kind === 'show'
-            ? 'Subscribe'
-            : 'Favorite'}</button
-    >{/if}
-  <button class="border border-border px-3 py-2 text-sm font-bold" onclick={share}>Share</button>
+    >
+      {#if busy}<Loader2
+          class="size-4 animate-spin"
+        />{:else if kind === 'show'}{#if active}<BellOff class="size-4" />{:else}<Bell
+            class="size-4"
+          />{/if}{:else}<Heart class={cn('size-4', active && 'fill-red-500 text-red-500')} />{/if}
+    </button>{/if}
+  <button type="button" class={buttonClass} aria-label="Share" title="Share" onclick={share}
+    ><Share2 class="size-4" /></button
+  >
   {#if status}<span class="text-xs text-muted-foreground" role="status">{status}</span>{/if}
 </div>
 <AuthPromptDialog

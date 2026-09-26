@@ -2,6 +2,9 @@
   import { GetMixQRPdfResponse } from '@gbfm/api/audio'
   import { page } from '$app/state'
   import { Match, Option, Schema } from 'effect'
+  import { buttonVariants } from '@gbfm/ui/button-variants'
+  import { Pause, Play } from 'lucide-svelte'
+  import { cn } from '@/lib/utils'
   import Artwork from './Artwork.svelte'
   import PublicActions from './PublicActions.svelte'
   import RichContent from './RichContent.svelte'
@@ -154,10 +157,12 @@
     </div>
   </header>
 
-  <div class="mb-8 flex flex-wrap gap-3">
-    {#if value('url')}<button
-        class="border-2 border-foreground bg-highlight px-5 py-3 font-bold text-highlight-foreground"
-        onclick={play}>{isCurrent && $snapshot?.playing ? 'Ⅱ Pause' : '▶ Play'}</button
+  <div class="mb-8 flex flex-wrap items-center gap-3">
+    {#if value('url')}<button class={buttonVariants({ size: 'lg' })} onclick={play}
+        >{#if isCurrent && $snapshot?.playing}<Pause
+            class="mr-2 size-4"
+            fill="currentColor"
+          />Pause{:else}<Play class="mr-2 size-4" fill="currentColor" />Play{/if}</button
       >{/if}
     <PublicActions
       {...value('id') ? { id: value('id') } : {}}
@@ -167,16 +172,16 @@
       initialActive={actionActive}
     />
     {#if isMix && value('url')}<button
-        class="border border-border px-3 py-2 text-sm font-bold"
+        class={buttonVariants({ variant: 'outline', size: 'sm' })}
         onclick={enqueue}>Add to queue</button
       >{/if}
     {#if isMix && ['creator', 'admin'].includes(role)}<button
-        class="border border-border px-3 py-2 text-sm font-bold"
+        class={buttonVariants({ variant: 'outline', size: 'sm' })}
         disabled={qrBusy}
         onclick={downloadQr}>{qrBusy ? 'Generating…' : 'Download QR'}</button
       >{/if}
     {#if isMix && role === 'admin'}<a
-        class="border border-border px-3 py-2 text-sm font-bold no-underline"
+        class={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'no-underline')}
         href={`/mix-upload?edit=${encodeURIComponent(value('slug'))}`}>Edit</a
       >{/if}
     {#if actionStatus}<span class="self-center text-xs text-muted-foreground" role="status"

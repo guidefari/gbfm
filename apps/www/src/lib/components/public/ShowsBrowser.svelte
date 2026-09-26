@@ -126,11 +126,39 @@
   <PublicState message="No shows found" />
 {:else}
   <div
-    class="grid w-full grid-cols-1 gap-6 px-4 py-4 sm:px-6 sm:py-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10"
+    class="grid w-full grid-cols-1 gap-6 px-4 py-4 sm:px-6 sm:py-6 lg:grid-cols-[220px_minmax(0,1fr)_240px] lg:gap-10"
   >
-    <aside class="hidden lg:block">
-      <div class="no-scrollbar sticky top-4 max-h-[calc(100dvh-8rem)] overflow-y-auto">
-        <h2 class={heading}>Radio shows</h2>
+    <div class="lg:hidden"><ShowSwitcherRail {shows} {selectedId} onSelect={preview} /></div>
+
+    {#if currentShow}
+      <aside>
+        <div
+          class="no-scrollbar lg:sticky lg:top-4 lg:max-h-[calc(100dvh-8rem)] lg:overflow-y-auto"
+        >
+          <h2 class={[heading, 'hidden lg:block']}>Show</h2>
+          {#key selectedId}
+            <ShowMeta
+              show={currentShow}
+              actionActive={shownActionActive}
+              showActions={previewShow === null}
+            />
+          {/key}
+        </div>
+      </aside>
+    {/if}
+
+    <main class="min-w-0 lg:col-start-2">
+      {#if currentShow}
+        <h2 class={heading}>Episodes</h2>
+        <ShowEpisodes slug={displaySlug} {serverSlug} {episodes} />
+      {:else}
+        <PublicState message="Select a show to browse its mixes" />
+      {/if}
+    </main>
+
+    <aside class="hidden lg:col-start-3 lg:block">
+      <div class="no-scrollbar sticky top-4 max-h-[calc(100dvh-8rem)] overflow-y-auto pl-1">
+        <h2 class={heading}>All shows</h2>
         <nav aria-label="Shows" class="font-mono text-base">
           {#each shows as show (text(show.id))}
             <ShowListItem
@@ -142,25 +170,5 @@
         </nav>
       </div>
     </aside>
-
-    <div class="lg:hidden"><ShowSwitcherRail {shows} {selectedId} onSelect={preview} /></div>
-
-    <main class="min-w-0 max-w-4xl space-y-8">
-      {#if currentShow}
-        {#key selectedId}
-          <ShowMeta
-            show={currentShow}
-            actionActive={shownActionActive}
-            showActions={previewShow === null}
-          />
-        {/key}
-        <section>
-          <h2 class={heading}>Episodes</h2>
-          <ShowEpisodes slug={displaySlug} {serverSlug} {episodes} />
-        </section>
-      {:else}
-        <PublicState message="Select a show to browse its mixes" />
-      {/if}
-    </main>
   </div>
 {/if}

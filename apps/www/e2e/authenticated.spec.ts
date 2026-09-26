@@ -77,6 +77,7 @@ test('show subscription state is present in the server-rendered response', async
   await signIn(page, 'admin@gbfm.local')
   const suffix = `${Date.now()}-${test.info().workerIndex}`
   const slug = `ssr-subscription-${suffix}`
+
   const createResponse = await page.context().request.post('/api/shows', {
     data: {
       title: 'SSR subscription test',
@@ -85,10 +86,13 @@ test('show subscription state is present in the server-rendered response', async
       draft: false,
     },
   })
+
   expect(createResponse.ok()).toBe(true)
+
   const show = Schema.decodeUnknownSync(Schema.Struct({ id: Schema.String }))(
     await createResponse.json(),
   )
+
   const subscribeResponse = await page.context().request.post(`/api/shows/${show.id}/subscribe`)
   expect(subscribeResponse.ok()).toBe(true)
 
@@ -100,12 +104,12 @@ test('show subscription state is present in the server-rendered response', async
   })
 
   const response = await page.goto(`/shows/${slug}`)
-  expect(await response?.text()).toContain('>Subscribed</button>')
-  await expect(page.getByRole('button', { name: 'Subscribed' })).toBeVisible()
+  expect(await response?.text()).toContain('aria-label="Unsubscribe"')
+  await expect(page.getByRole('button', { name: 'Unsubscribe' })).toBeVisible()
   expect(browserSubscriptionRequests).toEqual([])
 
-  await page.getByRole('button', { name: 'Subscribed' }).click()
-  await expect(page.getByRole('button', { name: 'Subscribe' })).toBeVisible()
+  await page.getByRole('button', { name: 'Unsubscribe' }).click()
+  await expect(page.getByRole('button', { name: 'Subscribe', exact: true })).toBeVisible()
 })
 
 test('creator can save and reopen a draft but cannot access admin tools', async ({ page }) => {
@@ -176,12 +180,14 @@ test('tweet detail preserves the content hierarchy, navigates by link, and posts
   await older.click()
   await expect.poll(() => new URL(page.url()).pathname).not.toBe(`/tweet/${secondSlug}`)
   await expect(page.getByRole('article').first()).toBeVisible()
+
   const result = await page.evaluate(() => ({
     marker: sessionStorage.getItem('tweet-navigation-marker'),
     elapsed:
       performance.now() -
       (performance.getEntriesByName('tweet-navigation-started')[0]?.startTime ?? 0),
   }))
+
   expect(result.marker).toBe('preserved')
   expect(result.elapsed).toBeLessThan(1_000)
 
