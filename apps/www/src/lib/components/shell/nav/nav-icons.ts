@@ -1,29 +1,15 @@
-import {
-  Disc3,
-  Headphones,
-  House,
-  LayoutDashboard,
-  Mail,
-  MessageSquare,
-  MonitorPlay,
-  Newspaper,
-  Radio,
-  Tag,
-  Upload,
-} from 'lucide-svelte'
+import { Disc3, Mail, MessageSquare, Newspaper, Radio, Rss, Tag } from 'lucide-svelte'
 
 import type { NavIcon } from './nav-config'
+import YoutubeIcon from './YoutubeIcon.svelte'
 
 export const navIcons = {
-  home: House,
   radio: Radio,
   disc: Disc3,
   newspaper: Newspaper,
   message: MessageSquare,
   tag: Tag,
-  headphones: Headphones,
-  dashboard: LayoutDashboard,
-  upload: Upload,
   mail: Mail,
-  youtube: MonitorPlay,
-} satisfies Record<NavIcon, typeof House>
+  rss: Rss,
+  youtube: YoutubeIcon,
+} satisfies Record<NavIcon, typeof Radio | typeof YoutubeIcon>

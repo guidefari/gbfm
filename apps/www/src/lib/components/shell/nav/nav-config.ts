@@ -5,16 +5,13 @@ import type { Principal } from '@/lib/auth/principal'
 type Role = 'user' | 'creator' | 'editor' | 'admin'
 
 export type NavIcon =
-  | 'home'
   | 'radio'
   | 'disc'
   | 'newspaper'
   | 'message'
   | 'tag'
-  | 'headphones'
-  | 'dashboard'
-  | 'upload'
   | 'mail'
+  | 'rss'
   | 'youtube'
 
 export const NavTier = { browse: 'browse', create: 'create', follow: 'follow' } as const
@@ -29,25 +26,17 @@ export type NavItem = {
   readonly tier: NavTier
   readonly desktop?: boolean
   readonly external?: boolean
+  readonly copy?: boolean
   readonly minRole?: Role
   readonly matches?: ReadonlyArray<string>
 }
 
 export const navItems: ReadonlyArray<NavItem> = [
-  { id: 'home', label: 'Home', href: '/', icon: 'home', tier: NavTier.browse },
   {
     id: 'shows',
     label: 'Radio Shows',
     href: '/shows',
     icon: 'radio',
-    tier: NavTier.browse,
-    desktop: true,
-  },
-  {
-    id: 'mixes',
-    label: 'Mixes',
-    href: '/mixes',
-    icon: 'disc',
     tier: NavTier.browse,
     desktop: true,
   },
@@ -59,6 +48,7 @@ export const navItems: ReadonlyArray<NavItem> = [
     tier: NavTier.browse,
     desktop: true,
   },
+  { id: 'subscribe', label: 'Subscribe', href: '/subscribe', icon: 'mail', tier: NavTier.browse },
   {
     id: 'tweets',
     label: 'Tweets',
@@ -68,13 +58,19 @@ export const navItems: ReadonlyArray<NavItem> = [
     desktop: true,
     matches: ['/tweet'],
   },
-  { id: 'labels', label: 'Record Labels', href: '/labels', icon: 'tag', tier: NavTier.browse },
-  { id: 'djs', label: 'DJs', href: '/djs', icon: 'headphones', tier: NavTier.browse },
+  {
+    id: 'labels',
+    label: 'Record Labels',
+    href: '/labels',
+    icon: 'tag',
+    tier: NavTier.browse,
+    desktop: true,
+  },
   {
     id: 'my-content',
     label: 'My content',
     href: '/dashboard/content',
-    icon: 'dashboard',
+    icon: 'newspaper',
     tier: NavTier.create,
     minRole: 'creator',
   },
@@ -82,7 +78,7 @@ export const navItems: ReadonlyArray<NavItem> = [
     id: 'new-mix',
     label: 'New mix',
     href: '/mix-upload',
-    icon: 'upload',
+    icon: 'disc',
     tier: NavTier.create,
     minRole: 'editor',
   },
@@ -102,10 +98,17 @@ export const navItems: ReadonlyArray<NavItem> = [
     tier: NavTier.create,
     minRole: 'admin',
   },
-  { id: 'newsletter', label: 'Newsletter', href: '/subscribe', icon: 'mail', tier: NavTier.follow },
+  {
+    id: 'rss',
+    label: 'Mixes via RSS',
+    href: '/rss.xml',
+    icon: 'rss',
+    tier: NavTier.follow,
+    copy: true,
+  },
   {
     id: 'youtube',
-    label: 'Mixes on YouTube',
+    label: 'Mixes via YouTube',
     href: 'https://youtube.com/@goosebumpsfm',
     icon: 'youtube',
     tier: NavTier.follow,

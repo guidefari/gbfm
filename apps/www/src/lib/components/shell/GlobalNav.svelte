@@ -54,11 +54,11 @@
 
 <nav
   aria-label="Primary"
-  class="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:h-12 lg:border-t-2 lg:border-foreground lg:pb-0"
+  class="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] lg:h-12 lg:border-t-2 lg:border-foreground lg:bg-background/95 lg:pb-0 lg:backdrop-blur"
 >
-  {#if player}<div class="absolute inset-x-0 top-0 h-[3px] bg-border/60">
+  {#if player}<div class="absolute inset-x-0 top-0 hidden h-[3px] bg-border/60 lg:block">
       <div
-        class="h-full bg-highlight shadow-[0_0_6px_var(--highlight)]"
+        class="h-full bg-highlight shadow-[0_0_6px_var(--highlight)] transition-[width] duration-300 ease-linear"
         style={`width:${player.progress}%`}
       ></div>
     </div>{/if}

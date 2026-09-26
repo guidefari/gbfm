@@ -135,7 +135,7 @@ test('mobile menu opens and links to the newsletter subscription page', async ({
 
   const menu = page.getByRole('dialog', { name: 'Menu' })
   await expect(menu).toBeVisible()
-  await menu.getByRole('link', { name: 'Newsletter' }).click()
+  await menu.getByRole('link', { name: 'Subscribe' }).click()
   await expect(page).toHaveURL(/\/subscribe$/)
   await expect(page.getByRole('heading', { name: 'Stay in the loop' })).toBeVisible()
 })
@@ -227,7 +227,7 @@ test('browser telemetry batches initial, SPA, error, and player events without p
     )
     .toBe(true)
   await page.getByRole('button', { name: 'Menu', exact: true }).click()
-  await page.getByRole('dialog', { name: 'Menu' }).getByRole('link', { name: 'Newsletter' }).click()
+  await page.getByRole('dialog', { name: 'Menu' }).getByRole('link', { name: 'Subscribe' }).click()
   await expect(page).toHaveURL(/\/subscribe$/)
   await expect(page.getByRole('heading', { name: 'Stay in the loop' })).toBeVisible()
 

@@ -2,7 +2,6 @@
   import { page } from '$app/state'
   import type { Principal } from '@/lib/auth/principal'
   import { LayoutDashboard, LogOut } from 'lucide-svelte'
-  import NavRow from './NavRow.svelte'
   import { navSections, signInHref } from './nav-config'
   import { signOut } from './sign-out'
 
@@ -27,13 +26,13 @@
   <div
     id="account-menu"
     popover="auto"
-    class="fixed bottom-14 left-auto right-4 top-auto m-0 w-60 rounded-sm border border-border bg-background p-1 text-foreground shadow-xl"
+    class="fixed bottom-14 left-auto right-4 top-auto m-0 min-w-52 rounded-sm border border-border bg-background p-1 text-foreground shadow-xl"
   >
     <div class="border-b border-border px-3 py-2">
-      <strong class="block truncate text-sm">{principal.name}</strong>
-      <span class="block truncate text-xs text-muted-foreground"
-        >{principal.username ? `@${principal.username}` : principal.email}</span
-      >
+      <strong class="block truncate text-base font-semibold">{principal.name}</strong>
+      {#if principal.username}<span class="block truncate text-xs text-muted-foreground"
+          >@{principal.username}</span
+        >{/if}
     </div>
     <div class="py-1">
       <a
@@ -43,8 +42,12 @@
       >
     </div>
     {#if create.length > 0}
-      <div class="border-t border-border py-1 text-sm">
-        {#each create as item (item.id)}<NavRow {item} />{/each}
+      <div class="border-t border-border py-1">
+        {#each create as item (item.id)}<a
+            href={item.href}
+            class="flex items-center gap-3 rounded-sm px-3 py-2 text-sm no-underline hover:bg-muted/60"
+            >{item.label}</a
+          >{/each}
       </div>
     {/if}
     <div class="border-t border-border pt-1">

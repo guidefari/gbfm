@@ -58,21 +58,21 @@
             />{:else}{principal.name[0] ?? '?'}{/if}</span
         >
         <span class="min-w-0 flex-1"
-          ><strong class="block truncate">{principal.name}</strong><span
-            class="block truncate text-xs text-muted-foreground"
-            >{principal.username ? `@${principal.username}` : principal.email}</span
-          ></span
+          ><strong class="block truncate text-base font-semibold">{principal.name}</strong
+          >{#if principal.username}<span class="block truncate text-xs text-muted-foreground"
+              >@{principal.username}</span
+            >{/if}</span
         >
       </div>
-      <a href="/dashboard" class={row}><LayoutDashboard size={18} strokeWidth={1.75} />Dashboard</a>
+      <a href="/dashboard" class={row}><LayoutDashboard class="size-5 shrink-0" />Dashboard</a>
       <button type="button" class={[row, 'text-left']} onclick={() => void signOut()}
-        ><LogOut size={18} strokeWidth={1.75} />Log out</button
+        ><LogOut class="size-5 shrink-0" />Log out</button
       >
     {:else}
       <a
         href={signInHref(page.url.pathname)}
         class={[row, 'bg-highlight text-highlight-foreground hover:bg-highlight/90']}
-        ><LogIn size={18} strokeWidth={1.75} />Log in</a
+        ><LogIn class="size-5 shrink-0" />Log in</a
       >
     {/if}
   </footer>
