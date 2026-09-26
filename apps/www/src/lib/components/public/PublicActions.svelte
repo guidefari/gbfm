@@ -1,6 +1,7 @@
 <script lang="ts">
   import { buttonVariants } from '@gbfm/ui/button-variants'
   import { Bell, BellOff, Heart, Loader2, Share2 } from 'lucide-svelte'
+  import { onMount } from 'svelte'
   import { cn } from '@/lib/utils'
   import AuthPromptDialog from './AuthPromptDialog.svelte'
 
@@ -22,6 +23,8 @@
 
   let busy = $state(false)
 
+  let interactive = $state(false)
+
   let status = $state('')
 
   let active = $derived(initialActive)
@@ -29,6 +32,10 @@
   let authOpen = $state(false)
 
   let retryAfterAuthentication = false
+
+  onMount(() => {
+    interactive = true
+  })
 
   const buttonClass = $derived(
     compact
@@ -108,7 +115,7 @@
   {#if kind !== 'content' && id}<button
       type="button"
       class={buttonClass}
-      disabled={busy}
+      disabled={busy || !interactive}
       aria-label={toggleLabel}
       title={toggleLabel}
       onclick={toggle}
@@ -119,8 +126,13 @@
             class="size-4"
           />{/if}{:else}<Heart class={cn('size-4', active && 'fill-red-500 text-red-500')} />{/if}
     </button>{/if}
-  <button type="button" class={buttonClass} aria-label="Share" title="Share" onclick={share}
-    ><Share2 class="size-4" /></button
+  <button
+    type="button"
+    class={buttonClass}
+    disabled={!interactive}
+    aria-label="Share"
+    title="Share"
+    onclick={share}><Share2 class="size-4" /></button
   >
   {#if status}<span class="text-xs text-muted-foreground" role="status">{status}</span>{/if}
 </div>
