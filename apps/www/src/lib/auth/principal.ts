@@ -1,12 +1,13 @@
+import { ROLES, type Role } from '@gbfm/core/roles'
 import { Data, Schema } from 'effect'
 
-const Role = Schema.Literals(['user', 'creator', 'editor', 'admin'])
+const RoleSchema = Schema.Literals(ROLES)
 
 const AuthenticatedUser = Schema.Struct({
   id: Schema.String,
   name: Schema.String,
   email: Schema.String,
-  role: Schema.optional(Schema.NullOr(Role)),
+  role: Schema.optional(Schema.NullOr(RoleSchema)),
   image: Schema.optional(Schema.NullOr(Schema.String)),
   username: Schema.optional(Schema.NullOr(Schema.String)),
   emailVerified: Schema.optional(Schema.Boolean),
@@ -24,7 +25,7 @@ export type AuthenticatedPrincipal = {
   readonly userId: string
   readonly name: string
   readonly email: string
-  readonly role: typeof Role.Type
+  readonly role: Role
   readonly imageUrl: string | undefined
   readonly username: string | undefined
   readonly emailVerified: boolean

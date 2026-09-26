@@ -1,3 +1,4 @@
+import { hasMinRole } from '@gbfm/core/roles'
 import { error, redirect } from '@sveltejs/kit'
 import { Predicate } from 'effect'
 
@@ -8,8 +9,7 @@ export const load: LayoutServerLoad = ({ locals, url }) => {
     redirect(303, `/auth/sign-in?redirect=${encodeURIComponent(url.pathname + url.search)}`)
   }
 
-  if (!['creator', 'editor', 'admin'].includes(locals.principal.role))
-    error(403, 'Creator access required')
+  if (!hasMinRole(locals.principal.role, 'creator')) error(403, 'Creator access required')
 
   return { principal: locals.principal }
 }

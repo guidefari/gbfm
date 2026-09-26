@@ -1,10 +1,9 @@
 <script lang="ts">
+  import { hasMinRole } from '@gbfm/core/roles'
   import type { Snippet } from 'svelte'
   import type { Principal } from '@/lib/auth/principal'
 
   let { principal, children }: { principal: Principal; children: Snippet } = $props()
-
-  const isPublisher = (role: 'user' | 'creator' | 'editor' | 'admin') => role !== 'user'
 
   const member = [
     ['/dashboard', 'Home'],
@@ -47,7 +46,7 @@
           class="whitespace-nowrap rounded px-3 py-2 text-sm no-underline hover:bg-muted md:py-1"
           href={item[0]}>{item[1]}</a
         >{/each}
-      {#if principal._tag === 'Authenticated' && isPublisher(principal.role)}
+      {#if principal._tag === 'Authenticated' && hasMinRole(principal.role, 'creator')}
         <p class="mt-3 hidden px-3 text-xs font-bold uppercase text-muted-foreground md:block">
           Publishing
         </p>

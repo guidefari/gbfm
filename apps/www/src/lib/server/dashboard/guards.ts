@@ -1,3 +1,4 @@
+import { hasMinRole } from '@gbfm/core/roles'
 import { error, redirect, type RequestEvent } from '@sveltejs/kit'
 import { Match } from 'effect'
 
@@ -25,7 +26,7 @@ export function requireDashboardAccess(
       if (authenticated.role !== 'admin') error(403, 'Administrator access required')
       break
     case 'creator':
-      if (authenticated.role === 'user') error(403, 'Creator access required')
+      if (!hasMinRole(authenticated.role, 'creator')) error(403, 'Creator access required')
       break
     case 'member':
       break

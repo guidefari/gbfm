@@ -1,8 +1,7 @@
+import { hasMinRole, type Role } from '@gbfm/core/roles'
 import { Predicate } from 'effect'
 
 import type { Principal } from '@/lib/auth/principal'
-
-type Role = 'user' | 'creator' | 'editor' | 'admin'
 
 export type NavIcon =
   | 'radio'
@@ -116,15 +115,10 @@ export const navItems: ReadonlyArray<NavItem> = [
   },
 ]
 
-const roleRank = { user: 0, creator: 1, editor: 2, admin: 3 } satisfies Record<Role, number>
-
 export const canSeeNavItem = (item: NavItem, principal: Principal) => {
   if (!item.minRole) return true
 
-  return (
-    Predicate.isTagged(principal, 'Authenticated') &&
-    roleRank[principal.role] >= roleRank[item.minRole]
-  )
+  return Predicate.isTagged(principal, 'Authenticated') && hasMinRole(principal.role, item.minRole)
 }
 
 export const isPathActive = (pathname: string, item: Pick<NavItem, 'href' | 'matches'>) => {

@@ -1,10 +1,11 @@
+import type { Role } from '@gbfm/core/roles'
 import { describe, expect, it } from 'vitest'
 
 import { Principal, type Principal as PrincipalType } from '@/lib/auth/principal'
 
 import { isPathActive, navSections } from './nav-config'
 
-const principalWithRole = (role: 'user' | 'creator' | 'editor' | 'admin'): PrincipalType =>
+const principalWithRole = (role: Role): PrincipalType =>
   Principal.Authenticated({
     userId: 'user-1',
     name: 'Test',
