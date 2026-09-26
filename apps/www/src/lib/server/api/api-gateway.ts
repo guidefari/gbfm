@@ -15,7 +15,10 @@ type ApiFetcher = {
       readonly body?: ArrayBuffer
     },
   ): Promise<{
-    readonly headers: { forEach(callback: (value: string, key: string) => void): void }
+    readonly headers: {
+      forEach(callback: (value: string, key: string) => void): void
+      getSetCookie(): ReadonlyArray<string>
+    }
     readonly status: number
     readonly statusText: string
     arrayBuffer(): Promise<ArrayBuffer>
@@ -82,32 +85,28 @@ const profileApiRequest = async (
   })
 }
 
-const bindingRequest = async (request: Request, requestId: string) => {
+const bindingRequest = (request: Request, requestId: string) => {
   const url = new URL(request.url)
   url.protocol = 'https:'
   url.host = 'api.internal'
-  const headers = new Headers(request.headers)
-  headers.set('x-request-id', requestId)
-  traceHeaders(headers)
-  const body = request.body === null ? undefined : await request.arrayBuffer()
+  const internal = new Request(url, request)
 
-  const init: RequestInit = {
-    method: request.method,
-    headers,
-    redirect: request.redirect,
-    signal: request.signal,
-  }
+  internal.headers.set('x-request-id', requestId)
+  traceHeaders(internal.headers)
 
-  if (body !== undefined) init.body = body
-
-  return new Request(url, init)
+  return internal
 }
 
 const normalizeBindingResponse = async (
   response: Awaited<ReturnType<ApiFetcher['fetch']>>,
 ): Promise<Response> => {
   const headers = new Headers()
-  response.headers.forEach((value, key) => headers.append(key, value))
+  response.headers.forEach((value, key) => {
+    if (key !== 'set-cookie') headers.append(key, value)
+  })
+
+  for (const cookie of response.headers.getSetCookie()) headers.append('set-cookie', cookie)
+
   const body = [204, 205, 304].includes(response.status) ? null : await response.arrayBuffer()
 
   return new Response(body, {
@@ -131,21 +130,15 @@ const fetchBinding = async (
   })
   const body = request.body === null ? undefined : await request.arrayBuffer()
 
-  const response =
-    body === undefined
-      ? await api.fetch(request.url, {
-          method: request.method,
-          headers,
-          redirect: request.redirect,
-        })
-      : await api.fetch(request.url, {
-          method: request.method,
-          headers,
-          redirect: request.redirect,
-          body,
-        })
+  const init = {
+    method: request.method,
+    headers,
+    redirect: request.redirect,
+    signal: request.signal,
+    ...(body === undefined ? undefined : { body }),
+  }
 
-  return normalizeBindingResponse(response)
+  return normalizeBindingResponse(await api.fetch(request.url, init))
 }
 
 /** Forwards a SvelteKit request to the API Worker binding or local API server. */
@@ -155,7 +148,7 @@ export async function forwardApiRequest(event: RequestEvent): Promise<Response> 
     'www.api.forward',
     new URL(event.request.url).pathname,
     async () => {
-      const request = await bindingRequest(event.request, event.locals.requestId)
+      const request = bindingRequest(event.request, event.locals.requestId)
       const bindingResponse = await fetchBinding(event, request)
 
       if (bindingResponse) return bindingResponse
