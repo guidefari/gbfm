@@ -51,11 +51,21 @@ function browserFamily(userAgent: string): string {
   return 'other'
 }
 
+function externalRequestOrigin(request: Request): string {
+  const url = new URL(request.url)
+  const forwardedProtocol = request.headers.get('x-forwarded-proto')?.split(',', 1)[0]?.trim()
+
+  if (forwardedProtocol === 'http' || forwardedProtocol === 'https')
+    return `${forwardedProtocol}://${url.host}`
+
+  return url.origin
+}
+
 export async function ingestBrowserTelemetry(
   request: Request,
   dependencies: BrowserTelemetryIngestion,
 ): Promise<Response> {
-  const expectedOrigin = new URL(request.url).origin
+  const expectedOrigin = externalRequestOrigin(request)
 
   if (request.headers.get('origin') !== expectedOrigin) return new Response(null, { status: 403 })
 

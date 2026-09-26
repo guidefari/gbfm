@@ -173,6 +173,28 @@ describe('browser telemetry ingestion', () => {
     ])
   })
 
+  test('accepts the browser origin when a trusted proxy terminates HTTPS', async () => {
+    const proxied = new Request('http://gbfm.localhost/telemetry/browser', {
+      method: 'POST',
+      body: JSON.stringify(envelope()),
+      headers: {
+        origin: 'https://gbfm.localhost',
+        'user-agent': 'Firefox/130',
+        'x-forwarded-proto': 'https',
+      },
+    })
+
+    expect(
+      (
+        await ingestBrowserTelemetry(proxied, {
+          stage: 'local',
+          release: 'release-1',
+          write: () => {},
+        })
+      ).status,
+    ).toBe(204)
+  })
+
   test('enforces the bytes read rather than trusting Content-Length', async () => {
     const oversized = new ReadableStream<Uint8Array>({
       start(controller) {
