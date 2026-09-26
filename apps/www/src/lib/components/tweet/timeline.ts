@@ -102,3 +102,29 @@ export const monthOf = (at: string) => {
 
   return monthKey(date.getUTCFullYear(), date.getUTCMonth())
 }
+
+export const monthShort = (month: string) => {
+  const { year, monthIndex } = parseMonth(month)
+
+  return new Date(Date.UTC(year, monthIndex, 1)).toLocaleDateString('en-US', {
+    month: 'short',
+    timeZone: 'UTC',
+  })
+}
+
+/** One entry per year that has tweets, pointing at that year's newest tweet. */
+export const yearJumps = (months: ReadonlyArray<RailMonth>) =>
+  yearGroups(months).flatMap((group) => {
+    const newestSlug = group.months.find((entry) => entry.newestSlug)?.newestSlug
+
+    if (!newestSlug) return []
+
+    return [
+      {
+        year: group.year,
+        newestSlug,
+        total: group.months.reduce((sum, entry) => sum + entry.total, 0),
+        unread: group.months.reduce((sum, entry) => sum + entry.unread, 0),
+      },
+    ]
+  })

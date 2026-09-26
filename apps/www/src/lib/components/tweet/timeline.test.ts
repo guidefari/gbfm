@@ -4,9 +4,11 @@ import {
   markerPercent,
   monthLabel,
   monthOf,
+  monthShort,
   relativeAge,
   timelineMonths,
   yearGroups,
+  yearJumps,
 } from './timeline'
 
 test('fills empty months between the oldest and newest tweet, newest first', () => {
@@ -55,4 +57,21 @@ test('groups months under their year and locates a tweet month', () => {
     ['2025', 1],
   ])
   expect(monthOf('2026-01-31T23:00:00.000Z')).toBe('2026-01')
+})
+
+test('jumps to the newest tweet of each year and skips empty years', () => {
+  const months = timelineMonths([
+    { month: '2023-12', total: 2, unread: 0, newestSlug: 't-2023-12' },
+    { month: '2025-02', total: 1, unread: 1, newestSlug: 't-2025-02' },
+    { month: '2025-06', total: 3, unread: 2, newestSlug: 't-2025-06' },
+  ])
+
+  expect(yearJumps(months)).toEqual([
+    { year: '2025', newestSlug: 't-2025-06', total: 4, unread: 3 },
+    { year: '2023', newestSlug: 't-2023-12', total: 2, unread: 0 },
+  ])
+})
+
+test('names a month without its year', () => {
+  expect(monthShort('2026-09')).toBe('Sep')
 })

@@ -5,12 +5,11 @@
   import ReadModeToggle from '@/lib/components/tweet/ReadModeToggle.svelte'
   import ReplyForm from '@/lib/components/tweet/ReplyForm.svelte'
   import ReplyList from '@/lib/components/tweet/ReplyList.svelte'
-  import TimelineColumn from '@/lib/components/tweet/TimelineColumn.svelte'
   import TweetCard from '@/lib/components/tweet/TweetCard.svelte'
   import TweetNavigator from '@/lib/components/tweet/TweetNavigator.svelte'
   import TweetPreview from '@/lib/components/tweet/TweetPreview.svelte'
   import TweetShortcuts from '@/lib/components/tweet/TweetShortcuts.svelte'
-  import TweetTimeline from '@/lib/components/tweet/TweetTimeline.svelte'
+  import TweetWayfinder from '@/lib/components/tweet/TweetWayfinder.svelte'
   import { tweetLinks } from '@/lib/components/tweet/tweet-links'
 
   import type { PageProps } from './$types'
@@ -65,8 +64,12 @@
   class="mx-auto max-w-6xl px-4 py-8 lg:grid lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start lg:gap-12"
 >
   <div class="min-w-0">
+    <TweetWayfinder
+      timeline={neighbours?.timeline ?? null}
+      at={post.createdAt}
+      unreadCount={neighbours?.unreadCount ?? null}
+    />
     <div class="mb-6 space-y-3 lg:hidden">
-      <TweetTimeline timeline={neighbours?.timeline ?? null} at={post.createdAt} />
       <TweetNavigator newer={links.newer} older={links.older} {hasUnread} />
       {@render readModeRow()}
     </div>
@@ -105,12 +108,9 @@
   </div>
 
   <aside class="hidden lg:block" aria-label="Where you are">
-    <div
-      class="sticky top-6 max-h-[calc(100vh-7rem)] space-y-5 overflow-y-auto pb-4 pl-2 scrollbar-hide"
-    >
+    <div class="sticky top-6 space-y-5 pl-2">
       <TweetNavigator newer={links.newer} older={links.older} {hasUnread} />
       {@render readModeRow()}
-      <TimelineColumn timeline={neighbours?.timeline ?? null} at={post.createdAt} />
     </div>
   </aside>
 </div>
