@@ -1,3 +1,10 @@
+## [2.100.1](https://github.com/guidefari/gbfm/compare/v2.100.0...v2.100.1) (2026-09-26)
+
+
+### Bug Fixes
+
+* **db:** canonicalize legacy audio URLs ([#353](https://github.com/guidefari/gbfm/issues/353)) ([3c0947e](https://github.com/guidefari/gbfm/commit/3c0947e9cc2bb52af238e2baf4ce63577e272dfd))
+
 # [2.100.0](https://github.com/guidefari/gbfm/compare/v2.99.0...v2.100.0) (2026-09-24)
 
 
