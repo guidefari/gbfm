@@ -105,7 +105,9 @@
   </div>
 
   <aside class="hidden lg:block" aria-label="Where you are">
-    <div class="sticky top-6 max-h-[calc(100vh-7rem)] space-y-5 overflow-y-auto pb-4 pl-2">
+    <div
+      class="sticky top-6 max-h-[calc(100vh-7rem)] space-y-5 overflow-y-auto pb-4 pl-2 scrollbar-hide"
+    >
       <TweetNavigator newer={links.newer} older={links.older} {hasUnread} />
       {@render readModeRow()}
       <TimelineColumn timeline={neighbours?.timeline ?? null} at={post.createdAt} />
