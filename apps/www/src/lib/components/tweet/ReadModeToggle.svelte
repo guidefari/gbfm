@@ -5,30 +5,40 @@
 
   let { readMode }: { readMode: ReadMode } = $props()
 
-  const options = [
-    { value: 'unread', label: 'Unread' },
-    { value: 'all', label: 'Everything' },
-  ] satisfies ReadonlyArray<{ value: ReadMode; label: string }>
+  let pending = $state<ReadMode | null>(null)
+
+  const skipping = $derived((pending ?? readMode) === 'unread')
 </script>
 
 <form
   method="POST"
   action="?/readMode"
-  aria-label="Browse"
-  class="inline-flex rounded-sm border border-border p-0.5 text-xs"
-  use:enhance={() =>
-    async ({ update }) => {
+  use:enhance={() => {
+    pending = skipping ? 'all' : 'unread'
+
+    return async ({ update }) => {
       await update({ invalidateAll: false, reset: false })
-    }}
+      pending = null
+    }
+  }}
 >
-  {#each options as option (option.value)}
-    <button
-      name="mode"
-      value={option.value}
-      aria-pressed={readMode === option.value}
-      class="min-h-7 rounded-sm px-2.5 text-muted-foreground transition-colors hover:text-foreground aria-pressed:bg-muted aria-pressed:text-foreground"
+  <input type="hidden" name="mode" value={skipping ? 'all' : 'unread'} />
+  <button
+    role="switch"
+    aria-checked={skipping}
+    class="group flex w-full items-center justify-between gap-3 rounded-sm py-1 text-left text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+  >
+    <span>
+      <span class="block text-foreground">Skip tweets you've seen</span>
+      <span class="block">Newer and Older jump to unread only</span>
+    </span>
+    <span
+      class="relative h-4 w-7 shrink-0 rounded-sm border border-border bg-muted transition-colors group-aria-checked:border-highlight group-aria-checked:bg-highlight"
+      aria-hidden="true"
     >
-      {option.label}
-    </button>
-  {/each}
+      <span
+        class="absolute left-0.5 top-0.5 size-2.5 rounded-[2px] bg-muted-foreground transition-transform group-aria-checked:translate-x-3 group-aria-checked:bg-highlight-foreground"
+      ></span>
+    </span>
+  </button>
 </form>

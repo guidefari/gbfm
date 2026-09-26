@@ -53,13 +53,6 @@
 
 <TweetShortcuts newer={links.newer} older={links.older} randomMessage={form?.random} />
 
-{#snippet readModeRow()}
-  <div class="flex items-center justify-between gap-3 text-xs text-muted-foreground">
-    <span>Browse</span>
-    <ReadModeToggle {readMode} />
-  </div>
-{/snippet}
-
 <div
   class="mx-auto max-w-6xl px-4 py-8 lg:grid lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start lg:gap-12"
 >
@@ -71,7 +64,7 @@
     />
     <div class="mb-6 space-y-3 lg:hidden">
       <TweetNavigator newer={links.newer} older={links.older} {hasUnread} />
-      {@render readModeRow()}
+      <ReadModeToggle {readMode} />
     </div>
 
     {#if data.screen.root.slug !== post.slug}
@@ -110,7 +103,7 @@
   <aside class="hidden lg:block" aria-label="Where you are">
     <div class="sticky top-6 space-y-5 pl-2">
       <TweetNavigator newer={links.newer} older={links.older} {hasUnread} />
-      {@render readModeRow()}
+      <ReadModeToggle {readMode} />
     </div>
   </aside>
 </div>

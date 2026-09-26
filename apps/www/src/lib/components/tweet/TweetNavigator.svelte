@@ -8,35 +8,35 @@
     hasUnread,
   }: { newer: string | null; older: string | null; hasUnread: boolean } = $props()
 
-  const button =
-    'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-sm border border-border px-3 text-sm no-underline transition-colors'
+  const step =
+    'inline-flex h-full flex-1 items-center justify-center gap-1.5 text-sm no-underline transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring'
 
-  const enabled = `${button} text-foreground hover:bg-muted`
+  const live = `${step} text-foreground hover:bg-muted hover:text-highlight`
 
-  const disabled = `${button} cursor-not-allowed text-muted-foreground opacity-40`
+  const dead = `${step} cursor-not-allowed text-muted-foreground/40`
 </script>
 
 <nav aria-label="Tweet navigation" class="flex items-center gap-2">
-  {#if newer}
-    <a href={newer} class="{enabled} flex-1" aria-keyshortcuts="ArrowLeft">
-      <ArrowLeft size={14} /> Newer
-    </a>
-  {:else}
-    <span class="{disabled} flex-1" aria-disabled="true"><ArrowLeft size={14} /> Newer</span>
-  {/if}
-  {#if older}
-    <a href={older} class="{enabled} flex-1" aria-keyshortcuts="ArrowRight">
-      Older <ArrowRight size={14} />
-    </a>
-  {:else}
-    <span class="{disabled} flex-1" aria-disabled="true">Older <ArrowRight size={14} /></span>
-  {/if}
+  <div
+    class="flex h-9 flex-1 divide-x divide-border overflow-hidden rounded-sm border border-border"
+  >
+    {#if newer}
+      <a href={newer} class={live} aria-keyshortcuts="ArrowLeft"><ArrowLeft size={14} /> Newer</a>
+    {:else}
+      <span class={dead} aria-disabled="true"><ArrowLeft size={14} /> Newer</span>
+    {/if}
+    {#if older}
+      <a href={older} class={live} aria-keyshortcuts="ArrowRight">Older <ArrowRight size={14} /></a>
+    {:else}
+      <span class={dead} aria-disabled="true">Older <ArrowRight size={14} /></span>
+    {/if}
+  </div>
   <form method="POST" action="?/random" use:enhance>
     <button
-      class={hasUnread ? enabled : disabled}
       disabled={!hasUnread}
       aria-label="Random unread tweet"
       title="Random unread tweet"
+      class="grid size-9 place-items-center rounded-sm border border-border text-foreground transition-colors hover:bg-muted hover:text-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:text-muted-foreground/40 disabled:hover:bg-transparent"
     >
       <Shuffle size={14} />
     </button>
