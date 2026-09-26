@@ -1,5 +1,9 @@
 import { randomUUID } from 'node:crypto'
 
+import { OtelTracer, Resource } from '@effect/opentelemetry'
+import { trace } from '@opentelemetry/api'
+import { InMemorySpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
+import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
 import { Effect, Layer } from 'effect'
 import { beforeAll, describe, expect, test } from 'vitest'
 
@@ -40,6 +44,72 @@ beforeAll(async () => {
 })
 
 describe('ShowService creators', () => {
+  test('getAll and getAllForEdit trace count, list, and labels under their request spans', async () => {
+    const exporter = new InMemorySpanExporter()
+
+    const provider = new NodeTracerProvider({
+      spanProcessors: [new SimpleSpanProcessor(exporter)],
+    })
+
+    provider.register()
+
+    const tracingLive = OtelTracer.layerGlobal.pipe(
+      Layer.provide(Resource.layer({ serviceName: 'show-service-test' })),
+    )
+
+    try {
+      const results = await Effect.runPromise(
+        withTestLayer(
+          Effect.gen(function* () {
+            const service = yield* ShowService
+
+            return yield* Effect.all([
+              service.getAll({ limit: 5, offset: 0 }),
+              service.getAllForEdit({ limit: 5, offset: 0 }, hostId, 'user'),
+            ])
+          }),
+          Layer.merge(ShowServiceLayer.pipe(Layer.provide(DatabaseTestLayer)), tracingLive),
+        ),
+      )
+
+      await provider.forceFlush()
+
+      const spans = exporter.getFinishedSpans()
+
+      const parents = spans.filter((span) =>
+        ['show.getAll', 'show.getAllForEdit'].includes(span.name),
+      )
+
+      expect(parents).toHaveLength(2)
+
+      for (const parent of parents) {
+        const result = results[parent.name === 'show.getAll' ? 0 : 1]
+
+        expect(parent.attributes).toMatchObject({
+          limit: 5,
+          offset: 0,
+          resultCount: result?.data.length,
+          totalCount: result?.pagination.total,
+        })
+
+        for (const name of ['show.getAll.count', 'show.getAll.list', 'show.getAll.labels']) {
+          expect(
+            spans.filter(
+              (span) =>
+                span.name === name &&
+                span.parentSpanContext?.spanId === parent.spanContext().spanId,
+            ),
+          ).toHaveLength(1)
+        }
+      }
+
+      expect(JSON.stringify(spans.map((span) => span.attributes))).not.toContain(hostId)
+    } finally {
+      await provider.shutdown()
+      trace.disable()
+    }
+  })
+
   test('getAll attaches hosts and getEpisodes attaches episode creators', async () => {
     const service = await getService()
     const slug = `show-${randomUUID()}`

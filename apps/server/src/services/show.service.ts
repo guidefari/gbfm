@@ -102,7 +102,7 @@ const getAllEffect = (
               operation: 'select',
               table: 'shows',
             }),
-        }),
+        }).pipe(Effect.withSpan('show.getAll.count')),
         Effect.tryPromise({
           try: () =>
             db.query.showsTable.findMany({
@@ -122,7 +122,7 @@ const getAllEffect = (
               operation: 'select',
               table: 'shows',
             }),
-        }),
+        }).pipe(Effect.withSpan('show.getAll.list')),
       ],
       { concurrency: 'unbounded' },
     )
@@ -137,7 +137,9 @@ const getAllEffect = (
           operation: 'select',
           table: 'labels',
         }),
-    })
+    }).pipe(Effect.withSpan('show.getAll.labels'))
+
+    yield* Effect.annotateCurrentSpan({ resultCount: shows.length, totalCount: total })
 
     const data = projectedShows.map(({ showCreators: hosts, ...show }) => ({
       ...show,
@@ -596,10 +598,17 @@ export const ShowServiceLayer = Layer.effect(
     const provideDb = Effect.provideService(Database, db)
 
     return {
-      getAll: (options) => provideDb(getAllEffect(options)).pipe(Effect.withSpan('show.getAll')),
+      getAll: (options) =>
+        provideDb(getAllEffect(options)).pipe(
+          Effect.withSpan('show.getAll', {
+            attributes: { limit: options.limit, offset: options.offset },
+          }),
+        ),
       getAllForEdit: (options, userId, userRole) =>
         provideDb(getAllEffect(options, { userId, userRole })).pipe(
-          Effect.withSpan('show.getAllForEdit'),
+          Effect.withSpan('show.getAllForEdit', {
+            attributes: { limit: options.limit, offset: options.offset },
+          }),
         ),
       getBySlug: (slug) =>
         provideDb(getBySlugEffect(slug)).pipe(
