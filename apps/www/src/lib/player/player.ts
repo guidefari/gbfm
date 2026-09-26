@@ -35,6 +35,18 @@ const PlayTrackEvent = Schema.Struct({
   type: Schema.optional(Schema.Literals(['mix', 'track', 'misc'])),
 })
 
+const canonicalAudioUrl = (value: string): string => {
+  try {
+    const url = new URL(value)
+
+    if (url.hostname === 'cdn.dev.goosebumps.fm') url.hostname = 'cdn.goosebumps.fm'
+
+    return url.href
+  } catch {
+    return value
+  }
+}
+
 const VolumeState = Schema.Struct({ volume: Schema.Number, isMuted: Schema.Boolean })
 
 const PositionState = Schema.Struct({ position: Schema.Number })
@@ -81,12 +93,13 @@ export const parsePlayTrackEvent = (value: Schema.Json): QueueTrackType | null =
   const parsed = Option.getOrNull(Schema.decodeUnknownOption(PlayTrackEvent)(value))
 
   if (!parsed || !parsed.url || !parsed.title) return null
+  const url = canonicalAudioUrl(parsed.url)
 
   return {
-    id: parsed.id || parsed.url,
+    id: parsed.id || url,
     title: parsed.title,
     slug: parsed.slug ?? '',
-    url: parsed.url,
+    url,
     thumbnailUrl: parsed.thumbnailUrl ?? parsed.artwork ?? null,
     type: parsed.type ?? 'misc',
   }
@@ -108,7 +121,10 @@ const parseQueue = (raw: string | null): PersistedQueueType => {
     if (new Set(queue.tracks.map((track) => track.id)).size !== queue.tracks.length)
       return emptyQueue
 
-    return queue
+    return {
+      ...queue,
+      tracks: queue.tracks.map((track) => ({ ...track, url: canonicalAudioUrl(track.url) })),
+    }
   } catch {
     return emptyQueue
   }
