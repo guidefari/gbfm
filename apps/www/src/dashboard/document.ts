@@ -1,0 +1,288 @@
+import {
+  AdminOverviewResponse,
+  AdminTelemetryResponse,
+  NewsletterSubscribersResponse,
+} from '@gbfm/api/admin'
+import { GetAudioByTypeResponse } from '@gbfm/api/audio'
+import { EmailLogsResponse } from '@gbfm/api/email'
+import { GetFavoritesResponse } from '@gbfm/api/favorites'
+import { ArtistListResponse, PlaylistListResponse } from '@gbfm/api/music'
+import { GetMusicRemindersResponse } from '@gbfm/api/music-reminders'
+import { GetPostsResponse } from '@gbfm/api/post'
+import { SearchResults } from '@gbfm/api/search'
+import { GetAllShowsResponse } from '@gbfm/api/shows'
+import { UserProfileResponse } from '@gbfm/api/user'
+import { Data, Effect, Schema } from 'effect'
+
+export const Row = Schema.Struct({
+  id: Schema.String,
+  title: Schema.String,
+  detail: Schema.String,
+  href: Schema.NullOr(Schema.String),
+  actionId: Schema.NullOr(Schema.String),
+})
+
+export const DashboardDocument = Schema.Struct({
+  rows: Schema.Array(Row),
+  fields: Schema.Record(Schema.String, Schema.String),
+  toggles: Schema.Record(Schema.String, Schema.Boolean),
+})
+
+export type DashboardDocument = typeof DashboardDocument.Type
+
+export const emptyDocument: DashboardDocument = { rows: [], fields: {}, toggles: {} }
+
+const rowsDocument = (rows: ReadonlyArray<typeof Row.Type>): DashboardDocument => ({
+  ...emptyDocument,
+  rows,
+})
+
+const EmailPreferences = Schema.Struct({
+  mixReleaseEnabled: Schema.Boolean,
+  promotionalEnabled: Schema.Boolean,
+  systemEnabled: Schema.Boolean,
+  globalUnsubscribe: Schema.Boolean,
+})
+
+const AdminUsers = Schema.Struct({
+  users: Schema.Array(
+    Schema.Struct({
+      id: Schema.String,
+      name: Schema.String,
+      email: Schema.String,
+      role: Schema.optional(Schema.NullOr(Schema.String)),
+    }),
+  ),
+  total: Schema.Number,
+})
+
+/** Each endpoint is decoded before its payload enters the dashboard state machine. */
+export const parseDashboardDocument = (
+  path: string,
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- HTTP response parsing boundary; each case decodes its endpoint contract.
+  input: unknown,
+): Effect.Effect<DashboardDocument, Schema.SchemaError | UnsupportedDashboardEndpoint> => {
+  const pathname = new URL(path, 'http://localhost').pathname
+
+  switch (pathname) {
+    case '/auth/admin/list-users':
+      return Schema.decodeUnknownEffect(AdminUsers)(input).pipe(
+        Effect.map(({ users }) =>
+          rowsDocument(
+            users.map((user) => ({
+              id: user.id,
+              title: user.name,
+              detail: `${user.email} · ${user.role ?? 'user'}`,
+              href: null,
+              actionId: user.id,
+            })),
+          ),
+        ),
+      )
+    case '/api/content/posts/manage':
+      return Schema.decodeUnknownEffect(GetPostsResponse)(input).pipe(
+        Effect.map(({ data }) =>
+          rowsDocument(
+            data.map((post) => ({
+              id: post.id,
+              title: post.title ?? post.content?.slice(0, 80) ?? post.slug,
+              detail: post.draft ? 'Draft' : 'Published',
+              href: `/new/${post.type === 'micro' ? 'tweet' : 'editorial'}?edit=${encodeURIComponent(post.slug)}`,
+              actionId: post.id,
+            })),
+          ),
+        ),
+      )
+    case '/api/search':
+      return Schema.decodeUnknownEffect(SearchResults)(input).pipe(
+        Effect.map(({ shows, audio, posts }) =>
+          rowsDocument([
+            ...shows.map((item) => ({
+              id: item.id,
+              title: item.title ?? item.slug,
+              detail: 'Show',
+              href: `/shows/${encodeURIComponent(item.slug)}`,
+              actionId: null,
+            })),
+            ...audio.map((item) => ({
+              id: item.id,
+              title: item.title ?? item.slug,
+              detail: item.type,
+              href: `/mixes/${encodeURIComponent(item.slug)}`,
+              actionId: null,
+            })),
+            ...posts.map((item) => ({
+              id: item.id,
+              title: item.title ?? item.slug,
+              detail: item.type,
+              href: `/${item.type === 'micro' ? 'tweet' : 'editorial'}/${encodeURIComponent(item.slug)}`,
+              actionId: null,
+            })),
+          ]),
+        ),
+      )
+    case '/api/user/profile':
+      return Schema.decodeUnknownEffect(UserProfileResponse)(input).pipe(
+        Effect.map(({ username, email, bio }) => ({
+          ...emptyDocument,
+          fields: { username: username ?? '', email, bio: bio ?? '' },
+        })),
+      )
+    case '/api/user/email-preferences':
+      return Schema.decodeUnknownEffect(EmailPreferences)(input).pipe(
+        Effect.map((toggles) => ({ ...emptyDocument, toggles })),
+      )
+    case '/api/favorites':
+      return Schema.decodeUnknownEffect(GetFavoritesResponse)(input).pipe(
+        Effect.map(({ favorites }) =>
+          rowsDocument(
+            favorites.map((favorite) => {
+              const content = favorite.audio ?? favorite.show
+
+              return {
+                id: favorite.id,
+                title: content?.title ?? 'Unavailable content',
+                detail: favorite.audio?.type ?? 'show',
+                href: content
+                  ? `/${favorite.audio ? 'mixes' : 'shows'}/${encodeURIComponent(content.slug)}`
+                  : null,
+                actionId: favorite.audioId ?? (favorite.showId ? `show/${favorite.showId}` : null),
+              }
+            }),
+          ),
+        ),
+      )
+    case '/api/music-reminders':
+      return Schema.decodeUnknownEffect(GetMusicRemindersResponse)(input).pipe(
+        Effect.map(({ reminders }) =>
+          rowsDocument(
+            reminders.map((item) => ({
+              id: item.id,
+              title: item.musicTitle,
+              detail: item.artistName,
+              href: item.musicUrl,
+              actionId: item.id,
+            })),
+          ),
+        ),
+      )
+    case '/api/shows':
+      return Schema.decodeUnknownEffect(GetAllShowsResponse)(input).pipe(
+        Effect.map(({ data }) =>
+          rowsDocument(
+            data.map((item) => ({
+              id: item.id,
+              title: item.title,
+              detail: item.draft ? 'Draft' : 'Published',
+              href: `/shows/${encodeURIComponent(item.slug)}`,
+              actionId: null,
+            })),
+          ),
+        ),
+      )
+    case '/api/content/audio/mix/manage':
+      return Schema.decodeUnknownEffect(GetAudioByTypeResponse)(input).pipe(
+        Effect.map(({ data }) =>
+          rowsDocument(
+            data.map((item) => ({
+              id: item.id,
+              title: item.title,
+              detail: item.draft ? 'Draft' : 'Published',
+              href: `/new/mix?edit=${encodeURIComponent(item.slug)}`,
+              actionId: null,
+            })),
+          ),
+        ),
+      )
+    case '/api/music/artists':
+      return Schema.decodeUnknownEffect(ArtistListResponse)(input).pipe(
+        Effect.map((items) =>
+          rowsDocument(
+            items.map((item) => ({
+              id: item.id,
+              title: item.name,
+              detail: item.slug,
+              href: null,
+              actionId: null,
+            })),
+          ),
+        ),
+      )
+    case '/api/music/playlists':
+      return Schema.decodeUnknownEffect(PlaylistListResponse)(input).pipe(
+        Effect.map((items) =>
+          rowsDocument(
+            items.map((item) => ({
+              id: item.id,
+              title: item.title,
+              detail: item.description ?? '',
+              href: null,
+              actionId: null,
+            })),
+          ),
+        ),
+      )
+    case '/api/email/logs':
+      return Schema.decodeUnknownEffect(EmailLogsResponse)(input).pipe(
+        Effect.map(({ data }) =>
+          rowsDocument(
+            data.map((item) => ({
+              id: item.id,
+              title: item.subject,
+              detail: `${item.status} · ${item.recipientEmail}`,
+              href: null,
+              actionId: null,
+            })),
+          ),
+        ),
+      )
+    case '/api/admin/newsletter-subscribers':
+      return Schema.decodeUnknownEffect(NewsletterSubscribersResponse)(input).pipe(
+        Effect.map(({ subscribers }) =>
+          rowsDocument(
+            subscribers.map((item) => ({
+              id: item.id,
+              title: item.email,
+              detail: item.unsubscribedAt ? 'Unsubscribed' : 'Subscribed',
+              href: null,
+              actionId: null,
+            })),
+          ),
+        ),
+      )
+    case '/api/admin/overview':
+      return Schema.decodeUnknownEffect(AdminOverviewResponse)(input).pipe(
+        Effect.map(({ highlights }) =>
+          rowsDocument(
+            Object.entries(highlights).map(([name, value]) => ({
+              id: name,
+              title: name,
+              detail: String(value),
+              href: null,
+              actionId: null,
+            })),
+          ),
+        ),
+      )
+    case '/api/admin/telemetry':
+      return Schema.decodeUnknownEffect(AdminTelemetryResponse)(input).pipe(
+        Effect.map(({ sections }) =>
+          rowsDocument(
+            Object.entries(sections).flatMap(([section, value]) =>
+              value.rows.map((row, index) => ({
+                id: `${section}:${index}`,
+                title: `${section} · ${row.name}`,
+                detail: `${row.route} · ${row.samples} samples · p75 ${row.p75 ?? 'unavailable'}`,
+                href: null,
+                actionId: null,
+              })),
+            ),
+          ),
+        ),
+      )
+    default:
+      return Effect.fail(new UnsupportedDashboardEndpoint())
+  }
+}
+
+class UnsupportedDashboardEndpoint extends Data.TaggedError('UnsupportedDashboardEndpoint') {}

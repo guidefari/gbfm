@@ -1,5 +1,6 @@
 import { Music, Radio, Search, User } from 'lucide-react'
 import { useState } from 'react'
+
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './accordion'
 import { Badge } from './badge'
 import {
@@ -8,7 +9,7 @@ import {
   BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
-  BreadcrumbSeparator
+  BreadcrumbSeparator,
 } from './breadcrumb'
 import { Button } from './button'
 import { Card, CardContent, CardHeader, CardTitle } from './card'
@@ -33,14 +34,14 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tool
 import { UploadProgress } from './upload-progress'
 
 export default {
-  title: '@gbfm/ui/Start here/Kitchen sink'
+  title: '@gbfm/ui/Start here/Kitchen sink',
 }
 
 const tiles = [
   { id: 'mixes', label: 'Mixes', icon: Music, onSelect: () => {} },
   { id: 'radio', label: 'Radio', icon: Radio, onSelect: () => {} },
   { id: 'profile', label: 'Profile', icon: User, onSelect: () => {} },
-  { id: 'search', label: 'Search', icon: Search, onSelect: () => {} }
+  { id: 'search', label: 'Search', icon: Search, onSelect: () => {} },
 ]
 
 export function KitchenSink() {
@@ -84,7 +85,7 @@ export function KitchenSink() {
       </Section>
 
       <Section title='Quick Nav'>
-        <IconGrid tiles={tiles} onTileSelect={(t) => console.log(t.id)} isAuthenticated={true} />
+        <IconGrid tiles={tiles} onTileSelect={() => undefined} isAuthenticated={true} />
       </Section>
 
       <Section title='Media Cards'>

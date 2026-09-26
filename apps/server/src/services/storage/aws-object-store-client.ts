@@ -10,24 +10,27 @@ import {
   PutObjectCommand,
   S3Client,
   UploadPartCommand,
-  type CompletedPart
+  type CompletedPart,
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { Effect, Layer, Option, Schema } from 'effect'
+
 import { ConfigService } from '@/services/config.service'
+
 import {
   ObjectStoreClient,
-  type ObjectStoreClient as ObjectStoreClientType
+  type ObjectStoreClient as ObjectStoreClientType,
 } from './object-store-client'
 import { StorageProvider } from './provider'
 
 const AwsFailure = Schema.Struct({
   name: Schema.String,
-  $metadata: Schema.optional(Schema.Struct({ httpStatusCode: Schema.optional(Schema.Number) }))
+  $metadata: Schema.optional(Schema.Struct({ httpStatusCode: Schema.optional(Schema.Number) })),
 })
 
 const isNotFoundError = (cause: unknown) => {
   const failure = Option.getOrUndefined(Schema.decodeUnknownOption(AwsFailure)(cause))
+
   return (
     failure !== undefined &&
     (failure.name === 'NotFound' ||
@@ -46,13 +49,14 @@ export const AwsObjectStoreClientLayer = Layer.effect(
   ObjectStoreClient,
   Effect.gen(function* () {
     const config = yield* ConfigService
+
     if (config.storage.provider !== StorageProvider.aws) {
       return yield* Effect.die(new Error('AWS object storage requires the aws provider'))
     }
 
     const client = yield* Effect.acquireRelease(
       Effect.sync(() => new S3Client({})),
-      destroyClient
+      destroyClient,
     )
 
     return {
@@ -63,15 +67,15 @@ export const AwsObjectStoreClientLayer = Layer.effect(
             Bucket: bucketName,
             Key: key,
             Body: body,
-            ContentType: contentType
-          })
+            ContentType: contentType,
+          }),
         )
       },
       presignPutObject: ({ bucketName, key, contentType, expiresInSeconds }) =>
         getSignedUrl(
           client,
           new PutObjectCommand({ Bucket: bucketName, Key: key, ContentType: contentType }),
-          { expiresIn: expiresInSeconds }
+          { expiresIn: expiresInSeconds },
         ),
       deleteObject: async (bucketName, key) => {
         await client.send(new DeleteObjectCommand({ Bucket: bucketName, Key: key }))
@@ -79,8 +83,9 @@ export const AwsObjectStoreClientLayer = Layer.effect(
       headObject: async (bucketName, key) => {
         try {
           const response = await client.send(
-            new HeadObjectCommand({ Bucket: bucketName, Key: key })
+            new HeadObjectCommand({ Bucket: bucketName, Key: key }),
           )
+
           return { size: response.ContentLength ?? 0, metadata: response.Metadata ?? {} }
         } catch (error) {
           if (isNotFoundError(error)) return null
@@ -96,15 +101,16 @@ export const AwsObjectStoreClientLayer = Layer.effect(
             new ListObjectsV2Command({
               Bucket: bucketName,
               Prefix: prefix || undefined,
-              ContinuationToken: continuationToken
-            })
+              ContinuationToken: continuationToken,
+            }),
           )
+
           objects.push(
             ...(response.Contents ?? []).flatMap((object) =>
               object.Key && object.LastModified
                 ? [{ key: object.Key, lastModified: object.LastModified, size: object.Size ?? 0 }]
-                : []
-            )
+                : [],
+            ),
           )
           continuationToken = response.IsTruncated ? response.NextContinuationToken : undefined
         } while (continuationToken)
@@ -113,6 +119,7 @@ export const AwsObjectStoreClientLayer = Layer.effect(
       },
       listBuckets: async () => {
         const response = await client.send(new ListBucketsCommand({}))
+
         return (response.Buckets ?? []).flatMap((bucket) => (bucket.Name ? [bucket.Name] : []))
       },
       createMultipartUpload: async ({ bucketName, key, contentType, expectedSize }) => {
@@ -121,10 +128,12 @@ export const AwsObjectStoreClientLayer = Layer.effect(
             Bucket: bucketName,
             Key: key,
             ContentType: contentType,
-            Metadata: { 'expected-size': String(expectedSize) }
-          })
+            Metadata: { 'expected-size': String(expectedSize) },
+          }),
         )
+
         if (!response.UploadId) throw new Error('S3 did not return an UploadId')
+
         return response.UploadId
       },
       presignUploadPart: ({ bucketName, key, uploadId, partNumber, expiresInSeconds }) =>
@@ -134,26 +143,27 @@ export const AwsObjectStoreClientLayer = Layer.effect(
             Bucket: bucketName,
             Key: key,
             UploadId: uploadId,
-            PartNumber: partNumber
+            PartNumber: partNumber,
           }),
-          { expiresIn: expiresInSeconds }
+          { expiresIn: expiresInSeconds },
         ),
       completeMultipartUpload: async ({ bucketName, key, uploadId, parts }) => {
-        const sortedParts: CompletedPart[] = parts
+        const sortedParts: Array<CompletedPart> = parts
           .toSorted((left, right) => left.partNumber - right.partNumber)
           .map((part) => ({ ETag: part.etag, PartNumber: part.partNumber }))
+
         await client.send(
           new CompleteMultipartUploadCommand({
             Bucket: bucketName,
             Key: key,
             UploadId: uploadId,
-            MultipartUpload: { Parts: sortedParts }
-          })
+            MultipartUpload: { Parts: sortedParts },
+          }),
         )
       },
       abortMultipartUpload: async (bucketName, key, uploadId) => {
         await client.send(
-          new AbortMultipartUploadCommand({ Bucket: bucketName, Key: key, UploadId: uploadId })
+          new AbortMultipartUploadCommand({ Bucket: bucketName, Key: key, UploadId: uploadId }),
         )
       },
       listMultipartParts: async (bucketName, key, uploadId) => {
@@ -166,15 +176,16 @@ export const AwsObjectStoreClientLayer = Layer.effect(
               Bucket: bucketName,
               Key: key,
               UploadId: uploadId,
-              PartNumberMarker: partNumberMarker
-            })
+              PartNumberMarker: partNumberMarker,
+            }),
           )
+
           parts.push(
             ...(response.Parts ?? []).flatMap((part) =>
               part.PartNumber && part.ETag
                 ? [{ partNumber: part.PartNumber, etag: part.ETag, size: part.Size ?? 0 }]
-                : []
-            )
+                : [],
+            ),
           )
           partNumberMarker =
             response.IsTruncated && response.NextPartNumberMarker
@@ -183,7 +194,7 @@ export const AwsObjectStoreClientLayer = Layer.effect(
         } while (partNumberMarker)
 
         return parts.toSorted((left, right) => left.partNumber - right.partNumber)
-      }
+      },
     } satisfies ObjectStoreClientType
-  })
+  }),
 )

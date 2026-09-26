@@ -13,7 +13,7 @@ describe('canonical audio URL migration', () => {
         .prepare(
           `INSERT INTO audio (
             id, title, slug, createdAt, updatedAt, content, type, url
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .bind(
           'legacy-mix',
@@ -23,13 +23,13 @@ describe('canonical audio URL migration', () => {
           0,
           '',
           'mix',
-          'https://cdn.dev.goosebumps.fm/user-content/legacy.mp3'
+          'https://cdn.dev.goosebumps.fm/user-content/legacy.mp3',
         ),
       d1
         .prepare(
           `INSERT INTO audio (
             id, title, slug, createdAt, updatedAt, content, type, url
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .bind(
           'external-mix',
@@ -39,8 +39,8 @@ describe('canonical audio URL migration', () => {
           0,
           '',
           'mix',
-          'https://audio.example.com/external.mp3'
-        )
+          'https://audio.example.com/external.mp3',
+        ),
     ])
 
     await applyD1Migrations(d1, ['0008_canonical_audio_urls.sql'])
@@ -51,7 +51,7 @@ describe('canonical audio URL migration', () => {
 
     expect(result.results).toEqual([
       { id: 'external-mix', url: 'https://audio.example.com/external.mp3' },
-      { id: 'legacy-mix', url: 'https://cdn.goosebumps.fm/user-content/legacy.mp3' }
+      { id: 'legacy-mix', url: 'https://cdn.goosebumps.fm/user-content/legacy.mp3' },
     ])
   })
 })

@@ -9,8 +9,9 @@ import {
   Platform,
   Pressable,
   Text,
-  View
+  View,
 } from 'react-native'
+
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
 import { useThemeColors } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
@@ -19,17 +20,18 @@ const textColor =
   Platform.OS === 'ios'
     ? DynamicColorIOS({ dark: brandDark.overlayText, light: brandDark.bg })
     : brandDark.overlayText
+
 const symbols = {
   previous: { ios: 'backward.fill', android: 'skip_previous', web: 'skip_previous' },
   play: { ios: 'play.fill', android: 'play_arrow', web: 'play_arrow' },
   pause: { ios: 'pause.fill', android: 'pause', web: 'pause' },
-  next: { ios: 'forward.fill', android: 'skip_next', web: 'skip_next' }
+  next: { ios: 'forward.fill', android: 'skip_next', web: 'skip_next' },
 } as const
 
 function Artwork({
   url,
   size,
-  colors
+  colors,
 }: {
   url: string | null | undefined
   size: number
@@ -42,11 +44,12 @@ function Artwork({
           width: size,
           height: size,
           borderRadius: 4,
-          backgroundColor: colors.accentSurface
+          backgroundColor: colors.accentSurface,
         }}
       />
     )
   }
+
   return (
     <Image
       source={{ uri: url }}
@@ -67,8 +70,9 @@ export function MiniPlayerBar() {
     isLoaded,
     skipNext,
     skipPrevious,
-    queue
+    queue,
   } = useNowPlaying()
+
   const router = useRouter()
   const colors = useThemeColors()
   const placement = NativeTabs.BottomAccessory.usePlacement()
@@ -89,7 +93,7 @@ export function MiniPlayerBar() {
           flexDirection: 'row',
           alignItems: 'center',
           gap: 8,
-          paddingHorizontal: 10
+          paddingHorizontal: 10,
         }}>
         <Pressable
           accessibilityRole='button'
@@ -114,7 +118,7 @@ export function MiniPlayerBar() {
             height: 28,
             alignItems: 'center',
             justifyContent: 'center',
-            opacity: canSkipPrev ? 1 : 0.4
+            opacity: canSkipPrev ? 1 : 0.4,
           }}>
           <SymbolView name={symbols.previous} size={14} tintColor={textColor} />
         </Pressable>
@@ -141,7 +145,7 @@ export function MiniPlayerBar() {
             height: 28,
             alignItems: 'center',
             justifyContent: 'center',
-            opacity: canSkipNext ? 1 : 0.4
+            opacity: canSkipNext ? 1 : 0.4,
           }}>
           <SymbolView name={symbols.next} size={14} tintColor={textColor} />
         </Pressable>
@@ -160,7 +164,7 @@ export function MiniPlayerBar() {
           flexDirection: 'row',
           alignItems: 'center',
           gap: 12,
-          paddingHorizontal: 12
+          paddingHorizontal: 12,
         }}>
         <Pressable
           accessibilityRole='button'
@@ -194,7 +198,7 @@ export function MiniPlayerBar() {
             height: 32,
             alignItems: 'center',
             justifyContent: 'center',
-            opacity: canSkipPrev ? 1 : 0.4
+            opacity: canSkipPrev ? 1 : 0.4,
           }}>
           <SymbolView name={symbols.previous} size={16} tintColor={textColor} />
         </Pressable>
@@ -221,7 +225,7 @@ export function MiniPlayerBar() {
             height: 32,
             alignItems: 'center',
             justifyContent: 'center',
-            opacity: canSkipNext ? 1 : 0.4
+            opacity: canSkipNext ? 1 : 0.4,
           }}>
           <SymbolView name={symbols.next} size={16} tintColor={textColor} />
         </Pressable>
@@ -240,9 +244,9 @@ export function MiniPlayerBar() {
               Platform.OS === 'ios'
                 ? DynamicColorIOS({
                     dark: brandDark.faintOverlayText,
-                    light: colors.faintOverlayText
+                    light: colors.faintOverlayText,
                   })
-                : colors.faintOverlayText
+                : colors.faintOverlayText,
           }}>
           <View style={{ height: '100%', width: `${progress * 100}%`, backgroundColor: accent }} />
         </View>

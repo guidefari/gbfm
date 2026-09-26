@@ -10,6 +10,8 @@
     "exactOptionalPropertyTypes": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "noUncheckedSideEffectImports": true,
     "noFallthroughCasesInSwitch": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -18,6 +20,7 @@
     "skipLibCheck": true,
     "noEmit": true,
     "jsx": "react-jsx",
+    "plugins": [{ "name": "@effect/language-service", "diagnostics": true }],
     "types": ["@cloudflare/workers-types", "@types/bun"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"]

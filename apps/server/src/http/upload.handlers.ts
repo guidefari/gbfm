@@ -3,6 +3,7 @@ import { FileTooLargeError } from '@gbfm/api/errors'
 import { AuthSession } from '@gbfm/api/middleware/auth'
 import { Effect } from 'effect'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
+
 import { dieOnS3Error as makeDieOnS3Error } from '@/http/handler-utils'
 import { ConfigService } from '@/services/config.service'
 import { S3Service } from '@/services/s3.service'
@@ -11,7 +12,9 @@ import { UploadAssetService } from '@/services/upload-asset.service'
 const dieOnS3Error = makeDieOnS3Error('upload')
 
 const CHUNK_SIZE = 8 * 1024 * 1024
+
 const MAX_AUDIO_SIZE = 200 * 1024 * 1024
+
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024
 
 // Long enough to cover an 8 MiB part PUT over a genuinely slow upload
@@ -40,14 +43,16 @@ const buildObjectKey = (
   userId: string,
   fileType: string,
   fileName: string,
-  expectedSize: number
+  expectedSize: number,
 ): string => {
   const sanitizedName = sanitizeKeySegment(fileName)
+
   return `${sanitizeKeySegment(userId)}/multipart/${crypto.randomUUID()}/${expectedSize}/${fileType}_${sanitizedName}`
 }
 
 const buildImageObjectKey = (userId: string, fileName: string): string => {
   const sanitizedName = sanitizeKeySegment(fileName)
+
   return `${sanitizeKeySegment(userId)}/image/${crypto.randomUUID()}/${sanitizedName}`
 }
 
@@ -60,8 +65,8 @@ const recordAssetLifecycle = <A>(effect: Effect.Effect<A, { readonly _tag: 'Data
   effect.pipe(
     Effect.asVoid,
     Effect.catchTag('DatabaseError', (cause) =>
-      Effect.logError('[upload] failed to record upload_assets lifecycle state', cause)
-    )
+      Effect.logError('[upload] failed to record upload_assets lifecycle state', cause),
+    ),
   )
 
 export const assertKeyOwnership = (userId: string, key: string) =>
@@ -69,29 +74,36 @@ export const assertKeyOwnership = (userId: string, key: string) =>
 
 export const assertContiguousParts = (parts: ReadonlyArray<{ partNumber: number }>) => {
   const sorted = parts.toSorted((a, b) => a.partNumber - b.partNumber)
+
   for (const [index, part] of sorted.entries()) {
     if (part.partNumber !== index + 1) {
       return new HttpApiError.BadRequest()
     }
   }
+
   return null
 }
 
 export const expectedMultipartPartSize = (expectedSize: number, partNumber: number) => {
   const partCount = Math.ceil(expectedSize / CHUNK_SIZE)
+
   if (partNumber < 1 || partNumber > partCount) return null
+
   if (partNumber < partCount) return CHUNK_SIZE
+
   return expectedSize - CHUNK_SIZE * (partCount - 1)
 }
 
 export const validateMultipartParts = (
   expectedSize: number,
-  parts: ReadonlyArray<{ partNumber: number; size: number }>
+  parts: ReadonlyArray<{ partNumber: number; size: number }>,
 ) => {
   if (parts.length !== Math.ceil(expectedSize / CHUNK_SIZE)) {
     return new HttpApiError.BadRequest()
   }
+
   const contiguityError = assertContiguousParts(parts)
+
   if (contiguityError) return contiguityError
 
   for (const part of parts) {
@@ -99,20 +111,24 @@ export const validateMultipartParts = (
       return new HttpApiError.BadRequest()
     }
   }
+
   return null
 }
 
 export const matchesCompletedObject = (
   expectedSize: number,
-  object: { readonly size: number; readonly metadata: Readonly<Record<string, string>> } | null
+  object: { readonly size: number; readonly metadata: Readonly<Record<string, string>> } | null,
 ) => object?.size === expectedSize && object.metadata['expected-size'] === String(expectedSize)
 
 const expectedSizeFromKey = (userId: string, key: string) => {
   const prefix = `${sanitizeKeySegment(userId)}/multipart/`
+
   if (!key.startsWith(prefix)) return null
   const segments = key.slice(prefix.length).split('/')
+
   if (segments.length !== 3 || !/^[0-9a-f-]{36}$/i.test(segments[0] ?? '')) return null
   const expectedSize = Number(segments[1])
+
   return Number.isSafeInteger(expectedSize) && expectedSize > 0 && expectedSize <= MAX_AUDIO_SIZE
     ? expectedSize
     : null
@@ -120,6 +136,7 @@ const expectedSizeFromKey = (userId: string, key: string) => {
 
 const requireExpectedSize = (userId: string, key: string) => {
   const expectedSize = expectedSizeFromKey(userId, key)
+
   return expectedSize === null
     ? Effect.fail(new HttpApiError.BadRequest())
     : Effect.succeed(expectedSize)
@@ -154,7 +171,7 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
         if (payload.fileSize > MAX_IMAGE_SIZE) {
           return yield* new FileTooLargeError({
             message: `File too large. Maximum size is ${MAX_IMAGE_SIZE / (1024 * 1024)}MB`,
-            maxBytes: MAX_IMAGE_SIZE
+            maxBytes: MAX_IMAGE_SIZE,
           })
         }
 
@@ -162,13 +179,14 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
 
         const config = yield* ConfigService
         const s3Service = yield* S3Service
+
         const uploadUrl = yield* dieOnS3Error(
           s3Service.presignPutObject(
             key,
             payload.contentType,
             config.buckets.userContent,
-            PRESIGNED_IMAGE_URL_EXPIRY_SECONDS
-          )
+            PRESIGNED_IMAGE_URL_EXPIRY_SECONDS,
+          ),
         )
 
         const uploadAssetService = yield* UploadAssetService
@@ -179,21 +197,21 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
             bucket: config.buckets.userContent,
             assetType: 'image',
             expectedSize: payload.fileSize,
-            expiresInSeconds: PENDING_ASSET_EXPIRY_SECONDS
-          })
+            expiresInSeconds: PENDING_ASSET_EXPIRY_SECONDS,
+          }),
         )
 
         return {
           uploadUrl,
           publicUrl: `${config.urls.bucketRouter}/user-content/${key}`,
           key,
-          expiresInSeconds: PRESIGNED_IMAGE_URL_EXPIRY_SECONDS
+          expiresInSeconds: PRESIGNED_IMAGE_URL_EXPIRY_SECONDS,
         }
       }).pipe(
         Effect.withSpan('api.upload.image.presign', {
-          attributes: { fileSize: payload.fileSize }
-        })
-      )
+          attributes: { fileSize: payload.fileSize },
+        }),
+      ),
     )
     .handle('initMultipartUpload', ({ payload }) =>
       Effect.gen(function* () {
@@ -202,7 +220,7 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
         if (payload.fileSize > MAX_AUDIO_SIZE) {
           return yield* new FileTooLargeError({
             message: `File too large. Maximum size is ${MAX_AUDIO_SIZE / (1024 * 1024)}MB`,
-            maxBytes: MAX_AUDIO_SIZE
+            maxBytes: MAX_AUDIO_SIZE,
           })
         }
 
@@ -210,13 +228,14 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
 
         const config = yield* ConfigService
         const s3Service = yield* S3Service
+
         const upload = yield* dieOnS3Error(
           s3Service.createMultipartUpload(
             key,
             payload.contentType,
             payload.fileSize,
-            config.buckets.userContent
-          )
+            config.buckets.userContent,
+          ),
         )
 
         const uploadAssetService = yield* UploadAssetService
@@ -228,16 +247,16 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
             assetType: 'audio',
             uploadId: upload.uploadId,
             expectedSize: payload.fileSize,
-            expiresInSeconds: PENDING_ASSET_EXPIRY_SECONDS
-          })
+            expiresInSeconds: PENDING_ASSET_EXPIRY_SECONDS,
+          }),
         )
 
         return { uploadId: upload.uploadId, key: upload.key, chunkSize: CHUNK_SIZE }
       }).pipe(
         Effect.withSpan('api.upload.multipart.init', {
-          attributes: { fileType: payload.fileType, fileSize: payload.fileSize }
-        })
-      )
+          attributes: { fileType: payload.fileType, fileSize: payload.fileSize },
+        }),
+      ),
     )
     .handle('presignMultipartPart', ({ payload }) =>
       Effect.gen(function* () {
@@ -246,6 +265,7 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
 
         yield* assertKeyOwnership(user.id, key)
         const expectedSize = yield* requireExpectedSize(user.id, key)
+
         // Only partNumber is checked here -- actual byte size can't be
         // validated at presign time since the client hasn't PUT the bytes
         // to S3 yet (this just mints the URL). A client can still push an
@@ -262,26 +282,27 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
 
         const config = yield* ConfigService
         const s3Service = yield* S3Service
+
         const url = yield* dieOnS3Error(
           s3Service.presignUploadPart(
             key,
             uploadId,
             partNumber,
             config.buckets.userContent,
-            PRESIGNED_PART_URL_EXPIRY_SECONDS
-          )
+            PRESIGNED_PART_URL_EXPIRY_SECONDS,
+          ),
         )
 
         return {
           url,
           partNumber,
-          expiresInSeconds: PRESIGNED_PART_URL_EXPIRY_SECONDS
+          expiresInSeconds: PRESIGNED_PART_URL_EXPIRY_SECONDS,
         }
       }).pipe(
         Effect.withSpan('api.upload.multipart.presignPart', {
-          attributes: { partNumber: payload.partNumber }
-        })
-      )
+          attributes: { partNumber: payload.partNumber },
+        }),
+      ),
     )
     .handle('completeMultipartUpload', ({ payload }) =>
       Effect.gen(function* () {
@@ -296,23 +317,29 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
         const uploadAssetService = yield* UploadAssetService
 
         const existing = yield* dieOnS3Error(
-          s3Service.getObjectMetadata(key, config.buckets.userContent)
+          s3Service.getObjectMetadata(key, config.buckets.userContent),
         )
+
         if (existing) {
           if (!matchesCompletedObject(expectedSize, existing)) {
             return yield* new HttpApiError.BadRequest()
           }
+
           yield* recordAssetLifecycle(uploadAssetService.markUploaded(key))
+
           return { url: `${config.urls.bucketRouter}/user-content/${key}`, key }
         }
 
         const uploadedParts = yield* dieOnS3Error(
-          s3Service.listMultipartParts(key, uploadId, config.buckets.userContent)
+          s3Service.listMultipartParts(key, uploadId, config.buckets.userContent),
         )
+
         const partsError = validateMultipartParts(expectedSize, uploadedParts)
+
         if (partsError) return yield* partsError
 
         const submittedByPartNumber = new Map(parts.map((part) => [part.partNumber, part.etag]))
+
         if (
           parts.length !== uploadedParts.length ||
           submittedByPartNumber.size !== uploadedParts.length ||
@@ -332,20 +359,20 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
                     Effect.flatMap((object) =>
                       matchesCompletedObject(expectedSize, object)
                         ? Effect.void
-                        : Effect.fail(completionError)
-                    )
-                  )
-              )
-            )
+                        : Effect.fail(completionError),
+                    ),
+                  ),
+              ),
+            ),
         )
         yield* recordAssetLifecycle(uploadAssetService.markUploaded(key))
 
         return { url: `${config.urls.bucketRouter}/user-content/${key}`, key }
       }).pipe(
         Effect.withSpan('api.upload.multipart.complete', {
-          attributes: { key: payload.key, partCount: payload.parts.length }
-        })
-      )
+          attributes: { partCount: payload.parts.length },
+        }),
+      ),
     )
     .handle('abortMultipartUpload', ({ payload }) =>
       Effect.gen(function* () {
@@ -358,11 +385,11 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
         const config = yield* ConfigService
         const s3Service = yield* S3Service
         yield* dieOnS3Error(
-          s3Service.abortMultipartUpload(key, uploadId, config.buckets.userContent)
+          s3Service.abortMultipartUpload(key, uploadId, config.buckets.userContent),
         )
 
         return { ok: true as const }
-      }).pipe(Effect.withSpan('api.upload.multipart.abort', { attributes: { key: payload.key } }))
+      }).pipe(Effect.withSpan('api.upload.multipart.abort')),
     )
     .handle('multipartUploadStatus', ({ query }) =>
       Effect.gen(function* () {
@@ -374,11 +401,12 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
 
         const config = yield* ConfigService
         const s3Service = yield* S3Service
+
         const parts = yield* dieOnS3Error(
-          s3Service.listMultipartParts(key, uploadId, config.buckets.userContent)
+          s3Service.listMultipartParts(key, uploadId, config.buckets.userContent),
         )
 
         return { parts }
-      }).pipe(Effect.withSpan('api.upload.multipart.status', { attributes: { key: query.key } }))
-    )
+      }).pipe(Effect.withSpan('api.upload.multipart.status')),
+    ),
 )

@@ -1,5 +1,6 @@
 import { Exit, Schema } from 'effect'
 import { describe, expect, it } from 'vitest'
+
 import { AudioResponse, CreateAudioInput } from './audio'
 
 const createInput = {
@@ -7,19 +8,21 @@ const createInput = {
   slug: 'test-mix',
   content: '',
   type: 'mix',
-  url: 'https://example.com/audio.mp3'
+  url: 'https://example.com/audio.mp3',
 } as const
 
 describe('audio API contract', () => {
   it('requires a UUID idempotency key for creates', () => {
     const missing = Schema.decodeUnknownExit(CreateAudioInput)(createInput)
+
     const invalid = Schema.decodeUnknownExit(CreateAudioInput)({
       ...createInput,
-      idempotencyKey: 'not-a-uuid'
+      idempotencyKey: 'not-a-uuid',
     })
+
     const valid = Schema.decodeUnknownExit(CreateAudioInput)({
       ...createInput,
-      idempotencyKey: 'fd501dca-d3f4-4267-a5a8-53d28ac8a7f4'
+      idempotencyKey: 'fd501dca-d3f4-4267-a5a8-53d28ac8a7f4',
     })
 
     expect(Exit.isFailure(missing)).toBe(true)
@@ -46,7 +49,7 @@ describe('audio API contract', () => {
       updatedAt: '2026-07-24T00:00:00.000Z',
       idempotencyKey: 'fd501dca-d3f4-4267-a5a8-53d28ac8a7f4',
       idempotencyActorId: 'actor-1',
-      idempotencyFingerprint: 'private-fingerprint'
+      idempotencyFingerprint: 'private-fingerprint',
     })
 
     expect(decoded).not.toHaveProperty('idempotencyKey')

@@ -1,8 +1,9 @@
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as Output from 'alchemy/Output'
 import * as Effect from 'effect/Effect'
+
 import type { CdnRouter } from './cdn'
-import { workerObservability } from './observability'
+import { privateSourceMaps, workerObservability } from './observability'
 import { localDevPorts, type StageConfig } from './stage'
 import type { Storage } from './storage'
 
@@ -13,17 +14,19 @@ export const qrPdfWorker = (config: StageConfig, store: Storage, cdn: CdnRouter)
       workersDev: false,
       ...(config.isLocalDev ? { dev: { port: localDevPorts.qrPdf, strictPort: true } } : undefined),
       compatibility: { date: '2026-07-04' },
+      build: privateSourceMaps,
       observability: workerObservability(config.isProduction),
       assets: {
         directory: './apps/pdf-generator/assets/fonts',
         runWorkerFirst: true,
         htmlHandling: 'none',
-        notFoundHandling: 'none'
+        notFoundHandling: 'none',
       },
       env: {
+        APP_RELEASE: config.release,
         USER_CONTENT: store.userContent,
-        CDN_ROUTER_URL: Output.map(cdn.url, (url) => url ?? '')
-      }
+        CDN_ROUTER_URL: Output.map(cdn.url, (url) => url ?? ''),
+      },
     })
   })
 

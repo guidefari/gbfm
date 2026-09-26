@@ -1,3 +1,5 @@
+import { omitUndefined } from '@/lib/omit-undefined'
+
 export interface R2SigningConfig {
   readonly accountId: string
   readonly accessKeyId: string
@@ -16,6 +18,7 @@ const encodeString = (value: string) => {
   const encoded = textEncoder.encode(value)
   const buffer = new ArrayBuffer(encoded.byteLength)
   new Uint8Array(buffer).set(encoded)
+
   return buffer
 }
 
@@ -31,15 +34,16 @@ const hmac = async (key: ArrayBuffer, value: string) => {
     key,
     { name: 'HMAC', hash: 'SHA-256' },
     false,
-    ['sign']
+    ['sign'],
   )
+
   return crypto.subtle.sign('HMAC', cryptoKey, encodeString(value))
 }
 
 const encodeRfc3986 = (value: string) =>
   encodeURIComponent(value).replace(
     /[!'()*]/g,
-    (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`
+    (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`,
   )
 
 const encodeKeyPath = (key: string) => key.split('/').map(encodeRfc3986).join('/')
@@ -50,10 +54,11 @@ const signingKey = async (secretAccessKey: string, dateStamp: string) => {
   const dateKey = await hmac(encodeString(`AWS4${secretAccessKey}`), dateStamp)
   const regionKey = await hmac(dateKey, 'auto')
   const serviceKey = await hmac(regionKey, 's3')
+
   return hmac(serviceKey, 'aws4_request')
 }
 
-export const canonicalQuery = (params: readonly [string, string][]) =>
+export const canonicalQuery = (params: ReadonlyArray<[string, string]>) =>
   [...params]
     .map(([key, value]): [string, string] => [encodeRfc3986(key), encodeRfc3986(value)])
     .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
@@ -64,7 +69,7 @@ export const signedRequest = async (input: {
   readonly config: R2SigningConfig
   readonly method: string
   readonly key: string
-  readonly query: readonly [string, string][]
+  readonly query: ReadonlyArray<[string, string]>
   readonly headers?: Readonly<Record<string, string>>
   readonly body?: string
   readonly now?: Date
@@ -75,52 +80,63 @@ export const signedRequest = async (input: {
   const host = `${input.config.accountId}.r2.cloudflarestorage.com`
   const payload = input.body ?? ''
   const payloadHash = await sha256Hex(payload)
+
   const headers = {
     host,
     'x-amz-content-sha256': payloadHash,
     'x-amz-date': amzDate,
-    ...input.headers
+    ...input.headers,
   }
+
   const sortedHeaders = Object.entries(headers)
     .map(([key, value]): [string, string] => [key.toLowerCase(), value])
     .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+
   const signedHeaders = sortedHeaders.map(([key]) => key).join(';')
   const canonicalHeaders = sortedHeaders.map(([key, value]) => `${key}:${value.trim()}\n`).join('')
   const path = `/${input.config.bucketName}/${encodeKeyPath(input.key)}`
   const query = canonicalQuery(input.query)
+
   const canonicalRequest = [
     input.method,
     path,
     query,
     canonicalHeaders,
     signedHeaders,
-    payloadHash
+    payloadHash,
   ].join('\n')
+
   const credentialScope = `${dateStamp}/auto/s3/aws4_request`
+
   const stringToSign = [
     'AWS4-HMAC-SHA256',
     amzDate,
     credentialScope,
-    await sha256Hex(canonicalRequest)
+    await sha256Hex(canonicalRequest),
   ].join('\n')
+
   const signature = toHex(
-    await hmac(await signingKey(input.config.secretAccessKey, dateStamp), stringToSign)
+    await hmac(await signingKey(input.config.secretAccessKey, dateStamp), stringToSign),
   )
+
   const authorization = `AWS4-HMAC-SHA256 Credential=${input.config.accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`
   const url = `https://${host}${path}${query ? `?${query}` : ''}`
 
-  return fetch(url, {
-    method: input.method,
-    headers: { ...headers, authorization },
-    body: input.body
-  })
+  return fetch(
+    url,
+    omitUndefined({
+      method: input.method,
+      headers: { ...headers, authorization },
+      body: input.body,
+    }),
+  )
 }
 
 export const presignedUrl = async (input: {
   readonly config: R2SigningConfig
   readonly method: string
   readonly key: string
-  readonly query: readonly [string, string][]
+  readonly query: ReadonlyArray<[string, string]>
   readonly expiresSeconds: number
   readonly now?: Date
 }) => {
@@ -130,30 +146,34 @@ export const presignedUrl = async (input: {
   const host = `${input.config.accountId}.r2.cloudflarestorage.com`
   const credentialScope = `${dateStamp}/auto/s3/aws4_request`
   const path = `/${input.config.bucketName}/${encodeKeyPath(input.key)}`
+
   const query = canonicalQuery([
     ...input.query,
     ['X-Amz-Algorithm', 'AWS4-HMAC-SHA256'],
     ['X-Amz-Credential', `${input.config.accessKeyId}/${credentialScope}`],
     ['X-Amz-Date', amzDate],
     ['X-Amz-Expires', String(input.expiresSeconds)],
-    ['X-Amz-SignedHeaders', 'host']
+    ['X-Amz-SignedHeaders', 'host'],
   ])
+
   const canonicalRequest = [
     input.method,
     path,
     query,
     `host:${host}\n`,
     'host',
-    'UNSIGNED-PAYLOAD'
+    'UNSIGNED-PAYLOAD',
   ].join('\n')
+
   const stringToSign = [
     'AWS4-HMAC-SHA256',
     amzDate,
     credentialScope,
-    await sha256Hex(canonicalRequest)
+    await sha256Hex(canonicalRequest),
   ].join('\n')
+
   const signature = toHex(
-    await hmac(await signingKey(input.config.secretAccessKey, dateStamp), stringToSign)
+    await hmac(await signingKey(input.config.secretAccessKey, dateStamp), stringToSign),
   )
 
   return `https://${host}${path}?${query}&X-Amz-Signature=${signature}`
@@ -161,10 +181,13 @@ export const presignedUrl = async (input: {
 
 export const parseUploadId = async (response: Response) => {
   const body = await response.text()
+
   if (!response.ok) throw new Error(body || `R2 responded with ${response.status}`)
 
   const uploadId = /<UploadId>([^<]+)<\/UploadId>/.exec(body)?.[1]
+
   if (!uploadId) throw new Error('R2 did not return an upload id')
+
   return uploadId
 }
 
@@ -176,11 +199,11 @@ const escapeXml = (value: string) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;')
 
-export const completeMultipartXml = (parts: readonly CompletedUploadPart[]) =>
+export const completeMultipartXml = (parts: ReadonlyArray<CompletedUploadPart>) =>
   `<CompleteMultipartUpload>${parts
     .map(
       (part) =>
-        `<Part><PartNumber>${part.partNumber}</PartNumber><ETag>${escapeXml(part.etag)}</ETag></Part>`
+        `<Part><PartNumber>${part.partNumber}</PartNumber><ETag>${escapeXml(part.etag)}</ETag></Part>`,
     )
     .join('')}</CompleteMultipartUpload>`
 

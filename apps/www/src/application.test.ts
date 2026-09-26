@@ -1,0 +1,16 @@
+import { describe, expect, it } from 'vitest'
+
+import { parseRoute, Route } from './application'
+
+describe('parseRoute', () => {
+  it('parses public, creator, dashboard, and missing routes', () => {
+    expect(parseRoute('/mixes/42')).toEqual(Route.cases.Detail.make({ kind: 'mixes', slug: '42' }))
+    expect(parseRoute('/new/editorial')).toEqual(Route.cases.Composer.make({ kind: 'editorial' }))
+    expect(parseRoute('/dashboard/email-logs')).toEqual(
+      Route.cases.Dashboard.make({
+        section: 'email-logs',
+      }),
+    )
+    expect(parseRoute('/definitely-missing')).toEqual(Route.cases.NotFound.make({}))
+  })
+})

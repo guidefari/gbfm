@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { AccessibilityInfo, Animated, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
 import { useThemeColors, withAlpha } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
 
@@ -14,6 +15,7 @@ export type SpotifyToastNotice = {
 export const useSpotifyToast = () => {
   const [notice, setNotice] = useState<SpotifyToastNotice | null>(null)
   const notify = (message: string) => setNotice({ id: Date.now(), message })
+
   return { notice, notify }
 }
 
@@ -30,13 +32,15 @@ export function SpotifyToast({ notice }: { notice: SpotifyToastNotice | null }) 
     progress.stopAnimation()
     progress.setValue(0)
     Animated.timing(progress, { toValue: 1, duration: 180, useNativeDriver: true }).start()
+
     const hide = setTimeout(() => {
       Animated.timing(progress, { toValue: 0, duration: 220, useNativeDriver: true }).start(
         ({ finished }) => {
           if (finished) setMessage(null)
-        }
+        },
       )
     }, VISIBLE_MS)
+
     return () => clearTimeout(hide)
   }, [notice, progress])
 
@@ -54,8 +58,8 @@ export function SpotifyToast({ notice }: { notice: SpotifyToastNotice | null }) 
         alignItems: 'center',
         opacity: progress,
         transform: [
-          { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }
-        ]
+          { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) },
+        ],
       }}>
       <View
         style={{
@@ -68,7 +72,7 @@ export function SpotifyToast({ notice }: { notice: SpotifyToastNotice | null }) 
           borderColor: withAlpha(colors.accent, 0.35),
           backgroundColor: colors.surface,
           paddingHorizontal: 14,
-          paddingVertical: 10
+          paddingVertical: 10,
         }}>
         <Text
           numberOfLines={2}
@@ -76,7 +80,7 @@ export function SpotifyToast({ notice }: { notice: SpotifyToastNotice | null }) 
             flexShrink: 1,
             color: colors.strong,
             fontFamily: fonts.mono,
-            fontSize: 12
+            fontSize: 12,
           }}>
           {message}
         </Text>

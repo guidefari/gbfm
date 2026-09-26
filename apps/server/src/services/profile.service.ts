@@ -1,14 +1,15 @@
 import { and, asc, eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
-import { audioCreators, audioTable } from '@/db/audio.schema'
-import { audioIdsForCreator } from '@/db/creator-membership'
-import { Database } from '@/db/layer'
+
+import { audioTable } from '@/db/audio.schema'
 import {
   SOCIAL_LINK_PLATFORMS,
   type SocialLinkPlatform,
   userSocialLinks,
-  user as userTable
+  user as userTable,
 } from '@/db/auth.schema'
+import { audioIdsForCreator } from '@/db/creator-membership'
+import { Database } from '@/db/layer'
 import { postCreators, postsTable } from '@/db/post.schema'
 import { showCreators, showsTable } from '@/db/show.schema'
 import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
@@ -63,7 +64,7 @@ export type PublicProfile = {
 
 export interface ProfileService {
   readonly getPublicProfile: (
-    username: string
+    username: string,
   ) => Effect.Effect<PublicProfile, DatabaseError | NotFoundError>
 }
 
@@ -72,6 +73,7 @@ export const ProfileService = Context.Service<ProfileService>('ProfileService')
 export const getPublicProfileEffect = (username: string) =>
   Effect.gen(function* () {
     const db = yield* Database
+
     const userRecords = yield* Effect.tryPromise({
       try: () =>
         db
@@ -82,7 +84,7 @@ export const getPublicProfileEffect = (username: string) =>
             image: userTable.image,
             bio: userTable.bio,
             createdAt: userTable.createdAt,
-            banned: userTable.banned
+            banned: userTable.banned,
           })
           .from(userTable)
           .where(eq(userTable.username, username))
@@ -91,16 +93,17 @@ export const getPublicProfileEffect = (username: string) =>
         new DatabaseError({
           message: `Failed to get user: ${getErrorMessage(error)}`,
           operation: 'select',
-          table: 'user'
-        })
-    }).pipe(Effect.withSpan('profile.getPublic.user', { attributes: { username } }))
+          table: 'user',
+        }),
+    }).pipe(Effect.withSpan('profile.getPublic.user'))
 
     const foundUser = userRecords[0]
+
     if (!foundUser || foundUser.banned) {
       return yield* new NotFoundError({
         message: 'User not found',
         resource: 'user',
-        id: username
+        id: username,
       })
     }
 
@@ -110,7 +113,7 @@ export const getPublicProfileEffect = (username: string) =>
           .select({
             platform: userSocialLinks.platform,
             url: userSocialLinks.url,
-            position: userSocialLinks.position
+            position: userSocialLinks.position,
           })
           .from(userSocialLinks)
           .where(eq(userSocialLinks.userId, foundUser.id))
@@ -119,11 +122,9 @@ export const getPublicProfileEffect = (username: string) =>
         new DatabaseError({
           message: `Failed to get user social links: ${getErrorMessage(error)}`,
           operation: 'select',
-          table: 'user_social_links'
-        })
-    }).pipe(
-      Effect.withSpan('profile.getPublic.socialLinks', { attributes: { userId: foundUser.id } })
-    )
+          table: 'user_social_links',
+        }),
+    }).pipe(Effect.withSpan('profile.getPublic.socialLinks'))
 
     const userMixes = yield* Effect.tryPromise({
       try: () =>
@@ -134,30 +135,30 @@ export const getPublicProfileEffect = (username: string) =>
             slug: true,
             thumbnailUrl: true,
             type: true,
-            showId: true
+            showId: true,
           },
           with: {
             show: {
-              columns: { thumbnailUrl: true }
-            }
+              columns: { thumbnailUrl: true },
+            },
           },
           where: and(audioIdsForCreator(db, foundUser.id), eq(audioTable.draft, false)),
-          orderBy: asc(audioTable.createdAt)
+          orderBy: asc(audioTable.createdAt),
         }),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to get user mixes: ${getErrorMessage(error)}`,
           operation: 'select',
-          table: 'audio'
-        })
+          table: 'audio',
+        }),
     }).pipe(
       Effect.map((rows) =>
         rows.map(({ show, ...row }) => ({
           ...row,
-          thumbnailUrl: row.thumbnailUrl ?? show?.thumbnailUrl ?? null
-        }))
+          thumbnailUrl: row.thumbnailUrl ?? show?.thumbnailUrl ?? null,
+        })),
       ),
-      Effect.withSpan('profile.getPublic.mixes', { attributes: { userId: foundUser.id } })
+      Effect.withSpan('profile.getPublic.mixes'),
     )
 
     const userShows = yield* Effect.tryPromise({
@@ -167,7 +168,7 @@ export const getPublicProfileEffect = (username: string) =>
             id: showsTable.id,
             title: showsTable.title,
             slug: showsTable.slug,
-            thumbnailUrl: showsTable.thumbnailUrl
+            thumbnailUrl: showsTable.thumbnailUrl,
           })
           .from(showsTable)
           .innerJoin(showCreators, eq(showsTable.id, showCreators.showId))
@@ -177,9 +178,9 @@ export const getPublicProfileEffect = (username: string) =>
         new DatabaseError({
           message: `Failed to get user shows: ${getErrorMessage(error)}`,
           operation: 'select',
-          table: 'shows'
-        })
-    }).pipe(Effect.withSpan('profile.getPublic.shows', { attributes: { userId: foundUser.id } }))
+          table: 'shows',
+        }),
+    }).pipe(Effect.withSpan('profile.getPublic.shows'))
 
     const userPosts = yield* Effect.tryPromise({
       try: () =>
@@ -191,7 +192,7 @@ export const getPublicProfileEffect = (username: string) =>
             thumbnailUrl: postsTable.thumbnailUrl,
             description: postsTable.description,
             type: postsTable.type,
-            createdAt: postsTable.createdAt
+            createdAt: postsTable.createdAt,
           })
           .from(postsTable)
           .innerJoin(postCreators, eq(postsTable.id, postCreators.postId))
@@ -201,17 +202,19 @@ export const getPublicProfileEffect = (username: string) =>
         new DatabaseError({
           message: `Failed to get user posts: ${getErrorMessage(error)}`,
           operation: 'select',
-          table: 'posts'
-        })
-    }).pipe(Effect.withSpan('profile.getPublic.posts', { attributes: { userId: foundUser.id } }))
+          table: 'posts',
+        }),
+    }).pipe(Effect.withSpan('profile.getPublic.posts'))
 
     const editorials = userPosts
       .filter((p): p is typeof p & { title: string } => Boolean(p.type === 'post' && p.title))
-      .map(({ type, ...rest }) => rest)
+      .map(({ type: _type, ...rest }) => rest)
 
     const tweets = userPosts
       .filter((p) => p.type === 'micro')
-      .map(({ type, thumbnailUrl, description, ...rest }) => rest)
+      .map(
+        ({ type: _type, thumbnailUrl: _thumbnailUrl, description: _description, ...rest }) => rest,
+      )
 
     return {
       id: foundUser.id,
@@ -222,15 +225,15 @@ export const getPublicProfileEffect = (username: string) =>
       socialLinks: socialLinks.flatMap((link) =>
         isSocialLinkPlatform(link.platform)
           ? [{ platform: link.platform, url: link.url, position: link.position }]
-          : []
+          : [],
       ),
       createdAt: foundUser.createdAt,
       content: {
         mixes: userMixes,
         shows: userShows,
         editorials,
-        tweets
-      }
+        tweets,
+      },
     }
   })
 
@@ -238,12 +241,13 @@ export const ProfileServiceLayer = Layer.effect(
   ProfileService,
   Effect.gen(function* () {
     const db = yield* Database
+
     return {
       getPublicProfile: (username) =>
         getPublicProfileEffect(username).pipe(
           Effect.provideService(Database, db),
-          Effect.withSpan('profile.getPublic', { attributes: { username } })
-        )
+          Effect.withSpan('profile.getPublic'),
+        ),
     }
-  })
+  }),
 )

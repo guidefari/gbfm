@@ -4,8 +4,12 @@ interface CdnRouterBindings {
   readonly IMAGES: ImagesBinding
 }
 
-interface Env extends CdnRouterBindings {}
+interface Env extends CdnRouterBindings {
+  readonly IMAGES: CdnRouterBindings['IMAGES']
+}
 
 declare namespace Cloudflare {
-  interface Env extends CdnRouterBindings {}
+  interface Env extends CdnRouterBindings {
+    readonly IMAGES: CdnRouterBindings['IMAGES']
+  }
 }

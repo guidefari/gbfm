@@ -1,11 +1,14 @@
 import { Schema } from 'effect'
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/unstable/httpapi'
+
 import { AuthMiddleware } from './middleware/auth'
 
 const UuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 const Uuid = Schema.String.pipe(Schema.check(Schema.isPattern(UuidPattern)))
 
 const UrlPattern = /^https?:\/\/.+/i
+
 const UrlString = Schema.String.pipe(Schema.check(Schema.isPattern(UrlPattern)))
 
 const AudioType = Schema.Literals(['mix', 'track', 'misc'])
@@ -13,7 +16,7 @@ const AudioType = Schema.Literals(['mix', 'track', 'misc'])
 const Creator = Schema.Struct({
   id: Schema.String,
   name: Schema.String,
-  username: Schema.NullOr(Schema.String)
+  username: Schema.NullOr(Schema.String),
 })
 
 export const AudioResponse = Schema.Struct({
@@ -32,47 +35,48 @@ export const AudioResponse = Schema.Struct({
   playCount: Schema.Number,
   createdAt: Schema.String,
   updatedAt: Schema.String,
-  creators: Schema.optional(Schema.Array(Creator))
+  creators: Schema.optional(Schema.Array(Creator)),
 })
 
 export const CompiledAudioResponse = Schema.Struct({
   ...AudioResponse.fields,
-  compiledContent: Schema.String
+  compiledContent: Schema.String,
 })
 
 const PaginationMeta = Schema.Struct({
   total: Schema.Number,
   limit: Schema.Number,
   offset: Schema.Number,
-  hasMore: Schema.Boolean
+  hasMore: Schema.Boolean,
 })
 
 const PaginationQuery = {
   limit: Schema.optional(
-    Schema.NumberFromString.pipe(Schema.check(Schema.isBetween({ minimum: 1, maximum: 100 })))
+    Schema.NumberFromString.pipe(Schema.check(Schema.isBetween({ minimum: 1, maximum: 100 }))),
   ),
   offset: Schema.optional(
-    Schema.NumberFromString.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(0)))
-  )
+    Schema.NumberFromString.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(0))),
+  ),
 }
 
 export const GetAudioByTypeQuery = {
   ...PaginationQuery,
-  tag: Schema.optional(Schema.String)
+  tag: Schema.optional(Schema.String),
 }
 
 export const AudioSortField = Schema.Literals(['plays', 'created'])
+
 export const AudioSortOrder = Schema.Literals(['asc', 'desc'])
 
 export const ManageAudioQuery = {
   ...GetAudioByTypeQuery,
   sort: Schema.optional(AudioSortField),
-  order: Schema.optional(AudioSortOrder)
+  order: Schema.optional(AudioSortOrder),
 }
 
 export const GetAudioByTypeResponse = Schema.Struct({
   data: Schema.Array(AudioResponse),
-  pagination: PaginationMeta
+  pagination: PaginationMeta,
 })
 
 export const GetAudioTagsResponse = Schema.Array(Schema.String)
@@ -88,7 +92,7 @@ const insertAudioFields = {
   type: AudioType,
   url: UrlString,
   showId: Schema.optional(Uuid),
-  episodeNumber: Schema.optional(Schema.Int.pipe(Schema.check(Schema.isGreaterThan(0))))
+  episodeNumber: Schema.optional(Schema.Int.pipe(Schema.check(Schema.isGreaterThan(0)))),
 }
 
 export const CreateAudioInput = Schema.Struct({
@@ -97,8 +101,9 @@ export const CreateAudioInput = Schema.Struct({
   // Old zod schema had .min(1) on creatorIds, but the handler already
   // treats an empty array the same as omitted (falls back to [user.id]),
   // same no-op pattern established for shows/label/post.
-  creatorIds: Schema.optional(Schema.Array(Schema.String))
+  creatorIds: Schema.optional(Schema.Array(Schema.String)),
 })
+
 export type CreateAudioInput = typeof CreateAudioInput.Type
 
 // updateAudioSchema (old) omits `type` from the body since it's already in
@@ -114,20 +119,22 @@ export const UpdateAudioInput = Schema.Struct({
   url: Schema.optional(UrlString),
   showId: Schema.optional(Uuid),
   episodeNumber: Schema.optional(Schema.Int.pipe(Schema.check(Schema.isGreaterThan(0)))),
-  creatorIds: Schema.optional(Schema.Array(Schema.String))
+  creatorIds: Schema.optional(Schema.Array(Schema.String)),
 })
+
 export type UpdateAudioInput = typeof UpdateAudioInput.Type
 
 export const TrackAudioPlayResponse = Schema.Struct({
-  playCount: Schema.Int
+  playCount: Schema.Int,
 })
 
 export const GetMixQRPdfResponse = Schema.Struct({
   url: Schema.String,
-  cached: Schema.Boolean
+  cached: Schema.Boolean,
 })
 
 const AudioTypeParam = { type: AudioType }
+
 const AudioTypeSlugParams = { type: AudioType, slug: Schema.String }
 
 export const AudioGroup = HttpApiGroup.make('audio')
@@ -135,72 +142,72 @@ export const AudioGroup = HttpApiGroup.make('audio')
     HttpApiEndpoint.post('createMix', '/api/content/mixes', {
       payload: CreateAudioInput,
       success: AudioResponse,
-      error: [HttpApiError.Conflict, HttpApiError.InternalServerError]
-    }).middleware(AuthMiddleware)
+      error: [HttpApiError.Conflict, HttpApiError.InternalServerError],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.get('getAudioTags', '/api/content/audio/:type/tags', {
       params: AudioTypeParam,
       success: GetAudioTagsResponse,
-      error: HttpApiError.InternalServerError
-    })
+      error: HttpApiError.InternalServerError,
+    }),
   )
   .add(
     HttpApiEndpoint.get('getAudioByType', '/api/content/audio/:type', {
       params: AudioTypeParam,
       query: GetAudioByTypeQuery,
       success: GetAudioByTypeResponse,
-      error: HttpApiError.InternalServerError
-    })
+      error: HttpApiError.InternalServerError,
+    }),
   )
   .add(
     HttpApiEndpoint.get('getAudioByTypeForEdit', '/api/content/audio/:type/manage', {
       params: AudioTypeParam,
       query: ManageAudioQuery,
       success: GetAudioByTypeResponse,
-      error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError]
-    }).middleware(AuthMiddleware)
+      error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.get('getAudioBySlug', '/api/content/audio/:type/:slug', {
       params: AudioTypeSlugParams,
       success: CompiledAudioResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
-    })
+      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+    }),
   )
   .add(
     HttpApiEndpoint.get('getAudioBySlugForEdit', '/api/content/audio/:type/:slug/edit', {
       params: AudioTypeSlugParams,
       success: CompiledAudioResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError]
-    }).middleware(AuthMiddleware)
+      error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.patch('updateAudioBySlug', '/api/content/audio/:type/:slug', {
       params: AudioTypeSlugParams,
       payload: UpdateAudioInput,
       success: CompiledAudioResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError]
-    }).middleware(AuthMiddleware)
+      error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.post('createAudio', '/api/content/audio', {
       payload: CreateAudioInput,
       success: AudioResponse,
-      error: [HttpApiError.Conflict, HttpApiError.InternalServerError]
-    }).middleware(AuthMiddleware)
+      error: [HttpApiError.Conflict, HttpApiError.InternalServerError],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.post('trackAudioPlay', '/api/content/audio/:id/play', {
       params: { id: Uuid },
       success: TrackAudioPlayResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
-    })
+      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+    }),
   )
   .add(
     HttpApiEndpoint.get('getMixQRPdf', '/api/content/audio/mix/:slug/qr-pdf', {
       params: { slug: Schema.String },
       success: GetMixQRPdfResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
-    })
+      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+    }),
   )

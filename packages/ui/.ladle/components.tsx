@@ -1,5 +1,8 @@
 import type { ReactNode } from 'react'
-import '../src/styles.css'
+
+import styles from '../src/styles.css'
+
+void styles
 
 interface ProviderProps {
   children: ReactNode

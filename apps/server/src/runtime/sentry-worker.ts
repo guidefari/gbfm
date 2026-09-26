@@ -1,5 +1,6 @@
 import { OtelTracer, Resource } from '@effect/opentelemetry'
 import { Context, Effect, Layer } from 'effect'
+
 import { shouldEnableSentry } from '@/lib/sentry'
 import { SentryEnabled } from '@/services/sentry.service'
 
@@ -14,15 +15,16 @@ export interface WorkerSentryEnvironment {
 }
 
 export class WorkerSentryEnv extends Context.Service<WorkerSentryEnv, WorkerSentryEnvironment>()(
-  'WorkerSentryEnv'
+  'WorkerSentryEnv',
 ) {}
 
 export const WorkerSentryEnabledLive = Layer.effect(
   SentryEnabled,
   Effect.gen(function* () {
     const { dsn, environment } = yield* WorkerSentryEnv
+
     return { enabled: shouldEnableSentry(dsn ?? '', environment ?? 'development') }
-  })
+  }),
 )
 
 // @sentry/cloudflare's withSentry() registers the global OpenTelemetry
@@ -38,8 +40,8 @@ export const WorkerTracingLive = OtelTracer.layerGlobal.pipe(
       serviceName: 'goosebumps-fm-api',
       serviceVersion: '1.0.0',
       attributes: {
-        'service.namespace': 'application'
-      }
-    })
-  )
+        'service.namespace': 'application',
+      },
+    }),
+  ),
 )

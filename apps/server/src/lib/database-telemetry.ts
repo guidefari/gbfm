@@ -1,9 +1,10 @@
-import { Option, Schema } from 'effect'
 import type { SpanAttributes, SpanJSON } from '@sentry/core'
+import { Option, Schema } from 'effect'
 
 type DatabaseTelemetryValue =
   | SpanAttributes[string]
-  | { readonly text: string; readonly values?: readonly (string | number | boolean | null)[] }
+  | { readonly text: string; readonly values?: ReadonlyArray<string | number | boolean | null> }
+
 type DatabaseTelemetrySpan = {
   readonly data: Readonly<Record<string, DatabaseTelemetryValue>>
   readonly description?: string
@@ -11,7 +12,9 @@ type DatabaseTelemetrySpan = {
 }
 
 const DATABASE_QUERY_ATTRIBUTE_KEYS = ['db.statement', 'db.query', 'db.query.text'] as const
+
 const SafeDatabaseAttribute = Schema.Union([Schema.String, Schema.Number, Schema.Boolean])
+
 const SAFE_DATABASE_ATTRIBUTE_KEYS = new Set([
   'db.system',
   'db.system.name',
@@ -19,13 +22,14 @@ const SAFE_DATABASE_ATTRIBUTE_KEYS = new Set([
   'db.name',
   'gbfm.db.instrumentation',
   'server.address',
-  'server.port'
+  'server.port',
 ])
+
 const TABLE_PATTERNS = {
   SELECT: /\bfrom\s+((?:"[^"]+"|[\w$]+)(?:\s*\.\s*(?:"[^"]+"|[\w$]+))?)/i,
   INSERT: /\binsert\s+into\s+((?:"[^"]+"|[\w$]+)(?:\s*\.\s*(?:"[^"]+"|[\w$]+))?)/i,
   UPDATE: /\bupdate\s+((?:"[^"]+"|[\w$]+)(?:\s*\.\s*(?:"[^"]+"|[\w$]+))?)/i,
-  DELETE: /\bdelete\s+from\s+((?:"[^"]+"|[\w$]+)(?:\s*\.\s*(?:"[^"]+"|[\w$]+))?)/i
+  DELETE: /\bdelete\s+from\s+((?:"[^"]+"|[\w$]+)(?:\s*\.\s*(?:"[^"]+"|[\w$]+))?)/i,
 } satisfies Readonly<Record<SqlOperation, RegExp>>
 
 export type DatabaseQuerySummary = {
@@ -38,11 +42,12 @@ type SqlOperation = 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE'
 
 function unquoteIdentifier(identifier: string): string {
   const part = identifier.split('.').at(-1)?.trim() ?? ''
+
   return part.startsWith('"') && part.endsWith('"') ? part.slice(1, -1) : part
 }
 
 function findTopLevelOperation(
-  query: string
+  query: string,
 ): { operation: SqlOperation; index: number } | undefined {
   let depth = 0
 
@@ -52,6 +57,7 @@ function findTopLevelOperation(
 
     if (character === '-' && nextCharacter === '-') {
       const lineEnd = query.indexOf('\n', index + 2)
+
       if (lineEnd === -1) return undefined
       index = lineEnd
       continue
@@ -59,6 +65,7 @@ function findTopLevelOperation(
 
     if (character === '/' && nextCharacter === '*') {
       const commentEnd = query.indexOf('*/', index + 2)
+
       if (commentEnd === -1) return undefined
       index = commentEnd + 1
       continue
@@ -66,21 +73,27 @@ function findTopLevelOperation(
 
     if (character === "'" || character === '"') {
       const quote = character
+
       for (index += 1; index < query.length; index += 1) {
         if (query[index] !== quote) continue
+
         if (query[index + 1] === quote) {
           index += 1
           continue
         }
+
         break
       }
+
       continue
     }
 
     if (character === '$') {
       const delimiter = /^\$(?:[A-Za-z_][A-Za-z0-9_]*)?\$/.exec(query.slice(index))?.[0]
+
       if (delimiter) {
         const valueEnd = query.indexOf(delimiter, index + delimiter.length)
+
         if (valueEnd === -1) return undefined
         index = valueEnd + delimiter.length - 1
         continue
@@ -91,6 +104,7 @@ function findTopLevelOperation(
       depth += 1
       continue
     }
+
     if (character === ')') {
       depth = Math.max(0, depth - 1)
       continue
@@ -99,9 +113,11 @@ function findTopLevelOperation(
     if (depth !== 0 || character === undefined || !/[A-Za-z]/.test(character)) continue
 
     const token = /^[A-Za-z]+/.exec(query.slice(index))?.[0]
+
     if (!token) continue
 
     const operation = token.toUpperCase()
+
     if (
       operation === 'SELECT' ||
       operation === 'INSERT' ||
@@ -110,6 +126,7 @@ function findTopLevelOperation(
     ) {
       return { operation, index }
     }
+
     index += token.length - 1
   }
 
@@ -118,9 +135,11 @@ function findTopLevelOperation(
 
 export function extractDatabaseQueryText<Input>(value: Input): string | undefined {
   const text = Schema.decodeUnknownOption(Schema.String)(value)
+
   if (Option.isSome(text)) return text.value
+
   return Option.getOrUndefined(
-    Schema.decodeUnknownOption(Schema.Struct({ text: Schema.String }))(value)
+    Schema.decodeUnknownOption(Schema.Struct({ text: Schema.String }))(value),
   )?.text
 }
 
@@ -133,14 +152,16 @@ export function summarizeDatabaseQuery(query: string): DatabaseQuerySummary {
   const match = findTopLevelOperation(query)
   const operation = match?.operation ?? 'QUERY'
   const operationQuery = match ? query.slice(match.index) : query
+
   const tableMatch =
     operation === 'QUERY' ? undefined : TABLE_PATTERNS[operation].exec(operationQuery)
+
   const table = tableMatch?.[1] ? unquoteIdentifier(tableMatch[1]) : 'unknown'
 
   return {
     operation,
     table,
-    description: table === 'unknown' ? operation : `${operation} ${table}`
+    description: table === 'unknown' ? operation : `${operation} ${table}`,
   }
 }
 
@@ -151,20 +172,24 @@ export function sanitizeDatabaseSpan(span: SpanJSON): SpanJSON
 export function sanitizeDatabaseSpan<T extends DatabaseTelemetrySpan>(span: T): T
 export function sanitizeDatabaseSpan<T extends DatabaseTelemetrySpan>(span: T): T {
   const dbSystem = span.data['db.system.name'] ?? span.data['db.system']
+
   if (dbSystem === undefined || !Schema.is(Schema.String)(dbSystem)) return span
 
   const rawQuery = DATABASE_QUERY_ATTRIBUTE_KEYS.flatMap((key) => {
     const query = extractDatabaseQueryText(span.data[key])
+
     return query ? [query] : []
   })[0]
+
   const summary = summarizeDatabaseQuery(rawQuery ?? span.description ?? '')
   const data: SpanAttributes = {}
 
   for (const [key, value] of Object.entries(span.data)) {
     if (SAFE_DATABASE_ATTRIBUTE_KEYS.has(key)) {
       const safeValue = Option.getOrUndefined(
-        Schema.decodeUnknownOption(SafeDatabaseAttribute)(value)
+        Schema.decodeUnknownOption(SafeDatabaseAttribute)(value),
       )
+
       if (safeValue !== undefined) data[key] = safeValue
     }
   }
@@ -179,6 +204,6 @@ export function sanitizeDatabaseSpan<T extends DatabaseTelemetrySpan>(span: T): 
     ...span,
     op: 'db.query',
     description: summary.description,
-    data
+    data,
   }
 }

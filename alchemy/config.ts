@@ -6,12 +6,14 @@ const secretSources = {
   SENTRY_BACKEND_DSN: 'SENTRY_BACKEND_DSN',
   VITE_PUBLIC_SENTRY_DSN: 'VITE_PUBLIC_SENTRY_DSN',
   BETTER_AUTH_SECRET: 'BETTER_AUTH_SECRET',
+  CloudflareAnalyticsApiToken: 'CLOUDFLARE_ANALYTICS_API_TOKEN',
   StorageRegion: 'StorageRegion',
   StorageAccessKeyId: 'StorageAccessKeyId',
-  StorageSecretAccessKey: 'StorageSecretAccessKey'
+  StorageSecretAccessKey: 'StorageSecretAccessKey',
 } as const
 
 export type SecretName = keyof typeof secretSources
+
 export type SecretValues = Readonly<Record<SecretName, string>>
 
 export interface WebsiteConfig {
@@ -33,7 +35,7 @@ export class IncompleteSecretsError extends Error {
       `Refusing to deploy without ${missing.length} secret(s): ${missing.join(', ')}. ` +
         `Alchemy patches any secret whose value differs from its state, so ` +
         `deploying these blank would overwrite the stored value with an empty ` +
-        `string. Populate the environment before deploying.`
+        `string. Populate the environment before deploying.`,
     )
   }
 }
@@ -60,16 +62,17 @@ export const deploymentConfig = (isLocalDev: boolean) =>
         SENTRY_BACKEND_DSN: read(secretSources.SENTRY_BACKEND_DSN),
         VITE_PUBLIC_SENTRY_DSN: sentryDsn,
         BETTER_AUTH_SECRET: read(secretSources.BETTER_AUTH_SECRET),
+        CloudflareAnalyticsApiToken: read(secretSources.CloudflareAnalyticsApiToken),
         StorageRegion: read(secretSources.StorageRegion),
         StorageAccessKeyId: read(secretSources.StorageAccessKeyId),
-        StorageSecretAccessKey: read(secretSources.StorageSecretAccessKey)
+        StorageSecretAccessKey: read(secretSources.StorageSecretAccessKey),
       },
       website: {
         spotifyClientId,
         sentryDsn,
-        sentryRelease: read('SENTRY_RELEASE')
+        sentryRelease: read('SENTRY_RELEASE'),
       },
       adminEmail: read('ADMIN_EMAIL'),
-      emailTestRecipient: process.env.EMAIL_TEST_RECIPIENT
+      emailTestRecipient: process.env.EMAIL_TEST_RECIPIENT,
     } satisfies DeploymentConfig
   })

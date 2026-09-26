@@ -1,17 +1,25 @@
-import { Effect, ManagedRuntime } from 'effect'
+import { Effect } from 'effect'
+import type { ManagedRuntime } from 'effect'
 import type { Scope } from 'effect/Scope'
-import { AudioEngine, type EngineStatus } from './engine'
-import { type QueueTrackType } from './persistedQueue'
-import { PlayReporter } from './playReporter'
-import { makePlayerCore } from './playerCore'
-import { PlayerStorage } from './playerStorage'
+
 import type { VolumeRecordType } from './audioStorage'
-import { initialQueueState, mergeHydratedQueue, reduceQueue, type QueueAction } from './queueState'
+import { AudioEngine, type EngineStatus } from './engine'
+import type { QueueTrackType } from './persistedQueue'
+import { playerCore } from './playerCore'
+import { PlayerStorage } from './playerStorage'
+import type { PlayReporter } from './playReporter'
+import {
+  initialQueueState,
+  mergeHydratedQueue,
+  QueueAction,
+  reduceQueue,
+  type QueueAction as QueueActionType,
+} from './queueState'
 
 export const selectQueueView = (state: typeof initialQueueState) => ({
   tracks: state.tracks,
   currentIndex: state.currentIndex,
-  current: state.currentIndex >= 0 ? (state.tracks[state.currentIndex] ?? null) : null
+  current: state.currentIndex >= 0 ? (state.tracks[state.currentIndex] ?? null) : null,
 })
 
 export type QueueView = ReturnType<typeof selectQueueView>
@@ -73,7 +81,7 @@ const initialTransport: PlaybackTransportSnapshot = {
   isPlaying: false,
   isBuffering: false,
   currentTime: 0,
-  duration: 0
+  duration: 0,
 }
 
 const defaultVolume: VolumeRecordType = { volume: 100, isMuted: false }
@@ -84,31 +92,33 @@ const noopReporter: Required<AudioPlaybackReporter> = {
   onTrackCompleted: () => Effect.void,
   onTrackSeek: () => Effect.void,
   onQueueAction: () => Effect.void,
-  onError: () => Effect.void
+  onError: () => Effect.void,
 }
 
 const buildSnapshot = (
   queue: typeof initialQueueState,
   transport: PlaybackTransportSnapshot,
-  volume: VolumeRecordType
+  volume: VolumeRecordType,
 ): PlaybackSnapshot => ({
   queue: selectQueueView(queue),
   transport,
-  volume
+  volume,
 })
 
 const queueLength = (state: typeof initialQueueState) => state.tracks.length
 
 const queueTrackInfo = (track: QueueTrackType | null) => ({
   trackId: track?.id ?? null,
-  title: track?.title ?? 'unknown'
+  title: track?.title ?? 'unknown',
 })
 
 const playAllUnique = (tracks: ReadonlyArray<QueueTrackType>) => {
   const ids = new Set<string>()
+
   return tracks.filter((track) => {
     if (ids.has(track.id)) return false
     ids.add(track.id)
+
     return true
   })
 }
@@ -144,7 +154,7 @@ export interface AudioPlaybackController {
 
 export const makeAudioPlayback = (
   runtime: PlaybackRuntime,
-  reporter: AudioPlaybackReporter = noopReporter
+  reporter: AudioPlaybackReporter = noopReporter,
 ): Effect.Effect<
   AudioPlaybackController,
   never,
@@ -155,8 +165,7 @@ export const makeAudioPlayback = (
     const storage = yield* PlayerStorage
 
     const onError =
-      reporter.onError ??
-      ((message: string, error: Error) => Effect.sync(() => console.error(message, error)))
+      reporter.onError ?? ((message: string, error: Error) => Effect.logError(message, error))
 
     const reportError = (message: string, error: Error) => onError(message, error)
 
@@ -165,17 +174,20 @@ export const makeAudioPlayback = (
     let volumeState = defaultVolume
     const queueHydrationToken = Symbol('queue hydration')
     const volumeHydrationToken = Symbol('volume hydration')
-    let queueHydration: { token: symbol; pending: Array<QueueAction> } | null = {
+
+    let queueHydration: { token: symbol; pending: Array<QueueActionType> } | null = {
       token: queueHydrationToken,
-      pending: []
+      pending: [],
     }
+
     let volumeHydration: {
       token: symbol
       pending: VolumeRecordType | null
     } | null = {
       token: volumeHydrationToken,
-      pending: null
+      pending: null,
     }
+
     let queueWriteTail: Promise<void> = Promise.resolve()
     let volumeWriteTail: Promise<void> = Promise.resolve()
     const listeners = new Set<SnapshotListener>()
@@ -183,6 +195,7 @@ export const makeAudioPlayback = (
 
     const emitSnapshot = () => {
       currentSnapshot = buildSnapshot(queueState, transportState, volumeState)
+
       for (const listener of listeners) listener(currentSnapshot)
     }
 
@@ -195,8 +208,8 @@ export const makeAudioPlayback = (
             .runPromise(
               reportError(
                 'Unable to persist audio queue',
-                new Error('Unable to persist audio queue', { cause })
-              )
+                new Error('Unable to persist audio queue', { cause }),
+              ),
             )
             .catch(() => undefined)
         })
@@ -211,8 +224,8 @@ export const makeAudioPlayback = (
             .runPromise(
               reportError(
                 'Unable to persist audio volume',
-                new Error('Unable to persist audio volume', { cause })
-              )
+                new Error('Unable to persist audio volume', { cause }),
+              ),
             )
             .catch(() => undefined)
         })
@@ -242,38 +255,46 @@ export const makeAudioPlayback = (
     const syncCurrentTrack = (autoplay: boolean) =>
       Effect.gen(function* () {
         const current = currentTrack(queueState)
+
         if (!current) {
           yield* core.detachCurrentSource
           yield* core.setSource(null)
+
           return
         }
 
         if (autoplay) {
           yield* core.requestPlayOnReady(current.id)
         }
+
         yield* core.detachCurrentSource
         yield* core.setSource(current)
       })
 
     const playCurrent = Effect.gen(function* () {
       const current = currentTrack(queueState)
+
       if (!current) return
       const currentId = yield* core.currentTrackId
+
       if (currentId !== current.id) {
         yield* syncCurrentTrack(true)
+
         return
       }
+
       yield* core.play(current.id)
     })
 
     const pauseCurrent = Effect.gen(function* () {
       const current = currentTrack(queueState)
+
       if (!current) return
       yield* (
         reporter.onTrackPaused?.({
           ...queueTrackInfo(current),
           currentTime: currentSnapshot.transport.currentTime,
-          duration: currentSnapshot.transport.duration
+          duration: currentSnapshot.transport.duration,
         }) ?? Effect.void
       )
       yield* core.pause
@@ -283,49 +304,60 @@ export const makeAudioPlayback = (
       Effect.gen(function* () {
         const current = currentTrack(queueState)
         const fromTime = currentSnapshot.transport.currentTime
+
         if (current) {
           yield* (
             reporter.onTrackSeek?.({
               trackId: current.id,
               fromTime,
               toTime: seconds,
-              method
+              method,
             }) ?? Effect.void
           )
         }
+
         yield* core.seekTo(seconds)
       }).pipe(
         Effect.catchCause((cause) =>
-          reportError('Unable to seek audio', new Error('Unable to seek audio', { cause }))
-        )
+          reportError('Unable to seek audio', new Error('Unable to seek audio', { cause })),
+        ),
       )
 
     const playFromQueue = (index: number, autoplay = true) =>
       Effect.gen(function* () {
         const target = trackFromQueueIndex(queueState, index)
+
         if (!target) return
         const currentId = yield* core.currentTrackId
+
         if (currentTrack(queueState)?.id === target.id) {
           if (currentId !== target.id) {
             yield* syncCurrentTrack(autoplay)
+
             return
           }
+
           if (autoplay) {
             yield* core.play(target.id)
           }
+
           return
         }
+
         yield* core.requestPlayOnReady(target.id)
         yield* core.detachCurrentSource
-        const next = reduceQueue(queueState, { _tag: 'playIndex', index })
+        const action = QueueAction.playIndex({ index })
+        const next = reduceQueue(queueState, action)
         updateQueue(next)
-        if (queueHydration) queueHydration.pending.push({ _tag: 'playIndex', index })
+
+        if (queueHydration) queueHydration.pending.push(action)
         else persistQueue(next)
         yield* core.setSource(target)
       })
 
     const togglePlayPause = Effect.gen(function* () {
       const desired = yield* core.isDesiredPlaying
+
       if (desired) {
         yield* pauseCurrent
       } else {
@@ -335,8 +367,10 @@ export const makeAudioPlayback = (
 
     const playNext = Effect.gen(function* () {
       const currentIndex = queueState.currentIndex
+
       if (currentIndex < 0) return
       const next = currentIndex + 1
+
       if (next >= queueState.tracks.length) return
       yield* playFromQueue(next, true)
     })
@@ -349,22 +383,24 @@ export const makeAudioPlayback = (
     })
 
     const forkDetached = <A, E>(
-      effect: Effect.Effect<A, E, AudioEngine | PlayReporter | PlayerStorage>
+      effect: Effect.Effect<A, E, AudioEngine | PlayReporter | PlayerStorage>,
     ) => {
       void runtime.runFork(effect.pipe(Effect.catchCause(() => Effect.void)))
     }
 
     const handleTrackFinished = () => {
       const current = currentTrack(queueState)
+
       if (!current) return
       const nextIndex = queueState.currentIndex + 1
       const next = trackFromQueueIndex(queueState, nextIndex)
       forkDetached(
         reporter.onTrackCompleted?.({
           ...queueTrackInfo(current),
-          duration: currentSnapshot.transport.duration
-        }) ?? Effect.void
+          duration: currentSnapshot.transport.duration,
+        }) ?? Effect.void,
       )
+
       if (next) {
         forkDetached(playFromQueue(nextIndex, true))
       }
@@ -377,12 +413,12 @@ export const makeAudioPlayback = (
         isPlaying: status.playing,
         isBuffering: status.isBuffering,
         currentTime: status.currentTime,
-        duration: status.duration
+        duration: status.duration,
       })
       forkDetached(engine.setPositionState(status.duration, status.currentTime))
     }
 
-    const core = yield* makePlayerCore({
+    const core = yield* playerCore({
       onStatus: handleStatus,
       onTrackStarted: (track) => {
         forkDetached(reporter.onTrackPlayed?.(track) ?? Effect.void)
@@ -390,7 +426,7 @@ export const makeAudioPlayback = (
       onTrackFinished: handleTrackFinished,
       onError: (message, error) => {
         forkDetached(reportError(message, error))
-      }
+      },
     })
 
     updateTransport({ ...transportState, isInitialized: true })
@@ -400,10 +436,11 @@ export const makeAudioPlayback = (
         Effect.catchCause((cause) =>
           reportError(
             'Unable to hydrate audio queue',
-            new Error('Unable to hydrate audio queue', { cause })
-          ).pipe(Effect.as(null))
-        )
+            new Error('Unable to hydrate audio queue', { cause }),
+          ).pipe(Effect.as(null)),
+        ),
       )
+
       if (queueHydration?.token !== queueHydrationToken) return
       // No Effect yield here: merge, clear hydration, and publish are one
       // cooperatively atomic step.
@@ -412,9 +449,11 @@ export const makeAudioPlayback = (
       updateQueue(next)
       const currentId = yield* core.currentTrackId
       const nextCurrent = selectQueueView(next).current
+
       if (nextCurrent?.id !== currentId) {
         yield* core.setSource(nextCurrent)
       }
+
       if (next !== persisted) persistQueue(next)
     })
 
@@ -423,15 +462,17 @@ export const makeAudioPlayback = (
         Effect.catchCause((cause) =>
           reportError(
             'Unable to hydrate audio volume',
-            new Error('Unable to hydrate audio volume', { cause })
-          ).pipe(Effect.as(null))
-        )
+            new Error('Unable to hydrate audio volume', { cause }),
+          ).pipe(Effect.as(null)),
+        ),
       )
+
       if (volumeHydration?.token !== volumeHydrationToken) return
       const next = volumeHydration.pending ?? persisted ?? defaultVolume
       volumeHydration = null
       updateVolume(next)
       yield* applyVolumeToEngine(next)
+
       if (next !== persisted) persistVolume(next)
     })
 
@@ -440,8 +481,8 @@ export const makeAudioPlayback = (
 
     yield* Effect.addFinalizer(() =>
       Effect.promise(() =>
-        Promise.allSettled([queueWriteTail, volumeWriteTail]).then(() => undefined)
-      )
+        Promise.allSettled([queueWriteTail, volumeWriteTail]).then(() => undefined),
+      ),
     )
 
     yield* engine.setCommandHandlers({
@@ -453,7 +494,7 @@ export const makeAudioPlayback = (
       },
       onSeekBackward: (offset) => {
         forkDetached(
-          seekCurrent(Math.max(0, currentSnapshot.transport.currentTime - offset), 'mediasession')
+          seekCurrent(Math.max(0, currentSnapshot.transport.currentTime - offset), 'mediasession'),
         )
       },
       onSeekForward: (offset) => {
@@ -467,7 +508,7 @@ export const makeAudioPlayback = (
       },
       onSeekTo: (time) => {
         forkDetached(seekCurrent(time, 'mediasession'))
-      }
+      },
     })
 
     yield* Effect.addFinalizer(() => engine.setCommandHandlers(null))
@@ -477,10 +518,13 @@ export const makeAudioPlayback = (
         const next = { volume: Math.max(0, Math.min(100, volume)), isMuted: volumeState.isMuted }
         updateVolume(next)
         yield* applyVolumeToEngine(next)
+
         if (volumeHydration) {
           volumeHydration.pending = next
+
           return
         }
+
         persistVolume(next)
       })
 
@@ -488,10 +532,13 @@ export const makeAudioPlayback = (
       const next = { ...volumeState, isMuted: !volumeState.isMuted }
       updateVolume(next)
       yield* applyVolumeToEngine(next)
+
       if (volumeHydration) {
         volumeHydration.pending = next
+
         return
       }
+
       persistVolume(next)
     })
 
@@ -499,19 +546,26 @@ export const makeAudioPlayback = (
       Effect.gen(function* () {
         const current = currentTrack(queueState)
         const currentId = yield* core.currentTrackId
+
         if (current?.id === track.id) {
           if (currentId === track.id) {
             yield* core.play(track.id)
+
             return
           }
+
           yield* syncCurrentTrack(true)
+
           return
         }
-        const next = reduceQueue(queueState, { _tag: 'playNow', track })
+
+        const action = QueueAction.playNow({ track })
+        const next = reduceQueue(queueState, action)
         yield* core.requestPlayOnReady(track.id)
         yield* core.detachCurrentSource
         updateQueue(next)
-        if (queueHydration) queueHydration.pending.push({ _tag: 'playNow', track })
+
+        if (queueHydration) queueHydration.pending.push(action)
         else persistQueue(next)
         yield* core.setSource(track)
       })
@@ -520,38 +574,47 @@ export const makeAudioPlayback = (
       Effect.gen(function* () {
         const uniqueTracks = playAllUnique(tracks)
         const [first] = uniqueTracks
+
         if (!first) return
-        const next = reduceQueue(queueState, { _tag: 'playAll', tracks: uniqueTracks })
+        const action = QueueAction.playAll({ tracks: uniqueTracks })
+        const next = reduceQueue(queueState, action)
         yield* core.requestPlayOnReady(first.id)
         yield* core.detachCurrentSource
         updateQueue(next)
-        if (queueHydration) queueHydration.pending.push({ _tag: 'playAll', tracks: uniqueTracks })
+
+        if (queueHydration) queueHydration.pending.push(action)
         else persistQueue(next)
         yield* core.setSource(first)
       })
 
     const enqueue = (track: QueueTrackType) =>
       Effect.gen(function* () {
-        const next = reduceQueue(queueState, { _tag: 'enqueue', track })
+        const action = QueueAction.enqueue({ track })
+        const next = reduceQueue(queueState, action)
+
         if (next === queueState) return
         updateQueue(next)
-        if (queueHydration) queueHydration.pending.push({ _tag: 'enqueue', track })
+
+        if (queueHydration) queueHydration.pending.push(action)
         else persistQueue(next)
         yield* (
           reporter.onQueueAction?.({
             action: 'add',
             trackId: track.id,
-            queueLength: queueLength(next)
+            queueLength: queueLength(next),
           }) ?? Effect.void
         )
       })
 
     const enqueueAll = (tracks: ReadonlyArray<QueueTrackType>) =>
       Effect.gen(function* () {
-        const next = reduceQueue(queueState, { _tag: 'enqueueAll', tracks })
+        const action = QueueAction.enqueueAll({ tracks })
+        const next = reduceQueue(queueState, action)
+
         if (next === queueState) return
         updateQueue(next)
-        if (queueHydration) queueHydration.pending.push({ _tag: 'enqueueAll', tracks })
+
+        if (queueHydration) queueHydration.pending.push(action)
         else persistQueue(next)
         yield* (
           reporter.onQueueAction?.({ action: 'add', queueLength: queueLength(next) }) ?? Effect.void
@@ -560,10 +623,13 @@ export const makeAudioPlayback = (
 
     const reorderQueue = (from: number, to: number) =>
       Effect.gen(function* () {
-        const next = reduceQueue(queueState, { _tag: 'reorder', from, to })
+        const action = QueueAction.reorder({ from, to })
+        const next = reduceQueue(queueState, action)
+
         if (next === queueState) return
         updateQueue(next)
-        if (queueHydration) queueHydration.pending.push({ _tag: 'reorder', from, to })
+
+        if (queueHydration) queueHydration.pending.push(action)
         else persistQueue(next)
         yield* (
           reporter.onQueueAction?.({ action: 'reorder', queueLength: queueLength(next) }) ??
@@ -576,36 +642,47 @@ export const makeAudioPlayback = (
         if (index < 0 || index >= queueState.tracks.length) return
         const previousCurrentId = currentTrack(queueState)?.id ?? null
         const removed = queueState.tracks[index]
-        const next = reduceQueue(queueState, { _tag: 'remove', index })
+
+        if (!removed) return
+
+        const action = QueueAction.remove({ index })
+        const next = reduceQueue(queueState, action)
         const nextCurrent = selectQueueView(next).current
         const nextCurrentId = nextCurrent?.id ?? null
         const shouldAutoplay = previousCurrentId === removed?.id && (yield* core.isDesiredPlaying)
         updateQueue(next)
-        if (queueHydration) queueHydration.pending.push({ _tag: 'remove', index })
+
+        if (queueHydration) queueHydration.pending.push(action)
         else persistQueue(next)
         yield* (
           reporter.onQueueAction?.({
             action: 'remove',
-            trackId: removed?.id,
-            queueLength: queueLength(next)
+            trackId: removed.id,
+            queueLength: queueLength(next),
           }) ?? Effect.void
         )
+
         if (previousCurrentId === nextCurrentId) return
+
         if (nextCurrent) {
           if (shouldAutoplay) {
             yield* core.requestPlayOnReady(nextCurrent.id)
           }
+
           yield* core.detachCurrentSource
           yield* core.setSource(nextCurrent)
+
           return
         }
+
         yield* core.detachCurrentSource
         yield* core.setSource(null)
       })
 
     const clearQueue = Effect.gen(function* () {
       updateQueue(initialQueueState)
-      if (queueHydration) queueHydration.pending.push({ _tag: 'clear' })
+
+      if (queueHydration) queueHydration.pending.push(QueueAction.clear())
       else persistQueue(initialQueueState)
       yield* reporter.onQueueAction?.({ action: 'clear', queueLength: 0 }) ?? Effect.void
       yield* core.detachCurrentSource
@@ -615,12 +692,13 @@ export const makeAudioPlayback = (
     const playFromQueueIntent = (index: number) =>
       Effect.gen(function* () {
         const target = queueState.tracks[index]
+
         if (!target) return
         yield* (
           reporter.onQueueAction?.({
             action: 'play_from',
             trackId: target.id,
-            queueLength: queueLength(queueState)
+            queueLength: queueLength(queueState),
           }) ?? Effect.void
         )
         yield* playFromQueue(index, true)
@@ -629,6 +707,7 @@ export const makeAudioPlayback = (
     const subscribeSnapshot = (listener: SnapshotListener) => {
       listeners.add(listener)
       listener(currentSnapshot)
+
       return () => listeners.delete(listener)
     }
 
@@ -664,6 +743,6 @@ export const makeAudioPlayback = (
       clearQueue,
       playFromQueue: playFromQueueIntent,
       playNext,
-      playPrevious
+      playPrevious,
     }
   })

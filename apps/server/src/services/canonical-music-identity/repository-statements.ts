@@ -1,6 +1,8 @@
 import { LINK_STATUS } from '@gbfm/core/status'
+
 import type { DatabaseClient } from '@/db/layer'
 import type { ScrapedLink } from '@/services/music-link-scraper.service'
+
 import type { ParsedMusicSource } from './music-source'
 import type { EntityRecord, EntityReference } from './repository'
 
@@ -9,8 +11,8 @@ const unreachable = (value: never): never => {
 }
 
 export type WriteFence = {
-  readonly ownedSources: readonly ParsedMusicSource[]
-  readonly aliases: readonly ParsedMusicSource[]
+  readonly ownedSources: ReadonlyArray<ParsedMusicSource>
+  readonly aliases: ReadonlyArray<ParsedMusicSource>
   readonly ownerToken: string
   readonly reference: EntityReference
 }
@@ -36,36 +38,39 @@ const ownershipGuard = (fence: WriteFence) => {
   const aliasGuards = fence.aliases.map(
     () =>
       `NOT EXISTS (SELECT 1 FROM music_source_aliases
-        WHERE normalized_url = ? AND source_key <> ?)`
+        WHERE normalized_url = ? AND source_key <> ?)`,
   )
+
   return {
     sql: [
       `(SELECT COUNT(*) FROM music_source_identities
         WHERE state = 'resolving' AND owner_token = ?
           AND source_key IN (${placeholders(fence.ownedSources.length)})) = ?`,
-      ...aliasGuards
+      ...aliasGuards,
     ].join(' AND '),
     values: [
       fence.ownerToken,
       ...fence.ownedSources.map((source) => source.sourceKey),
       fence.ownedSources.length,
-      ...fence.aliases.flatMap((source) => [source.normalizedUrl, source.sourceKey])
-    ]
+      ...fence.aliases.flatMap((source) => [source.normalizedUrl, source.sourceKey]),
+    ],
   }
 }
 
 const targetGuard = (fence: WriteFence) => ({
   sql: `EXISTS (SELECT 1 FROM ${entityTable(fence.reference.entityType)} WHERE id = ?)`,
-  values: [fence.reference.entityId]
+  values: [fence.reference.entityId],
 })
 
 export const writeFenceGuard = (fence: WriteFence, requireTarget: boolean) => {
   const ownership = ownershipGuard(fence)
+
   if (!requireTarget) return ownership
   const target = targetGuard(fence)
+
   return {
     sql: `${ownership.sql} AND ${target.sql}`,
-    values: [...ownership.values, ...target.values]
+    values: [...ownership.values, ...target.values],
   }
 }
 
@@ -73,9 +78,10 @@ const newArtistStatements = (
   db: DatabaseClient,
   entity: EntityRecord,
   fence: WriteFence,
-  now: Date
+  now: Date,
 ) => {
   const guard = writeFenceGuard(fence, false)
+
   return entity.artists.flatMap((artist) =>
     artist.isNew && artist.slug
       ? [
@@ -88,10 +94,10 @@ const newArtistStatements = (
               artist.slug,
               now.getTime(),
               now.getTime(),
-              ...guard.values
-            )
+              ...guard.values,
+            ),
         ]
-      : []
+      : [],
   )
 }
 
@@ -100,10 +106,11 @@ const primaryEntityStatement = (
   entity: EntityRecord,
   slug: string,
   fence: WriteFence,
-  now: Date
+  now: Date,
 ) => {
   const guard = writeFenceGuard(fence, false)
   const artistNames = entity.artistNames.length > 0 ? JSON.stringify(entity.artistNames) : null
+
   switch (entity.entityType) {
     case 'artist':
       return db.$client
@@ -116,7 +123,7 @@ const primaryEntityStatement = (
           slug,
           now.getTime(),
           now.getTime(),
-          ...guard.values
+          ...guard.values,
         )
     case 'album':
       return db.$client
@@ -130,7 +137,7 @@ const primaryEntityStatement = (
           slug,
           now.getTime(),
           now.getTime(),
-          ...guard.values
+          ...guard.values,
         )
     case 'track':
       return db.$client
@@ -146,7 +153,7 @@ const primaryEntityStatement = (
           slug,
           now.getTime(),
           now.getTime(),
-          ...guard.values
+          ...guard.values,
         )
     case 'playlist':
       return db.$client
@@ -162,7 +169,7 @@ const primaryEntityStatement = (
           slug,
           now.getTime(),
           now.getTime(),
-          ...guard.values
+          ...guard.values,
         )
     default:
       return unreachable(entity.entityType)
@@ -174,12 +181,13 @@ const relationStatements = (db: DatabaseClient, entity: EntityRecord, fence: Wri
   const guard = writeFenceGuard(fence, true)
   const table = entity.entityType === 'album' ? 'music_album_artists' : 'music_track_artists'
   const entityColumn = entity.entityType === 'album' ? 'albumId' : 'trackId'
+
   return entity.artists.map((artist, displayOrder) =>
     db.$client
       .prepare(`INSERT INTO ${table} (${entityColumn}, artistId, displayOrder)
         SELECT ?, ?, ? WHERE ${guard.sql}
           AND EXISTS (SELECT 1 FROM music_artists WHERE id = ?)`)
-      .bind(entity.entityId, artist.id, displayOrder, ...guard.values, artist.id)
+      .bind(entity.entityId, artist.id, displayOrder, ...guard.values, artist.id),
   )
 }
 
@@ -188,11 +196,11 @@ export const entityInsertStatements = (
   entity: EntityRecord,
   slug: string,
   fence: WriteFence,
-  now: Date
+  now: Date,
 ) => [
   ...newArtistStatements(db, entity, fence, now),
   primaryEntityStatement(db, entity, slug, fence, now),
-  ...relationStatements(db, entity, fence)
+  ...relationStatements(db, entity, fence),
 ]
 
 export const linkStatement = (
@@ -200,9 +208,10 @@ export const linkStatement = (
   reference: EntityReference,
   link: ScrapedLink,
   fence: WriteFence,
-  now: Date
+  now: Date,
 ) => {
   const guard = writeFenceGuard(fence, true)
+
   return db.$client
     .prepare(`INSERT INTO music_entity_links (
       id, entity_type, entityId, platform, url, status, scrapedAt, verifiedAt, metadata, createdAt, updatedAt
@@ -222,7 +231,7 @@ export const linkStatement = (
       link.metadata ? JSON.stringify(link.metadata) : null,
       now.getTime(),
       now.getTime(),
-      ...guard.values
+      ...guard.values,
     )
 }
 
@@ -230,9 +239,10 @@ export const aliasStatement = (
   db: DatabaseClient,
   source: ParsedMusicSource,
   fence: WriteFence,
-  now: Date
+  now: Date,
 ) => {
   const guard = writeFenceGuard(fence, true)
+
   return db.$client
     .prepare(`INSERT INTO music_source_aliases (normalized_url, source_key, first_seen_at, last_seen_at)
       SELECT ?, ?, ?, ? WHERE ${guard.sql}
@@ -245,9 +255,10 @@ export const completionStatement = (
   db: DatabaseClient,
   fence: WriteFence,
   scrapedAt: Date,
-  now: Date
+  now: Date,
 ) => {
   const guard = writeFenceGuard(fence, true)
+
   return db.$client
     .prepare(`UPDATE music_source_identities SET
       state = 'resolved', entity_type = ?, entity_id = ?, owner_token = NULL,
@@ -262,22 +273,23 @@ export const completionStatement = (
       now.getTime(),
       ...fence.ownedSources.map((source) => source.sourceKey),
       fence.ownerToken,
-      ...guard.values
+      ...guard.values,
     )
 }
 
 export const entityExistenceGuard = (reference: EntityReference) => ({
   sql: `EXISTS (SELECT 1 FROM ${entityTable(reference.entityType)} WHERE id = ?)`,
-  values: [reference.entityId]
+  values: [reference.entityId],
 })
 
 export const existingEntityLinkStatement = (
   db: DatabaseClient,
   reference: EntityReference,
   link: ScrapedLink,
-  now: Date
+  now: Date,
 ) => {
   const target = entityExistenceGuard(reference)
+
   return db.$client
     .prepare(`INSERT INTO music_entity_links (
       id, entity_type, entityId, platform, url, status, scrapedAt, verifiedAt, metadata, createdAt, updatedAt
@@ -297,16 +309,17 @@ export const existingEntityLinkStatement = (
       link.metadata ? JSON.stringify(link.metadata) : null,
       now.getTime(),
       now.getTime(),
-      ...target.values
+      ...target.values,
     )
 }
 
 export const deleteLinksStatement = (
   db: DatabaseClient,
   reference: EntityReference,
-  fence?: WriteFence
+  fence?: WriteFence,
 ) => {
   const guard = fence ? writeFenceGuard(fence, true) : entityExistenceGuard(reference)
+
   return db.$client
     .prepare(`DELETE FROM music_entity_links
       WHERE entity_type = ? AND entityId = ? AND ${guard.sql}`)

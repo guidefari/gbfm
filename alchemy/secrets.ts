@@ -2,6 +2,7 @@ import * as Alchemy from 'alchemy'
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as Effect from 'effect/Effect'
 import * as Redacted from 'effect/Redacted'
+
 import type { SecretValues } from './config'
 
 /**
@@ -27,12 +28,12 @@ export const secretsStore = (apiUrl: string, isLocalDev: boolean, values: Secret
     // whichever host it last named: production's pointed at a staging Worker.
     const sources = {
       ...values,
-      BETTER_AUTH_URL: apiUrl
+      BETTER_AUTH_URL: apiUrl,
     } satisfies Record<string, string>
 
     if (isLocalDev) {
       return Object.fromEntries(
-        Object.entries(sources).map(([name, value]) => [name, Redacted.make(value)])
+        Object.entries(sources).map(([name, value]) => [name, Redacted.make(value)]),
       )
     }
 
@@ -44,9 +45,9 @@ export const secretsStore = (apiUrl: string, isLocalDev: boolean, values: Secret
         Cloudflare.SecretsStore.Secret(`Secret${name}`, {
           store,
           name: `${stack.stage}-${name}`,
-          value: Redacted.make(value)
+          value: Redacted.make(value),
         }).pipe(Effect.map((secret) => [name, secret] as const)),
-      { concurrency: 4 }
+      { concurrency: 4 },
     )
 
     return Object.fromEntries(entries)

@@ -5,7 +5,7 @@ const escapeHtml = (value: string) =>
     /[&<>"']/g,
     (character) =>
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[character] ??
-      character
+      character,
   )
 
 const getSiteUrl = (frontendUrl = 'https://goosebumps.fm') => frontendUrl.replace(/\/$/, '')
@@ -49,6 +49,7 @@ export interface ErrorPageData {
 
 export const buildErrorHtml = (data: ErrorPageData, frontendUrl?: string): string => {
   const siteUrl = getSiteUrl(frontendUrl)
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>

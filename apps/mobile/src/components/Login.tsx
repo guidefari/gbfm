@@ -1,5 +1,5 @@
 import { typography } from '@gbfm/theme'
-import { Effect } from 'effect'
+import { Effect, Match } from 'effect'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import {
@@ -10,8 +10,9 @@ import {
   ScrollView,
   Text,
   TextInput,
-  View
+  View,
 } from 'react-native'
+
 import { login } from '@/api/auth'
 import { Screen } from '@/components/Screen'
 import { useSetAuth } from '@/store/auth'
@@ -40,13 +41,17 @@ export default function Login() {
       Effect.catch((error) =>
         Effect.sync(() => {
           setErrorMessage(
-            error._tag === 'LoginFailed' ? error.message : 'Unable to sign in right now.'
+            Match.value(error).pipe(
+              Match.tag('LoginFailed', ({ message }) => message),
+              Match.orElse(() => 'Unable to sign in right now.'),
+            ),
           )
-        })
+        }),
       ),
       Effect.ensuring(Effect.sync(() => setIsSubmitting(false))),
-      Effect.asVoid
+      Effect.asVoid,
     )
+
     void Effect.runPromise(runLogin)
   }
 
@@ -66,7 +71,7 @@ export default function Login() {
                   fontFamily: typography.fontJetbrains,
                   fontSize: 12,
                   letterSpacing: 2.4,
-                  textTransform: 'uppercase'
+                  textTransform: 'uppercase',
                 }}>
                 Goosebumps FM
               </Text>
@@ -75,7 +80,7 @@ export default function Login() {
                   color: colors.accent,
                   fontFamily: typography.fontSansAlt,
                   fontSize: 42,
-                  lineHeight: 44
+                  lineHeight: 44,
                 }}>
                 Welcome back.
               </Text>
@@ -91,7 +96,7 @@ export default function Login() {
                 backgroundColor: colors.surface,
                 borderColor: `${colors.muted}55`,
                 borderWidth: 1,
-                borderRadius: 4
+                borderRadius: 4,
               }}>
               <View style={{ gap: 8 }}>
                 <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>Email</Text>
@@ -114,7 +119,7 @@ export default function Login() {
                     borderColor: `${colors.muted}66`,
                     borderWidth: 1,
                     borderRadius: 4,
-                    fontSize: 16
+                    fontSize: 16,
                   }}
                 />
               </View>
@@ -144,7 +149,7 @@ export default function Login() {
                       borderColor: `${colors.muted}66`,
                       borderWidth: 1,
                       borderRadius: 4,
-                      fontSize: 16
+                      fontSize: 16,
                     }}
                   />
                   <Pressable
@@ -176,7 +181,7 @@ export default function Login() {
                   justifyContent: 'center',
                   borderRadius: 4,
                   backgroundColor: canSubmit ? colors.accent : `${colors.muted}66`,
-                  opacity: pressed ? 0.8 : 1
+                  opacity: pressed ? 0.8 : 1,
                 })}>
                 {isSubmitting ? (
                   <ActivityIndicator color={colors.surface} />

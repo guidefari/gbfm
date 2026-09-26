@@ -1,9 +1,12 @@
-import * as Atom from 'effect/unstable/reactivity/Atom'
 import { useAtomSet, useAtomValue } from '@effect/atom-react'
-import * as SplashScreen from 'expo-splash-screen'
-import { useFonts } from 'expo-font'
-import { type PropsWithChildren, useEffect, useRef } from 'react'
 import { Effect } from 'effect'
+import * as Atom from 'effect/unstable/reactivity/Atom'
+import { useFonts } from 'expo-font'
+import * as SplashScreen from 'expo-splash-screen'
+import { type PropsWithChildren, useEffect, useRef } from 'react'
+
+import jetBrainsMono from '../../../assets/fonts/JetBrainsMono-Regular.ttf'
+import jetBrainsMonoSemiBold from '../../../assets/fonts/JetBrainsMono-SemiBold.ttf'
 
 export const fontsReadyAtom = Atom.make<boolean>(false).pipe(Atom.keepAlive)
 
@@ -12,8 +15,8 @@ const hideSplash = Effect.promise(() => SplashScreen.hideAsync())
 export const splashHideAtom = Atom.make(hideSplash)
 
 const fontMap: Parameters<typeof useFonts>[0] = {
-  JetBrainsMono: require('../../../assets/fonts/JetBrainsMono-Regular.ttf'),
-  'JetBrainsMono-SemiBold': require('../../../assets/fonts/JetBrainsMono-SemiBold.ttf')
+  JetBrainsMono: jetBrainsMono,
+  'JetBrainsMono-SemiBold': jetBrainsMonoSemiBold,
 }
 
 export function FontsLoadedBridge({ children }: PropsWithChildren) {

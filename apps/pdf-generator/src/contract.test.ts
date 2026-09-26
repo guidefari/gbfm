@@ -1,5 +1,6 @@
 import { Effect, Exit } from 'effect'
 import { describe, expect, test } from 'vitest'
+
 import { decodeQrPdfRequest } from './contract'
 
 describe('QR PDF runtime contract', () => {
@@ -9,8 +10,8 @@ describe('QR PDF runtime contract', () => {
         kind: 'show',
         slug: 'deep-cuts',
         title: 'Deep Cuts',
-        people: ['Guide Fari']
-      })
+        people: ['Guide Fari'],
+      }),
     )
 
     expect(decoded.kind).toBe('show')
@@ -18,7 +19,7 @@ describe('QR PDF runtime contract', () => {
 
   test('rejects malformed runtime-hop input', async () => {
     const exit = await Effect.runPromiseExit(
-      decodeQrPdfRequest({ kind: 'playlist', slug: '', title: 'Bad request' })
+      decodeQrPdfRequest({ kind: 'playlist', slug: '', title: 'Bad request' }),
     )
 
     expect(Exit.isFailure(exit)).toBe(true)

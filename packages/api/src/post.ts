@@ -1,8 +1,10 @@
 import { Schema } from 'effect'
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/unstable/httpapi'
+
 import { AuthMiddleware } from './middleware/auth'
 
 const UuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 const Uuid = Schema.String.pipe(Schema.check(Schema.isPattern(UuidPattern)))
 
 // effect@4.0.0-beta.93's HttpApiError has no built-in 422 -- the old routes
@@ -13,16 +15,18 @@ const Uuid = Schema.String.pipe(Schema.check(Schema.isPattern(UuidPattern)))
 export class ValidationHttpError extends Schema.TaggedError<ValidationHttpError>()(
   'ValidationHttpError',
   {},
-  { httpApiStatus: 422 }
+  { httpApiStatus: 422 },
 ) {}
 
 const PostType = Schema.Literals(['post', 'micro'])
+
 const MusicEntityType = Schema.Literals(['album', 'track', 'playlist'])
 
 const Creator = Schema.Struct({
   id: Schema.String,
   name: Schema.String,
-  username: Schema.NullOr(Schema.String)
+  username: Schema.NullOr(Schema.String),
+  image: Schema.NullOr(Schema.String),
 })
 
 const BlueskySource = Schema.Struct({
@@ -32,7 +36,7 @@ const BlueskySource = Schema.Struct({
   sourceCreatedAt: Schema.String,
   sourceStatus: Schema.String,
   locallyEdited: Schema.Boolean,
-  lastError: Schema.NullOr(Schema.String)
+  lastError: Schema.NullOr(Schema.String),
 })
 
 export const PostResponse = Schema.Struct({
@@ -53,47 +57,47 @@ export const PostResponse = Schema.Struct({
   quotedPostId: Schema.NullOr(Schema.String),
   createdAt: Schema.String,
   updatedAt: Schema.String,
-  blueskySource: Schema.optional(BlueskySource)
+  blueskySource: Schema.optional(BlueskySource),
 })
 
 export const CompiledPostResponse = Schema.Struct({
   ...PostResponse.fields,
   compiledContent: Schema.String,
   creators: Schema.optional(Schema.Array(Creator)),
-  replyCount: Schema.optional(Schema.Number)
+  replyCount: Schema.optional(Schema.Number),
 })
 
 export const CompiledEditorialPostResponse = Schema.Struct({
   ...CompiledPostResponse.fields,
   title: Schema.String,
   content: Schema.String,
-  type: Schema.Literal('post')
+  type: Schema.Literal('post'),
 })
 
 export const CompiledMicroPostResponse = Schema.Struct({
   ...CompiledPostResponse.fields,
-  type: Schema.Literal('micro')
+  type: Schema.Literal('micro'),
 })
 
 const PaginationMeta = Schema.Struct({
   total: Schema.Number,
   limit: Schema.Number,
   offset: Schema.Number,
-  hasMore: Schema.Boolean
+  hasMore: Schema.Boolean,
 })
 
 const PaginationQuery = {
   limit: Schema.optional(
-    Schema.NumberFromString.pipe(Schema.check(Schema.isBetween({ minimum: 1, maximum: 100 })))
+    Schema.NumberFromString.pipe(Schema.check(Schema.isBetween({ minimum: 1, maximum: 100 }))),
   ),
   offset: Schema.optional(
-    Schema.NumberFromString.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(0)))
-  )
+    Schema.NumberFromString.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(0))),
+  ),
 }
 
 export const GetPostsQuery = {
   ...PaginationQuery,
-  type: Schema.optional(PostType)
+  type: Schema.optional(PostType),
 }
 
 export const PostSourceFilter = Schema.Literals(['bluesky', 'native'])
@@ -102,32 +106,34 @@ export const ManagePostsQuery = {
   ...GetPostsQuery,
   source: Schema.optional(PostSourceFilter),
   status: Schema.optional(Schema.Literals(['draft', 'live'])),
-  q: Schema.optional(Schema.String)
+  q: Schema.optional(Schema.String),
 }
 
 export const GetPostsResponse = Schema.Struct({
   data: Schema.Array(CompiledPostResponse),
-  pagination: PaginationMeta
+  pagination: PaginationMeta,
 })
 
 export const GetEditorialPostsQuery = {
   ...PaginationQuery,
-  tag: Schema.optional(Schema.String)
+  tag: Schema.optional(Schema.String),
 }
 
 export const GetEditorialPostsResponse = Schema.Struct({
   data: Schema.Array(CompiledEditorialPostResponse),
-  pagination: PaginationMeta
+  pagination: PaginationMeta,
 })
 
 export const GetMicroPostsResponse = Schema.Struct({
   data: Schema.Array(CompiledMicroPostResponse),
-  pagination: PaginationMeta
+  pagination: PaginationMeta,
 })
+
+export const LatestMicroPostResponse = Schema.NullOr(Schema.Struct({ slug: Schema.String }))
 
 export const GetPostsByTagResponse = Schema.Struct({
   data: Schema.Array(PostResponse),
-  pagination: PaginationMeta
+  pagination: PaginationMeta,
 })
 
 export const GetPostTagsResponse = Schema.Array(Schema.String)
@@ -138,26 +144,26 @@ export const GetMicroTagsResponse = Schema.Array(Schema.String)
 
 export const GetMicroPostsQuery = {
   ...PaginationQuery,
-  tag: Schema.optional(Schema.String)
+  tag: Schema.optional(Schema.String),
 }
 
 const MicroPostSummary = Schema.Struct({
   slug: Schema.String,
-  title: Schema.NullOr(Schema.String)
+  title: Schema.NullOr(Schema.String),
 })
 
 export const GetAdjacentMicroPostsResponse = Schema.Struct({
   prev: Schema.NullOr(MicroPostSummary),
-  next: Schema.NullOr(MicroPostSummary)
+  next: Schema.NullOr(MicroPostSummary),
 })
 
 export const GetRandomMicroPostResponse = Schema.Struct({
-  slug: Schema.String
+  slug: Schema.String,
 })
 
 const SearchMicroPostsQuery = {
   ...PaginationQuery,
-  q: Schema.NonEmptyString
+  q: Schema.NonEmptyString,
 }
 
 const insertPostFields = {
@@ -170,11 +176,11 @@ const insertPostFields = {
   tags: Schema.optional(Schema.Array(Schema.String)),
   type: Schema.optional(Schema.NullOr(PostType)),
   musicEntityType: Schema.optional(Schema.NullOr(MusicEntityType)),
-  musicEntityId: Schema.optional(Schema.NullOr(Uuid))
+  musicEntityId: Schema.optional(Schema.NullOr(Uuid)),
 }
 
 const quotedPostIdField = {
-  quotedPostId: Schema.optional(Schema.NullOr(Uuid))
+  quotedPostId: Schema.optional(Schema.NullOr(Uuid)),
 }
 
 export const CreatePostInput = Schema.Struct({
@@ -183,8 +189,9 @@ export const CreatePostInput = Schema.Struct({
   // Old zod schema had .min(1) on creatorIds, but the handler already
   // treats an empty array the same as omitted (falls back to [user.id]),
   // same no-op pattern established for shows/label.
-  creatorIds: Schema.optional(Schema.Array(Schema.String))
+  creatorIds: Schema.optional(Schema.Array(Schema.String)),
 })
+
 export type CreatePostInput = typeof CreatePostInput.Type
 
 export const UpdatePostInput = Schema.Struct({
@@ -198,13 +205,17 @@ export const UpdatePostInput = Schema.Struct({
   type: Schema.optional(Schema.NullOr(PostType)),
   musicEntityType: Schema.optional(Schema.NullOr(MusicEntityType)),
   musicEntityId: Schema.optional(Schema.NullOr(Uuid)),
-  creatorIds: Schema.optional(Schema.Array(Schema.String))
+  creatorIds: Schema.optional(Schema.Array(Schema.String)),
 })
+
 export type UpdatePostInput = typeof UpdatePostInput.Type
 
 const TagParam = { tag: Schema.NonEmptyString }
+
 const SlugParam = { slug: Schema.String }
+
 const ParentSlugParam = { parentSlug: Schema.String }
+
 const IdParam = { id: Uuid }
 
 export const CreateMicroPostReplyInput = Schema.Struct({
@@ -212,91 +223,155 @@ export const CreateMicroPostReplyInput = Schema.Struct({
   content: Schema.optional(Schema.NullOr(Schema.String)),
   musicEntityType: Schema.optional(Schema.NullOr(MusicEntityType)),
   musicEntityId: Schema.optional(Schema.NullOr(Uuid)),
-  ...quotedPostIdField
+  ...quotedPostIdField,
 })
+
 export type CreateMicroPostReplyInput = typeof CreateMicroPostReplyInput.Type
 
 export const MicroPostThreadResponse = Schema.Struct({
   root: CompiledMicroPostResponse,
   focus: CompiledMicroPostResponse,
   posts: Schema.Array(CompiledMicroPostResponse),
-  pagination: PaginationMeta
+  pagination: PaginationMeta,
 })
+
+const MicroPostScreenMusic = Schema.Struct({
+  entity: Schema.Struct({
+    id: Schema.String,
+    type: MusicEntityType,
+    title: Schema.String,
+    artistNames: Schema.NullOr(Schema.Array(Schema.String)),
+    coverImageUrl: Schema.NullOr(Schema.String),
+  }),
+  links: Schema.Array(
+    Schema.Struct({
+      platform: Schema.String,
+      url: Schema.String,
+    }),
+  ),
+})
+
+const MicroPostScreenPost = Schema.Struct({
+  ...CompiledMicroPostResponse.fields,
+  music: Schema.NullOr(MicroPostScreenMusic),
+})
+
+export const MicroPostScreenResponse = Schema.Struct({
+  post: MicroPostScreenPost,
+  replies: Schema.Array(MicroPostScreenPost),
+  root: MicroPostScreenPost,
+  quote: Schema.NullOr(MicroPostScreenPost),
+})
+
+export const MicroPostScreenRepliesResponse = Schema.Array(MicroPostScreenPost)
+
+export type MicroPostScreenResponse = typeof MicroPostScreenResponse.Type
+
+export type MicroPostScreenPost = typeof MicroPostScreenPost.Type
+
+export type MicroPostScreenMusic = typeof MicroPostScreenMusic.Type
+
+export type PostCreator = typeof Creator.Type
 
 export const PostGroup = HttpApiGroup.make('post')
   .add(
     HttpApiEndpoint.get('getPosts', '/api/content/posts', {
       query: GetPostsQuery,
       success: GetPostsResponse,
-      error: HttpApiError.InternalServerError
-    })
+      error: HttpApiError.InternalServerError,
+    }),
   )
   .add(
     HttpApiEndpoint.get('getPostsForEdit', '/api/content/posts/manage', {
       query: ManagePostsQuery,
       success: GetPostsResponse,
-      error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError]
-    }).middleware(AuthMiddleware)
+      error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.get('getPostTags', '/api/content/posts/tags', {
       success: GetPostTagsResponse,
-      error: HttpApiError.InternalServerError
-    })
+      error: HttpApiError.InternalServerError,
+    }),
   )
   .add(
     HttpApiEndpoint.get('getEditorialTags', '/api/content/posts/editorials/tags', {
       success: GetEditorialTagsResponse,
-      error: HttpApiError.InternalServerError
-    })
+      error: HttpApiError.InternalServerError,
+    }),
   )
   .add(
     HttpApiEndpoint.get('getEditorialPosts', '/api/content/posts/editorials', {
       query: GetEditorialPostsQuery,
       success: GetEditorialPostsResponse,
-      error: HttpApiError.InternalServerError
-    })
+      error: HttpApiError.InternalServerError,
+    }),
   )
   .add(
     HttpApiEndpoint.get('getEditorialPostBySlug', '/api/content/posts/editorials/:slug', {
       params: SlugParam,
       success: CompiledEditorialPostResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
-    })
+      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+    }),
   )
   .add(
     HttpApiEndpoint.get('getMicroPosts', '/api/content/posts/micro', {
       query: GetMicroPostsQuery,
       success: GetMicroPostsResponse,
-      error: HttpApiError.InternalServerError
-    })
+      error: HttpApiError.InternalServerError,
+    }),
+  )
+  .add(
+    HttpApiEndpoint.get('getLatestMicroPost', '/api/content/posts/micro/latest', {
+      success: LatestMicroPostResponse,
+      error: HttpApiError.InternalServerError,
+    }),
   )
   .add(
     HttpApiEndpoint.get('getMicroTags', '/api/content/posts/micro/tags', {
       success: GetMicroTagsResponse,
-      error: HttpApiError.InternalServerError
-    })
+      error: HttpApiError.InternalServerError,
+    }),
   )
   .add(
     HttpApiEndpoint.get('searchMicroPosts', '/api/content/posts/micro/search', {
       query: SearchMicroPostsQuery,
       success: GetMicroPostsResponse,
-      error: HttpApiError.InternalServerError
-    })
+      error: HttpApiError.InternalServerError,
+    }),
   )
   .add(
     HttpApiEndpoint.get('getMicroPostById', '/api/content/posts/micro/by-id/:id', {
       params: IdParam,
       success: CompiledMicroPostResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
-    })
+      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+    }),
   )
   .add(
     HttpApiEndpoint.get('getMicroPostBySlug', '/api/content/posts/micro/:slug', {
       params: SlugParam,
       success: CompiledMicroPostResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
-    })
+      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+    }),
+  )
+  .add(
+    HttpApiEndpoint.get('getMicroPostScreen', '/api/content/posts/micro/:slug/screen', {
+      params: SlugParam,
+      query: { part: Schema.optional(Schema.Literal('main')) },
+      success: MicroPostScreenResponse,
+      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+    }),
+  )
+  .add(
+    HttpApiEndpoint.get(
+      'getMicroPostScreenReplies',
+      '/api/content/posts/micro/:slug/screen/replies',
+      {
+        params: SlugParam,
+        success: MicroPostScreenRepliesResponse,
+        error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+      },
+    ),
   )
   .add(
     HttpApiEndpoint.post('createMicroPostReply', '/api/content/posts/micro/:parentSlug/replies', {
@@ -307,39 +382,39 @@ export const PostGroup = HttpApiGroup.make('post')
         ValidationHttpError,
         HttpApiError.NotFound,
         HttpApiError.Conflict,
-        HttpApiError.InternalServerError
-      ]
-    }).middleware(AuthMiddleware)
+        HttpApiError.InternalServerError,
+      ],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.get('getMicroPostReplies', '/api/content/posts/micro/:parentSlug/replies', {
       params: ParentSlugParam,
       query: PaginationQuery,
       success: GetMicroPostsResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
-    })
+      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+    }),
   )
   .add(
     HttpApiEndpoint.get('getMicroPostThread', '/api/content/posts/micro/:slug/thread', {
       params: SlugParam,
       query: PaginationQuery,
       success: MicroPostThreadResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
-    })
+      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+    }),
   )
   .add(
     HttpApiEndpoint.get('getPostBySlug', '/api/content/posts/:slug', {
       params: SlugParam,
       success: CompiledPostResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
-    })
+      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+    }),
   )
   .add(
     HttpApiEndpoint.get('getPostBySlugForEdit', '/api/content/posts/:slug/edit', {
       params: SlugParam,
       success: CompiledPostResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError]
-    }).middleware(AuthMiddleware)
+      error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.post('createPost', '/api/content/post', {
@@ -350,9 +425,9 @@ export const PostGroup = HttpApiGroup.make('post')
         HttpApiError.Forbidden,
         HttpApiError.Conflict,
         HttpApiError.NotFound,
-        HttpApiError.InternalServerError
-      ]
-    }).middleware(AuthMiddleware)
+        HttpApiError.InternalServerError,
+      ],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.patch('updatePostBySlug', '/api/content/posts/:slug', {
@@ -363,15 +438,15 @@ export const PostGroup = HttpApiGroup.make('post')
         ValidationHttpError,
         HttpApiError.NotFound,
         HttpApiError.Unauthorized,
-        HttpApiError.InternalServerError
-      ]
-    }).middleware(AuthMiddleware)
+        HttpApiError.InternalServerError,
+      ],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.get('getPostsByTag', '/api/content/tag/:tag', {
       params: TagParam,
       query: PaginationQuery,
       success: GetPostsByTagResponse,
-      error: HttpApiError.InternalServerError
-    })
+      error: HttpApiError.InternalServerError,
+    }),
   )

@@ -7,8 +7,9 @@ import {
   primaryKey,
   sqliteTable,
   text,
-  uniqueIndex
+  uniqueIndex,
 } from 'drizzle-orm/sqlite-core'
+
 import { user } from './auth.schema'
 
 // ---------------------------------------------------------------------------
@@ -29,6 +30,7 @@ import { user } from './auth.schema'
 // ---------------------------------------------------------------------------
 
 export const MUSIC_ENTITY_TYPES = ['artist', 'album', 'track', 'playlist', 'label'] as const
+
 export type MusicEntityType = (typeof MUSIC_ENTITY_TYPES)[number]
 
 export const MUSIC_PLATFORMS = [
@@ -47,11 +49,13 @@ export const MUSIC_PLATFORMS = [
   'twitter',
   'musicbrainz',
   'discogs',
-  'other'
+  'other',
 ] as const
+
 export type MusicPlatform = (typeof MUSIC_PLATFORMS)[number]
 
 export const ALBUM_TYPES = ['LP', 'EP', 'single', 'compilation'] as const
+
 export type AlbumType = (typeof ALBUM_TYPES)[number]
 
 export type MusicEntityMetadataValue =
@@ -62,6 +66,7 @@ export type MusicEntityMetadataValue =
   | undefined
   | ReadonlyArray<MusicEntityMetadataValue>
   | { readonly [key: string]: MusicEntityMetadataValue }
+
 export type MusicEntityMetadata = Record<string, MusicEntityMetadataValue>
 
 // ---------------------------------------------------------------------------
@@ -71,7 +76,7 @@ export type MusicEntityMetadata = Record<string, MusicEntityMetadataValue>
 /** Seeded — do not insert manually; use scripts/seed-music-lookups.ts */
 export const musicEntityTypesTable = sqliteTable('music_entity_types', {
   id: text().primaryKey(), // 'artist' | 'album' | 'track' | 'playlist' | 'label'
-  displayName: text().notNull()
+  displayName: text().notNull(),
 })
 
 /** Seeded — do not insert manually; use scripts/seed-music-lookups.ts */
@@ -79,7 +84,7 @@ export const musicPlatformsTable = sqliteTable('music_platforms', {
   id: text().primaryKey(), // 'spotify' | 'bandcamp' | ...
   displayName: text().notNull(),
   websiteUrl: text(),
-  iconUrl: text()
+  iconUrl: text(),
 })
 
 // ---------------------------------------------------------------------------
@@ -103,9 +108,9 @@ export const musicArtistsTable = sqliteTable(
       .$defaultFn(() => new Date()),
     updatedAt: integer({ mode: 'timestamp_ms' })
       .notNull()
-      .$defaultFn(() => new Date())
+      .$defaultFn(() => new Date()),
   },
-  (table) => [index('music_artists_slug_idx').on(table.slug)]
+  (table) => [index('music_artists_slug_idx').on(table.slug)],
 )
 
 export const musicAlbumsTable = sqliteTable(
@@ -116,7 +121,7 @@ export const musicAlbumsTable = sqliteTable(
       .$defaultFn(() => crypto.randomUUID()),
     title: text().notNull(),
     // Denormalized artist names for fast display without joins
-    artistNames: text({ mode: 'json' }).$type<string[]>(),
+    artistNames: text({ mode: 'json' }).$type<Array<string>>(),
     releaseDate: integer({ mode: 'timestamp_ms' }),
     coverImageUrl: text(),
     albumType: text(), // LP | EP | single | compilation
@@ -128,9 +133,9 @@ export const musicAlbumsTable = sqliteTable(
       .$defaultFn(() => new Date()),
     updatedAt: integer({ mode: 'timestamp_ms' })
       .notNull()
-      .$defaultFn(() => new Date())
+      .$defaultFn(() => new Date()),
   },
-  (table) => [index('music_albums_slug_idx').on(table.slug)]
+  (table) => [index('music_albums_slug_idx').on(table.slug)],
 )
 
 export const musicTracksTable = sqliteTable(
@@ -141,10 +146,10 @@ export const musicTracksTable = sqliteTable(
       .$defaultFn(() => crypto.randomUUID()),
     title: text().notNull(),
     // Denormalized artist names for fast display without joins
-    artistNames: text({ mode: 'json' }).$type<string[]>(),
+    artistNames: text({ mode: 'json' }).$type<Array<string>>(),
     coverImageUrl: text(),
     albumId: text().references(() => musicAlbumsTable.id, {
-      onDelete: 'set null'
+      onDelete: 'set null',
     }),
     trackNumber: integer(),
     slug: text().notNull().unique(),
@@ -155,9 +160,9 @@ export const musicTracksTable = sqliteTable(
       .$defaultFn(() => new Date()),
     updatedAt: integer({ mode: 'timestamp_ms' })
       .notNull()
-      .$defaultFn(() => new Date())
+      .$defaultFn(() => new Date()),
   },
-  (table) => [index('music_tracks_slug_idx').on(table.slug)]
+  (table) => [index('music_tracks_slug_idx').on(table.slug)],
 )
 
 export const musicPlaylistsTable = sqliteTable(
@@ -179,9 +184,9 @@ export const musicPlaylistsTable = sqliteTable(
     updatedAt: integer({ mode: 'timestamp_ms' })
       .notNull()
       .$defaultFn(() => new Date()),
-    revision: integer().notNull().default(0)
+    revision: integer().notNull().default(0),
   },
-  (table) => [index('music_playlists_slug_idx').on(table.slug)]
+  (table) => [index('music_playlists_slug_idx').on(table.slug)],
 )
 
 export const musicLabelsTable = sqliteTable(
@@ -203,9 +208,9 @@ export const musicLabelsTable = sqliteTable(
       .$defaultFn(() => new Date()),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
       .notNull()
-      .$defaultFn(() => new Date())
+      .$defaultFn(() => new Date()),
   },
-  (table) => [index('music_labels_slug_idx').on(table.slug)]
+  (table) => [index('music_labels_slug_idx').on(table.slug)],
 )
 
 export const musicLabelCreatorsTable = sqliteTable(
@@ -216,9 +221,9 @@ export const musicLabelCreatorsTable = sqliteTable(
       .references(() => musicLabelsTable.id, { onDelete: 'cascade' }),
     creatorId: text('creator_id')
       .notNull()
-      .references(() => user.id, { onDelete: 'cascade' })
+      .references(() => user.id, { onDelete: 'cascade' }),
   },
-  (table) => [primaryKey({ columns: [table.labelId, table.creatorId] })]
+  (table) => [primaryKey({ columns: [table.labelId, table.creatorId] })],
 )
 
 export const musicLabelArtistsTable = sqliteTable(
@@ -229,12 +234,12 @@ export const musicLabelArtistsTable = sqliteTable(
       .references(() => musicLabelsTable.id, { onDelete: 'cascade' }),
     artistId: text('artist_id')
       .notNull()
-      .references(() => musicArtistsTable.id, { onDelete: 'cascade' })
+      .references(() => musicArtistsTable.id, { onDelete: 'cascade' }),
   },
   (table) => [
     primaryKey({ columns: [table.labelId, table.artistId] }),
-    index('music_label_artists_artist_id_idx').on(table.artistId)
-  ]
+    index('music_label_artists_artist_id_idx').on(table.artistId),
+  ],
 )
 
 export const musicLabelAlbumsTable = sqliteTable(
@@ -245,12 +250,12 @@ export const musicLabelAlbumsTable = sqliteTable(
       .references(() => musicLabelsTable.id, { onDelete: 'cascade' }),
     albumId: text('album_id')
       .notNull()
-      .references(() => musicAlbumsTable.id, { onDelete: 'cascade' })
+      .references(() => musicAlbumsTable.id, { onDelete: 'cascade' }),
   },
   (table) => [
     primaryKey({ columns: [table.labelId, table.albumId] }),
-    index('music_label_albums_album_id_idx').on(table.albumId)
-  ]
+    index('music_label_albums_album_id_idx').on(table.albumId),
+  ],
 )
 
 // ---------------------------------------------------------------------------
@@ -267,9 +272,9 @@ export const musicAlbumArtistsTable = sqliteTable(
       .notNull()
       .references(() => musicArtistsTable.id, { onDelete: 'cascade' }),
     displayOrder: integer().notNull().default(0),
-    role: text() // 'primary' | 'featured' | 'producer' | null
+    role: text(), // 'primary' | 'featured' | 'producer' | null
   },
-  (table) => [primaryKey({ columns: [table.albumId, table.artistId] })]
+  (table) => [primaryKey({ columns: [table.albumId, table.artistId] })],
 )
 
 export const musicTrackArtistsTable = sqliteTable(
@@ -282,9 +287,9 @@ export const musicTrackArtistsTable = sqliteTable(
       .notNull()
       .references(() => musicArtistsTable.id, { onDelete: 'cascade' }),
     displayOrder: integer().notNull().default(0),
-    role: text()
+    role: text(),
   },
-  (table) => [primaryKey({ columns: [table.trackId, table.artistId] })]
+  (table) => [primaryKey({ columns: [table.trackId, table.artistId] })],
 )
 
 // ---------------------------------------------------------------------------
@@ -303,12 +308,12 @@ export const musicPlaylistTracksTable = sqliteTable(
     position: integer().notNull(),
     addedAt: integer({ mode: 'timestamp_ms' })
       .notNull()
-      .$defaultFn(() => new Date())
+      .$defaultFn(() => new Date()),
   },
   (table) => [
     primaryKey({ columns: [table.playlistId, table.trackId] }),
-    index('music_playlist_tracks_position_idx').on(table.playlistId, table.position)
-  ]
+    index('music_playlist_tracks_position_idx').on(table.playlistId, table.position),
+  ],
 )
 
 // ---------------------------------------------------------------------------
@@ -347,7 +352,7 @@ export const musicEntityLinksTable = sqliteTable(
       .$defaultFn(() => new Date()),
     updatedAt: integer({ mode: 'timestamp_ms' })
       .notNull()
-      .$defaultFn(() => new Date())
+      .$defaultFn(() => new Date()),
   },
   (table) => [
     index('music_entity_links_entity_idx').on(table.entityType, table.entityId),
@@ -357,15 +362,17 @@ export const musicEntityLinksTable = sqliteTable(
     uniqueIndex('music_entity_links_identity_uq').on(
       table.entityType,
       table.entityId,
-      table.platform
-    )
-  ]
+      table.platform,
+    ),
+  ],
 )
 
 export const MUSIC_SOURCE_IDENTITY_STATES = ['resolving', 'resolved'] as const
+
 export type MusicSourceIdentityState = (typeof MUSIC_SOURCE_IDENTITY_STATES)[number]
 
 export const MUSIC_SOURCE_CONFLICT_STATUSES = ['open', 'resolved', 'ignored'] as const
+
 export type MusicSourceConflictStatus = (typeof MUSIC_SOURCE_CONFLICT_STATUSES)[number]
 
 export const musicSourceIdentitiesTable = sqliteTable(
@@ -390,7 +397,7 @@ export const musicSourceIdentitiesTable = sqliteTable(
       .$defaultFn(() => new Date()),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
       .notNull()
-      .$defaultFn(() => new Date())
+      .$defaultFn(() => new Date()),
   },
   (table) => [
     uniqueIndex('music_source_identities_canonical_url_uq').on(table.canonicalUrl),
@@ -402,9 +409,9 @@ export const musicSourceIdentitiesTable = sqliteTable(
     index('music_source_identities_resolving_audit_page_idx').on(table.state, table.sourceKey),
     check(
       'music_source_identities_state_check',
-      sql`(${table.state} = 'resolving' AND ${table.ownerToken} IS NOT NULL AND ${table.leaseExpiresAt} IS NOT NULL AND ${table.entityType} IS NULL AND ${table.entityId} IS NULL AND ${table.resolvedAt} IS NULL) OR (${table.state} = 'resolved' AND ${table.ownerToken} IS NULL AND ${table.leaseExpiresAt} IS NULL AND ${table.entityType} IS NOT NULL AND ${table.entityId} IS NOT NULL AND ${table.resolvedAt} IS NOT NULL)`
-    )
-  ]
+      sql`(${table.state} = 'resolving' AND ${table.ownerToken} IS NOT NULL AND ${table.leaseExpiresAt} IS NOT NULL AND ${table.entityType} IS NULL AND ${table.entityId} IS NULL AND ${table.resolvedAt} IS NULL) OR (${table.state} = 'resolved' AND ${table.ownerToken} IS NULL AND ${table.leaseExpiresAt} IS NULL AND ${table.entityType} IS NOT NULL AND ${table.entityId} IS NOT NULL AND ${table.resolvedAt} IS NOT NULL)`,
+    ),
+  ],
 )
 
 export const musicSourceAliasesTable = sqliteTable(
@@ -415,9 +422,9 @@ export const musicSourceAliasesTable = sqliteTable(
       .notNull()
       .references(() => musicSourceIdentitiesTable.sourceKey, { onDelete: 'cascade' }),
     firstSeenAt: integer('first_seen_at', { mode: 'timestamp_ms' }).notNull(),
-    lastSeenAt: integer('last_seen_at', { mode: 'timestamp_ms' }).notNull()
+    lastSeenAt: integer('last_seen_at', { mode: 'timestamp_ms' }).notNull(),
   },
-  (table) => [index('music_source_aliases_source_key_idx').on(table.sourceKey)]
+  (table) => [index('music_source_aliases_source_key_idx').on(table.sourceKey)],
 )
 
 export const musicSourceIdentityConflictsTable = sqliteTable(
@@ -442,7 +449,7 @@ export const musicSourceIdentityConflictsTable = sqliteTable(
     detectedAt: integer('detected_at', { mode: 'timestamp_ms' })
       .notNull()
       .$defaultFn(() => new Date()),
-    resolvedAt: integer('resolved_at', { mode: 'timestamp_ms' })
+    resolvedAt: integer('resolved_at', { mode: 'timestamp_ms' }),
   },
   (table) => [
     uniqueIndex('music_source_identity_conflicts_open_uq')
@@ -451,19 +458,19 @@ export const musicSourceIdentityConflictsTable = sqliteTable(
         table.incumbentEntityType,
         table.incumbentEntityId,
         table.candidateEntityType,
-        table.candidateEntityId
+        table.candidateEntityId,
       )
       .where(sql`${table.status} = 'open'`),
     check(
       'music_source_identity_conflicts_status_check',
-      sql`${table.status} IN ('open', 'resolved', 'ignored')`
+      sql`${table.status} IN ('open', 'resolved', 'ignored')`,
     ),
     index('music_source_identity_conflicts_audit_page_idx').on(
       table.status,
       table.detectedAt,
-      table.id
-    )
-  ]
+      table.id,
+    ),
+  ],
 )
 
 export const musicIdentityMaintenanceRunsTable = sqliteTable(
@@ -474,18 +481,18 @@ export const musicIdentityMaintenanceRunsTable = sqliteTable(
     phase: text().notNull(),
     active: integer({ mode: 'boolean' }).notNull().default(true),
     linkHighWaterCreatedAt: integer('link_high_water_created_at', {
-      mode: 'timestamp_ms'
+      mode: 'timestamp_ms',
     }).notNull(),
     linkHighWaterId: text('link_high_water_id').notNull(),
     claimHighWaterUpdatedAt: integer('claim_high_water_updated_at', {
-      mode: 'timestamp_ms'
+      mode: 'timestamp_ms',
     }).notNull(),
     claimHighWaterEntityType: text('claim_high_water_entity_type').notNull(),
     claimHighWaterCanonicalUrl: text('claim_high_water_canonical_url').notNull(),
     cursorCreatedAt: integer('cursor_created_at', { mode: 'timestamp_ms' }).notNull(),
     cursorId: text('cursor_id').notNull(),
     claimCursorUpdatedAt: integer('claim_cursor_updated_at', {
-      mode: 'timestamp_ms'
+      mode: 'timestamp_ms',
     }).notNull(),
     claimCursorEntityType: text('claim_cursor_entity_type').notNull(),
     claimCursorCanonicalUrl: text('claim_cursor_canonical_url').notNull(),
@@ -496,13 +503,13 @@ export const musicIdentityMaintenanceRunsTable = sqliteTable(
     invalidCount: integer('invalid_count').notNull().default(0),
     orphanCount: integer('orphan_count').notNull().default(0),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
-    updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull()
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
   },
   (table) => [
     uniqueIndex('music_identity_maintenance_runs_active_uq')
       .on(table.operation)
-      .where(sql`${table.active} = 1`)
-  ]
+      .where(sql`${table.active} = 1`),
+  ],
 )
 
 export const musicIdentityMaintenanceCandidatesTable = sqliteTable(
@@ -511,7 +518,7 @@ export const musicIdentityMaintenanceCandidatesTable = sqliteTable(
     generationId: text('generation_id')
       .notNull()
       .references(() => musicIdentityMaintenanceRunsTable.generationId, {
-        onDelete: 'cascade'
+        onDelete: 'cascade',
       }),
     sourceKey: text('source_key').notNull(),
     origin: text().notNull(),
@@ -527,7 +534,7 @@ export const musicIdentityMaintenanceCandidatesTable = sqliteTable(
     status: text().notNull(),
     verifiedAt: integer('verified_at', { mode: 'timestamp_ms' }),
     scrapedAt: integer('scraped_at', { mode: 'timestamp_ms' }),
-    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull()
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   },
   (table) => [
     primaryKey({ columns: [table.generationId, table.origin, table.originKey] }),
@@ -535,9 +542,9 @@ export const musicIdentityMaintenanceCandidatesTable = sqliteTable(
       table.generationId,
       table.sourceKey,
       table.origin,
-      table.originKey
-    )
-  ]
+      table.originKey,
+    ),
+  ],
 )
 
 export const musicIdentityMaintenanceSourceKeysTable = sqliteTable(
@@ -546,11 +553,11 @@ export const musicIdentityMaintenanceSourceKeysTable = sqliteTable(
     generationId: text('generation_id')
       .notNull()
       .references(() => musicIdentityMaintenanceRunsTable.generationId, {
-        onDelete: 'cascade'
+        onDelete: 'cascade',
       }),
-    sourceKey: text('source_key').notNull()
+    sourceKey: text('source_key').notNull(),
   },
-  (table) => [primaryKey({ columns: [table.generationId, table.sourceKey] })]
+  (table) => [primaryKey({ columns: [table.generationId, table.sourceKey] })],
 )
 
 export const musicIdentityMaintenanceFindingsTable = sqliteTable(
@@ -559,7 +566,7 @@ export const musicIdentityMaintenanceFindingsTable = sqliteTable(
     generationId: text('generation_id')
       .notNull()
       .references(() => musicIdentityMaintenanceRunsTable.generationId, {
-        onDelete: 'cascade'
+        onDelete: 'cascade',
       }),
     findingKey: text('finding_key').notNull(),
     category: text().notNull(),
@@ -568,16 +575,16 @@ export const musicIdentityMaintenanceFindingsTable = sqliteTable(
     entityType: text('entity_type'),
     entityId: text('entity_id'),
     detail: text().notNull(),
-    detectedAt: integer('detected_at', { mode: 'timestamp_ms' }).notNull()
+    detectedAt: integer('detected_at', { mode: 'timestamp_ms' }).notNull(),
   },
   (table) => [
     primaryKey({ columns: [table.generationId, table.findingKey] }),
     index('music_identity_maintenance_findings_page_idx').on(
       table.generationId,
       table.category,
-      table.findingKey
-    )
-  ]
+      table.findingKey,
+    ),
+  ],
 )
 
 export const musicIdentityMaintenanceActionsTable = sqliteTable(
@@ -586,16 +593,16 @@ export const musicIdentityMaintenanceActionsTable = sqliteTable(
     generationId: text('generation_id')
       .notNull()
       .references(() => musicIdentityMaintenanceRunsTable.generationId, {
-        onDelete: 'cascade'
+        onDelete: 'cascade',
       }),
     actionKey: text('action_key').notNull(),
     kind: text().notNull(),
-    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull()
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   },
   (table) => [
     primaryKey({ columns: [table.generationId, table.actionKey] }),
-    index('music_identity_maintenance_actions_kind_idx').on(table.generationId, table.kind)
-  ]
+    index('music_identity_maintenance_actions_kind_idx').on(table.generationId, table.kind),
+  ],
 )
 
 export const musicEntityResolutionClaimsTable = sqliteTable(
@@ -613,14 +620,14 @@ export const musicEntityResolutionClaimsTable = sqliteTable(
       .$defaultFn(() => new Date()),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
       .notNull()
-      .$defaultFn(() => new Date())
+      .$defaultFn(() => new Date()),
   },
   (table) => [
     primaryKey({ columns: [table.entityType, table.canonicalUrl] }),
     index('music_entity_resolution_claims_backfill_page_idx')
       .on(table.updatedAt, table.entityType, table.canonicalUrl)
-      .where(sql`${table.entityId} IS NOT NULL`)
-  ]
+      .where(sql`${table.entityId} IS NOT NULL`),
+  ],
 )
 
 // ---------------------------------------------------------------------------
@@ -628,52 +635,69 @@ export const musicEntityResolutionClaimsTable = sqliteTable(
 // ---------------------------------------------------------------------------
 
 export type SelectMusicEntityType = InferSelectModel<typeof musicEntityTypesTable>
+
 export type SelectMusicPlatform = InferSelectModel<typeof musicPlatformsTable>
 
 export type SelectMusicArtist = InferSelectModel<typeof musicArtistsTable> & {
-  genres: string[] | null
+  genres: Array<string> | null
 }
+
 export type InsertMusicArtist = InferInsertModel<typeof musicArtistsTable>
 
 export type SelectMusicAlbum = InferSelectModel<typeof musicAlbumsTable> & {
-  genres: string[] | null
+  genres: Array<string> | null
 }
+
 export type InsertMusicAlbum = InferInsertModel<typeof musicAlbumsTable>
 
 export type SelectMusicTrack = InferSelectModel<typeof musicTracksTable>
+
 export type InsertMusicTrack = InferInsertModel<typeof musicTracksTable>
 
 export type SelectMusicPlaylist = InferSelectModel<typeof musicPlaylistsTable>
+
 export type InsertMusicPlaylist = InferInsertModel<typeof musicPlaylistsTable>
 
 export type SelectMusicLabel = InferSelectModel<typeof musicLabelsTable> & {
-  tags: string[] | null
-  genres: string[] | null
+  tags: Array<string> | null
+  genres: Array<string> | null
 }
+
 export type InsertMusicLabel = InferInsertModel<typeof musicLabelsTable>
+
 export type SelectMdxCompiledMusicLabel = SelectMusicLabel & {
   compiledContent: string
   creators: Array<{ id: string; name: string }>
 }
 
 export type SelectMusicPlaylistTrack = InferSelectModel<typeof musicPlaylistTracksTable>
+
 export type InsertMusicPlaylistTrack = InferInsertModel<typeof musicPlaylistTracksTable>
 
 export type SelectMusicEntityLink = InferSelectModel<typeof musicEntityLinksTable>
+
 export type InsertMusicEntityLink = InferInsertModel<typeof musicEntityLinksTable>
+
 export type SelectMusicEntityResolutionClaim = InferSelectModel<
   typeof musicEntityResolutionClaimsTable
 >
+
 export type SelectMusicIdentityMaintenanceRun = InferSelectModel<
   typeof musicIdentityMaintenanceRunsTable
 >
+
 export type SelectMusicSourceIdentity = InferSelectModel<typeof musicSourceIdentitiesTable>
+
 export type InsertMusicSourceIdentity = InferInsertModel<typeof musicSourceIdentitiesTable>
+
 export type SelectMusicSourceAlias = InferSelectModel<typeof musicSourceAliasesTable>
+
 export type InsertMusicSourceAlias = InferInsertModel<typeof musicSourceAliasesTable>
+
 export type SelectMusicSourceIdentityConflict = InferSelectModel<
   typeof musicSourceIdentityConflictsTable
 >
+
 export type InsertMusicSourceIdentityConflict = InferInsertModel<
   typeof musicSourceIdentityConflictsTable
 >
@@ -685,100 +709,100 @@ export type InsertMusicSourceIdentityConflict = InferInsertModel<
 export const musicArtistsRelations = relations(musicArtistsTable, ({ many }) => ({
   albumArtists: many(musicAlbumArtistsTable),
   trackArtists: many(musicTrackArtistsTable),
-  labelArtists: many(musicLabelArtistsTable)
+  labelArtists: many(musicLabelArtistsTable),
 }))
 
 export const musicAlbumsRelations = relations(musicAlbumsTable, ({ many }) => ({
   albumArtists: many(musicAlbumArtistsTable),
   tracks: many(musicTracksTable),
-  labelAlbums: many(musicLabelAlbumsTable)
+  labelAlbums: many(musicLabelAlbumsTable),
 }))
 
 export const musicTracksRelations = relations(musicTracksTable, ({ one, many }) => ({
   album: one(musicAlbumsTable, {
     fields: [musicTracksTable.albumId],
-    references: [musicAlbumsTable.id]
+    references: [musicAlbumsTable.id],
   }),
   trackArtists: many(musicTrackArtistsTable),
-  playlistTracks: many(musicPlaylistTracksTable)
+  playlistTracks: many(musicPlaylistTracksTable),
 }))
 
 export const musicAlbumArtistsRelations = relations(musicAlbumArtistsTable, ({ one }) => ({
   album: one(musicAlbumsTable, {
     fields: [musicAlbumArtistsTable.albumId],
-    references: [musicAlbumsTable.id]
+    references: [musicAlbumsTable.id],
   }),
   artist: one(musicArtistsTable, {
     fields: [musicAlbumArtistsTable.artistId],
-    references: [musicArtistsTable.id]
-  })
+    references: [musicArtistsTable.id],
+  }),
 }))
 
 export const musicTrackArtistsRelations = relations(musicTrackArtistsTable, ({ one }) => ({
   track: one(musicTracksTable, {
     fields: [musicTrackArtistsTable.trackId],
-    references: [musicTracksTable.id]
+    references: [musicTracksTable.id],
   }),
   artist: one(musicArtistsTable, {
     fields: [musicTrackArtistsTable.artistId],
-    references: [musicArtistsTable.id]
-  })
+    references: [musicArtistsTable.id],
+  }),
 }))
 
 export const musicPlaylistsRelations = relations(musicPlaylistsTable, ({ one, many }) => ({
   curator: one(user, {
     fields: [musicPlaylistsTable.curatorId],
-    references: [user.id]
+    references: [user.id],
   }),
-  playlistTracks: many(musicPlaylistTracksTable)
+  playlistTracks: many(musicPlaylistTracksTable),
 }))
 
 export const musicLabelsRelations = relations(musicLabelsTable, ({ many }) => ({
   creators: many(musicLabelCreatorsTable),
   artists: many(musicLabelArtistsTable),
-  albums: many(musicLabelAlbumsTable)
+  albums: many(musicLabelAlbumsTable),
 }))
 
 export const musicLabelCreatorsRelations = relations(musicLabelCreatorsTable, ({ one }) => ({
   label: one(musicLabelsTable, {
     fields: [musicLabelCreatorsTable.labelId],
-    references: [musicLabelsTable.id]
+    references: [musicLabelsTable.id],
   }),
   creator: one(user, {
     fields: [musicLabelCreatorsTable.creatorId],
-    references: [user.id]
-  })
+    references: [user.id],
+  }),
 }))
 
 export const musicLabelArtistsRelations = relations(musicLabelArtistsTable, ({ one }) => ({
   label: one(musicLabelsTable, {
     fields: [musicLabelArtistsTable.labelId],
-    references: [musicLabelsTable.id]
+    references: [musicLabelsTable.id],
   }),
   artist: one(musicArtistsTable, {
     fields: [musicLabelArtistsTable.artistId],
-    references: [musicArtistsTable.id]
-  })
+    references: [musicArtistsTable.id],
+  }),
 }))
 
 export const musicLabelAlbumsRelations = relations(musicLabelAlbumsTable, ({ one }) => ({
   label: one(musicLabelsTable, {
     fields: [musicLabelAlbumsTable.labelId],
-    references: [musicLabelsTable.id]
+    references: [musicLabelsTable.id],
   }),
   album: one(musicAlbumsTable, {
     fields: [musicLabelAlbumsTable.albumId],
-    references: [musicAlbumsTable.id]
-  })
+    references: [musicAlbumsTable.id],
+  }),
 }))
 
 export const musicPlaylistTracksRelations = relations(musicPlaylistTracksTable, ({ one }) => ({
   playlist: one(musicPlaylistsTable, {
     fields: [musicPlaylistTracksTable.playlistId],
-    references: [musicPlaylistsTable.id]
+    references: [musicPlaylistsTable.id],
   }),
   track: one(musicTracksTable, {
     fields: [musicPlaylistTracksTable.trackId],
-    references: [musicTracksTable.id]
-  })
+    references: [musicTracksTable.id],
+  }),
 }))

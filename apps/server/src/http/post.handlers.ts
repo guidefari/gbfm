@@ -1,17 +1,19 @@
 import { Api } from '@gbfm/api/api'
 import { AuthSession } from '@gbfm/api/middleware/auth'
-import { canCreatePosts } from '@gbfm/core/roles'
 import {
   GetEditorialPostsResponse,
   GetEditorialTagsResponse,
   GetMicroTagsResponse,
   GetPostTagsResponse,
-  ValidationHttpError
+  ValidationHttpError,
 } from '@gbfm/api/post'
+import { canCreatePosts } from '@gbfm/core/roles'
 import { Effect, Schema } from 'effect'
 import { HttpServerResponse } from 'effect/unstable/http'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
+
 import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
+import { omitUndefined } from '@/lib/omit-undefined'
 import { PostService } from '@/services/post.service'
 
 const dieOnDatabaseError = makeDieOnDatabaseError('post')
@@ -29,16 +31,18 @@ const toDateStrings = <
       readonly locallyEdited: boolean
       readonly lastError: string | null
     }
-  }
+  },
 >(
-  post: T
+  post: T,
 ) => {
   const { blueskySource, ...rest } = post
+
   const response = {
     ...rest,
     createdAt: post.createdAt.toISOString(),
-    updatedAt: post.updatedAt.toISOString()
+    updatedAt: post.updatedAt.toISOString(),
   }
+
   if (!blueskySource) return response
 
   return {
@@ -48,8 +52,8 @@ const toDateStrings = <
       sourceCreatedAt:
         blueskySource.sourceCreatedAt instanceof Date
           ? blueskySource.sourceCreatedAt.toISOString()
-          : blueskySource.sourceCreatedAt
-    }
+          : blueskySource.sourceCreatedAt,
+    },
   }
 }
 
@@ -58,249 +62,371 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
     .handle('getPosts', ({ query }) =>
       Effect.gen(function* () {
         const svc = yield* PostService
+
         const result = yield* dieOnDatabaseError(
-          svc.getAll({ limit: query.limit ?? 20, offset: query.offset ?? 0, type: query.type })
+          svc.getAll(
+            omitUndefined({
+              limit: query.limit ?? 20,
+              offset: query.offset ?? 0,
+              type: query.type,
+            }),
+          ),
         )
 
         return {
           data: result.data.map(toDateStrings),
-          pagination: result.pagination
+          pagination: result.pagination,
         }
-      })
+      }),
     )
     .handle('getPostsForEdit', ({ query }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
         const svc = yield* PostService
+
         const result = yield* dieOnDatabaseError(
           svc.getAllForEdit(
-            {
+            omitUndefined({
               limit: query.limit ?? 20,
               offset: query.offset ?? 0,
               type: query.type,
               source: query.source,
               draft: query.status === undefined ? undefined : query.status === 'draft',
-              q: query.q
-            },
+              q: query.q,
+            }),
             user.id,
-            user.role ?? 'user'
-          )
+            user.role ?? 'user',
+          ),
         )
+
         return { data: result.data.map(toDateStrings), pagination: result.pagination }
-      })
+      }),
     )
     .handle('getPostTags', () =>
       Effect.gen(function* () {
         const svc = yield* PostService
         const tags = yield* dieOnDatabaseError(svc.getPostTags())
         const body = yield* Schema.encodeEffect(GetPostTagsResponse)(tags).pipe(Effect.orDie)
+
         return HttpServerResponse.setHeader(
           yield* HttpServerResponse.json(body).pipe(Effect.orDie),
           'Cache-Control',
-          'public, max-age=3600, stale-while-revalidate=86400'
+          'public, max-age=3600, stale-while-revalidate=86400',
         )
-      })
+      }),
     )
     .handle('getEditorialTags', () =>
       Effect.gen(function* () {
         const svc = yield* PostService
         const tags = yield* dieOnDatabaseError(svc.getEditorialTags())
         const body = yield* Schema.encodeEffect(GetEditorialTagsResponse)(tags).pipe(Effect.orDie)
+
         return HttpServerResponse.setHeader(
           yield* HttpServerResponse.json(body).pipe(Effect.orDie),
           'Cache-Control',
-          'public, max-age=3600, stale-while-revalidate=86400'
+          'public, max-age=3600, stale-while-revalidate=86400',
         )
-      })
+      }),
     )
     .handle('getEditorialPosts', ({ query }) =>
       Effect.gen(function* () {
         const svc = yield* PostService
+
         const result = yield* dieOnDatabaseError(
-          svc.getEditorials({ limit: query.limit ?? 20, offset: query.offset ?? 0, tag: query.tag })
+          svc.getEditorials(
+            omitUndefined({
+              limit: query.limit ?? 20,
+              offset: query.offset ?? 0,
+              tag: query.tag,
+            }),
+          ),
         )
 
         const body = {
           data: result.data.map(toDateStrings),
-          pagination: result.pagination
+          pagination: result.pagination,
         }
+
         const encoded = yield* Schema.encodeEffect(GetEditorialPostsResponse)(body).pipe(
-          Effect.orDie
+          Effect.orDie,
         )
+
         return HttpServerResponse.setHeader(
           yield* HttpServerResponse.json(encoded).pipe(Effect.orDie),
           'Cache-Control',
-          'public, max-age=60, stale-while-revalidate=300'
+          'public, max-age=60, stale-while-revalidate=300',
         )
-      })
+      }),
     )
     .handle('getEditorialPostBySlug', ({ params }) =>
       Effect.gen(function* () {
         const svc = yield* PostService
+
         const post = yield* dieOnDatabaseError(
           svc
             .getEditorialBySlug(params.slug)
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
         )
 
         return toDateStrings(post)
-      })
+      }),
     )
     .handle('getMicroPosts', ({ query }) =>
       Effect.gen(function* () {
         const svc = yield* PostService
+
         const result = yield* dieOnDatabaseError(
-          svc.getMicroPosts({ limit: query.limit ?? 20, offset: query.offset ?? 0, tag: query.tag })
+          svc.getMicroPosts(
+            omitUndefined({
+              limit: query.limit ?? 20,
+              offset: query.offset ?? 0,
+              tag: query.tag,
+            }),
+          ),
         )
 
         return {
           data: result.data.map(toDateStrings),
-          pagination: result.pagination
+          pagination: result.pagination,
         }
-      })
+      }),
+    )
+    .handle('getLatestMicroPost', () =>
+      Effect.gen(function* () {
+        const svc = yield* PostService
+
+        return yield* dieOnDatabaseError(svc.getLatestMicroPost)
+      }),
     )
     .handle('getMicroTags', () =>
       Effect.gen(function* () {
         const svc = yield* PostService
         const tags = yield* dieOnDatabaseError(svc.getMicroTags())
         const body = yield* Schema.encodeEffect(GetMicroTagsResponse)(tags).pipe(Effect.orDie)
+
         return HttpServerResponse.setHeader(
           yield* HttpServerResponse.json(body).pipe(Effect.orDie),
           'Cache-Control',
-          'public, max-age=3600, stale-while-revalidate=86400'
+          'public, max-age=3600, stale-while-revalidate=86400',
         )
-      })
+      }),
     )
     .handle('searchMicroPosts', ({ query }) =>
       Effect.gen(function* () {
         const svc = yield* PostService
+
         const result = yield* dieOnDatabaseError(
-          svc.searchMicroPosts({ q: query.q, limit: query.limit ?? 20, offset: query.offset ?? 0 })
+          svc.searchMicroPosts({ q: query.q, limit: query.limit ?? 20, offset: query.offset ?? 0 }),
         )
 
         return {
           data: result.data.map(toDateStrings),
-          pagination: result.pagination
+          pagination: result.pagination,
         }
-      })
+      }),
     )
     .handle('getMicroPostBySlug', ({ params }) =>
       Effect.gen(function* () {
         const svc = yield* PostService
+
         const post = yield* dieOnDatabaseError(
           svc
             .getMicroPostBySlug(params.slug)
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
         )
 
         return toDateStrings(post)
-      })
+      }),
+    )
+    .handle('getMicroPostScreen', ({ params, query }) =>
+      Effect.gen(function* () {
+        const svc = yield* PostService
+
+        const result = yield* dieOnDatabaseError(
+          Effect.all(
+            {
+              post: svc.getMicroPostBySlug(params.slug),
+              replies:
+                query.part === 'main'
+                  ? Effect.succeed({ data: [] })
+                  : svc.getMicroPostReplies(params.slug, { limit: 100, offset: 0 }),
+            },
+            { concurrency: 'unbounded' },
+          ).pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
+        )
+
+        const related = yield* dieOnDatabaseError(
+          Effect.all(
+            {
+              root: result.post.rootPostId
+                ? svc.getMicroPostById(result.post.rootPostId)
+                : Effect.succeed(result.post),
+              quote: result.post.quotedPostId
+                ? svc.getMicroPostById(result.post.quotedPostId)
+                : Effect.succeed(null),
+            },
+            { concurrency: 'unbounded' },
+          ).pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
+        )
+
+        const screenPosts = [
+          ...new Map(
+            [result.post, related.root, related.quote, ...result.replies.data].flatMap((post) =>
+              post ? [[post.id, post] as const] : [],
+            ),
+          ).values(),
+        ]
+
+        const musicByPostId = yield* dieOnDatabaseError(svc.getMicroPostScreenMusic(screenPosts))
+
+        const toScreenPost = (post: (typeof screenPosts)[number]) => ({
+          ...toDateStrings(post),
+          music: musicByPostId.get(post.id) ?? null,
+        })
+
+        return {
+          post: toScreenPost(result.post),
+          replies: result.replies.data.map(toScreenPost),
+          root: toScreenPost(related.root),
+          quote: related.quote ? toScreenPost(related.quote) : null,
+        }
+      }).pipe(Effect.withSpan('post.getMicroPostScreen', { attributes: { slug: params.slug } })),
+    )
+    .handle('getMicroPostScreenReplies', ({ params }) =>
+      Effect.gen(function* () {
+        const svc = yield* PostService
+
+        const replies = yield* dieOnDatabaseError(
+          svc
+            .getMicroPostReplies(params.slug, { limit: 100, offset: 0 })
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
+        )
+
+        const musicByPostId = yield* dieOnDatabaseError(svc.getMicroPostScreenMusic(replies.data))
+
+        return replies.data.map((reply) => ({
+          ...toDateStrings(reply),
+          music: musicByPostId.get(reply.id) ?? null,
+        }))
+      }).pipe(
+        Effect.withSpan('post.getMicroPostScreenReplies', { attributes: { slug: params.slug } }),
+      ),
     )
     .handle('getMicroPostById', ({ params }) =>
       Effect.gen(function* () {
         const svc = yield* PostService
+
         const post = yield* dieOnDatabaseError(
           svc
             .getMicroPostById(params.id)
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
         )
 
         return toDateStrings(post)
-      })
+      }),
     )
     .handle('createMicroPostReply', ({ params, payload }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
         const svc = yield* PostService
+
         const reply = yield* dieOnDatabaseError(
           svc
-            .createMicroPostReply({
-              parentSlug: params.parentSlug,
-              actorUserId: user.id,
-              title: payload.title,
-              content: payload.content,
-              musicEntityType: payload.musicEntityType,
-              musicEntityId: payload.musicEntityId,
-              quotedPostId: payload.quotedPostId
-            })
+            .createMicroPostReply(
+              omitUndefined({
+                parentSlug: params.parentSlug,
+                actorUserId: user.id,
+                title: payload.title,
+                content: payload.content,
+                musicEntityType: payload.musicEntityType,
+                musicEntityId: payload.musicEntityId,
+                quotedPostId: payload.quotedPostId,
+              }),
+            )
             .pipe(
               Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
               Effect.catchTag('ConflictError', () => new HttpApiError.Conflict()),
               Effect.catchTag('ValidationError', () => new ValidationHttpError()),
               Effect.catchTag('ParentPostNotReplyableError', () => new ValidationHttpError()),
-              Effect.catchTag('QuotedPostNotEmbeddableError', () => new ValidationHttpError())
-            )
+              Effect.catchTag('QuotedPostNotEmbeddableError', () => new ValidationHttpError()),
+            ),
         )
 
         return toDateStrings(reply)
-      })
+      }),
     )
     .handle('getMicroPostReplies', ({ params, query }) =>
       Effect.gen(function* () {
         const svc = yield* PostService
+
         const result = yield* dieOnDatabaseError(
           svc
             .getMicroPostReplies(params.parentSlug, {
               limit: query.limit ?? 20,
-              offset: query.offset ?? 0
+              offset: query.offset ?? 0,
             })
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
         )
 
         return {
           data: result.data.map(toDateStrings),
-          pagination: result.pagination
+          pagination: result.pagination,
         }
-      })
+      }),
     )
     .handle('getMicroPostThread', ({ params, query }) =>
       Effect.gen(function* () {
         const svc = yield* PostService
+
         const result = yield* dieOnDatabaseError(
           svc
             .getMicroPostThread(params.slug, {
               limit: query.limit ?? 20,
-              offset: query.offset ?? 0
+              offset: query.offset ?? 0,
             })
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
         )
 
         return {
           root: toDateStrings(result.root),
           focus: toDateStrings(result.focus),
           posts: result.posts.map(toDateStrings),
-          pagination: result.pagination
+          pagination: result.pagination,
         }
-      })
+      }),
     )
     .handle('getPostBySlug', ({ params }) =>
       Effect.gen(function* () {
         const svc = yield* PostService
+
         const post = yield* dieOnDatabaseError(
           svc
             .getBySlug(params.slug)
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
         )
 
         return toDateStrings(post)
-      })
+      }),
     )
     .handle('getPostBySlugForEdit', ({ params }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
         const svc = yield* PostService
+
         const post = yield* dieOnDatabaseError(
           svc.getBySlugForEdit(params.slug, user.id, user.role ?? 'user').pipe(
             Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
-            Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized())
-          )
+            Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized()),
+          ),
         )
+
         return toDateStrings(post)
-      })
+      }),
     )
     .handle('createPost', ({ payload }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
+
         if (!canCreatePosts(user.role)) {
           return yield* new HttpApiError.Forbidden()
         }
@@ -309,22 +435,23 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
         const finalCreatorIds = creatorIds?.length ? [...creatorIds] : [user.id]
 
         const svc = yield* PostService
+
         const post = yield* dieOnDatabaseError(
           svc
             .create(
-              { ...postData, tags: postData.tags ? [...postData.tags] : undefined },
-              finalCreatorIds
+              omitUndefined({ ...postData, tags: postData.tags ? [...postData.tags] : undefined }),
+              finalCreatorIds,
             )
             .pipe(
               Effect.catchTag('ConflictError', () => new HttpApiError.Conflict()),
               Effect.catchTag('ValidationError', () => new ValidationHttpError()),
               Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
-              Effect.catchTag('QuotedPostNotEmbeddableError', () => new ValidationHttpError())
-            )
+              Effect.catchTag('QuotedPostNotEmbeddableError', () => new ValidationHttpError()),
+            ),
         )
 
         return toDateStrings(post)
-      })
+      }),
     )
     .handle('updatePostBySlug', ({ params, payload }) =>
       Effect.gen(function* () {
@@ -332,34 +459,41 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
         const { tags, creatorIds, ...updateData } = payload
 
         const svc = yield* PostService
+
         const post = yield* dieOnDatabaseError(
           svc
-            .update(params.slug, user.id, user.role || 'user', {
-              ...updateData,
-              ...(tags && { tags: [...tags] }),
-              ...(creatorIds && { creatorIds: [...creatorIds] })
-            })
+            .update(
+              params.slug,
+              user.id,
+              user.role || 'user',
+              omitUndefined({
+                ...updateData,
+                ...(tags && { tags: [...tags] }),
+                ...(creatorIds && { creatorIds: [...creatorIds] }),
+              }),
+            )
             .pipe(
               Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
               Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized()),
-              Effect.catchTag('ValidationError', () => new ValidationHttpError())
-            )
+              Effect.catchTag('ValidationError', () => new ValidationHttpError()),
+            ),
         )
 
         return toDateStrings(post)
-      })
+      }),
     )
     .handle('getPostsByTag', ({ params, query }) =>
       Effect.gen(function* () {
         const svc = yield* PostService
+
         const result = yield* dieOnDatabaseError(
-          svc.getByTag(params.tag, { limit: query.limit ?? 20, offset: query.offset ?? 0 })
+          svc.getByTag(params.tag, { limit: query.limit ?? 20, offset: query.offset ?? 0 }),
         )
 
         return {
           data: result.data.map(toDateStrings),
-          pagination: result.pagination
+          pagination: result.pagination,
         }
-      })
-    )
+      }),
+    ),
 )

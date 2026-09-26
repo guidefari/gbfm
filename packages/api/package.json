@@ -37,7 +37,7 @@
   "dependencies": {
     "@gbfm/social-card": "workspace:*",
     "@gbfm/site-metadata": "workspace:*",
-    "effect": "4.0.0-rc.117"
+    "effect": "4.0.0-rc.116"
   },
   "devDependencies": {
     "@types/bun": "1.4.2",

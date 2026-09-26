@@ -8,7 +8,7 @@ import {
   type FieldValues,
   FormProvider,
   type FormProviderProps,
-  useFormContext
+  useFormContext,
 } from 'react-hook-form'
 
 import { cn } from '../lib/cn'
@@ -17,7 +17,7 @@ import { Label } from './label'
 const Form = <
   TFieldValues extends FieldValues,
   TContext = unknown,
-  TTransformedValues extends FieldValues | undefined = undefined
+  TTransformedValues extends FieldValues | undefined = undefined,
 >({
   onSubmit,
   onError,
@@ -48,7 +48,7 @@ const Form = <
 
 type FormFieldContextValue<
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 > = {
   name: TName
 }
@@ -57,12 +57,14 @@ const FormFieldContext = React.createContext<FormFieldContextValue | undefined>(
 
 const FormField = <
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 >({
   ...props
 }: ControllerProps<TFieldValues, TName>) => {
+  const contextValue = React.useMemo(() => ({ name: props.name }), [props.name])
+
   return (
-    <FormFieldContext.Provider value={{ name: props.name }}>
+    <FormFieldContext.Provider value={contextValue}>
       <Controller {...props} />
     </FormFieldContext.Provider>
   )
@@ -91,7 +93,7 @@ const useFormField = () => {
     formItemId: `${id}-form-item`,
     formDescriptionId: `${id}-form-item-description`,
     formMessageId: `${id}-form-item-message`,
-    ...fieldState
+    ...fieldState,
   }
 }
 
@@ -104,14 +106,16 @@ const FormItemContext = React.createContext<FormItemContextValue | undefined>(un
 const FormItem = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => {
     const id = React.useId()
+    const contextValue = React.useMemo(() => ({ id }), [id])
 
     return (
-      <FormItemContext.Provider value={{ id }}>
+      <FormItemContext.Provider value={contextValue}>
         <div ref={ref} className={cn('grid gap-1', className)} {...props} />
       </FormItemContext.Provider>
     )
-  }
+  },
 )
+
 FormItem.displayName = 'FormItem'
 
 const FormLabel = React.forwardRef<
@@ -129,6 +133,7 @@ const FormLabel = React.forwardRef<
     />
   )
 })
+
 FormLabel.displayName = 'FormLabel'
 
 const FormControl = React.forwardRef<
@@ -145,12 +150,13 @@ const FormControl = React.forwardRef<
       aria-invalid={Boolean(error)}
       className={cn(
         error && 'border-destructive focus-visible:border-2 focus-visible:ring-0',
-        className
+        className,
       )}
       {...props}
     />
   )
 })
+
 FormControl.displayName = 'FormControl'
 
 const FormDescription = React.forwardRef<
@@ -158,6 +164,7 @@ const FormDescription = React.forwardRef<
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, ...props }, ref) => {
   const { formDescriptionId, error } = useFormField()
+
   if (error) return null
 
   return (
@@ -169,13 +176,15 @@ const FormDescription = React.forwardRef<
     />
   )
 })
+
 FormDescription.displayName = 'FormDescription'
 
 const FormMessage = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
->(({ className, children, ...props }, ref) => {
+>(({ className, ...props }, ref) => {
   const { error, formMessageId } = useFormField()
+
   if (!error) return null
 
   return (
@@ -188,6 +197,7 @@ const FormMessage = React.forwardRef<
     </p>
   )
 })
+
 FormMessage.displayName = 'FormMessage'
 
 export {
@@ -198,5 +208,5 @@ export {
   FormItem,
   FormLabel,
   FormMessage,
-  useFormField
+  useFormField,
 }

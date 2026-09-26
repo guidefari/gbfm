@@ -4,22 +4,31 @@
   "bracketSameLine": true,
   "bracketSpacing": true,
   "jsxSingleQuote": true,
+  "printWidth": 100,
   "quoteProps": "as-needed",
   "semi": false,
   "singleQuote": true,
   "sortPackageJson": false,
   "tabWidth": 2,
-  "trailingComma": "none",
+  "trailingComma": "all",
   "useTabs": false,
+  "endOfLine": "lf",
+  "experimentalSortImports": {
+    "groups": ["builtin", "external", "internal", ["parent", "sibling", "index"]],
+    "newlinesBetween": true
+  },
   "ignorePatterns": [
     "**/node_modules/**",
     "**/dist/**",
     "**/build/**",
     "**/.next/**",
+    "**/.turbo/**",
     "**/coverage/**",
     "apps/www/src/routeTree.gen.ts",
     "**/*.gen.ts",
     "**/*.generated.ts",
-    "**/*sst-env.d.ts"
+    "**/*sst-env.d.ts",
+    "**/package.json",
+    "**/tsconfig.json"
   ]
 }

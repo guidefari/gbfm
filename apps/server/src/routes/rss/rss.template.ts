@@ -212,7 +212,7 @@ export const rssFeedHtml = (mixes: ReadonlyArray<RssMixEntry>): string => {
                 </div>`
                     : ''
                 }
-            </div>`
+            </div>`,
               )
               .join('')}
         </div>

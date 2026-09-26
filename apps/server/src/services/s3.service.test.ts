@@ -1,11 +1,14 @@
 import { Effect, Layer } from 'effect'
 import { describe, expect, test } from 'vitest'
-import { ObjectStoreClient } from './storage/object-store-client'
+
 import { withTestLayer } from '@/test/effect'
+
 import { S3Service, S3ServiceLayer } from './s3.service'
+import { ObjectStoreClient } from './storage/object-store-client'
 
 const testStore = () => {
   const uploads: Array<{ bucketName: string; key: string; contentType: string }> = []
+
   return {
     uploads,
     provider: 'r2' as const,
@@ -18,7 +21,7 @@ const testStore = () => {
       uploads.push({
         bucketName: input.bucketName,
         key: input.key,
-        contentType: input.contentType
+        contentType: input.contentType,
       })
     },
     presignPutObject: async () => 'https://object-store.test/upload',
@@ -30,7 +33,7 @@ const testStore = () => {
     presignUploadPart: async () => 'https://object-store.test/part',
     completeMultipartUpload: async () => {},
     abortMultipartUpload: async () => {},
-    listMultipartParts: async () => []
+    listMultipartParts: async () => [],
   }
 }
 
@@ -44,14 +47,15 @@ describe('S3Service', () => {
         Effect.gen(function* () {
           const s3 = yield* S3Service
           yield* s3.uploadFile('path/file.txt', 'hello object store', 'text/plain', 'test-bucket')
+
           return yield* s3.listBuckets()
         }),
-        serviceLayer
-      )
+        serviceLayer,
+      ),
     )
 
     expect(store.uploads).toEqual([
-      { bucketName: 'test-bucket', key: 'path/file.txt', contentType: 'text/plain' }
+      { bucketName: 'test-bucket', key: 'path/file.txt', contentType: 'text/plain' },
     ])
     expect(result).toEqual(['user-content', 'mixes'])
   })

@@ -35,7 +35,7 @@ export const cloudflareRejectedProviderCodes = [
   'E_SENDER_DOMAIN_NOT_AVAILABLE',
   'E_RECIPIENT_NOT_ALLOWED',
   'E_RECIPIENT_SUPPRESSED',
-  'E_DELIVERY_FAILED'
+  'E_DELIVERY_FAILED',
 ] as const
 
 /** A documented Cloudflare rejection code safe to expose to service callers and telemetry. */
@@ -45,7 +45,7 @@ export type CloudflareRejectedProviderCode = (typeof cloudflareRejectedProviderC
 export const emailUnavailableProviderCodes = [
   'unknown',
   'invalid-receipt',
-  'not-configured'
+  'not-configured',
 ] as const
 
 /** A safe finite code for an unavailable email transport. */
@@ -74,7 +74,7 @@ export interface TransportReceipt {
 export interface EmailTransportService {
   /** Sends one complete message once and returns its provider receipt. */
   readonly send: (
-    message: OutboundEmailMessage
+    message: OutboundEmailMessage,
   ) => Effect.Effect<TransportReceipt, EmailRejected | EmailUnavailable>
 }
 
@@ -105,7 +105,7 @@ export interface RecordingEmailTransportOptions {
  * @returns A real `EmailTransport` layer plus immutable message snapshots for assertions.
  */
 export function makeRecordingEmailTransport(
-  options: RecordingEmailTransportOptions = {}
+  options: RecordingEmailTransportOptions = {},
 ): RecordingEmailTransport {
   const sent: Array<OutboundEmailMessage> = []
   const messageId = options.messageId ?? 'recorded-email'
@@ -117,11 +117,14 @@ export function makeRecordingEmailTransport(
     layer: Layer.succeed(EmailTransport, {
       send: (message) => {
         sent.push(message)
+
         if (options.failure) return Effect.fail(options.failure)
+
         if (options.unavailable) return Effect.fail(new EmailUnavailable({}))
+
         return Effect.succeed({ provider: 'cloudflare', messageId })
-      }
-    })
+      },
+    }),
   }
 }
 
@@ -134,5 +137,5 @@ export const RecordingEmailTransportLayer = makeRecordingEmailTransport().layer
  * The next infrastructure slice replaces this layer at the Worker composition seam.
  */
 export const UnconfiguredEmailTransportLayer = Layer.succeed(EmailTransport, {
-  send: () => Effect.fail(new EmailUnavailable({ providerCode: 'not-configured' }))
+  send: () => Effect.fail(new EmailUnavailable({ providerCode: 'not-configured' })),
 })

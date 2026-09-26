@@ -1,17 +1,18 @@
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as Output from 'alchemy/Output'
 import * as Effect from 'effect/Effect'
+
 import type { NavigationLockDurableObject } from '../apps/server/src/durable-objects/navigation-lock.do'
 import type { SpotifyImportResolverDurableObject } from '../apps/server/src/durable-objects/spotify-import-resolver.do'
 import type { EmailDeploymentConfig } from '../apps/server/src/email-deployment-config'
 import {
   maintenanceSweepCron,
   reminderSweepCron,
-  sitemapRegenerationCron
+  sitemapRegenerationCron,
 } from '../apps/server/src/scheduled'
 import type { CdnRouter } from './cdn'
 import type { EmailResources } from './email'
-import { workerObservability } from './observability'
+import { privateSourceMaps, workerObservability } from './observability'
 import type { QrPdfWorker } from './qr-pdf'
 import type { SecretBindings } from './secrets'
 import { hostname, localDevPorts, type StageConfig } from './stage'
@@ -36,10 +37,15 @@ export const apiWorker = ({
   emailConfig,
   cdn,
   qrPdf,
-  adminEmail
+  adminEmail,
 }: ApiWorkerInput) =>
   Effect.gen(function* () {
     const sentryDsn = secrets.SENTRY_BACKEND_DSN
+
+    const requestTelemetry = yield* Cloudflare.AnalyticsEngine.Dataset('ApiRequestTelemetry', {
+      dataset: `gbfm_api_${config.stage}`,
+    })
+
     if (sentryDsn === undefined) {
       return yield* Effect.die(new Error('SENTRY_BACKEND_DSN secret is missing'))
     }
@@ -49,10 +55,12 @@ export const apiWorker = ({
       ...hostname(config, 'api.goosebumps.fm'),
       ...(config.isLocalDev ? { dev: { port: localDevPorts.api, strictPort: true } } : undefined),
       compatibility: { date: '2026-07-04', flags: ['nodejs_compat'] },
+      build: privateSourceMaps,
       crons: [reminderSweepCron, sitemapRegenerationCron, maintenanceSweepCron],
       observability: workerObservability(config.isProduction),
       env: {
         DB: store.db,
+        REQUEST_TELEMETRY: requestTelemetry,
         USER_CONTENT: store.userContent,
         MIXES: store.mixes,
         SITEMAP: store.sitemap,
@@ -63,15 +71,19 @@ export const apiWorker = ({
         EMAIL_SENDER: emailConfig.emailSender,
         EMAIL_TRANSPORT_MODE: emailConfig.transport,
         NAVIGATION_LOCK: Cloudflare.DurableObject<NavigationLockDurableObject>('NavigationLock', {
-          className: 'NavigationLockDurableObject'
+          className: 'NavigationLockDurableObject',
         }),
         SPOTIFY_IMPORT_RESOLVER: Cloudflare.DurableObject<SpotifyImportResolverDurableObject>(
           'SpotifyImportResolver',
           {
-            className: 'SpotifyImportResolverDurableObject'
-          }
+            className: 'SpotifyImportResolverDurableObject',
+          },
         ),
         APP_STAGE: config.stage,
+        APP_RELEASE: config.release,
+        CLOUDFLARE_ACCOUNT_ID: process.env.CLOUDFLARE_ACCOUNT_ID ?? '',
+        BROWSER_TELEMETRY_DATASET: `gbfm_www_${config.stage}`,
+        ...(config.isLocalDev ? { LOCAL_DEV: 'true' } : undefined),
         CDN_ROUTER_URL: Output.map(cdn.url, (url) => url ?? ''),
         USER_CONTENT_BUCKET_NAME: store.userContent.bucketName,
         MIXES_BUCKET_NAME: store.mixes.bucketName,
@@ -79,19 +91,19 @@ export const apiWorker = ({
         ADMIN_EMAIL: adminEmail,
         ...secrets,
         SENTRY_DSN: sentryDsn,
-        R2AccountId: store.userContent.accountId
-      }
+        R2AccountId: store.userContent.accountId,
+      },
     })
 
     yield* Cloudflare.Queues.Consumer('ReminderConsumer', {
       queueId: store.reminders.queueId,
-      scriptName: api.workerName
+      scriptName: api.workerName,
     })
     yield* Cloudflare.Queues.Consumer('PlaylistEnrichmentConsumer', {
       queueId: store.playlistEnrichment.queueId,
       scriptName: api.workerName,
       deadLetterQueue: store.playlistEnrichmentFailures.queueName,
-      settings: { maxRetries: 5, retryDelay: 30 }
+      settings: { maxRetries: 5, retryDelay: 30 },
     })
 
     return api

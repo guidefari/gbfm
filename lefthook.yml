@@ -1,15 +1,15 @@
 pre-commit:
-  parallel: true
+  parallel: false
   commands:
-    format:
+    format-and-lint:
       glob: '*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc,css}'
-      run: bun oxfmt --write --no-error-on-unmatched-pattern {staged_files}
+      run: bun oxfmt --write --no-error-on-unmatched-pattern {staged_files} && bun oxlint --fix --no-error-on-unmatched-pattern {staged_files} && bun oxfmt --write --no-error-on-unmatched-pattern {staged_files}
       stage_fixed: true
 
-    # lint-staged:
-    #   glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc,css}"
-    #   run: bun oxlint --fix --no-error-on-unmatched-pattern {staged_files}
-    #   stage_fixed: true
+    format-svelte:
+      glob: '*.svelte'
+      run: bun prettier --write {staged_files}
+      stage_fixed: true
 
     theme-css-build:
       glob: 'packages/theme/src/**/*.ts'

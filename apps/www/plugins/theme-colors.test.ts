@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
 import { dark, light } from '@gbfm/theme'
+import { describe, expect, it } from 'vitest'
+
 import { transformThemeColors } from './theme-colors'
 
 describe('themeColorsPlugin', () => {

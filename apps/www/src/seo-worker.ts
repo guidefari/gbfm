@@ -1,5 +1,5 @@
-import { Schema } from 'effect'
 import { getStaticSiteMetadata, renderMetadataHtml, SiteMetadata } from '@gbfm/site-metadata'
+import { Effect, Schema } from 'effect'
 
 type Fetcher = {
   readonly fetch: (request: Request) => Promise<Response>
@@ -54,7 +54,7 @@ const reservedTopLevelRoutes = new Set([
   'tracks',
   'tweet',
   'tweets',
-  'unsubscribe'
+  'unsubscribe',
 ])
 
 const metadataKind = (segment: string): MetadataRoute['kind'] | null => {
@@ -82,18 +82,23 @@ const metadataKind = (segment: string): MetadataRoute['kind'] | null => {
 
 const metadataRoute = (pathname: string): MetadataRoute | null => {
   const segments = pathname.split('/').filter(Boolean)
+
   if (segments.length === 1 && segments[0] && !reservedTopLevelRoutes.has(segments[0])) {
     return { kind: 'slug', slug: segments[0] }
   }
+
   if (segments.length !== 2 || !segments[1]) return null
+
   if (segments[0] === 'tweet' && (segments[1] === 'latest' || segments[1] === 'new')) return null
 
   const kind = metadataKind(segments[0] ?? '')
+
   return kind ? { kind, slug: segments[1] } : null
 }
 
 const injectHead = (html: string, head: string) => {
   const withoutDefaultTitle = html.replace(/\s*<title>goosebumps\.fm<\/title>/i, '')
+
   return withoutDefaultTitle.replace('</head>', `    ${head}\n  </head>`)
 }
 
@@ -105,61 +110,75 @@ const htmlResponse = async (source: Response, html: string, status = source.stat
   headers.delete('content-length')
   headers.delete('content-encoding')
   headers.set('content-type', 'text/html; charset=utf-8')
+
   return new Response(html, { status, headers })
 }
 
 /** Injects canonical metadata into every public dynamic SPA document. */
 export const handleRequest = async (request: Request, env: SeoWorkerEnv): Promise<Response> => {
   const pathname = new URL(request.url).pathname
+
   if (pathname === '/sitemap.xml') return env.API.fetch(request)
+
   if (pathname.startsWith('/social/cards/') || pathname.startsWith('/social/tweets/')) {
     return env.SOCIAL_IMAGES.fetch(request)
   }
 
   const assetResponse = await env.ASSETS.fetch(request)
+
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     return assetResponse
   }
+
   if (!assetResponse.headers.get('content-type')?.startsWith('text/html')) return assetResponse
 
   const staticMetadata = getStaticSiteMetadata(pathname)
+
   if (staticMetadata) {
     const html = injectHead(await assetResponse.text(), renderMetadataHtml(staticMetadata))
+
     return htmlResponse(assetResponse, request.method === 'HEAD' ? '' : html)
   }
 
   const route = metadataRoute(pathname)
+
   if (!route || !assetResponse.ok) return assetResponse
   const fallbackResponse = assetResponse.clone()
 
   try {
     const apiResponse = await env.API.fetch(
       new Request(
-        `https://api.internal/api/site-metadata/${route.kind}/${encodeURIComponent(route.slug)}`
-      )
+        `https://api.internal/api/site-metadata/${route.kind}/${encodeURIComponent(route.slug)}`,
+      ),
     )
+
     if (apiResponse.status === 404) {
       const html = noindexHtml(await assetResponse.text())
       const response = await htmlResponse(assetResponse, request.method === 'HEAD' ? '' : html, 404)
       response.headers.set('cache-control', 'no-store')
       response.headers.delete('etag')
+
       return response
     }
+
     if (!apiResponse.ok) return fallbackResponse
 
     const metadata = decodeMetadata(await apiResponse.json())
     const html = injectHead(await assetResponse.text(), renderMetadataHtml(metadata))
+
     return htmlResponse(assetResponse, request.method === 'HEAD' ? '' : html)
   } catch (error) {
-    console.error('site metadata injection failed', {
-      path: pathname,
-      errorName: error instanceof Error ? error.name : 'UnknownError'
-    })
+    Effect.runSync(
+      Effect.logError('site metadata injection failed', {
+        errorName: error instanceof Error ? error.name : 'UnknownError',
+      }),
+    )
+
     return fallbackResponse
   }
 }
 
 export default {
   fetch: (request: Request, env: SeoWorkerEnv, _context: WorkerExecutionContext) =>
-    handleRequest(request, env)
+    handleRequest(request, env),
 }

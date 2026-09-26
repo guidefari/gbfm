@@ -1,15 +1,13 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs'
-import { Platform, useColorScheme } from 'react-native'
+
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
 import { MiniPlayerBar } from '@/components/NowPlaying/MiniPlayerBar'
-import { useThemeColors } from '@/theme/colors'
 import { useColorSchemePreference } from '@/store/preferences'
+import { useThemeColors } from '@/theme/colors'
 
 export default function TabsLayout() {
   const colors = useThemeColors()
-  const systemColorScheme = useColorScheme()
-  const preference = useColorSchemePreference()
-  const colorScheme = preference === 'system' ? systemColorScheme : preference
+  useColorSchemePreference()
   const { track } = useNowPlaying()
 
   return (

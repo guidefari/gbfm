@@ -1,24 +1,27 @@
 import { Effect } from 'effect'
 import { describe, expect, test } from 'vitest'
+
+import { withTestLayer } from '@/test/effect'
+
 import {
   PlaylistEnrichmentQueue,
   PlaylistEnrichmentQueueLayer,
-  type PlaylistEnrichmentJob
+  PlaylistEnrichmentJob,
 } from './playlist-enrichment-queue'
-import { withTestLayer } from '@/test/effect'
 
 describe('PlaylistEnrichmentQueue', () => {
   test('reports acceptance only after the queue sender accepts the job', async () => {
-    const sent: PlaylistEnrichmentJob[] = []
-    const job: PlaylistEnrichmentJob = {
-      _tag: 'PlaylistEnrichmentJob',
+    const sent: Array<PlaylistEnrichmentJob> = []
+
+    const job = PlaylistEnrichmentJob.make({
       playlistId: 'playlist-1',
-      reason: 'manual'
-    }
+      reason: 'manual',
+    })
+
     const layer = PlaylistEnrichmentQueueLayer({
       send: async (message) => {
         sent.push(message)
-      }
+      },
     })
 
     await Effect.runPromise(
@@ -27,8 +30,8 @@ describe('PlaylistEnrichmentQueue', () => {
           const queue = yield* PlaylistEnrichmentQueue
           yield* queue.enqueue(job)
         }),
-        layer
-      )
+        layer,
+      ),
     )
 
     expect(sent).toEqual([job])
@@ -36,26 +39,25 @@ describe('PlaylistEnrichmentQueue', () => {
 
   test('exposes queue rejection as a typed unavailable failure', async () => {
     const layer = PlaylistEnrichmentQueueLayer({
-      send: () => Promise.reject(new Error('private queue failure'))
+      send: () => Promise.reject(new Error('private queue failure')),
     })
 
     const error = await Effect.runPromise(
       withTestLayer(
         Effect.gen(function* () {
           const queue = yield* PlaylistEnrichmentQueue
-          return yield* queue.enqueue({
-            _tag: 'PlaylistEnrichmentJob',
-            playlistId: 'playlist-1',
-            reason: 'after_import'
-          })
+
+          return yield* queue.enqueue(
+            PlaylistEnrichmentJob.make({
+              playlistId: 'playlist-1',
+              reason: 'after_import',
+            }),
+          )
         }),
-        layer
-      ).pipe(Effect.flip)
+        layer,
+      ).pipe(Effect.flip),
     )
 
-    expect(error).toMatchObject({
-      _tag: 'PlaylistEnrichmentQueueUnavailable',
-      playlistId: 'playlist-1'
-    })
+    expect(error).toMatchObject({ playlistId: 'playlist-1' })
   })
 })

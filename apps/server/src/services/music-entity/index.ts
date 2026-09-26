@@ -1,5 +1,7 @@
 import { LINK_STATUS, type LinkStatus } from '@gbfm/core/status'
 import { Context, Effect, Layer } from 'effect'
+
+import { Database } from '@/db/layer'
 import type {
   InsertMusicEntityLink,
   MusicEntityType,
@@ -10,44 +12,22 @@ import type {
   SelectMusicLabel,
   SelectMusicPlaylist,
   SelectMusicPlaylistTrack,
-  SelectMusicTrack
+  SelectMusicTrack,
 } from '@/db/music-entity.schema'
-import { DatabaseError, NotFoundError } from '@/errors'
-import type { ValidationError } from '@/errors'
-import { Database } from '@/db/layer'
-import {
-  affiliateAlbumWithLabelEffect,
-  affiliateArtistWithLabelEffect,
-  getAlbumsForLabelEffect,
-  getArtistsForLabelEffect,
-  getLabelsForAlbumEffect,
-  getLabelsForArtistEffect,
-  getPublishedAlbumsForLabelEffect,
-  getPublishedArtistsForLabelEffect,
-  unaffiliateAlbumFromLabelEffect,
-  unaffiliateArtistFromLabelEffect
-} from './label-affiliation.service'
-import {
-  type CreateLabelInput,
-  createLabelEffect,
-  deleteLabelEffect,
-  getLabelByIdEffect,
-  getLabelBySlugEffect,
-  getLabelsEffect,
-  updateLabelEffect
-} from './label.service'
-import {
-  MusicLinkScraperService as MusicLinkScraperServiceTag,
-  type MusicScraperError
-} from '@/services/music-link-scraper.service'
+import { type DatabaseError, NotFoundError, type ValidationError } from '@/errors'
+import { omitUndefined } from '@/lib/omit-undefined'
 import {
   CanonicalMusicIdentity,
-  type MusicIdentityError
+  type MusicIdentityError,
 } from '@/services/canonical-music-identity'
 import { parseMusicSource } from '@/services/canonical-music-identity/music-source'
 import {
+  MusicLinkScraperService as MusicLinkScraperServiceTag,
+  type MusicScraperError,
+} from '@/services/music-link-scraper.service'
+import {
   SpotifyService as SpotifyServiceTag,
-  type SpotifyServiceError
+  type SpotifyServiceError,
 } from '@/services/spotify.service'
 
 import {
@@ -58,7 +38,7 @@ import {
   getAlbumByIdEffect,
   getAlbumsEffect,
   removeArtistFromAlbumEffect,
-  updateAlbumEffect
+  updateAlbumEffect,
 } from './album.service'
 import {
   type CreateArtistInput,
@@ -66,22 +46,35 @@ import {
   deleteArtistEffect,
   getArtistByIdEffect,
   getArtistsEffect,
-  updateArtistEffect
+  updateArtistEffect,
 } from './artist.service'
+import {
+  affiliateAlbumWithLabelEffect,
+  affiliateArtistWithLabelEffect,
+  getAlbumsForLabelEffect,
+  getArtistsForLabelEffect,
+  getLabelsForAlbumEffect,
+  getLabelsForArtistEffect,
+  getPublishedAlbumsForLabelEffect,
+  getPublishedArtistsForLabelEffect,
+  unaffiliateAlbumFromLabelEffect,
+  unaffiliateArtistFromLabelEffect,
+} from './label-affiliation.service'
+import {
+  type CreateLabelInput,
+  createLabelEffect,
+  deleteLabelEffect,
+  getLabelByIdEffect,
+  getLabelBySlugEffect,
+  getLabelsEffect,
+  updateLabelEffect,
+} from './label.service'
 import {
   addLinkEffect,
   deleteLinkEffect,
   getLinksForEntityEffect,
-  updateLinkStatusEffect
+  updateLinkStatusEffect,
 } from './link.service'
-import {
-  type CreatePlaylistInput,
-  createPlaylistEffect,
-  deletePlaylistEffect,
-  getPlaylistByIdEffect,
-  getPlaylistsEffect,
-  updatePlaylistEffect
-} from './playlist.service'
 import {
   addSpotifyTrackToPlaylistEffect,
   addTrackToPlaylistEffect,
@@ -90,12 +83,20 @@ import {
   importSpotifyPlaylistEffect,
   removeTrackFromPlaylistEffect,
   reorderPlaylistTracksEffect,
-  syncPlaylistLinksEffect
+  syncPlaylistLinksEffect,
 } from './playlist-tracks.service'
+import {
+  type CreatePlaylistInput,
+  createPlaylistEffect,
+  deletePlaylistEffect,
+  getPlaylistByIdEffect,
+  getPlaylistsEffect,
+  updatePlaylistEffect,
+} from './playlist.service'
 import {
   type MusicMetadataScrapeInput,
   scrapeAndCreateEntityWithoutSourceEffect,
-  type ScrapedMusicEntity
+  type ScrapedMusicEntity,
 } from './scrape.service'
 import {
   addArtistToTrackEffect,
@@ -105,7 +106,7 @@ import {
   getTrackByIdEffect,
   getTracksEffect,
   removeArtistFromTrackEffect,
-  updateTrackEffect
+  updateTrackEffect,
 } from './track.service'
 
 export type {
@@ -114,7 +115,7 @@ export type {
   CreateLabelInput,
   CreatePlaylistInput,
   CreateTrackInput,
-  ScrapedMusicEntity
+  ScrapedMusicEntity,
 }
 
 type ScrapeableMusicEntityType = Exclude<MusicEntityType, 'label'>
@@ -126,114 +127,120 @@ const isLegacyDirectLink = (entityType: ScrapeableMusicEntityType, platform: str
         entityType === 'album' &&
         source.platform === 'youtube' &&
         source.sourceEntityType === 'video' &&
-        (platform === 'youtube' || platform === 'youtube_music')
-    )
+        (platform === 'youtube' || platform === 'youtube_music'),
+    ),
   )
 
 const preserveCanonicalMetadata = (
   link: SelectMusicEntityLink | undefined,
-  metadata: InsertMusicEntityLink['metadata']
+  metadata: InsertMusicEntityLink['metadata'],
 ): InsertMusicEntityLink['metadata'] =>
   link && metadata ? { ...metadata, ...link.metadata } : metadata
 
 export interface MusicEntityService {
   readonly createArtist: (
-    data: CreateArtistInput
+    data: CreateArtistInput,
   ) => Effect.Effect<SelectMusicArtist, DatabaseError>
-  readonly getArtists: Effect.Effect<SelectMusicArtist[], DatabaseError>
+  readonly getArtists: Effect.Effect<Array<SelectMusicArtist>, DatabaseError>
   readonly getArtistById: (
-    id: string
+    id: string,
   ) => Effect.Effect<SelectMusicArtist, DatabaseError | NotFoundError>
   readonly updateArtist: (
     id: string,
-    data: Partial<CreateArtistInput>
+    data: Partial<CreateArtistInput>,
   ) => Effect.Effect<SelectMusicArtist, DatabaseError | NotFoundError>
   readonly deleteArtist: (id: string) => Effect.Effect<void, DatabaseError | NotFoundError>
 
   readonly createAlbum: (data: CreateAlbumInput) => Effect.Effect<SelectMusicAlbum, DatabaseError>
-  readonly getAlbums: Effect.Effect<SelectMusicAlbum[], DatabaseError>
+  readonly getAlbums: Effect.Effect<Array<SelectMusicAlbum>, DatabaseError>
   readonly getAlbumById: (
-    id: string
+    id: string,
   ) => Effect.Effect<SelectMusicAlbum, DatabaseError | NotFoundError>
   readonly updateAlbum: (
     id: string,
-    data: Partial<CreateAlbumInput>
+    data: Partial<CreateAlbumInput>,
   ) => Effect.Effect<SelectMusicAlbum, DatabaseError | NotFoundError>
   readonly deleteAlbum: (id: string) => Effect.Effect<void, DatabaseError | NotFoundError>
 
   readonly createTrack: (data: CreateTrackInput) => Effect.Effect<SelectMusicTrack, DatabaseError>
-  readonly getTracks: Effect.Effect<SelectMusicTrack[], DatabaseError>
+  readonly getTracks: Effect.Effect<Array<SelectMusicTrack>, DatabaseError>
   readonly getTrackById: (
-    id: string
+    id: string,
   ) => Effect.Effect<SelectMusicTrack, DatabaseError | NotFoundError>
   readonly updateTrack: (
     id: string,
-    data: Partial<CreateTrackInput>
+    data: Partial<CreateTrackInput>,
   ) => Effect.Effect<SelectMusicTrack, DatabaseError | NotFoundError>
   readonly deleteTrack: (id: string) => Effect.Effect<void, DatabaseError | NotFoundError>
 
   readonly createPlaylist: (
-    data: CreatePlaylistInput
+    data: CreatePlaylistInput,
   ) => Effect.Effect<SelectMusicPlaylist, DatabaseError>
   readonly getPlaylists: Effect.Effect<
-    (SelectMusicPlaylist & { spotifyUrl: string | null })[],
+    Array<SelectMusicPlaylist & { spotifyUrl: string | null }>,
     DatabaseError
   >
   readonly getPlaylistById: (
-    id: string
+    id: string,
   ) => Effect.Effect<
     SelectMusicPlaylist & { spotifyUrl: string | null },
     DatabaseError | NotFoundError
   >
   readonly updatePlaylist: (
     id: string,
-    data: Partial<CreatePlaylistInput>
+    data: Partial<CreatePlaylistInput>,
   ) => Effect.Effect<SelectMusicPlaylist, DatabaseError | NotFoundError>
   readonly deletePlaylist: (id: string) => Effect.Effect<void, DatabaseError | NotFoundError>
 
   readonly createLabel: (data: CreateLabelInput) => Effect.Effect<SelectMusicLabel, DatabaseError>
-  readonly getLabels: (includeDrafts: boolean) => Effect.Effect<SelectMusicLabel[], DatabaseError>
+  readonly getLabels: (
+    includeDrafts: boolean,
+  ) => Effect.Effect<Array<SelectMusicLabel>, DatabaseError>
   readonly getLabelById: (
-    id: string
+    id: string,
   ) => Effect.Effect<SelectMusicLabel, DatabaseError | NotFoundError>
   readonly getLabelBySlug: (
-    slug: string
+    slug: string,
   ) => Effect.Effect<SelectMdxCompiledMusicLabel, DatabaseError | NotFoundError>
   readonly updateLabel: (
     id: string,
-    data: Partial<CreateLabelInput>
+    data: Partial<CreateLabelInput>,
   ) => Effect.Effect<SelectMusicLabel, DatabaseError | NotFoundError>
   readonly deleteLabel: (id: string) => Effect.Effect<void, DatabaseError | NotFoundError>
 
   readonly getArtistsForLabel: (
-    labelId: string
-  ) => Effect.Effect<SelectMusicArtist[], DatabaseError>
+    labelId: string,
+  ) => Effect.Effect<Array<SelectMusicArtist>, DatabaseError>
   readonly getPublishedArtistsForLabel: (
-    labelId: string
-  ) => Effect.Effect<SelectMusicArtist[], DatabaseError>
-  readonly getAlbumsForLabel: (labelId: string) => Effect.Effect<SelectMusicAlbum[], DatabaseError>
+    labelId: string,
+  ) => Effect.Effect<Array<SelectMusicArtist>, DatabaseError>
+  readonly getAlbumsForLabel: (
+    labelId: string,
+  ) => Effect.Effect<Array<SelectMusicAlbum>, DatabaseError>
   readonly getPublishedAlbumsForLabel: (
-    labelId: string
-  ) => Effect.Effect<SelectMusicAlbum[], DatabaseError>
+    labelId: string,
+  ) => Effect.Effect<Array<SelectMusicAlbum>, DatabaseError>
   readonly getLabelsForArtist: (
-    artistId: string
-  ) => Effect.Effect<SelectMusicLabel[], DatabaseError>
-  readonly getLabelsForAlbum: (albumId: string) => Effect.Effect<SelectMusicLabel[], DatabaseError>
+    artistId: string,
+  ) => Effect.Effect<Array<SelectMusicLabel>, DatabaseError>
+  readonly getLabelsForAlbum: (
+    albumId: string,
+  ) => Effect.Effect<Array<SelectMusicLabel>, DatabaseError>
   readonly affiliateArtistWithLabel: (
     labelId: string,
-    artistId: string
+    artistId: string,
   ) => Effect.Effect<void, DatabaseError | NotFoundError>
   readonly unaffiliateArtistFromLabel: (
     labelId: string,
-    artistId: string
+    artistId: string,
   ) => Effect.Effect<void, DatabaseError>
   readonly affiliateAlbumWithLabel: (
     labelId: string,
-    albumId: string
+    albumId: string,
   ) => Effect.Effect<void, DatabaseError | NotFoundError>
   readonly unaffiliateAlbumFromLabel: (
     labelId: string,
-    albumId: string
+    albumId: string,
   ) => Effect.Effect<void, DatabaseError>
 
   readonly getPlaylistTracks: (playlistId: string) => Effect.Effect<
@@ -241,33 +248,33 @@ export interface MusicEntityService {
       track: SelectMusicTrack
       position: number
       addedAt: Date
-      links: SelectMusicEntityLink[]
+      links: Array<SelectMusicEntityLink>
     }>,
     DatabaseError
   >
   readonly addTrackToPlaylist: (
     playlistId: string,
     trackId: string,
-    position: number
+    position: number,
   ) => Effect.Effect<SelectMusicPlaylistTrack, DatabaseError>
   readonly removeTrackFromPlaylist: (
     playlistId: string,
-    trackId: string
+    trackId: string,
   ) => Effect.Effect<void, DatabaseError>
   readonly reorderPlaylistTracks: (
     playlistId: string,
-    trackIds: string[]
+    trackIds: Array<string>,
   ) => Effect.Effect<void, DatabaseError>
   readonly addSpotifyTrackToPlaylist: (
     playlistId: string,
-    spotifyUrl: string
+    spotifyUrl: string,
   ) => Effect.Effect<
     { trackId: string; position: number; created: boolean },
     DatabaseError | SpotifyServiceError | MusicIdentityError
   >
   readonly importSpotifyPlaylist: (
     url: string,
-    curatorId?: string | null
+    curatorId?: string | null,
   ) => Effect.Effect<
     {
       playlist: SelectMusicPlaylist
@@ -278,13 +285,13 @@ export interface MusicEntityService {
     DatabaseError | SpotifyServiceError | MusicIdentityError
   >
   readonly syncPlaylistLinks: (
-    playlistId: string
+    playlistId: string,
   ) => Effect.Effect<
     { playlistId: string; trackCount: number; insertedCount: number },
     DatabaseError | SpotifyServiceError | MusicIdentityError
   >
   readonly enrichPlaylistLinks: (
-    playlistId: string
+    playlistId: string,
   ) => Effect.Effect<
     { playlistId: string; trackCount: number; insertedCount: number },
     DatabaseError | MusicIdentityError
@@ -293,29 +300,29 @@ export interface MusicEntityService {
   readonly addArtistToAlbum: (
     albumId: string,
     artistId: string,
-    opts?: { role?: string; displayOrder?: number }
+    opts?: { role?: string; displayOrder?: number },
   ) => Effect.Effect<void, DatabaseError>
   readonly removeArtistFromAlbum: (
     albumId: string,
-    artistId: string
+    artistId: string,
   ) => Effect.Effect<void, DatabaseError>
   readonly addArtistToTrack: (
     trackId: string,
     artistId: string,
-    opts?: { role?: string; displayOrder?: number }
+    opts?: { role?: string; displayOrder?: number },
   ) => Effect.Effect<void, DatabaseError>
   readonly removeArtistFromTrack: (
     trackId: string,
-    artistId: string
+    artistId: string,
   ) => Effect.Effect<void, DatabaseError>
 
   readonly getLinksForEntity: (
     entityType: MusicEntityType,
     entityId: string,
-    statusFilter?: LinkStatus
-  ) => Effect.Effect<SelectMusicEntityLink[], DatabaseError>
+    statusFilter?: LinkStatus,
+  ) => Effect.Effect<Array<SelectMusicEntityLink>, DatabaseError>
   readonly addLink: (
-    data: InsertMusicEntityLink
+    data: InsertMusicEntityLink,
   ) => Effect.Effect<SelectMusicEntityLink, DatabaseError | NotFoundError | MusicIdentityError>
   readonly updateLinkStatus: (
     entityType: MusicEntityType,
@@ -323,17 +330,17 @@ export interface MusicEntityService {
     linkId: string,
     status: LinkStatus,
     verifiedBy?: string,
-    metadata?: InsertMusicEntityLink['metadata']
+    metadata?: InsertMusicEntityLink['metadata'],
   ) => Effect.Effect<SelectMusicEntityLink, DatabaseError | NotFoundError | MusicIdentityError>
   readonly deleteLink: (
     entityType: MusicEntityType,
     entityId: string,
-    linkId: string
+    linkId: string,
   ) => Effect.Effect<void, DatabaseError | NotFoundError | MusicIdentityError>
 
   readonly scrapeAndCreateEntityWithoutSource: (
     entityType: ScrapeableMusicEntityType,
-    input: MusicMetadataScrapeInput
+    input: MusicMetadataScrapeInput,
   ) => Effect.Effect<ScrapedMusicEntity, DatabaseError | MusicScraperError | ValidationError>
 }
 
@@ -347,33 +354,39 @@ export const MusicEntityServiceLayer = Layer.effect(
     const identity = yield* CanonicalMusicIdentity
     const db = yield* Database
     const provideDb = Effect.provideService(Database, db)
+
     const releaseIdentityLink = (
       entityType: ScrapeableMusicEntityType,
       entityId: string,
       linkId: string,
       action: 'reject' | 'delete',
       verifiedBy?: string,
-      metadata?: InsertMusicEntityLink['metadata']
+      metadata?: InsertMusicEntityLink['metadata'],
     ) =>
-      identity.releaseLink({ entityType, entityId, linkId, action, verifiedBy, metadata }).pipe(
-        Effect.catchTags({
-          MusicIdentityEntityNotFound: () =>
-            Effect.fail(new NotFoundError({ message: 'Music entity not found', id: entityId })),
-          MusicIdentitySourceLinkNotFound: () =>
-            Effect.fail(new NotFoundError({ message: 'Music entity link not found', id: linkId }))
-        })
-      )
+      identity
+        .releaseLink(omitUndefined({ entityType, entityId, linkId, action, verifiedBy, metadata }))
+        .pipe(
+          Effect.catchTags({
+            MusicIdentityEntityNotFound: () =>
+              Effect.fail(new NotFoundError({ message: 'Music entity not found', id: entityId })),
+            MusicIdentitySourceLinkNotFound: () =>
+              Effect.fail(
+                new NotFoundError({ message: 'Music entity link not found', id: linkId }),
+              ),
+          }),
+        )
 
     const verifyIdentityLink = (
       entityType: ScrapeableMusicEntityType,
       entityId: string,
       linkId: string,
       verifiedBy?: string,
-      metadata?: InsertMusicEntityLink['metadata']
+      metadata?: InsertMusicEntityLink['metadata'],
     ) =>
       provideDb(getLinksForEntityEffect(entityType, entityId)).pipe(
         Effect.flatMap((links) => {
           const link = links.find((candidate) => candidate.id === linkId)
+
           return link
             ? Effect.succeed(link)
             : Effect.fail(new NotFoundError({ message: 'Music entity link not found', id: linkId }))
@@ -385,18 +398,20 @@ export const MusicEntityServiceLayer = Layer.effect(
               entityId,
               platform: link.platform,
               url: link.url,
-              origin: 'manual'
+              origin: 'manual',
             })
             .pipe(
               Effect.catchTag('MusicSourceInvalid', (error) =>
                 Effect.gen(function* () {
                   if (error.reason !== 'type_mismatch') return yield* error
                   const direct = yield* isLegacyDirectLink(entityType, link.platform, link.url)
+
                   if (!direct) return yield* error
+
                   return undefined
-                })
-              )
-            )
+                }),
+              ),
+            ),
         ),
         Effect.flatMap((identityLink) =>
           provideDb(
@@ -406,15 +421,15 @@ export const MusicEntityServiceLayer = Layer.effect(
               linkId,
               LINK_STATUS.VERIFIED,
               verifiedBy,
-              preserveCanonicalMetadata(identityLink, metadata)
-            )
-          )
-        )
+              preserveCanonicalMetadata(identityLink, metadata),
+            ),
+          ),
+        ),
       )
 
     const attachIdentityLink = (
       data: InsertMusicEntityLink,
-      entityType: ScrapeableMusicEntityType
+      entityType: ScrapeableMusicEntityType,
     ) =>
       Effect.gen(function* () {
         const link = yield* identity.attachLink({
@@ -422,8 +437,9 @@ export const MusicEntityServiceLayer = Layer.effect(
           entityId: data.entityId,
           platform: data.platform,
           url: data.url,
-          origin: 'manual'
+          origin: 'manual',
         })
+
         if (data.status === LINK_STATUS.REJECTED) {
           const released = yield* releaseIdentityLink(
             entityType,
@@ -431,11 +447,14 @@ export const MusicEntityServiceLayer = Layer.effect(
             link.id,
             'reject',
             undefined,
-            data.metadata
+            data.metadata,
           )
+
           if (!released) return yield* Effect.die('Rejected link was not returned')
+
           return released
         }
+
         if (data.status !== undefined || data.metadata !== undefined) {
           return yield* provideDb(
             updateLinkStatusEffect(
@@ -444,20 +463,23 @@ export const MusicEntityServiceLayer = Layer.effect(
               link.id,
               LINK_STATUS.VERIFIED,
               undefined,
-              preserveCanonicalMetadata(link, data.metadata)
-            )
+              preserveCanonicalMetadata(link, data.metadata),
+            ),
           )
         }
+
         return link
       }).pipe(
         Effect.catchTag('MusicSourceInvalid', (error) =>
           Effect.gen(function* () {
             if (error.reason !== 'type_mismatch') return yield* error
             const direct = yield* isLegacyDirectLink(entityType, data.platform, data.url)
+
             if (!direct) return yield* error
+
             return yield* provideDb(addLinkEffect(data))
-          })
-        )
+          }),
+        ),
       )
 
     return {
@@ -547,20 +569,20 @@ export const MusicEntityServiceLayer = Layer.effect(
               Effect.flatMap((link) =>
                 link
                   ? Effect.succeed(link)
-                  : Effect.die('Canonical identity rejected link without returning it')
-              )
+                  : Effect.die('Canonical identity rejected link without returning it'),
+              ),
             )
           : entityType !== 'label' && status === LINK_STATUS.VERIFIED
             ? verifyIdentityLink(entityType, entityId, linkId, verifiedBy, metadata)
             : provideDb(
-                updateLinkStatusEffect(entityType, entityId, linkId, status, verifiedBy, metadata)
+                updateLinkStatusEffect(entityType, entityId, linkId, status, verifiedBy, metadata),
               ),
       deleteLink: (entityType, entityId, linkId) =>
         entityType === 'label'
           ? provideDb(deleteLinkEffect(entityType, entityId, linkId))
           : releaseIdentityLink(entityType, entityId, linkId, 'delete').pipe(Effect.asVoid),
       scrapeAndCreateEntityWithoutSource: (entityType, input) =>
-        provideDb(scrapeAndCreateEntityWithoutSourceEffect(scraper, entityType, input))
+        provideDb(scrapeAndCreateEntityWithoutSourceEffect(scraper, entityType, input)),
     } satisfies MusicEntityService
-  })
+  }),
 )

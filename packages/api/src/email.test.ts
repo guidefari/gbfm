@@ -1,22 +1,23 @@
 import { Exit, Schema } from 'effect'
 import { describe, expect, it } from 'vitest'
+
 import { EmailLogsQuery, EmailLogsResponse, SendMixNotificationInput } from './email'
 
 describe('email API contract', () => {
   it('defaults pagination and trims the recipient filter', () => {
     expect(
-      Schema.decodeUnknownSync(EmailLogsQuery)({ recipientEmail: '  listener@example.com  ' })
+      Schema.decodeUnknownSync(EmailLogsQuery)({ recipientEmail: '  listener@example.com  ' }),
     ).toMatchObject({
       limit: 20,
       offset: 0,
-      recipientEmail: 'listener@example.com'
+      recipientEmail: 'listener@example.com',
     })
   })
 
   it('rejects a reversed date range', () => {
     const result = Schema.decodeUnknownExit(EmailLogsQuery)({
       dateFrom: '2026-07-12',
-      dateTo: '2026-07-11'
+      dateTo: '2026-07-11',
     })
 
     expect(Exit.isFailure(result)).toBe(true)
@@ -25,16 +26,16 @@ describe('email API contract', () => {
   it('rejects non-finite pagination', () => {
     expect(
       Exit.isFailure(
-        Schema.decodeUnknownExit(EmailLogsQuery)({ limit: 'Infinity', dateFrom: '2026-02-28' })
-      )
+        Schema.decodeUnknownExit(EmailLogsQuery)({ limit: 'Infinity', dateFrom: '2026-02-28' }),
+      ),
     ).toBe(true)
   })
 
   it('rejects an invalid calendar date with valid pagination', () => {
     expect(
       Exit.isFailure(
-        Schema.decodeUnknownExit(EmailLogsQuery)({ limit: '20', dateFrom: '2026-02-30' })
-      )
+        Schema.decodeUnknownExit(EmailLogsQuery)({ limit: '20', dateFrom: '2026-02-30' }),
+      ),
     ).toBe(true)
   })
 
@@ -42,7 +43,7 @@ describe('email API contract', () => {
     const result = Schema.decodeUnknownExit(SendMixNotificationInput)({
       recipients: ['listener@example.com'],
       mixSlug: 'summer-mix',
-      metadata: { coverImageUrl: 'https://cdn.example.com/cover.jpg' }
+      metadata: { coverImageUrl: 'https://cdn.example.com/cover.jpg' },
     })
 
     expect(Exit.isSuccess(result)).toBe(true)
@@ -56,9 +57,9 @@ describe('email API contract', () => {
       Exit.isFailure(
         Schema.decodeUnknownExit(SendMixNotificationInput)({
           recipients,
-          mixSlug: 'summer-mix'
-        })
-      )
+          mixSlug: 'summer-mix',
+        }),
+      ),
     ).toBe(true)
   })
 
@@ -67,17 +68,17 @@ describe('email API contract', () => {
       Exit.isSuccess(
         Schema.decodeUnknownExit(SendMixNotificationInput)({
           mixSlug: 'summer-mix',
-          metadata: { coverImageUrl: 'ftp://cdn.example.com/cover.jpg' }
-        })
-      )
+          metadata: { coverImageUrl: 'ftp://cdn.example.com/cover.jpg' },
+        }),
+      ),
     ).toBe(true)
     expect(
       Exit.isSuccess(
         Schema.decodeUnknownExit(SendMixNotificationInput)({
           mixSlug: 'summer-mix',
-          metadata: { coverImageUrl: 'http://?x' }
-        })
-      )
+          metadata: { coverImageUrl: 'http://?x' },
+        }),
+      ),
     ).toBe(false)
   })
 
@@ -103,16 +104,16 @@ describe('email API contract', () => {
           bouncedAt: null,
           complainedAt: null,
           createdAt: '2026-07-12T00:00:00.000Z',
-          updatedAt: '2026-07-12T00:00:00.000Z'
-        }
+          updatedAt: '2026-07-12T00:00:00.000Z',
+        },
       ],
-      pagination: { total: 1, limit: 20, offset: 0, hasMore: false }
+      pagination: { total: 1, limit: 20, offset: 0, hasMore: false },
     })
 
     expect(response.data[0]).toMatchObject({
       id: 'log-1',
       recipientEmail: 'listener@example.com',
-      status: 'SENT'
+      status: 'SENT',
     })
     expect(response.data[0]).not.toHaveProperty('metadata')
   })

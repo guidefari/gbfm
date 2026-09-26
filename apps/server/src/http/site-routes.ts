@@ -2,6 +2,7 @@ import type { SiteMetadataRouteKind } from '@gbfm/api/site-metadata'
 import { and, eq } from 'drizzle-orm'
 import { Effect, Layer } from 'effect'
 import { HttpRouter, HttpServerResponse } from 'effect/unstable/http'
+
 import { audioTable } from '@/db/audio.schema'
 import { Database } from '@/db/layer'
 import { DatabaseError, getErrorMessage } from '@/errors'
@@ -17,7 +18,7 @@ const htmlResponse = (result: HtmlResult) =>
   HttpServerResponse.text(result.html, {
     contentType: 'text/html',
     status: result.status,
-    headers: result.status === 200 ? { 'cache-control': 'public, max-age=3600' } : undefined
+    headers: result.status === 200 ? { 'cache-control': 'public, max-age=3600' } : undefined,
   })
 
 const missingParamResponse = (label: string) =>
@@ -26,10 +27,10 @@ const missingParamResponse = (label: string) =>
       html: buildErrorHtml({
         title: 'Invalid URL',
         message: `The URL is missing a ${label}.`,
-        statusCode: 400
+        statusCode: 400,
       }),
-      status: 400
-    })
+      status: 400,
+    }),
   )
 
 const notFoundResponse = (label: string) =>
@@ -37,88 +38,94 @@ const notFoundResponse = (label: string) =>
     html: buildErrorHtml({
       title: `${label} not found`,
       message: `The ${label.toLowerCase()} you're looking for doesn't exist.`,
-      statusCode: 404
+      statusCode: 404,
     }),
-    status: 404
+    status: 404,
   })
 
 const shareRoute = (
   kind: SiteMetadataRouteKind,
   label: string,
-  param: 'slug' | 'username' = 'slug'
+  param: 'slug' | 'username' = 'slug',
 ) =>
   HttpRouter.params.pipe(
     Effect.flatMap((params) => {
       const identifier = params[param]
+
       if (!identifier)
         return missingParamResponse(param === 'username' ? 'username' : `${label} slug`)
 
       return resolveSiteMetadata(kind, identifier).pipe(
         Effect.map(
-          (metadata) => ({ html: buildShareHtml(metadata), status: 200 }) satisfies HtmlResult
+          (metadata) => ({ html: buildShareHtml(metadata), status: 200 }) satisfies HtmlResult,
         ),
         Effect.catchTag('NotFoundError', () => notFoundResponse(label)),
         Effect.catchTag('DatabaseError', (error) =>
           Effect.gen(function* () {
             yield* Effect.logError(`[Share] Error fetching ${label.toLowerCase()}`, {
               identifier,
-              error: error.message
+              error: error.message,
             })
+
             return {
               html: buildErrorHtml({
                 title: 'Error',
                 message: `Something went wrong while loading this ${label.toLowerCase()}.`,
-                statusCode: 500
+                statusCode: 500,
               }),
-              status: 500
+              status: 500,
             } satisfies HtmlResult
-          })
+          }),
         ),
-        Effect.map(htmlResponse)
+        Effect.map(htmlResponse),
       )
-    })
+    }),
   )
 
 const fetchDb = <A>(query: () => Promise<A>, table: string) =>
   Effect.tryPromise({
     try: query,
     catch: (cause) =>
-      new DatabaseError({ message: getErrorMessage(cause), operation: 'select', table })
+      new DatabaseError({ message: getErrorMessage(cause), operation: 'select', table }),
   })
 
 const rssXml = Effect.gen(function* () {
   const db = yield* Database
+
   const mixes = yield* fetchDb(
     () =>
       db
         .select()
         .from(audioTable)
         .where(and(eq(audioTable.type, 'mix'), eq(audioTable.draft, false))),
-    'audio'
+    'audio',
   )
+
   return HttpServerResponse.text(rssFeedHtml(mixes), {
     contentType: 'text/html',
-    headers: { 'cache-control': 'public, max-age=3600' }
+    headers: { 'cache-control': 'public, max-age=3600' },
   })
 }).pipe(
   Effect.catchTag('DatabaseError', (error) =>
     Effect.gen(function* () {
       yield* Effect.logError('[RSS] Error generating RSS feed', { error: error.message })
+
       return HttpServerResponse.text('Internal Server Error', { status: 500 })
-    })
-  )
+    }),
+  ),
 )
 
 const faviconIco = Effect.sync(() =>
   HttpServerResponse.text(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" x="-0.1em" font-size="90">🪿</text></svg>',
-    { contentType: 'image/svg+xml' }
-  )
+    { contentType: 'image/svg+xml' },
+  ),
 )
 
 const robotsTxt = Effect.gen(function* () {
   const config = yield* ConfigService
   const siteUrl = config.urls.frontend.replace(/\/$/, '')
+
   return HttpServerResponse.text(
     `# https://www.robotstxt.org/robotstxt.html
 User-agent: *
@@ -129,8 +136,8 @@ Sitemap: ${siteUrl}/sitemap.xml
 `,
     {
       contentType: 'text/plain; charset=utf-8',
-      headers: { 'cache-control': 'public, max-age=86400' }
-    }
+      headers: { 'cache-control': 'public, max-age=86400' },
+    },
   )
 })
 
@@ -143,21 +150,22 @@ const sitemapXml = getCachedSitemap.pipe(
       contentType: 'application/xml; charset=utf-8',
       headers: {
         'cache-control': 'public, max-age=3600, stale-while-revalidate=86400',
-        'last-modified': generatedAt.toUTCString()
-      }
-    })
+        'last-modified': generatedAt.toUTCString(),
+      },
+    }),
   ),
   Effect.catch((error) =>
     Effect.gen(function* () {
       yield* Effect.logError('[Sitemap] Error getting sitemap', {
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       })
+
       return HttpServerResponse.text(EMPTY_SITEMAP, {
         contentType: 'application/xml; charset=utf-8',
-        status: 500
+        status: 500,
       })
-    })
-  )
+    }),
+  ),
 )
 
 export const SiteRoutesLive = Layer.mergeAll(
@@ -174,5 +182,5 @@ export const SiteRoutesLive = Layer.mergeAll(
   HttpRouter.add('GET', '/robots.txt', robotsTxt),
   HttpRouter.add('GET', '/sitemap.xml', sitemapXml),
   HttpRouter.add('GET', '/rss.xml', rssXml),
-  HttpRouter.add('GET', '/favicon.ico', faviconIco)
+  HttpRouter.add('GET', '/favicon.ico', faviconIco),
 )

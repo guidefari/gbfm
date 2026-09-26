@@ -1,10 +1,11 @@
 import { expect, test } from 'vitest'
+
 import { getErrorMessage } from './errors'
 
 test('returns safe user-facing messages without leaking database queries or request parameters', () => {
   const databaseError = new Error(
     'Failed query: select * from "user" where "email" = $1\nparams: private@example.com',
-    { cause: { code: '23505', detail: 'private-token' } }
+    { cause: { code: '23505', detail: 'private-token' } },
   )
 
   const databaseMessage = getErrorMessage(databaseError)
@@ -14,12 +15,12 @@ test('returns safe user-facing messages without leaking database queries or requ
 
   expect(getErrorMessage(new Error('Request failed\nparams: private-token'))).toBe('Request failed')
   expect(
-    getErrorMessage(new Error('Failed query: select private_data', { cause: { code: 'invalid' } }))
+    getErrorMessage(new Error('Failed query: select private_data', { cause: { code: 'invalid' } })),
   ).toBe('Database query failed')
 
   for (const cause of [undefined, null, { code: 23505 }]) {
     expect(getErrorMessage(new Error('Failed query: select private_data', { cause }))).toBe(
-      'Database query failed'
+      'Database query failed',
     )
   }
 })

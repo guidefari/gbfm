@@ -1,8 +1,9 @@
 import { Effect } from 'effect'
+
 import type { S3Service } from '@/services/s3.service'
 
 export const makeTestS3Service = (
-  uploadFile: S3Service['uploadFile'] = (key) => Effect.succeed(key)
+  uploadFile: S3Service['uploadFile'] = (key) => Effect.succeed(key),
 ): S3Service => ({
   uploadFile,
   presignPutObject: (key) => Effect.succeed(key),
@@ -17,5 +18,5 @@ export const makeTestS3Service = (
   completeMultipartUpload: (key, _uploadId, _parts, bucketName) =>
     Effect.succeed({ key, bucket: bucketName }),
   abortMultipartUpload: () => Effect.void,
-  listMultipartParts: () => Effect.succeed([])
+  listMultipartParts: () => Effect.succeed([]),
 })

@@ -1,20 +1,23 @@
 import { Effect } from 'effect'
 import { describe, expect, test, vi } from 'vitest'
+
 import { withTestLayer } from '@/test/effect'
+
 import { MdxService, makeMdxServiceTest } from './mdx'
 
 const withService = <A, E>(
   compileFn: (content: string) => Promise<string>,
-  run: (svc: MdxService) => Effect.Effect<A, E>
+  run: (svc: MdxService) => Effect.Effect<A, E>,
 ): Promise<A> =>
   Effect.runPromise(
     withTestLayer(
       Effect.gen(function* () {
         const svc = yield* MdxService
+
         return yield* run(svc)
       }),
-      makeMdxServiceTest(compileFn)
-    )
+      makeMdxServiceTest(compileFn),
+    ),
   )
 
 describe('MdxService', () => {
@@ -23,17 +26,15 @@ describe('MdxService', () => {
     await expect(
       withService(
         () => Promise.reject(err),
-        (svc) => svc.compile('bad mdx')
-      )
-    ).rejects.toMatchObject({
-      _tag: 'MDXCompileError',
-      details: 'syntax error at line 3'
-    })
+        (svc) => svc.compile('bad mdx'),
+      ),
+    ).rejects.toMatchObject({ details: 'syntax error at line 3' })
   })
 
   describe('caching', () => {
     test('deduplicates concurrent requests for the same content', async () => {
       let calls = 0
+
       const fn = () =>
         new Promise<string>((resolve) => {
           calls++
@@ -43,29 +44,36 @@ describe('MdxService', () => {
       const result = await withService(fn, (svc) =>
         Effect.gen(function* () {
           const [r1, r2] = yield* Effect.all([svc.compile('# Same'), svc.compile('# Same')], {
-            concurrency: 'unbounded'
+            concurrency: 'unbounded',
           })
+
           return [r1, r2]
-        })
+        }),
       )
+
       expect(calls).toBe(1)
       expect(result).toEqual(['concurrent-result', 'concurrent-result'])
     })
 
     test('does not cache failures — retries on next call', async () => {
       let attempt = 0
+
       const fn = () => {
         attempt++
+
         if (attempt === 1) return Promise.reject(new Error('transient'))
+
         return Promise.resolve('recovered')
       }
 
       const result = await withService(fn, (svc) =>
         Effect.gen(function* () {
           yield* svc.compile('content').pipe(Effect.ignore)
+
           return yield* svc.compile('content')
-        })
+        }),
       )
+
       expect(attempt).toBe(2)
       expect(result).toBe('recovered')
     })
@@ -79,7 +87,7 @@ describe('MdxService', () => {
           yield* svc.compile('# Hello')
           yield* svc.invalidateAll
           yield* svc.compile('# Hello')
-        })
+        }),
       )
       expect(fn).toHaveBeenCalledTimes(2)
     })

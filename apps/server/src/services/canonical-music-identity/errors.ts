@@ -10,7 +10,7 @@ export const MUSIC_SOURCE_ERROR_REASONS = [
   'invalid_provider_source',
   'type_mismatch',
   'platform_mismatch',
-  'digest_failed'
+  'digest_failed',
 ] as const
 
 export type MusicSourceErrorReason = (typeof MUSIC_SOURCE_ERROR_REASONS)[number]
@@ -19,18 +19,22 @@ export class MusicSourceInvalid extends Schema.TaggedError<MusicSourceInvalid>()
   'MusicSourceInvalid',
   {
     reason: Schema.Literals(MUSIC_SOURCE_ERROR_REASONS),
-    message: Schema.String
-  }
+    message: Schema.String,
+  },
 ) {}
 
 export class MusicIdentityBusy extends Schema.TaggedError<MusicIdentityBusy>()(
   'MusicIdentityBusy',
-  { retryAfterMs: Schema.Number }
+  { retryAfterMs: Schema.Number },
 ) {}
 
 export class MusicIdentityAliasCollision extends Schema.TaggedError<MusicIdentityAliasCollision>()(
   'MusicIdentityAliasCollision',
-  { normalizedUrl: Schema.String, expectedSourceKey: Schema.String, storedSourceKey: Schema.String }
+  {
+    normalizedUrl: Schema.String,
+    expectedSourceKey: Schema.String,
+    storedSourceKey: Schema.String,
+  },
 ) {}
 
 export class MusicIdentityConflict extends Schema.TaggedError<MusicIdentityConflict>()(
@@ -40,23 +44,23 @@ export class MusicIdentityConflict extends Schema.TaggedError<MusicIdentityConfl
     incumbentEntityType: Schema.String,
     incumbentEntityId: Schema.String,
     candidateEntityType: Schema.String,
-    candidateEntityId: Schema.String
-  }
+    candidateEntityId: Schema.String,
+  },
 ) {}
 
 export class MusicIdentityEntityNotFound extends Schema.TaggedError<MusicIdentityEntityNotFound>()(
   'MusicIdentityEntityNotFound',
-  { entityType: Schema.String, entityId: Schema.String }
+  { entityType: Schema.String, entityId: Schema.String },
 ) {}
 
 export class MusicIdentitySourceLinkNotFound extends Schema.TaggedError<MusicIdentitySourceLinkNotFound>()(
   'MusicIdentitySourceLinkNotFound',
-  { entityType: Schema.String, entityId: Schema.String }
+  { entityType: Schema.String, entityId: Schema.String },
 ) {}
 
 export class MusicIdentityInvalidSnapshot extends Schema.TaggedError<MusicIdentityInvalidSnapshot>()(
   'MusicIdentityInvalidSnapshot',
-  { message: Schema.String }
+  { message: Schema.String },
 ) {}
 
 export class MusicIdentityProviderRejected extends Schema.TaggedError<MusicIdentityProviderRejected>()(
@@ -64,13 +68,13 @@ export class MusicIdentityProviderRejected extends Schema.TaggedError<MusicIdent
   {
     provider: Schema.String,
     reason: Schema.Literals(['invalid_request', 'not_found']),
-    message: Schema.String
-  }
+    message: Schema.String,
+  },
 ) {}
 
 export class MusicIdentityProviderUnavailable extends Schema.TaggedError<MusicIdentityProviderUnavailable>()(
   'MusicIdentityProviderUnavailable',
-  { provider: Schema.String, statusCode: Schema.optional(Schema.Number), message: Schema.String }
+  { provider: Schema.String, statusCode: Schema.optional(Schema.Number), message: Schema.String },
 ) {}
 
 export class MusicIdentityArtworkDeliveryFailed extends Schema.TaggedError<MusicIdentityArtworkDeliveryFailed>()(
@@ -79,13 +83,13 @@ export class MusicIdentityArtworkDeliveryFailed extends Schema.TaggedError<Music
     entityType: Schema.Literals(['artist', 'album', 'track', 'playlist']),
     entityId: Schema.String,
     operation: Schema.Literal('upload'),
-    message: Schema.String
-  }
+    message: Schema.String,
+  },
 ) {}
 
 export class MusicIdentityStorageError extends Schema.TaggedError<MusicIdentityStorageError>()(
   'MusicIdentityStorageError',
-  { operation: Schema.String, message: Schema.String }
+  { operation: Schema.String, message: Schema.String },
 ) {}
 
 export type MusicIdentityError =

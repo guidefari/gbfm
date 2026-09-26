@@ -1,4 +1,5 @@
 import { expect, test } from 'vitest'
+
 import { generateCSS, toVars } from './css'
 import { brandDark, brandLight } from './tokens/brand'
 import { dark, light, studio } from './tokens/shadcn'
@@ -9,12 +10,13 @@ function themeBlock(css: string, selector: string): string {
 
   expect(start).toBeGreaterThan(-1)
   expect(end).toBeGreaterThan(start)
+
   return css.slice(start, end)
 }
 
 test('serializes token names and values as indented CSS custom-property declarations', () => {
   expect(toVars({ background: 'red', cardForeground: 'white', 'pastel-green-1': '#b6fadf' })).toBe(
-    '    --background: red;\n    --card-foreground: white;\n    --pastel-green-1: #b6fadf;'
+    '    --background: red;\n    --card-foreground: white;\n    --pastel-green-1: #b6fadf;',
   )
   expect(toVars({ highlightRgb: '85, 206, 246' }, '  ')).toBe('  --highlight-rgb: 85, 206, 246;')
 })

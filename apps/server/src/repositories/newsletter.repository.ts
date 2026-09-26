@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm'
+
 import type { DatabaseClient } from '@/db/layer'
 import { newsletterSubscribersTable } from '@/db/newsletter.schema'
 
@@ -13,14 +14,14 @@ export async function linkOrCreateSubscriberForUser(
     email: string
     name?: string | null
   },
-  database: DatabaseClient
+  database: DatabaseClient,
 ): Promise<{ previouslyUnsubscribed: boolean }> {
   const normalizedEmail = params.email.trim().toLowerCase()
 
   const [existing] = await database
     .select({
       id: newsletterSubscribersTable.id,
-      unsubscribedAt: newsletterSubscribersTable.unsubscribedAt
+      unsubscribedAt: newsletterSubscribersTable.unsubscribedAt,
     })
     .from(newsletterSubscribersTable)
     .where(eq(newsletterSubscribersTable.email, normalizedEmail))
@@ -31,6 +32,7 @@ export async function linkOrCreateSubscriberForUser(
       .update(newsletterSubscribersTable)
       .set({ userId: params.userId, updatedAt: new Date() })
       .where(eq(newsletterSubscribersTable.id, existing.id))
+
     return { previouslyUnsubscribed: existing.unsubscribedAt !== null }
   }
 
@@ -38,7 +40,7 @@ export async function linkOrCreateSubscriberForUser(
     email: normalizedEmail,
     userId: params.userId,
     source: 'signup',
-    ...(params.name && { name: params.name.trim() })
+    ...(params.name && { name: params.name.trim() }),
   })
 
   return { previouslyUnsubscribed: false }
@@ -46,7 +48,7 @@ export async function linkOrCreateSubscriberForUser(
 
 export async function markSubscriberUnsubscribedByUserId(
   userId: string,
-  database: DatabaseClient
+  database: DatabaseClient,
 ): Promise<void> {
   await database
     .update(newsletterSubscribersTable)
@@ -60,5 +62,6 @@ export async function getSubscriberByUnsubscribeToken(token: string, database: D
     .from(newsletterSubscribersTable)
     .where(eq(newsletterSubscribersTable.unsubscribeToken, token))
     .limit(1)
+
   return subscriber
 }

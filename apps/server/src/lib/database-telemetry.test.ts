@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+
 import { sanitizeDatabaseSpan, summarizeDatabaseQuery } from './database-telemetry'
 
 describe('summarizeDatabaseQuery', () => {
@@ -10,8 +11,8 @@ describe('summarizeDatabaseQuery', () => {
     ['with matching as (select "id" from "audio") update "shows" set "title" = $1', 'UPDATE shows'],
     [
       'with recursive tree as (select "id" from "shows") delete from "shows" where "id" = $1',
-      'DELETE shows'
-    ]
+      'DELETE shows',
+    ],
   ])('summarizes %s without values', (query, description) => {
     expect(summarizeDatabaseQuery(query).description).toBe(description)
   })
@@ -30,8 +31,8 @@ describe('sanitizeDatabaseSpan', () => {
         'db.query.parameters': 'secret-user-id',
         'db.operation.parameters': 'another-secret',
         'db.query.parameter.0': 'one-more-secret',
-        'server.address': 'database.internal'
-      }
+        'server.address': 'database.internal',
+      },
     })
 
     expect(span).toEqual({
@@ -45,8 +46,8 @@ describe('sanitizeDatabaseSpan', () => {
         'db.system.name': 'postgresql',
         'db.operation.name': 'SELECT',
         'db.collection.name': 'audio',
-        'db.query.summary': 'SELECT audio'
-      }
+        'db.query.summary': 'SELECT audio',
+      },
     })
     expect(JSON.stringify(span)).not.toContain('secret-user-id')
     expect(JSON.stringify(span)).not.toContain('another-secret')
@@ -60,14 +61,14 @@ describe('sanitizeDatabaseSpan', () => {
         'db.system.name': 'postgresql',
         'db.query': {
           text: 'insert into "music_reminder" ("id") values ($1)',
-          values: ['secret-reminder-id']
-        }
-      }
+          values: ['secret-reminder-id'],
+        },
+      },
     })
 
     expect(span).toMatchObject({
       description: 'INSERT music_reminder',
-      data: { 'db.collection.name': 'music_reminder' }
+      data: { 'db.collection.name': 'music_reminder' },
     })
     expect(JSON.stringify(span)).not.toContain('secret-reminder-id')
   })
@@ -75,14 +76,14 @@ describe('sanitizeDatabaseSpan', () => {
   test('preserves the instrumented database system instead of relabelling it', () => {
     const span = sanitizeDatabaseSpan({
       description: 'select value from cache',
-      data: { 'db.system': 'redis' }
+      data: { 'db.system': 'redis' },
     })
 
     expect(span).toMatchObject({
       data: {
         'db.system': 'redis',
-        'db.system.name': 'redis'
-      }
+        'db.system.name': 'redis',
+      },
     })
   })
 

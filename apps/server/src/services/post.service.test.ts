@@ -1,14 +1,16 @@
 import { Effect } from 'effect'
 import { describe, expect, test } from 'vitest'
+
 import type { SelectMdxCompiledPost } from '@/db/post.schema'
 import { DatabaseError, ValidationError } from '@/errors'
+
 import {
   deriveReplyThreadFields,
   generatePostSlug,
   normalizePostData,
   toEditorialPost,
   toMicroPost,
-  validatePostData
+  validatePostData,
 } from './post.service'
 import { stripSlugSuffix } from './to-slug'
 
@@ -32,43 +34,43 @@ const basePost: SelectMdxCompiledPost = {
   createdAt: new Date('2026-01-01T00:00:00Z'),
   updatedAt: new Date('2026-01-01T00:00:00Z'),
   compiledContent: '',
-  creators: []
+  creators: [],
 }
 
 describe('validatePostData', () => {
   test('allows a tweet with only a title', async () => {
     await expect(
-      Effect.runPromise(validatePostData({ type: 'micro', title: 'Track is wild' }))
+      Effect.runPromise(validatePostData({ type: 'micro', title: 'Track is wild' })),
     ).resolves.toBeUndefined()
   })
 
   test('allows a tweet with only content', async () => {
     await expect(
-      Effect.runPromise(validatePostData({ type: 'micro', content: 'Track is wild' }))
+      Effect.runPromise(validatePostData({ type: 'micro', content: 'Track is wild' })),
     ).resolves.toBeUndefined()
   })
 
   test('allows a post with surrounding whitespace', async () => {
     await expect(
-      Effect.runPromise(validatePostData({ type: 'post', title: ' Title ', content: ' Body ' }))
+      Effect.runPromise(validatePostData({ type: 'post', title: ' Title ', content: ' Body ' })),
     ).resolves.toBeUndefined()
   })
 
   test('rejects a tweet without title or content', async () => {
     await expect(
-      Effect.runPromise(validatePostData({ type: 'micro', title: ' ', content: null }))
+      Effect.runPromise(validatePostData({ type: 'micro', title: ' ', content: null })),
     ).rejects.toEqual(new ValidationError({ message: 'Tweet title or body is required' }))
   })
 
   test('rejects a regular post without a title', async () => {
     await expect(
-      Effect.runPromise(validatePostData({ type: 'post', content: 'Body' }))
+      Effect.runPromise(validatePostData({ type: 'post', content: 'Body' })),
     ).rejects.toEqual(new ValidationError({ message: 'Post title is required' }))
   })
 
   test('rejects a regular post without content', async () => {
     await expect(
-      Effect.runPromise(validatePostData({ type: 'post', title: 'Title' }))
+      Effect.runPromise(validatePostData({ type: 'post', title: 'Title' })),
     ).rejects.toEqual(new ValidationError({ message: 'Post content is required' }))
   })
 })
@@ -77,21 +79,21 @@ describe('normalizePostData', () => {
   test('normalizes empty tweet title and content to null', async () => {
     expect(normalizePostData({ title: ' ', content: '' }, 'micro')).toEqual({
       title: null,
-      content: null
+      content: null,
     })
   })
 
   test('preserves non-empty tweet title and content', async () => {
     expect(normalizePostData({ title: ' Title ', content: ' Body ' }, 'micro')).toEqual({
       title: ' Title ',
-      content: ' Body '
+      content: ' Body ',
     })
   })
 
   test('does not normalize regular post data', async () => {
     expect(normalizePostData({ title: ' ', content: '' }, 'post')).toEqual({
       title: ' ',
-      content: ''
+      content: '',
     })
   })
 
@@ -107,7 +109,7 @@ describe('deriveReplyThreadFields', () => {
     expect(deriveReplyThreadFields(parent)).toEqual({
       parentPostId: 'parent-id',
       rootPostId: 'parent-id',
-      depth: 1
+      depth: 1,
     })
   })
 
@@ -117,7 +119,7 @@ describe('deriveReplyThreadFields', () => {
     expect(deriveReplyThreadFields(parent)).toEqual({
       parentPostId: 'reply-id',
       rootPostId: 'root-id',
-      depth: 3
+      depth: 3,
     })
   })
 })
@@ -125,13 +127,13 @@ describe('deriveReplyThreadFields', () => {
 describe('generatePostSlug', () => {
   test('derives the slug from the title when present', () => {
     expect(stripSlugSuffix(generatePostSlug('Four Tet just dropped', null))).toBe(
-      'four-tet-just-dropped'
+      'four-tet-just-dropped',
     )
   })
 
   test('falls back to content when there is no title', () => {
     expect(stripSlugSuffix(generatePostSlug(null, 'a body with no title'))).toBe(
-      'a-body-with-no-title'
+      'a-body-with-no-title',
     )
   })
 
@@ -147,13 +149,13 @@ describe('post type refinement', () => {
 
   test('rejects editorial posts without title or content', async () => {
     await expect(
-      Effect.runPromise(toEditorialPost({ ...basePost, title: null, content: 'Body' }))
+      Effect.runPromise(toEditorialPost({ ...basePost, title: null, content: 'Body' })),
     ).rejects.toEqual(
       new DatabaseError({
         message: 'Expected editorial post with title and content: title',
         operation: 'post_type_refinement',
-        table: 'posts'
-      })
+        table: 'posts',
+      }),
     )
   })
 

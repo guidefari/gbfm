@@ -5,19 +5,22 @@ import {
   integer,
   sqliteTable,
   primaryKey,
-  text
+  text,
 } from 'drizzle-orm/sqlite-core'
+
 import { user } from './auth.schema'
 import { defaultContentFields } from './util'
 
 export const POST_MUSIC_ENTITY_TYPES = ['album', 'track', 'playlist'] as const
+
 export type PostMusicEntityType = (typeof POST_MUSIC_ENTITY_TYPES)[number]
 
 export const postTypeEnum = ['post', 'micro'] as const
+
 // todo: derive this at some point bossman
 export type PostType = 'post' | 'micro'
 
-const { title, content, ...postContentFields } = defaultContentFields
+const { title: _title, content: _content, ...postContentFields } = defaultContentFields
 
 export const postsTable = sqliteTable(
   'posts',
@@ -29,15 +32,15 @@ export const postsTable = sqliteTable(
     musicEntityType: text('music_entity_type'),
     musicEntityId: text('music_entity_id'),
     parentPostId: text('parent_post_id').references((): AnySQLiteColumn => postsTable.id, {
-      onDelete: 'set null'
+      onDelete: 'set null',
     }),
     rootPostId: text('root_post_id').references((): AnySQLiteColumn => postsTable.id, {
-      onDelete: 'set null'
+      onDelete: 'set null',
     }),
     depth: integer('depth').notNull().default(0),
     quotedPostId: text('quoted_post_id').references((): AnySQLiteColumn => postsTable.id, {
-      onDelete: 'set null'
-    })
+      onDelete: 'set null',
+    }),
   },
   (table) => [
     index('posts_slug_idx').on(table.slug),
@@ -45,12 +48,13 @@ export const postsTable = sqliteTable(
     index('posts_type_created_idx').on(table.type, table.createdAt),
     index('posts_parent_created_idx').on(table.parentPostId, table.createdAt),
     index('posts_root_created_idx').on(table.rootPostId, table.createdAt),
-    index('posts_quoted_post_idx').on(table.quotedPostId)
-  ]
+    index('posts_quoted_post_idx').on(table.quotedPostId),
+  ],
 )
 
-export type SelectPost = InferSelectModel<typeof postsTable> & { tags: string[] | null }
-export type InsertPost = InferInsertModel<typeof postsTable> & { tags?: string[] }
+export type SelectPost = InferSelectModel<typeof postsTable> & { tags: Array<string> | null }
+
+export type InsertPost = InferInsertModel<typeof postsTable> & { tags?: Array<string> }
 
 export type BlueskySourceAttribution = {
   readonly authorDid: string
@@ -65,11 +69,14 @@ export type BlueskySourceAttribution = {
 export type SelectMdxCompiledPost = SelectPost & {
   compiledContent: string
   blueskySource?: BlueskySourceAttribution
-  creators?: Array<{
-    id: string
-    name: string
-    username: string | null
-  }>
+  creators?:
+    | Array<{
+        id: string
+        name: string
+        username: string | null
+        image: string | null
+      }>
+    | undefined
   replyCount?: number
 }
 
@@ -91,25 +98,25 @@ export const postCreators = sqliteTable(
       .references(() => postsTable.id),
     creatorId: text()
       .notNull()
-      .references(() => user.id, { onDelete: 'cascade' })
+      .references(() => user.id, { onDelete: 'cascade' }),
   },
   (t) => [
     primaryKey({ columns: [t.postId, t.creatorId] }),
-    index('post_creators_creatorId_idx').on(t.creatorId)
-  ]
+    index('post_creators_creatorId_idx').on(t.creatorId),
+  ],
 )
 
 export const postsRelations = relations(postsTable, ({ many }) => ({
-  postCreators: many(postCreators)
+  postCreators: many(postCreators),
 }))
 
 export const postCreatorsRelations = relations(postCreators, ({ one }) => ({
   post: one(postsTable, {
     fields: [postCreators.postId],
-    references: [postsTable.id]
+    references: [postsTable.id],
   }),
   creator: one(user, {
     fields: [postCreators.creatorId],
-    references: [user.id]
-  })
+    references: [user.id],
+  }),
 }))

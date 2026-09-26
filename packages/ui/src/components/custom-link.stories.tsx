@@ -2,7 +2,7 @@ import CustomLink from './custom-link'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Content/Custom link'
+  title: '@gbfm/ui/Content/Custom link',
 }
 
 export function CustomLinks() {

@@ -6,6 +6,7 @@ const DATABASE_AUTO_INTEGRATIONS = new Set(['Postgres', 'PostgresJs'])
 
 const isLocalUrl = (cause: SpanAttributeValue | string | undefined) => {
   const value = Option.getOrUndefined(Schema.decodeUnknownOption(Schema.String)(cause))
+
   return value !== undefined && (value.includes('127.0.0.1') || value.includes('localhost'))
 }
 
@@ -14,7 +15,7 @@ const isLocalUrl = (cause: SpanAttributeValue | string | undefined) => {
  * Sentry's automatic integrations would create a second span containing the statement.
  */
 export const withoutDatabaseAutoInstrumentation = <T extends { readonly name: string }>(
-  integrations: T[]
+  integrations: Array<T>,
 ) => integrations.filter((integration) => !DATABASE_AUTO_INTEGRATIONS.has(integration.name))
 
 /**

@@ -1,7 +1,9 @@
 import { readFile } from 'node:fs/promises'
+
 import { Effect } from 'effect'
 import { PDFDocument } from 'pdf-lib'
 import { describe, expect, test } from 'vitest'
+
 import type { QrPdfRequest } from './contract'
 import { generateQrPdf, QrPdfGenerationError, type QrPdfDependencies } from './generator'
 
@@ -11,12 +13,12 @@ const input: QrPdfRequest = {
   kind: 'mix',
   slug: 'night-drive',
   title: 'Night Drive',
-  people: ['Guide Fari']
+  people: ['Guide Fari'],
 }
 
 const makeDependencies = () => {
   const objects = new Map<string, Uint8Array>()
-  const loadedFonts: string[] = []
+  const loadedFonts: Array<string> = []
 
   const dependencies: QrPdfDependencies = {
     cdnUrl: 'https://cdn.goosebumps.fm',
@@ -29,10 +31,11 @@ const makeDependencies = () => {
       Effect.tryPromise({
         try: async () => {
           loadedFonts.push(name)
+
           return new Uint8Array(await readFile(decodeURIComponent(fontUrl(name).pathname)))
         },
-        catch: (error) => new QrPdfGenerationError({ message: String(error), stage: 'font-read' })
-      })
+        catch: (error) => new QrPdfGenerationError({ message: String(error), stage: 'font-read' }),
+      }),
   }
 
   return { dependencies, loadedFonts, objects }
@@ -45,11 +48,12 @@ describe('generateQrPdf', () => {
     const first = await Effect.runPromise(generateQrPdf(dependencies, input))
     expect(first.cached).toBe(false)
     expect(first.url).toMatch(
-      /^https:\/\/cdn\.goosebumps\.fm\/user-content\/qr-pdfs\/qr\/night-drive-[a-f0-9]{16}\.pdf$/
+      /^https:\/\/cdn\.goosebumps\.fm\/user-content\/qr-pdfs\/qr\/night-drive-[a-f0-9]{16}\.pdf$/,
     )
     expect(loadedFonts).toEqual(['JetBrainsMono-Bold.ttf', 'JetBrainsMono-ExtraBold.ttf'])
 
     const [bytes] = objects.values()
+
     if (bytes === undefined) throw new Error('Expected the generated PDF to be cached')
     const pdf = await PDFDocument.load(bytes)
     expect(pdf.getPageCount()).toBe(1)

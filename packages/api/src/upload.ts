@@ -1,10 +1,11 @@
 import { Schema } from 'effect'
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/unstable/httpapi'
+
 import { FileTooLargeError } from './errors'
 import { AuthMiddleware } from './middleware/auth'
 
 export const PartNumber = Schema.Number.pipe(
-  Schema.check(Schema.isInt(), Schema.isBetween({ minimum: 1, maximum: 10000 }))
+  Schema.check(Schema.isInt(), Schema.isBetween({ minimum: 1, maximum: 10000 })),
 )
 
 // Images are a single PUT (no chunking), so this is intentionally simpler
@@ -17,9 +18,9 @@ export const PartNumber = Schema.Number.pipe(
 export const PresignImageUploadInput = Schema.Struct({
   fileName: Schema.NonEmptyString.pipe(Schema.check(Schema.isMaxLength(255))),
   contentType: Schema.NonEmptyString.pipe(
-    Schema.check(Schema.isMaxLength(127), Schema.isPattern(/^image\//))
+    Schema.check(Schema.isMaxLength(127), Schema.isPattern(/^image\//)),
   ),
-  fileSize: Schema.Number.pipe(Schema.check(Schema.isInt(), Schema.isGreaterThan(0)))
+  fileSize: Schema.Number.pipe(Schema.check(Schema.isInt(), Schema.isGreaterThan(0))),
 })
 
 export const PresignImageUploadResponse = Schema.Struct({
@@ -34,7 +35,7 @@ export const PresignImageUploadResponse = Schema.Struct({
   // onto every call site.
   publicUrl: Schema.NonEmptyString,
   key: Schema.NonEmptyString,
-  expiresInSeconds: Schema.Number
+  expiresInSeconds: Schema.Number,
 })
 
 export const InitMultipartUploadInput = Schema.Struct({
@@ -42,65 +43,65 @@ export const InitMultipartUploadInput = Schema.Struct({
   // Matches the old regex(/^audio\//) constraint -- multipart upload is
   // audio-only today (fileType is a literal 'audio' below).
   contentType: Schema.NonEmptyString.pipe(
-    Schema.check(Schema.isMaxLength(127), Schema.isPattern(/^audio\//))
+    Schema.check(Schema.isMaxLength(127), Schema.isPattern(/^audio\//)),
   ),
   fileSize: Schema.Number.pipe(Schema.check(Schema.isInt(), Schema.isGreaterThan(0))),
-  fileType: Schema.Literal('audio')
+  fileType: Schema.Literal('audio'),
 })
 
 export const InitMultipartUploadResponse = Schema.Struct({
   uploadId: Schema.String,
   key: Schema.String,
-  chunkSize: Schema.Number
+  chunkSize: Schema.Number,
 })
 
 export const PresignMultipartPartInput = Schema.Struct({
   key: Schema.NonEmptyString,
   uploadId: Schema.NonEmptyString,
-  partNumber: PartNumber
+  partNumber: PartNumber,
 })
 
 export const PresignMultipartPartResponse = Schema.Struct({
   url: Schema.NonEmptyString,
   partNumber: PartNumber,
-  expiresInSeconds: Schema.Number
+  expiresInSeconds: Schema.Number,
 })
 
 const CompletedPart = Schema.Struct({
   partNumber: PartNumber,
-  etag: Schema.NonEmptyString
+  etag: Schema.NonEmptyString,
 })
 
 export const CompleteMultipartUploadInput = Schema.Struct({
   key: Schema.NonEmptyString,
   uploadId: Schema.NonEmptyString,
   parts: Schema.Array(CompletedPart).pipe(
-    Schema.check(Schema.isMinLength(1), Schema.isMaxLength(10000))
-  )
+    Schema.check(Schema.isMinLength(1), Schema.isMaxLength(10000)),
+  ),
 })
 
 export const CompleteMultipartUploadResponse = Schema.Struct({
   url: Schema.String,
-  key: Schema.String
+  key: Schema.String,
 })
 
 export const AbortMultipartUploadInput = Schema.Struct({
   key: Schema.NonEmptyString,
-  uploadId: Schema.NonEmptyString
+  uploadId: Schema.NonEmptyString,
 })
 
 export const AbortMultipartUploadResponse = Schema.Struct({
-  ok: Schema.Literal(true)
+  ok: Schema.Literal(true),
 })
 
 const MultipartStatusPart = Schema.Struct({
   partNumber: PartNumber,
   etag: Schema.NonEmptyString,
-  size: Schema.Number.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(0)))
+  size: Schema.Number.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(0))),
 })
 
 export const MultipartUploadStatusResponse = Schema.Struct({
-  parts: Schema.Array(MultipartStatusPart)
+  parts: Schema.Array(MultipartStatusPart),
 })
 
 export const UploadGroup = HttpApiGroup.make('upload')
@@ -108,15 +109,15 @@ export const UploadGroup = HttpApiGroup.make('upload')
     HttpApiEndpoint.post('presignImage', '/api/upload/image/presign', {
       payload: PresignImageUploadInput,
       success: PresignImageUploadResponse,
-      error: [HttpApiError.BadRequest, FileTooLargeError]
-    }).middleware(AuthMiddleware)
+      error: [HttpApiError.BadRequest, FileTooLargeError],
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.post('initMultipartUpload', '/api/upload/multipart/init', {
       payload: InitMultipartUploadInput,
       success: InitMultipartUploadResponse,
-      error: [HttpApiError.BadRequest, FileTooLargeError]
-    }).middleware(AuthMiddleware)
+      error: [HttpApiError.BadRequest, FileTooLargeError],
+    }).middleware(AuthMiddleware),
   )
   .add(
     // Browser PUTs the raw part body directly to S3 with this URL --
@@ -128,30 +129,30 @@ export const UploadGroup = HttpApiGroup.make('upload')
     HttpApiEndpoint.post('presignMultipartPart', '/api/upload/multipart/presign-part', {
       payload: PresignMultipartPartInput,
       success: PresignMultipartPartResponse,
-      error: HttpApiError.BadRequest
-    }).middleware(AuthMiddleware)
+      error: HttpApiError.BadRequest,
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.post('completeMultipartUpload', '/api/upload/multipart/complete', {
       payload: CompleteMultipartUploadInput,
       success: CompleteMultipartUploadResponse,
-      error: HttpApiError.BadRequest
-    }).middleware(AuthMiddleware)
+      error: HttpApiError.BadRequest,
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.post('abortMultipartUpload', '/api/upload/multipart/abort', {
       payload: AbortMultipartUploadInput,
       success: AbortMultipartUploadResponse,
-      error: HttpApiError.BadRequest
-    }).middleware(AuthMiddleware)
+      error: HttpApiError.BadRequest,
+    }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.get('multipartUploadStatus', '/api/upload/multipart/status', {
       query: {
         key: Schema.NonEmptyString,
-        uploadId: Schema.NonEmptyString
+        uploadId: Schema.NonEmptyString,
       },
       success: MultipartUploadStatusResponse,
-      error: HttpApiError.BadRequest
-    }).middleware(AuthMiddleware)
+      error: HttpApiError.BadRequest,
+    }).middleware(AuthMiddleware),
   )
