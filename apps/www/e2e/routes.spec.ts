@@ -1,4 +1,22 @@
 import { expect, test } from '@playwright/test'
+import { Option, Schema } from 'effect'
+
+declare global {
+  interface Window {
+    gbfmTelemetryBodies?: Array<string>
+    gbfmListenerTypes?: Array<string>
+  }
+}
+
+const TelemetryBatch = Schema.fromJsonString(
+  Schema.Struct({ events: Schema.Array(Schema.Unknown) }),
+)
+
+const telemetryEvents = (body: string): ReadonlyArray<unknown> =>
+  Option.match(Schema.decodeUnknownOption(TelemetryBatch)(body), {
+    onNone: () => [],
+    onSome: (batch) => batch.events,
+  })
 
 const publicRoutes = [
   '/',
@@ -135,7 +153,7 @@ test('home SSR includes canonical metadata and visible content', async ({ page }
 test('tweet replies render hydrated music without browser-side music API requests', async ({
   page,
 }) => {
-  const musicRequests: string[] = []
+  const musicRequests: Array<string> = []
   page.on('request', (request) => {
     if (new URL(request.url()).pathname.startsWith('/api/music/')) {
       musicRequests.push(request.url())
@@ -168,21 +186,21 @@ test('browser telemetry batches initial, SPA, error, and player events without p
       'gbfm.telemetry.session.v1',
       JSON.stringify({ id: sampledSession, createdAt: Date.now() }),
     )
-    const telemetryWindow = window as typeof window & {
-      __telemetryBodies: Array<string>
-      __listenerTypes: Array<string>
-    }
-    telemetryWindow.__telemetryBodies = []
-    telemetryWindow.__listenerTypes = []
-    const addEventListener = window.addEventListener.bind(window)
-    window.addEventListener = ((type: string, ...input: Array<unknown>) => {
-      telemetryWindow.__listenerTypes.push(type)
 
-      return Reflect.apply(addEventListener, window, [type, ...input])
-    }) as typeof window.addEventListener
+    const telemetryBodies: Array<string> = []
+    const listenerTypes: Array<string> = []
+    window.gbfmTelemetryBodies = telemetryBodies
+    window.gbfmListenerTypes = listenerTypes
+    const addEventListener = window.addEventListener.bind(window)
+    Object.defineProperty(window, 'addEventListener', {
+      value: (...input: Parameters<typeof addEventListener>) => {
+        listenerTypes.push(input[0])
+        addEventListener(...input)
+      },
+    })
     Object.defineProperty(navigator, 'sendBeacon', {
-      value: (_url: string, body: BodyInit | null) => {
-        telemetryWindow.__telemetryBodies.push(String(body))
+      value: (_url: string, body: string) => {
+        telemetryBodies.push(body)
 
         return true
       },
@@ -205,13 +223,7 @@ test('browser telemetry batches initial, SPA, error, and player events without p
   expect(pageErrors).toEqual([])
   await expect
     .poll(() =>
-      page.evaluate(() =>
-        (
-          window as typeof window & {
-            __listenerTypes: Array<string>
-          }
-        ).__listenerTypes.includes('gbfm:player-telemetry'),
-      ),
+      page.evaluate(() => window.gbfmListenerTypes?.includes('gbfm:player-telemetry') ?? false),
     )
     .toBe(true)
   await page.getByRole('button', { name: 'Menu', exact: true }).click()
@@ -226,23 +238,18 @@ test('browser telemetry batches initial, SPA, error, and player events without p
         error: new Error('failed person@example.com https://private.test/path/123'),
       }),
     )
+
     for (let index = 0; index < 20; index += 1)
       window.dispatchEvent(new CustomEvent('gbfm:player-telemetry', { detail: 'play' }))
   })
   await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          (window as typeof window & { __telemetryBodies: Array<string> }).__telemetryBodies.length,
-      ),
-    )
+    .poll(() => page.evaluate(() => window.gbfmTelemetryBodies?.length ?? 0))
     .toBeGreaterThan(0)
 
-  const bodies = await page.evaluate(
-    () => (window as typeof window & { __telemetryBodies: Array<string> }).__telemetryBodies,
-  )
+  const bodies = await page.evaluate(() => window.gbfmTelemetryBodies ?? [])
+
   const serialized = bodies.join('\n')
-  const events = bodies.flatMap((body) => JSON.parse(body).events as Array<Record<string, unknown>>)
+  const events = bodies.flatMap(telemetryEvents)
 
   expect(events).toEqual(
     expect.arrayContaining([
