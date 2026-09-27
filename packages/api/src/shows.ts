@@ -10,6 +10,7 @@ const Uuid = Schema.String.pipe(Schema.check(Schema.isPattern(UuidPattern)))
 const ShowHost = Schema.Struct({
   id: Schema.String,
   name: Schema.String,
+  username: Schema.optional(Schema.NullOr(Schema.String)),
 })
 
 const ShowResponse = Schema.Struct({

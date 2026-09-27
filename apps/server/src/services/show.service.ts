@@ -27,7 +27,7 @@ import { createPaginationMetadata, type PaginationMetadata } from '@/lib/paginat
 export { ShowSubscriptionService, ShowSubscriptionServiceLayer } from './show-subscription.service'
 
 type ShowWithHosts = SelectShow & {
-  hosts: Array<{ id: string; name: string }>
+  hosts: Array<{ id: string; name: string; username: string | null }>
 }
 
 export interface ShowService {
@@ -143,7 +143,11 @@ const getAllEffect = (
 
     const data = projectedShows.map(({ showCreators: hosts, ...show }) => ({
       ...show,
-      hosts: hosts.map(({ creator }) => ({ id: creator.id, name: creator.name })),
+      hosts: hosts.map(({ creator }) => ({
+        id: creator.id,
+        name: creator.name,
+        username: creator.username,
+      })),
     }))
 
     return {
@@ -203,6 +207,7 @@ const getBySlugEffect = (slug: string, includeDrafts = false) =>
       hosts: hosts.map(({ creator }) => ({
         id: creator.id,
         name: creator.name,
+        username: creator.username,
       })),
     }
 
@@ -411,6 +416,7 @@ const updateEffect = (
       hosts: hostRows.map(({ creator }) => ({
         id: creator.id,
         name: creator.name,
+        username: creator.username,
       })),
     }
 

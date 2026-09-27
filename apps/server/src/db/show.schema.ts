@@ -21,6 +21,7 @@ export type SelectMdxCompiledShow = SelectShow & {
   hosts?: Array<{
     id: string
     name: string
+    username: string | null
   }>
 }
 
