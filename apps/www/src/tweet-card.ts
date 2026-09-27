@@ -8,6 +8,21 @@ import { richContent } from './rich-content'
 
 export type TweetPost = MicroPostScreenResponse['post']
 
+const avatarSizes = '40px'
+
+const coverSizes = '(min-width: 640px) 128px, 96px'
+
+/** The artwork a tweet screen paints first, for warming the image cache before navigating to it. */
+export const tweetImages = (screen: MicroPostScreenResponse) =>
+  [screen.post, screen.quote, screen.post.parentPostId ? screen.root : null].flatMap((post) =>
+    post
+      ? [
+          ...(post.creators?.[0] ? [{ src: post.creators[0].image, sizes: avatarSizes }] : []),
+          ...(post.music ? [{ src: post.music.entity.coverImageUrl, sizes: coverSizes }] : []),
+        ]
+      : [],
+  )
+
 type Creator = NonNullable<TweetPost['creators']>[number]
 
 const platformLabels = new Map([
@@ -51,7 +66,7 @@ export const authorRow = (
   const avatar = artwork(
     creator.image,
     `${creator.name}'s avatar`,
-    '40px',
+    avatarSizes,
     false,
     'h-10 w-10 object-cover',
   )
@@ -133,9 +148,12 @@ const streamLinks = (links: NonNullable<TweetPost['music']>['links']) =>
     ),
   )
 
-export const musicCard = (music: NonNullable<TweetPost['music']>) =>
+export const musicCard = (music: NonNullable<TweetPost['music']>, eager = false) =>
   h.article(
-    [h.Class('not-prose min-w-0 overflow-hidden rounded-md border border-border/50 bg-muted/20')],
+    [
+      h.Key(music.entity.id),
+      h.Class('not-prose min-w-0 overflow-hidden rounded-md border border-border/50 bg-muted/20'),
+    ],
     [
       h.div(
         [h.Class('flex items-start gap-4 p-4 sm:gap-5')],
@@ -151,8 +169,8 @@ export const musicCard = (music: NonNullable<TweetPost['music']>) =>
                 ? artwork(
                     music.entity.coverImageUrl,
                     music.entity.title,
-                    '(min-width: 640px) 128px, 96px',
-                    false,
+                    coverSizes,
+                    eager,
                     'size-full object-cover',
                   )
                 : lucide(iconPaths.music, 'size-10 text-muted-foreground/70'),

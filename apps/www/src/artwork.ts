@@ -20,6 +20,26 @@ export const artworkUrl = (src: string, width: number): string => {
   return url.toString()
 }
 
+const srcset = (original: string) =>
+  artworkUrl(original, 640) === original
+    ? null
+    : [160, 320, 640, 960, 1280]
+        .map((width) => `${artworkUrl(original, width)} ${width}w`)
+        .join(', ')
+
+/** Fetches and decodes the exact candidate an `artwork` with the same sizes will pick, so it paints without a gap. */
+export const preloadArtwork = (src: string | null | undefined, sizes: string) => {
+  const original = src || fallback
+  const image = new Image()
+  const candidates = srcset(original)
+  image.sizes = sizes
+
+  if (candidates) image.srcset = candidates
+  image.src = artworkUrl(original, 640)
+
+  return image.decode().catch(() => undefined)
+}
+
 /** Responsive square artwork with an explicit rendered size and LCP priority only when requested. */
 export const artwork = (
   src: string | null | undefined,
@@ -29,7 +49,7 @@ export const artwork = (
   className = '',
 ) => {
   const original = src || fallback
-  const responsive = artworkUrl(original, 640) !== original
+  const candidates = srcset(original)
 
   return h.img([
     h.Src(artworkUrl(original, 640)),
@@ -38,15 +58,7 @@ export const artwork = (
     h.Width('640'),
     h.Height('640'),
     h.Sizes(sizes),
-    ...(responsive
-      ? [
-          h.Srcset(
-            [160, 320, 640, 960, 1280]
-              .map((width) => `${artworkUrl(original, width)} ${width}w`)
-              .join(', '),
-          ),
-        ]
-      : []),
+    ...(candidates ? [h.Srcset(candidates)] : []),
     h.Loading(eager ? 'eager' : 'lazy'),
     h.Decoding('async'),
     h.Fetchpriority(eager ? 'high' : 'auto'),

@@ -12,7 +12,7 @@ import { defineMessageUnion } from 'foldkit/message'
 import { UrlRequest } from 'foldkit/navigation'
 import { Url, toString as urlToString } from 'foldkit/url'
 
-import { artwork } from './artwork'
+import { artwork, preloadArtwork } from './artwork'
 import * as Creator from './creator'
 import * as Dashboard from './dashboard'
 import { DashboardDocument } from './dashboard/document'
@@ -43,6 +43,7 @@ import {
   replySkeleton,
   tagLinks,
   tweetBody,
+  tweetImages,
   type TweetPost,
 } from './tweet-card'
 import { tweetWayfinder } from './tweet-wayfinder'
@@ -241,6 +242,7 @@ export const Message = defineMessageUnion({
   LoadedReplies: { slug: Schema.String, replies: MicroPostScreenRepliesResponse },
   FailedReplies: { slug: Schema.String },
   NavigationCompleted: {},
+  PrefetchedPage: { flags: Flags, key: Schema.String },
 })
 
 export type Message = typeof Message.Type
@@ -349,24 +351,46 @@ const SetResolvedUrl = Command.define('Navigation.SetResolvedUrl', {
     }),
 })
 
+const fetchPage = (href: string) =>
+  Effect.tryPromise(async (signal) => {
+    const url = new URL(href, location.href)
+    url.searchParams.set('__data', '1')
+
+    const response = await fetch(url, {
+      headers: { accept: 'text/html' },
+      credentials: 'same-origin',
+      signal,
+    })
+
+    return await response.json()
+  }).pipe(Effect.flatMap(Schema.decodeUnknownEffect(Flags)))
+
+/** Warms the page cache and the images a neighbouring page paints first, without navigation telemetry. */
+const PrefetchPage = Command.define('Navigation.Prefetch', {
+  args: { href: Schema.String },
+  messages: [Message.PrefetchedPage, Message.NavigationCompleted],
+  execute: ({ href }) =>
+    fetchPage(href).pipe(
+      Effect.tap((flags) =>
+        Effect.promise(() =>
+          Promise.all(
+            (flags.tweet ? tweetImages(flags.tweet) : []).map(({ src, sizes }) =>
+              preloadArtwork(src, sizes),
+            ),
+          ),
+        ),
+      ),
+      Effect.map((flags) => Message.PrefetchedPage({ flags, key: pageKey(href) })),
+      Effect.catch(() => Effect.succeed(Message.NavigationCompleted())),
+    ),
+})
+
 const LoadPage = Command.define('Navigation.Load', {
   args: { href: Schema.String, navigationId: Schema.Number },
   messages: [Message.LoadedPage, Message.FailedPage],
   execute: ({ href, navigationId }) =>
-    Effect.tryPromise(async (signal) => {
-      window.dispatchEvent(new Event('gbfm:navigation-start'))
-      const url = new URL(href)
-      url.searchParams.set('__data', '1')
-
-      const response = await fetch(url, {
-        headers: { accept: 'text/html' },
-        credentials: 'same-origin',
-        signal,
-      })
-
-      return await response.json()
-    }).pipe(
-      Effect.flatMap(Schema.decodeUnknownEffect(Flags)),
+    Effect.sync(() => window.dispatchEvent(new Event('gbfm:navigation-start'))).pipe(
+      Effect.andThen(fetchPage(href)),
       Effect.tap(() =>
         Effect.sync(() => {
           requestAnimationFrame(() =>
@@ -560,6 +584,16 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
         },
       })
     },
+    PrefetchedPage: ({ flags, key }) => ({
+      model: {
+        ...model,
+        pageCache: settlePage(
+          settlePage(model.pageCache, key, Result.succeed(flags)),
+          pageKey(flags.url),
+          Result.succeed(flags),
+        ),
+      },
+    }),
     LoadedPage: ({ flags, key, navigationId }) => {
       const pageCache = settlePage(
         settlePage(model.pageCache, key, Result.succeed(flags)),
@@ -654,7 +688,19 @@ export const init: Runtime.ApplicationInit<Model, Message, Flags, Services> = (f
     commands: [
       StartClient(),
       ...(flags.tweet
-        ? [LoadReplies({ slug: flags.tweet.post.slug }), MarkSeen({ slug: flags.tweet.post.slug })]
+        ? [
+            LoadReplies({ slug: flags.tweet.post.slug }),
+            MarkSeen({ slug: flags.tweet.post.slug }),
+            ...[
+              ...new Set(
+                [
+                  flags.neighbours?.newer,
+                  flags.neighbours?.older,
+                  flags.neighbours?.olderUnread,
+                ].flatMap((slug) => (slug ? [slug] : [])),
+              ),
+            ].map((slug) => PrefetchPage({ href: `/tweet/${encodeURIComponent(slug)}` })),
+          ]
         : []),
       ...(creatorKind
         ? Command.mapMessages(creator.commands ?? [], (message) =>
@@ -1126,7 +1172,7 @@ const tweetView = (model: Model, h: HtmlBuilder<Message>) => {
             ? h.h1([h.Class('m-0 text-lg font-medium leading-snug tracking-tight')], [post.title])
             : h.empty,
           tweetBody(post, 'base'),
-          post.music ? musicCard(post.music) : h.empty,
+          post.music ? musicCard(post.music, true) : h.empty,
           screen.quote ? quoteCard(screen.quote) : h.empty,
           post.tags?.length ? h.div([h.Class('pt-1')], [tagLinks(post.tags)]) : h.empty,
           h.div(
