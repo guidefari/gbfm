@@ -121,6 +121,12 @@ const listingKinds = new Set([
   'djs',
 ])
 
+/** Same-origin paths answered by the API rather than a Foldkit page, so they need a full load. */
+const serverPaths = ['/rss.xml', '/sitemap.xml', '/robots.txt', '/api/', '/health', '/s/']
+
+const isServerPath = (pathname: string) =>
+  serverPaths.some((path) => (path.endsWith('/') ? pathname.startsWith(path) : pathname === path))
+
 export const parseRoute = (pathname: string): Route => {
   let parts: Array<string>
 
@@ -437,7 +443,14 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
         : { model },
     RequestedUrl: ({ request }) =>
       UrlRequest.match<Update.Return<Model, Message, Services>>(request, {
-        Internal: ({ url }) => ({ model, commands: [Navigate({ href: urlToString(url) })] }),
+        Internal: ({ url }) => ({
+          model,
+          commands: [
+            isServerPath(url.pathname)
+              ? Leave({ href: urlToString(url) })
+              : Navigate({ href: urlToString(url) }),
+          ],
+        }),
         External: ({ href }) => ({ model, commands: [Leave({ href })] }),
       }),
     ChangedUrl: ({ url }) => ({
