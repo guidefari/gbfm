@@ -910,7 +910,9 @@
 .card-copy {
   padding: 1rem;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.6rem;
+  overflow-wrap: anywhere;
 }
 .card-copy h3 {
   overflow-wrap: anywhere;
