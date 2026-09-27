@@ -1,5 +1,6 @@
 - run `bun precommit` to validate your changes. this gives you typecheck, oxlint, and oxfmt
 - work in the `prod` branch unless otherwise specified
+- when changing the Foldkit WWW app, read `FOLDKIT.md` and check the installed framework version before using upstream examples
 
 ## Agent skills
 
