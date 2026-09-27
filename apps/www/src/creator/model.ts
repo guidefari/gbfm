@@ -1,9 +1,10 @@
-import { Effect, Schema } from 'effect'
-import { Command, type Update } from 'foldkit'
+import { Effect, Schema, Stream } from 'effect'
+import { Command, Subscription, type Update } from 'foldkit'
 import { defineMessageUnion } from 'foldkit/message'
 
 import type { CreatorDraft, CreatorError, CreatorKind } from './services'
 import { CreatorService } from './services'
+import { CreatorUpload } from './upload'
 
 const Kind = Schema.Literals(['micro', 'post', 'mix'])
 
@@ -41,6 +42,7 @@ export const Model = Schema.Struct({
   saveState: Schema.Literals(['saved', 'unsaved', 'saved-locally', 'failed']),
   error: Schema.NullOr(Schema.String),
   uploadPercent: Schema.Number,
+  uploadState: Schema.Literals(['idle', 'running', 'pausing', 'paused', 'failed', 'cancelling']),
 })
 
 export type Model = typeof Model.Type
@@ -77,6 +79,15 @@ export const Message = defineMessageUnion({
   ArtworkUploaded: { url: Schema.String },
   AudioChosen: { files: Schema.Array(Schema.instanceOf(File)) },
   AudioUploaded: { url: Schema.String },
+  UploadProgressed: { percent: Schema.Number },
+  UploadPauseRequested: {},
+  UploadPauseAcknowledged: {},
+  UploadPaused: { percent: Schema.Number },
+  UploadResumeRequested: {},
+  UploadCancelRequested: {},
+  UploadCancelled: {},
+  UploadFailed: { message: Schema.String },
+  UploadUnavailable: { message: Schema.String },
 })
 
 export type Message = typeof Message.Type
@@ -144,13 +155,54 @@ const UploadArtwork = Command.define('Creator.UploadArtwork', {
 })
 
 const UploadAudio = Command.define('Creator.UploadAudio', {
-  args: { file: Schema.instanceOf(File) },
-  messages: [Message.AudioUploaded, Message.Failed],
+  args: { file: Schema.NullOr(Schema.instanceOf(File)) },
+  messages: [
+    Message.AudioUploaded,
+    Message.UploadPaused,
+    Message.UploadFailed,
+    Message.UploadUnavailable,
+  ],
   execute: ({ file }) =>
-    Effect.flatMap(CreatorService, (service) => service.uploadMix(file, () => {})).pipe(
+    Effect.flatMap(CreatorUpload, (service) => (file ? service.start(file) : service.resume)).pipe(
       Effect.map((url) => Message.AudioUploaded({ url })),
-      Effect.catch((error) => Effect.succeed(failure('audio upload')(error))),
+      Effect.catchTag('UploadPaused', ({ checkpoint }) =>
+        Effect.succeed(
+          Message.UploadPaused({
+            percent:
+              checkpoint.totalBytes === 0
+                ? 0
+                : Math.floor(
+                    (checkpoint.completedParts.reduce((bytes, part) => bytes + part.size, 0) /
+                      checkpoint.totalBytes) *
+                      100,
+                  ),
+          }),
+        ),
+      ),
+      Effect.catchTag('AlreadyInProgressError', () =>
+        Effect.succeed(
+          Message.UploadUnavailable({
+            message: 'The previous upload is pausing. Select your file again in a moment.',
+          }),
+        ),
+      ),
+      Effect.catch((error) => Effect.succeed(Message.UploadFailed({ message: error.message }))),
     ),
+})
+
+const PauseUpload = Command.define('Creator.PauseUpload', {
+  messages: [Message.UploadPauseAcknowledged],
+  execute: Effect.flatMap(CreatorUpload, (service) => service.pause).pipe(
+    Effect.as(Message.UploadPauseAcknowledged()),
+  ),
+})
+
+const CancelUpload = Command.define('Creator.CancelUpload', {
+  messages: [Message.UploadCancelled, Message.UploadFailed],
+  execute: Effect.flatMap(CreatorUpload, (service) => service.cancel).pipe(
+    Effect.as(Message.UploadCancelled()),
+    Effect.catch((error) => Effect.succeed(Message.UploadFailed({ message: error.message }))),
+  ),
 })
 
 const keyOf = (draft: CreatorDraft) => `${draft.kind}:${draft.editSlug ?? 'new'}`
@@ -166,8 +218,8 @@ const changed = (
 export const update = (
   model: Model,
   message: Message,
-): Update.Return<Model, Message, CreatorService> =>
-  Message.match<Update.Return<Model, Message, CreatorService>>(message, {
+): Update.Return<Model, Message, CreatorService | CreatorUpload> =>
+  Message.match<Update.Return<Model, Message, CreatorService | CreatorUpload>>(message, {
     Changed: ({ field, value }) => changed(model, { ...model.draft, [field]: value }),
     TagsChanged: ({ value }) =>
       changed(model, {
@@ -238,14 +290,57 @@ export const update = (
     ArtworkUploaded: ({ url }) =>
       changed({ ...model, phase: 'writing' }, { ...model.draft, thumbnailUrl: url }),
     AudioChosen: ({ files }) =>
-      files[0]
-        ? { model: { ...model, phase: 'uploading' }, commands: [UploadAudio({ file: files[0] })] }
+      files[0] && model.uploadState === 'idle'
+        ? {
+            model: {
+              ...model,
+              phase: 'uploading',
+              uploadState: 'running',
+              uploadPercent: 0,
+              error: null,
+            },
+            commands: [UploadAudio({ file: files[0] })],
+          }
         : { model },
     AudioUploaded: ({ url }) =>
       changed(
-        { ...model, phase: 'writing', uploadPercent: 100 },
+        { ...model, phase: 'writing', uploadState: 'idle', uploadPercent: 100 },
         { ...model.draft, audioUrl: url },
       ),
+    UploadProgressed: ({ percent }) => ({
+      model:
+        model.uploadState === 'running' || model.uploadState === 'pausing'
+          ? { ...model, uploadPercent: percent }
+          : model,
+    }),
+    UploadPauseRequested: () =>
+      model.uploadState === 'running'
+        ? { model: { ...model, uploadState: 'pausing' }, commands: [PauseUpload()] }
+        : { model },
+    UploadPauseAcknowledged: () => ({ model }),
+    UploadPaused: ({ percent }) => ({
+      model: { ...model, phase: 'writing', uploadState: 'paused', uploadPercent: percent },
+    }),
+    UploadResumeRequested: () =>
+      model.uploadState === 'paused' || model.uploadState === 'failed'
+        ? {
+            model: { ...model, phase: 'uploading', uploadState: 'running', error: null },
+            commands: [UploadAudio({ file: null })],
+          }
+        : { model },
+    UploadCancelRequested: () =>
+      model.uploadState === 'paused' || model.uploadState === 'failed'
+        ? { model: { ...model, uploadState: 'cancelling' }, commands: [CancelUpload()] }
+        : { model },
+    UploadCancelled: () => ({
+      model: { ...model, phase: 'writing', uploadState: 'idle', uploadPercent: 0, error: null },
+    }),
+    UploadFailed: ({ message }) => ({
+      model: { ...model, phase: 'writing', uploadState: 'failed', error: message },
+    }),
+    UploadUnavailable: ({ message }) => ({
+      model: { ...model, phase: 'writing', uploadState: 'idle', error: message },
+    }),
   })
 
 export interface InitInput {
@@ -279,6 +374,7 @@ export const initialModel = ({ kind, editSlug, creatorId, authorized }: InitInpu
   saveState: 'saved',
   error: null,
   uploadPercent: 0,
+  uploadState: 'idle',
 })
 
 export const init = (input: InitInput): Update.Return<Model, Message, CreatorService> => {
@@ -293,3 +389,24 @@ export const init = (input: InitInput): Update.Return<Model, Message, CreatorSer
       }
     : { model }
 }
+
+export const subscriptions = Subscription.make<Model, Message, CreatorUpload>()(() => ({
+  uploadProgress: Subscription.persistent(
+    Stream.unwrap(
+      CreatorUpload.pipe(
+        Effect.map((service) =>
+          service.progress.pipe(
+            Stream.map((progress) =>
+              Message.UploadProgressed({
+                percent:
+                  progress.totalBytes === 0
+                    ? 0
+                    : Math.floor((progress.bytesUploaded / progress.totalBytes) * 100),
+              }),
+            ),
+          ),
+        ),
+      ),
+    ),
+  ),
+}))

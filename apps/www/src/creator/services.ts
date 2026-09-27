@@ -68,11 +68,6 @@ export interface SaveInput {
   readonly publish: boolean
 }
 
-export interface UploadProgress {
-  readonly uploaded: number
-  readonly total: number
-}
-
 export interface CreatorOperations {
   readonly readLocalDraft: (key: string) => Effect.Effect<CreatorDraft | null, CreatorStorageError>
   readonly writeLocalDraft: (
@@ -96,10 +91,6 @@ export interface CreatorOperations {
   >
   readonly save: (input: SaveInput) => Effect.Effect<{ readonly slug: string }, CreatorRequestError>
   readonly uploadImage: (file: File) => Effect.Effect<string, CreatorUploadError>
-  readonly uploadMix: (
-    file: File,
-    onProgress: (progress: UploadProgress) => void,
-  ) => Effect.Effect<string, CreatorUploadError>
 }
 
 export class CreatorService extends Context.Service<CreatorService, CreatorOperations>()(
@@ -136,16 +127,6 @@ const ImageResponse = Schema.Struct({
   publicUrl: Schema.String,
   key: Schema.String,
 })
-
-const InitResponse = Schema.Struct({
-  uploadId: Schema.String,
-  key: Schema.String,
-  chunkSize: Schema.Number,
-})
-
-const PartResponse = Schema.Struct({ url: Schema.String, partNumber: Schema.Number })
-
-const CompleteResponse = Schema.Struct({ url: Schema.String, key: Schema.String })
 
 const requestJson = <A>(
   operation: string,
@@ -369,85 +350,5 @@ export const CreatorServiceLive = Layer.succeed(CreatorService, {
         })
 
       return signed.publicUrl
-    }),
-  uploadMix: (file, onProgress) =>
-    Effect.gen(function* () {
-      const init = yield* requestJson(
-        'start multipart upload',
-        InitResponse,
-        '/upload/multipart/init',
-        json({
-          fileName: file.name,
-          contentType: file.type,
-          fileSize: file.size,
-          fileType: 'audio',
-        }),
-      ).pipe(
-        Effect.mapError(
-          (error) =>
-            new CreatorUploadError({ stage: 'init', status: error.status, message: error.message }),
-        ),
-      )
-
-      const parts: Array<{ partNumber: number; etag: string }> = []
-
-      for (
-        let offset = 0, partNumber = 1;
-        offset < file.size;
-        offset += init.chunkSize, partNumber += 1
-      ) {
-        const signed = yield* requestJson(
-          'presign upload part',
-          PartResponse,
-          '/upload/multipart/presign-part',
-          json({ key: init.key, uploadId: init.uploadId, partNumber }),
-        ).pipe(
-          Effect.mapError(
-            (error) =>
-              new CreatorUploadError({
-                stage: 'presign',
-                status: error.status,
-                message: error.message,
-              }),
-          ),
-        )
-
-        const blob = file.slice(offset, Math.min(file.size, offset + init.chunkSize))
-
-        const response = yield* Effect.tryPromise({
-          try: () => fetch(signed.url, { method: 'PUT', body: blob }),
-          catch: (cause) =>
-            new CreatorUploadError({ stage: 'part', status: null, message: String(cause) }),
-        })
-
-        const etag = response.headers.get('etag')
-
-        if (!response.ok || !etag)
-          return yield* new CreatorUploadError({
-            stage: 'part',
-            status: response.status,
-            message: 'Audio part upload failed',
-          })
-        parts.push({ partNumber, etag })
-        onProgress({ uploaded: Math.min(file.size, offset + blob.size), total: file.size })
-      }
-
-      const complete = yield* requestJson(
-        'complete multipart upload',
-        CompleteResponse,
-        '/upload/multipart/complete',
-        json({ key: init.key, uploadId: init.uploadId, parts }),
-      ).pipe(
-        Effect.mapError(
-          (error) =>
-            new CreatorUploadError({
-              stage: 'complete',
-              status: error.status,
-              message: error.message,
-            }),
-        ),
-      )
-
-      return complete.url
     }),
 } satisfies CreatorOperations)

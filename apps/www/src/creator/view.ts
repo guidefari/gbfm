@@ -32,7 +32,10 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
 
   if (model.phase === 'loading')
     return h.section([h.Class('page narrow')], [h.p([], ['Loading draft…'])])
-  const busy = model.phase === 'saving' || model.phase === 'uploading'
+
+  const busy =
+    model.phase === 'saving' || model.phase === 'uploading' || model.uploadState !== 'idle'
+
   const review = model.phase === 'reviewing'
   const canContinue = model.draft.title.trim().length > 0 || model.draft.content.trim().length > 0
 
@@ -70,7 +73,7 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
               review
                 ? h.button([h.OnClick(Message.ReviewClosed())], ['Back to writing'])
                 : h.button(
-                    [h.OnClick(Message.ReviewRequested()), h.Disabled(!canContinue)],
+                    [h.OnClick(Message.ReviewRequested()), h.Disabled(busy || !canContinue)],
                     ['Continue'],
                   ),
             ],
@@ -125,7 +128,7 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
                   h.select(
                     [
                       h.Value(model.draft.kind),
-                      h.Disabled(Boolean(model.draft.editSlug)),
+                      h.Disabled(busy || Boolean(model.draft.editSlug)),
                       h.OnChange((value) =>
                         Message.KindChanged({
                           kind: Match.value(value).pipe(
@@ -200,6 +203,7 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
                           h.input([
                             h.Type('file'),
                             h.Accept('image/*'),
+                            h.Disabled(busy),
                             h.OnFileChange((files) => Message.ArtworkChosen({ files: [...files] })),
                           ]),
                         ],
@@ -219,10 +223,59 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
                           h.input([
                             h.Type('file'),
                             h.Accept('audio/*'),
+                            h.Disabled(busy),
                             h.OnFileChange((files) => Message.AudioChosen({ files: [...files] })),
                           ]),
                         ],
                       ),
+                      h.small(
+                        [],
+                        [
+                          'After a reload, select the same file to resume from the last completed part.',
+                        ],
+                      ),
+                      model.uploadState !== 'idle'
+                        ? h.div(
+                            [h.Class('panel upload-progress')],
+                            [
+                              h.p(
+                                [h.Role('status')],
+                                [
+                                  `${model.uploadState === 'pausing' ? 'Pausing after the current part' : model.uploadState === 'paused' ? 'Upload paused' : model.uploadState === 'failed' ? 'Upload interrupted' : model.uploadState === 'cancelling' ? 'Cancelling upload' : model.uploadPercent === 100 ? 'Finalizing upload' : 'Uploading audio'} · ${model.uploadPercent}%`,
+                                ],
+                              ),
+                              h.progress(
+                                [
+                                  h.Value(String(model.uploadPercent)),
+                                  h.Max('100'),
+                                  h.AriaLabel('Audio upload progress'),
+                                ],
+                                [],
+                              ),
+                              model.uploadState === 'running'
+                                ? h.button(
+                                    [h.OnClick(Message.UploadPauseRequested())],
+                                    ['Pause upload'],
+                                  )
+                                : h.empty,
+                              model.uploadState === 'paused' || model.uploadState === 'failed'
+                                ? h.div(
+                                    [h.Class('creator-actions')],
+                                    [
+                                      h.button(
+                                        [h.OnClick(Message.UploadResumeRequested())],
+                                        ['Resume upload'],
+                                      ),
+                                      h.button(
+                                        [h.OnClick(Message.UploadCancelRequested())],
+                                        ['Cancel upload'],
+                                      ),
+                                    ],
+                                  )
+                                : h.empty,
+                            ],
+                          )
+                        : h.empty,
                       model.draft.audioUrl ? h.small([], ['Audio ready']) : h.empty,
                     ],
                   )

@@ -186,6 +186,7 @@ export const Message = defineMessageUnion({
   ReadModeFailed: {},
   GotPlayerMessage: { message: Player.Message },
   GotCreatorMessage: { message: Creator.Message },
+  GotCreatorResult: { message: Creator.Message, navigationId: Schema.Number },
   GotDashboardMessage: { message: Dashboard.Message },
   RequestedUrl: { request: UrlRequest },
   ChangedUrl: { url: Url },
@@ -201,12 +202,20 @@ export type Message = typeof Message.Type
 type Services =
   | Player.PlayerClient
   | Creator.CreatorService
+  | Creator.CreatorUpload
   | Dashboard.DashboardService
   | SpotifyConnection
 
 const StartClient = Command.define('Application.Start', {
   messages: [Message.ClientStarted],
   execute: Effect.succeed(Message.ClientStarted()),
+})
+
+const PauseCreatorUpload = Command.define('Application.PauseCreatorUpload', {
+  messages: [Message.NavigationCompleted],
+  execute: Effect.flatMap(Creator.CreatorUpload, (upload) => upload.pause).pipe(
+    Effect.as(Message.NavigationCompleted()),
+  ),
 })
 
 const LoadReplies = Command.define('Tweet.LoadReplies', {
@@ -384,10 +393,14 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
       return {
         model: { ...model, creator: child.model },
         commands: Command.mapMessages(child.commands ?? [], (message) =>
-          Message.GotCreatorMessage({ message }),
+          Message.GotCreatorResult({ message, navigationId: model.navigationId }),
         ),
       }
     },
+    GotCreatorResult: ({ message, navigationId }) =>
+      navigationId === model.navigationId
+        ? update(model, Message.GotCreatorMessage({ message }))
+        : { model },
     GotDashboardMessage: ({ message }) => {
       const child = Dashboard.update(model.dashboard, message)
 
@@ -405,7 +418,10 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
       }),
     ChangedUrl: ({ url }) => ({
       model: { ...model, loading: true, menuOpen: false, navigationId: model.navigationId + 1 },
-      commands: [LoadPage({ href: urlToString(url), navigationId: model.navigationId + 1 })],
+      commands: [
+        ...(model.creator.uploadState === 'running' ? [PauseCreatorUpload()] : []),
+        LoadPage({ href: urlToString(url), navigationId: model.navigationId + 1 }),
+      ],
     }),
     LoadedPage: ({ flags, navigationId }) => {
       if (navigationId !== model.navigationId) return { model }
@@ -422,7 +438,14 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
           navigationId,
         },
         commands: [
-          ...(next.commands ?? []),
+          ...Command.mapMessages(next.commands ?? [], (message) =>
+            Match.value(message).pipe(
+              Match.tag('GotCreatorResult', ({ message }) =>
+                Message.GotCreatorResult({ message, navigationId }),
+              ),
+              Match.orElse((message) => message),
+            ),
+          ),
           SetResolvedUrl({
             href: flags.url,
             metadata: flags.metadata,
@@ -504,7 +527,7 @@ export const init: Runtime.ApplicationInit<Model, Message, Flags, Services> = (f
         : []),
       ...(creatorKind
         ? Command.mapMessages(creator.commands ?? [], (message) =>
-            Message.GotCreatorMessage({ message }),
+            Message.GotCreatorResult({ message, navigationId: 0 }),
           )
         : []),
       ...(section && (flags.principal || section === 'spotify-callback') && !flags.dashboard
@@ -1260,11 +1283,18 @@ export const applicationConfig = {
 export const clientResources = Layer.mergeAll(
   Player.playerClientLayer,
   Creator.CreatorServiceLive,
+  Creator.CreatorUploadLive,
   Dashboard.DashboardServiceLive,
   SpotifyConnectionLive,
 )
 
-export const subscriptions = Subscription.lift(Player.subscriptions)<Model, Message>({
-  toChildModel: (model) => model.player,
-  toParentMessage: (message) => Message.GotPlayerMessage({ message }),
-})
+export const subscriptions = Subscription.aggregate(
+  Subscription.lift(Player.subscriptions)<Model, Message>({
+    toChildModel: (model) => model.player,
+    toParentMessage: (message) => Message.GotPlayerMessage({ message }),
+  }),
+  Subscription.lift(Creator.subscriptions)<Model, Message>({
+    toChildModel: (model) => model.creator,
+    toParentMessage: (message) => Message.GotCreatorMessage({ message }),
+  }),
+)

@@ -47,4 +47,14 @@ describe('creator model', () => {
     const model = initialModel({ ...input, kind: 'mix', editSlug: 'existing-mix' })
     expect(update(model, Message.KindChanged({ kind: 'post' }))).toEqual({ model })
   })
+
+  it('the pause checkpoint wins over delayed progress events', () => {
+    const model = { ...initialModel(input), uploadState: 'pausing' as const, uploadPercent: 0 }
+    const paused = update(model, Message.UploadPaused({ percent: 36 })).model
+    expect(paused.uploadPercent).toBe(36)
+    expect(update(paused, Message.UploadProgressed({ percent: 0 })).model.uploadPercent).toBe(36)
+    expect(update(paused, Message.UploadResumeRequested()).commands?.[0]?.name).toBe(
+      'Creator.UploadAudio',
+    )
+  })
 })

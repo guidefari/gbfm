@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseRoute, Route } from './application'
+import { init, Message, parseRoute, Route, update, type Flags } from './application'
+import { Message as CreatorMessage } from './creator/model'
 
 describe('parseRoute', () => {
   it('parses public, creator, dashboard, and missing routes', () => {
@@ -15,5 +16,38 @@ describe('parseRoute', () => {
       Route.cases.Detail.make({ kind: 'resolve', slug: 'local-creator' }),
     )
     expect(parseRoute('/definitely/missing/route')).toEqual(Route.cases.NotFound.make({}))
+  })
+
+  it('drops creator command results from a prior navigation without changing another draft', () => {
+    const flags: Flags = {
+      url: 'https://gbfm.co.za/new/mix',
+      status: 200,
+      principal: null,
+      items: [],
+      title: 'Create',
+      description: '',
+      requestId: 'test',
+      renderedAt: 0,
+      skipSeen: false,
+      tweet: null,
+      neighbours: null,
+      dashboard: null,
+      profile: null,
+      shows: null,
+      changelog: null,
+      publicAction: null,
+      metadata: null,
+      failure: null,
+    }
+
+    const model = { ...init(flags).model, navigationId: 3 }
+    const result = CreatorMessage.AudioUploaded({ url: 'https://cdn.example/previous.mp3' })
+    expect(update(model, Message.GotCreatorResult({ message: result, navigationId: 2 }))).toEqual({
+      model,
+    })
+    expect(
+      update(model, Message.GotCreatorResult({ message: result, navigationId: 3 })).model.creator
+        .draft.audioUrl,
+    ).toBe('https://cdn.example/previous.mp3')
   })
 })
