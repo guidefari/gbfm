@@ -917,9 +917,6 @@
   font-size: 0.75rem;
   color: var(--muted-foreground);
 }
-.tweet-detail {
-  max-width: 760px;
-}
 .tweet-wayfinder {
   position: sticky;
   top: 0;
@@ -1023,63 +1020,11 @@
   background: var(--foreground);
   pointer-events: none;
 }
-.tweet-post {
-  padding: 1.5rem 0;
-  border-bottom: 1px solid var(--border);
-}
-.tweet-post small {
-  color: var(--muted-foreground);
-  font-size: 0.75rem;
-}
 .content-paragraph {
   margin: 1rem 0;
   line-height: 1.8;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
-}
-.music-attachment {
-  display: grid;
-  grid-template-columns: 64px 1fr;
-  gap: 0.5rem 1rem;
-  align-items: center;
-  padding: 1rem;
-  background: var(--card);
-  border: 1px solid var(--border);
-  margin: 1rem 0;
-}
-.music-attachment img {
-  width: 64px;
-  height: 64px;
-  object-fit: cover;
-  grid-row: span 3;
-}
-.music-attachment a {
-  font-size: 0.75rem;
-}
-.tweet-detail > nav:not(.tweet-wayfinder) {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem 0;
-  font-size: 0.8rem;
-}
-.tweet-detail nav label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-.tweet-detail > h2 {
-  margin-top: 2rem;
-}
-.tweet-detail blockquote {
-  border-left: 2px solid var(--highlight);
-  padding-left: 1rem;
-}
-.tweet-detail form {
-  display: grid;
-  gap: 1rem;
-  margin: 1rem 0;
 }
 .site > footer {
   border-top: 1px solid var(--border);
@@ -1267,36 +1212,38 @@
 .detail-actions {
   margin: 2rem 0;
 }
-.rich-content {
-  overflow-wrap: anywhere;
-  line-height: 1.8;
-}
-.rich-content > * {
-  margin: 1rem 0;
-}
-.rich-content p {
-  white-space: pre-wrap;
-}
-.rich-content h2 {
-  font-size: 1.25rem;
-  font-weight: 900;
-}
-.rich-content a {
-  text-decoration: underline;
-  text-decoration-color: var(--highlight);
-}
-.rich-content blockquote {
-  border-left: 3px solid var(--highlight);
-  padding-left: 1rem;
-}
-.rich-content ul {
-  list-style: disc;
-  padding-left: 1.5rem;
-}
-.rich-content pre {
-  overflow-x: auto;
-  background: var(--muted);
-  padding: 1rem;
+@layer components {
+  .rich-content {
+    overflow-wrap: anywhere;
+    line-height: 1.8;
+  }
+  .rich-content > * {
+    margin: 1rem 0;
+  }
+  .rich-content p {
+    white-space: pre-wrap;
+  }
+  .rich-content h2 {
+    font-size: 1.25rem;
+    font-weight: 900;
+  }
+  .rich-content a {
+    text-decoration: underline;
+    text-decoration-color: var(--highlight);
+  }
+  .rich-content blockquote {
+    border-left: 3px solid var(--highlight);
+    padding-left: 1rem;
+  }
+  .rich-content ul {
+    list-style: disc;
+    padding-left: 1.5rem;
+  }
+  .rich-content pre {
+    overflow-x: auto;
+    background: var(--muted);
+    padding: 1rem;
+  }
 }
 @media (max-width: 639px) {
   .content-detail > header {

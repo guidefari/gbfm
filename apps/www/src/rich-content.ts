@@ -33,7 +33,7 @@ const inline = (text: string): Array<Html | string> => {
 }
 
 /** Render stored writing as inert markup, never evaluating compiled MDX or accepting arbitrary HTML. */
-export const richContent = (content: string): Html => {
+export const richContent = (content: string, className = ''): Html => {
   const output: Array<Html> = []
   let code = false
   let lines: Array<string> = []
@@ -134,5 +134,5 @@ export const richContent = (content: string): Html => {
 
   renderText(content.slice(cursor))
 
-  return h.div([h.Class('rich-content')], output)
+  return h.div([h.Class(`rich-content ${className}`.trim())], output)
 }
