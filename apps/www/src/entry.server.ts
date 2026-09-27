@@ -3,8 +3,12 @@ import { MicroPostNeighboursResponse, MicroPostRandomUnreadResponse } from '@gbf
 import { GetPostTagsResponse, GetPostsByTagResponse, MicroPostScreenResponse } from '@gbfm/api/post'
 import { PublicProfileResponse } from '@gbfm/api/profile'
 import { ResolveResult } from '@gbfm/api/resolve'
-import { GetAllShowsResponse, GetShowEpisodesResponse } from '@gbfm/api/shows'
-import { GetUserSubscriptionsResponse, ListDjsResponse } from '@gbfm/api/user'
+import {
+  GetAllShowsResponse,
+  GetShowEpisodesResponse,
+  ShowSubscriptionStatusResponse,
+} from '@gbfm/api/shows'
+import { ListDjsResponse } from '@gbfm/api/user'
 import { submitLocalRequestLog } from '@gbfm/core/observability/local-loki'
 import { resolveRequestId } from '@gbfm/core/observability/request-id'
 import { isRole } from '@gbfm/core/roles'
@@ -172,32 +176,37 @@ const publicActionState = async (
   request: Request,
   target: PublicActionDocument['target'],
 ): Promise<PublicActionDocument['state']> => {
-  let offset = 0
-
-  while (true) {
+  if (target.kind === 'show') {
     const response = await apiRequest(
       request,
-      `${target.kind === 'audio' ? '/api/favorites' : '/api/user/subscriptions'}?limit=100&offset=${offset}`,
-      { method: 'GET' },
+      `/api/shows/${encodeURIComponent(target.id)}/subscription`,
+      {
+        method: 'GET',
+      },
     )
 
     if (!response.ok) return 'unavailable'
 
-    if (target.kind === 'audio') {
-      const result = Schema.decodeUnknownSync(GetFavoritesResponse)(await response.json())
+    const status = Schema.decodeUnknownSync(ShowSubscriptionStatusResponse)(await response.json())
 
-      if (result.favorites.some((favorite) => favorite.audioId === target.id)) return 'active'
-      offset += result.favorites.length
+    return status.subscribed ? 'active' : 'inactive'
+  }
 
-      if (!result.favorites.length || offset >= result.total) return 'inactive'
-    } else {
-      const result = Schema.decodeUnknownSync(GetUserSubscriptionsResponse)(await response.json())
+  let offset = 0
 
-      if (result.data.some((subscription) => subscription.showId === target.id)) return 'active'
-      offset += result.data.length
+  while (true) {
+    const response = await apiRequest(request, `/api/favorites?limit=100&offset=${offset}`, {
+      method: 'GET',
+    })
 
-      if (!result.data.length || !result.pagination.hasMore) return 'inactive'
-    }
+    if (!response.ok) return 'unavailable'
+
+    const result = Schema.decodeUnknownSync(GetFavoritesResponse)(await response.json())
+
+    if (result.favorites.some((favorite) => favorite.audioId === target.id)) return 'active'
+    offset += result.favorites.length
+
+    if (!result.favorites.length || offset >= result.total) return 'inactive'
   }
 }
 
@@ -501,6 +510,36 @@ const renderResponse = async (request: Request): Promise<Server.Responded> => {
     if (slug) return redirectPage(`/tweet/${encodeURIComponent(slug)}`)
   }
 
+  const endpoint = endpointFor(route)
+  const showDetailSlug = Route.guards.Detail(route) && route.kind === 'shows' ? route.slug : null
+
+  const optionalShowRequest = (path: string) =>
+    Effect.tryPromise(() => apiRequest(ownedRequest, path, { method: 'GET' })).pipe(
+      Effect.orElseSucceed(() => null),
+    )
+
+  const showEndpointRequest =
+    endpoint && ((Route.guards.Listing(route) && route.kind === 'shows') || showDetailSlug !== null)
+      ? Effect.runPromise(optionalShowRequest(endpoint))
+      : null
+
+  const showDetailRequests = showDetailSlug
+    ? Effect.runPromise(
+        Effect.all(
+          {
+            list: optionalShowRequest('/api/shows?limit=100&offset=0'),
+            episodes: optionalShowRequest(
+              `/api/shows/${encodeURIComponent(showDetailSlug)}/episodes?limit=100&offset=0`,
+            ),
+            metadata: optionalShowRequest(
+              `/api/site-metadata/show/${encodeURIComponent(showDetailSlug)}`,
+            ),
+          },
+          { concurrency: 'unbounded' },
+        ),
+      )
+    : null
+
   const identity = await session(ownedRequest)
 
   const dashboardPath =
@@ -520,33 +559,9 @@ const renderResponse = async (request: Request): Promise<Server.Responded> => {
         .catch(() => null)
     : null
 
-  const endpoint = endpointFor(route)
-  const showDetailSlug = Route.guards.Detail(route) && route.kind === 'shows' ? route.slug : null
-
-  const optionalShowRequest = (path: string) =>
-    Effect.tryPromise(() => apiRequest(ownedRequest, path, { method: 'GET' })).pipe(
-      Effect.orElseSucceed(() => null),
-    )
-
-  const showDetailRequests = showDetailSlug
-    ? Effect.runPromise(
-        Effect.all(
-          {
-            list: optionalShowRequest('/api/shows?limit=100&offset=0'),
-            episodes: optionalShowRequest(
-              `/api/shows/${encodeURIComponent(showDetailSlug)}/episodes?limit=100&offset=0`,
-            ),
-            metadata: optionalShowRequest(
-              `/api/site-metadata/show/${encodeURIComponent(showDetailSlug)}`,
-            ),
-          },
-          { concurrency: 'unbounded' },
-        ),
-      )
-    : null
-
   const response = endpoint
-    ? await apiRequest(ownedRequest, endpoint, { method: 'GET' }).catch(() => null)
+    ? await (showEndpointRequest ??
+        apiRequest(ownedRequest, endpoint, { method: 'GET' }).catch(() => null))
     : null
 
   const payload = response?.ok ? await json(response) : null

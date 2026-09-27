@@ -35,6 +35,7 @@ export interface ShowSubscriptionService {
     { data: Array<SubscriptionWithShow>; pagination: PaginationMetadata },
     DatabaseError
   >
+  readonly isSubscribed: (userId: string, showId: string) => Effect.Effect<boolean, DatabaseError>
   readonly getSubscribers: (
     showId: string,
   ) => Effect.Effect<Array<{ userId: string; email: string; name: string }>, DatabaseError>
@@ -225,6 +226,35 @@ const getUserSubscriptionsEffect = (userId: string, options: { limit: number; of
     }
   })
 
+const isSubscribedEffect = (userId: string, showId: string) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+
+    const subscriptions = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select({ id: showSubscriptionsTable.id })
+          .from(showSubscriptionsTable)
+          .innerJoin(showsTable, eq(showSubscriptionsTable.showId, showsTable.id))
+          .where(
+            and(
+              eq(showSubscriptionsTable.userId, userId),
+              eq(showSubscriptionsTable.showId, showId),
+              eq(showsTable.draft, false),
+            ),
+          )
+          .limit(1),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to check subscription: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'show_subscriptions',
+        }),
+    })
+
+    return subscriptions.length > 0
+  })
+
 const getSubscribersEffect = (showId: string) =>
   Effect.gen(function* () {
     const db = yield* Database
@@ -273,6 +303,10 @@ export const ShowSubscriptionServiceLayer = Layer.effect(
       getUserSubscriptions: (userId, options) =>
         provideDb(getUserSubscriptionsEffect(userId, options)).pipe(
           Effect.withSpan('showSubscription.getUserSubscriptions'),
+        ),
+      isSubscribed: (userId, showId) =>
+        provideDb(isSubscribedEffect(userId, showId)).pipe(
+          Effect.withSpan('showSubscription.isSubscribed'),
         ),
       getSubscribers: (showId) =>
         provideDb(getSubscribersEffect(showId)).pipe(

@@ -50,7 +50,7 @@ import {
 import { navigationSessions } from '@/db/navigation.schema'
 import { postCreators, postsTable } from '@/db/post.schema'
 import { releasesTable } from '@/db/release.schema'
-import { showsTable } from '@/db/show.schema'
+import { showSubscriptionsTable, showsTable } from '@/db/show.schema'
 import { entityLabelsTable } from '@/db/tags.schema'
 import { omitUndefined } from '@/lib/omit-undefined'
 import { MusicCoverImageFetcher } from '@/services/canonical-music-identity/artwork-delivery'
@@ -2233,6 +2233,59 @@ describe('shows (HttpApiBuilder group, Step 6)', () => {
     )
 
     expect(res.status).toBe(401)
+  })
+
+  it('GET /api/shows/:id/subscription checks only the current listener and published show', async () => {
+    const listenerId = crypto.randomUUID()
+    const otherId = crypto.randomUUID()
+    const token = crypto.randomUUID()
+    const showId = crypto.randomUUID()
+    const draftId = crypto.randomUUID()
+
+    await db.insert(user).values([
+      { id: listenerId, name: 'Listener', email: `${listenerId}@example.com` },
+      { id: otherId, name: 'Other listener', email: `${otherId}@example.com` },
+    ])
+    await db.insert(session).values({
+      id: crypto.randomUUID(),
+      token,
+      userId: listenerId,
+      expiresAt: new Date(Date.now() + 60_000),
+    })
+    await db.insert(showsTable).values([
+      { id: showId, title: 'Published', slug: showId, content: '' },
+      { id: draftId, title: 'Draft', slug: draftId, content: '', draft: true },
+    ])
+    await db.insert(showSubscriptionsTable).values([
+      { userId: otherId, showId },
+      { userId: listenerId, showId: draftId },
+    ])
+
+    const status = (id: string) =>
+      webHandler.handler(
+        new Request(`http://localhost/api/shows/${id}/subscription`, {
+          headers: { authorization: `Bearer ${token}` },
+        }),
+      )
+
+    const anonymous = await webHandler.handler(
+      new Request(`http://localhost/api/shows/${showId}/subscription`),
+    )
+
+    expect(anonymous.status).toBe(401)
+
+    const inactive = await status(showId)
+    expect(inactive.status).toBe(200)
+    expect(await inactive.json()).toEqual({ subscribed: false })
+
+    const hiddenDraft = await status(draftId)
+    expect(hiddenDraft.status).toBe(200)
+    expect(await hiddenDraft.json()).toEqual({ subscribed: false })
+
+    await db.insert(showSubscriptionsTable).values({ userId: listenerId, showId })
+    const active = await status(showId)
+    expect(active.status).toBe(200)
+    expect(await active.json()).toEqual({ subscribed: true })
   })
 
   it('POST /api/shows/:id/subscribe returns 401 (not 400) for a non-UUID id without a session cookie', async () => {

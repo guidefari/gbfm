@@ -129,6 +129,8 @@ const SubscriptionResponse = Schema.Struct({
   createdAt: Schema.String,
 })
 
+export const ShowSubscriptionStatusResponse = Schema.Struct({ subscribed: Schema.Boolean })
+
 export const QRPdfResponse = Schema.Struct({
   url: Schema.String,
   cached: Schema.Boolean,
@@ -203,6 +205,13 @@ export const ShowsGroup = HttpApiGroup.make('shows')
     HttpApiEndpoint.delete('unsubscribeFromShow', '/api/shows/:id/unsubscribe', {
       params: { id: Uuid },
       error: [HttpApiError.Forbidden, HttpApiError.NotFound, HttpApiError.InternalServerError],
+    }).middleware(AuthMiddleware),
+  )
+  .add(
+    HttpApiEndpoint.get('getShowSubscriptionStatus', '/api/shows/:id/subscription', {
+      params: { id: Uuid },
+      success: ShowSubscriptionStatusResponse,
+      error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError],
     }).middleware(AuthMiddleware),
   )
   .add(

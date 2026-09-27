@@ -215,6 +215,16 @@ export const ShowsHandlersLive = HttpApiBuilder.group(Api, 'shows', (handlers) =
         )
       }),
     )
+    .handle('getShowSubscriptionStatus', ({ params }) =>
+      Effect.gen(function* () {
+        const { user } = yield* AuthSession
+        const svc = yield* ShowSubscriptionService
+
+        return {
+          subscribed: yield* dieOnDatabaseError(svc.isSubscribed(user.id, params.id)),
+        }
+      }),
+    )
     .handle('getShowQRPdf', ({ params }) =>
       Effect.gen(function* () {
         const showSvc = yield* ShowService
