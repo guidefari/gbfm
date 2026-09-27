@@ -31,5 +31,12 @@ test('guest invitation preserves its public content, links and metadata without 
     'href',
     'https://goosebumps.fm/invite/charlie3000',
   )
+  await page.getByRole('link', { name: 'Meet the residents' }).click()
+  await expect(page.getByRole('link', { name: 'Local Creator', exact: true })).toHaveAttribute(
+    'href',
+    '/profile/local-creator',
+  )
+  await page.getByRole('link', { name: 'Local Creator', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Local Creator', exact: true })).toBeVisible()
   await context.close()
 })

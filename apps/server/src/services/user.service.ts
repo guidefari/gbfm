@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, like, or, sql } from 'drizzle-orm'
+import { and, asc, count, desc, eq, like, or, sql } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 
 import { audioCreators, audioTable } from '@/db/audio.schema'
@@ -332,7 +332,7 @@ const replaceUserSocialLinksEffect = (
 const listDjsEffect = () =>
   Effect.gen(function* () {
     const db = yield* Database
-    const mixCountExpr = sql<number>`count(${audioTable.id})::int`
+    const mixCountExpr = count(audioTable.id)
 
     const rows = yield* Effect.tryPromise({
       try: () =>

@@ -4,7 +4,7 @@ import { GetPostTagsResponse, GetPostsByTagResponse, MicroPostScreenResponse } f
 import { PublicProfileResponse } from '@gbfm/api/profile'
 import { ResolveResult } from '@gbfm/api/resolve'
 import { GetAllShowsResponse, GetShowEpisodesResponse } from '@gbfm/api/shows'
-import { GetUserSubscriptionsResponse } from '@gbfm/api/user'
+import { GetUserSubscriptionsResponse, ListDjsResponse } from '@gbfm/api/user'
 import { resolveRequestId } from '@gbfm/core/observability/request-id'
 import {
   makeStaticSiteMetadata,
@@ -528,7 +528,15 @@ const renderResponse = async (request: Request): Promise<Server.Responded> => {
         ? Schema.decodeUnknownSync(GetPostsByTagResponse)(payload).data.flatMap((post) =>
             contentItems(post, post.type === 'micro' ? '/tweet' : '/editorial'),
           )
-        : contentItems(payload, listPath)
+        : Route.guards.Listing(route) && route.kind === 'djs' && response?.ok
+          ? contentItems(
+              Schema.decodeUnknownSync(ListDjsResponse)(payload).map((dj) => ({
+                ...dj,
+                slug: dj.username ?? dj.id,
+              })),
+              '/profile',
+            )
+          : contentItems(payload, listPath)
 
   let shows: ShowsDocument | null = null
 
@@ -602,7 +610,8 @@ const renderResponse = async (request: Request): Promise<Server.Responded> => {
     (Route.guards.Detail(route) ? items[0]?.title : null) ??
     Route.match(route, {
       Home: () => 'goosebumps.fm',
-      Listing: ({ kind }) => kind.charAt(0).toUpperCase() + kind.slice(1),
+      Listing: ({ kind }) =>
+        kind === 'djs' ? 'DJs & Residents' : kind.charAt(0).toUpperCase() + kind.slice(1),
       Detail: () => 'Not found',
       Auth: () => 'Account',
       Composer: () => 'Create',
