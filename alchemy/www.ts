@@ -27,27 +27,12 @@ export const website = ({ config, websiteConfig, api, socialImages, apiUrl }: We
       dataset: `gbfm_www_${config.stage}`,
     })
 
-    return yield* Cloudflare.Website.StaticSite('Www', {
-      cwd: 'apps/www',
-      command: 'bun run build',
-      outdir: 'dist/client',
+    const worker = {
       main: './apps/www/dist/server/fetch.js',
       ...(config.isProduction
         ? { domain: { name: 'www.goosebumps.fm', aliases: ['goosebumps.fm'] } }
         : { url: true }),
-      assets: {
-        notFoundHandling: '404-page',
-        runWorkerFirst: false,
-      },
       observability: workerObservability(config.isProduction),
-      ...(config.isLocalDev
-        ? {
-            dev: {
-              command: 'bun run dev',
-              cwd: 'apps/www',
-            },
-          }
-        : undefined),
       env: {
         API: api,
         SOCIAL_IMAGES: socialImages,
@@ -65,6 +50,24 @@ export const website = ({ config, websiteConfig, api, socialImages, apiUrl }: We
           ? { VPS_PROXY_TARGET: Output.map(apiUrl, requireApiUrl) }
           : undefined),
         VITE_SPOTIFY_CLIENT_ID: websiteConfig.spotifyClientId,
+      },
+    }
+
+    // Cmdz owns Vite in dev; StaticSite.dev would start a second Web process.
+    if (config.isLocalDev)
+      return yield* Cloudflare.Worker('Www', {
+        ...worker,
+        dev: { mode: 'external', url: 'https://gbfm.localhost' },
+      })
+
+    return yield* Cloudflare.Website.StaticSite('Www', {
+      ...worker,
+      cwd: 'apps/www',
+      command: 'bun run build',
+      outdir: 'dist/client',
+      assets: {
+        notFoundHandling: '404-page',
+        runWorkerFirst: false,
       },
     })
   })
