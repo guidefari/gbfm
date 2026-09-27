@@ -227,6 +227,11 @@ test('root profile resolves public content and latest tweet navigation follows J
   expect(await profile.text()).toContain('Local Frequencies')
   await page.goto('/local-creator')
   await expect(page.getByRole('heading', { name: 'Mixes', exact: true })).toBeVisible()
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    ),
+  ).toBe(true)
   await page.getByRole('button', { name: 'Menu', exact: true }).click()
   await page.getByRole('link', { name: 'Tweets', exact: true }).click()
   await expect(page).toHaveURL(/\/tweet\/[^/?]+$/)
@@ -276,7 +281,7 @@ test('show selection survives reload and history, with distinct populated and em
   await expect(page.getByRole('heading', { name: 'Quiet Hours', exact: true })).toBeVisible()
   await page.goBack()
   await expect(page.getByRole('heading', { name: 'Local Radio', exact: true })).toBeVisible()
-  await page.getByRole('button', { name: 'Play Local Frequencies', exact: true }).click()
+  await page.getByRole('button', { name: 'Play episode 1: Local Frequencies', exact: true }).click()
   await expect(
     page
       .getByRole('region', { name: 'Now playing' })

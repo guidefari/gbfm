@@ -912,6 +912,9 @@
   display: grid;
   gap: 0.6rem;
 }
+.card-copy h3 {
+  overflow-wrap: anywhere;
+}
 .card-title {
   font-weight: 600;
 }
