@@ -140,8 +140,8 @@ export interface PostService {
     slug: string,
   ) => Effect.Effect<SelectMdxCompiledMicroPost, DatabaseError | NotFoundError>
   readonly getTweetCardInput: (
-    slug: string,
-  ) => Effect.Effect<TweetCardPresentationInput, DatabaseError | NotFoundError>
+    post: TweetCardPost,
+  ) => Effect.Effect<TweetCardPresentationInput, DatabaseError>
   readonly getMicroPostReferenceBySlug: (
     slug: string,
   ) => Effect.Effect<{ readonly id: string; readonly slug: string }, DatabaseError | NotFoundError>
@@ -1569,29 +1569,38 @@ const getTweetCardEntity = (type: string | null, id: string | null) =>
     return null
   })
 
-const getTweetCardInputEffect = (slug: string, mdx: MdxService) =>
+type TweetCardPost = Pick<
+  SelectMdxCompiledPost,
+  'slug' | 'title' | 'createdAt' | 'creators' | 'musicEntityType' | 'musicEntityId'
+>
+
+const getTweetCardInputEffect = (post: TweetCardPost) =>
   Effect.gen(function* () {
-    const post = yield* getMicroPostBySlugEffect(slug, mdx)
-    const entity = yield* getTweetCardEntity(post.musicEntityType, post.musicEntityId)
     const creator = post.creators?.[0]
     const db = yield* Database
 
-    const avatarRows = creator
-      ? yield* Effect.tryPromise({
-          try: () =>
-            db
-              .select({ image: usersTable.image })
-              .from(usersTable)
-              .where(eq(usersTable.id, creator.id))
-              .limit(1),
-          catch: (error) =>
-            new DatabaseError({
-              message: `Failed to fetch tweet creator avatar: ${getErrorMessage(error)}`,
-              operation: 'select',
-              table: 'user',
-            }),
-        })
-      : []
+    const [entity, avatarRows] = yield* Effect.all(
+      [
+        getTweetCardEntity(post.musicEntityType, post.musicEntityId),
+        creator
+          ? Effect.tryPromise({
+              try: () =>
+                db
+                  .select({ image: usersTable.image })
+                  .from(usersTable)
+                  .where(eq(usersTable.id, creator.id))
+                  .limit(1),
+              catch: (error) =>
+                new DatabaseError({
+                  message: `Failed to fetch tweet creator avatar: ${getErrorMessage(error)}`,
+                  operation: 'select',
+                  table: 'user',
+                }),
+            })
+          : Effect.succeed([]),
+      ],
+      { concurrency: 'unbounded' },
+    )
 
     return {
       slug: post.slug,
@@ -1606,7 +1615,7 @@ const getTweetCardInputEffect = (slug: string, mdx: MdxService) =>
         : null,
       entity,
     }
-  }).pipe(Effect.withSpan('post.getTweetCardInput', { attributes: { slug } }))
+  }).pipe(Effect.withSpan('post.getTweetCardInput', { attributes: { slug: post.slug } }))
 
 const getMicroPostScreenMusicEffect = (posts: ReadonlyArray<SelectMdxCompiledMicroPost>) =>
   Effect.gen(function* () {
@@ -2469,7 +2478,7 @@ export const PostServiceLayer = Layer.effect(
       getMicroPosts: (opts) => provideDb(getMicroPostsEffect(opts, mdx)),
       getLatestMicroPost: provideDb(getLatestMicroPostEffect),
       getMicroPostBySlug: (slug) => provideDb(getMicroPostBySlugEffect(slug, mdx)),
-      getTweetCardInput: (slug) => provideDb(getTweetCardInputEffect(slug, mdx)),
+      getTweetCardInput: (post) => provideDb(getTweetCardInputEffect(post)),
       getMicroPostReferenceBySlug: (slug) => provideDb(getMicroPostReferenceBySlugEffect(slug)),
       getMicroPostById: (id) => provideDb(getMicroPostByIdEffect(id, mdx)),
       getMicroPostScreenMusic: (posts) => provideDb(getMicroPostScreenMusicEffect(posts)),

@@ -4143,6 +4143,13 @@ describe('GET /api/social-cards/tweet/:slug', () => {
     await db.insert(postCreators).values({ postId: post.id, creatorId: userId })
 
     try {
+      const metadataResponse = await webHandler.handler(
+        new Request(`http://localhost/api/site-metadata/tweet/${slug}`),
+      )
+
+      expect(metadataResponse.status).toBe(200)
+      const metadata = await decodeResponseBody(SiteMetadata, metadataResponse)
+
       const response = await webHandler.handler(
         new Request(`http://localhost/api/social-cards/tweet/${slug}`),
       )
@@ -4162,6 +4169,8 @@ describe('GET /api/social-cards/tweet/:slug', () => {
       expect(body.images.openGraph).toBe(
         `https://goosebumps.fm/social/cards/tweet/${slug}/${body.revision}/open-graph.png`,
       )
+      expect(metadata.image.url).toBe(body.images.openGraph)
+      expect(metadata.title).toContain('This commentary identifies the rendered card')
     } finally {
       await db.delete(postCreators).where(eq(postCreators.postId, post.id))
       await db.delete(postsTable).where(eq(postsTable.id, post.id))
