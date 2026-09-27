@@ -17,7 +17,7 @@ the wrong dialect.
 ## One migration directory
 
 `apps/server/drizzle-d1/` (sqlite) is what ships. `alchemy/storage.ts` passes
-`migrationsDir: './apps/server/drizzle-d1'` to the D1 database resource for
+`migrations: './apps/server/drizzle-d1'` to the D1 database resource for
 every non-local-dev stage.
 
 The former `apps/server/drizzle/` Postgres chain was deleted along with the Bun
@@ -26,32 +26,26 @@ runtime. It remains in git history if you ever need it (last touched in
 
 ## Rules that are not negotiable
 
-- Use `drizzle migrate`, never `drizzle push`. The production ledger was
-  baselined after a period of push-built history, so push can silently diverge
-  from the recorded state. There is deliberately no push script here; do not add
-  one back.
+- Keep `drizzle-d1/` flat: numbered `.sql` files at its root and no
+  `meta/_journal.json`. Alchemy rejects drizzle-kit's pre-v1 metadata layout and
+  uses the flat filenames to adopt Cloudflare's existing `d1_migrations` ledger.
+- Ship forward migrations through Alchemy, never `drizzle push`. The production
+  ledger was baselined after a period of push-built history, so push can silently
+  diverge from the recorded state. There is deliberately no push script here; do
+  not add one back.
 - Never run migrations against production. Verify against a throwaway database.
   The test harness already gives you one: `src/test/migrate-d1.ts` spins up a
   Miniflare D1 and replays the forward migrations.
 
-## The stale snapshot trap
+## Flat migration history
 
-`drizzle-d1/meta/` contains exactly one snapshot, `0000_snapshot.json`.
-Migrations 0001 through 0005 were hand-written: SQL file plus a manual
-`_journal.json` entry, no snapshot.
+The D1 chain is intentionally a flat series of hand-written SQL files. Do not
+run `drizzle-kit generate` or `drizzle-kit up`: either command can recreate a
+`meta/_journal.json` layout that Alchemy refuses to deploy.
 
-So `drizzle-kit generate` does not work here. Run it and drizzle diffs your
-current schema against the 0000 snapshot and tries to re-create everything added
-since, prompting on every column:
-
-```
-npx drizzle-kit generate --config drizzle.d1.config.ts
-# Error: Interactive prompts require a TTY terminal
-#   at promptColumnsConflicts ...
-```
-
-Until someone regenerates the snapshot chain, **hand-write migrations**. That is
-the working pattern, not a shortcut.
+The migration-layout test enforces both invariants required by deployment: the
+legacy journal stays absent, and every root SQL file appears in
+`d1MigrationFiles` for local replay.
 
 ## Column naming
 
@@ -71,16 +65,14 @@ pick a name. Match the table you are in, do not "correct" existing columns.
 1. Edit the `*.schema.ts` file. Match the existing naming in that table.
 2. Write `apps/server/drizzle-d1/000N_<name>.sql` by hand. Separate statements
    with `--> statement-breakpoint`.
-3. Add an entry to `meta/_journal.json`: next `idx`, `"version": "7"`, a `when`
-   timestamp, `tag` matching the filename without `.sql`.
-4. Add the filename to `d1MigrationFiles` in `src/test/migrate-d1.ts`. That
+3. Add the filename to `d1MigrationFiles` in `src/test/migrate-d1.ts`. That
    array is the literal replay list for tests. Omit it and your tests run
    against a database that does not have your column.
-5. `cd apps/server && bun run test`.
+4. `cd apps/server && bun run test`.
 
 ## Adding a table
 
-Same five steps, plus:
+Same four steps, plus:
 
 - Add `export * from './your.schema.ts'` to `exports.ts`. That module is the
   schema object passed to `drizzle(database, { schema })` in both `layer.ts` and
