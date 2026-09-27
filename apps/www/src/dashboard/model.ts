@@ -9,6 +9,7 @@ import { readTheme, saveTheme, Theme } from '../theme'
 import { DashboardDocument, Row } from './document'
 import { DashboardService } from './service'
 import * as Sessions from './sessions'
+import * as Shows from './shows'
 
 export const Role = Schema.NullOr(Schema.Literals(ROLES))
 
@@ -30,6 +31,7 @@ export const Model = Schema.Struct({
   telemetry: DashboardDocument.fields.telemetry,
   users: DashboardDocument.fields.users,
   sessions: Sessions.Model,
+  shows: Shows.Model,
 })
 
 export type Model = typeof Model.Type
@@ -85,7 +87,7 @@ export const endpointFor = (section: string, query = new URLSearchParams()) => {
       'all/mixes': '/api/content/audio/mix/manage?limit=25&offset=0',
       'all/tweets': '/api/content/posts/manage?type=micro&limit=25&offset=0',
       'all/editorial': '/api/content/posts/manage?type=post&limit=25&offset=0',
-      shows: '/api/shows?limit=100&offset=0',
+      shows: '/api/shows/manage?limit=25&offset=0',
       music: '/api/music/artists',
       playlists: '/api/music/playlists',
       newsletter: '/api/admin/newsletter-subscribers',
@@ -100,6 +102,7 @@ export const endpointFor = (section: string, query = new URLSearchParams()) => {
 
 export const Message = defineMessageUnion({
   GotSessionMessage: { message: Sessions.Message },
+  GotShowMessage: { message: Shows.Message },
   LoadRequested: {},
   Loaded: { document: DashboardDocument },
   Failed: { message: Schema.String },
@@ -207,6 +210,7 @@ export const initialModel = (section: string, principal: Principal): Model => ({
   error: null,
   spotify: disconnected,
   sessions: Sessions.initialModel,
+  shows: Shows.initialModel,
 })
 
 export const init =
@@ -241,6 +245,17 @@ export const init =
 
 export const update = (model: Model, message: Message): Update.Return<Model, Message, Services> =>
   Message.match<Update.Return<Model, Message, Services>>(message, {
+    GotShowMessage: ({ message }) => {
+      if (model.principal.role !== 'admin' || model.section !== 'shows') return { model }
+      const child = Shows.update(model.shows, message)
+
+      return {
+        model: { ...model, shows: child.model },
+        commands: Command.mapMessages(child.commands ?? [], (message) =>
+          Message.GotShowMessage({ message }),
+        ),
+      }
+    },
     GotSessionMessage: ({ message }) => {
       if (model.principal.role !== 'admin' || model.section !== 'sessions') return { model }
       const child = Sessions.update(model.sessions, message)
@@ -285,6 +300,7 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
         toggles: document.toggles,
         telemetry: document.telemetry,
         users: document.users,
+        shows: { ...Shows.initialModel, listing: document.shows },
         error: null,
       },
     }),

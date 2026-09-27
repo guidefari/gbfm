@@ -30,6 +30,7 @@ export const DashboardDocument = Schema.Struct({
   toggles: Schema.Record(Schema.String, Schema.Boolean),
   telemetry: Schema.optional(AdminTelemetryResponse),
   users: Schema.optional(AdminUsers),
+  shows: Schema.optional(GetAllShowsResponse),
 })
 
 export type DashboardDocument = typeof DashboardDocument.Type
@@ -156,6 +157,10 @@ export const parseDashboardDocument = (
             })),
           ),
         ),
+      )
+    case '/api/shows/manage':
+      return Schema.decodeUnknownEffect(GetAllShowsResponse)(input).pipe(
+        Effect.map((shows) => ({ ...emptyDocument, shows })),
       )
     case '/api/shows':
       return Schema.decodeUnknownEffect(GetAllShowsResponse)(input).pipe(

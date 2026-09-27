@@ -526,7 +526,8 @@ export const init: Runtime.ApplicationInit<Model, Message, Flags, Services> = (f
       publicAction: PublicActions.init(flags.publicAction),
       creator: creator.model,
       dashboard: flags.dashboard
-        ? { ...dashboard.model, ...flags.dashboard, phase: 'ready' }
+        ? Dashboard.update(dashboard.model, Dashboard.Message.Loaded({ document: flags.dashboard }))
+            .model
         : dashboard.model,
     },
     commands: [
