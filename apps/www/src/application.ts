@@ -17,6 +17,7 @@ import * as Creator from './creator'
 import * as Dashboard from './dashboard'
 import { DashboardDocument } from './dashboard/document'
 import { updateDocumentHead } from './document-head'
+import { invitationView } from './invitation'
 import { newsletterView } from './newsletter'
 import * as Player from './player'
 import * as PublicActions from './public-actions'
@@ -26,6 +27,7 @@ import * as Search from './search'
 import { ShowsDocument, showsView } from './shows'
 import { type SpotifyConnection, SpotifyConnectionLive } from './spotify'
 import { staticPages } from './static-pages'
+import { tweetWayfinder } from './tweet-wayfinder'
 
 export const Principal = Schema.Struct({
   id: Schema.String,
@@ -62,6 +64,7 @@ export const Flags = Schema.Struct({
   title: Schema.String,
   description: Schema.String,
   requestId: Schema.String,
+  renderedAt: Schema.Number,
   skipSeen: Schema.Boolean,
   tweet: Schema.NullOr(MicroPostScreenResponse),
   neighbours: Schema.NullOr(MicroPostNeighboursResponse),
@@ -123,6 +126,9 @@ export const parseRoute = (pathname: string): Route => {
     return Route.cases.Static.make({ page: 'spotify-callback' })
 
   if (parts.length > 2) return Route.cases.NotFound.make({})
+
+  if (first === 'invite' && second === 'charlie3000')
+    return Route.cases.Static.make({ page: 'invite/charlie3000' })
 
   if (
     first === 'auth' &&
@@ -884,15 +890,7 @@ const tweetView = (model: Model, h: HtmlBuilder<Message>) => {
   return h.section(
     [h.Class('page tweet-detail')],
     [
-      h.nav(
-        [h.Class('tweet-wayfinder'), h.AriaLabel('Tweet timeline')],
-        [
-          link(h, '/tweets', 'Tweets'),
-          ...(neighbours?.timeline ?? []).map((month) =>
-            link(h, `/tweet/${month.newestSlug}`, `${month.month} (${month.unread} unread)`),
-          ),
-        ],
-      ),
+      tweetWayfinder(neighbours, screen.post.createdAt, model.flags.renderedAt),
       postView(screen.post),
       screen.quote ? h.blockquote([], [postView(screen.quote)]) : h.empty,
       h.nav(
@@ -1033,26 +1031,28 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
                   })
                 : auth(h, 'sign-in', new URL(model.flags.url)),
             Static: ({ page }) =>
-              page === 'spotify-callback'
-                ? h.submodel({
-                    slotId: 'dashboard',
-                    view: Dashboard.view,
-                    model: model.dashboard,
-                    viewInputs: { role: model.dashboard.principal.role },
-                    toParentMessage: (message) => Message.GotDashboardMessage({ message }),
-                  })
-                : ['subscribe', 'unsubscribe'].includes(page)
-                  ? newsletterView(page, new URL(model.flags.url))
-                  : h.article(
-                      [h.Class('page prose')],
-                      [
-                        h.h1([], [model.flags.title]),
-                        ...(staticPages.get(page)?.paragraphs ?? []).map((text) =>
-                          h.p([h.Class('content-paragraph')], [text]),
-                        ),
-                        page === 'changelog' ? richContent(model.flags.changelog ?? '') : h.empty,
-                      ],
-                    ),
+              page === 'invite/charlie3000'
+                ? invitationView()
+                : page === 'spotify-callback'
+                  ? h.submodel({
+                      slotId: 'dashboard',
+                      view: Dashboard.view,
+                      model: model.dashboard,
+                      viewInputs: { role: model.dashboard.principal.role },
+                      toParentMessage: (message) => Message.GotDashboardMessage({ message }),
+                    })
+                  : ['subscribe', 'unsubscribe'].includes(page)
+                    ? newsletterView(page, new URL(model.flags.url))
+                    : h.article(
+                        [h.Class('page prose')],
+                        [
+                          h.h1([], [model.flags.title]),
+                          ...(staticPages.get(page)?.paragraphs ?? []).map((text) =>
+                            h.p([h.Class('content-paragraph')], [text]),
+                          ),
+                          page === 'changelog' ? richContent(model.flags.changelog ?? '') : h.empty,
+                        ],
+                      ),
             NotFound: () =>
               h.section(
                 [h.Class('page')],

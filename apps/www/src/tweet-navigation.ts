@@ -21,11 +21,17 @@ export const startTweetShortcuts = () => {
 
     if (
       target instanceof HTMLElement &&
-      (target.isContentEditable || target.closest('button, input, textarea, select, dialog[open]'))
+      (target.isContentEditable ||
+        target.closest('button, summary, input, textarea, select, dialog[open]'))
     )
       return
 
-    if (document.querySelector('dialog[open], aside[aria-label="Menu"]')) return
+    if (
+      document.querySelector(
+        'dialog[open], aside[aria-label="Menu"], details[name="tweet-jumps"][open]',
+      )
+    )
+      return
 
     const id = Match.value(event.key).pipe(
       Match.when('ArrowLeft', () => 'tweet-newer'),

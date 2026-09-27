@@ -1,5 +1,44 @@
 import { expect, test } from '@playwright/test'
 
+test('year and month jumps navigate the archive without triggering background keyboard shortcuts', async ({
+  page,
+}) => {
+  await page.goto('/tweet/e2e-archive-one')
+  await expect(page.getByRole('button', { name: 'Menu', exact: true })).toBeEnabled()
+  await page.locator('summary[aria-label="Jump to year"]').click()
+  await page.keyboard.press('ArrowLeft')
+  await expect(page).toHaveURL(/\/tweet\/e2e-archive-one$/)
+  await page
+    .getByRole('navigation', { name: 'Jump to year', exact: true })
+    .getByRole('link', { name: /^2020/ })
+    .click()
+  await expect(page).toHaveURL(/\/tweet\/e2e-archive-two$/)
+  await page.locator('summary[aria-label="Jump within 2020"]').click()
+  await page
+    .getByRole('navigation', { name: 'Jump within 2020', exact: true })
+    .getByRole('link', { name: /^Jan/ })
+    .click()
+  await expect(page).toHaveURL(/\/tweet\/e2e-archive-one$/)
+  await expect(page.getByRole('link', { name: 'Jump to Feb 2020', exact: true })).toHaveAttribute(
+    'href',
+    '/tweet/e2e-archive-two',
+  )
+  await expect(page.locator('.tweet-month-marker')).toBeVisible()
+})
+
+test('archive disclosures and links remain usable without JavaScript', async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false })
+  const page = await context.newPage()
+  await page.goto('/tweet/e2e-archive-one')
+  await page.locator('summary[aria-label="Jump within 2020"]').click()
+  await page
+    .getByRole('navigation', { name: 'Jump within 2020', exact: true })
+    .getByRole('link', { name: /^Feb/ })
+    .click()
+  await expect(page).toHaveURL(/\/tweet\/e2e-archive-two$/)
+  await context.close()
+})
+
 test('tweet read mode persists across reload and keyboard navigation falls back when all older tweets were seen', async ({
   page,
   context,

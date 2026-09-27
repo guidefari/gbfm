@@ -625,10 +625,13 @@ const renderResponse = async (request: Request): Promise<Server.Responded> => {
     items,
     title,
     description:
-      tweet?.post.description ??
-      items[0]?.description ??
-      'Independent music, mixes and stories on goosebumps.fm.',
+      Route.guards.Static(route) && route.page === 'invite/charlie3000'
+        ? 'An invitation to contribute a guest mix to goosebumps.fm'
+        : (tweet?.post.description ??
+          items[0]?.description ??
+          'Independent music, mixes and stories on goosebumps.fm.'),
     requestId,
+    renderedAt: Date.now(),
     skipSeen: skipsSeenTweets(request.headers.get('cookie')),
     tweet,
     neighbours,
