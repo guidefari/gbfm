@@ -3,28 +3,10 @@ import { Command, Subscription, type Update } from 'foldkit'
 import { defineMessageUnion } from 'foldkit/message'
 
 import type { CreatorDraft, CreatorError, CreatorKind } from './services'
-import { CreatorService } from './services'
+import { CreatorDraftSchema as Draft, CreatorService } from './services'
 import { CreatorUpload } from './upload'
 
 const Kind = Schema.Literals(['micro', 'post', 'mix'])
-
-const Draft = Schema.Struct({
-  kind: Kind,
-  editSlug: Schema.NullOr(Schema.String),
-  title: Schema.String,
-  slug: Schema.String,
-  content: Schema.String,
-  description: Schema.String,
-  tags: Schema.Array(Schema.String),
-  thumbnailUrl: Schema.String,
-  musicUrl: Schema.String,
-  musicEntityType: Schema.NullOr(Schema.Literals(['album', 'track', 'playlist'])),
-  musicEntityId: Schema.NullOr(Schema.String),
-  quotedPostId: Schema.NullOr(Schema.String),
-  audioUrl: Schema.String,
-  showId: Schema.NullOr(Schema.String),
-  episodeNumber: Schema.NullOr(Schema.Number),
-})
 
 export const Model = Schema.Struct({
   draft: Draft,
@@ -41,6 +23,10 @@ export const Model = Schema.Struct({
   ]),
   saveState: Schema.Literals(['saved', 'unsaved', 'saved-locally', 'failed']),
   error: Schema.NullOr(Schema.String),
+  episodeError: Schema.NullOr(Schema.String),
+  tagsInput: Schema.String,
+  creatorsInput: Schema.String,
+  episodeInput: Schema.String,
   uploadPercent: Schema.Number,
   uploadState: Schema.Literals(['idle', 'running', 'pausing', 'paused', 'failed', 'cancelling']),
 })
@@ -61,6 +47,11 @@ export const Message = defineMessageUnion({
     value: Schema.String,
   },
   TagsChanged: { value: Schema.String },
+  CreatorsChanged: { value: Schema.String },
+  QuoteChanged: { value: Schema.String },
+  ShowChanged: { value: Schema.String },
+  EpisodeChanged: { value: Schema.String },
+  MusicRemoved: {},
   KindChanged: { kind: Kind },
   ReviewRequested: {},
   ReviewClosed: {},
@@ -68,6 +59,7 @@ export const Message = defineMessageUnion({
   MusicResolved: {
     entityType: Schema.Literals(['album', 'track', 'playlist']),
     entityId: Schema.String,
+    url: Schema.String,
   },
   PublishRequested: {},
   DraftSaveRequested: {},
@@ -125,7 +117,9 @@ const ResolveMusic = Command.define('Creator.ResolveMusic', {
   messages: [Message.MusicResolved, Message.Failed],
   execute: ({ url, kind }) =>
     Effect.flatMap(CreatorService, (service) => service.resolveMusic(url, kind)).pipe(
-      Effect.map(({ entityType, entityId }) => Message.MusicResolved({ entityType, entityId })),
+      Effect.map(({ entityType, entityId }) =>
+        Message.MusicResolved({ entityType, entityId, url }),
+      ),
       Effect.catch((error) => Effect.succeed(failure('resolve music')(error))),
     ),
 })
@@ -221,18 +215,59 @@ export const update = (
 ): Update.Return<Model, Message, CreatorService | CreatorUpload> =>
   Message.match<Update.Return<Model, Message, CreatorService | CreatorUpload>>(message, {
     Changed: ({ field, value }) => changed(model, { ...model.draft, [field]: value }),
+    CreatorsChanged: ({ value }) =>
+      changed(
+        { ...model, creatorsInput: value },
+        {
+          ...model.draft,
+          creatorIds: [
+            ...new Set(
+              value
+                .split(',')
+                .map((id) => id.trim())
+                .filter(Boolean),
+            ),
+          ],
+        },
+      ),
+    QuoteChanged: ({ value }) =>
+      model.draft.editSlug
+        ? { model }
+        : changed(model, { ...model.draft, quotedPostId: value.trim() || null }),
+    ShowChanged: ({ value }) => changed(model, { ...model.draft, showId: value.trim() || null }),
+    EpisodeChanged: ({ value }) => {
+      const episodeNumber = value.trim() ? Number(value) : null
+
+      return episodeNumber !== null && (!Number.isSafeInteger(episodeNumber) || episodeNumber < 1)
+        ? {
+            model: {
+              ...model,
+              episodeInput: value,
+              episodeError: 'Episode number must be a positive whole number.',
+            },
+          }
+        : changed(
+            { ...model, episodeInput: value, episodeError: null },
+            { ...model.draft, episodeNumber },
+          )
+    },
+    MusicRemoved: () =>
+      changed(model, { ...model.draft, musicUrl: '', musicEntityType: null, musicEntityId: null }),
     TagsChanged: ({ value }) =>
-      changed(model, {
-        ...model.draft,
-        tags: [
-          ...new Set(
-            value
-              .split(',')
-              .map((tag) => tag.trim())
-              .filter(Boolean),
-          ),
-        ],
-      }),
+      changed(
+        { ...model, tagsInput: value },
+        {
+          ...model.draft,
+          tags: [
+            ...new Set(
+              value
+                .split(',')
+                .map((tag) => tag.trim())
+                .filter(Boolean),
+            ),
+          ],
+        },
+      ),
     KindChanged: ({ kind }) =>
       model.draft.editSlug ? { model } : changed(model, { ...model.draft, kind }),
     ReviewRequested: () => ({ model: { ...model, phase: 'reviewing' } }),
@@ -241,22 +276,28 @@ export const update = (
       model: { ...model, error: null },
       commands: [ResolveMusic({ url: model.draft.musicUrl.trim(), kind: model.draft.kind })],
     }),
-    MusicResolved: ({ entityType, entityId }) =>
-      changed(model, { ...model.draft, musicEntityType: entityType, musicEntityId: entityId }),
+    MusicResolved: ({ entityType, entityId, url }) =>
+      model.draft.musicUrl.trim() !== url
+        ? { model }
+        : changed(model, { ...model.draft, musicEntityType: entityType, musicEntityId: entityId }),
     DraftSaveRequested: () =>
-      model.authorized
-        ? {
-            model: { ...model, phase: 'saving' },
-            commands: [Save({ draft: model.draft, creatorId: model.creatorId, publish: false })],
-          }
-        : { model: { ...model, phase: 'forbidden' } },
+      model.draft.kind === 'mix' && model.episodeError
+        ? { model }
+        : model.authorized
+          ? {
+              model: { ...model, phase: 'saving' },
+              commands: [Save({ draft: model.draft, creatorId: model.creatorId, publish: false })],
+            }
+          : { model: { ...model, phase: 'forbidden' } },
     PublishRequested: () =>
-      model.authorized
-        ? {
-            model: { ...model, phase: 'saving' },
-            commands: [Save({ draft: model.draft, creatorId: model.creatorId, publish: true })],
-          }
-        : { model: { ...model, phase: 'forbidden' } },
+      model.draft.kind === 'mix' && model.episodeError
+        ? { model }
+        : model.authorized
+          ? {
+              model: { ...model, phase: 'saving' },
+              commands: [Save({ draft: model.draft, creatorId: model.creatorId, publish: true })],
+            }
+          : { model: { ...model, phase: 'forbidden' } },
     Saved: ({ slug, published }) => ({
       model: {
         ...model,
@@ -273,6 +314,9 @@ export const update = (
       model: {
         ...model,
         draft: draft ?? model.draft,
+        tagsInput: (draft ?? model.draft).tags.join(', '),
+        creatorsInput: (draft ?? model.draft).creatorIds.join(', '),
+        episodeInput: (draft ?? model.draft).episodeNumber?.toString() ?? '',
         phase: 'writing',
         saveState: draft ? 'saved-locally' : model.saveState,
       },
@@ -359,6 +403,7 @@ export const initialModel = ({ kind, editSlug, creatorId, authorized }: InitInpu
     content: '',
     description: '',
     tags: [],
+    creatorIds: [creatorId],
     thumbnailUrl: '',
     musicUrl: '',
     musicEntityType: null,
@@ -373,6 +418,10 @@ export const initialModel = ({ kind, editSlug, creatorId, authorized }: InitInpu
   phase: authorized ? 'loading' : 'forbidden',
   saveState: 'saved',
   error: null,
+  episodeError: null,
+  tagsInput: '',
+  creatorsInput: creatorId,
+  episodeInput: '',
   uploadPercent: 0,
   uploadState: 'idle',
 })

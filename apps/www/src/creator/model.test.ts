@@ -48,6 +48,40 @@ describe('creator model', () => {
     expect(update(model, Message.KindChanged({ kind: 'post' }))).toEqual({ model })
   })
 
+  it('invalid episode input blocks writes until corrected, including after other fields change', () => {
+    const model = initialModel({ ...input, kind: 'mix' })
+
+    for (const value of ['0', '-2', '1.5', 'Infinity', 'NaN']) {
+      const invalid = update(model, Message.EpisodeChanged({ value })).model
+      const edited = update(invalid, Message.Changed({ field: 'title', value: 'A mix' })).model
+      expect(edited.episodeError).toBe('Episode number must be a positive whole number.')
+      expect(update(edited, Message.PublishRequested()).commands).toBeUndefined()
+      expect(update(edited, Message.DraftSaveRequested()).commands).toBeUndefined()
+      const corrected = update(edited, Message.EpisodeChanged({ value: '7' })).model
+      expect(corrected.draft.episodeNumber).toBe(7)
+      expect(update(corrected, Message.PublishRequested()).commands).toHaveLength(1)
+    }
+  })
+
+  it('keeps quoted posts immutable when editing and removes both sides of a music attachment', () => {
+    const model = initialModel({ ...input, editSlug: 'existing-tweet' })
+    expect(update(model, Message.QuoteChanged({ value: 'other-post' }))).toEqual({ model })
+
+    const url = 'https://open.spotify.com/album/fixture'
+    const entered = update(model, Message.Changed({ field: 'musicUrl', value: url })).model
+    const resolved = Message.MusicResolved({ entityType: 'album', entityId: 'album-1', url })
+    const attached = update(entered, resolved).model
+    expect(attached.draft.musicEntityId).toBe('album-1')
+    const removed = update(attached, Message.MusicRemoved()).model
+
+    expect(removed.draft).toMatchObject({
+      musicUrl: '',
+      musicEntityType: null,
+      musicEntityId: null,
+    })
+    expect(update(removed, resolved).model).toBe(removed)
+  })
+
   it('the pause checkpoint wins over delayed progress events', () => {
     const model = { ...initialModel(input), uploadState: 'pausing' as const, uploadPercent: 0 }
     const paused = update(model, Message.UploadPaused({ percent: 36 })).model

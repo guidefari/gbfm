@@ -10,6 +10,7 @@ export const CreatorDraftSchema = Schema.Struct({
   content: Schema.String,
   description: Schema.String,
   tags: Schema.Array(Schema.String),
+  creatorIds: Schema.Array(Schema.String),
   thumbnailUrl: Schema.String,
   musicUrl: Schema.String,
   musicEntityType: Schema.NullOr(Schema.Literals(['album', 'track', 'playlist'])),
@@ -20,23 +21,7 @@ export const CreatorDraftSchema = Schema.Struct({
   episodeNumber: Schema.NullOr(Schema.Number),
 })
 
-export interface CreatorDraft {
-  readonly kind: CreatorKind
-  readonly editSlug: string | null
-  readonly title: string
-  readonly slug: string
-  readonly content: string
-  readonly description: string
-  readonly tags: ReadonlyArray<string>
-  readonly thumbnailUrl: string
-  readonly musicUrl: string
-  readonly musicEntityType: 'album' | 'track' | 'playlist' | null
-  readonly musicEntityId: string | null
-  readonly quotedPostId: string | null
-  readonly audioUrl: string
-  readonly showId: string | null
-  readonly episodeNumber: number | null
-}
+export type CreatorDraft = typeof CreatorDraftSchema.Type
 
 export class CreatorRequestError extends Data.TaggedError('CreatorRequestError')<{
   readonly operation: string
@@ -58,7 +43,6 @@ export class CreatorUploadError extends Data.TaggedError('CreatorUploadError')<{
 export type CreatorError = CreatorRequestError | CreatorStorageError | CreatorUploadError
 
 export interface EditableContent extends CreatorDraft {
-  readonly creatorIds: ReadonlyArray<string>
   readonly draft: boolean
 }
 
@@ -281,7 +265,7 @@ export const CreatorServiceLive = Layer.succeed(CreatorService, {
             draft: !publish,
             tags: draft.tags,
             idempotencyKey: draft.editSlug ? undefined : crypto.randomUUID(),
-            creatorIds: draft.editSlug ? undefined : [creatorId],
+            creatorIds: draft.creatorIds.length ? draft.creatorIds : [creatorId],
             showId: draft.showId ?? undefined,
             episodeNumber: draft.episodeNumber ?? undefined,
           }
@@ -294,10 +278,10 @@ export const CreatorServiceLive = Layer.succeed(CreatorService, {
             tags: draft.tags,
             draft: !publish,
             type: draft.kind,
-            creatorIds: draft.editSlug ? undefined : [creatorId],
+            creatorIds: draft.creatorIds.length ? draft.creatorIds : [creatorId],
             musicEntityType: draft.musicEntityType,
             musicEntityId: draft.musicEntityId,
-            quotedPostId: draft.quotedPostId,
+            quotedPostId: draft.editSlug ? undefined : draft.quotedPostId,
           }
 
     const path = draft.editSlug

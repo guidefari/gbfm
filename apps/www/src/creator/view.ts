@@ -3,6 +3,7 @@ import { Match } from 'effect'
 import type { HtmlBuilder } from 'foldkit/html'
 import { defineView } from 'foldkit/submodel'
 
+import { richContent } from '../rich-content'
 import { Message, type Model } from './model'
 
 export interface ViewInputs {
@@ -37,7 +38,37 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
     model.phase === 'saving' || model.phase === 'uploading' || model.uploadState !== 'idle'
 
   const review = model.phase === 'reviewing'
-  const canContinue = model.draft.title.trim().length > 0 || model.draft.content.trim().length > 0
+
+  const canContinue =
+    (model.draft.kind !== 'mix' || !model.episodeError) &&
+    (model.draft.title.trim().length > 0 || model.draft.content.trim().length > 0)
+
+  const publishType = h.label(
+    [],
+    [
+      'Publish as',
+      h.select(
+        [
+          h.Value(model.draft.kind),
+          h.Disabled(busy || Boolean(model.draft.editSlug)),
+          h.OnChange((value) =>
+            Message.KindChanged({
+              kind: Match.value(value).pipe(
+                Match.when('post', () => 'post' as const),
+                Match.when('mix', () => 'mix' as const),
+                Match.orElse(() => 'micro' as const),
+              ),
+            }),
+          ),
+        ],
+        [
+          h.option([h.Value('micro')], ['Tweet']),
+          h.option([h.Value('post')], ['Editorial']),
+          h.option([h.Value('mix')], ['Mix']),
+        ],
+      ),
+    ],
+  )
 
   const publicPath = Match.value(model.draft.kind).pipe(
     Match.when('micro', () => 'tweet'),
@@ -80,7 +111,10 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
           ),
         ],
       ),
-      model.error ? h.p([h.Class('form-error')], [model.error]) : h.empty,
+      model.error ? h.p([h.Class('form-error'), h.Role('alert')], [model.error]) : h.empty,
+      model.draft.kind === 'mix' && model.episodeError
+        ? h.p([h.Class('form-error'), h.Role('alert')], [model.episodeError])
+        : h.empty,
       model.phase === 'published'
         ? h.p(
             [h.Role('status')],
@@ -98,11 +132,26 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
             [h.Class('panel creator-review')],
             [
               h.p([h.Class('eyebrow')], ['PUBLISH REVIEW']),
+              publishType,
               model.draft.thumbnailUrl
                 ? h.img([h.Src(model.draft.thumbnailUrl), h.Alt('Artwork preview')])
                 : h.empty,
               h.h2([], [model.draft.title || 'Untitled']),
-              h.p([], [model.draft.description || model.draft.content]),
+              model.draft.description ? h.p([], [model.draft.description]) : h.empty,
+              richContent(model.draft.content),
+              h.p([], [`Creators: ${model.draft.creatorIds.join(', ')}`]),
+              model.draft.quotedPostId ? h.p([], [`Quote: ${model.draft.quotedPostId}`]) : h.empty,
+              model.draft.musicEntityId
+                ? h.p([], [`Music: ${model.draft.musicEntityType} · ${model.draft.musicEntityId}`])
+                : h.empty,
+              model.draft.kind === 'mix' && model.draft.showId
+                ? h.p(
+                    [],
+                    [
+                      `Show: ${model.draft.showId} · Episode: ${model.draft.episodeNumber ?? 'none'}`,
+                    ],
+                  )
+                : h.empty,
               h.p(
                 [],
                 [`Type: ${model.draft.kind} · Tags: ${model.draft.tags.join(', ') || 'none'}`],
@@ -121,32 +170,7 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
         : h.div(
             [h.Class('creator-canvas')],
             [
-              h.label(
-                [],
-                [
-                  'Publish as',
-                  h.select(
-                    [
-                      h.Value(model.draft.kind),
-                      h.Disabled(busy || Boolean(model.draft.editSlug)),
-                      h.OnChange((value) =>
-                        Message.KindChanged({
-                          kind: Match.value(value).pipe(
-                            Match.when('post', () => 'post' as const),
-                            Match.when('mix', () => 'mix' as const),
-                            Match.orElse(() => 'micro' as const),
-                          ),
-                        }),
-                      ),
-                    ],
-                    [
-                      h.option([h.Value('micro')], ['Tweet']),
-                      h.option([h.Value('post')], ['Editorial']),
-                      h.option([h.Value('mix')], ['Mix']),
-                    ],
-                  ),
-                ],
-              ),
+              publishType,
               field(h, 'Title', model.draft.title, 'title'),
               h.label(
                 [],
@@ -166,13 +190,37 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
                 [
                   'Tags',
                   h.input([
-                    h.Value(model.draft.tags.join(', ')),
+                    h.Value(model.tagsInput),
                     h.OnInput((value) => Message.TagsChanged({ value })),
                     h.Placeholder('house, johannesburg'),
                   ]),
                 ],
               ),
               field(h, 'Slug', model.draft.slug, 'slug'),
+              h.label(
+                [],
+                [
+                  'Creator IDs (comma separated)',
+                  h.input([
+                    h.Value(model.creatorsInput),
+                    h.Disabled(busy),
+                    h.OnInput((value) => Message.CreatorsChanged({ value })),
+                  ]),
+                ],
+              ),
+              model.draft.kind !== 'mix'
+                ? h.label(
+                    [],
+                    [
+                      'Quoted post ID',
+                      h.input([
+                        h.Value(model.draft.quotedPostId ?? ''),
+                        h.Disabled(busy || Boolean(model.draft.editSlug)),
+                        h.OnInput((value) => Message.QuoteChanged({ value })),
+                      ]),
+                    ],
+                  )
+                : h.empty,
               model.draft.kind !== 'mix'
                 ? h.div(
                     [h.Class('creator-inline')],
@@ -186,7 +234,16 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
                         ['Attach music'],
                       ),
                       model.draft.musicEntityId
-                        ? h.small([], [`Attached ${model.draft.musicEntityType}`])
+                        ? h.div(
+                            [],
+                            [
+                              h.small([], [`Attached ${model.draft.musicEntityType}`]),
+                              h.button(
+                                [h.Disabled(busy), h.OnClick(Message.MusicRemoved())],
+                                ['Remove music'],
+                              ),
+                            ],
+                          )
                         : h.empty,
                     ],
                   )
@@ -216,6 +273,31 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
                     [h.Class('creator-media')],
                     [
                       field(h, 'Existing audio URL', model.draft.audioUrl, 'audioUrl'),
+                      h.label(
+                        [],
+                        [
+                          'Show ID',
+                          h.input([
+                            h.Value(model.draft.showId ?? ''),
+                            h.Disabled(busy),
+                            h.OnInput((value) => Message.ShowChanged({ value })),
+                          ]),
+                        ],
+                      ),
+                      h.label(
+                        [],
+                        [
+                          'Episode number',
+                          h.input([
+                            h.Type('number'),
+                            h.Min('1'),
+                            h.Step('1'),
+                            h.Value(model.episodeInput),
+                            h.Disabled(busy),
+                            h.OnInput((value) => Message.EpisodeChanged({ value })),
+                          ]),
+                        ],
+                      ),
                       h.label(
                         [],
                         [
