@@ -28,7 +28,7 @@ import * as PublicActions from './public-actions'
 import { profileView } from './public-profile'
 import { richContent } from './rich-content'
 import * as Search from './search'
-import { ShowsDocument, showsView } from './shows'
+import { type Episode, ShowsDocument, showsView } from './shows'
 import { pageSkeleton } from './skeletons'
 import { type SpotifyConnection, SpotifyConnectionLive } from './spotify'
 import { staticPages } from './static-pages'
@@ -1202,7 +1202,32 @@ const tweetView = (model: Model, h: HtmlBuilder<Message>) => {
   )
 }
 
+/** The show list any loaded or cached page already holds, so a show can render before its episodes arrive. */
+const knownShows = (model: Model) =>
+  model.flags.shows ??
+  Array.from(HashMap.values(model.pageCache))
+    .flatMap((entry) => Option.toArray(AsyncData.getData(entry)))
+    .find((flags) => flags.shows !== null)?.shows ??
+  null
+
+const pendingShowSlug = (route: Route, shows: ShowsDocument) =>
+  Match.value(route).pipe(
+    Match.tag('Detail', ({ kind, slug }) =>
+      kind === 'shows' && shows.shows.some((show) => show.slug === slug) ? slug : null,
+    ),
+    Match.tag('Listing', ({ kind }) => (kind === 'shows' ? shows.selectedSlug : null)),
+    Match.orElse(() => null),
+  )
+
 export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
+  const playback = {
+    play: (episode: Episode) =>
+      Message.GotPlayerMessage({ message: Player.Message.PlayTrack({ track: episode }) }),
+    toggle: Message.GotPlayerMessage({ message: Player.Message.TogglePlayPause() }),
+    currentId: model.player.snapshot.queue.current?.id ?? null,
+    isPlaying: model.player.snapshot.transport.isPlaying,
+  }
+
   const page =
     model.flags.status === 404
       ? h.section([h.Class('page')], [h.h1([], ['Page not found']), link(h, '/', 'Return home')])
@@ -1210,13 +1235,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
         ? showsView(
             model.flags.shows,
             h,
-            {
-              play: (episode) =>
-                Message.GotPlayerMessage({ message: Player.Message.PlayTrack({ track: episode }) }),
-              toggle: Message.GotPlayerMessage({ message: Player.Message.TogglePlayPause() }),
-              currentId: model.player.snapshot.queue.current?.id ?? null,
-              isPlaying: model.player.snapshot.transport.isPlaying,
-            },
+            playback,
             PublicActions.view(
               model.publicAction,
               h,
@@ -1316,12 +1335,23 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
               ),
           })
 
-  const skeleton =
-    model.loading && model.pendingPath
-      ? pageSkeleton(parseRoute(model.pendingPath), model.route)
+  const target = model.loading && model.pendingPath ? parseRoute(model.pendingPath) : null
+  const shows = target ? knownShows(model) : null
+  const showSlug = target && shows ? pendingShowSlug(target, shows) : null
+
+  const pendingShow =
+    shows && showSlug
+      ? showsView(
+          { ...shows, selectedSlug: showSlug, episodes: null },
+          h,
+          playback,
+          h.empty,
+          model.interactive,
+          true,
+        )
       : null
 
-  const content = skeleton ?? page
+  const content = pendingShow ?? (target ? pageSkeleton(target, model.route) : null) ?? page
 
   return {
     title:

@@ -5,6 +5,7 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 import { artwork } from './artwork'
 import { formatDate } from './format-date'
 import { iconPaths, lucide } from './icons'
+import { episodeRowsSkeleton } from './skeletons'
 
 /** The public show browser preserves selection in the URL and distinguishes failed episode reads from empty shows. */
 export const ShowsDocument = Schema.Struct({
@@ -296,6 +297,7 @@ export const showsView = <M>(
   playback: ShowsPlayback<M>,
   actions: Html,
   interactive: boolean,
+  pending = false,
 ) => {
   const selected = document.shows.find((show) => show.slug === document.selectedSlug)
 
@@ -319,14 +321,14 @@ export const showsView = <M>(
               masthead(
                 h,
                 selected,
-                document.episodes?.data[0] ?? null,
+                pending ? null : (document.episodes?.data[0] ?? null),
                 playback,
-                actions,
+                pending ? h.empty : actions,
                 interactive,
               ),
               h.section(
                 [h.AriaLabel('Episodes')],
-                [episodeList(h, document, playback, interactive)],
+                [pending ? episodeRowsSkeleton() : episodeList(h, document, playback, interactive)],
               ),
             ],
           )

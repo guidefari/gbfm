@@ -179,23 +179,85 @@ export const profileSkeleton = () =>
     ),
   ])
 
-export const episodesSkeleton = () =>
-  loading('max-w-3xl mx-auto px-4 py-8 space-y-3', [
-    ...repeat(6, (index) =>
-      h.div(
-        [h.Key(String(index)), h.Class('flex items-center gap-3')],
+export const episodeRowsSkeleton = () =>
+  h.ol(
+    [
+      h.Role('status'),
+      h.AriaLabel('Loading episodes'),
+      h.Class('m-0 list-none border-t border-border p-0'),
+    ],
+    repeat(4, (index) =>
+      h.li(
         [
-          block('size-4 shrink-0 rounded bg-muted/50 animate-pulse'),
+          h.Key(String(index)),
+          h.Class(
+            'm-0 grid list-none grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-x-4 border-b border-border py-5 sm:grid-cols-[4.5rem_4rem_minmax(0,1fr)_auto_auto] sm:gap-x-6',
+          ),
+        ],
+        [
+          block('h-8 w-12 animate-pulse rounded-sm bg-muted/60 sm:h-9 sm:w-16'),
+          block('hidden h-16 w-16 animate-pulse rounded-sm bg-muted/60 sm:block'),
           h.div(
-            [h.Class('flex-1 space-y-2')],
+            [h.Class('min-w-0 space-y-2')],
             [
-              block('h-4 w-3/4 rounded bg-muted/50 animate-pulse'),
-              block('h-3 w-1/3 rounded bg-muted/50 animate-pulse'),
+              block('h-4 w-3/4 animate-pulse rounded-sm bg-muted/60'),
+              block('h-3 w-1/2 animate-pulse rounded-sm bg-muted/40'),
             ],
           ),
+          block('hidden h-3 w-20 animate-pulse rounded-sm bg-muted/40 sm:block'),
+          block('h-10 w-10 animate-pulse rounded-sm border border-border'),
         ],
       ),
     ),
+  )
+
+export const showsSkeleton = () =>
+  loading('mx-auto max-w-5xl px-4 pb-16 pt-4 sm:pt-6', [
+    h.div(
+      [h.Class('flex gap-6 border-b border-border py-3')],
+      repeat(2, (index) =>
+        h.div(
+          [h.Key(String(index)), h.Class('flex items-center gap-3')],
+          [
+            block('h-10 w-10 animate-pulse rounded-sm bg-muted/60'),
+            h.div(
+              [h.Class('space-y-1.5')],
+              [
+                block('h-3 w-24 animate-pulse rounded-sm bg-muted/60'),
+                block('h-2.5 w-16 animate-pulse rounded-sm bg-muted/40'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+    h.div(
+      [
+        h.Class(
+          'grid gap-6 py-8 sm:grid-cols-[minmax(0,14rem)_1fr] sm:items-end sm:gap-10 sm:py-12',
+        ),
+      ],
+      [
+        block(
+          'aspect-square w-3/5 max-w-56 animate-pulse rounded-sm bg-muted/60 sm:w-full sm:max-w-none',
+        ),
+        h.div(
+          [h.Class('space-y-4')],
+          [
+            block('h-12 w-3/4 animate-pulse rounded-sm bg-muted/60 sm:h-16'),
+            block('h-3 w-40 animate-pulse rounded-sm bg-muted/40'),
+            h.div(
+              [h.Class('flex gap-3 pt-2')],
+              [
+                block('h-10 w-32 animate-pulse rounded-sm bg-muted/60'),
+                block('h-10 w-28 animate-pulse rounded-sm border border-border'),
+              ],
+            ),
+          ],
+        ),
+      ],
+    ),
+    episodeRowsSkeleton(),
   ])
 
 export const detailSkeleton = () =>
@@ -225,7 +287,7 @@ const listingSkeleton = (kind: string) =>
     Match.when('editorial', editorialSkeleton),
     Match.when('tweets', tweetSkeleton),
     Match.when('tags', tagsSkeleton),
-    Match.when('shows', episodesSkeleton),
+    Match.when('shows', showsSkeleton),
     Match.orElse(gridSkeleton),
   )
 
@@ -234,7 +296,7 @@ const detailSkeletonFor = (kind: string) =>
     Match.when('tweets', tweetSkeleton),
     Match.when('profile', profileSkeleton),
     Match.when('tags', postsSkeleton),
-    Match.when('shows', episodesSkeleton),
+    Match.when('shows', showsSkeleton),
     Match.orElse(detailSkeleton),
   )
 
