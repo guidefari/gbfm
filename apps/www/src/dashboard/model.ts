@@ -8,6 +8,7 @@ import { SpotifyConnection, SpotifyStatus, disconnected } from '../spotify'
 import { readTheme, saveTheme, Theme } from '../theme'
 import { DashboardDocument, Row } from './document'
 import { DashboardService } from './service'
+import * as Sessions from './sessions'
 
 export const Role = Schema.NullOr(Schema.Literals(ROLES))
 
@@ -27,6 +28,7 @@ export const Model = Schema.Struct({
   error: Schema.NullOr(Schema.String),
   spotify: SpotifyStatus,
   telemetry: DashboardDocument.fields.telemetry,
+  sessions: Sessions.Model,
 })
 
 export type Model = typeof Model.Type
@@ -68,7 +70,6 @@ export const endpointFor = (section: string) => {
       music: '/api/music/artists',
       playlists: '/api/music/playlists',
       users: '/auth/admin/list-users?limit=100&offset=0',
-      sessions: '/auth/admin/list-users?limit=100&offset=0',
       newsletter: '/api/admin/newsletter-subscribers',
       'email-logs': '/api/email/logs?limit=50&offset=0',
       'frontend-errors': '/api/admin/telemetry',
@@ -80,6 +81,7 @@ export const endpointFor = (section: string) => {
 }
 
 export const Message = defineMessageUnion({
+  GotSessionMessage: { message: Sessions.Message },
   LoadRequested: {},
   Loaded: { document: DashboardDocument },
   Failed: { message: Schema.String },
@@ -102,7 +104,7 @@ export const Message = defineMessageUnion({
 
 export type Message = typeof Message.Type
 
-type Services = DashboardService | SpotifyConnection
+type Services = DashboardService | SpotifyConnection | Sessions.SessionService
 
 const SpotifyRequest = Command.define('Spotify.Connection', {
   args: { action: Schema.Literals(['status', 'connect', 'disconnect', 'completeCallback']) },
@@ -186,6 +188,7 @@ export const initialModel = (section: string, principal: Principal): Model => ({
   toggles: {},
   error: null,
   spotify: disconnected,
+  sessions: Sessions.initialModel,
 })
 
 export const init =
@@ -220,6 +223,17 @@ export const init =
 
 export const update = (model: Model, message: Message): Update.Return<Model, Message, Services> =>
   Message.match<Update.Return<Model, Message, Services>>(message, {
+    GotSessionMessage: ({ message }) => {
+      if (model.principal.role !== 'admin' || model.section !== 'sessions') return { model }
+      const child = Sessions.update(model.sessions, message)
+
+      return {
+        model: { ...model, sessions: child.model },
+        commands: Command.mapMessages(child.commands ?? [], (message) =>
+          Message.GotSessionMessage({ message }),
+        ),
+      }
+    },
     SpotifyRequested: ({ action }) => ({
       model: { ...model, phase: 'loading', error: null },
       commands: [SpotifyRequest({ action })],

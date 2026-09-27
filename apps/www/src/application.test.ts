@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { init, Message, parseRoute, Route, update, type Flags } from './application'
 import { Message as CreatorMessage } from './creator/model'
+import { Message as DashboardMessage } from './dashboard/model'
 
 describe('parseRoute', () => {
   it('parses public, creator, dashboard, and missing routes', () => {
@@ -18,7 +19,7 @@ describe('parseRoute', () => {
     expect(parseRoute('/definitely/missing/route')).toEqual(Route.cases.NotFound.make({}))
   })
 
-  it('drops creator command results from a prior navigation without changing another draft', () => {
+  it('drops creator and dashboard command results from a prior navigation', () => {
     const flags: Flags = {
       url: 'https://gbfm.co.za/new/mix',
       status: 200,
@@ -49,5 +50,13 @@ describe('parseRoute', () => {
       update(model, Message.GotCreatorResult({ message: result, navigationId: 3 })).model.creator
         .draft.audioUrl,
     ).toBe('https://cdn.example/previous.mp3')
+    const failure = DashboardMessage.Failed({ message: 'Failure for the old account screen' })
+    expect(
+      update(model, Message.GotDashboardResult({ message: failure, navigationId: 2 })),
+    ).toEqual({ model })
+    expect(
+      update(model, Message.GotDashboardResult({ message: failure, navigationId: 3 })).model
+        .dashboard.error,
+    ).toBe('Failure for the old account screen')
   })
 })

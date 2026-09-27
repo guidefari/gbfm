@@ -2,4 +2,6 @@ export { init, initialModel, Message, Model, Principal, Role, update } from './m
 
 export { DashboardService, DashboardServiceLive, makeDashboardServiceLayer } from './service'
 
+export { SessionService, SessionServiceLive } from './sessions'
+
 export { view, type ViewInputs } from './view'

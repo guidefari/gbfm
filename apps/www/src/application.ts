@@ -188,6 +188,7 @@ export const Message = defineMessageUnion({
   GotCreatorMessage: { message: Creator.Message },
   GotCreatorResult: { message: Creator.Message, navigationId: Schema.Number },
   GotDashboardMessage: { message: Dashboard.Message },
+  GotDashboardResult: { message: Dashboard.Message, navigationId: Schema.Number },
   RequestedUrl: { request: UrlRequest },
   ChangedUrl: { url: Url },
   LoadedPage: { flags: Flags, navigationId: Schema.Number },
@@ -204,6 +205,7 @@ type Services =
   | Creator.CreatorService
   | Creator.CreatorUpload
   | Dashboard.DashboardService
+  | Dashboard.SessionService
   | SpotifyConnection
 
 const StartClient = Command.define('Application.Start', {
@@ -407,10 +409,14 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
       return {
         model: { ...model, dashboard: child.model },
         commands: Command.mapMessages(child.commands ?? [], (message) =>
-          Message.GotDashboardMessage({ message }),
+          Message.GotDashboardResult({ message, navigationId: model.navigationId }),
         ),
       }
     },
+    GotDashboardResult: ({ message, navigationId }) =>
+      navigationId === model.navigationId
+        ? update(model, Message.GotDashboardMessage({ message }))
+        : { model },
     RequestedUrl: ({ request }) =>
       UrlRequest.match<Update.Return<Model, Message, Services>>(request, {
         Internal: ({ url }) => ({ model, commands: [Navigate({ href: urlToString(url) })] }),
@@ -442,6 +448,9 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
             Match.value(message).pipe(
               Match.tag('GotCreatorResult', ({ message }) =>
                 Message.GotCreatorResult({ message, navigationId }),
+              ),
+              Match.tag('GotDashboardResult', ({ message }) =>
+                Message.GotDashboardResult({ message, navigationId }),
               ),
               Match.orElse((message) => message),
             ),
@@ -532,7 +541,7 @@ export const init: Runtime.ApplicationInit<Model, Message, Flags, Services> = (f
         : []),
       ...(section && (flags.principal || section === 'spotify-callback') && !flags.dashboard
         ? Command.mapMessages(dashboard.commands ?? [], (message) =>
-            Message.GotDashboardMessage({ message }),
+            Message.GotDashboardResult({ message, navigationId: 0 }),
           )
         : []),
     ],
@@ -1285,6 +1294,7 @@ export const clientResources = Layer.mergeAll(
   Creator.CreatorServiceLive,
   Creator.CreatorUploadLive,
   Dashboard.DashboardServiceLive,
+  Dashboard.SessionServiceLive,
   SpotifyConnectionLive,
 )
 

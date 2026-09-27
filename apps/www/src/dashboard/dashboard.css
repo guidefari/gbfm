@@ -83,7 +83,7 @@
   box-sizing: border-box;
   padding: 0.75rem;
   border: 1px solid var(--dash-line);
-  background: #080808;
+  background: var(--dash-bg);
   color: var(--dash-fg);
 }
 .gbfm-dashboard button {
@@ -134,6 +134,14 @@
   display: block;
   margin-top: 0.25rem;
   color: var(--dash-muted);
+}
+.session-list li {
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+.session-list li > div {
+  min-width: 0;
+  flex: 1 1 18rem;
 }
 .dashboard-state,
 .dashboard-forbidden {

@@ -145,7 +145,8 @@ const makeAuth = (
     session: {
       expiresIn: 60 * 60 * 24 * 7,
       updateAge: 60 * 60 * 24,
-      cookieCache: { enabled: true, maxAge: 5 * 60 },
+      // Revocation and role changes must take effect on the next authenticated request.
+      cookieCache: { enabled: false },
     },
     trustedOrigins: browserOrigins(config.urls.frontend),
     secret: config.auth.betterAuthSecret,

@@ -1,8 +1,9 @@
 import type { D1Database } from '@cloudflare/workers-types'
-import { Clock, Effect, Layer } from 'effect'
+import { eq } from 'drizzle-orm'
+import { Clock, Effect, Layer, Schema } from 'effect'
 import { describe, expect, test } from 'vitest'
 
-import { user } from '@/db/auth.schema'
+import { session, user } from '@/db/auth.schema'
 import { emailDeliveryLogsTable } from '@/db/email.schema'
 import { Database, DatabaseLayer } from '@/db/layer'
 import { ConfigService, createConfig, type WorkerConfigBindings } from '@/services/config.service'
@@ -135,4 +136,54 @@ describe('AuthLive password-reset delivery', () => {
       providerMessageId: 'password-reset-receipt',
     })
   })
+})
+
+test('session cookies cannot retain old roles or authenticate after D1 revocation', async () => {
+  await using d1Resource = await createMigratedD1Database()
+  const database = Effect.runSync(withTestLayer(Database, DatabaseLayer(d1Resource.database)))
+
+  const transport = Layer.succeed(EmailTransport, {
+    send: () => Effect.succeed({ provider: 'cloudflare' as const, messageId: 'local-receipt' }),
+  })
+
+  const auth = await Effect.runPromise(
+    withTestLayer(Auth, authLayer(d1Resource.database, transport)),
+  )
+
+  const signup = await auth.handler(
+    new Request('http://localhost/auth/sign-up/email', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: 'http://localhost' },
+      body: JSON.stringify({
+        name: 'Revocation fixture',
+        email: 'revocation@example.test',
+        password: 'LocalTest123!',
+      }),
+    }),
+  )
+
+  expect(signup.status).toBe(200)
+
+  const identity = Schema.decodeUnknownSync(
+    Schema.Struct({ user: Schema.Struct({ id: Schema.String }) }),
+  )(await signup.json())
+
+  const cookie = signup.headers
+    .getSetCookie()
+    .map((value) => value.split(';')[0])
+    .join('; ')
+
+  const read = () =>
+    auth.handler(new Request('http://localhost/auth/get-session', { headers: { cookie } }))
+
+  const sessionIdentity = Schema.Struct({ user: Schema.Struct({ role: Schema.String }) })
+  expect(Schema.decodeUnknownSync(sessionIdentity)(await (await read()).json()).user.role).toBe(
+    'user',
+  )
+  await database.update(user).set({ role: 'creator' }).where(eq(user.id, identity.user.id))
+  expect(Schema.decodeUnknownSync(sessionIdentity)(await (await read()).json()).user.role).toBe(
+    'creator',
+  )
+  await database.delete(session).where(eq(session.userId, identity.user.id))
+  expect((await (await read()).json()) === null).toBe(true)
 })
