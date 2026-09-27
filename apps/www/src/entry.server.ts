@@ -6,6 +6,7 @@ import { ResolveResult } from '@gbfm/api/resolve'
 import { GetAllShowsResponse, GetShowEpisodesResponse } from '@gbfm/api/shows'
 import { GetUserSubscriptionsResponse, ListDjsResponse } from '@gbfm/api/user'
 import { resolveRequestId } from '@gbfm/core/observability/request-id'
+import { isRole } from '@gbfm/core/roles'
 import {
   makeStaticSiteMetadata,
   renderDocumentHead,
@@ -241,6 +242,59 @@ const formAction = async (request: Request): Promise<Server.Responded> => {
 
   const action = url.pathname
 
+  if (action.startsWith('/actions/admin/')) {
+    const operation = action.slice('/actions/admin/'.length)
+    const userId = field('userId')
+    const role = field('role')
+
+    if ((operation === 'create-user' || operation === 'set-role') && !isRole(role))
+      return redirect('/dashboard/users?notice=failed')
+
+    if (operation === 'create-user' && !field('email').trim() && !field('username').trim())
+      return redirect('/dashboard/users?notice=failed')
+
+    const payload = Match.value(operation).pipe(
+      Match.when('create-user', () => {
+        const username = field('username').trim()
+
+        const body = {
+          name: field('name').trim() || username || 'User',
+          email: field('email').trim() || `${username}@placeholder.local`,
+          password: field('password') || crypto.randomUUID(),
+          role,
+        }
+
+        return username ? { ...body, data: { username } } : body
+      }),
+      Match.when('set-role', () => ({ userId, role })),
+      Match.when('ban-user', () =>
+        field('banReason') ? { userId, banReason: field('banReason') } : { userId },
+      ),
+      Match.whenOr('unban-user', 'remove-user', 'invite', () => ({ userId })),
+      Match.orElse(() => null),
+    )
+
+    if (!payload) return Server.Responded(new Response('Not found', { status: 404 }))
+
+    const response = await apiRequest(
+      request,
+      operation === 'invite' ? '/api/invite/send' : `/auth/admin/${operation}`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', origin: url.origin },
+        body: JSON.stringify(payload),
+      },
+    )
+
+    const returnQuery = new URLSearchParams({
+      notice: response.ok ? 'done' : 'failed',
+      search: url.searchParams.get('search') ?? '',
+      offset: url.searchParams.get('offset') ?? '0',
+    })
+
+    return redirect(`/dashboard/users?${returnQuery}`, response.headers.getSetCookie())
+  }
+
   if (action === '/actions/tweet-read-mode') {
     const mode = field('mode') === 'all' ? 'all' : 'unread'
 
@@ -452,7 +506,7 @@ const renderResponse = async (request: Request): Promise<Server.Responded> => {
     Route.guards.Dashboard(route) &&
     identity.principal &&
     (!isAdminSection(route.section) || identity.principal.role === 'admin')
-      ? dashboardEndpointFor(route.section)
+      ? dashboardEndpointFor(route.section, url.searchParams)
       : null
 
   const dashboard = dashboardPath

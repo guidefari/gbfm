@@ -1058,7 +1058,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
                     slotId: 'dashboard',
                     view: Dashboard.view,
                     model: model.dashboard,
-                    viewInputs: { role: model.dashboard.principal.role },
+                    viewInputs: { role: model.dashboard.principal.role, url: model.flags.url },
                     toParentMessage: (message) => Message.GotDashboardMessage({ message }),
                   })
                 : auth(h, 'sign-in', new URL(model.flags.url)),
@@ -1070,7 +1070,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
                       slotId: 'dashboard',
                       view: Dashboard.view,
                       model: model.dashboard,
-                      viewInputs: { role: model.dashboard.principal.role },
+                      viewInputs: { role: model.dashboard.principal.role, url: model.flags.url },
                       toParentMessage: (message) => Message.GotDashboardMessage({ message }),
                     })
                   : ['subscribe', 'unsubscribe'].includes(page)
@@ -1257,7 +1257,8 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
         h.main(
           [],
           [
-            Route.guards.Dashboard(model.route) || Route.guards.Composer(model.route)
+            (Route.guards.Dashboard(model.route) && model.dashboard.section !== 'users') ||
+            Route.guards.Composer(model.route)
               ? h.fieldset([h.Class('contents'), h.Disabled(!model.interactive)], [content])
               : content,
           ],

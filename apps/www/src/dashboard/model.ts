@@ -28,6 +28,7 @@ export const Model = Schema.Struct({
   error: Schema.NullOr(Schema.String),
   spotify: SpotifyStatus,
   telemetry: DashboardDocument.fields.telemetry,
+  users: DashboardDocument.fields.users,
   sessions: Sessions.Model,
 })
 
@@ -51,7 +52,25 @@ const adminSections = new Set([
 
 export const isAdminSection = (section: string) => adminSections.has(section)
 
-export const endpointFor = (section: string) => {
+export const endpointFor = (section: string, query = new URLSearchParams()) => {
+  if (section === 'users') {
+    const offset = Number(query.get('offset') ?? '0')
+
+    const params = new URLSearchParams({
+      limit: '25',
+      offset: String(Number.isSafeInteger(offset) && offset >= 0 ? offset : 0),
+    })
+
+    const search = query.get('search')?.trim()
+
+    if (search) {
+      params.set('searchField', 'email')
+      params.set('searchValue', search)
+    }
+
+    return `/auth/admin/list-users?${params}`
+  }
+
   const endpoints = new Map(
     Object.entries({
       overview: '/api/favorites?limit=25&offset=0',
@@ -69,7 +88,6 @@ export const endpointFor = (section: string) => {
       shows: '/api/shows?limit=100&offset=0',
       music: '/api/music/artists',
       playlists: '/api/music/playlists',
-      users: '/auth/admin/list-users?limit=100&offset=0',
       newsletter: '/api/admin/newsletter-subscribers',
       'email-logs': '/api/email/logs?limit=50&offset=0',
       'frontend-errors': '/api/admin/telemetry',
@@ -266,6 +284,7 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
         fields: document.fields,
         toggles: document.toggles,
         telemetry: document.telemetry,
+        users: document.users,
         error: null,
       },
     }),

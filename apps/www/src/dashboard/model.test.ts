@@ -1,6 +1,7 @@
+import { Effect } from 'effect'
 import { describe, expect, it } from 'vitest'
 
-import { emptyDocument } from './document'
+import { emptyDocument, parseDashboardDocument } from './document'
 import { endpointFor, init, initialModel, Message, update } from './model'
 
 const member = { id: 'user-1', role: 'user' as const }
@@ -10,6 +11,29 @@ describe('dashboard submodel', () => {
     expect(endpointFor('profile')).toBe('/api/user/profile')
     expect(endpointFor('content/mixes')).toContain('/api/content/audio/mix/manage')
     expect(endpointFor('frontend-errors')).toBe('/api/admin/telemetry')
+  })
+
+  it('encodes user searches and preserves requested pagination when the API omits its offset', async () => {
+    const path = endpointFor(
+      'users',
+      new URLSearchParams({ search: ' dj+test@example.com ', offset: '25' }),
+    )
+
+    expect(path).toBe(
+      '/auth/admin/list-users?limit=25&offset=25&searchField=email&searchValue=dj%2Btest%40example.com',
+    )
+
+    const document = await Effect.runPromise(
+      parseDashboardDocument(path ?? '', { users: [], total: 27, limit: 25 }),
+    )
+
+    expect(document.fields).toEqual({ search: 'dj+test@example.com', offset: '25' })
+
+    for (const offset of ['-1', '1.5', 'NaN', 'Infinity']) {
+      expect(endpointFor('users', new URLSearchParams({ offset }))).toBe(
+        '/auth/admin/list-users?limit=25&offset=0',
+      )
+    }
   })
 
   it('does not issue an admin request for a non-admin principal', () => {

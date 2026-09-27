@@ -14,6 +14,8 @@ import { GetAllShowsResponse } from '@gbfm/api/shows'
 import { UserProfileResponse } from '@gbfm/api/user'
 import { Data, Effect, Schema } from 'effect'
 
+import { AdminUsers } from './users'
+
 export const Row = Schema.Struct({
   id: Schema.String,
   title: Schema.String,
@@ -27,6 +29,7 @@ export const DashboardDocument = Schema.Struct({
   fields: Schema.Record(Schema.String, Schema.String),
   toggles: Schema.Record(Schema.String, Schema.Boolean),
   telemetry: Schema.optional(AdminTelemetryResponse),
+  users: Schema.optional(AdminUsers),
 })
 
 export type DashboardDocument = typeof DashboardDocument.Type
@@ -45,18 +48,6 @@ const EmailPreferences = Schema.Struct({
   globalUnsubscribe: Schema.Boolean,
 })
 
-const AdminUsers = Schema.Struct({
-  users: Schema.Array(
-    Schema.Struct({
-      id: Schema.String,
-      name: Schema.String,
-      email: Schema.String,
-      role: Schema.optional(Schema.NullOr(Schema.String)),
-    }),
-  ),
-  total: Schema.Number,
-})
-
 /** Each endpoint is decoded before its payload enters the dashboard state machine. */
 export const parseDashboardDocument = (
   path: string,
@@ -68,17 +59,16 @@ export const parseDashboardDocument = (
   switch (pathname) {
     case '/auth/admin/list-users':
       return Schema.decodeUnknownEffect(AdminUsers)(input).pipe(
-        Effect.map(({ users }) =>
-          rowsDocument(
-            users.map((user) => ({
-              id: user.id,
-              title: user.name,
-              detail: `${user.email} · ${user.role ?? 'user'}`,
-              href: null,
-              actionId: user.id,
-            })),
-          ),
-        ),
+        Effect.map((users) => ({
+          ...emptyDocument,
+          users,
+          fields: {
+            search: new URL(path, 'http://localhost').searchParams.get('searchValue') ?? '',
+            offset: String(
+              users.offset ?? new URL(path, 'http://localhost').searchParams.get('offset') ?? 0,
+            ),
+          },
+        })),
       )
     case '/api/content/posts/manage':
       return Schema.decodeUnknownEffect(GetPostsResponse)(input).pipe(
