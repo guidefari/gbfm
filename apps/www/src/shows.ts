@@ -172,7 +172,24 @@ const masthead = <M>(
                 [h.Class('mt-4 text-sm text-muted-foreground')],
                 [
                   'hosted by ',
-                  h.span([h.Class('font-semibold text-foreground')], [hostLine(show)]),
+                  ...show.hosts.flatMap((host, index) => [
+                    host.username
+                      ? h.a(
+                          [
+                            h.Key(host.id),
+                            h.Href(`/profile/${encodeURIComponent(host.username)}`),
+                            h.Class(
+                              'font-semibold text-foreground underline decoration-border underline-offset-4 transition-colors hover:text-highlight hover:decoration-highlight',
+                            ),
+                          ],
+                          [host.name],
+                        )
+                      : h.span(
+                          [h.Key(host.id), h.Class('font-semibold text-foreground')],
+                          [host.name],
+                        ),
+                    index < show.hosts.length - 1 ? ', ' : '',
+                  ]),
                 ],
               )
             : h.empty,
