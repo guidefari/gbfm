@@ -1413,7 +1413,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
       model.flags.metadata?.canonicalUrl ??
       `https://goosebumps.fm${new URL(model.flags.url).pathname}`,
     body: h.div(
-      [h.Class('site')],
+      [h.Class('site'), h.DataAttribute('interactive', String(model.interactive))],
       [
         stationNav(h, {
           pathname: model.pendingPath ?? new URL(model.flags.url).pathname,

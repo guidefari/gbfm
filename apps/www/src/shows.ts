@@ -50,7 +50,7 @@ const dial = <M>(h: HtmlBuilder<M>, shows: ReadonlyArray<Show>, selectedSlug: st
           h.Href(showHref(show)),
           ...(current ? [h.AriaCurrent('page')] : []),
           h.Class(
-            `-mb-px flex shrink-0 items-center gap-3 border-b-2 py-3 pr-5 no-underline transition-colors ${
+            `-mb-px flex shrink-0 items-center gap-3 border-b-2 py-3 pr-5 no-underline transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${
               current
                 ? 'border-highlight text-foreground'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -421,7 +421,7 @@ export const showsView = <M>(
       dial(h, document.shows, document.selectedSlug),
       selected
         ? h.div(
-            [h.Key(selected.id), h.Class('show-scope animate-in fade-in duration-300')],
+            [h.Key(selected.id), h.Class('show-scope')],
             [
               compactBar(
                 h,

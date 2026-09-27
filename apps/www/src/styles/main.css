@@ -102,6 +102,12 @@
   }
 }
 
+/* Controls render disabled until the client boots; keep them at full strength so hydration does not flash. Unlayered so it outranks disabled utilities. */
+[data-interactive='false'] :disabled {
+  opacity: 1;
+  cursor: default;
+}
+
 /* The show masthead scrolls away into a sticky compact bar, scrubbed by the masthead's own view timeline. */
 .show-scope {
   timeline-scope: --show-masthead;
