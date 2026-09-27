@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq } from 'drizzle-orm'
+import { and, asc, count, desc, eq, inArray } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 
 import { audioTable, type SelectAudio } from '@/db/audio.schema'
@@ -501,36 +501,27 @@ const getEpisodesEffect = (
     const db = yield* Database
     const { limit, offset } = options
 
-    const showRecords = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select()
-          .from(showsTable)
-          .where(and(eq(showsTable.slug, showSlug), eq(showsTable.draft, false)))
-          .limit(1),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to fetch show: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'shows',
-        }),
-    })
-
-    const show = showRecords[0]
-
-    if (!show) {
-      return yield* new NotFoundError({
-        message: 'Show not found',
-        resource: 'show',
-        id: showSlug,
-      })
-    }
-
     const draftCondition = actor?.userRole === 'admin' ? undefined : eq(audioTable.draft, false)
-    const whereCondition = and(eq(audioTable.showId, show.id), draftCondition)
 
-    const [countResult, episodes] = yield* Effect.all(
+    const publishedShow = db
+      .select({ id: showsTable.id })
+      .from(showsTable)
+      .where(and(eq(showsTable.slug, showSlug), eq(showsTable.draft, false)))
+      .limit(1)
+
+    const whereCondition = and(inArray(audioTable.showId, publishedShow), draftCondition)
+
+    const [showRecords, countResult, episodes] = yield* Effect.all(
       [
+        Effect.tryPromise({
+          try: () => publishedShow,
+          catch: (error) =>
+            new DatabaseError({
+              message: `Failed to fetch show: ${getErrorMessage(error)}`,
+              operation: 'select',
+              table: 'shows',
+            }),
+        }),
         Effect.tryPromise({
           try: () => db.select({ total: count() }).from(audioTable).where(whereCondition),
           catch: (error) =>
@@ -566,6 +557,14 @@ const getEpisodesEffect = (
       ],
       { concurrency: 'unbounded' },
     )
+
+    if (!showRecords[0]) {
+      return yield* new NotFoundError({
+        message: 'Show not found',
+        resource: 'show',
+        id: showSlug,
+      })
+    }
 
     const total = countResult[0]?.total ?? 0
 

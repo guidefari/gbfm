@@ -9,6 +9,7 @@ import { beforeAll, describe, expect, test } from 'vitest'
 
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { user } from '@/db/auth.schema'
+import { NotFoundError } from '@/errors'
 import { DatabaseTestLayer, db } from '@/test/database'
 import { withTestLayer } from '@/test/effect'
 
@@ -258,5 +259,61 @@ describe('ShowService creators', () => {
     expect(episodesAfter.find((e) => e.id === episode.id)?.thumbnailUrl).toBe(
       'https://example.com/new-show-art.png',
     )
+  })
+
+  test('getEpisodes keeps published-show and pagination semantics', async () => {
+    const service = await getService()
+    const slug = `show-episodes-${randomUUID()}`
+    const draftSlug = `show-draft-${randomUUID()}`
+
+    const show = await Effect.runPromise(
+      service.create({ title: slug, slug, content: '' }, [hostId]),
+    )
+
+    await Effect.runPromise(
+      service.create({ title: draftSlug, slug: draftSlug, content: '', draft: true }, [hostId]),
+    )
+
+    const empty = await Effect.runPromise(service.getEpisodes(slug, { limit: 1, offset: 0 }))
+    expect(empty).toMatchObject({ data: [], pagination: { total: 0, hasMore: false } })
+
+    await db.insert(audioTable).values([
+      {
+        title: 'Published episode',
+        slug: `published-${randomUUID()}`,
+        content: '',
+        type: 'mix',
+        url: 'https://example.com/published.mp3',
+        showId: show.id,
+      },
+      {
+        title: 'Draft episode',
+        slug: `draft-${randomUUID()}`,
+        content: '',
+        type: 'mix',
+        url: 'https://example.com/draft.mp3',
+        showId: show.id,
+        draft: true,
+      },
+    ])
+
+    const pastEnd = await Effect.runPromise(service.getEpisodes(slug, { limit: 1, offset: 10 }))
+    expect(pastEnd).toMatchObject({ data: [], pagination: { total: 1, hasMore: false } })
+
+    const admin = await Effect.runPromise(
+      service.getEpisodes(slug, { limit: 10, offset: 0 }, { userId: hostId, userRole: 'admin' }),
+    )
+
+    expect(admin.data).toHaveLength(2)
+    expect(admin.pagination.total).toBe(2)
+
+    for (const missingSlug of [draftSlug, `missing-${randomUUID()}`]) {
+      const failure = await Effect.runPromise(
+        Effect.flip(service.getEpisodes(missingSlug, { limit: 10, offset: 0 })),
+      )
+
+      expect(failure).toBeInstanceOf(NotFoundError)
+      expect(failure).toMatchObject({ resource: 'show' })
+    }
   })
 })
