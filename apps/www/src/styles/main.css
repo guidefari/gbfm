@@ -102,6 +102,36 @@
   }
 }
 
+/* Episode rows fade up on entry and their number lights up while crossing the middle of the viewport. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .episode-reveal {
+      animation: episode-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 80%;
+    }
+
+    .episode-tune {
+      animation: episode-tune linear both;
+      animation-timeline: view();
+      animation-range: cover 30% cover 70%;
+    }
+  }
+}
+
+@keyframes episode-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+}
+
+@keyframes episode-tune {
+  50% {
+    color: var(--highlight);
+  }
+}
+
 @keyframes equalizer {
   0%,
   100% {

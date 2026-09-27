@@ -180,7 +180,7 @@ const episodeRow = <M>(
     [
       h.Key(episode.id),
       h.Class(
-        `group relative m-0 grid list-none grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-x-4 border-b border-border py-5 sm:grid-cols-[4.5rem_4rem_minmax(0,1fr)_auto_auto] sm:gap-x-6 ${
+        `episode-reveal group relative m-0 grid list-none grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-x-4 border-b border-border py-5 sm:grid-cols-[4.5rem_4rem_minmax(0,1fr)_auto_auto] sm:gap-x-6 ${
           current
             ? 'before:absolute before:inset-y-0 before:-left-4 before:w-[3px] before:bg-highlight'
             : ''
@@ -191,7 +191,7 @@ const episodeRow = <M>(
       h.span(
         [
           h.Class(
-            `text-2xl font-black tabular-nums tracking-tighter sm:text-4xl ${current ? 'text-highlight' : 'text-muted-foreground/40'}`,
+            `text-2xl font-black tabular-nums tracking-tighter sm:text-4xl ${current ? 'text-highlight' : 'episode-tune text-muted-foreground/40'}`,
           ),
         ],
         [String(number).padStart(3, '0')],
