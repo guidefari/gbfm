@@ -26,6 +26,7 @@ import { SiteMetadata } from '@gbfm/site-metadata'
 import { SocialCardPresentation, TweetCardPresentation } from '@gbfm/social-card'
 import { and, eq, inArray } from 'drizzle-orm'
 import { Layer } from 'effect'
+import { XMLValidator } from 'fast-xml-parser'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { audioTable } from '@/db/audio.schema'
@@ -3434,13 +3435,54 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
     }
   })
 
-  it('GET /rss.xml returns 200 HTML with the feed title', async () => {
-    const res = await webHandler.handler(new Request('http://localhost/rss.xml'))
+  it('GET /rss.xml returns a valid RSS 2.0 feed containing published mixes', async () => {
+    const slug = `rss-published-${crypto.randomUUID()}`
+    const olderSlug = `rss-older-${crypto.randomUUID()}`
 
-    expect(res.status).toBe(200)
-    expect(res.headers.get('content-type')).toContain('text/html')
-    const body = await res.text()
-    expect(body).toContain('Goosebumps.fm Mixes RSS Feed')
+    await db.insert(audioTable).values([
+      {
+        title: 'Published & valid mix',
+        slug,
+        content: '',
+        description: 'A published mix with <escaped> text',
+        type: 'mix',
+        url: 'https://example.com/published.mp3?source=rss&format=mp3',
+        draft: false,
+        createdAt: new Date('2999-01-02T00:00:00Z'),
+      },
+      {
+        title: 'Older published mix',
+        slug: olderSlug,
+        content: '',
+        type: 'mix',
+        url: 'https://example.com/older.mp3',
+        draft: false,
+        createdAt: new Date('2999-01-01T00:00:00Z'),
+      },
+    ])
+
+    try {
+      const res = await webHandler.handler(new Request('http://localhost/rss.xml'))
+
+      expect(res.status).toBe(200)
+      expect(res.headers.get('content-type')).toBe('application/rss+xml; charset=utf-8')
+
+      const body = await res.text()
+
+      expect(XMLValidator.validate(body)).toBe(true)
+      expect(body).toContain('<rss version="2.0"')
+      expect(body).toContain('<title>Goosebumps.fm Mixes</title>')
+      expect(body).toContain('<title>Published &amp; valid mix</title>')
+      expect(body).toContain(`<link>https://goosebumps.fm/mixes/${slug}</link>`)
+      expect(body).toContain(
+        '<enclosure url="https://example.com/published.mp3?source=rss&amp;format=mp3" type="audio/mpeg" />',
+      )
+      expect(body.indexOf('<title>Published &amp; valid mix</title>')).toBeLessThan(
+        body.indexOf('<title>Older published mix</title>'),
+      )
+    } finally {
+      await db.delete(audioTable).where(inArray(audioTable.slug, [slug, olderSlug]))
+    }
   })
 
   it('GET /robots.txt returns 200 plain text pointing at the sitemap', async () => {

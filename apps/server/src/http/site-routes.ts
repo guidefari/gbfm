@@ -8,7 +8,7 @@ import { Database } from '@/db/layer'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { buildErrorHtml, buildShareHtml } from '@/routes/redirect/redirect.template'
 import { getCachedSitemap } from '@/routes/redirect/seo/sitemap.service'
-import { rssFeedHtml } from '@/routes/rss/rss.template'
+import { rssFeedXml } from '@/routes/rss/rss.template'
 import { ConfigService } from '@/services/config.service'
 import { resolveSiteMetadata } from '@/services/site-presentation.service'
 
@@ -101,8 +101,8 @@ const rssXml = Effect.gen(function* () {
     'audio',
   )
 
-  return HttpServerResponse.text(rssFeedHtml(mixes), {
-    contentType: 'text/html',
+  return HttpServerResponse.text(rssFeedXml(mixes), {
+    contentType: 'application/rss+xml; charset=utf-8',
     headers: { 'cache-control': 'public, max-age=3600' },
   })
 }).pipe(
