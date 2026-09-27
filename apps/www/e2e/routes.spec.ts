@@ -17,7 +17,7 @@ test('primary tweet and structured metadata are rendered before replies', async 
 test('anonymous public navigation hydrates and missing pages return real 404s', async ({
   page,
 }) => {
-  const errors: string[] = []
+  const errors: Array<string> = []
   page.on('pageerror', (error) => errors.push(error.message))
   await page.goto('/tweet/e2e-music-thread')
   await expect(page.getByRole('heading', { name: 'Root Frequency' })).toBeVisible()
@@ -52,7 +52,7 @@ test('creator profile persists and private SSR avoids a duplicate browser accoun
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
   await expect(page).toHaveURL(/\/dashboard$/)
 
-  const accountRequests: string[] = []
+  const accountRequests: Array<string> = []
   page.on('request', (request) => {
     if (new URL(request.url()).pathname === '/api/user/profile')
       accountRequests.push(request.method())
@@ -64,10 +64,12 @@ test('creator profile persists and private SSR avoids a duplicate browser accoun
 
   const bio = 'Independent frequencies, tested against local D1.'
   await page.getByRole('textbox', { name: 'Bio' }).fill(bio)
+
   const saved = page.waitForResponse(
     (response) =>
       response.url().endsWith('/api/user/profile') && response.request().method() === 'PATCH',
   )
+
   await page.getByRole('button', { name: 'Save profile' }).click()
   expect((await saved).status()).toBe(200)
   await page.reload()
@@ -88,17 +90,20 @@ test('auth forms reject a cross-origin submission', async ({ request }) => {
     headers: { origin: 'https://attacker.invalid' },
     form: { email: 'creator@gbfm.local', password: 'LocalTest123!' },
   })
+
   expect(response.status()).toBe(403)
   expect(response.headers()['set-cookie']).toBeUndefined()
 })
 
 test('playback advances and persists through client navigation', async ({ page }) => {
   await page.goto('/mixes')
+
   const recordedPlay = page.waitForResponse(
     (response) =>
       /\/api\/content\/audio\/[^/]+\/play$/.test(response.url()) &&
       response.request().method() === 'POST',
   )
+
   await page
     .getByRole('article')
     .filter({ hasText: 'Local Frequencies' })
@@ -230,7 +235,7 @@ test('newsletter forms render without JavaScript and subscription persists throu
   const context = await browser.newContext({ javaScriptEnabled: false })
   const page = await context.newPage()
   await page.goto('/subscribe')
-  await expect(page.locator('.topbar')).toHaveCSS('position', 'fixed')
+  await expect(page.getByRole('navigation', { name: 'Primary' })).toHaveCSS('position', 'fixed')
   await expect(page.locator('body')).toHaveCSS('margin', '0px')
   await page
     .getByRole('textbox', { name: 'Email', exact: true })

@@ -2,7 +2,6 @@
 @import 'tailwindcss';
 @import './scrollbar.css';
 @import '@gbfm/theme/styles.css';
-@import '../player/player.css';
 @import '../dashboard/dashboard.css';
 
 @plugin "@tailwindcss/typography";
@@ -553,26 +552,6 @@
 .site > main {
   flex: 1;
 }
-.topbar {
-  position: fixed;
-  z-index: 40;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  min-height: 48px;
-  padding: 0 1.5rem 0 1rem;
-  border-top: 2px solid var(--foreground);
-  background: var(--background);
-}
-.brand {
-  font-weight: 900;
-  font-size: 1.05rem;
-  text-decoration: none;
-  white-space: nowrap;
-}
 .wordmark {
   display: block;
   width: 125px;
@@ -703,32 +682,6 @@
 }
 .profile-content {
   gap: 3rem;
-}
-.nav {
-  display: flex;
-  gap: 1.1rem;
-  font-size: 0.8rem;
-}
-.topbar > .account-link {
-  margin-left: auto;
-  font-size: 0.8rem;
-}
-.topbar a {
-  text-decoration: none;
-}
-.topbar a[aria-current='page'] {
-  color: var(--highlight);
-}
-.topbar svg {
-  width: 20px;
-  height: 20px;
-}
-.topbar button {
-  border: 0;
-  background: transparent;
-}
-.mobile-tabs {
-  display: none;
 }
 .menu-sheet {
   position: fixed;
@@ -1045,29 +998,6 @@
     border: 0;
     padding: 0;
     font-size: min(12vw, 4.5rem);
-  }
-  .topbar {
-    padding: 0 0 env(safe-area-inset-bottom);
-    border-top: 1px solid var(--border);
-  }
-  .topbar > .brand,
-  .topbar > .account-link,
-  .topbar > .desktop-search {
-    display: none;
-  }
-  .nav {
-    display: none;
-  }
-  .mobile-tabs {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    height: 44px;
-    width: 100%;
-  }
-  .mobile-tabs > * {
-    display: grid;
-    place-items: center;
-    padding: 0;
   }
   .page {
     padding: 1rem 1rem 5rem;

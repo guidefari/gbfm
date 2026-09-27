@@ -30,6 +30,7 @@ import * as Search from './search'
 import { ShowsDocument, showsView } from './shows'
 import { type SpotifyConnection, SpotifyConnectionLive } from './spotify'
 import { staticPages } from './static-pages'
+import { stationNav } from './station-nav'
 import {
   authorRow,
   cardActions,
@@ -438,7 +439,13 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
         External: ({ href }) => ({ model, commands: [Leave({ href })] }),
       }),
     ChangedUrl: ({ url }) => ({
-      model: { ...model, loading: true, menuOpen: false, navigationId: model.navigationId + 1 },
+      model: {
+        ...model,
+        loading: true,
+        menuOpen: false,
+        navigationId: model.navigationId + 1,
+        player: { ...model.player, fullscreen: false, queueOpen: false },
+      },
       commands: [
         ...(model.creator.uploadState === 'running' ? [PauseCreatorUpload()] : []),
         LoadPage({ href: urlToString(url), navigationId: model.navigationId + 1 }),
@@ -1233,103 +1240,31 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
     body: h.div(
       [h.Class('site')],
       [
-        h.nav(
-          [h.Class('topbar'), h.AriaLabel('Primary')],
-          [
-            h.a(
-              [h.Href('/'), h.Class('brand'), h.AriaLabel('goosebumps.fm home')],
-              [h.span([h.Class('wordmark'), h.AriaHidden(true)], [])],
-            ),
-            h.div(
-              [h.Class('nav desktop-links')],
-              nav.map(([href, label]) =>
-                h.a(
-                  [
-                    h.Href(href),
-                    h.AriaCurrent(
-                      new URL(model.flags.url).pathname.startsWith(href) ? 'page' : 'false',
-                    ),
-                  ],
-                  [label],
-                ),
-              ),
-            ),
-            h.button(
-              [
-                h.Class('desktop-search'),
-                h.AriaLabel('Search'),
-                h.Disabled(!model.interactive),
-                h.OnClick(Message.GotSearchMessage({ message: Search.Message.Opened() })),
-              ],
-              [icon(h, 'M21 21l-4.3-4.3 M19 11a8 8 0 1 1-16 0a8 8 0 1 1 16 0')],
-            ),
-            link(
-              h,
-              model.flags.principal ? '/dashboard' : '/auth/sign-in',
-              model.flags.principal?.name ?? 'Sign in',
-              'account-link',
-            ),
-            h.div(
-              [h.Class('mobile-tabs')],
-              [
-                model.player.snapshot.queue.current
-                  ? h.button(
-                      [
-                        h.AriaLabel('Now playing'),
-                        h.OnClick(
-                          Message.GotPlayerMessage({ message: Player.Message.ToggleFullscreen() }),
-                        ),
-                      ],
-                      [icon(h, 'M9 5l10 7-10 7z')],
-                    )
-                  : h.a(
-                      [h.Href('/shows'), h.AriaLabel('Now playing')],
-                      [
-                        icon(
-                          h,
-                          'M22 12a10 10 0 1 1-20 0a10 10 0 1 1 20 0 M15 12a3 3 0 1 1-6 0a3 3 0 1 1 6 0',
-                        ),
-                      ],
-                    ),
-                h.a(
-                  [h.Href('/shows'), h.AriaLabel('Shows')],
-                  [
-                    icon(
-                      h,
-                      'M22 12a10 10 0 1 1-20 0a10 10 0 1 1 20 0 M15 12a3 3 0 1 1-6 0a3 3 0 1 1 6 0',
-                    ),
-                  ],
-                ),
-                h.a(
-                  [h.Href('/editorial'), h.AriaLabel('Editorial')],
-                  [
-                    icon(
-                      h,
-                      'M12 7v14 M3 3h5a4 4 0 0 1 4 4a4 4 0 0 1 4-4h5v16h-5a4 4 0 0 0-4 2a4 4 0 0 0-4-2H3z',
-                    ),
-                  ],
-                ),
-                h.button(
-                  [
-                    h.AriaLabel('Search'),
-                    h.Disabled(!model.interactive),
-                    h.OnClick(Message.GotSearchMessage({ message: Search.Message.Opened() })),
-                  ],
-                  [icon(h, 'M21 21l-4.3-4.3 M19 11a8 8 0 1 1-16 0a8 8 0 1 1 16 0')],
-                ),
-                h.button(
-                  [
-                    h.AriaLabel('Menu'),
-                    h.Disabled(!model.interactive),
-                    h.AriaExpanded(model.menuOpen),
-                    h.OnClick(Message.MenuToggled()),
-                  ],
-                  [icon(h, 'M4 6h16 M4 12h16 M4 18h16')],
-                ),
-              ],
-            ),
-          ],
-        ),
+        stationNav(h, {
+          pathname: new URL(model.flags.url).pathname,
+          links: nav,
+          accountName: model.flags.principal
+            ? (model.flags.principal.name ?? model.flags.principal.username ?? '?')
+            : null,
+          interactive: model.interactive,
+          menuOpen: model.menuOpen,
+          nowPlaying: model.player.snapshot.queue.current
+            ? {
+                title: model.player.snapshot.queue.current.title,
+                thumbnailUrl: model.player.snapshot.queue.current.thumbnailUrl ?? null,
+                isPlaying: model.player.snapshot.transport.isPlaying,
+                progress: model.player.snapshot.transport.duration
+                  ? (model.player.snapshot.transport.currentTime /
+                      model.player.snapshot.transport.duration) *
+                    100
+                  : 0,
+              }
+            : null,
+          togglePlay: Message.GotPlayerMessage({ message: Player.Message.TogglePlayPause() }),
+          openPlayer: Message.GotPlayerMessage({ message: Player.Message.ToggleFullscreen() }),
+          openSearch: Message.GotSearchMessage({ message: Search.Message.Opened() }),
+          toggleMenu: Message.MenuToggled(),
+        }),
         model.menuOpen
           ? h.aside(
               [h.Class('menu-sheet'), h.AriaLabel('Menu')],
