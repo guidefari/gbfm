@@ -191,11 +191,17 @@ export const episodeRowsSkeleton = () =>
         [
           h.Key(String(index)),
           h.Class(
-            'm-0 grid list-none grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-x-4 border-b border-border py-5 sm:grid-cols-[4.5rem_4rem_minmax(0,1fr)_auto_auto] sm:gap-x-6',
+            'm-0 grid list-none grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 border-b border-border py-5 sm:grid-cols-[auto_4rem_minmax(0,1fr)_auto] sm:gap-x-6',
           ),
         ],
         [
-          block('h-8 w-12 animate-pulse rounded-sm bg-muted/60 sm:h-9 sm:w-16'),
+          h.div(
+            [h.Class('flex items-center gap-3')],
+            [
+              block('h-8 w-8 animate-pulse rounded-sm border border-border'),
+              block('h-8 w-12 animate-pulse rounded-sm bg-muted/60 sm:h-9 sm:w-16'),
+            ],
+          ),
           block('hidden h-16 w-16 animate-pulse rounded-sm bg-muted/60 sm:block'),
           h.div(
             [h.Class('min-w-0 space-y-2')],
@@ -205,7 +211,6 @@ export const episodeRowsSkeleton = () =>
             ],
           ),
           block('hidden h-3 w-20 animate-pulse rounded-sm bg-muted/40 sm:block'),
-          block('h-10 w-10 animate-pulse rounded-sm border border-border'),
         ],
       ),
     ),

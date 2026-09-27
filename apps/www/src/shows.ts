@@ -209,7 +209,8 @@ const equalizer = <M>(h: HtmlBuilder<M>) =>
     ),
   )
 
-const episodeRow = <M>(
+/** The episode number doubles as its play control, so position in the run and playback read as one thing. */
+const episodePlay = <M>(
   h: HtmlBuilder<M>,
   episode: Episode,
   number: number,
@@ -219,11 +220,60 @@ const episodeRow = <M>(
   const current = episode.id === playback.currentId
   const playing = current && playback.isPlaying
 
+  return h.button(
+    [
+      h.Type('button'),
+      h.Disabled(!interactive),
+      h.OnClick(current ? playback.toggle : playback.play(episode)),
+      h.AriaLabel(`${playing ? 'Pause' : 'Play'} ${episode.title}`),
+      h.AriaPressed(String(playing)),
+      h.Class(
+        'group/play -m-1 flex items-center gap-3 rounded-sm border-0 bg-transparent p-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50',
+      ),
+    ],
+    [
+      h.span(
+        [
+          h.Class(
+            `flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border transition-colors ${
+              current
+                ? 'border-highlight bg-highlight/10 text-highlight'
+                : 'border-border text-foreground group-hover/play:border-highlight group-hover/play:bg-highlight group-hover/play:text-highlight-foreground'
+            }`,
+          ),
+        ],
+        [playing ? equalizer(h) : lucide(iconPaths.play, 'h-3.5 w-3.5 fill-current')],
+      ),
+      h.span(
+        [
+          h.Class(
+            `w-[3ch] text-2xl font-black tabular-nums tracking-tighter transition-colors sm:text-4xl ${
+              current
+                ? 'text-highlight'
+                : 'episode-tune text-muted-foreground/40 group-hover/play:text-foreground'
+            }`,
+          ),
+        ],
+        [String(number).padStart(3, '0')],
+      ),
+    ],
+  )
+}
+
+const episodeRow = <M>(
+  h: HtmlBuilder<M>,
+  episode: Episode,
+  number: number,
+  playback: ShowsPlayback<M>,
+  interactive: boolean,
+) => {
+  const current = episode.id === playback.currentId
+
   return h.li(
     [
       h.Key(episode.id),
       h.Class(
-        `episode-reveal group relative m-0 grid list-none grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-x-4 border-b border-border py-5 sm:grid-cols-[4.5rem_4rem_minmax(0,1fr)_auto_auto] sm:gap-x-6 ${
+        `episode-reveal group relative m-0 grid list-none grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 border-b border-border py-5 sm:grid-cols-[auto_4rem_minmax(0,1fr)_auto] sm:gap-x-6 ${
           current
             ? 'before:absolute before:inset-y-0 before:-left-4 before:w-[3px] before:bg-highlight'
             : ''
@@ -231,14 +281,7 @@ const episodeRow = <M>(
       ),
     ],
     [
-      h.span(
-        [
-          h.Class(
-            `text-2xl font-black tabular-nums tracking-tighter sm:text-4xl ${current ? 'text-highlight' : 'episode-tune text-muted-foreground/40'}`,
-          ),
-        ],
-        [String(number).padStart(3, '0')],
-      ),
+      episodePlay(h, episode, number, playback, interactive),
       h.a(
         [h.Href(mixHref(episode)), h.Tabindex(-1), h.AriaHidden(true), h.Class('hidden sm:block')],
         [artwork(episode.thumbnailUrl, '', '64px', false, 'h-16 w-16 rounded-sm')],
@@ -286,22 +329,6 @@ const episodeRow = <M>(
               )
             : h.empty,
         ],
-      ),
-      h.button(
-        [
-          h.Type('button'),
-          h.Disabled(!interactive),
-          h.OnClick(current ? playback.toggle : playback.play(episode)),
-          h.AriaLabel(`${playing ? 'Pause' : 'Play'} ${episode.title}`),
-          h.Class(
-            `flex h-10 w-10 items-center justify-center rounded-sm border p-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 ${
-              current
-                ? 'border-highlight bg-highlight/10 text-highlight'
-                : 'border-border bg-transparent text-foreground hover:border-foreground hover:bg-muted'
-            }`,
-          ),
-        ],
-        [playing ? equalizer(h) : lucide(iconPaths.play, 'h-4 w-4 fill-current')],
       ),
     ],
   )
