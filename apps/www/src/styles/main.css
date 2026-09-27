@@ -1000,13 +1000,6 @@
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
-.site > footer {
-  border-top: 1px solid var(--border);
-  padding: 1.5rem 3vw 6rem;
-  display: flex;
-  gap: 2rem;
-  font-size: 0.75rem;
-}
 @media (max-width: 1023px) {
   .public-profile {
     grid-template-columns: 1fr;

@@ -1376,8 +1376,23 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
           toParentMessage: (message) => Message.GotPlayerMessage({ message }),
         }),
         h.footer(
-          [],
-          [link(h, '/privacy', 'Privacy'), link(h, '/terms', 'Terms'), link(h, '/rss.xml', 'RSS')],
+          [h.Class('mx-auto flex w-full max-w-5xl gap-5 px-4 pb-8 pt-12 text-xs')],
+          [
+            ['/privacy', 'Privacy'],
+            ['/terms', 'Terms'],
+            ['/rss.xml', 'RSS'],
+          ].map(([href, label]) =>
+            h.a(
+              [
+                h.Key(href),
+                h.Href(href),
+                h.Class(
+                  'text-muted-foreground no-underline transition-colors hover:text-foreground',
+                ),
+              ],
+              [label],
+            ),
+          ),
         ),
       ],
     ),
