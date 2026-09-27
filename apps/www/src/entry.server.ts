@@ -521,26 +521,42 @@ const renderResponse = async (request: Request): Promise<Server.Responded> => {
     : null
 
   const endpoint = endpointFor(route)
+  const showDetailSlug = Route.guards.Detail(route) && route.kind === 'shows' ? route.slug : null
+
+  const optionalShowRequest = (path: string) =>
+    Effect.tryPromise(() => apiRequest(ownedRequest, path, { method: 'GET' })).pipe(
+      Effect.orElseSucceed(() => null),
+    )
+
+  const showDetailRequests = showDetailSlug
+    ? Effect.runPromise(
+        Effect.all(
+          {
+            list: optionalShowRequest('/api/shows?limit=100&offset=0'),
+            episodes: optionalShowRequest(
+              `/api/shows/${encodeURIComponent(showDetailSlug)}/episodes?limit=100&offset=0`,
+            ),
+            metadata: optionalShowRequest(
+              `/api/site-metadata/show/${encodeURIComponent(showDetailSlug)}`,
+            ),
+          },
+          { concurrency: 'unbounded' },
+        ),
+      )
+    : null
 
   const response = endpoint
     ? await apiRequest(ownedRequest, endpoint, { method: 'GET' }).catch(() => null)
     : null
 
   const payload = response?.ok ? await json(response) : null
+  const showDetailData = showDetailRequests ? await showDetailRequests : null
 
   const showMetadata =
-    Route.guards.Detail(route) && route.kind === 'shows' && response?.ok
-      ? apiRequest(ownedRequest, `/api/site-metadata/show/${encodeURIComponent(route.slug)}`, {
-          method: 'GET',
-        })
-          .then(async (metadataResponse) =>
-            metadataResponse.ok
-              ? Option.getOrNull(
-                  Schema.decodeUnknownOption(SiteMetadata)(await metadataResponse.json()),
-                )
-              : null,
-          )
-          .catch(() => null)
+    response?.ok && showDetailData?.metadata?.ok
+      ? Option.getOrNull(
+          Schema.decodeUnknownOption(SiteMetadata)(await showDetailData.metadata.json()),
+        )
       : null
 
   const resolved =
@@ -615,19 +631,7 @@ const renderResponse = async (request: Request): Promise<Server.Responded> => {
     route.kind === 'shows' &&
     response?.ok
   ) {
-    const detailEpisodes = Route.guards.Detail(route)
-      ? apiRequest(
-          ownedRequest,
-          `/api/shows/${encodeURIComponent(route.slug)}/episodes?limit=100&offset=0`,
-          { method: 'GET' },
-        ).catch(() => null)
-      : null
-
-    const allResponse = Route.guards.Listing(route)
-      ? response
-      : await apiRequest(ownedRequest, '/api/shows?limit=100&offset=0', { method: 'GET' }).catch(
-          () => null,
-        )
+    const allResponse = Route.guards.Listing(route) ? response : (showDetailData?.list ?? null)
 
     const all = allResponse?.ok
       ? Schema.decodeUnknownSync(GetAllShowsResponse)(
@@ -641,12 +645,13 @@ const renderResponse = async (request: Request): Promise<Server.Responded> => {
         : (url.searchParams.get('show') ?? all.data[0]?.slug ?? null)
 
       const episodesResponse = selectedSlug
-        ? await (detailEpisodes ??
-            apiRequest(
+        ? Route.guards.Detail(route)
+          ? (showDetailData?.episodes ?? null)
+          : await apiRequest(
               ownedRequest,
               `/api/shows/${encodeURIComponent(selectedSlug)}/episodes?limit=100&offset=0`,
               { method: 'GET' },
-            ).catch(() => null))
+            ).catch(() => null)
         : null
 
       shows = {
@@ -762,21 +767,22 @@ const renderResponse = async (request: Request): Promise<Server.Responded> => {
       ? metadataKind.get(route.kind)
       : undefined
 
-  const publicMetadata = showMetadata
-    ? await showMetadata
-    : kind && Route.guards.Detail(route) && status === 200
-      ? await apiRequest(
-          ownedRequest,
-          `/api/site-metadata/${kind}/${encodeURIComponent(route.slug)}`,
-          { method: 'GET' },
-        )
-          .then(async (response) =>
-            response.ok
-              ? Option.getOrNull(Schema.decodeUnknownOption(SiteMetadata)(await response.json()))
-              : null,
+  const publicMetadata =
+    showDetailSlug && response?.ok
+      ? showMetadata
+      : kind && Route.guards.Detail(route) && status === 200
+        ? await apiRequest(
+            ownedRequest,
+            `/api/site-metadata/${kind}/${encodeURIComponent(route.slug)}`,
+            { method: 'GET' },
           )
-          .catch(() => null)
-      : null
+            .then(async (response) =>
+              response.ok
+                ? Option.getOrNull(Schema.decodeUnknownOption(SiteMetadata)(await response.json()))
+                : null,
+            )
+            .catch(() => null)
+        : null
 
   const sourceMetadata =
     publicMetadata ?? makeStaticSiteMetadata(title, flags.description, url.pathname)
