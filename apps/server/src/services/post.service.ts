@@ -381,42 +381,46 @@ const loadPostRelations = (rows: Array<PostRow>) =>
 
     if (postIds.length === 0) return { rows: [], creatorsByPostId }
 
-    const creatorsData = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select({
-            postId: postCreators.postId,
-            id: usersTable.id,
-            name: usersTable.name,
-            username: usersTable.username,
-            image: usersTable.image,
-          })
-          .from(postCreators)
-          .innerJoin(usersTable, eq(postCreators.creatorId, usersTable.id))
-          .where(inArray(postCreators.postId, postIds)),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to fetch creators: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'post_creators',
+    const [creatorsData, projectedRows] = yield* Effect.all(
+      [
+        Effect.tryPromise({
+          try: () =>
+            db
+              .select({
+                postId: postCreators.postId,
+                id: usersTable.id,
+                name: usersTable.name,
+                username: usersTable.username,
+                image: usersTable.image,
+              })
+              .from(postCreators)
+              .innerJoin(usersTable, eq(postCreators.creatorId, usersTable.id))
+              .where(inArray(postCreators.postId, postIds)),
+          catch: (error) =>
+            new DatabaseError({
+              message: `Failed to fetch creators: ${getErrorMessage(error)}`,
+              operation: 'select',
+              table: 'post_creators',
+            }),
         }),
-    })
+        Effect.tryPromise({
+          try: () => projectEntityLabelsForRows(db, 'post', rows),
+          catch: (error) =>
+            new DatabaseError({
+              message: getErrorMessage(error),
+              operation: 'select',
+              table: 'labels',
+            }),
+        }),
+      ],
+      { concurrency: 'unbounded' },
+    )
 
     for (const { postId, ...creator } of creatorsData) {
       const creators = creatorsByPostId.get(postId) ?? []
       creators.push(creator)
       creatorsByPostId.set(postId, creators)
     }
-
-    const projectedRows = yield* Effect.tryPromise({
-      try: () => projectEntityLabelsForRows(db, 'post', rows),
-      catch: (error) =>
-        new DatabaseError({
-          message: getErrorMessage(error),
-          operation: 'select',
-          table: 'labels',
-        }),
-    })
 
     return { rows: projectedRows, creatorsByPostId }
   })
@@ -602,33 +606,37 @@ const getAllEffect = (
     })
 
     const postIds = data.map((p) => p.id)
-    const { rows: projectedData, creatorsByPostId } = yield* loadPostRelations(data)
 
-    const sourcesData =
-      postIds.length > 0
-        ? yield* Effect.tryPromise({
-            try: () =>
-              db
-                .select({
-                  postId: blueskyPostSources.postId,
-                  authorDid: blueskyPostSources.authorDid,
-                  authorHandle: blueskyPostSources.authorHandle,
-                  publicUrl: blueskyPostSources.publicUrl,
-                  sourceCreatedAt: blueskyPostSources.sourceCreatedAt,
-                  sourceStatus: blueskyPostSources.sourceStatus,
-                  locallyEdited: blueskyPostSources.locallyEdited,
-                  lastError: blueskyPostSources.lastError,
-                })
-                .from(blueskyPostSources)
-                .where(inArray(blueskyPostSources.postId, postIds)),
-            catch: (error) =>
-              new DatabaseError({
-                message: `Failed to fetch Bluesky sources: ${getErrorMessage(error)}`,
-                operation: 'select',
-                table: 'bluesky_post_sources',
-              }),
-          })
-        : []
+    const [{ rows: projectedData, creatorsByPostId }, sourcesData] = yield* Effect.all(
+      [
+        loadPostRelations(data),
+        postIds.length > 0
+          ? Effect.tryPromise({
+              try: () =>
+                db
+                  .select({
+                    postId: blueskyPostSources.postId,
+                    authorDid: blueskyPostSources.authorDid,
+                    authorHandle: blueskyPostSources.authorHandle,
+                    publicUrl: blueskyPostSources.publicUrl,
+                    sourceCreatedAt: blueskyPostSources.sourceCreatedAt,
+                    sourceStatus: blueskyPostSources.sourceStatus,
+                    locallyEdited: blueskyPostSources.locallyEdited,
+                    lastError: blueskyPostSources.lastError,
+                  })
+                  .from(blueskyPostSources)
+                  .where(inArray(blueskyPostSources.postId, postIds)),
+              catch: (error) =>
+                new DatabaseError({
+                  message: `Failed to fetch Bluesky sources: ${getErrorMessage(error)}`,
+                  operation: 'select',
+                  table: 'bluesky_post_sources',
+                }),
+            })
+          : Effect.succeed([]),
+      ],
+      { concurrency: 'unbounded' },
+    )
 
     const sourceByPostId = new Map(
       sourcesData.flatMap(({ postId, ...source }) => (postId ? [[postId, source] as const] : [])),
