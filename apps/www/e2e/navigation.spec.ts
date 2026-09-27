@@ -46,6 +46,6 @@ test('a menu opened during navigation stays open when the page arrives', async (
   await page.getByRole('button', { name: 'Menu', exact: true }).click()
   await expect(page.getByRole('complementary', { name: 'Menu', exact: true })).toBeVisible()
   release()
-  await expect(page.getByRole('heading', { name: 'Editorial', exact: true })).toBeVisible()
+  await expect(page.getByRole('status', { name: 'Loading page' })).toHaveCount(0)
   await expect(page.getByRole('complementary', { name: 'Menu', exact: true })).toBeVisible()
 })

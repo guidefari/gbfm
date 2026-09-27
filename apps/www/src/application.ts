@@ -17,6 +17,7 @@ import * as Creator from './creator'
 import * as Dashboard from './dashboard'
 import { DashboardDocument } from './dashboard/document'
 import { updateDocumentHead } from './document-head'
+import { editorialList } from './editorial-list'
 import { invitationView } from './invitation'
 import { newsletterView } from './newsletter'
 import * as Player from './player'
@@ -1012,21 +1013,27 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
         : Route.match(model.route, {
             Home: () => home(model, h),
             Listing: ({ kind }) =>
-              h.section(
-                [h.Class('page')],
-                [
-                  h.h1([], [model.flags.title]),
-                  model.flags.failure ? h.p([h.Role('alert')], [model.flags.failure]) : h.empty,
-                  kind === 'tags'
-                    ? model.flags.items.length
-                      ? h.nav(
-                          [h.Class('detail-actions'), h.AriaLabel('Tags')],
-                          model.flags.items.map((item) => link(h, item.href, item.title)),
-                        )
-                      : h.p([], ['No tags yet.'])
-                    : cards(model, h),
-                ],
-              ),
+              kind === 'editorial'
+                ? editorialList(
+                    model.flags.items,
+                    model.flags.renderedAt,
+                    model.flags.failure ?? null,
+                  )
+                : h.section(
+                    [h.Class('page')],
+                    [
+                      h.h1([], [model.flags.title]),
+                      model.flags.failure ? h.p([h.Role('alert')], [model.flags.failure]) : h.empty,
+                      kind === 'tags'
+                        ? model.flags.items.length
+                          ? h.nav(
+                              [h.Class('detail-actions'), h.AriaLabel('Tags')],
+                              model.flags.items.map((item) => link(h, item.href, item.title)),
+                            )
+                          : h.p([], ['No tags yet.'])
+                        : cards(model, h),
+                    ],
+                  ),
             Detail: ({ kind }) =>
               kind === 'tweets'
                 ? tweetView(model, h)

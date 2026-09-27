@@ -26,6 +26,7 @@ export const artwork = (
   alt: string,
   sizes: string,
   eager = false,
+  className = '',
 ) => {
   const original = src || fallback
   const responsive = artworkUrl(original, 640) !== original
@@ -33,7 +34,7 @@ export const artwork = (
   return h.img([
     h.Src(artworkUrl(original, 640)),
     h.Alt(alt),
-    h.Class('artwork'),
+    h.Class(`artwork ${className}`.trim()),
     h.Width('640'),
     h.Height('640'),
     h.Sizes(sizes),
