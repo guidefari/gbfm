@@ -224,7 +224,7 @@ const masthead = <M>(
               )
             : h.empty,
           h.div(
-            [h.Class('mt-6 flex flex-wrap items-center gap-3')],
+            [h.Class('mt-6 flex min-h-10 flex-wrap items-center gap-3')],
             [latest ? latestButton(h, latest, playback, interactive, false) : h.empty, actions],
           ),
         ],
