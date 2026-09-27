@@ -28,7 +28,7 @@ import * as PublicActions from './public-actions'
 import { profileView } from './public-profile'
 import { richContent } from './rich-content'
 import * as Search from './search'
-import { type Episode, ShowsDocument, showsView } from './shows'
+import { type Episode, ShowsDocument, showImages, showsView } from './shows'
 import { pageSkeleton } from './skeletons'
 import { type SpotifyConnection, SpotifyConnectionLive } from './spotify'
 import { staticPages } from './static-pages'
@@ -243,6 +243,7 @@ export const Message = defineMessageUnion({
   FailedReplies: { slug: Schema.String },
   NavigationCompleted: {},
   PrefetchedPage: { flags: Flags, key: Schema.String },
+  PrefetchRequested: { href: Schema.String },
 })
 
 export type Message = typeof Message.Type
@@ -374,9 +375,10 @@ const PrefetchPage = Command.define('Navigation.Prefetch', {
       Effect.tap((flags) =>
         Effect.promise(() =>
           Promise.all(
-            (flags.tweet ? tweetImages(flags.tweet) : []).map(({ src, sizes }) =>
-              preloadArtwork(src, sizes),
-            ),
+            [
+              ...(flags.tweet ? tweetImages(flags.tweet) : []),
+              ...(flags.shows ? showImages(flags.shows) : []),
+            ].map(({ src, sizes }) => preloadArtwork(src, sizes)),
           ),
         ),
       ),
@@ -583,6 +585,22 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
           return { ...shown, commands: [...commands, ...(shown.commands ?? [])] }
         },
       })
+    },
+    PrefetchRequested: ({ href }) => {
+      const key = pageKey(href)
+
+      if (!isCacheable(key)) return { model }
+
+      return Option.match(
+        AsyncData.loadIfMissing(AsyncData.fromOptionOrIdle(HashMap.get(model.pageCache, key))),
+        {
+          onNone: () => ({ model }),
+          onSome: (loading) => ({
+            model: { ...model, pageCache: HashMap.set(model.pageCache, key, loading) },
+            commands: [PrefetchPage({ href })],
+          }),
+        },
+      )
     },
     PrefetchedPage: ({ flags, key }) => ({
       model: {
@@ -1272,6 +1290,7 @@ const pendingShowSlug = (route: Route, shows: ShowsDocument) =>
 
 export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
   const playback = {
+    prefetch: (href: string) => Message.PrefetchRequested({ href }),
     play: (episode: Episode) =>
       Message.GotPlayerMessage({ message: Player.Message.PlayTrack({ track: episode }) }),
     toggle: Message.GotPlayerMessage({ message: Player.Message.TogglePlayPause() }),

@@ -21,11 +21,28 @@ export type Episode = (typeof GetShowEpisodesResponse.Type.data)[number]
 type Show = ShowsDocument['shows'][number]
 
 export type ShowsPlayback<M> = {
+  readonly prefetch: (href: string) => M
   readonly play: (episode: Episode) => M
   readonly toggle: M
   readonly currentId: string | null
   readonly isPlaying: boolean
 }
+
+const mastheadArtSizes = '(min-width: 640px) 224px, 60vw'
+
+const episodeArtSizes = '64px'
+
+/** The artwork a show page paints first, for warming the image cache before navigating to it. */
+export const showImages = (document: ShowsDocument) => [
+  ...document.shows.flatMap((show) =>
+    show.slug === document.selectedSlug
+      ? [{ src: show.thumbnailUrl, sizes: mastheadArtSizes }]
+      : [],
+  ),
+  ...(document.episodes?.data ?? [])
+    .slice(0, 8)
+    .map((episode) => ({ src: episode.thumbnailUrl, sizes: episodeArtSizes })),
+]
 
 const hostLine = (show: Show) => show.hosts.map((host) => host.name).join(', ')
 
@@ -33,7 +50,12 @@ const showHref = (show: Show) => `/shows/${encodeURIComponent(show.slug)}`
 
 const mixHref = (episode: Episode) => `/mixes/${encodeURIComponent(episode.slug)}`
 
-const dial = <M>(h: HtmlBuilder<M>, shows: ReadonlyArray<Show>, selectedSlug: string | null) =>
+const dial = <M>(
+  h: HtmlBuilder<M>,
+  shows: ReadonlyArray<Show>,
+  selectedSlug: string | null,
+  prefetch: (href: string) => M,
+) =>
   h.nav(
     [
       h.AriaLabel('Shows'),
@@ -48,7 +70,9 @@ const dial = <M>(h: HtmlBuilder<M>, shows: ReadonlyArray<Show>, selectedSlug: st
         [
           h.Key(show.id),
           h.Href(showHref(show)),
-          ...(current ? [h.AriaCurrent('page')] : []),
+          ...(current
+            ? [h.AriaCurrent('page')]
+            : [h.OnMouseEnter(prefetch(showHref(show))), h.OnFocus(prefetch(showHref(show)))]),
           h.Class(
             `-mb-px flex shrink-0 items-center gap-3 border-b-2 py-3 pr-5 no-underline transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${
               current
@@ -152,7 +176,7 @@ const masthead = <M>(
       artwork(
         show.thumbnailUrl,
         show.title,
-        '(min-width: 640px) 224px, 60vw',
+        mastheadArtSizes,
         true,
         'show-masthead-art w-3/5 max-w-56 rounded-sm shadow-2xl sm:w-full sm:max-w-none',
       ),
@@ -319,7 +343,7 @@ const episodeRow = <M>(
       episodePlay(h, episode, number, playback, interactive),
       h.a(
         [h.Href(mixHref(episode)), h.Tabindex(-1), h.AriaHidden(true), h.Class('hidden sm:block')],
-        [artwork(episode.thumbnailUrl, '', '64px', false, 'h-16 w-16 rounded-sm')],
+        [artwork(episode.thumbnailUrl, '', episodeArtSizes, false, 'h-16 w-16 rounded-sm')],
       ),
       h.div(
         [h.Class('min-w-0')],
@@ -418,7 +442,7 @@ export const showsView = <M>(
   return h.div(
     [h.Class('mx-auto max-w-5xl px-4 pb-16 pt-4 sm:pt-6')],
     [
-      dial(h, document.shows, document.selectedSlug),
+      dial(h, document.shows, document.selectedSlug, playback.prefetch),
       selected
         ? h.div(
             [h.Key(selected.id), h.Class('show-scope')],
