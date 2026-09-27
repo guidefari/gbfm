@@ -28,6 +28,7 @@ import { profileView } from './public-profile'
 import { richContent } from './rich-content'
 import * as Search from './search'
 import { ShowsDocument, showsView } from './shows'
+import { pageSkeleton } from './skeletons'
 import { type SpotifyConnection, SpotifyConnectionLive } from './spotify'
 import { staticPages } from './static-pages'
 import { stationNav } from './station-nav'
@@ -181,6 +182,7 @@ export const Model = Schema.Struct({
   search: Search.Model,
   skipSeen: Schema.Boolean,
   loading: Schema.Boolean,
+  pendingPath: Schema.NullOr(Schema.String),
   interactive: Schema.Boolean,
   navigationId: Schema.Number,
   error: Schema.NullOr(Schema.String),
@@ -442,6 +444,7 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
       model: {
         ...model,
         loading: true,
+        pendingPath: url.pathname,
         menuOpen: false,
         navigationId: model.navigationId + 1,
         player: { ...model.player, fullscreen: false, queueOpen: false },
@@ -494,7 +497,12 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
     FailedPage: ({ navigationId }) => ({
       model:
         navigationId === model.navigationId
-          ? { ...model, loading: false, error: 'This page could not be loaded. Please try again.' }
+          ? {
+              ...model,
+              loading: false,
+              pendingPath: null,
+              error: 'This page could not be loaded. Please try again.',
+            }
           : model,
     }),
     NavigationCompleted: () => ({ model }),
@@ -540,6 +548,7 @@ export const init: Runtime.ApplicationInit<Model, Message, Flags, Services> = (f
       search: Search.initialModel,
       skipSeen: flags.skipSeen,
       loading: false,
+      pendingPath: null,
       interactive: false,
       navigationId: 0,
       error: null,
@@ -1117,7 +1126,7 @@ const tweetView = (model: Model, h: HtmlBuilder<Message>) => {
 }
 
 export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
-  const content =
+  const page =
     model.flags.status === 404
       ? h.section([h.Class('page')], [h.h1([], ['Page not found']), link(h, '/', 'Return home')])
       : model.flags.shows
@@ -1225,6 +1234,13 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
               ),
           })
 
+  const skeleton =
+    model.loading && model.pendingPath
+      ? pageSkeleton(parseRoute(model.pendingPath), model.route)
+      : null
+
+  const content = skeleton ?? page
+
   return {
     title:
       model.flags.title === 'goosebumps.fm'
@@ -1241,7 +1257,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
       [h.Class('site')],
       [
         stationNav(h, {
-          pathname: new URL(model.flags.url).pathname,
+          pathname: model.pendingPath ?? new URL(model.flags.url).pathname,
           links: nav,
           accountName: model.flags.principal
             ? (model.flags.principal.name ?? model.flags.principal.username ?? '?')
