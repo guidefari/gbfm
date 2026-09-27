@@ -6,6 +6,12 @@ import {
 import { GetAudioByTypeResponse } from '@gbfm/api/audio'
 import { EmailLogsResponse } from '@gbfm/api/email'
 import { GetFavoritesResponse } from '@gbfm/api/favorites'
+import {
+  ImportSpotifyPlaylistResponse,
+  PlaylistListResponse,
+  PlaylistTrackEntry,
+  SyncPlaylistLinksResponse,
+} from '@gbfm/api/music'
 import { GetMusicRemindersResponse } from '@gbfm/api/music-reminders'
 import { GetPostsResponse } from '@gbfm/api/post'
 import { SearchResults } from '@gbfm/api/search'
@@ -31,6 +37,10 @@ export const DashboardDocument = Schema.Struct({
   telemetry: Schema.optional(AdminTelemetryResponse),
   users: Schema.optional(AdminUsers),
   shows: Schema.optional(GetAllShowsResponse),
+  playlists: Schema.optional(PlaylistListResponse),
+  playlistTracks: Schema.optional(Schema.Array(PlaylistTrackEntry)),
+  playlistImport: Schema.optional(ImportSpotifyPlaylistResponse),
+  playlistSync: Schema.optional(SyncPlaylistLinksResponse),
 })
 
 export type DashboardDocument = typeof DashboardDocument.Type
@@ -56,6 +66,21 @@ export const parseDashboardDocument = (
   input: unknown,
 ): Effect.Effect<DashboardDocument, Schema.SchemaError | UnsupportedDashboardEndpoint> => {
   const pathname = new URL(path, 'http://localhost').pathname
+
+  if (/^\/api\/music\/playlists\/[^/]+\/tracks$/.test(pathname))
+    return Schema.decodeUnknownEffect(Schema.Array(PlaylistTrackEntry))(input).pipe(
+      Effect.map((playlistTracks) => ({ ...emptyDocument, playlistTracks })),
+    )
+
+  if (pathname === '/api/music/playlists/import/spotify')
+    return Schema.decodeUnknownEffect(ImportSpotifyPlaylistResponse)(input).pipe(
+      Effect.map((playlistImport) => ({ ...emptyDocument, playlistImport })),
+    )
+
+  if (/^\/api\/music\/playlists\/[^/]+\/sync-links$/.test(pathname))
+    return Schema.decodeUnknownEffect(SyncPlaylistLinksResponse)(input).pipe(
+      Effect.map((playlistSync) => ({ ...emptyDocument, playlistSync })),
+    )
   const catalog = parseCatalogDocument(pathname, input)
 
   if (catalog) return catalog

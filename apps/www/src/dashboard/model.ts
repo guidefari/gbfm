@@ -9,6 +9,7 @@ import { SpotifyConnection, SpotifyStatus, disconnected } from '../spotify'
 import { readTheme, saveTheme, Theme } from '../theme'
 import { catalogPayload, entityRoute, Kind, tabs } from './catalog'
 import { DashboardDocument, Row } from './document'
+import * as Playlists from './playlists'
 import { DashboardService } from './service'
 import * as Sessions from './sessions'
 import * as Shows from './shows'
@@ -34,6 +35,7 @@ export const Model = Schema.Struct({
   users: DashboardDocument.fields.users,
   sessions: Sessions.Model,
   shows: Shows.Model,
+  playlists: Playlists.Model,
   catalogRevision: Schema.Number,
   catalogNotice: Schema.String,
 })
@@ -134,6 +136,7 @@ export const Message = defineMessageUnion({
   CatalogLinksFailed: { revision: Schema.Number },
   GotSessionMessage: { message: Sessions.Message },
   GotShowMessage: { message: Shows.Message },
+  GotPlaylistMessage: { message: Playlists.Message },
   LoadRequested: {},
   Loaded: { document: DashboardDocument },
   Failed: { message: Schema.String },
@@ -345,6 +348,7 @@ export const initialModel = (section: string, principal: Principal): Model => ({
   spotify: disconnected,
   sessions: Sessions.initialModel,
   shows: Shows.initialModel,
+  playlists: Playlists.initialModel,
   catalogRevision: 0,
   catalogNotice: '',
 })
@@ -381,6 +385,17 @@ export const init =
 
 export const update = (model: Model, message: Message): Update.Return<Model, Message, Services> =>
   Message.match<Update.Return<Model, Message, Services>>(message, {
+    GotPlaylistMessage: ({ message }) => {
+      if (model.principal.role !== 'admin' || model.section !== 'playlists') return { model }
+      const child = Playlists.update(model.playlists, message)
+
+      return {
+        model: { ...model, playlists: child.model },
+        commands: Command.mapMessages(child.commands ?? [], (message) =>
+          Message.GotPlaylistMessage({ message }),
+        ),
+      }
+    },
     SaveCatalogEntity: () => writeCatalog(model, 'save'),
     DeleteCatalogEntity: () => writeCatalog(model, 'delete'),
     AddCatalogLink: () => writeCatalog(model, 'add-link'),
@@ -491,6 +506,7 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
           telemetry: document.telemetry,
           users: document.users,
           shows: { ...Shows.initialModel, listing: document.shows },
+          playlists: { ...Playlists.initialModel, listing: document.playlists ?? [] },
           error: null,
           catalogRevision: model.catalogRevision + 1,
         },

@@ -272,6 +272,7 @@ export const parseCatalogDocument = (
       return Schema.decodeUnknownEffect(PlaylistListResponse)(input).pipe(
         Effect.map((items) => ({
           ...emptyDocument,
+          playlists: items,
           fields: { tab: 'playlists' },
           rows: items.map((item) => row(item, item.title, 'playlist')),
         })),

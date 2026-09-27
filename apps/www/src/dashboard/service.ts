@@ -77,7 +77,12 @@ export const makeDashboardServiceLayer = (fetchImplementation: typeof fetch = gl
               }),
       }).pipe(
         Effect.flatMap((input) =>
-          method === 'GET' ? parseDashboardDocument(path, input) : Effect.succeed(emptyDocument),
+          method === 'GET' ||
+          (method === 'POST' &&
+            (path === '/api/music/playlists/import/spotify' ||
+              /^\/api\/music\/playlists\/[^/]+\/sync-links$/.test(path)))
+            ? parseDashboardDocument(path, input)
+            : Effect.succeed(emptyDocument),
         ),
         Effect.mapError((cause) =>
           cause instanceof DashboardRequestError
