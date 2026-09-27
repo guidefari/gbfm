@@ -1,5 +1,5 @@
 import { MicroPostNeighboursResponse, MicroPostRandomUnreadResponse } from '@gbfm/api/navigation'
-import { MicroPostScreenResponse } from '@gbfm/api/post'
+import { GetPostTagsResponse, GetPostsByTagResponse, MicroPostScreenResponse } from '@gbfm/api/post'
 import { PublicProfileResponse } from '@gbfm/api/profile'
 import { ResolveResult } from '@gbfm/api/resolve'
 import { GetAllShowsResponse, GetShowEpisodesResponse } from '@gbfm/api/shows'
@@ -13,6 +13,7 @@ import {
 import { Effect, Match, Option, Schema } from 'effect'
 import * as Server from 'foldkit/experimental/server'
 import template from 'virtual:gbfm-document'
+import changelog from 'virtual:repo-changelog'
 
 import {
   applicationConfig,
@@ -53,8 +54,11 @@ export const apiRequest = async (
 ): Promise<Response> => {
   const headers = new Headers(init?.headers ?? request.headers)
   const cookie = request.headers.get('cookie')
+  const traceparent = request.headers.get('traceparent')
 
   if (cookie) headers.set('cookie', cookie)
+
+  if (traceparent) headers.set('traceparent', traceparent)
   headers.delete('host')
   headers.delete('content-length')
   headers.set('x-request-id', resolveRequestId(request.headers.get('x-request-id')))
@@ -97,7 +101,7 @@ export const endpointFor = (route: Route): string | null =>
     Listing: ({ kind }) =>
       kind === 'shows' ? '/api/shows?limit=100&offset=0' : (endpoints.get(kind) ?? null),
     Detail: ({ kind, slug }) => {
-      if (kind === 'tags') return `/api/content/posts/micro?tag=${encodeURIComponent(slug)}`
+      if (kind === 'tags') return `/api/content/tag/${encodeURIComponent(slug)}`
       const root = endpoints.get(kind)
 
       return root
@@ -145,8 +149,12 @@ const contentItems = (payload: Schema.Json, path: string): ReadonlyArray<Content
         creators: Option.getOrUndefined(
           Schema.decodeUnknownOption(ContentItem.fields.creators)(item.creators),
         ),
+        tags: Option.getOrNull(Schema.decodeUnknownOption(ContentItem.fields.tags)(item.tags)),
+        streamingLinks: Option.getOrNull(
+          Schema.decodeUnknownOption(ContentItem.fields.streamingLinks)(item.streamingLinks),
+        ),
         href: `${path}/${encodeURIComponent(slug)}`,
-        meta: text(item.createdAt) || null,
+        meta: text(item.releaseDate, text(item.createdAt)) || null,
       },
     ]
   })
@@ -467,7 +475,21 @@ const renderResponse = async (request: Request): Promise<Server.Responded> => {
       ? `/${route.kind === 'tweets' ? 'tweet' : route.kind}`
       : url.pathname
 
-  const items = contentItems(payload, listPath)
+  const items =
+    Route.guards.Listing(route) && route.kind === 'tags' && response?.ok
+      ? contentItems(
+          Schema.decodeUnknownSync(GetPostTagsResponse)(payload).map((tag) => ({
+            id: tag,
+            slug: tag,
+            title: `#${tag}`,
+          })),
+          '/tags',
+        )
+      : Route.guards.Detail(route) && route.kind === 'tags' && response?.ok
+        ? Schema.decodeUnknownSync(GetPostsByTagResponse)(payload).data.flatMap((post) =>
+            contentItems(post, post.type === 'micro' ? '/tweet' : '/editorial'),
+          )
+        : contentItems(payload, listPath)
 
   let shows: ShowsDocument | null = null
 
@@ -512,6 +534,7 @@ const renderResponse = async (request: Request): Promise<Server.Responded> => {
   }
 
   const title =
+    (Route.guards.Detail(route) && route.kind === 'tags' ? `#${route.slug}` : null) ??
     shows?.shows.find((show) => show.slug === shows.selectedSlug)?.title ??
     profile?.name ??
     tweet?.post.title ??
@@ -552,6 +575,7 @@ const renderResponse = async (request: Request): Promise<Server.Responded> => {
     dashboard,
     profile,
     shows,
+    changelog: Route.guards.Static(route) && route.page === 'changelog' ? changelog : null,
     metadata: null,
     failure: status === 503 ? 'Content is unavailable right now.' : null,
   }
@@ -676,7 +700,14 @@ export const renderPage = async (request: Request): Promise<Server.EntryResult> 
   }
 
   try {
-    const result = await renderResponse(owned)
+    const result = import.meta.env.DEV
+      ? Server.Responded(
+          await (
+            await import('./telemetry/local-request-tracing')
+          ).traceLocalRequest(owned, async (traced) => (await renderResponse(traced)).response),
+        )
+      : await renderResponse(owned)
+
     const response = new Response(result.response.body, result.response)
     response.headers.set('x-request-id', requestId)
     await Effect.runPromise(

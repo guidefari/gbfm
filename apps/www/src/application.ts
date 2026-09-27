@@ -2,6 +2,7 @@ import { AudioResponse } from '@gbfm/api/audio'
 import { MicroPostNeighboursResponse } from '@gbfm/api/navigation'
 import { MicroPostScreenResponse, MicroPostScreenRepliesResponse } from '@gbfm/api/post'
 import { PublicProfileResponse } from '@gbfm/api/profile'
+import { ReleaseResponse } from '@gbfm/api/release'
 import { canCreatePosts, isRole } from '@gbfm/core/roles'
 import { SiteMetadata } from '@gbfm/site-metadata'
 import { Effect, Layer, Match, Schema } from 'effect'
@@ -46,6 +47,8 @@ export const ContentItem = Schema.Struct({
   audioUrl: Schema.NullOr(Schema.String),
   audioType: Schema.NullOr(AudioResponse.fields.type),
   creators: AudioResponse.fields.creators,
+  tags: ReleaseResponse.fields.tags,
+  streamingLinks: ReleaseResponse.fields.streamingLinks,
 })
 
 export type ContentItem = typeof ContentItem.Type
@@ -64,6 +67,7 @@ export const Flags = Schema.Struct({
   dashboard: Schema.NullOr(DashboardDocument),
   profile: Schema.NullOr(PublicProfileResponse),
   shows: Schema.NullOr(ShowsDocument),
+  changelog: Schema.NullOr(Schema.String),
   metadata: Schema.NullOr(SiteMetadata),
   failure: Schema.NullOr(Schema.String),
 })
@@ -677,6 +681,19 @@ const detail = (model: Model, h: HtmlBuilder<Message>, kind: string) => {
             ],
           )
         : h.empty,
+      h.nav(
+        [h.Class('detail-actions'), h.AriaLabel('Listen on')],
+        (item.streamingLinks ?? []).map((stream) =>
+          h.a(
+            [h.Href(stream.url), h.Target('_blank'), h.Rel('noopener noreferrer')],
+            [stream.platform],
+          ),
+        ),
+      ),
+      h.nav(
+        [h.Class('detail-actions'), h.AriaLabel('Content tags')],
+        (item.tags ?? []).map((tag) => link(h, `/tags/${encodeURIComponent(tag)}`, `#${tag}`)),
+      ),
       richContent(item.content),
     ],
   )
@@ -904,21 +921,40 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
           )
         : Route.match(model.route, {
             Home: () => home(model, h),
-            Listing: () =>
+            Listing: ({ kind }) =>
               h.section(
                 [h.Class('page')],
                 [
                   h.h1([], [model.flags.title]),
                   model.flags.failure ? h.p([h.Role('alert')], [model.flags.failure]) : h.empty,
-                  cards(model, h),
+                  kind === 'tags'
+                    ? model.flags.items.length
+                      ? h.nav(
+                          [h.Class('detail-actions'), h.AriaLabel('Tags')],
+                          model.flags.items.map((item) => link(h, item.href, item.title)),
+                        )
+                      : h.p([], ['No tags yet.'])
+                    : cards(model, h),
                 ],
               ),
             Detail: ({ kind }) =>
               kind === 'tweets'
                 ? tweetView(model, h)
-                : model.flags.profile
-                  ? profileView(model.flags.profile)
-                  : detail(model, h, kind),
+                : kind === 'tags'
+                  ? h.section(
+                      [h.Class('page')],
+                      [
+                        h.h1([], [model.flags.title]),
+                        model.flags.failure
+                          ? h.p([h.Role('alert')], [model.flags.failure])
+                          : model.flags.items.length === 0
+                            ? h.p([], ['No posts with this tag yet.'])
+                            : cards(model, h),
+                      ],
+                    )
+                  : model.flags.profile
+                    ? profileView(model.flags.profile)
+                    : detail(model, h, kind),
             Auth: ({ action }) => auth(h, action, new URL(model.flags.url)),
             Composer: () =>
               h.submodel({
@@ -956,13 +992,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
                         ...(staticPages.get(page)?.paragraphs ?? []).map((text) =>
                           h.p([h.Class('content-paragraph')], [text]),
                         ),
-                        page === 'changelog'
-                          ? link(
-                              h,
-                              'https://github.com/guidefari/gbfm/blob/prod/CHANGELOG.md',
-                              'Read the complete release history',
-                            )
-                          : h.empty,
+                        page === 'changelog' ? richContent(model.flags.changelog ?? '') : h.empty,
                       ],
                     ),
             NotFound: () =>

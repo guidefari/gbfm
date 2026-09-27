@@ -3,14 +3,17 @@ import { Layer } from 'effect'
 
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { user } from '@/db/auth.schema'
+import { replaceEntityLabels } from '@/db/labels'
 import { makeDatabaseClient } from '@/db/layer'
 import {
   musicEntityLinksTable,
   musicEntityTypesTable,
+  musicLabelsTable,
   musicPlatformsTable,
   musicTracksTable,
 } from '@/db/music-entity.schema'
 import { postCreators, postsTable } from '@/db/post.schema'
+import { releasesTable } from '@/db/release.schema'
 import { seedLocalUsers } from '@/db/seed-local-users'
 import { showCreators, showsTable } from '@/db/show.schema'
 import { ConfigService, createConfig } from '@/services/config.service'
@@ -148,6 +151,40 @@ const [rootPost] = await database
   .returning()
 
 if (!rootPost) throw new Error('Local E2E tweet was not seeded')
+
+const [editorial] = await database
+  .insert(postsTable)
+  .values({
+    slug: 'e2e-listening-notes',
+    title: 'Local listening notes',
+    content: 'An editorial about independent music.',
+    type: 'post',
+    draft: false,
+  })
+  .returning()
+
+if (!editorial) throw new Error('Local E2E editorial was not seeded')
+
+for (const post of [rootPost, editorial]) {
+  await replaceEntityLabels(database, 'post', post.id, { tags: ['local-music'] })
+}
+
+const labelId = crypto.randomUUID()
+await database.insert(musicLabelsTable).values({
+  id: labelId,
+  name: 'Local Records',
+  slug: 'e2e-local-records',
+  publishedAt: new Date('2020-01-01T00:00:00Z'),
+})
+await database.insert(releasesTable).values({
+  labelId,
+  title: 'Local Signals EP',
+  slug: 'e2e-local-signals',
+  content: 'Independent signals from Local Records.',
+  draft: false,
+  releaseDate: new Date('2020-05-14T12:00:00Z'),
+  streamingLinks: [{ platform: 'Bandcamp', url: 'https://example.bandcamp.com/album/signals' }],
+})
 
 const [replyPost] = await database
   .insert(postsTable)

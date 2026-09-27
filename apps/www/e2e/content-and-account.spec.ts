@@ -1,5 +1,47 @@
 import { expect, test } from '@playwright/test'
 
+test('changelog renders release history without JavaScript', async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false })
+  try {
+    const page = await context.newPage()
+    await page.goto(`${process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:5173'}/changelog`)
+    await expect(page.getByRole('heading', { name: 'Changelog', exact: true })).toBeVisible()
+    await expect(
+      page.locator('.rich-content').getByRole('link', { name: '2.100.2', exact: true }),
+    ).toHaveAttribute('href', 'https://github.com/guidefari/gbfm/compare/v2.100.1...v2.100.2')
+  } finally {
+    await context.close()
+  }
+})
+
+test('tags link to all matching public post types and handle an empty tag', async ({ page }) => {
+  await page.goto('/tags')
+  await page.getByRole('link', { name: '#local-music', exact: true }).click()
+  await expect(page.getByRole('heading', { name: '#local-music', exact: true })).toBeVisible()
+  await expect(
+    page.getByRole('link', { name: 'Local listening notes', exact: true }),
+  ).toHaveAttribute('href', '/editorial/e2e-listening-notes')
+  await expect(
+    page.getByRole('link', { name: 'A tweet with a musical reply.', exact: true }),
+  ).toHaveAttribute('href', '/tweet/e2e-music-thread')
+  await page.getByRole('link', { name: 'Local listening notes', exact: true }).click()
+  await expect(
+    page.getByRole('heading', { name: 'Local listening notes', exact: true }),
+  ).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Content tags' })).toContainText('#local-music')
+  await page.goto('/tags/e2e-empty-tag')
+  await expect(page.getByText('No posts with this tag yet.', { exact: true })).toBeVisible()
+})
+
+test('releases show their release date and safe listening links', async ({ page }) => {
+  await page.goto('/releases/e2e-local-signals')
+  await expect(page.getByRole('heading', { name: 'Local Signals EP', exact: true })).toBeVisible()
+  await expect(page.locator('article.content-detail time')).toHaveText('May 14, 2020')
+  const link = page.getByRole('link', { name: 'Bandcamp', exact: true })
+  await expect(link).toHaveAttribute('href', 'https://example.bandcamp.com/album/signals')
+  await expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+})
+
 test('public writing renders Markdown and trusted legacy audio without executing arbitrary markup', async ({
   page,
 }) => {
