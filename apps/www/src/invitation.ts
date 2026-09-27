@@ -33,12 +33,10 @@ export const invitationView = () =>
           h.dl(
             [],
             [
-                ['Stipend', '€100 per mix'],
-                ['Format', 'Guest mix on the main show'],
-                ['Cadence', 'Start with one, open to more'],
-              ].map(([label = '', value = '']) =>
-                h.div([], [h.dt([], [label]), h.dd([], [value])]),
-              ),
+              ['Stipend', '€100 per mix'],
+              ['Format', 'Guest mix on the main show'],
+              ['Cadence', 'Start with one, open to more'],
+            ].map(([label = '', value = '']) => h.div([], [h.dt([], [label]), h.dd([], [value])])),
           ),
         ],
       ),
