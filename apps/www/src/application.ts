@@ -600,19 +600,6 @@ const nav = [
   ['/labels', 'Record Labels'],
 ] as const
 
-const icon = (h: HtmlBuilder<Message>, path: string, className = '') =>
-  h.svg(
-    [
-      h.Class(className),
-      h.ViewBox('0 0 24 24'),
-      h.Fill('none'),
-      h.Stroke('currentColor'),
-      h.StrokeWidth('1.75'),
-      h.AriaHidden(true),
-    ],
-    [h.path([h.D(path)])],
-  )
-
 const link = (h: HtmlBuilder<Message>, href: string, label: string, className = '') =>
   h.a([h.Href(href), h.Class(className)], [label])
 
@@ -1349,23 +1336,30 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
           ? h.div(
               [
                 h.Class(
-                  'pointer-events-none fixed bottom-20 left-1/2 z-40 flex min-h-8 -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-sm border border-border/60 bg-background/95 px-3 py-1.5 font-mono text-xs text-muted-foreground shadow-lg backdrop-blur-sm animate-in fade-in duration-0 delay-400 fill-mode-both',
+                  'pointer-events-none fixed inset-x-0 top-0 z-50 h-0.5 overflow-hidden animate-in fade-in duration-200 delay-150 fill-mode-both',
                 ),
                 h.Role('status'),
                 h.AriaLive('polite'),
                 h.AriaLabel('Loading page'),
               ],
               [
-                icon(
-                  h,
-                  'M21 12a9 9 0 1 1-6.219-8.56',
-                  'h-3.5 w-3.5 [stroke-linecap:round] [stroke-width:2] motion-safe:animate-spin',
+                h.div(
+                  [
+                    h.Class(
+                      'h-full w-2/5 bg-highlight shadow-[0_0_8px_var(--highlight)] motion-safe:animate-[navigation-sweep_1.1s_cubic-bezier(0.65,0,0.35,1)_infinite] motion-reduce:w-full motion-reduce:opacity-60',
+                    ),
+                  ],
+                  [],
                 ),
-                'Loading…',
               ],
             )
           : h.empty,
-        model.error ? h.p([h.Role('alert')], [model.error]) : h.empty,
+        model.error
+          ? h.p(
+              [h.Role('alert'), h.Class('mx-auto max-w-5xl px-4 pt-6 text-sm text-destructive')],
+              [model.error],
+            )
+          : h.empty,
         h.main(
           [],
           [

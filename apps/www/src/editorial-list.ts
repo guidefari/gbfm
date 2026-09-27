@@ -134,7 +134,9 @@ export const editorialList = (
   h.div(
     [h.Class('max-w-2xl mx-auto px-4 py-8')],
     [
-      failure ? h.p([h.Role('alert')], [failure]) : h.empty,
+      failure
+        ? h.p([h.Role('alert'), h.Class('py-8 text-sm text-muted-foreground')], [failure])
+        : h.empty,
       h.div(
         [h.Class('grid gap-3')],
         items.map((item) => listItem(item, renderedAt)),
