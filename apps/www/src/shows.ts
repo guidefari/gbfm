@@ -74,6 +74,66 @@ const dial = <M>(h: HtmlBuilder<M>, shows: ReadonlyArray<Show>, selectedSlug: st
 const primaryButton =
   'inline-flex h-10 items-center gap-2 rounded-sm border-0 bg-highlight px-4 text-sm font-bold text-highlight-foreground transition-opacity hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
 
+const latestButton = <M>(
+  h: HtmlBuilder<M>,
+  latest: Episode,
+  playback: ShowsPlayback<M>,
+  interactive: boolean,
+  compact: boolean,
+) => {
+  const isCurrent = latest.id === playback.currentId
+  const playing = isCurrent && playback.isPlaying
+  const label = isCurrent ? (playback.isPlaying ? 'Pause' : 'Resume') : 'Play latest'
+
+  return h.button(
+    [
+      h.Type('button'),
+      h.Disabled(!interactive),
+      h.OnClick(isCurrent ? playback.toggle : playback.play(latest)),
+      ...(compact ? [h.AriaLabel(label), h.Title(label)] : []),
+      h.Class(compact ? `${primaryButton} h-9 px-3` : primaryButton),
+    ],
+    [
+      lucide(playing ? iconPaths.pause : iconPaths.play, 'h-4 w-4 fill-current'),
+      compact ? h.span([h.Class('hidden sm:inline')], [label]) : label,
+    ],
+  )
+}
+
+/** Folds out of the masthead as it scrolls away; hidden where scroll timelines are unsupported. */
+const compactBar = <M>(
+  h: HtmlBuilder<M>,
+  show: Show,
+  latest: Episode | null,
+  playback: ShowsPlayback<M>,
+  interactive: boolean,
+) =>
+  h.div(
+    [h.Class('sticky top-0 z-30 h-0')],
+    [
+      h.div(
+        [
+          h.Class(
+            'show-compact absolute inset-x-0 top-0 -mx-4 flex h-16 items-center gap-3 border-b border-border bg-background/90 px-4 backdrop-blur-md',
+          ),
+        ],
+        [
+          artwork(show.thumbnailUrl, '', '40px', false, 'h-10 w-10 shrink-0 rounded-sm shadow-md'),
+          h.div(
+            [h.Class('min-w-0 flex-1 leading-tight')],
+            [
+              h.p([h.Class('m-0 truncate text-base font-black tracking-tight')], [show.title]),
+              show.hosts.length
+                ? h.p([h.Class('m-0 truncate text-xs text-muted-foreground')], [hostLine(show)])
+                : h.empty,
+            ],
+          ),
+          latest ? latestButton(h, latest, playback, interactive, true) : h.empty,
+        ],
+      ),
+    ],
+  )
+
 const masthead = <M>(
   h: HtmlBuilder<M>,
   show: Show,
@@ -82,20 +142,22 @@ const masthead = <M>(
   actions: Html,
   interactive: boolean,
 ) => {
-  const latestIsCurrent = latest !== null && latest.id === playback.currentId
-
   return h.header(
-    [h.Class('grid gap-6 py-8 sm:grid-cols-[minmax(0,14rem)_1fr] sm:items-end sm:gap-10 sm:py-12')],
+    [
+      h.Class(
+        'show-masthead grid gap-6 py-8 sm:grid-cols-[minmax(0,14rem)_1fr] sm:items-end sm:gap-10 sm:py-12',
+      ),
+    ],
     [
       artwork(
         show.thumbnailUrl,
         show.title,
         '(min-width: 640px) 224px, 60vw',
         true,
-        'w-3/5 max-w-56 rounded-sm shadow-2xl sm:w-full sm:max-w-none',
+        'show-masthead-art w-3/5 max-w-56 rounded-sm shadow-2xl sm:w-full sm:max-w-none',
       ),
       h.div(
-        [h.Class('min-w-0')],
+        [h.Class('show-masthead-copy min-w-0')],
         [
           h.h1(
             [
@@ -122,26 +184,7 @@ const masthead = <M>(
             : h.empty,
           h.div(
             [h.Class('mt-6 flex flex-wrap items-center gap-3')],
-            [
-              latest
-                ? h.button(
-                    [
-                      h.Type('button'),
-                      h.Disabled(!interactive),
-                      h.OnClick(latestIsCurrent ? playback.toggle : playback.play(latest)),
-                      h.Class(primaryButton),
-                    ],
-                    [
-                      lucide(
-                        latestIsCurrent && playback.isPlaying ? iconPaths.pause : iconPaths.play,
-                        'h-4 w-4 fill-current',
-                      ),
-                      latestIsCurrent ? (playback.isPlaying ? 'Pause' : 'Resume') : 'Play latest',
-                    ],
-                  )
-                : h.empty,
-              actions,
-            ],
+            [latest ? latestButton(h, latest, playback, interactive, false) : h.empty, actions],
           ),
         ],
       ),
@@ -316,8 +359,15 @@ export const showsView = <M>(
       dial(h, document.shows, document.selectedSlug),
       selected
         ? h.div(
-            [h.Key(selected.id), h.Class('animate-in fade-in duration-300')],
+            [h.Key(selected.id), h.Class('show-scope animate-in fade-in duration-300')],
             [
+              compactBar(
+                h,
+                selected,
+                pending ? null : (document.episodes?.data[0] ?? null),
+                playback,
+                interactive,
+              ),
               masthead(
                 h,
                 selected,

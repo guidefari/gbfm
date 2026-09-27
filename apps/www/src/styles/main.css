@@ -102,6 +102,78 @@
   }
 }
 
+/* The show masthead scrolls away into a sticky compact bar, scrubbed by the masthead's own view timeline. */
+.show-scope {
+  timeline-scope: --show-masthead;
+}
+
+.show-masthead {
+  view-timeline-name: --show-masthead;
+}
+
+.show-compact {
+  visibility: hidden;
+}
+
+@supports (animation-timeline: view()) {
+  .show-compact {
+    animation: show-compact-in linear both;
+    animation-timeline: --show-masthead;
+    animation-range: exit 45% exit 85%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .show-compact {
+      animation-timing-function: steps(1, end);
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .show-masthead-art {
+      transform-origin: left bottom;
+      animation: show-masthead-art-out linear both;
+      animation-timeline: --show-masthead;
+      animation-range: exit 0% exit 90%;
+    }
+
+    .show-masthead-copy {
+      transform-origin: left bottom;
+      animation: show-masthead-copy-out linear both;
+      animation-timeline: --show-masthead;
+      animation-range: exit 10% exit 80%;
+    }
+  }
+}
+
+@keyframes show-compact-in {
+  from {
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-0.75rem);
+  }
+
+  to {
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes show-masthead-art-out {
+  to {
+    opacity: 0;
+    transform: scale(0.6);
+    filter: blur(6px);
+  }
+}
+
+@keyframes show-masthead-copy-out {
+  to {
+    opacity: 0;
+    transform: translateY(-2rem) scale(0.85);
+  }
+}
+
 /* Episode rows fade up on entry and their number lights up while crossing the middle of the viewport. */
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
