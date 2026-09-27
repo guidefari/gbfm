@@ -26,6 +26,7 @@ export const DashboardDocument = Schema.Struct({
   rows: Schema.Array(Row),
   fields: Schema.Record(Schema.String, Schema.String),
   toggles: Schema.Record(Schema.String, Schema.Boolean),
+  telemetry: Schema.optional(AdminTelemetryResponse),
 })
 
 export type DashboardDocument = typeof DashboardDocument.Type
@@ -266,19 +267,7 @@ export const parseDashboardDocument = (
       )
     case '/api/admin/telemetry':
       return Schema.decodeUnknownEffect(AdminTelemetryResponse)(input).pipe(
-        Effect.map(({ sections }) =>
-          rowsDocument(
-            Object.entries(sections).flatMap(([section, value]) =>
-              value.rows.map((row, index) => ({
-                id: `${section}:${index}`,
-                title: `${section} · ${row.name}`,
-                detail: `${row.route} · ${row.samples} samples · p75 ${row.p75 ?? 'unavailable'}`,
-                href: null,
-                actionId: null,
-              })),
-            ),
-          ),
-        ),
+        Effect.map((telemetry) => ({ ...emptyDocument, telemetry })),
       )
     default:
       return Effect.fail(new UnsupportedDashboardEndpoint())

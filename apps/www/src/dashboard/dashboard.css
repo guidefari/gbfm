@@ -142,10 +142,42 @@
 }
 .dashboard-error {
   border-color: #a43b3b;
-  color: #ffb4b4;
+  color: var(--dash-fg);
 }
 .dashboard-empty {
   color: var(--dash-muted);
+}
+.telemetry-dashboard p {
+  margin: 0.75rem 0;
+  overflow-wrap: anywhere;
+}
+.telemetry-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  gap: 1rem;
+}
+.telemetry-sections article {
+  min-width: 0;
+  border: 1px solid var(--dash-line);
+  padding: 1rem;
+}
+.telemetry-sections h3 {
+  text-transform: capitalize;
+}
+.telemetry-sections dl {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.25rem 0.75rem;
+  border-top: 1px solid var(--dash-line);
+  padding-top: 0.75rem;
+  font-size: 0.75rem;
+}
+.telemetry-sections dt {
+  color: var(--dash-muted);
+}
+.telemetry-sections dd {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 @media (max-width: 720px) {
   .gbfm-dashboard {

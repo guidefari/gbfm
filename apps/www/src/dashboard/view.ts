@@ -3,6 +3,7 @@ import type { HtmlBuilder } from 'foldkit/html'
 import { defineView } from 'foldkit/submodel'
 
 import { isAdminSection, Message, type Model } from './model'
+import { telemetryView } from './telemetry'
 
 export interface ViewInputs {
   readonly role: Model['principal']['role']
@@ -205,64 +206,72 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
                 h.button([h.OnClick(Message.LoadRequested())], ['Try again']),
               ],
             )
-          : model.section === 'profile'
-            ? profile(model, h)
-            : model.section === 'email'
-              ? preferences(model, h)
-              : model.section === 'search'
-                ? h.section(
-                    [h.Class('dashboard-panel')],
-                    [
-                      h.h2([], ['Search']),
-                      input(h, model, 'query', 'Query', 'search'),
-                      h.button([h.OnClick(Message.SearchRequested())], ['Search']),
-                      rows(model, h),
-                    ],
-                  )
-                : model.section === 'player'
+          : model.section === 'frontend-errors'
+            ? h.div(
+                [],
+                [
+                  h.button([h.OnClick(Message.LoadRequested())], ['Refresh telemetry']),
+                  telemetryView(model.telemetry),
+                ],
+              )
+            : model.section === 'profile'
+              ? profile(model, h)
+              : model.section === 'email'
+                ? preferences(model, h)
+                : model.section === 'search'
                   ? h.section(
                       [h.Class('dashboard-panel')],
                       [
-                        h.h2([], ['Player preferences']),
-                        h.p([], ['Player settings are stored on this device.']),
-                        toggle(h, model, 'continueQueue', 'Continue through queue'),
-                        toggle(h, model, 'restorePosition', 'Restore listening position'),
-                        h.button(
-                          [
-                            h.OnClick(Message.SavePlayerPreferences()),
-                            h.Disabled(model.phase === 'saving'),
-                          ],
-                          [model.phase === 'saving' ? 'Saving…' : 'Save player preferences'],
-                        ),
+                        h.h2([], ['Search']),
+                        input(h, model, 'query', 'Query', 'search'),
+                        h.button([h.OnClick(Message.SearchRequested())], ['Search']),
+                        rows(model, h),
                       ],
                     )
-                  : model.section === 'appearance'
+                  : model.section === 'player'
                     ? h.section(
-                        [h.Class('appearance-options')],
+                        [h.Class('dashboard-panel')],
                         [
-                          h.p([], ['Choose how gbfm looks on this device']),
-                          ...(['light', 'dark', 'system'] as const).map((theme) =>
-                            h.button(
-                              [
-                                h.AriaPressed(String((model.fields.theme ?? 'system') === theme)),
-                                h.OnClick(Message.ThemeSelected({ theme })),
-                              ],
-                              [
-                                h.strong([], [theme.charAt(0).toUpperCase() + theme.slice(1)]),
-                                h.span(
-                                  [],
-                                  [
-                                    theme === 'system'
-                                      ? 'Follow your device preference'
-                                      : `Always use the ${theme} interface`,
-                                  ],
-                                ),
-                              ],
-                            ),
+                          h.h2([], ['Player preferences']),
+                          h.p([], ['Player settings are stored on this device.']),
+                          toggle(h, model, 'continueQueue', 'Continue through queue'),
+                          toggle(h, model, 'restorePosition', 'Restore listening position'),
+                          h.button(
+                            [
+                              h.OnClick(Message.SavePlayerPreferences()),
+                              h.Disabled(model.phase === 'saving'),
+                            ],
+                            [model.phase === 'saving' ? 'Saving…' : 'Save player preferences'],
                           ),
                         ],
                       )
-                    : rows(model, h)
+                    : model.section === 'appearance'
+                      ? h.section(
+                          [h.Class('appearance-options')],
+                          [
+                            h.p([], ['Choose how gbfm looks on this device']),
+                            ...(['light', 'dark', 'system'] as const).map((theme) =>
+                              h.button(
+                                [
+                                  h.AriaPressed(String((model.fields.theme ?? 'system') === theme)),
+                                  h.OnClick(Message.ThemeSelected({ theme })),
+                                ],
+                                [
+                                  h.strong([], [theme.charAt(0).toUpperCase() + theme.slice(1)]),
+                                  h.span(
+                                    [],
+                                    [
+                                      theme === 'system'
+                                        ? 'Follow your device preference'
+                                        : `Always use the ${theme} interface`,
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        )
+                      : rows(model, h)
 
   return h.div(
     [h.Class('gbfm-dashboard')],

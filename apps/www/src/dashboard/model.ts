@@ -26,6 +26,7 @@ export const Model = Schema.Struct({
   toggles: Schema.Record(Schema.String, Schema.Boolean),
   error: Schema.NullOr(Schema.String),
   spotify: SpotifyStatus,
+  telemetry: DashboardDocument.fields.telemetry,
 })
 
 export type Model = typeof Model.Type
@@ -250,6 +251,7 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
         rows: document.rows,
         fields: document.fields,
         toggles: document.toggles,
+        telemetry: document.telemetry,
         error: null,
       },
     }),
