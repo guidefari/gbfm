@@ -20,6 +20,8 @@ export {
 
 export { createPlayDelivery } from './playDelivery'
 
+export { PlayerPreferences, defaultPlayerPreferences } from './preferences'
+
 export {
   PlayReporter,
   PlayReporterNoop,

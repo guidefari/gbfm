@@ -11,8 +11,10 @@ export interface ViewInputs {
 const memberNav = [
   ['overview', 'Home'],
   ['profile', 'Profile'],
+  ['appearance', 'Appearance'],
   ['email', 'Email'],
   ['player', 'Player'],
+  ['integrations', 'Integrations'],
   ['favorites', 'Favorites'],
   ['reminders', 'Reminders'],
 ] as const
@@ -137,6 +139,44 @@ const rows = (model: Model, h: HtmlBuilder<Message>) =>
 export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, inputs, h) => {
   const role = inputs.role
 
+  const spotify = h.section(
+    [h.Class(model.section === 'spotify-callback' ? 'page prose' : 'dashboard-panel')],
+    [
+      h.h2([], ['Spotify connection']),
+      h.p([], ['Connect Spotify to play and queue tracks from music cards.']),
+      model.phase === 'loading' ? h.p([h.Role('status')], ['Connecting Spotify…']) : h.empty,
+      model.error ? h.p([h.Role('alert')], [model.error]) : h.empty,
+      model.spotify.connected ? h.p([], [`Connected as ${model.spotify.name}`]) : h.empty,
+      model.section === 'spotify-callback'
+        ? h.a([h.Href('/dashboard/integrations')], ['Back to integrations'])
+        : h.div(
+            [],
+            [
+              h.button(
+                [
+                  h.Disabled(model.phase === 'loading'),
+                  h.OnClick(
+                    Message.SpotifyRequested({
+                      action: model.spotify.connected ? 'disconnect' : 'connect',
+                    }),
+                  ),
+                ],
+                [model.spotify.connected ? 'Disconnect Spotify' : 'Connect Spotify'],
+              ),
+              h.button(
+                [
+                  h.Disabled(model.phase === 'loading'),
+                  h.OnClick(Message.SpotifyRequested({ action: 'status' })),
+                ],
+                ['Refresh session'],
+              ),
+            ],
+          ),
+    ],
+  )
+
+  if (model.section === 'spotify-callback') return spotify
+
   if (isAdminSection(model.section) && role !== 'admin')
     return h.section(
       [h.Class('dashboard-forbidden')],
@@ -153,41 +193,76 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
   ]
 
   const content =
-    model.phase === 'loading'
-      ? h.p([h.Class('dashboard-state')], ['Loading…'])
-      : model.phase === 'error'
-        ? h.div(
-            [h.Class('dashboard-state dashboard-error'), h.Role('alert')],
-            [
-              h.p([], [model.error ?? 'Could not load this dashboard section.']),
-              h.button([h.OnClick(Message.LoadRequested())], ['Try again']),
-            ],
-          )
-        : model.section === 'profile'
-          ? profile(model, h)
-          : model.section === 'email'
-            ? preferences(model, h)
-            : model.section === 'search'
-              ? h.section(
-                  [h.Class('dashboard-panel')],
-                  [
-                    h.h2([], ['Search']),
-                    input(h, model, 'query', 'Query', 'search'),
-                    h.button([h.OnClick(Message.SearchRequested())], ['Search']),
-                    rows(model, h),
-                  ],
-                )
-              : model.section === 'player'
+    model.section === 'integrations'
+      ? spotify
+      : model.phase === 'loading'
+        ? h.p([h.Class('dashboard-state')], ['Loading…'])
+        : model.phase === 'error'
+          ? h.div(
+              [h.Class('dashboard-state dashboard-error'), h.Role('alert')],
+              [
+                h.p([], [model.error ?? 'Could not load this dashboard section.']),
+                h.button([h.OnClick(Message.LoadRequested())], ['Try again']),
+              ],
+            )
+          : model.section === 'profile'
+            ? profile(model, h)
+            : model.section === 'email'
+              ? preferences(model, h)
+              : model.section === 'search'
                 ? h.section(
                     [h.Class('dashboard-panel')],
                     [
-                      h.h2([], ['Player preferences']),
-                      h.p([], ['Player settings are stored on this device.']),
-                      toggle(h, model, 'continueQueue', 'Continue through queue'),
-                      toggle(h, model, 'restorePosition', 'Restore listening position'),
+                      h.h2([], ['Search']),
+                      input(h, model, 'query', 'Query', 'search'),
+                      h.button([h.OnClick(Message.SearchRequested())], ['Search']),
+                      rows(model, h),
                     ],
                   )
-                : rows(model, h)
+                : model.section === 'player'
+                  ? h.section(
+                      [h.Class('dashboard-panel')],
+                      [
+                        h.h2([], ['Player preferences']),
+                        h.p([], ['Player settings are stored on this device.']),
+                        toggle(h, model, 'continueQueue', 'Continue through queue'),
+                        toggle(h, model, 'restorePosition', 'Restore listening position'),
+                        h.button(
+                          [
+                            h.OnClick(Message.SavePlayerPreferences()),
+                            h.Disabled(model.phase === 'saving'),
+                          ],
+                          [model.phase === 'saving' ? 'Saving…' : 'Save player preferences'],
+                        ),
+                      ],
+                    )
+                  : model.section === 'appearance'
+                    ? h.section(
+                        [h.Class('appearance-options')],
+                        [
+                          h.p([], ['Choose how gbfm looks on this device']),
+                          ...(['light', 'dark', 'system'] as const).map((theme) =>
+                            h.button(
+                              [
+                                h.AriaPressed(String((model.fields.theme ?? 'system') === theme)),
+                                h.OnClick(Message.ThemeSelected({ theme })),
+                              ],
+                              [
+                                h.strong([], [theme.charAt(0).toUpperCase() + theme.slice(1)]),
+                                h.span(
+                                  [],
+                                  [
+                                    theme === 'system'
+                                      ? 'Follow your device preference'
+                                      : `Always use the ${theme} interface`,
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      )
+                    : rows(model, h)
 
   return h.div(
     [h.Class('gbfm-dashboard')],
@@ -207,6 +282,10 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
                 [label],
               ),
             ),
+          ),
+          h.form(
+            [h.Method('post'), h.Action('/actions/sign-out')],
+            [h.button([h.Type('submit')], ['Sign out'])],
           ),
         ],
       ),

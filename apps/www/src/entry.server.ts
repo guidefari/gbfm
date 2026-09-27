@@ -1,14 +1,22 @@
-import { MicroPostNeighboursResponse } from '@gbfm/api/navigation'
+import { MicroPostNeighboursResponse, MicroPostRandomUnreadResponse } from '@gbfm/api/navigation'
 import { MicroPostScreenResponse } from '@gbfm/api/post'
+import { PublicProfileResponse } from '@gbfm/api/profile'
+import { ResolveResult } from '@gbfm/api/resolve'
+import { GetAllShowsResponse, GetShowEpisodesResponse } from '@gbfm/api/shows'
 import { resolveRequestId } from '@gbfm/core/observability/request-id'
-import { makeStaticSiteMetadata, renderDocumentHead, SiteMetadata } from '@gbfm/site-metadata'
-import { Effect, Option, Schema } from 'effect'
+import {
+  makeStaticSiteMetadata,
+  renderDocumentHead,
+  SiteMetadata,
+  SITE_URL,
+} from '@gbfm/site-metadata'
+import { Effect, Match, Option, Schema } from 'effect'
 import * as Server from 'foldkit/experimental/server'
 import template from 'virtual:gbfm-document'
 
 import {
   applicationConfig,
-  type ContentItem,
+  ContentItem,
   type Flags,
   parseRoute,
   Principal,
@@ -16,8 +24,11 @@ import {
 } from './application'
 import { parseDashboardDocument } from './dashboard/document'
 import { endpointFor as dashboardEndpointFor, isAdminSection } from './dashboard/model'
+import type { ShowsDocument } from './shows'
 import { staticPages } from './static-pages'
+import { routeTemplate } from './telemetry/privacy'
 import { handleBrowserTelemetry } from './telemetry/server'
+import { readModeCookie, skipsSeenTweets } from './tweet-navigation'
 
 const JsonObject = Schema.Record(Schema.String, Schema.Json)
 
@@ -77,12 +88,14 @@ const endpoints = new Map([
   ['tags', '/api/content/posts/tags'],
   ['djs', '/api/user/djs'],
   ['profile', '/api/profile'],
+  ['resolve', '/api/resolve'],
 ])
 
 export const endpointFor = (route: Route): string | null =>
   Route.match(route, {
     Home: () => '/api/content/audio/mix?limit=12&offset=0',
-    Listing: ({ kind }) => endpoints.get(kind) ?? null,
+    Listing: ({ kind }) =>
+      kind === 'shows' ? '/api/shows?limit=100&offset=0' : (endpoints.get(kind) ?? null),
     Detail: ({ kind, slug }) => {
       if (kind === 'tags') return `/api/content/posts/micro?tag=${encodeURIComponent(slug)}`
       const root = endpoints.get(kind)
@@ -126,6 +139,12 @@ const contentItems = (payload: Schema.Json, path: string): ReadonlyArray<Content
         description: text(item.description, text(item.bio)) || null,
         imageUrl: text(item.thumbnailUrl, text(item.imageUrl, text(item.image))) || null,
         audioUrl: text(item.url) || null,
+        audioType: Option.getOrNull(
+          Schema.decodeUnknownOption(ContentItem.fields.audioType)(item.type),
+        ),
+        creators: Option.getOrUndefined(
+          Schema.decodeUnknownOption(ContentItem.fields.creators)(item.creators),
+        ),
         href: `${path}/${encodeURIComponent(slug)}`,
         meta: text(item.createdAt) || null,
       },
@@ -166,7 +185,7 @@ const redirect = (location: string, cookies: ReadonlyArray<string> = []) => {
   return Server.Responded(new Response(null, { status: 303, headers }))
 }
 
-const formAction = async (request: Request): Promise<Server.EntryResult> => {
+const formAction = async (request: Request): Promise<Server.Responded> => {
   const url = new URL(request.url)
 
   if (request.headers.get('origin') !== url.origin)
@@ -177,6 +196,81 @@ const formAction = async (request: Request): Promise<Server.EntryResult> => {
     Option.getOrElse(Schema.decodeUnknownOption(Schema.String)(form.get(name)), () => '')
 
   const action = url.pathname
+
+  if (action === '/actions/tweet-read-mode') {
+    const mode = field('mode') === 'all' ? 'all' : 'unread'
+
+    return Server.Responded(
+      new Response(null, {
+        status: 204,
+        headers: {
+          'cache-control': 'private, no-store',
+          'set-cookie': `${readModeCookie}=${mode}; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000${url.protocol === 'https:' ? '; Secure' : ''}`,
+        },
+      }),
+    )
+  }
+
+  if (action === '/actions/tweet-random') {
+    const response = await apiRequest(
+      request,
+      `/api/content/posts/micro/${encodeURIComponent(field('slug'))}/random`,
+      { method: 'GET' },
+    )
+
+    if (!response.ok)
+      return redirect(`/tweet/${encodeURIComponent(field('slug'))}?random=unavailable`)
+    const result = Schema.decodeUnknownSync(MicroPostRandomUnreadResponse)(await response.json())
+
+    return redirect(`/tweet/${encodeURIComponent(result.slug)}`)
+  }
+
+  if (action === '/actions/sign-out') {
+    const response = await apiRequest(request, '/auth/sign-out', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: url.origin },
+      body: '{}',
+    })
+
+    if (!response.ok)
+      return Server.Responded(
+        new Response('Sign out failed. Please try again.', { status: response.status }),
+      )
+
+    return redirect('/', response.headers.getSetCookie())
+  }
+
+  const newsletterPath = Match.value(action).pipe(
+    Match.when('/actions/subscribe', () => '/api/newsletter/subscribe'),
+    Match.when('/actions/unsubscribe', () =>
+      field('token') ? '/api/newsletter/unsubscribe' : '/api/newsletter/request-unsubscribe',
+    ),
+    Match.orElse(() => null),
+  )
+
+  if (newsletterPath) {
+    const response = await apiRequest(request, newsletterPath, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: url.origin },
+      body: JSON.stringify(
+        field('token') ? { token: field('token') } : { email: field('email'), name: field('name') },
+      ),
+    })
+
+    if (!response.ok)
+      return Server.Responded(
+        new Response('The request could not be completed. Please try again.', {
+          status: response.status,
+          headers: { 'cache-control': 'no-store' },
+        }),
+      )
+
+    return redirect(
+      action === '/actions/subscribe'
+        ? '/subscribe?complete=1'
+        : `/unsubscribe?complete=${field('token') ? 'removed' : 'requested'}`,
+    )
+  }
 
   const authPath = new Map([
     ['/auth/sign-in', '/auth/sign-in/email'],
@@ -219,12 +313,20 @@ const formAction = async (request: Request): Promise<Server.EntryResult> => {
     )
 
   return redirect(
-    authPath ? '/dashboard' : `/tweet/${encodeURIComponent(url.searchParams.get('slug') ?? '')}`,
+    Match.value(action).pipe(
+      Match.when('/auth/forgot-password', () => '/auth/forgot-password?sent=1'),
+      Match.when('/auth/reset-password', () => '/auth/sign-in?reset=1'),
+      Match.orElse(() =>
+        authPath
+          ? '/dashboard'
+          : `/tweet/${encodeURIComponent(url.searchParams.get('slug') ?? '')}`,
+      ),
+    ),
     response.headers.getSetCookie(),
   )
 }
 
-export const renderPage = async (request: Request): Promise<Server.EntryResult> => {
+const renderResponse = async (request: Request): Promise<Server.Responded> => {
   const startedAt = performance.now()
   const url = new URL(request.url)
   const host = request.headers.get('host')
@@ -265,6 +367,8 @@ export const renderPage = async (request: Request): Promise<Server.EntryResult> 
 
   if (
     url.pathname.startsWith('/api/') ||
+    url.pathname.startsWith('/s/') ||
+    (url.pathname === '/auth/verify-email' && url.searchParams.has('token')) ||
     (url.pathname.startsWith('/auth/') && !Route.guards.Auth(route)) ||
     ['/rss.xml', '/sitemap.xml'].includes(url.pathname)
   )
@@ -273,7 +377,17 @@ export const renderPage = async (request: Request): Promise<Server.EntryResult> 
   if (!['GET', 'HEAD'].includes(request.method))
     return Server.Responded(new Response(null, { status: 405 }))
 
-  if (['/tweet/latest', '/tweet'].includes(url.pathname)) return redirect('/tweets')
+  const redirectPage = (path: string) => {
+    const target = new URL(path, url)
+
+    if (dataRequest) target.searchParams.set('__data', '1')
+
+    return redirect(`${target.pathname}${target.search}`)
+  }
+
+  if (['/tweet/latest', '/tweet'].includes(url.pathname)) return redirectPage('/tweets')
+
+  if (url.pathname === '/tweet/new') return redirectPage('/new/tweet')
 
   if (url.pathname === '/tweets' && !url.searchParams.has('q')) {
     const latest = await apiRequest(ownedRequest, '/api/content/posts/micro/latest', {
@@ -282,7 +396,7 @@ export const renderPage = async (request: Request): Promise<Server.EntryResult> 
 
     const slug = text(record(await json(latest))?.slug)
 
-    if (slug) return redirect(`/tweet/${encodeURIComponent(slug)}`)
+    if (slug) return redirectPage(`/tweet/${encodeURIComponent(slug)}`)
   }
 
   const identity = await session(ownedRequest)
@@ -311,6 +425,22 @@ export const renderPage = async (request: Request): Promise<Server.EntryResult> 
     : null
 
   const payload = response?.ok ? await json(response) : null
+
+  const resolved =
+    Route.guards.Detail(route) && route.kind === 'resolve' && payload
+      ? Schema.decodeUnknownSync(ResolveResult)(payload)
+      : null
+
+  if (resolved?.type === 'show')
+    return redirectPage(`/shows/${encodeURIComponent(resolved.data.slug)}`)
+
+  const profile =
+    resolved?.type === 'profile'
+      ? resolved.data
+      : Route.guards.Detail(route) && route.kind === 'profile' && payload
+        ? Schema.decodeUnknownSync(PublicProfileResponse)(payload)
+        : null
+
   const isTweet = Route.guards.Detail(route) && route.kind === 'tweets'
 
   const tweet =
@@ -339,7 +469,51 @@ export const renderPage = async (request: Request): Promise<Server.EntryResult> 
 
   const items = contentItems(payload, listPath)
 
+  let shows: ShowsDocument | null = null
+
+  if (
+    (Route.guards.Listing(route) || Route.guards.Detail(route)) &&
+    route.kind === 'shows' &&
+    response?.ok
+  ) {
+    const allResponse = Route.guards.Listing(route)
+      ? response
+      : await apiRequest(ownedRequest, '/api/shows?limit=100&offset=0', { method: 'GET' }).catch(
+          () => null,
+        )
+
+    const all = allResponse?.ok
+      ? Schema.decodeUnknownSync(GetAllShowsResponse)(
+          Route.guards.Listing(route) ? payload : await json(allResponse),
+        )
+      : null
+
+    if (all) {
+      const selectedSlug = Route.guards.Detail(route)
+        ? route.slug
+        : (url.searchParams.get('show') ?? all.data[0]?.slug ?? null)
+
+      const episodesResponse = selectedSlug
+        ? await apiRequest(
+            ownedRequest,
+            `/api/shows/${encodeURIComponent(selectedSlug)}/episodes?limit=100&offset=0`,
+            { method: 'GET' },
+          ).catch(() => null)
+        : null
+
+      shows = {
+        shows: all.data,
+        selectedSlug,
+        episodes: episodesResponse?.ok
+          ? Schema.decodeUnknownSync(GetShowEpisodesResponse)(await json(episodesResponse))
+          : null,
+      }
+    }
+  }
+
   const title =
+    shows?.shows.find((show) => show.slug === shows.selectedSlug)?.title ??
+    profile?.name ??
     tweet?.post.title ??
     tweet?.post.content?.slice(0, 80) ??
     (Route.guards.Detail(route) ? items[0]?.title : null) ??
@@ -362,7 +536,7 @@ export const renderPage = async (request: Request): Promise<Server.EntryResult> 
         : 200
 
   const flags: Flags = {
-    url: url.href,
+    url: url.pathname === '/spotify/callback' ? `${url.origin}${url.pathname}` : url.href,
     status,
     principal: identity.principal,
     items,
@@ -372,9 +546,13 @@ export const renderPage = async (request: Request): Promise<Server.EntryResult> 
       items[0]?.description ??
       'Independent music, mixes and stories on goosebumps.fm.',
     requestId,
+    skipSeen: skipsSeenTweets(request.headers.get('cookie')),
     tweet,
     neighbours,
     dashboard,
+    profile,
+    shows,
+    metadata: null,
     failure: status === 503 ? 'Content is unavailable right now.' : null,
   }
 
@@ -391,16 +569,6 @@ export const renderPage = async (request: Request): Promise<Server.EntryResult> 
   ])
     headers.append('set-cookie', cookie)
 
-  if (dataRequest) return Server.Responded(Response.json(flags, { status, headers }))
-
-  const rendered = await Effect.runPromise(
-    Server.renderToString(applicationConfig, {
-      flags,
-      url: url.href,
-      buildId: import.meta.env.FOLDKIT_BUILD_ID,
-    }),
-  )
-
   const metadataKind = new Map([
     ['mixes', 'mix'],
     ['tracks', 'track'],
@@ -412,7 +580,11 @@ export const renderPage = async (request: Request): Promise<Server.EntryResult> 
     ['profile', 'profile'],
   ])
 
-  const kind = Route.guards.Detail(route) ? metadataKind.get(route.kind) : undefined
+  const kind = profile
+    ? 'profile'
+    : Route.guards.Detail(route)
+      ? metadataKind.get(route.kind)
+      : undefined
 
   const publicMetadata =
     kind && Route.guards.Detail(route) && status === 200
@@ -429,33 +601,56 @@ export const renderPage = async (request: Request): Promise<Server.EntryResult> 
           .catch(() => null)
       : null
 
-  const metadata = publicMetadata ?? makeStaticSiteMetadata(title, flags.description, url.pathname)
+  const sourceMetadata =
+    publicMetadata ?? makeStaticSiteMetadata(title, flags.description, url.pathname)
+
+  // Preview and dev origins must not become competing public canonical URLs.
+  const metadata = {
+    ...sourceMetadata,
+    canonicalUrl: new URL(new URL(sourceMetadata.canonicalUrl).pathname, SITE_URL).href,
+  }
+
+  const readyFlags: Flags = { ...flags, metadata }
+
+  if (dataRequest) return Server.Responded(Response.json(readyFlags, { status, headers }))
+
+  const rendered = await Effect.runPromise(
+    Server.renderToString(applicationConfig, {
+      flags: readyFlags,
+      url: url.href,
+      buildId: import.meta.env.FOLDKIT_BUILD_ID,
+    }),
+  )
+
   const head = renderDocumentHead(metadata)
 
   const extraHead =
-    `<link rel="canonical" href="${escapeHtml(metadata.canonicalUrl)}">` +
+    `<link rel="canonical" href="${escapeHtml(metadata.canonicalUrl)}"><meta property="og:url" content="${escapeHtml(metadata.canonicalUrl)}">` +
     head.meta
       .flatMap((entry) =>
-        'title' in entry
+        'title' in entry || ('property' in entry && entry.property === 'og:url')
           ? []
           : [
-              `<meta ${'name' in entry ? `name="${escapeHtml(entry.name)}"` : `property="${escapeHtml(entry.property)}"`} content="${escapeHtml(entry.content)}">`,
+              `<meta data-gbfm-metadata ${'name' in entry ? `name="${escapeHtml(entry.name)}"` : `property="${escapeHtml(entry.property)}"`} content="${escapeHtml(entry.content)}">`,
             ],
       )
       .join('') +
     head.scripts
       .map(
         (script) =>
-          `<script type="application/ld+json">${script.children.replaceAll('<', '\\u003c')}</script>`,
+          `<script data-gbfm-metadata type="application/ld+json">${script.children.replaceAll('<', '\\u003c')}</script>`,
       )
       .join('')
 
   const privatePage =
-    Route.guards.Dashboard(route) || Route.guards.Composer(route) || Route.guards.Auth(route)
+    Route.guards.Dashboard(route) ||
+    Route.guards.Composer(route) ||
+    Route.guards.Auth(route) ||
+    url.pathname === '/spotify/callback'
 
   const html = Server.injectIntoTemplate(template, rendered).replace(
     '</head>',
-    `${extraHead}${privatePage || status !== 200 ? '<meta name="robots" content="noindex, nofollow">' : ''}</head>`,
+    `${extraHead}${privatePage || status !== 200 ? '<meta data-gbfm-metadata name="robots" content="noindex, nofollow">' : ''}</head>`,
   )
 
   headers.set('content-type', 'text/html; charset=utf-8')
@@ -463,4 +658,57 @@ export const renderPage = async (request: Request): Promise<Server.EntryResult> 
   return Server.Responded(
     new Response(request.method === 'HEAD' ? null : html, { status, headers }),
   )
+}
+
+/** One request-owned correlation ID covers SSR, actions, redirects, and API forwarding. Logs exclude raw URLs and payloads. */
+export const renderPage = async (request: Request): Promise<Server.EntryResult> => {
+  const startedAt = performance.now()
+  const requestId = resolveRequestId(request.headers.get('x-request-id'))
+  const owned = new Request(request)
+  owned.headers.set('x-request-id', requestId)
+
+  const attributes = {
+    service: 'www',
+    requestId,
+    route: routeTemplate(undefined, new URL(request.url).pathname),
+    method: request.method,
+    release: import.meta.env.PROD ? import.meta.env.FOLDKIT_BUILD_ID : 'local',
+  }
+
+  try {
+    const result = await renderResponse(owned)
+    const response = new Response(result.response.body, result.response)
+    response.headers.set('x-request-id', requestId)
+    await Effect.runPromise(
+      Effect.logInfo({
+        ...attributes,
+        operation: 'request.completed',
+        status: response.status,
+        durationMs: Math.round(performance.now() - startedAt),
+      }),
+    )
+
+    return Server.Responded(response)
+  } catch (cause) {
+    if (request.signal.aborted) throw cause
+    await Effect.runPromise(
+      Effect.logError({
+        ...attributes,
+        operation: 'request.failed',
+        status: 500,
+        durationMs: Math.round(performance.now() - startedAt),
+      }),
+    )
+
+    return Server.Responded(
+      new Response(`Something went wrong. Request ID: ${requestId}`, {
+        status: 500,
+        headers: {
+          'content-type': 'text/plain; charset=utf-8',
+          'cache-control': 'private, no-store',
+          'x-request-id': requestId,
+        },
+      }),
+    )
+  }
 }

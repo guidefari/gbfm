@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises'
+import { fileURLToPath } from 'node:url'
 
 import type { Plugin, ViteDevServer } from 'vite'
 
@@ -17,6 +18,7 @@ export const documentTemplate = (): Plugin => {
     },
     async load(id) {
       if (id !== '\0virtual:gbfm-document') return undefined
+      this.addWatchFile(fileURLToPath(new URL('../index.html', import.meta.url)))
       const source = server
         ? await server.transformIndexHtml(
             '/',

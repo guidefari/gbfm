@@ -1,9 +1,11 @@
 import { Runtime } from 'foldkit'
 
 import { applicationConfig, clientResources, subscriptions } from './application'
+import { startArtworkFallback } from './artwork'
+import { startSearchShortcuts } from './search'
 import { startBrowserTelemetry } from './telemetry/browser'
-// oxlint-disable-next-line import/no-unassigned-import -- Vite extracts the document stylesheet from this side-effect import.
-import './styles/main.css'
+import { startTheme } from './theme'
+import { startTweetShortcuts } from './tweet-navigation'
 
 const application = Runtime.makeApplication({
   ...applicationConfig,
@@ -11,6 +13,14 @@ const application = Runtime.makeApplication({
   subscriptions,
   container: document.getElementById('root'),
 })
+
+const stopTheme = startTheme()
+
+const stopArtwork = startArtworkFallback()
+
+const stopSearchShortcuts = startSearchShortcuts()
+
+const stopTweetShortcuts = startTweetShortcuts()
 
 Runtime.hydrate(application, { buildId: import.meta.env.FOLDKIT_BUILD_ID })
 
@@ -32,3 +42,11 @@ const stopTelemetry = startBrowserTelemetry({
 })
 
 import.meta.hot?.dispose(stopTelemetry)
+
+import.meta.hot?.dispose(stopTheme)
+
+import.meta.hot?.dispose(stopSearchShortcuts)
+
+import.meta.hot?.dispose(stopTweetShortcuts)
+
+import.meta.hot?.dispose(stopArtwork)

@@ -138,6 +138,7 @@ const transitionSourcePreparation = (
 
 export type PlayerCoreCallbacks = {
   readonly onStatus: (status: EngineStatus) => void
+  readonly restorePosition?: () => boolean
   readonly onTrackStarted?: (track: QueueTrackType) => void
   readonly onTrackFinished: () => void
   readonly onError?: (message: string, error: Error) => void
@@ -413,7 +414,11 @@ export const playerCore = (
           yield* engine.setNowPlaying(buildMetadata(track))
           yield* observeStatus(yield* engine.currentStatus)
 
-          const saved = yield* storage.loadPosition(track.id).pipe(
+          const saved = yield* (
+            callbacks.restorePosition?.() === false
+              ? Effect.succeed(null)
+              : storage.loadPosition(track.id)
+          ).pipe(
             Effect.catchCause((cause) =>
               Effect.sync(() => {
                 onError(

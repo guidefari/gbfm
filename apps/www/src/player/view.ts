@@ -128,7 +128,29 @@ const queue = (model: Model, h: HtmlBuilder<typeof Message.Type>) =>
 export const view = defineView<Model, typeof Message.Type>((model, h) => {
   const current = model.snapshot.queue.current
 
-  if (!current) return queue(model, h)
+  if (!current)
+    return h.div(
+      [h.Class('gbfm-player-root')],
+      [
+        model.snapshot.queue.tracks.length
+          ? h.section(
+              [h.Class('player-bar player-pending'), h.AriaLabel('Audio player')],
+              [
+                h.span([], [`${model.snapshot.queue.tracks.length} queued`]),
+                h.button(
+                  [h.OnClick(Message.PlayIndex({ index: 0 })), h.AriaLabel('Play queue')],
+                  ['▶ Play queue'],
+                ),
+                h.button(
+                  [h.OnClick(Message.ToggleQueue()), h.AriaLabel('Open queue')],
+                  ['Open queue'],
+                ),
+              ],
+            )
+          : h.empty,
+        queue(model, h),
+      ],
+    )
   const { transport: playback, volume } = model.snapshot
 
   return h.div(

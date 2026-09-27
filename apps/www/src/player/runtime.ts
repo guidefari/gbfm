@@ -3,14 +3,18 @@ import {
   createWebAudioStorageAdapter,
   layerFromAdapter,
   makeAudioPlayback,
-  PlayReporterNoop,
+  makePlayReporterLayer,
   PlaybackRejected,
+  type AudioPlaybackReporter,
   type AudioPlaybackController,
   type EngineStatus,
   type NowPlayingMetadata,
   type PlaybackCommandHandlers,
 } from '@gbfm/player'
-import { Context, Effect, Layer, ManagedRuntime, Queue, Stream } from 'effect'
+import { Context, Data, Effect, Layer, ManagedRuntime, Queue, Stream } from 'effect'
+
+import { reportPlayerTelemetry } from '../telemetry/browser'
+import { readPlayerPreferences } from './preferences'
 
 export type AudioPort = {
   src: string
@@ -197,9 +201,15 @@ export class PlayerClient extends Context.Service<PlayerClient, PlayerClientValu
   '@gbfm/www/PlayerClient',
 ) {}
 
+class PlayDeliveryFailed extends Data.TaggedError('PlayDeliveryFailed')<{
+  readonly reason: 'unavailable' | 'rejected'
+}> {}
+
 export type BrowserDependencies = {
   readonly createAudio: () => AudioPort
   readonly storage: () => Storage | undefined
+  readonly deliverPlay: (trackId: string) => Effect.Effect<void, PlayDeliveryFailed>
+  readonly reporter: AudioPlaybackReporter
 }
 
 export const makePlayerClientLayer = (dependencies: BrowserDependencies) =>
@@ -208,11 +218,12 @@ export const makePlayerClientLayer = (dependencies: BrowserDependencies) =>
     Effect.acquireRelease(
       Effect.promise(async () => {
         const audio = dependencies.createAudio()
+        const storage = layerFromAdapter(createWebAudioStorageAdapter(dependencies.storage))
 
         const services = Layer.mergeAll(
           makeHtmlAudioEngineLayer(audio),
-          layerFromAdapter(createWebAudioStorageAdapter(dependencies.storage)),
-          PlayReporterNoop,
+          storage,
+          makePlayReporterLayer(dependencies.deliverPlay).pipe(Layer.provide(storage)),
         )
 
         const runtime = ManagedRuntime.make(services)
@@ -224,7 +235,9 @@ export const makePlayerClientLayer = (dependencies: BrowserDependencies) =>
 
         runtime.runFork(
           Effect.scoped(
-            makeAudioPlayback(runtime).pipe(
+            makeAudioPlayback(runtime, dependencies.reporter, () =>
+              readPlayerPreferences(dependencies.storage),
+            ).pipe(
               Effect.tap((controller) => Effect.sync(() => resolveController(controller))),
               Effect.andThen(Effect.never),
             ),
@@ -245,4 +258,23 @@ export const makePlayerClientLayer = (dependencies: BrowserDependencies) =>
 export const playerClientLayer = makePlayerClientLayer({
   createAudio: () => new Audio(),
   storage: () => ('window' in globalThis ? window.localStorage : undefined),
+  deliverPlay: (trackId) =>
+    Effect.tryPromise({
+      try: (signal) =>
+        fetch(`/api/content/audio/${encodeURIComponent(trackId)}/play`, {
+          method: 'POST',
+          credentials: 'same-origin',
+          signal,
+        }),
+      catch: () => new PlayDeliveryFailed({ reason: 'unavailable' }),
+    }).pipe(
+      Effect.flatMap((response) =>
+        response.ok ? Effect.void : Effect.fail(new PlayDeliveryFailed({ reason: 'rejected' })),
+      ),
+    ),
+  reporter: {
+    onTrackPlayed: () => Effect.sync(() => reportPlayerTelemetry('play')),
+    onTrackPaused: () => Effect.sync(() => reportPlayerTelemetry('pause')),
+    onError: () => Effect.sync(() => reportPlayerTelemetry('error')),
+  },
 })

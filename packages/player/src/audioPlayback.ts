@@ -8,6 +8,7 @@ import type { QueueTrackType } from './persistedQueue'
 import { playerCore } from './playerCore'
 import { PlayerStorage } from './playerStorage'
 import type { PlayReporter } from './playReporter'
+import { defaultPlayerPreferences, type PlayerPreferences } from './preferences'
 import {
   initialQueueState,
   mergeHydratedQueue,
@@ -155,6 +156,7 @@ export interface AudioPlaybackController {
 export const makeAudioPlayback = (
   runtime: PlaybackRuntime,
   reporter: AudioPlaybackReporter = noopReporter,
+  readPreferences: () => PlayerPreferences = () => defaultPlayerPreferences,
 ): Effect.Effect<
   AudioPlaybackController,
   never,
@@ -401,7 +403,7 @@ export const makeAudioPlayback = (
         }) ?? Effect.void,
       )
 
-      if (next) {
+      if (next && readPreferences().continueQueue) {
         forkDetached(playFromQueue(nextIndex, true))
       }
     }
@@ -420,6 +422,7 @@ export const makeAudioPlayback = (
 
     const core = yield* playerCore({
       onStatus: handleStatus,
+      restorePosition: () => readPreferences().restorePosition,
       onTrackStarted: (track) => {
         forkDetached(reporter.onTrackPlayed?.(track) ?? Effect.void)
       },

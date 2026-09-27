@@ -1,4 +1,5 @@
 export const staticPages = new Map([
+  ['spotify-callback', { title: 'Spotify connection', paragraphs: [] }],
   [
     'privacy',
     {

@@ -1,7 +1,3 @@
-// The submodel owns its standalone control-surface styles.
-// oxlint-disable-next-line import/no-unassigned-import
-import './player.css'
-
 export { initialModel, Message, Model, Snapshot, update } from './model'
 
 export {

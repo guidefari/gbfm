@@ -1,8 +1,11 @@
 import { ROLES } from '@gbfm/core/roles'
+import { PlayerPreferences } from '@gbfm/player'
 import { Effect, Match, Schema } from 'effect'
 import { Command, type Runtime, type Update } from 'foldkit'
 import { defineMessageUnion } from 'foldkit/message'
 
+import { SpotifyConnection, SpotifyStatus, disconnected } from '../spotify'
+import { readTheme, saveTheme, Theme } from '../theme'
 import { DashboardDocument, Row } from './document'
 import { DashboardService } from './service'
 
@@ -22,6 +25,7 @@ export const Model = Schema.Struct({
   fields: Schema.Record(Schema.String, Schema.String),
   toggles: Schema.Record(Schema.String, Schema.Boolean),
   error: Schema.NullOr(Schema.String),
+  spotify: SpotifyStatus,
 })
 
 export type Model = typeof Model.Type
@@ -83,12 +87,67 @@ export const Message = defineMessageUnion({
   SaveProfile: {},
   SaveEmailPreferences: {},
   SavePlayerPreferences: {},
+  PlayerPreferencesLoaded: { preferences: PlayerPreferences },
+  ThemeSelected: { theme: Theme },
+  ThemeRestored: { theme: Theme },
   SearchRequested: {},
   DeleteRequested: { id: Schema.String },
   Saved: {},
+  SpotifyRequested: {
+    action: Schema.Literals(['status', 'connect', 'disconnect', 'completeCallback']),
+  },
+  SpotifyLoaded: { status: SpotifyStatus },
 })
 
 export type Message = typeof Message.Type
+
+type Services = DashboardService | SpotifyConnection
+
+const SpotifyRequest = Command.define('Spotify.Connection', {
+  args: { action: Schema.Literals(['status', 'connect', 'disconnect', 'completeCallback']) },
+  messages: [Message.SpotifyLoaded, Message.Failed],
+  execute: ({ action }) =>
+    SpotifyConnection.pipe(
+      Effect.flatMap((service) => service[action]),
+      Effect.map((status) => Message.SpotifyLoaded({ status: status ?? disconnected })),
+      Effect.catch((error) => Effect.succeed(Message.Failed({ message: error.message }))),
+    ),
+})
+
+const RestoreTheme = Command.define('Appearance.Restore', {
+  messages: [Message.ThemeRestored],
+  execute: Effect.sync(() => Message.ThemeRestored({ theme: readTheme() })),
+})
+
+const RestorePlayerPreferences = Command.define('PlayerPreferences.Restore', {
+  messages: [Message.PlayerPreferencesLoaded],
+  execute: DashboardService.pipe(
+    Effect.flatMap((service) => service.readPlayerPreferences),
+    Effect.map((preferences) => Message.PlayerPreferencesLoaded({ preferences })),
+  ),
+})
+
+const SavePlayerPreferences = Command.define('PlayerPreferences.Save', {
+  args: { preferences: PlayerPreferences },
+  messages: [Message.Saved, Message.Failed],
+  execute: ({ preferences }) =>
+    DashboardService.pipe(
+      Effect.flatMap((service) => service.writePlayerPreferences(preferences)),
+      Effect.as(Message.Saved()),
+      Effect.catch((error) => Effect.succeed(Message.Failed({ message: error.message }))),
+    ),
+})
+
+const ApplyTheme = Command.define('Appearance.Apply', {
+  args: { theme: Theme },
+  messages: [Message.ThemeRestored],
+  execute: ({ theme }) =>
+    Effect.sync(() => {
+      saveTheme(theme)
+
+      return Message.ThemeRestored({ theme })
+    }),
+})
 
 const Load = Command.define('DashboardLoad', {
   args: { path: Schema.String },
@@ -125,13 +184,14 @@ export const initialModel = (section: string, principal: Principal): Model => ({
   fields: {},
   toggles: {},
   error: null,
+  spotify: disconnected,
 })
 
 export const init =
   (
     section: string,
     principal: Principal,
-  ): Runtime.ApplicationInit<Model, Message, void, DashboardService> =>
+  ): Runtime.ApplicationInit<Model, Message, void, Services> =>
   () => {
     const model = initialModel(section, principal)
     const endpoint = endpointFor(section)
@@ -139,17 +199,44 @@ export const init =
     if (isAdminSection(section) && principal.role !== 'admin')
       return { model: { ...model, phase: 'error', error: 'Administrator access required.' } }
 
+    if (section === 'appearance')
+      return { model: { ...model, phase: 'ready' }, commands: [RestoreTheme()] }
+
+    if (section === 'player') return { model, commands: [RestorePlayerPreferences()] }
+
+    if (section === 'integrations' || section === 'spotify-callback')
+      return {
+        model,
+        commands: [
+          SpotifyRequest({ action: section === 'integrations' ? 'status' : 'completeCallback' }),
+        ],
+      }
+
     return endpoint
       ? { model, commands: [Load({ path: endpoint })] }
       : { model: { ...model, phase: 'ready' } }
   }
 
-export const update = (
-  model: Model,
-  message: Message,
-): Update.Return<Model, Message, DashboardService> =>
-  Message.match(message, {
+export const update = (model: Model, message: Message): Update.Return<Model, Message, Services> =>
+  Message.match<Update.Return<Model, Message, Services>>(message, {
+    SpotifyRequested: ({ action }) => ({
+      model: { ...model, phase: 'loading', error: null },
+      commands: [SpotifyRequest({ action })],
+    }),
+    SpotifyLoaded: ({ status }) => ({
+      model: { ...model, phase: 'ready', spotify: status, error: null },
+    }),
+    ThemeSelected: ({ theme }) => ({ model, commands: [ApplyTheme({ theme })] }),
+    ThemeRestored: ({ theme }) => ({ model: { ...model, fields: { ...model.fields, theme } } }),
+    PlayerPreferencesLoaded: ({ preferences }) => ({
+      model: { ...model, phase: 'ready', toggles: preferences },
+    }),
     LoadRequested: () => {
+      if (model.section === 'integrations')
+        return {
+          model: { ...model, phase: 'loading', error: null },
+          commands: [SpotifyRequest({ action: 'status' })],
+        }
       const path = endpointFor(model.section)
 
       return path
@@ -189,7 +276,17 @@ export const update = (
         }),
       ],
     }),
-    SavePlayerPreferences: () => ({ model }),
+    SavePlayerPreferences: () => ({
+      model: { ...model, phase: 'saving' },
+      commands: [
+        SavePlayerPreferences({
+          preferences: {
+            continueQueue: model.toggles.continueQueue ?? true,
+            restorePosition: model.toggles.restorePosition ?? true,
+          },
+        }),
+      ],
+    }),
     SearchRequested: () => ({
       model: { ...model, phase: 'loading' },
       commands: [Load({ path: `/api/search?q=${encodeURIComponent(model.fields.query ?? '')}` })],

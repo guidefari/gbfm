@@ -11,6 +11,9 @@ describe('parseRoute', () => {
         section: 'email-logs',
       }),
     )
-    expect(parseRoute('/definitely-missing')).toEqual(Route.cases.NotFound.make({}))
+    expect(parseRoute('/local-creator')).toEqual(
+      Route.cases.Detail.make({ kind: 'resolve', slug: 'local-creator' }),
+    )
+    expect(parseRoute('/definitely/missing/route')).toEqual(Route.cases.NotFound.make({}))
   })
 })

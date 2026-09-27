@@ -256,6 +256,45 @@ const makeReporter = () => {
 }
 
 describe('makeAudioPlayback', () => {
+  it.each([true, false])(
+    'honors live preferences for restore and automatic advance: %s',
+    async (enabled) => {
+      const storage = makeRecordingStorage({
+        positions: new Map([['one', { position: 42, updatedAt: 0 }]]),
+      })
+
+      const { reporter } = makeReporter()
+      const { engine, calls, setStatus, emit } = await Effect.runPromise(makeRecordingEngine())
+      const playReporter = makeRecordingPlayReporter()
+      const runtime = makeRuntime(engine, storage, playReporter)
+      let preferences = { continueQueue: !enabled, restorePosition: !enabled }
+
+      try {
+        await runtime.runPromise(
+          Effect.gen(function* () {
+            const playback = yield* makeAudioPlayback(runtime, reporter, () => preferences)
+            yield* Effect.yieldNow
+            preferences = { continueQueue: enabled, restorePosition: enabled }
+            yield* setStatus({ isLoaded: true, duration: 300 })
+            yield* playback.playAll([track('one'), track('two')])
+            yield* Effect.yieldNow
+            expect(calls.includes('seek:42')).toBe(enabled)
+            yield* emit({ didJustFinish: true, playing: false, currentTime: 300 })
+            yield* Effect.yieldNow
+            expect(playback.getSnapshot().queue.current?.id).toBe(enabled ? 'two' : 'one')
+
+            if (!enabled) {
+              yield* playback.playNext
+              expect(playback.getSnapshot().queue.current?.id).toBe('two')
+            }
+          }).pipe(Effect.scoped),
+        )
+      } finally {
+        await runtime.dispose()
+      }
+    },
+  )
+
   it('replays early queue changes after hydration without losing them', async () => {
     let resolveQueue!: (queue: PersistedQueueType | null) => void
 

@@ -26,7 +26,7 @@ export type SpotifyAuthSession = BrowserRefreshableTokens
 
 export type SpotifyProfile = PrivateUser
 
-export { readAuthorizationCallback }
+export { readAuthorizationCallback, SpotifyBrowser }
 
 export const SPOTIFY_ENTITY_KIND = {
   TRACK: 'track',

@@ -12,6 +12,7 @@ import {
 } from '@/db/music-entity.schema'
 import { postCreators, postsTable } from '@/db/post.schema'
 import { seedLocalUsers } from '@/db/seed-local-users'
+import { showCreators, showsTable } from '@/db/show.schema'
 import { ConfigService, createConfig } from '@/services/config.service'
 import { createTestWebHandler } from '@/test/http-handler'
 import { createMigratedD1Database } from '@/test/migrate-d1'
@@ -31,6 +32,25 @@ const [creator] = await database
 
 if (!creator) throw new Error('Local E2E creator was not seeded')
 
+const [show] = await database
+  .insert(showsTable)
+  .values({
+    title: 'Local Radio',
+    slug: 'e2e-local-radio',
+    description: 'Independent frequencies from our local resident.',
+    content: 'A disposable show for browser tests.',
+    draft: false,
+  })
+  .returning()
+if (!show) throw new Error('Local E2E show was not seeded')
+await database.insert(showCreators).values({ showId: show.id, creatorId: creator.id })
+await database.insert(showsTable).values({
+  title: 'Quiet Hours',
+  slug: 'e2e-quiet-hours',
+  content: 'A show without episodes.',
+  draft: false,
+})
+
 const [mix] = await database
   .insert(audioTable)
   .values({
@@ -38,7 +58,9 @@ const [mix] = await database
     title: 'Local Frequencies',
     slug: 'e2e-local-frequencies',
     description: 'A disposable audio fixture for playback and navigation tests.',
-    content: 'Local audio playback fixture.',
+    content:
+      '## Listening notes\n\nAn **independent signal**. [Read more](https://example.com/music).\n\n- Local audio playback fixture.\n\n<iframe src="https://w.soundcloud.com/player/?url=https%3A%2F%2Fapi.soundcloud.com%2Ftracks%2F123" />\n\n<iframe src="https://untrusted.invalid/player" />\n\n[Unsafe](javascript:alert(1))',
+    showId: show.id,
     url: `http://127.0.0.1:${port}/api/e2e-audio.wav`,
     draft: false,
   })
@@ -148,6 +170,29 @@ await database.insert(postCreators).values([
   { postId: rootPost.id, creatorId: creator.id },
   { postId: replyPost.id, creatorId: creator.id },
 ])
+
+const archivePosts = await database
+  .insert(postsTable)
+  .values([
+    {
+      slug: 'e2e-archive-one',
+      content: 'The first archived signal.',
+      type: 'micro',
+      draft: false,
+      createdAt: new Date('2020-01-01T12:00:00Z'),
+    },
+    {
+      slug: 'e2e-archive-two',
+      content: 'The second archived signal.',
+      type: 'micro',
+      draft: false,
+      createdAt: new Date('2020-02-01T12:00:00Z'),
+    },
+  ])
+  .returning()
+await database
+  .insert(postCreators)
+  .values(archivePosts.map((post) => ({ postId: post.id, creatorId: creator.id })))
 
 const baseConfig = createConfig()
 

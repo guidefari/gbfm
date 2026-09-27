@@ -4,11 +4,60 @@ export function boundedName(value: string, fallback: string): string {
   return TOKEN.test(value) ? value : fallback
 }
 
-/** Converts a URL path into a low-cardinality route when SvelteKit has no route ID. */
+/** Emits only fixed route templates; account names, slugs, tokens, and query strings never become telemetry dimensions. */
 export function routeTemplate(routeId: string | null | undefined, pathname: string): string {
   if (routeId?.startsWith('/') && routeId.length <= 120)
     return routeId.replace(/\([^)]*\)\/?/g, '') || '/'
-  void pathname
+
+  if (pathname === '/') return '/'
+  const [first, second, third] = pathname.split('/').filter(Boolean)
+
+  if (
+    first &&
+    [
+      'shows',
+      'mixes',
+      'tracks',
+      'editorial',
+      'tweets',
+      'labels',
+      'releases',
+      'tags',
+      'djs',
+    ].includes(first)
+  )
+    return second ? `/${first}/:slug` : `/${first}`
+
+  if (first === 'tweet') return second ? '/tweet/:slug' : '/tweet'
+
+  if (first === 'profile') return '/profile/:username'
+
+  if (first === 'dashboard') return second ? '/dashboard/:section' : '/dashboard'
+
+  if (first === 'auth') return '/auth/:action'
+
+  if (first === 'new') return '/new/:kind'
+
+  if (
+    first &&
+    [
+      'privacy',
+      'terms',
+      'changelog',
+      'subscribe',
+      'unsubscribe',
+      'reminders',
+      'mix-upload',
+    ].includes(first) &&
+    !second
+  )
+    return `/${first}`
+
+  if (first === 'api') return '/api/:endpoint'
+
+  if (first === 'actions') return '/actions/:action'
+
+  if (first && !second && !third) return '/:slug'
 
   return '/unknown'
 }

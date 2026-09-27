@@ -1,5 +1,7 @@
-import { Context, Data, Effect, Layer, Schema } from 'effect'
+import type { PlayerPreferences } from '@gbfm/player'
+import { Context, Data, Effect, Layer } from 'effect'
 
+import { preferencesKey, readPlayerPreferences } from '../player/preferences'
 import { type DashboardDocument, emptyDocument, parseDashboardDocument } from './document'
 
 export class DashboardRequestError extends Data.TaggedError('DashboardRequestError')<{
@@ -17,9 +19,9 @@ export interface DashboardOperations {
   readonly request: (
     request: DashboardRequest,
   ) => Effect.Effect<DashboardDocument, DashboardRequestError>
-  readonly readPlayerPreferences: Effect.Effect<Readonly<Record<string, boolean>>>
+  readonly readPlayerPreferences: Effect.Effect<PlayerPreferences>
   readonly writePlayerPreferences: (
-    preferences: Readonly<Record<string, boolean>>,
+    preferences: PlayerPreferences,
   ) => Effect.Effect<void, DashboardRequestError>
 }
 
@@ -83,20 +85,10 @@ export const makeDashboardServiceLayer = (fetchImplementation: typeof fetch = gl
             : new DashboardRequestError({ status: null, message: 'Invalid dashboard response.' }),
         ),
       ),
-    readPlayerPreferences: Effect.try(() =>
-      globalThis.localStorage?.getItem('gbfm:player:preferences'),
-    ).pipe(
-      Effect.flatMap(
-        Schema.decodeUnknownEffect(
-          Schema.fromJsonString(Schema.Record(Schema.String, Schema.Boolean)),
-        ),
-      ),
-      Effect.orElseSucceed(() => ({ continueQueue: true, restorePosition: true })),
-    ),
+    readPlayerPreferences: Effect.sync(() => readPlayerPreferences(() => globalThis.localStorage)),
     writePlayerPreferences: (preferences) =>
       Effect.try({
-        try: () =>
-          globalThis.localStorage?.setItem('gbfm:player:preferences', JSON.stringify(preferences)),
+        try: () => globalThis.localStorage.setItem(preferencesKey, JSON.stringify(preferences)),
         catch: () =>
           new DashboardRequestError({ status: null, message: 'Could not save player settings.' }),
       }),

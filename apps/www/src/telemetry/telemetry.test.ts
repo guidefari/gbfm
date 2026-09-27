@@ -50,6 +50,13 @@ describe('privacy boundary', () => {
     expect(first).not.toContain('person')
     expect(routeTemplate('/mix/[slug]', '/mix/private')).toBe('/mix/[slug]')
     expect(routeTemplate(undefined, '/mix/private')).toBe('/unknown')
+    expect(routeTemplate(undefined, '/mixes/private-title')).toBe('/mixes/:slug')
+    expect(routeTemplate(undefined, '/profile/person@example.com')).toBe('/profile/:username')
+    expect(routeTemplate(undefined, '/dashboard/music-entity/track/private-id')).toBe(
+      '/dashboard/:section',
+    )
+    expect(routeTemplate(undefined, '/someone-private')).toBe('/:slug')
+    expect(routeTemplate(undefined, '/auth/reset-password')).toBe('/auth/:action')
   })
 
   test('rotates the random anonymous session at 24 hours', () => {
