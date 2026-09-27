@@ -12,7 +12,7 @@ const application = Runtime.makeApplication({
   resources: clientResources,
   subscriptions,
   container: document.getElementById('root'),
-  viewTransition: ({ previousModel, model }) => previousModel.loading && !model.loading,
+  viewTransition: ({ previousModel, model }) => previousModel.flags.url !== model.flags.url,
 })
 
 const stopTheme = startTheme()

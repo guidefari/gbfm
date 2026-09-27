@@ -5,8 +5,8 @@ import { PublicProfileResponse } from '@gbfm/api/profile'
 import { ReleaseResponse } from '@gbfm/api/release'
 import { canCreatePosts, isRole } from '@gbfm/core/roles'
 import { SiteMetadata } from '@gbfm/site-metadata'
-import { Effect, Layer, Match, Schema } from 'effect'
-import { Command, Navigation, Subscription, type Runtime, type Update } from 'foldkit'
+import { Effect, HashMap, Layer, Match, Option, Result, Schema } from 'effect'
+import { AsyncData, Command, Navigation, Subscription, type Runtime, type Update } from 'foldkit'
 import type { Document, HtmlBuilder } from 'foldkit/html'
 import { defineMessageUnion } from 'foldkit/message'
 import { UrlRequest } from 'foldkit/navigation'
@@ -22,6 +22,7 @@ import { formatDate } from './format-date'
 import { iconPaths, lucide } from './icons'
 import { invitationView } from './invitation'
 import { newsletterView } from './newsletter'
+import { isCacheable, pageKey, samePage } from './page-cache'
 import * as Player from './player'
 import * as PublicActions from './public-actions'
 import { profileView } from './public-profile'
@@ -181,6 +182,25 @@ export const parseRoute = (pathname: string): Route => {
   return Route.cases.NotFound.make({})
 }
 
+/** Stale-while-revalidate page data per URL, so revisits render immediately while a fresh copy loads. */
+const PageData = AsyncData.Schema(Flags, Schema.String)
+
+type PageCache = HashMap.HashMap<string, AsyncData.AsyncData<Flags, string>>
+
+const settlePage = (
+  cache: PageCache,
+  key: string,
+  result: Result.Result<Flags, string>,
+): PageCache => {
+  if (!isCacheable(key)) return cache
+  const entry = AsyncData.fromOptionOrIdle(HashMap.get(cache, key))
+
+  return HashMap.set(cache, key, AsyncData.settle(entry, result))
+}
+
+const seedCache = (flags: Flags): PageCache =>
+  settlePage(HashMap.empty(), pageKey(flags.url), Result.succeed(flags))
+
 export const Model = Schema.Struct({
   route: Route,
   flags: Flags,
@@ -189,6 +209,7 @@ export const Model = Schema.Struct({
   skipSeen: Schema.Boolean,
   loading: Schema.Boolean,
   pendingPath: Schema.NullOr(Schema.String),
+  pageCache: Schema.HashMap(Schema.String, PageData.schema),
   interactive: Schema.Boolean,
   navigationId: Schema.Number,
   error: Schema.NullOr(Schema.String),
@@ -215,8 +236,8 @@ export const Message = defineMessageUnion({
   GotDashboardResult: { message: Dashboard.Message, navigationId: Schema.Number },
   RequestedUrl: { request: UrlRequest },
   ChangedUrl: { url: Url },
-  LoadedPage: { flags: Flags, navigationId: Schema.Number },
-  FailedPage: { navigationId: Schema.Number },
+  LoadedPage: { flags: Flags, key: Schema.String, navigationId: Schema.Number },
+  FailedPage: { key: Schema.String, navigationId: Schema.Number },
   LoadedReplies: { slug: Schema.String, replies: MicroPostScreenRepliesResponse },
   FailedReplies: { slug: Schema.String },
   NavigationCompleted: {},
@@ -353,10 +374,54 @@ const LoadPage = Command.define('Navigation.Load', {
           )
         }),
       ),
-      Effect.map((flags) => Message.LoadedPage({ flags, navigationId })),
-      Effect.catch(() => Effect.succeed(Message.FailedPage({ navigationId }))),
+      Effect.map((flags) => Message.LoadedPage({ flags, key: pageKey(href), navigationId })),
+      Effect.catch(() => Effect.succeed(Message.FailedPage({ key: pageKey(href), navigationId }))),
     ),
 })
+
+const showPage = (
+  model: Model,
+  flags: Flags,
+  navigationId: number,
+): Update.Return<Model, Message, Services> => {
+  const next = init(flags)
+
+  return {
+    ...next,
+    model: {
+      ...next.model,
+      player: model.player,
+      skipSeen: model.skipSeen,
+      menuOpen: model.menuOpen,
+      search: model.search,
+      pageCache: model.pageCache,
+      navigationId,
+    },
+    commands: [
+      ...Command.mapMessages(next.commands ?? [], (message) =>
+        Match.value(message).pipe(
+          Match.tag('GotCreatorResult', ({ message }) =>
+            Message.GotCreatorResult({ message, navigationId }),
+          ),
+          Match.tag('GotDashboardResult', ({ message }) =>
+            Message.GotDashboardResult({ message, navigationId }),
+          ),
+          Match.orElse((message) => message),
+        ),
+      ),
+      SetResolvedUrl({
+        href: flags.url,
+        metadata: flags.metadata,
+        noindex:
+          flags.status !== 200 ||
+          Route.guards.Dashboard(next.model.route) ||
+          Route.guards.Composer(next.model.route) ||
+          Route.guards.Auth(next.model.route) ||
+          (Route.guards.Static(next.model.route) && next.model.route.page === 'spotify-callback'),
+      }),
+    ],
+  }
+}
 
 export const update = (model: Model, message: Message): Update.Return<Model, Message, Services> =>
   Message.match<Update.Return<Model, Message, Services>>(message, {
@@ -453,71 +518,82 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
         }),
         External: ({ href }) => ({ model, commands: [Leave({ href })] }),
       }),
-    ChangedUrl: ({ url }) => ({
-      model: {
+    ChangedUrl: ({ url }) => {
+      const href = urlToString(url)
+      const key = pageKey(href)
+      const navigationId = model.navigationId + 1
+
+      const entry = isCacheable(key)
+        ? AsyncData.fromOptionOrIdle(HashMap.get(model.pageCache, key))
+        : AsyncData.Idle()
+
+      const transition = AsyncData.revalidateOrLoad(entry)
+
+      const pageCache = Option.match(transition, {
+        onNone: () => model.pageCache,
+        onSome: (next) =>
+          isCacheable(key) ? HashMap.set(model.pageCache, key, next) : model.pageCache,
+      })
+
+      const leaving = {
         ...model,
-        loading: true,
-        pendingPath: url.pathname,
+        pageCache,
         menuOpen: false,
-        navigationId: model.navigationId + 1,
+        navigationId,
         player: { ...model.player, fullscreen: false, queueOpen: false },
-      },
-      commands: [
+      }
+
+      const commands = [
         ...(model.creator.uploadState === 'running' ? [PauseCreatorUpload()] : []),
-        LoadPage({ href: urlToString(url), navigationId: model.navigationId + 1 }),
-      ],
-    }),
-    LoadedPage: ({ flags, navigationId }) => {
-      if (navigationId !== model.navigationId) return { model }
-      const next = init(flags)
+        LoadPage({ href, navigationId }),
+      ]
+
+      return Option.match(AsyncData.getData(entry), {
+        onNone: () => ({
+          model: { ...leaving, loading: true, pendingPath: url.pathname },
+          commands,
+        }),
+        onSome: (flags) => {
+          const shown = showPage(leaving, flags, navigationId)
+
+          return { ...shown, commands: [...commands, ...(shown.commands ?? [])] }
+        },
+      })
+    },
+    LoadedPage: ({ flags, key, navigationId }) => {
+      const pageCache = settlePage(
+        settlePage(model.pageCache, key, Result.succeed(flags)),
+        pageKey(flags.url),
+        Result.succeed(flags),
+      )
+
+      if (navigationId !== model.navigationId || (!model.loading && samePage(model.flags, flags)))
+        return { model: { ...model, pageCache } }
+
+      const shown = showPage(model, flags, navigationId)
+
+      return { ...shown, model: { ...shown.model, pageCache } }
+    },
+    FailedPage: ({ key, navigationId }) => {
+      const pageCache = settlePage(
+        model.pageCache,
+        key,
+        Result.fail('This page could not be loaded.'),
+      )
 
       return {
-        ...next,
-        model: {
-          ...next.model,
-          player: model.player,
-          skipSeen: model.skipSeen,
-          menuOpen: model.menuOpen,
-          search: model.search,
-          navigationId,
-        },
-        commands: [
-          ...Command.mapMessages(next.commands ?? [], (message) =>
-            Match.value(message).pipe(
-              Match.tag('GotCreatorResult', ({ message }) =>
-                Message.GotCreatorResult({ message, navigationId }),
-              ),
-              Match.tag('GotDashboardResult', ({ message }) =>
-                Message.GotDashboardResult({ message, navigationId }),
-              ),
-              Match.orElse((message) => message),
-            ),
-          ),
-          SetResolvedUrl({
-            href: flags.url,
-            metadata: flags.metadata,
-            noindex:
-              flags.status !== 200 ||
-              Route.guards.Dashboard(next.model.route) ||
-              Route.guards.Composer(next.model.route) ||
-              Route.guards.Auth(next.model.route) ||
-              (Route.guards.Static(next.model.route) &&
-                next.model.route.page === 'spotify-callback'),
-          }),
-        ],
+        model:
+          navigationId === model.navigationId && model.loading
+            ? {
+                ...model,
+                pageCache,
+                loading: false,
+                pendingPath: null,
+                error: 'This page could not be loaded. Please try again.',
+              }
+            : { ...model, pageCache },
       }
     },
-    FailedPage: ({ navigationId }) => ({
-      model:
-        navigationId === model.navigationId
-          ? {
-              ...model,
-              loading: false,
-              pendingPath: null,
-              error: 'This page could not be loaded. Please try again.',
-            }
-          : model,
-    }),
     NavigationCompleted: () => ({ model }),
   })
 
@@ -562,6 +638,7 @@ export const init: Runtime.ApplicationInit<Model, Message, Flags, Services> = (f
       skipSeen: flags.skipSeen,
       loading: false,
       pendingPath: null,
+      pageCache: seedCache(flags),
       interactive: false,
       navigationId: 0,
       error: null,
