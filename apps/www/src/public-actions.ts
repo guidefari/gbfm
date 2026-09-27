@@ -115,18 +115,27 @@ export const view = <M>(
     Match.orElse(() => (active ? 'Remove from favorites' : 'Add to favorites')),
   )
 
+  const outline =
+    'inline-flex h-10 items-center gap-2 rounded-sm border border-border bg-transparent px-4 text-sm font-semibold text-foreground no-underline transition-colors hover:border-foreground hover:bg-muted disabled:opacity-50 aria-pressed:border-highlight aria-pressed:text-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+
   return h.div(
-    [h.Class('detail-actions')],
+    [h.Class('flex flex-wrap items-center gap-3')],
     [
       Match.value(document.state).pipe(
         Match.when('anonymous', () =>
           h.a(
-            [h.Href(`/auth/sign-in?returnTo=${encodeURIComponent(document.path)}`)],
+            [
+              h.Href(`/auth/sign-in?returnTo=${encodeURIComponent(document.path)}`),
+              h.Class(outline),
+            ],
             [`Sign in to ${document.target.kind === 'show' ? 'subscribe' : 'favorite'}`],
           ),
         ),
         Match.when('unavailable', () =>
-          h.p([h.Role('status')], ['Your saved state is unavailable. Reload to try again.']),
+          h.p(
+            [h.Role('status'), h.Class('text-sm text-muted-foreground')],
+            ['Your saved state is unavailable. Reload to try again.'],
+          ),
         ),
         Match.orElse(() =>
           h.button(
@@ -135,12 +144,15 @@ export const view = <M>(
               h.Disabled(model.busy || !interactive),
               h.AriaPressed(String(active)),
               h.OnClick(message(Message.Toggle())),
+              h.Class(outline),
             ],
             [model.busy ? 'Saving…' : label],
           ),
         ),
       ),
-      model.notice ? h.p([h.Role('status')], [model.notice]) : h.empty,
+      model.notice
+        ? h.p([h.Role('status'), h.Class('text-sm text-muted-foreground')], [model.notice])
+        : h.empty,
     ],
   )
 }

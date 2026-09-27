@@ -92,6 +92,17 @@
   }
 }
 
+@keyframes equalizer {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+
+  50% {
+    transform: scaleY(1);
+  }
+}
+
 @keyframes accordion-down {
   from {
     height: 0;
@@ -1013,100 +1024,6 @@
     height: auto;
     aspect-ratio: 1;
     object-fit: cover;
-  }
-}
-.shows-browser {
-  display: grid;
-  grid-template-columns: 220px minmax(0, 1fr) 240px;
-  gap: 2.5rem;
-  padding: 1.5rem 1.5rem 8rem;
-}
-.shows-browser h2 {
-  font-size: 0.75rem;
-  color: var(--muted-foreground);
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 0.5rem;
-  margin-bottom: 1rem;
-}
-.show-meta h1 {
-  font-size: 1.125rem;
-  font-weight: bold;
-  margin-top: 1rem;
-}
-.show-meta p,
-.episode-row time,
-.episode-row p {
-  font-size: 0.75rem;
-  color: var(--muted-foreground);
-}
-.show-meta,
-.show-switcher {
-  align-self: start;
-  position: sticky;
-  top: 1.5rem;
-}
-.show-switcher nav {
-  display: grid;
-  gap: 1rem;
-}
-.show-switcher a {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  font-size: 0.875rem;
-  text-decoration: none;
-}
-.show-switcher img {
-  width: 48px;
-  height: 48px;
-}
-.show-switcher [aria-current='page'] {
-  color: var(--highlight);
-}
-.episode-row {
-  display: grid;
-  grid-template-columns: 112px minmax(0, 1fr);
-  gap: 1rem;
-  padding: 1rem 0;
-  border-bottom: 1px solid var(--border);
-}
-.episode-row h3 {
-  font-size: 1rem;
-  font-weight: bold;
-}
-.episode-row button {
-  margin-top: 0.5rem;
-  font-size: 0.75rem;
-}
-@media (max-width: 1023px) {
-  .shows-browser {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-  .show-meta,
-  .show-switcher {
-    position: static;
-    width: 100%;
-  }
-  .show-meta > img {
-    width: 200px;
-  }
-  .show-switcher {
-    order: -1;
-  }
-  .show-switcher nav {
-    display: flex;
-    overflow-x: auto;
-  }
-  .show-switcher a {
-    flex-shrink: 0;
-    max-width: 180px;
-  }
-}
-@media (max-width: 640px) {
-  .episode-row {
-    grid-template-columns: 80px minmax(0, 1fr);
   }
 }
 .content-detail {

@@ -1133,8 +1133,13 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
         ? showsView(
             model.flags.shows,
             h,
-            (episode) =>
-              Message.GotPlayerMessage({ message: Player.Message.PlayTrack({ track: episode }) }),
+            {
+              play: (episode) =>
+                Message.GotPlayerMessage({ message: Player.Message.PlayTrack({ track: episode }) }),
+              toggle: Message.GotPlayerMessage({ message: Player.Message.TogglePlayPause() }),
+              currentId: model.player.snapshot.queue.current?.id ?? null,
+              isPlaying: model.player.snapshot.transport.isPlaying,
+            },
             PublicActions.view(
               model.publicAction,
               h,
