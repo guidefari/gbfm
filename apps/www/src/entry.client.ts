@@ -1,6 +1,6 @@
 import { Runtime } from 'foldkit'
 
-import { applicationConfig, clientResources, subscriptions } from './application'
+import { applicationConfig, clientResources, displayedPath, subscriptions } from './application'
 import { startArtworkFallback } from './artwork'
 import { startSearchShortcuts } from './search'
 import { startBrowserTelemetry } from './telemetry/browser'
@@ -12,7 +12,8 @@ const application = Runtime.makeApplication({
   resources: clientResources,
   subscriptions,
   container: document.getElementById('root'),
-  viewTransition: ({ previousModel, model }) => previousModel.flags.url !== model.flags.url,
+  viewTransition: ({ previousModel, model }) =>
+    displayedPath(previousModel) !== displayedPath(model),
 })
 
 const stopTheme = startTheme()

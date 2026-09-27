@@ -631,6 +631,10 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
     NavigationCompleted: () => ({ model }),
   })
 
+/** The page the screen is showing: the pending destination while loading, else the loaded page. */
+export const displayedPath = (model: Model) =>
+  model.loading && model.pendingPath ? model.pendingPath : new URL(model.flags.url).pathname
+
 export const init: Runtime.ApplicationInit<Model, Message, Flags, Services> = (flags) => {
   const url = new URL(flags.url)
   const route = parseRoute(url.pathname)
