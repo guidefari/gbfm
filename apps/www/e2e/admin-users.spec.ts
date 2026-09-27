@@ -24,6 +24,9 @@ for (const scripting of [false, true]) {
       await page
         .getByRole('textbox', { name: 'Password (optional)', exact: true })
         .fill('LocalTest123!')
+      await page
+        .getByRole('button', { name: 'Create account', exact: true })
+        .evaluate((element) => element.scrollIntoView({ block: 'center' }))
       await page.getByRole('button', { name: 'Create account', exact: true }).click()
       await expect(page.getByRole('status')).toHaveText('Account action completed.')
       const search = new URLSearchParams({ searchField: 'email', searchValue: email, limit: '5' })
@@ -56,6 +59,9 @@ for (const scripting of [false, true]) {
         await account
           .getByRole('textbox', { name: 'Ban reason (optional)', exact: true })
           .fill('Disposable test restriction')
+        await account
+          .getByRole('button', { name: 'Confirm ban', exact: true })
+          .evaluate((element) => element.scrollIntoView({ block: 'center' }))
         await account.getByRole('button', { name: 'Confirm ban', exact: true }).click()
         await expect(account).toContainText('Banned: Disposable test restriction')
         expect((await readAccount())[0]?.banned).toBe(true)
@@ -82,6 +88,9 @@ for (const scripting of [false, true]) {
           .filter({ hasText: /^Delete$/ })
           .click()
         await expect(account).toContainText('This cannot be undone.')
+        await account
+          .getByRole('button', { name: 'Confirm delete', exact: true })
+          .evaluate((element) => element.scrollIntoView({ block: 'center' }))
         await account.getByRole('button', { name: 'Confirm delete', exact: true }).click()
         await expect(account).toHaveCount(0)
         expect(await readAccount()).toEqual([])

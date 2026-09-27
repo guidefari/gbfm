@@ -49,9 +49,13 @@ test('favorite and subscription controls persist and mutations do not interrupt 
   await expect(
     page.getByRole('button', { name: 'Remove from favorites', exact: true }),
   ).toBeVisible()
+  await page
+    .getByRole('navigation', { name: 'Primary', exact: true })
+    .getByRole('button', { name: 'Now playing', exact: true })
+    .click()
   await expect(
     page
-      .getByRole('region', { name: 'Audio player' })
+      .getByRole('region', { name: 'Now playing' })
       .getByRole('button', { name: 'Pause', exact: true }),
   ).toBeVisible()
   expect(await page.evaluate(() => performance.timeOrigin)).toBe(timeOrigin)

@@ -110,7 +110,7 @@ test('playback advances and persists through client navigation', async ({ page }
     .getByRole('button', { name: 'Play', exact: true })
     .click()
   expect((await recordedPlay).status()).toBe(200)
-  const player = page.getByRole('region', { name: 'Audio player' })
+  const player = page.getByRole('region', { name: 'Now playing' })
   await expect(player.getByRole('button', { name: 'Pause', exact: true })).toBeVisible()
   await expect
     .poll(async () =>
@@ -125,12 +125,19 @@ test('playback advances and persists through client navigation', async ({ page }
   await page.getByRole('button', { name: 'Collapse player', exact: true }).click()
   await page.getByRole('link', { name: 'Privacy', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible()
+  await page
+    .getByRole('navigation', { name: 'Primary', exact: true })
+    .getByRole('button', { name: 'Now playing', exact: true })
+    .click()
   await expect(player.getByRole('button', { name: 'Pause', exact: true })).toBeVisible()
-  await player.getByRole('button', { name: 'Open queue', exact: true }).click()
+  await player.getByRole('button', { name: /^Queue \(/ }).click()
   await expect(page.getByRole('complementary', { name: 'Playback queue' })).toContainText(
     'Local Frequencies',
   )
-  await page.getByRole('button', { name: 'Close queue', exact: true }).click()
+  await page
+    .getByRole('complementary', { name: 'Playback queue' })
+    .getByRole('button', { name: 'Close queue', exact: true })
+    .click()
   await player.getByRole('button', { name: 'Pause', exact: true }).click()
   await expect(player.getByRole('button', { name: 'Play', exact: true })).toBeVisible()
 })
@@ -272,7 +279,7 @@ test('show selection survives reload and history, with distinct populated and em
   await page.getByRole('button', { name: 'Play Local Frequencies', exact: true }).click()
   await expect(
     page
-      .getByRole('region', { name: 'Audio player' })
+      .getByRole('region', { name: 'Now playing' })
       .getByRole('button', { name: 'Pause', exact: true }),
   ).toBeVisible()
 })
