@@ -1,3 +1,10 @@
+## [2.100.3](https://github.com/guidefari/gbfm/compare/v2.100.2...v2.100.3) (2026-09-27)
+
+
+### Bug Fixes
+
+* **db:** use flat D1 migration layout ([#355](https://github.com/guidefari/gbfm/issues/355)) ([b926872](https://github.com/guidefari/gbfm/commit/b9268723d359247744f388c58f9004a928c68ac5))
+
 ## [2.100.2](https://github.com/guidefari/gbfm/compare/v2.100.1...v2.100.2) (2026-09-26)
 
 
