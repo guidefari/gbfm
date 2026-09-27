@@ -512,26 +512,45 @@ const renderResponse = async (request: Request): Promise<Server.Responded> => {
 
   const endpoint = endpointFor(route)
   const showDetailSlug = Route.guards.Detail(route) && route.kind === 'shows' ? route.slug : null
+  const tweetSlug = Route.guards.Detail(route) && route.kind === 'tweets' ? route.slug : null
 
-  const optionalShowRequest = (path: string) =>
+  const optionalPageRequest = (path: string) =>
     Effect.tryPromise(() => apiRequest(ownedRequest, path, { method: 'GET' })).pipe(
       Effect.orElseSucceed(() => null),
     )
 
   const showEndpointRequest =
     endpoint && ((Route.guards.Listing(route) && route.kind === 'shows') || showDetailSlug !== null)
-      ? Effect.runPromise(optionalShowRequest(endpoint))
+      ? Effect.runPromise(optionalPageRequest(endpoint))
+      : null
+
+  const tweetRequests =
+    tweetSlug && endpoint
+      ? Effect.runPromise(
+          Effect.all(
+            {
+              screen: optionalPageRequest(endpoint),
+              neighbours: optionalPageRequest(
+                `/api/content/posts/micro/${encodeURIComponent(tweetSlug)}/neighbours`,
+              ),
+              metadata: optionalPageRequest(
+                `/api/site-metadata/tweet/${encodeURIComponent(tweetSlug)}`,
+              ),
+            },
+            { concurrency: 'unbounded' },
+          ),
+        )
       : null
 
   const showDetailRequests = showDetailSlug
     ? Effect.runPromise(
         Effect.all(
           {
-            list: optionalShowRequest('/api/shows?limit=100&offset=0'),
-            episodes: optionalShowRequest(
+            list: optionalPageRequest('/api/shows?limit=100&offset=0'),
+            episodes: optionalPageRequest(
               `/api/shows/${encodeURIComponent(showDetailSlug)}/episodes?limit=100&offset=0`,
             ),
-            metadata: optionalShowRequest(
+            metadata: optionalPageRequest(
               `/api/site-metadata/show/${encodeURIComponent(showDetailSlug)}`,
             ),
           },
@@ -559,9 +578,13 @@ const renderResponse = async (request: Request): Promise<Server.Responded> => {
         .catch(() => null)
     : null
 
+  const tweetData = tweetRequests ? await tweetRequests : null
+
   const response = endpoint
-    ? await (showEndpointRequest ??
-        apiRequest(ownedRequest, endpoint, { method: 'GET' }).catch(() => null))
+    ? tweetData
+      ? tweetData.screen
+      : await (showEndpointRequest ??
+          apiRequest(ownedRequest, endpoint, { method: 'GET' }).catch(() => null))
     : null
 
   const payload = response?.ok ? await json(response) : null
@@ -589,19 +612,12 @@ const renderResponse = async (request: Request): Promise<Server.Responded> => {
         ? Schema.decodeUnknownSync(PublicProfileResponse)(payload)
         : null
 
-  const isTweet = Route.guards.Detail(route) && route.kind === 'tweets'
+  const isTweet = tweetSlug !== null
 
   const tweet =
     isTweet && payload ? Schema.decodeUnknownSync(MicroPostScreenResponse)(payload) : null
 
-  const neighbourResponse =
-    isTweet && Route.guards.Detail(route)
-      ? await apiRequest(
-          ownedRequest,
-          `/api/content/posts/micro/${encodeURIComponent(route.slug)}/neighbours`,
-          { method: 'GET' },
-        ).catch(() => null)
-      : null
+  const neighbourResponse = tweetData?.neighbours ?? null
 
   const neighbours = neighbourResponse?.ok
     ? Option.getOrNull(
@@ -785,19 +801,28 @@ const renderResponse = async (request: Request): Promise<Server.Responded> => {
   const publicMetadata =
     showDetailSlug && response?.ok
       ? showMetadata
-      : kind && Route.guards.Detail(route) && status === 200
-        ? await apiRequest(
-            ownedRequest,
-            `/api/site-metadata/${kind}/${encodeURIComponent(route.slug)}`,
-            { method: 'GET' },
-          )
-            .then(async (response) =>
-              response.ok
-                ? Option.getOrNull(Schema.decodeUnknownOption(SiteMetadata)(await response.json()))
-                : null,
+      : tweetData && status === 200
+        ? await (tweetData.metadata?.ok
+            ? tweetData.metadata
+                .json()
+                .then((value) => Option.getOrNull(Schema.decodeUnknownOption(SiteMetadata)(value)))
+                .catch(() => null)
+            : null)
+        : kind && Route.guards.Detail(route) && status === 200
+          ? await apiRequest(
+              ownedRequest,
+              `/api/site-metadata/${kind}/${encodeURIComponent(route.slug)}`,
+              { method: 'GET' },
             )
-            .catch(() => null)
-        : null
+              .then(async (response) =>
+                response.ok
+                  ? Option.getOrNull(
+                      Schema.decodeUnknownOption(SiteMetadata)(await response.json()),
+                    )
+                  : null,
+              )
+              .catch(() => null)
+          : null
 
   const sourceMetadata =
     publicMetadata ?? makeStaticSiteMetadata(title, flags.description, url.pathname)
