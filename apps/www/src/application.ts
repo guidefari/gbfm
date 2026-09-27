@@ -556,9 +556,10 @@ const nav = [
   ['/labels', 'Record Labels'],
 ] as const
 
-const icon = (h: HtmlBuilder<Message>, path: string) =>
+const icon = (h: HtmlBuilder<Message>, path: string, className = '') =>
   h.svg(
     [
+      h.Class(className),
       h.ViewBox('0 0 24 24'),
       h.Fill('none'),
       h.Stroke('currentColor'),
@@ -1252,7 +1253,24 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
           toParentMessage: (message) => Message.GotSearchMessage({ message }),
         }),
         model.loading
-          ? h.div([h.Role('progressbar'), h.AriaLabel('Loading page')], ['Loading…'])
+          ? h.div(
+              [
+                h.Class(
+                  'pointer-events-none fixed bottom-20 left-1/2 z-40 flex min-h-8 -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-sm border border-border/60 bg-background/95 px-3 py-1.5 font-mono text-xs text-muted-foreground shadow-lg backdrop-blur-sm animate-in fade-in duration-0 delay-400 fill-mode-both',
+                ),
+                h.Role('status'),
+                h.AriaLive('polite'),
+                h.AriaLabel('Loading page'),
+              ],
+              [
+                icon(
+                  h,
+                  'M21 12a9 9 0 1 1-6.219-8.56',
+                  'h-3.5 w-3.5 [stroke-linecap:round] [stroke-width:2] motion-safe:animate-spin',
+                ),
+                'Loading…',
+              ],
+            )
           : h.empty,
         model.error ? h.p([h.Role('alert')], [model.error]) : h.empty,
         h.main(

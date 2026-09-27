@@ -30,9 +30,11 @@ test('client navigation replaces structured data and private robots metadata wit
 
 test('a menu opened during navigation stays open when the page arrives', async ({ page }) => {
   let release = () => {}
+
   const pending = new Promise<void>((resolve) => {
     release = resolve
   })
+
   await page.route('**/editorial?__data=1', async (route) => {
     await pending
     await route.continue()
@@ -40,7 +42,7 @@ test('a menu opened during navigation stays open when the page arrives', async (
   await page.goto('/privacy')
   await expect(page.getByRole('button', { name: 'Menu', exact: true })).toBeEnabled()
   await page.getByRole('link', { name: 'Editorial', exact: true }).click()
-  await expect(page.getByRole('progressbar', { name: 'Loading page' })).toBeVisible()
+  await expect(page.getByRole('status', { name: 'Loading page' })).toBeVisible()
   await page.getByRole('button', { name: 'Menu', exact: true }).click()
   await expect(page.getByRole('complementary', { name: 'Menu', exact: true })).toBeVisible()
   release()
