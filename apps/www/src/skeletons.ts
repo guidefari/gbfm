@@ -85,8 +85,37 @@ export const postsSkeleton = () =>
     ),
   ])
 
+/** Mirrors the wayfinder and controls above a tweet so the card lands where the real one will. */
+const tweetChromeSkeleton = () => [
+  h.div(
+    [h.Class('tweet-wayfinder')],
+    [
+      h.div(
+        [h.Class('tweet-breadcrumb h-[42px] min-h-0')],
+        [
+          block('h-3 w-14 animate-pulse rounded-sm bg-muted/60'),
+          block('h-3 w-10 animate-pulse rounded-sm bg-muted/40'),
+          block('h-3 w-10 animate-pulse rounded-sm bg-muted/40'),
+        ],
+      ),
+      h.div(
+        [h.Class('tweet-month-rail')],
+        [block('h-1 w-full animate-pulse self-end rounded-sm bg-muted/40')],
+      ),
+    ],
+  ),
+  h.div(
+    [h.Class('mb-6 flex h-8 items-center justify-between')],
+    [
+      block('h-3 w-28 animate-pulse rounded-sm bg-muted/40'),
+      block('h-3 w-20 animate-pulse rounded-sm bg-muted/40'),
+    ],
+  ),
+]
+
 export const tweetSkeleton = () =>
   loading('max-w-3xl px-4 py-8 mx-auto', [
+    ...tweetChromeSkeleton(),
     h.div(
       [
         h.Class(
