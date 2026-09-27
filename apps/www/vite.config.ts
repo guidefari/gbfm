@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { foldkit } from '@foldkit/vite-plugin'
+import { foldkit, foldkitSsr, foldkitViewIdentity } from '@foldkit/vite-plugin'
 import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vite'
 
@@ -23,16 +23,20 @@ const vpsProxy = {
 }
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [
     documentTemplate(),
-    ...foldkit({
-      buildId,
-      ssr: {
-        serverEntry: '/src/entry.server.ts',
-        build: { clientOutDir: 'dist/client', serverOutDir: 'dist/server' },
-      },
-    }),
+    // Aggregate development reloads preserve one server-cached model across clients.
+    // Authenticated SSR must always initialize from the current request's flags.
+    ...(command === 'serve'
+      ? [foldkitViewIdentity(), foldkitSsr({ serverEntry: '/src/entry.server.ts', buildId })]
+      : foldkit({
+          buildId,
+          ssr: {
+            serverEntry: '/src/entry.server.ts',
+            build: { clientOutDir: 'dist/client', serverOutDir: 'dist/server' },
+          },
+        })),
     tailwindcss(),
     themeColorsPlugin(),
     repoChangelogPlugin(),
@@ -55,4 +59,4 @@ export default defineConfig({
       '/s/': vpsProxy,
     },
   },
-})
+}))

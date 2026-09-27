@@ -1,6 +1,6 @@
 import { GetAllShowsResponse, GetShowEpisodesResponse } from '@gbfm/api/shows'
 import { Schema } from 'effect'
-import type { HtmlBuilder } from 'foldkit/html'
+import type { Html, HtmlBuilder } from 'foldkit/html'
 
 import { artwork } from './artwork'
 
@@ -20,6 +20,8 @@ export const showsView = <M>(
   document: ShowsDocument,
   h: HtmlBuilder<M>,
   play: (episode: Episode) => M,
+  actions: Html,
+  interactive: boolean,
 ) => {
   const selected = document.shows.find((show) => show.slug === document.selectedSlug)
 
@@ -42,6 +44,7 @@ export const showsView = <M>(
               ),
               h.h1([], [selected.title]),
               h.p([], [`hosted by ${selected.hosts.map((host) => host.name).join(', ')}`]),
+              actions,
               selected.description
                 ? h.p([h.Class('content-paragraph')], [selected.description])
                 : h.empty,
@@ -88,7 +91,11 @@ export const showsView = <M>(
                               ),
                               episode.description ? h.p([], [episode.description]) : h.empty,
                               h.button(
-                                [h.OnClick(play(episode)), h.AriaLabel(`Play ${episode.title}`)],
+                                [
+                                  h.Disabled(!interactive),
+                                  h.OnClick(play(episode)),
+                                  h.AriaLabel(`Play ${episode.title}`),
+                                ],
                                 ['▶ Play'],
                               ),
                             ],

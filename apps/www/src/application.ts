@@ -19,6 +19,7 @@ import { DashboardDocument } from './dashboard/document'
 import { updateDocumentHead } from './document-head'
 import { newsletterView } from './newsletter'
 import * as Player from './player'
+import * as PublicActions from './public-actions'
 import { profileView } from './public-profile'
 import { richContent } from './rich-content'
 import * as Search from './search'
@@ -68,6 +69,7 @@ export const Flags = Schema.Struct({
   profile: Schema.NullOr(PublicProfileResponse),
   shows: Schema.NullOr(ShowsDocument),
   changelog: Schema.NullOr(Schema.String),
+  publicAction: Schema.NullOr(PublicActions.Document),
   metadata: Schema.NullOr(SiteMetadata),
   failure: Schema.NullOr(Schema.String),
 })
@@ -157,10 +159,12 @@ export const Model = Schema.Struct({
   search: Search.Model,
   skipSeen: Schema.Boolean,
   loading: Schema.Boolean,
+  interactive: Schema.Boolean,
   navigationId: Schema.Number,
   error: Schema.NullOr(Schema.String),
   repliesStatus: Schema.Literals(['loading', 'ready', 'error']),
   player: Player.Model,
+  publicAction: PublicActions.Model,
   creator: Creator.Model,
   dashboard: Dashboard.Model,
 })
@@ -168,8 +172,10 @@ export const Model = Schema.Struct({
 export type Model = typeof Model.Type
 
 export const Message = defineMessageUnion({
+  ClientStarted: {},
   MenuToggled: {},
   GotSearchMessage: { message: Search.Message },
+  GotPublicActionMessage: { message: PublicActions.Message },
   SkipSeenChanged: { value: Schema.Boolean },
   ReadModeFailed: {},
   GotPlayerMessage: { message: Player.Message },
@@ -191,6 +197,11 @@ type Services =
   | Creator.CreatorService
   | Dashboard.DashboardService
   | SpotifyConnection
+
+const StartClient = Command.define('Application.Start', {
+  messages: [Message.ClientStarted],
+  execute: Effect.succeed(Message.ClientStarted()),
+})
 
 const LoadReplies = Command.define('Tweet.LoadReplies', {
   args: { slug: Schema.String },
@@ -308,6 +319,7 @@ const LoadPage = Command.define('Navigation.Load', {
 
 export const update = (model: Model, message: Message): Update.Return<Model, Message, Services> =>
   Message.match<Update.Return<Model, Message, Services>>(message, {
+    ClientStarted: () => ({ model: { ...model, interactive: true } }),
     MenuToggled: () => ({ model: { ...model, menuOpen: !model.menuOpen } }),
     GotSearchMessage: ({ message }) => {
       const child = Search.update(model.search, message)
@@ -323,6 +335,16 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
       model: { ...model, skipSeen: value },
       commands: [SaveReadMode({ value })],
     }),
+    GotPublicActionMessage: ({ message }) => {
+      const child = PublicActions.update(model.publicAction, message)
+
+      return {
+        model: { ...model, publicAction: child.model },
+        commands: Command.mapMessages(child.commands ?? [], (message) =>
+          Message.GotPublicActionMessage({ message }),
+        ),
+      }
+    },
     ReadModeFailed: () => ({
       model: { ...model, error: 'Could not save your tweet reading preference. Try again.' },
     }),
@@ -458,16 +480,19 @@ export const init: Runtime.ApplicationInit<Model, Message, Flags, Services> = (f
       search: Search.initialModel,
       skipSeen: flags.skipSeen,
       loading: false,
+      interactive: false,
       navigationId: 0,
       error: null,
       repliesStatus: flags.tweet ? 'loading' : 'ready',
       player: Player.initialModel,
+      publicAction: PublicActions.init(flags.publicAction),
       creator: creator.model,
       dashboard: flags.dashboard
         ? { ...dashboard.model, ...flags.dashboard, phase: 'ready' }
         : dashboard.model,
     },
     commands: [
+      StartClient(),
       ...(flags.tweet
         ? [LoadReplies({ slug: flags.tweet.post.slug }), MarkSeen({ slug: flags.tweet.post.slug })]
         : []),
@@ -553,7 +578,13 @@ const home = (model: Model, h: HtmlBuilder<Message>) => {
                           )
                         : h.empty,
                       mix?.audioUrl
-                        ? h.button([h.OnClick(playItem(mix, mix.audioUrl))], ['▶ Play mix'])
+                        ? h.button(
+                            [
+                              h.Disabled(!model.interactive),
+                              h.OnClick(playItem(mix, mix.audioUrl)),
+                            ],
+                            ['▶ Play mix'],
+                          )
                         : h.empty,
                     ],
                   ),
@@ -583,7 +614,10 @@ const cards = (model: Model, h: HtmlBuilder<Message>) =>
               item.meta ? h.small([], [item.meta]) : h.empty,
               item.description ? h.p([], [item.description]) : h.empty,
               item.audioUrl
-                ? h.button([h.OnClick(playItem(item, item.audioUrl))], ['Play'])
+                ? h.button(
+                    [h.Disabled(!model.interactive), h.OnClick(playItem(item, item.audioUrl))],
+                    ['Play'],
+                  )
                 : h.empty,
             ],
           ),
@@ -650,6 +684,7 @@ const detail = (model: Model, h: HtmlBuilder<Message>, kind: string) => {
             [
               h.button(
                 [
+                  h.Disabled(!model.interactive),
                   h.OnClick(
                     current
                       ? Message.GotPlayerMessage({ message: Player.Message.TogglePlayPause() })
@@ -660,6 +695,7 @@ const detail = (model: Model, h: HtmlBuilder<Message>, kind: string) => {
               ),
               h.button(
                 [
+                  h.Disabled(!model.interactive),
                   h.OnClick(
                     Message.GotPlayerMessage({
                       message: Player.Message.Enqueue({
@@ -681,6 +717,12 @@ const detail = (model: Model, h: HtmlBuilder<Message>, kind: string) => {
             ],
           )
         : h.empty,
+      PublicActions.view(
+        model.publicAction,
+        h,
+        (message) => Message.GotPublicActionMessage({ message }),
+        model.interactive,
+      ),
       h.nav(
         [h.Class('detail-actions'), h.AriaLabel('Listen on')],
         (item.streamingLinks ?? []).map((stream) =>
@@ -728,6 +770,11 @@ const auth = (h: HtmlBuilder<Message>, action: string, url: URL) =>
                 h.Type('hidden'),
                 h.Name('token'),
                 h.Value(url.searchParams.get('token') ?? ''),
+              ]),
+              h.input([
+                h.Type('hidden'),
+                h.Name('returnTo'),
+                h.Value(url.searchParams.get('returnTo') ?? '/dashboard'),
               ]),
               h.h1(
                 [],
@@ -875,6 +922,7 @@ const tweetView = (model: Model, h: HtmlBuilder<Message>) => {
             [
               h.input([
                 h.Type('checkbox'),
+                h.Disabled(!model.interactive),
                 h.Checked(model.skipSeen),
                 h.OnClick(Message.SkipSeenChanged({ value: !model.skipSeen })),
               ]),
@@ -916,8 +964,18 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
     model.flags.status === 404
       ? h.section([h.Class('page')], [h.h1([], ['Page not found']), link(h, '/', 'Return home')])
       : model.flags.shows
-        ? showsView(model.flags.shows, h, (episode) =>
-            Message.GotPlayerMessage({ message: Player.Message.PlayTrack({ track: episode }) }),
+        ? showsView(
+            model.flags.shows,
+            h,
+            (episode) =>
+              Message.GotPlayerMessage({ message: Player.Message.PlayTrack({ track: episode }) }),
+            PublicActions.view(
+              model.publicAction,
+              h,
+              (message) => Message.GotPublicActionMessage({ message }),
+              model.interactive,
+            ),
+            model.interactive,
           )
         : Route.match(model.route, {
             Home: () => home(model, h),
@@ -1042,6 +1100,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
               [
                 h.Class('desktop-search'),
                 h.AriaLabel('Search'),
+                h.Disabled(!model.interactive),
                 h.OnClick(Message.GotSearchMessage({ message: Search.Message.Opened() })),
               ],
               [icon(h, 'M21 21l-4.3-4.3 M19 11a8 8 0 1 1-16 0a8 8 0 1 1 16 0')],
@@ -1095,6 +1154,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
                 h.button(
                   [
                     h.AriaLabel('Search'),
+                    h.Disabled(!model.interactive),
                     h.OnClick(Message.GotSearchMessage({ message: Search.Message.Opened() })),
                   ],
                   [icon(h, 'M21 21l-4.3-4.3 M19 11a8 8 0 1 1-16 0a8 8 0 1 1 16 0')],
@@ -1102,6 +1162,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
                 h.button(
                   [
                     h.AriaLabel('Menu'),
+                    h.Disabled(!model.interactive),
                     h.AriaExpanded(model.menuOpen),
                     h.OnClick(Message.MenuToggled()),
                   ],
@@ -1161,7 +1222,14 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
           ? h.div([h.Role('progressbar'), h.AriaLabel('Loading page')], ['Loading…'])
           : h.empty,
         model.error ? h.p([h.Role('alert')], [model.error]) : h.empty,
-        h.main([], [content]),
+        h.main(
+          [],
+          [
+            Route.guards.Dashboard(model.route) || Route.guards.Composer(model.route)
+              ? h.fieldset([h.Class('contents'), h.Disabled(!model.interactive)], [content])
+              : content,
+          ],
+        ),
         h.submodel({
           slotId: 'player',
           model: model.player,

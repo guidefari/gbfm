@@ -4,11 +4,13 @@ test('client navigation replaces structured data and private robots metadata wit
   page,
 }) => {
   await page.goto('/auth/sign-in')
+  await expect(page.getByRole('button', { name: 'Menu', exact: true })).toBeEnabled()
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow')
   await page.getByRole('link', { name: 'Privacy', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Privacy Policy', exact: true })).toBeVisible()
   await expect(page.locator('meta[name="robots"]')).toHaveCount(0)
   await page.goto('/shows/e2e-local-radio')
+  await expect(page.getByRole('button', { name: 'Menu', exact: true })).toBeEnabled()
   await page.getByRole('link', { name: 'Local Frequencies', exact: true }).click()
   await expect(page.locator('meta[property="og:type"]')).toHaveAttribute('content', 'music.song')
   await expect(page.locator('link[rel="canonical"]')).toHaveCount(1)
@@ -36,6 +38,7 @@ test('a menu opened during navigation stays open when the page arrives', async (
     await route.continue()
   })
   await page.goto('/privacy')
+  await expect(page.getByRole('button', { name: 'Menu', exact: true })).toBeEnabled()
   await page.getByRole('link', { name: 'Editorial', exact: true }).click()
   await expect(page.getByRole('progressbar', { name: 'Loading page' })).toBeVisible()
   await page.getByRole('button', { name: 'Menu', exact: true }).click()

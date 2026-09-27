@@ -1,8 +1,10 @@
+import { GetFavoritesResponse } from '@gbfm/api/favorites'
 import { MicroPostNeighboursResponse, MicroPostRandomUnreadResponse } from '@gbfm/api/navigation'
 import { GetPostTagsResponse, GetPostsByTagResponse, MicroPostScreenResponse } from '@gbfm/api/post'
 import { PublicProfileResponse } from '@gbfm/api/profile'
 import { ResolveResult } from '@gbfm/api/resolve'
 import { GetAllShowsResponse, GetShowEpisodesResponse } from '@gbfm/api/shows'
+import { GetUserSubscriptionsResponse } from '@gbfm/api/user'
 import { resolveRequestId } from '@gbfm/core/observability/request-id'
 import {
   makeStaticSiteMetadata,
@@ -25,6 +27,7 @@ import {
 } from './application'
 import { parseDashboardDocument } from './dashboard/document'
 import { endpointFor as dashboardEndpointFor, isAdminSection } from './dashboard/model'
+import type { Document as PublicActionDocument } from './public-actions'
 import type { ShowsDocument } from './shows'
 import { staticPages } from './static-pages'
 import { routeTemplate } from './telemetry/privacy'
@@ -162,6 +165,39 @@ const contentItems = (payload: Schema.Json, path: string): ReadonlyArray<Content
 
 const json = async (response: Response): Promise<Schema.Json> =>
   Schema.decodeUnknownSync(Schema.Json)(await response.json())
+
+const publicActionState = async (
+  request: Request,
+  target: PublicActionDocument['target'],
+): Promise<PublicActionDocument['state']> => {
+  let offset = 0
+
+  while (true) {
+    const response = await apiRequest(
+      request,
+      `${target.kind === 'audio' ? '/api/favorites' : '/api/user/subscriptions'}?limit=100&offset=${offset}`,
+      { method: 'GET' },
+    )
+
+    if (!response.ok) return 'unavailable'
+
+    if (target.kind === 'audio') {
+      const result = Schema.decodeUnknownSync(GetFavoritesResponse)(await response.json())
+
+      if (result.favorites.some((favorite) => favorite.audioId === target.id)) return 'active'
+      offset += result.favorites.length
+
+      if (!result.favorites.length || offset >= result.total) return 'inactive'
+    } else {
+      const result = Schema.decodeUnknownSync(GetUserSubscriptionsResponse)(await response.json())
+
+      if (result.data.some((subscription) => subscription.showId === target.id)) return 'active'
+      offset += result.data.length
+
+      if (!result.data.length || !result.pagination.hasMore) return 'inactive'
+    }
+  }
+}
 
 const session = async (request: Request) => {
   if (
@@ -320,14 +356,17 @@ const formAction = async (request: Request): Promise<Server.Responded> => {
       }),
     )
 
+  const returnUrl = URL.parse(field('returnTo') || '/dashboard', url.origin)
+
+  const returnPath =
+    returnUrl?.origin === url.origin ? `${returnUrl.pathname}${returnUrl.search}` : '/dashboard'
+
   return redirect(
     Match.value(action).pipe(
       Match.when('/auth/forgot-password', () => '/auth/forgot-password?sent=1'),
       Match.when('/auth/reset-password', () => '/auth/sign-in?reset=1'),
       Match.orElse(() =>
-        authPath
-          ? '/dashboard'
-          : `/tweet/${encodeURIComponent(url.searchParams.get('slug') ?? '')}`,
+        authPath ? returnPath : `/tweet/${encodeURIComponent(url.searchParams.get('slug') ?? '')}`,
       ),
     ),
     response.headers.getSetCookie(),
@@ -533,6 +572,27 @@ const renderResponse = async (request: Request): Promise<Server.Responded> => {
     }
   }
 
+  const selectedShow = shows?.shows.find((show) => show.slug === shows.selectedSlug)
+
+  const audioItem =
+    Route.guards.Detail(route) && ['mixes', 'tracks'].includes(route.kind) ? items[0] : undefined
+
+  const actionTarget: PublicActionDocument['target'] | null = selectedShow
+    ? { id: selectedShow.id, kind: 'show' }
+    : audioItem
+      ? { id: audioItem.id, kind: 'audio' }
+      : null
+
+  const publicAction: PublicActionDocument | null = actionTarget
+    ? {
+        target: actionTarget,
+        path: `${url.pathname}${url.search}`,
+        state: identity.principal
+          ? await publicActionState(ownedRequest, actionTarget).catch(() => 'unavailable' as const)
+          : 'anonymous',
+      }
+    : null
+
   const title =
     (Route.guards.Detail(route) && route.kind === 'tags' ? `#${route.slug}` : null) ??
     shows?.shows.find((show) => show.slug === shows.selectedSlug)?.title ??
@@ -576,6 +636,7 @@ const renderResponse = async (request: Request): Promise<Server.Responded> => {
     profile,
     shows,
     changelog: Route.guards.Static(route) && route.page === 'changelog' ? changelog : null,
+    publicAction,
     metadata: null,
     failure: status === 503 ? 'Content is unavailable right now.' : null,
   }
