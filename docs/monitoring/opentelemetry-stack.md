@@ -20,7 +20,12 @@ structured request logs. For local requests its HTTP handler and Effect services
 use `OtlpTracer`, continuing the `traceparent` from `www`. Open a
 `goosebumps-fm-www` trace to see the page route, API paths, and nested service
 spans in one waterfall. Production Worker tracing remains on Sentry. Application
-logs are printed locally but are not exported to Loki by this setup.
+logs are printed locally. In development, bounded WWW and API request summaries
+are also sent to the local Loki endpoint at `127.0.0.1:3100`. Open Grafana's
+Loki datasource and query `{service_name="goosebumps-fm-www"}` or
+`{service_name="goosebumps-fm-api"}`. Filter the JSON `requestId` field to
+match a trace's `gbfm.request_id`. Other application console logs are not
+forwarded, and browser events remain separate Analytics Engine points.
 
 That starts Jaeger through docker compose. The UI is at
 `http://localhost:16686`, and it accepts OTLP on `4317` (gRPC) and `4318`

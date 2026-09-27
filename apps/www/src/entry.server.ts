@@ -5,6 +5,7 @@ import { PublicProfileResponse } from '@gbfm/api/profile'
 import { ResolveResult } from '@gbfm/api/resolve'
 import { GetAllShowsResponse, GetShowEpisodesResponse } from '@gbfm/api/shows'
 import { GetUserSubscriptionsResponse, ListDjsResponse } from '@gbfm/api/user'
+import { submitLocalRequestLog } from '@gbfm/core/observability/local-loki'
 import { resolveRequestId } from '@gbfm/core/observability/request-id'
 import { isRole } from '@gbfm/core/roles'
 import {
@@ -846,6 +847,16 @@ export const renderPage = async (request: Request): Promise<Server.EntryResult> 
       }),
     )
 
+    if (import.meta.env.DEV && new URL(request.url).pathname !== '/telemetry/browser')
+      submitLocalRequestLog({
+        service: 'www',
+        method: request.method,
+        route: attributes.route,
+        requestId,
+        status: response.status,
+        durationMs: Math.round(performance.now() - startedAt),
+      })
+
     return Server.Responded(response)
   } catch (cause) {
     if (request.signal.aborted) throw cause
@@ -857,6 +868,16 @@ export const renderPage = async (request: Request): Promise<Server.EntryResult> 
         durationMs: Math.round(performance.now() - startedAt),
       }),
     )
+
+    if (import.meta.env.DEV && new URL(request.url).pathname !== '/telemetry/browser')
+      submitLocalRequestLog({
+        service: 'www',
+        method: request.method,
+        route: attributes.route,
+        requestId,
+        status: 500,
+        durationMs: Math.round(performance.now() - startedAt),
+      })
 
     return Server.Responded(
       new Response(`Something went wrong. Request ID: ${requestId}`, {

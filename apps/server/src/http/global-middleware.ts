@@ -81,7 +81,13 @@ export const RequestLoggerLive = HttpRouter.middleware(
 
       const annotate = (status: number, outcome: string) =>
         Effect.all([
-          telemetry.record({ method: request.method, route, status, durationMs: duration }),
+          telemetry.record({
+            method: request.method,
+            route,
+            requestId,
+            status,
+            durationMs: duration,
+          }),
           Effect.annotateCurrentSpan({
             'gbfm.request_id': requestId,
             'gbfm.release': telemetry.release,

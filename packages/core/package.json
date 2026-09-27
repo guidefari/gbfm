@@ -8,6 +8,7 @@
     "./api": "./src/api/index.ts",
     "./feature-flags": "./src/feature-flags/index.ts",
     "./observability/request-id": "./src/observability/request-id.ts",
+    "./observability/local-loki": "./src/observability/local-loki.ts",
     "./observability/trace-sampling": "./src/observability/trace-sampling.ts",
     "./roles": "./src/roles/index.ts",
     "./status": "./src/status/index.ts"

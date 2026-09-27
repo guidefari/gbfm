@@ -1,3 +1,4 @@
+import { submitLocalRequestLog } from '@gbfm/core/observability/local-loki'
 import { Context, Effect, Layer } from 'effect'
 
 export interface RequestTelemetryPoint {
@@ -5,6 +6,7 @@ export interface RequestTelemetryPoint {
   readonly route: string
   readonly status: number
   readonly durationMs: number
+  readonly requestId?: string
 }
 
 export interface RequestTelemetryWriter {
@@ -33,16 +35,35 @@ export const RequestTelemetryLive = (input: {
   readonly release: string
   readonly stage: string
   readonly writer: RequestTelemetryWriter
+  readonly localLogs?: boolean
+  readonly waitUntil?: (delivery: Promise<void>) => void
 }) =>
   Layer.succeed(RequestTelemetry, {
     release: input.release,
     stage: input.stage,
     record: (point) =>
-      Effect.sync(() =>
-        input.writer.writeDataPoint({
-          indexes: ['request'],
-          blobs: [input.release, input.stage, point.method, point.route, 'api'],
-          doubles: [point.durationMs, point.status],
-        }),
-      ),
+      Effect.gen(function* () {
+        yield* Effect.sync(() =>
+          input.writer.writeDataPoint({
+            indexes: ['request'],
+            blobs: [input.release, input.stage, point.method, point.route, 'api'],
+            doubles: [point.durationMs, point.status],
+          }),
+        )
+
+        if (input.localLogs && point.requestId)
+          yield* Effect.sync(() =>
+            submitLocalRequestLog(
+              {
+                service: 'api',
+                method: point.method,
+                route: point.route,
+                requestId: point.requestId ?? '',
+                status: point.status,
+                durationMs: point.durationMs,
+              },
+              input.waitUntil,
+            ),
+          )
+      }),
   })

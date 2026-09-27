@@ -147,7 +147,11 @@ const spotifyImportResolverLive = (env: ApiEnv) =>
       }),
   })
 
-const appServicesLive = (env: ApiEnv, tracing: Layer.Layer<never> = WorkerTracingLive) => {
+const appServicesLive = (
+  env: ApiEnv,
+  tracing: Layer.Layer<never> = WorkerTracingLive,
+  waitUntil?: (delivery: Promise<void>) => void,
+) => {
   const configLive = WorkerConfigServiceLayerEffect(
     resolveSecretBindings(env).pipe(
       Effect.map((secrets) => ({ ...env, ...secrets })),
@@ -190,6 +194,8 @@ const appServicesLive = (env: ApiEnv, tracing: Layer.Layer<never> = WorkerTracin
       release: env.APP_RELEASE,
       stage: env.APP_STAGE,
       writer: env.REQUEST_TELEMETRY,
+      localLogs: env.LOCAL_DEV === 'true',
+      ...(waitUntil ? { waitUntil } : undefined),
     }),
     adminTelemetry: adminTelemetryLive,
     emailTransport:
@@ -358,7 +364,7 @@ export default Sentry.withSentry<ApiEnv, ApiQueueJob>(sentryOptions, {
       const tracing = local ? Layer.succeed(Tracer.Tracer, await localTracer()) : WorkerTracingLive
 
       const webHandler = createWebHandler({
-        appServicesLive: appServicesLive(env, tracing),
+        appServicesLive: appServicesLive(env, tracing, (delivery) => ctx.waitUntil(delivery)),
         localTracing: local,
       })
 
