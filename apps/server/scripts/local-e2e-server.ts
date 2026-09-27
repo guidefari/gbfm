@@ -5,16 +5,11 @@ import { audioCreators, audioTable } from '@/db/audio.schema'
 import { user } from '@/db/auth.schema'
 import { replaceEntityLabels } from '@/db/labels'
 import { makeDatabaseClient } from '@/db/layer'
-import {
-  musicEntityLinksTable,
-  musicEntityTypesTable,
-  musicLabelsTable,
-  musicPlatformsTable,
-  musicTracksTable,
-} from '@/db/music-entity.schema'
+import { musicEntityLinksTable, musicLabelsTable, musicTracksTable } from '@/db/music-entity.schema'
 import { postCreators, postsTable } from '@/db/post.schema'
 import { releasesTable } from '@/db/release.schema'
 import { seedLocalUsers } from '@/db/seed-local-users'
+import { seedMusicLookups } from '@/db/seed-music-lookups'
 import { showCreators, showsTable } from '@/db/show.schema'
 import { ConfigService, createConfig } from '@/services/config.service'
 import { createTestWebHandler } from '@/test/http-handler'
@@ -27,6 +22,7 @@ const resource = await createMigratedD1Database()
 const database = makeDatabaseClient(resource.database)
 
 await seedLocalUsers(database)
+await seedMusicLookups(database)
 
 const [creator] = await database
   .select({ id: user.id })
@@ -94,17 +90,6 @@ const rootTrackId = '00000000-0000-4000-8000-000000000001'
 const replyTrackId = '00000000-0000-4000-8000-000000000002'
 
 await database.batch([
-  database
-    .insert(musicEntityTypesTable)
-    .values({ id: 'track', displayName: 'Track' })
-    .onConflictDoNothing(),
-  database
-    .insert(musicPlatformsTable)
-    .values([
-      { id: 'spotify', displayName: 'Spotify' },
-      { id: 'bandcamp', displayName: 'Bandcamp' },
-    ])
-    .onConflictDoNothing(),
   database.insert(musicTracksTable).values([
     {
       id: rootTrackId,

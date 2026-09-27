@@ -663,6 +663,10 @@ export const init: Runtime.ApplicationInit<Model, Message, Flags, Services> = (f
     role: role && isRole(role) ? role : null,
   })()
 
+  const preparedDashboard = flags.dashboard
+    ? Dashboard.update(dashboard.model, Dashboard.Message.Loaded({ document: flags.dashboard }))
+    : dashboard
+
   return {
     model: {
       route,
@@ -680,10 +684,7 @@ export const init: Runtime.ApplicationInit<Model, Message, Flags, Services> = (f
       player: Player.initialModel,
       publicAction: PublicActions.init(flags.publicAction),
       creator: creator.model,
-      dashboard: flags.dashboard
-        ? Dashboard.update(dashboard.model, Dashboard.Message.Loaded({ document: flags.dashboard }))
-            .model
-        : dashboard.model,
+      dashboard: preparedDashboard.model,
     },
     commands: [
       StartClient(),
@@ -707,8 +708,8 @@ export const init: Runtime.ApplicationInit<Model, Message, Flags, Services> = (f
             Message.GotCreatorResult({ message, navigationId: 0 }),
           )
         : []),
-      ...(section && (flags.principal || section === 'spotify-callback') && !flags.dashboard
-        ? Command.mapMessages(dashboard.commands ?? [], (message) =>
+      ...(section && (flags.principal || section === 'spotify-callback')
+        ? Command.mapMessages(preparedDashboard.commands ?? [], (message) =>
             Message.GotDashboardResult({ message, navigationId: 0 }),
           )
         : []),

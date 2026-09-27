@@ -1,3 +1,4 @@
+import { AddEntityLinkInput, CreateLabelInput } from '@gbfm/api/music'
 import { ROLES } from '@gbfm/core/roles'
 import { PlayerPreferences } from '@gbfm/player'
 import { Effect, Match, Schema } from 'effect'
@@ -6,6 +7,7 @@ import { defineMessageUnion } from 'foldkit/message'
 
 import { SpotifyConnection, SpotifyStatus, disconnected } from '../spotify'
 import { readTheme, saveTheme, Theme } from '../theme'
+import { catalogPayload, entityRoute, Kind, tabs } from './catalog'
 import { DashboardDocument, Row } from './document'
 import { DashboardService } from './service'
 import * as Sessions from './sessions'
@@ -32,6 +34,8 @@ export const Model = Schema.Struct({
   users: DashboardDocument.fields.users,
   sessions: Sessions.Model,
   shows: Shows.Model,
+  catalogRevision: Schema.Number,
+  catalogNotice: Schema.String,
 })
 
 export type Model = typeof Model.Type
@@ -52,9 +56,20 @@ const adminSections = new Set([
   'all/editorial',
 ])
 
-export const isAdminSection = (section: string) => adminSections.has(section)
+export const isAdminSection = (section: string) =>
+  adminSections.has(section) || section.startsWith('music-entity/')
 
 export const endpointFor = (section: string, query = new URLSearchParams()) => {
+  const entity = entityRoute(section)
+
+  if (entity) return entity.path
+
+  if (section === 'music') {
+    const tab = tabs.find((tab) => tab === query.get('tab')) ?? 'artists'
+
+    return `/api/music/${tab}${tab === 'labels' ? '/manage' : ''}`
+  }
+
   if (section === 'users') {
     const offset = Number(query.get('offset') ?? '0')
 
@@ -100,7 +115,23 @@ export const endpointFor = (section: string, query = new URLSearchParams()) => {
   return endpoints.get(section) ?? null
 }
 
+const CatalogOperation = Schema.Literals([
+  'save',
+  'delete',
+  'add-link',
+  'remove-link',
+  'create-label',
+])
+
 export const Message = defineMessageUnion({
+  SaveCatalogEntity: {},
+  DeleteCatalogEntity: {},
+  AddCatalogLink: {},
+  DeleteCatalogLink: { id: Schema.String },
+  CreateLabel: {},
+  CatalogCompleted: { operation: CatalogOperation },
+  CatalogLinksLoaded: { rows: Schema.Array(Row), revision: Schema.Number },
+  CatalogLinksFailed: { revision: Schema.Number },
   GotSessionMessage: { message: Sessions.Message },
   GotShowMessage: { message: Shows.Message },
   LoadRequested: {},
@@ -184,6 +215,109 @@ const Load = Command.define('DashboardLoad', {
     ),
 })
 
+const LoadCatalogLinks = Command.define('Catalog.LoadLinks', {
+  args: { kind: Kind, id: Schema.String, revision: Schema.Number },
+  messages: [Message.CatalogLinksLoaded, Message.CatalogLinksFailed],
+  execute: ({ kind, id, revision }) =>
+    DashboardService.pipe(
+      Effect.flatMap((service) =>
+        service.request({ path: `/api/music/${kind}/${encodeURIComponent(id)}/links` }),
+      ),
+      Effect.map((document) => Message.CatalogLinksLoaded({ rows: document.rows, revision })),
+      Effect.catch(() => Effect.succeed(Message.CatalogLinksFailed({ revision }))),
+    ),
+})
+
+const WriteCatalog = Command.define('Catalog.Write', {
+  args: {
+    operation: CatalogOperation,
+    kind: Kind,
+    id: Schema.String,
+    fields: Schema.Record(Schema.String, Schema.String),
+    linkId: Schema.String,
+  },
+  messages: [Message.CatalogCompleted, Message.Failed],
+  execute: ({ operation, kind, id, fields, linkId }) =>
+    Effect.gen(function* () {
+      const service = yield* DashboardService
+      const path = `/api/music/${kind}s/${encodeURIComponent(id)}`
+      const links = `/api/music/${kind}/${encodeURIComponent(id)}/links`
+
+      if (operation === 'save') {
+        const body = yield* catalogPayload(kind, fields)
+        yield* service.request({ path, method: 'PATCH', body })
+      } else if (operation === 'delete') yield* service.request({ path, method: 'DELETE' })
+      else if (operation === 'remove-link')
+        yield* service.request({ path: `${links}/${encodeURIComponent(linkId)}`, method: 'DELETE' })
+      else if (operation === 'add-link') {
+        const payload = yield* Schema.decodeUnknownEffect(AddEntityLinkInput)({
+          platform: fields.platform || 'spotify',
+          url: fields.linkUrl,
+          status: 'verified',
+        })
+
+        yield* service.request({ path: links, method: 'POST', body: JSON.stringify(payload) })
+      } else {
+        const payload = yield* Schema.decodeUnknownEffect(CreateLabelInput)({
+          name: fields.name?.trim(),
+          slug: fields.slug?.trim(),
+          content: '',
+        })
+
+        yield* service.request({
+          path: '/api/music/labels',
+          method: 'POST',
+          body: JSON.stringify(payload),
+        })
+      }
+
+      return Message.CatalogCompleted({ operation })
+    }).pipe(
+      Effect.catch(() =>
+        Effect.succeed(
+          Message.Failed({
+            message: 'Catalog action failed. Check the fields and your access, then retry.',
+          }),
+        ),
+      ),
+    ),
+})
+
+const writeCatalog = (
+  model: Model,
+  operation: typeof CatalogOperation.Type,
+  linkId = '',
+): Update.Return<Model, Message, Services> => {
+  const entity = entityRoute(model.section)
+
+  if (
+    model.principal.role !== 'admin' ||
+    model.phase === 'saving' ||
+    (entity && model.fields.id !== entity.id) ||
+    (!entity && operation !== 'create-label')
+  )
+    return { model }
+
+  return {
+    model: {
+      ...model,
+      phase: 'saving',
+      error: null,
+      catalogRevision: model.catalogRevision + 1,
+      catalogNotice: '',
+    },
+    commands: [
+      WriteCatalog({
+        operation,
+        kind: entity?.kind ?? 'label',
+        id: entity?.id ?? '',
+        fields: model.fields,
+        linkId,
+      }),
+    ],
+  }
+}
+
 // Dashboard command arguments can contain account data. Parent telemetry must mark command spans private.
 const Write = Command.define('DashboardWrite', {
   args: {
@@ -211,6 +345,8 @@ export const initialModel = (section: string, principal: Principal): Model => ({
   spotify: disconnected,
   sessions: Sessions.initialModel,
   shows: Shows.initialModel,
+  catalogRevision: 0,
+  catalogNotice: '',
 })
 
 export const init =
@@ -245,6 +381,57 @@ export const init =
 
 export const update = (model: Model, message: Message): Update.Return<Model, Message, Services> =>
   Message.match<Update.Return<Model, Message, Services>>(message, {
+    SaveCatalogEntity: () => writeCatalog(model, 'save'),
+    DeleteCatalogEntity: () => writeCatalog(model, 'delete'),
+    AddCatalogLink: () => writeCatalog(model, 'add-link'),
+    DeleteCatalogLink: ({ id }) =>
+      model.rows.some((row) => row.id === id) ? writeCatalog(model, 'remove-link', id) : { model },
+    CreateLabel: () =>
+      model.section === 'music' ? writeCatalog(model, 'create-label') : { model },
+    CatalogLinksLoaded: ({ rows, revision }) =>
+      revision !== model.catalogRevision
+        ? { model }
+        : {
+            model: { ...model, rows, fields: { ...model.fields, linksError: '' } },
+          },
+    CatalogLinksFailed: ({ revision }) =>
+      revision !== model.catalogRevision
+        ? { model }
+        : {
+            model: {
+              ...model,
+              fields: { ...model.fields, linksError: 'Source links are unavailable.' },
+            },
+          },
+    CatalogCompleted: ({ operation }) => {
+      if (operation === 'delete')
+        return { model: { ...model, phase: 'ready', fields: { deleted: 'true' }, rows: [] } }
+
+      if (operation === 'create-label')
+        return {
+          model: { ...model, phase: 'loading' },
+          commands: [Load({ path: '/api/music/labels/manage' })],
+        }
+      const entity = entityRoute(model.section)
+
+      if (!entity) return { model }
+
+      return operation === 'save'
+        ? {
+            model: { ...model, phase: 'loading', catalogNotice: 'Entity saved.' },
+            commands: [Load({ path: entity.path })],
+          }
+        : {
+            model: { ...model, phase: 'ready', fields: { ...model.fields, linkUrl: '' } },
+            commands: [
+              LoadCatalogLinks({
+                kind: entity.kind,
+                id: entity.id,
+                revision: model.catalogRevision,
+              }),
+            ],
+          }
+    },
     GotShowMessage: ({ message }) => {
       if (model.principal.role !== 'admin' || model.section !== 'shows') return { model }
       const child = Shows.update(model.shows, message)
@@ -291,19 +478,33 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
         ? { model: { ...model, phase: 'loading', error: null }, commands: [Load({ path })] }
         : { model }
     },
-    Loaded: ({ document }) => ({
-      model: {
-        ...model,
-        phase: 'ready',
-        rows: document.rows,
-        fields: document.fields,
-        toggles: document.toggles,
-        telemetry: document.telemetry,
-        users: document.users,
-        shows: { ...Shows.initialModel, listing: document.shows },
-        error: null,
-      },
-    }),
+    Loaded: ({ document }) => {
+      const entity = entityRoute(model.section)
+
+      return {
+        model: {
+          ...model,
+          phase: 'ready',
+          rows: document.rows,
+          fields: document.fields,
+          toggles: document.toggles,
+          telemetry: document.telemetry,
+          users: document.users,
+          shows: { ...Shows.initialModel, listing: document.shows },
+          error: null,
+          catalogRevision: model.catalogRevision + 1,
+        },
+        commands: entity
+          ? [
+              LoadCatalogLinks({
+                kind: entity.kind,
+                id: entity.id,
+                revision: model.catalogRevision + 1,
+              }),
+            ]
+          : [],
+      }
+    },
     Failed: ({ message: error }) => ({ model: { ...model, phase: 'error', error } }),
     FieldChanged: ({ name, value }) => ({
       model: { ...model, fields: { ...model.fields, [name]: value } },

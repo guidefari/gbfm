@@ -6,7 +6,6 @@ import {
 import { GetAudioByTypeResponse } from '@gbfm/api/audio'
 import { EmailLogsResponse } from '@gbfm/api/email'
 import { GetFavoritesResponse } from '@gbfm/api/favorites'
-import { ArtistListResponse, PlaylistListResponse } from '@gbfm/api/music'
 import { GetMusicRemindersResponse } from '@gbfm/api/music-reminders'
 import { GetPostsResponse } from '@gbfm/api/post'
 import { SearchResults } from '@gbfm/api/search'
@@ -14,6 +13,7 @@ import { GetAllShowsResponse } from '@gbfm/api/shows'
 import { UserProfileResponse } from '@gbfm/api/user'
 import { Data, Effect, Schema } from 'effect'
 
+import { parseCatalogDocument } from './catalog'
 import { AdminUsers } from './users'
 
 export const Row = Schema.Struct({
@@ -56,6 +56,9 @@ export const parseDashboardDocument = (
   input: unknown,
 ): Effect.Effect<DashboardDocument, Schema.SchemaError | UnsupportedDashboardEndpoint> => {
   const pathname = new URL(path, 'http://localhost').pathname
+  const catalog = parseCatalogDocument(pathname, input)
+
+  if (catalog) return catalog
 
   switch (pathname) {
     case '/auth/admin/list-users':
@@ -185,34 +188,6 @@ export const parseDashboardDocument = (
               title: item.title,
               detail: item.draft ? 'Draft' : 'Published',
               href: `/new/mix?edit=${encodeURIComponent(item.slug)}`,
-              actionId: null,
-            })),
-          ),
-        ),
-      )
-    case '/api/music/artists':
-      return Schema.decodeUnknownEffect(ArtistListResponse)(input).pipe(
-        Effect.map((items) =>
-          rowsDocument(
-            items.map((item) => ({
-              id: item.id,
-              title: item.name,
-              detail: item.slug,
-              href: null,
-              actionId: null,
-            })),
-          ),
-        ),
-      )
-    case '/api/music/playlists':
-      return Schema.decodeUnknownEffect(PlaylistListResponse)(input).pipe(
-        Effect.map((items) =>
-          rowsDocument(
-            items.map((item) => ({
-              id: item.id,
-              title: item.title,
-              detail: item.description ?? '',
-              href: null,
               actionId: null,
             })),
           ),
