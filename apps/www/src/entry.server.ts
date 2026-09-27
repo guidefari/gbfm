@@ -528,6 +528,21 @@ const renderResponse = async (request: Request): Promise<Server.Responded> => {
 
   const payload = response?.ok ? await json(response) : null
 
+  const showMetadata =
+    Route.guards.Detail(route) && route.kind === 'shows' && response?.ok
+      ? apiRequest(ownedRequest, `/api/site-metadata/show/${encodeURIComponent(route.slug)}`, {
+          method: 'GET',
+        })
+          .then(async (metadataResponse) =>
+            metadataResponse.ok
+              ? Option.getOrNull(
+                  Schema.decodeUnknownOption(SiteMetadata)(await metadataResponse.json()),
+                )
+              : null,
+          )
+          .catch(() => null)
+      : null
+
   const resolved =
     Route.guards.Detail(route) && route.kind === 'resolve' && payload
       ? Schema.decodeUnknownSync(ResolveResult)(payload)
@@ -600,6 +615,14 @@ const renderResponse = async (request: Request): Promise<Server.Responded> => {
     route.kind === 'shows' &&
     response?.ok
   ) {
+    const detailEpisodes = Route.guards.Detail(route)
+      ? apiRequest(
+          ownedRequest,
+          `/api/shows/${encodeURIComponent(route.slug)}/episodes?limit=100&offset=0`,
+          { method: 'GET' },
+        ).catch(() => null)
+      : null
+
     const allResponse = Route.guards.Listing(route)
       ? response
       : await apiRequest(ownedRequest, '/api/shows?limit=100&offset=0', { method: 'GET' }).catch(
@@ -618,11 +641,12 @@ const renderResponse = async (request: Request): Promise<Server.Responded> => {
         : (url.searchParams.get('show') ?? all.data[0]?.slug ?? null)
 
       const episodesResponse = selectedSlug
-        ? await apiRequest(
-            ownedRequest,
-            `/api/shows/${encodeURIComponent(selectedSlug)}/episodes?limit=100&offset=0`,
-            { method: 'GET' },
-          ).catch(() => null)
+        ? await (detailEpisodes ??
+            apiRequest(
+              ownedRequest,
+              `/api/shows/${encodeURIComponent(selectedSlug)}/episodes?limit=100&offset=0`,
+              { method: 'GET' },
+            ).catch(() => null))
         : null
 
       shows = {
@@ -738,8 +762,9 @@ const renderResponse = async (request: Request): Promise<Server.Responded> => {
       ? metadataKind.get(route.kind)
       : undefined
 
-  const publicMetadata =
-    kind && Route.guards.Detail(route) && status === 200
+  const publicMetadata = showMetadata
+    ? await showMetadata
+    : kind && Route.guards.Detail(route) && status === 200
       ? await apiRequest(
           ownedRequest,
           `/api/site-metadata/${kind}/${encodeURIComponent(route.slug)}`,
