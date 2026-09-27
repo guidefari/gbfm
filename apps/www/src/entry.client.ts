@@ -12,6 +12,7 @@ const application = Runtime.makeApplication({
   resources: clientResources,
   subscriptions,
   container: document.getElementById('root'),
+  viewTransition: ({ previousModel, model }) => previousModel.loading && !model.loading,
 })
 
 const stopTheme = startTheme()
