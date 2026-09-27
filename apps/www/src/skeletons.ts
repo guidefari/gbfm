@@ -195,13 +195,7 @@ export const episodeRowsSkeleton = () =>
           ),
         ],
         [
-          h.div(
-            [h.Class('flex items-center gap-3')],
-            [
-              block('h-8 w-8 animate-pulse rounded-sm border border-border'),
-              block('h-8 w-12 animate-pulse rounded-sm bg-muted/60 sm:h-9 sm:w-16'),
-            ],
-          ),
+          block('h-8 w-12 animate-pulse rounded-sm bg-muted/60 sm:h-9 sm:w-16'),
           block('hidden h-16 w-16 animate-pulse rounded-sm bg-muted/60 sm:block'),
           h.div(
             [h.Class('min-w-0 space-y-2')],

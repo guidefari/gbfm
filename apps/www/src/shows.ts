@@ -209,7 +209,7 @@ const equalizer = <M>(h: HtmlBuilder<M>) =>
     ),
   )
 
-/** The episode number doubles as its play control, so position in the run and playback read as one thing. */
+/** The episode number doubles as its play control: hover or focus swaps it for play or pause, playback shows the equalizer. */
 const episodePlay = <M>(
   h: HtmlBuilder<M>,
   episode: Episode,
@@ -219,43 +219,61 @@ const episodePlay = <M>(
 ) => {
   const current = episode.id === playback.currentId
   const playing = current && playback.isPlaying
+  const reveal = 'group-hover/play:opacity-100 group-focus-visible/play:opacity-100'
+  const conceal = 'group-hover/play:opacity-0 group-focus-visible/play:opacity-0'
 
   return h.button(
     [
       h.Type('button'),
       h.Disabled(!interactive),
       h.OnClick(current ? playback.toggle : playback.play(episode)),
-      h.AriaLabel(`${playing ? 'Pause' : 'Play'} ${episode.title}`),
+      h.AriaLabel(`${playing ? 'Pause' : 'Play'} episode ${number}: ${episode.title}`),
       h.AriaPressed(String(playing)),
       h.Class(
-        'group/play -m-1 flex items-center gap-3 rounded-sm border-0 bg-transparent p-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50',
+        'group/play relative -m-1 grid place-items-center rounded-sm border-0 bg-transparent p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50',
       ),
     ],
     [
       h.span(
         [
+          h.AriaHidden(true),
           h.Class(
-            `flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border transition-colors ${
-              current
-                ? 'border-highlight bg-highlight/10 text-highlight'
-                : 'border-border text-foreground group-hover/play:border-highlight group-hover/play:bg-highlight group-hover/play:text-highlight-foreground'
-            }`,
-          ),
-        ],
-        [playing ? equalizer(h) : lucide(iconPaths.play, 'h-3.5 w-3.5 fill-current')],
-      ),
-      h.span(
-        [
-          h.Class(
-            `w-[3ch] text-2xl font-black tabular-nums tracking-tighter transition-colors sm:text-4xl ${
-              current
-                ? 'text-highlight'
-                : 'episode-tune text-muted-foreground/40 group-hover/play:text-foreground'
-            }`,
+            `col-start-1 row-start-1 w-[3ch] text-2xl font-black tabular-nums tracking-tighter transition-opacity duration-150 sm:text-4xl ${conceal} ${
+              playing ? 'opacity-0' : ''
+            } ${current ? 'text-highlight' : 'episode-tune text-muted-foreground/40'}`,
           ),
         ],
         [String(number).padStart(3, '0')],
       ),
+      playing
+        ? h.span(
+            [
+              h.AriaHidden(true),
+              h.Class(`col-start-1 row-start-1 transition-opacity duration-150 ${conceal}`),
+            ],
+            [equalizer(h)],
+          )
+        : h.empty,
+      h.span(
+        [
+          h.AriaHidden(true),
+          h.Class(
+            `col-start-1 row-start-1 flex h-10 w-10 scale-75 items-center justify-center rounded-sm bg-highlight text-highlight-foreground opacity-0 shadow-lg transition duration-150 group-hover/play:scale-100 group-focus-visible/play:scale-100 ${reveal}`,
+          ),
+        ],
+        [lucide(playing ? iconPaths.pause : iconPaths.play, 'h-4 w-4 fill-current')],
+      ),
+      playing
+        ? h.empty
+        : h.span(
+            [
+              h.AriaHidden(true),
+              h.Class(
+                'pointer-events-none absolute -left-1 top-0 hidden text-muted-foreground pointer-coarse:block',
+              ),
+            ],
+            [lucide(iconPaths.play, 'h-2.5 w-2.5 fill-current')],
+          ),
     ],
   )
 }
