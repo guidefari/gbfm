@@ -32,4 +32,19 @@ describe('creator model', () => {
     expect(reviewed.phase).toBe('reviewing')
     expect(reviewed.draft.kind).toBe('post')
   })
+
+  it('an autosave completion cannot dismiss review or roll back publication', () => {
+    const model = initialModel(input)
+    const reviewed = update(model, Message.ReviewRequested()).model
+    const saved = update(reviewed, Message.LocallySaved()).model
+    expect(saved.phase).toBe('reviewing')
+    expect(saved.saveState).toBe('saved-locally')
+    const published = update(saved, Message.Saved({ slug: 'published', published: true })).model
+    expect(update(published, Message.LocallySaved()).model).toEqual(published)
+  })
+
+  it('editing cannot switch between post and audio endpoints', () => {
+    const model = initialModel({ ...input, kind: 'mix', editSlug: 'existing-mix' })
+    expect(update(model, Message.KindChanged({ kind: 'post' }))).toEqual({ model })
+  })
 })

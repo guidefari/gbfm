@@ -72,6 +72,7 @@ export const Message = defineMessageUnion({
   Saved: { slug: Schema.String, published: Schema.Boolean },
   Failed: { operation: Schema.String, message: Schema.String },
   Hydrated: { draft: Schema.NullOr(Draft) },
+  LocallySaved: {},
   ArtworkChosen: { files: Schema.Array(Schema.instanceOf(File)) },
   ArtworkUploaded: { url: Schema.String },
   AudioChosen: { files: Schema.Array(Schema.instanceOf(File)) },
@@ -85,10 +86,10 @@ const failure = (operation: string) => (error: CreatorError) =>
 
 const PersistDraft = Command.define('Creator.PersistDraft', {
   args: { key: Schema.String, draft: Draft },
-  messages: [Message.Hydrated, Message.Failed],
+  messages: [Message.LocallySaved, Message.Failed],
   execute: ({ key, draft }) =>
     Effect.flatMap(CreatorService, (service) => service.writeLocalDraft(key, draft)).pipe(
-      Effect.as(Message.Hydrated({ draft: null })),
+      Effect.as(Message.LocallySaved()),
       Effect.catch((error) => Effect.succeed(failure('autosave')(error))),
     ),
 })
@@ -180,7 +181,8 @@ export const update = (
           ),
         ],
       }),
-    KindChanged: ({ kind }) => changed(model, { ...model.draft, kind }),
+    KindChanged: ({ kind }) =>
+      model.draft.editSlug ? { model } : changed(model, { ...model.draft, kind }),
     ReviewRequested: () => ({ model: { ...model, phase: 'reviewing' } }),
     ReviewClosed: () => ({ model: { ...model, phase: 'writing' } }),
     ResolveMusicRequested: () => ({
@@ -222,6 +224,12 @@ export const update = (
         phase: 'writing',
         saveState: draft ? 'saved-locally' : model.saveState,
       },
+    }),
+    LocallySaved: () => ({
+      model:
+        model.phase === 'saving' || model.phase === 'published'
+          ? model
+          : { ...model, saveState: 'saved-locally' },
     }),
     ArtworkChosen: ({ files }) =>
       files[0]

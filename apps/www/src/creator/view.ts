@@ -125,6 +125,7 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
                   h.select(
                     [
                       h.Value(model.draft.kind),
+                      h.Disabled(Boolean(model.draft.editSlug)),
                       h.OnChange((value) =>
                         Message.KindChanged({
                           kind: Match.value(value).pipe(
