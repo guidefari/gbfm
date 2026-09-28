@@ -1565,7 +1565,7 @@ The catalog bootstrap is separate from content rewriting and should already be c
 
 - Before the hard cut, rollback means discarding or reverting the held runtime commits. Production data and behavior remain unchanged.
 - The hard cut occurs with traffic and writes paused. A failed conversion, deploy, or smoke check restores the verified backup and prior server and WWW revisions before traffic resumes.
-- The approved conversion requires both a database backup and an inverse file containing record ID and original content. Restoration is an explicit owner-approved operation.
+- The approved conversion retains both the full D1 export and `content-before.json`, which contains every original source value keyed by content kind and record ID. Restoration is an explicit owner-approved operation.
 - `compiledContent` and its generator remain through the hard cut for existing API clients. Their later removal has its own rollback commit and does not require data restoration.
 - Canonical source remains portable before and after restoration. The migration changes syntax, not the table schema.
 - The hard-cut gate is strict: do not deploy canonical-only readers while any production row remains in the old language.
