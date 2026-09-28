@@ -1,0 +1,30 @@
+{
+  "name": "@gbfm/rich-content",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./schema": "./src/schema.ts",
+    "./source": "./src/source.ts",
+    "./legacy-mdx": "./src/legacy-mdx.ts",
+    "./normalize": "./src/normalize.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsgo --noEmit"
+  },
+  "dependencies": {
+    "@mdx-js/mdx": "3.1.1",
+    "effect": "4.0.0-rc.116",
+    "remark-directive": "4.0.0",
+    "remark-gfm": "4.0.1",
+    "remark-parse": "11.0.0",
+    "unified": "11.0.5"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.2",
+    "@types/mdast": "4.0.4",
+    "@typescript/native-preview": "7.0.0-dev.20260707.2",
+    "vitest": "4.1.11"
+  }
+}
