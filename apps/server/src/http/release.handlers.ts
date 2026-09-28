@@ -1,5 +1,6 @@
 import { Api } from '@gbfm/api/api'
 import { AuthSession } from '@gbfm/api/middleware/auth'
+import { ValidationHttpError } from '@gbfm/api/post'
 import { Effect } from 'effect'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
 
@@ -45,6 +46,7 @@ export const ReleaseHandlersLive = HttpApiBuilder.group(Api, 'release', (handler
               Effect.catchTag('ConflictError', () => new HttpApiError.Conflict()),
               Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
               Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized()),
+              Effect.catchTag('ValidationError', () => new ValidationHttpError()),
             ),
         )
 
@@ -102,6 +104,7 @@ export const ReleaseHandlersLive = HttpApiBuilder.group(Api, 'release', (handler
             .pipe(
               Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
               Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized()),
+              Effect.catchTag('ValidationError', () => new ValidationHttpError()),
             ),
         )
 

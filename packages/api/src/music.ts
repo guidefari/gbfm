@@ -1,7 +1,9 @@
+import { RichContentDocument } from '@gbfm/rich-content/schema'
 import { Schema } from 'effect'
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup, HttpApiSchema } from 'effect/unstable/httpapi'
 
 import { AuthMiddleware } from './middleware/auth'
+import { ValidationHttpError } from './post'
 
 export class MusicServiceUnavailableResponse extends Schema.Error<MusicServiceUnavailableResponse>(
   'MusicServiceUnavailableResponse',
@@ -244,6 +246,7 @@ export const LabelResponse = Schema.Struct({
   createdAt: Schema.String,
   updatedAt: Schema.String,
   compiledContent: Schema.optional(Schema.String),
+  richContent: Schema.optional(RichContentDocument),
   creators: Schema.optional(Schema.Array(LabelCreatorResponse)),
   affiliatedArtists: Schema.optional(Schema.Array(ArtistResponse)),
   affiliatedAlbums: Schema.optional(Schema.Array(AlbumResponse)),
@@ -673,7 +676,7 @@ export const MusicGroup = HttpApiGroup.make('music')
     HttpApiEndpoint.post('createLabel', '/api/music/labels', {
       payload: CreateLabelInput,
       success: LabelResponse,
-      error: HttpApiError.Forbidden,
+      error: [HttpApiError.Forbidden, ValidationHttpError],
     }).middleware(AuthMiddleware),
   )
   .add(
@@ -695,7 +698,7 @@ export const MusicGroup = HttpApiGroup.make('music')
       params: labelIdParam,
       payload: UpdateLabelInput,
       success: LabelResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden],
+      error: [HttpApiError.NotFound, HttpApiError.Forbidden, ValidationHttpError],
     }).middleware(AuthMiddleware),
   )
   .add(

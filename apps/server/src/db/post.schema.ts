@@ -1,3 +1,4 @@
+import type { RichContentDocument } from '@gbfm/rich-content/schema'
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
 import {
   type AnySQLiteColumn,
@@ -68,6 +69,7 @@ export type BlueskySourceAttribution = {
 
 export type SelectMdxCompiledPost = SelectPost & {
   compiledContent: string
+  richContent: RichContentDocument
   blueskySource?: BlueskySourceAttribution
   creators?:
     | Array<{

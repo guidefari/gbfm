@@ -1,6 +1,7 @@
 import { Api } from '@gbfm/api/api'
 import { GetAudioByTypeResponse, GetAudioTagsResponse } from '@gbfm/api/audio'
 import { AuthSession } from '@gbfm/api/middleware/auth'
+import { ValidationHttpError } from '@gbfm/api/post'
 import { Effect, Schema } from 'effect'
 import { HttpServerResponse } from 'effect/unstable/http'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
@@ -38,7 +39,10 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
               finalCreatorIds,
               { actorId: user.id, idempotencyKey },
             )
-            .pipe(Effect.catchTag('ConflictError', () => new HttpApiError.Conflict())),
+            .pipe(
+              Effect.catchTag('ConflictError', () => new HttpApiError.Conflict()),
+              Effect.catchTag('ValidationError', () => new ValidationHttpError()),
+            ),
         )
 
         return toDateStrings(audio)
@@ -164,6 +168,7 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
             .pipe(
               Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
               Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized()),
+              Effect.catchTag('ValidationError', () => new ValidationHttpError()),
             ),
         )
 
@@ -188,7 +193,10 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
               finalCreatorIds,
               { actorId: user.id, idempotencyKey },
             )
-            .pipe(Effect.catchTag('ConflictError', () => new HttpApiError.Conflict())),
+            .pipe(
+              Effect.catchTag('ConflictError', () => new HttpApiError.Conflict()),
+              Effect.catchTag('ValidationError', () => new ValidationHttpError()),
+            ),
         )
 
         return toDateStrings(audio)

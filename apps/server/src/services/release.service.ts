@@ -17,9 +17,15 @@ import {
   getErrorMessage,
   NotFoundError,
   type UnauthorizedError,
+  type ValidationError,
 } from '@/errors'
 import { requireCreatorOrAdmin } from '@/lib/authorization'
-import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
+import {
+  compileMDX,
+  isMDXCompilationResult,
+  renderRichContent,
+  validateCanonicalContent,
+} from '@/lib/mdx'
 
 export interface ReleaseService {
   readonly getBySlug: (
@@ -36,14 +42,17 @@ export interface ReleaseService {
     userRole: string,
   ) => Effect.Effect<
     SelectRelease,
-    DatabaseError | NotFoundError | ConflictError | UnauthorizedError
+    DatabaseError | NotFoundError | ConflictError | UnauthorizedError | ValidationError
   >
   readonly update: (
     slug: string,
     userId: string,
     userRole: string,
     data: Partial<InsertRelease> & { releaseDate?: Date },
-  ) => Effect.Effect<SelectMdxCompiledRelease, DatabaseError | NotFoundError | UnauthorizedError>
+  ) => Effect.Effect<
+    SelectMdxCompiledRelease,
+    DatabaseError | NotFoundError | UnauthorizedError | ValidationError
+  >
   readonly delete: (
     slug: string,
     userId: string,
@@ -114,6 +123,7 @@ const getBySlugEffect = (slug: string, includeDrafts = false) =>
       ...release,
       tags,
       compiledContent: '',
+      richContent: renderRichContent(release.content),
     }
 
     if (release.content) {
@@ -131,6 +141,7 @@ const getBySlugEffect = (slug: string, includeDrafts = false) =>
         processedRelease = {
           ...processedRelease,
           compiledContent: mdxResult.compiled,
+          richContent: mdxResult.richContent,
         }
       }
     }
@@ -144,6 +155,7 @@ const createEffect = (
   userRole: string,
 ) =>
   Effect.gen(function* () {
+    yield* validateCanonicalContent(data.content)
     const db = yield* Database
     const { tags, ...releaseData } = data
 
@@ -261,6 +273,7 @@ const updateEffect = (
     }
 
     yield* requireCreatorOrAdmin('label', existingRelease.labelId, userId, userRole)
+    yield* validateCanonicalContent(data.content)
 
     if (data.labelId && data.labelId !== existingRelease.labelId) {
       const destinationLabelId = data.labelId
@@ -348,6 +361,7 @@ const updateEffect = (
       ...updatedRelease,
       tags: projectedTags,
       compiledContent: '',
+      richContent: renderRichContent(updatedRelease.content),
     }
 
     if (updatedRelease.content) {
@@ -365,6 +379,7 @@ const updateEffect = (
         return {
           ...baseProcessedRelease,
           compiledContent: mdxResult.compiled,
+          richContent: mdxResult.richContent,
         }
       }
     }

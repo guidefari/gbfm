@@ -1,3 +1,4 @@
+import type { RichContentDocument } from '@gbfm/rich-content/schema'
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
 import { index, integer, primaryKey, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
 
@@ -18,6 +19,7 @@ export type InsertShow = InferInsertModel<typeof showsTable> & { tags?: Array<st
 
 export type SelectMdxCompiledShow = SelectShow & {
   compiledContent: string
+  richContent: RichContentDocument
   hosts?: Array<{
     id: string
     name: string

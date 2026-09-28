@@ -1,7 +1,9 @@
+import { RichContentDocument } from '@gbfm/rich-content/schema'
 import { Schema } from 'effect'
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/unstable/httpapi'
 
 import { AuthMiddleware } from './middleware/auth'
+import { ValidationHttpError } from './post'
 
 const UuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -41,6 +43,7 @@ export const AudioResponse = Schema.Struct({
 export const CompiledAudioResponse = Schema.Struct({
   ...AudioResponse.fields,
   compiledContent: Schema.String,
+  richContent: Schema.optional(RichContentDocument),
 })
 
 const PaginationMeta = Schema.Struct({
@@ -142,7 +145,7 @@ export const AudioGroup = HttpApiGroup.make('audio')
     HttpApiEndpoint.post('createMix', '/api/content/mixes', {
       payload: CreateAudioInput,
       success: AudioResponse,
-      error: [HttpApiError.Conflict, HttpApiError.InternalServerError],
+      error: [HttpApiError.Conflict, ValidationHttpError, HttpApiError.InternalServerError],
     }).middleware(AuthMiddleware),
   )
   .add(
@@ -187,14 +190,19 @@ export const AudioGroup = HttpApiGroup.make('audio')
       params: AudioTypeSlugParams,
       payload: UpdateAudioInput,
       success: CompiledAudioResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError],
+      error: [
+        HttpApiError.NotFound,
+        HttpApiError.Unauthorized,
+        ValidationHttpError,
+        HttpApiError.InternalServerError,
+      ],
     }).middleware(AuthMiddleware),
   )
   .add(
     HttpApiEndpoint.post('createAudio', '/api/content/audio', {
       payload: CreateAudioInput,
       success: AudioResponse,
-      error: [HttpApiError.Conflict, HttpApiError.InternalServerError],
+      error: [HttpApiError.Conflict, ValidationHttpError, HttpApiError.InternalServerError],
     }).middleware(AuthMiddleware),
   )
   .add(

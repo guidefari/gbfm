@@ -60,7 +60,7 @@ import {
   ValidationError,
 } from '@/errors'
 import { checkCreatorAuthorship, requireCreatorOrAdmin } from '@/lib/authorization'
-import { MdxService } from '@/lib/mdx'
+import { MdxService, validateCanonicalContent } from '@/lib/mdx'
 import { createPaginationMetadata, type PaginationMetadata } from '@/lib/pagination'
 import { ConfigService } from '@/services/config.service'
 import { SentryService } from '@/services/sentry.service'
@@ -366,9 +366,12 @@ const compilePost = (
       ? yield* mdx.compile(post.content).pipe(Effect.orElseSucceed(() => ''))
       : ''
 
+    const richContent = yield* mdx.render(post.content ?? '')
+
     return {
       ...post,
       compiledContent,
+      richContent,
       creators,
     } satisfies SelectMdxCompiledPost
   })
@@ -1816,6 +1819,7 @@ const createEffect = (data: Partial<InsertPost>, creatorIds: Array<string>) =>
     const db = yield* Database
     const normalizedData = normalizePostData(data, data.type)
     yield* validatePostData(normalizedData)
+    yield* validateCanonicalContent(normalizedData.content)
 
     if (normalizedData.quotedPostId) {
       yield* validateQuotedPost(normalizedData.quotedPostId)
@@ -2365,6 +2369,7 @@ const updateEffect = (
     }
 
     yield* requireCreatorOrAdmin('post', existingPost.id, userId, userRole)
+    yield* validateCanonicalContent(rawData.content)
 
     // Thread structure (parentPostId/rootPostId/depth) must never be
     // mutable via update, even though InsertPost's type allows it -- the

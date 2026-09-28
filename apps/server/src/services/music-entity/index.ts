@@ -192,7 +192,9 @@ export interface MusicEntityService {
   ) => Effect.Effect<SelectMusicPlaylist, DatabaseError | NotFoundError>
   readonly deletePlaylist: (id: string) => Effect.Effect<void, DatabaseError | NotFoundError>
 
-  readonly createLabel: (data: CreateLabelInput) => Effect.Effect<SelectMusicLabel, DatabaseError>
+  readonly createLabel: (
+    data: CreateLabelInput,
+  ) => Effect.Effect<SelectMusicLabel, DatabaseError | ValidationError>
   readonly getLabels: (
     includeDrafts: boolean,
   ) => Effect.Effect<Array<SelectMusicLabel>, DatabaseError>
@@ -205,7 +207,7 @@ export interface MusicEntityService {
   readonly updateLabel: (
     id: string,
     data: Partial<CreateLabelInput>,
-  ) => Effect.Effect<SelectMusicLabel, DatabaseError | NotFoundError>
+  ) => Effect.Effect<SelectMusicLabel, DatabaseError | NotFoundError | ValidationError>
   readonly deleteLabel: (id: string) => Effect.Effect<void, DatabaseError | NotFoundError>
 
   readonly getArtistsForLabel: (

@@ -1,3 +1,4 @@
+import type { RichContentDocument } from '@gbfm/rich-content/schema'
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
@@ -23,6 +24,7 @@ export type InsertRelease = InferInsertModel<typeof releasesTable> & { tags?: Ar
 
 export type SelectMdxCompiledRelease = SelectRelease & {
   compiledContent: string
+  richContent: RichContentDocument
 }
 
 export const releasesRelations = relations(releasesTable, ({ one }) => ({

@@ -58,7 +58,7 @@ const [mix] = await database
     slug: 'e2e-local-frequencies',
     description: 'A disposable audio fixture for playback and navigation tests.',
     content:
-      '## Listening notes\n\nAn **independent signal**. [Read more](https://example.com/music).\n\n- Local audio playback fixture.\n\n<iframe src="https://w.soundcloud.com/player/?url=https%3A%2F%2Fapi.soundcloud.com%2Ftracks%2F123" />\n\n<iframe src="https://untrusted.invalid/player" />\n\n[Unsafe](javascript:alert(1))',
+      '## Listening notes\n\nAn **independent signal** with *room to breathe*. [Read more](https://example.com/music).\n\n1. Tune in\n2. Let it drift\n   - Keep the signal local\n\n| Frequency | Mood |\n| :-- | --: |\n| 88.3 FM | Open |\n\nhttps://soundcloud.com/gbfm/local-frequencies',
     showId: show.id,
     url: `http://127.0.0.1:${port}/api/e2e-audio.wav`,
     draft: false,

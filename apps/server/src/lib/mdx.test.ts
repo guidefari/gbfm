@@ -1,9 +1,10 @@
+/* oxlint-disable anti-slop-effect/no-manual-tagged-construction -- Assertions compare decoded tagged-union output. */
 import { Effect } from 'effect'
 import { describe, expect, test, vi } from 'vitest'
 
 import { withTestLayer } from '@/test/effect'
 
-import { MdxService, makeMdxServiceTest } from './mdx'
+import { MdxService, makeMdxServiceTest, renderRichContent, validateCanonicalContent } from './mdx'
 
 const withService = <A, E>(
   compileFn: (content: string) => Promise<string>,
@@ -21,6 +22,22 @@ const withService = <A, E>(
   )
 
 describe('MdxService', () => {
+  test('renders canonical media without executable output', () => {
+    expect(renderRichContent('https://www.youtube.com/watch?v=abc').blocks[0]).toMatchObject({
+      _tag: 'ExternalMediaEmbed',
+      provider: 'youtube',
+      embedUrl: 'https://www.youtube-nocookie.com/embed/abc',
+    })
+  })
+
+  test('rejects legacy JSX on canonical writes', async () => {
+    await expect(
+      Effect.runPromise(
+        validateCanonicalContent('<Track url="https://open.spotify.com/track/abc" />'),
+      ),
+    ).rejects.toMatchObject({ _tag: 'ValidationError' })
+  })
+
   test('fails with MDXCompileError when compile function throws', async () => {
     const err = new Error('syntax error at line 3')
     await expect(

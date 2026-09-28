@@ -19,9 +19,15 @@ import {
   getErrorMessage,
   NotFoundError,
   type UnauthorizedError,
+  type ValidationError,
 } from '@/errors'
 import { requireCreatorOrAdmin } from '@/lib/authorization'
-import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
+import {
+  compileMDX,
+  isMDXCompilationResult,
+  renderRichContent,
+  validateCanonicalContent,
+} from '@/lib/mdx'
 import { createPaginationMetadata, type PaginationMetadata } from '@/lib/pagination'
 
 export { ShowSubscriptionService, ShowSubscriptionServiceLayer } from './show-subscription.service'
@@ -51,13 +57,16 @@ export interface ShowService {
   readonly create: (
     data: InsertShow,
     hostIds: Array<string>,
-  ) => Effect.Effect<SelectShow, DatabaseError | ConflictError>
+  ) => Effect.Effect<SelectShow, DatabaseError | ConflictError | ValidationError>
   readonly update: (
     slug: string,
     userId: string,
     userRole: string,
     data: Partial<InsertShow> & { hostIds?: Array<string> },
-  ) => Effect.Effect<SelectMdxCompiledShow, DatabaseError | NotFoundError | UnauthorizedError>
+  ) => Effect.Effect<
+    SelectMdxCompiledShow,
+    DatabaseError | NotFoundError | UnauthorizedError | ValidationError
+  >
   readonly delete: (
     slug: string,
     userId: string,
@@ -204,6 +213,7 @@ const getBySlugEffect = (slug: string, includeDrafts = false) =>
       ...showFields,
       tags,
       compiledContent: '',
+      richContent: renderRichContent(show.content),
       hosts: hosts.map(({ creator }) => ({
         id: creator.id,
         name: creator.name,
@@ -226,6 +236,7 @@ const getBySlugEffect = (slug: string, includeDrafts = false) =>
         processedShow = {
           ...processedShow,
           compiledContent: mdxResult.compiled,
+          richContent: mdxResult.richContent,
         }
       }
     }
@@ -235,6 +246,7 @@ const getBySlugEffect = (slug: string, includeDrafts = false) =>
 
 const createEffect = (data: InsertShow, hostIds: Array<string>) =>
   Effect.gen(function* () {
+    yield* validateCanonicalContent(data.content)
     const db = yield* Database
     const { tags, ...showData } = data
     const id = crypto.randomUUID()
@@ -329,6 +341,7 @@ const updateEffect = (
     }
 
     yield* requireCreatorOrAdmin('show', existingShow.id, userId, userRole)
+    yield* validateCanonicalContent(data.content)
 
     const updatedRecords = yield* Effect.tryPromise({
       try: async () => {
@@ -413,6 +426,7 @@ const updateEffect = (
       ...updatedShow,
       tags: projectedTags,
       compiledContent: '',
+      richContent: renderRichContent(updatedShow.content),
       hosts: hostRows.map(({ creator }) => ({
         id: creator.id,
         name: creator.name,
@@ -435,6 +449,7 @@ const updateEffect = (
         return {
           ...baseProcessedShow,
           compiledContent: mdxResult.compiled,
+          richContent: mdxResult.richContent,
         }
       }
     }

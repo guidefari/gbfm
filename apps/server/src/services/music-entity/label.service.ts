@@ -16,7 +16,12 @@ import {
   type SelectMusicLabel,
 } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
-import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
+import {
+  compileMDX,
+  isMDXCompilationResult,
+  renderRichContent,
+  validateCanonicalContent,
+} from '@/lib/mdx'
 import { omitUndefined } from '@/lib/omit-undefined'
 import { toSlug } from '@/services/to-slug'
 
@@ -38,6 +43,7 @@ export interface CreateLabelInput {
 export const createLabelEffect = Effect.fn('musicEntity.createLabel')(function* (
   data: CreateLabelInput,
 ) {
+  yield* validateCanonicalContent(data.content)
   const db = yield* Database
   const { tags, genres, ...labelData } = data
   const id = crypto.randomUUID()
@@ -183,6 +189,7 @@ export const getLabelBySlugEffect = (slug: string) =>
     })
 
     let compiledContent = ''
+    let richContent = renderRichContent(projectedLabel.content)
 
     if (projectedLabel.content) {
       const result = yield* Effect.tryPromise({
@@ -195,14 +202,23 @@ export const getLabelBySlugEffect = (slug: string) =>
           }),
       })
 
-      if (isMDXCompilationResult(result)) compiledContent = result.compiled
+      if (isMDXCompilationResult(result)) {
+        compiledContent = result.compiled
+        richContent = result.richContent
+      }
     }
 
-    return { ...projectedLabel, compiledContent, creators } satisfies SelectMdxCompiledMusicLabel
+    return {
+      ...projectedLabel,
+      compiledContent,
+      richContent,
+      creators,
+    } satisfies SelectMdxCompiledMusicLabel
   }).pipe(Effect.withSpan('musicEntity.getLabelBySlug', { attributes: { slug } }))
 
 export const updateLabelEffect = (id: string, data: Partial<CreateLabelInput>) =>
   Effect.gen(function* () {
+    yield* validateCanonicalContent(data.content)
     const db = yield* Database
     const { tags, genres, ...updateData } = data
 

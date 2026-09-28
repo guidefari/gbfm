@@ -4049,7 +4049,7 @@ describe('quote-tweet (quotedPostId)', () => {
 })
 
 describe('GET /api/content/posts/micro/:slug', () => {
-  it('returns the compiled tweet with creators and projected labels', async () => {
+  it('returns the rich-content tweet with creators and projected labels', async () => {
     const suffix = crypto.randomUUID()
     const userId = `micro-by-slug-${suffix}`
     const slug = `micro-by-slug-${suffix}`
@@ -4088,7 +4088,14 @@ describe('GET /api/content/posts/micro/:slug', () => {
         tags: ['performance'],
         creators: [{ id: userId, name: 'Tweet Author', username: `tweet-author-${suffix}` }],
       })
-      expect(body.compiledContent).toContain('tweet')
+      expect(body.compiledContent).toBe('')
+      expect(body.richContent?.version).toBe(1)
+      const block = body.richContent?.blocks[0]
+      expect(block?._tag).toBe('Paragraph')
+
+      if (block?._tag !== 'Paragraph') throw new Error('Expected paragraph content')
+      expect(block.children[0]).toMatchObject({ value: 'Fetchable ' })
+      expect(block.children[1]?._tag).toBe('Strong')
     } finally {
       await db.delete(entityLabelsTable).where(eq(entityLabelsTable.entityId, post.id))
       await db.delete(postCreators).where(eq(postCreators.postId, post.id))

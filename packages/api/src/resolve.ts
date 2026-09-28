@@ -1,3 +1,4 @@
+import { RichContentDocument } from '@gbfm/rich-content/schema'
 import { Schema } from 'effect'
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/unstable/httpapi'
 
@@ -19,6 +20,7 @@ const ResolvedShowData = Schema.Struct({
   tags: Schema.NullOr(Schema.Array(Schema.String)),
   createdAt: Schema.String,
   compiledContent: Schema.NullOr(Schema.String),
+  richContent: Schema.optional(RichContentDocument),
   hosts: Schema.Array(ShowHost),
 })
 

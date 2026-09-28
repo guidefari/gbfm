@@ -1,4 +1,5 @@
 import { LINK_STATUS } from '@gbfm/core/status'
+import type { RichContentDocument } from '@gbfm/rich-content/schema'
 import { type InferInsertModel, type InferSelectModel, relations, sql } from 'drizzle-orm'
 import {
   check,
@@ -667,6 +668,7 @@ export type InsertMusicLabel = InferInsertModel<typeof musicLabelsTable>
 
 export type SelectMdxCompiledMusicLabel = SelectMusicLabel & {
   compiledContent: string
+  richContent: RichContentDocument
   creators: Array<{ id: string; name: string }>
 }
 

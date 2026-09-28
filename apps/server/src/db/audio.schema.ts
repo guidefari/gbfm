@@ -1,3 +1,4 @@
+import type { RichContentDocument } from '@gbfm/rich-content/schema'
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
 import { index, integer, sqliteTable, primaryKey, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
@@ -53,6 +54,7 @@ export type SelectAudio = BaseSelectAudio & {
 
 export type SelectMdxCompiledAudio = SelectAudio & {
   compiledContent: string
+  richContent: RichContentDocument
 }
 
 export const audioCreators = sqliteTable(

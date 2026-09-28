@@ -1,3 +1,4 @@
+import type { RichContentDocument } from '@gbfm/rich-content/schema'
 import { and, eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 
@@ -6,7 +7,7 @@ import { readEntityLabels } from '@/db/labels'
 import { Database } from '@/db/layer'
 import { showCreators, showsTable } from '@/db/show.schema'
 import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
-import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
+import { compileMDX, isMDXCompilationResult, renderRichContent } from '@/lib/mdx'
 import { isReservedSlug } from '@/lib/reserved-slugs'
 import { getPublicProfileEffect, type PublicProfile } from '@/services/profile.service'
 
@@ -20,6 +21,7 @@ type ShowData = {
   tags: Array<string> | null
   createdAt: Date
   compiledContent: string | null
+  richContent: RichContentDocument
   hosts: Array<{ id: string; name: string; username: string | null }>
 }
 
@@ -127,6 +129,7 @@ const resolveEffect = (slug: string) =>
 
       let compiledContent: string | null = null
       const contentToCompile = foundShow.content
+      let richContent = renderRichContent(contentToCompile)
 
       if (contentToCompile) {
         const compiled = yield* Effect.tryPromise({
@@ -141,6 +144,7 @@ const resolveEffect = (slug: string) =>
 
         if (isMDXCompilationResult(compiled)) {
           compiledContent = compiled.compiled
+          richContent = compiled.richContent
         }
       }
 
@@ -156,6 +160,7 @@ const resolveEffect = (slug: string) =>
           tags,
           createdAt: foundShow.createdAt,
           compiledContent,
+          richContent,
           hosts,
         },
       }

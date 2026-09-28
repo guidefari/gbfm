@@ -1,3 +1,4 @@
+/* oxlint-disable anti-slop-effect/no-manual-tagged-construction -- Structural expectations describe decoded rich-content response values at the service boundary. */
 import { randomUUID } from 'node:crypto'
 
 import { Effect, Layer } from 'effect'
@@ -204,7 +205,7 @@ describe('post hydration through the service interface', () => {
     })
   })
 
-  test('list and single reads retain labels, creators, attribution and MDX fallback', async () => {
+  test('list and single reads retain labels, creators, attribution and inert rich content', async () => {
     const list = await runPostEffect((service) => service.getAll({ limit: 100, offset: 0 }))
     const single = await runPostEffect((service) => service.getBySlug(replySlug))
     const bySlug = await runPostEffect((service) => service.getMicroPostBySlug(replySlug))
@@ -217,6 +218,15 @@ describe('post hydration through the service interface', () => {
       tags: ['second', 'first'],
       genres: ['ambient'],
       compiledContent: '',
+      richContent: {
+        version: 1,
+        blocks: [
+          {
+            _tag: 'Paragraph',
+            children: [{ _tag: 'Text', value: '<Unclosed' }],
+          },
+        ],
+      },
       blueskySource: source,
     })
     expect(single.creators).toHaveLength(2)
@@ -226,8 +236,17 @@ describe('post hydration through the service interface', () => {
       genres: null,
       creators: [],
       compiledContent: '',
+      richContent: { version: 1, blocks: [] },
     })
-    expect(list.data.find((post) => post.id === rootId)?.compiledContent).not.toBe('')
+    expect(list.data.find((post) => post.id === rootId)?.richContent).toEqual({
+      version: 1,
+      blocks: [
+        {
+          _tag: 'Paragraph',
+          children: [{ _tag: 'Strong', children: [{ _tag: 'Text', value: 'root' }] }],
+        },
+      ],
+    })
   })
 
   test('search, replies and thread share hydration without changing endpoint refinements', async () => {
@@ -257,7 +276,10 @@ describe('post hydration through the service interface', () => {
     expect(thread.focus).not.toHaveProperty('replyCount')
     expect({ ...thread.focus, replyCount: 0 }).toEqual(searched)
     expect(thread.root).toMatchObject({ id: rootId, tags: ['root-tag'], creators: [creator] })
-    expect(thread.root.compiledContent).not.toBe('')
+    expect(thread.root.richContent.blocks[0]).toEqual({
+      _tag: 'Paragraph',
+      children: [{ _tag: 'Strong', children: [{ _tag: 'Text', value: 'root' }] }],
+    })
     expect(replies.data.map((post) => post.id)).toEqual([replyId, emptyId])
     expect(thread.posts.map((post) => post.id)).toEqual([replyId, emptyId])
     expect(replies.pagination.total).toBe(3)

@@ -1,3 +1,4 @@
+import { RichContentDocument } from '@gbfm/rich-content/schema'
 import { Schema } from 'effect'
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/unstable/httpapi'
 
@@ -63,6 +64,7 @@ export const PostResponse = Schema.Struct({
 export const CompiledPostResponse = Schema.Struct({
   ...PostResponse.fields,
   compiledContent: Schema.String,
+  richContent: Schema.optional(RichContentDocument),
   creators: Schema.optional(Schema.Array(Creator)),
   replyCount: Schema.optional(Schema.Number),
 })

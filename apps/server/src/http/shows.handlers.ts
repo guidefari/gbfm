@@ -1,5 +1,6 @@
 import { Api } from '@gbfm/api/api'
 import { AuthSession } from '@gbfm/api/middleware/auth'
+import { ValidationHttpError } from '@gbfm/api/post'
 import { Effect } from 'effect'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
 
@@ -109,7 +110,10 @@ export const ShowsHandlersLive = HttpApiBuilder.group(Api, 'shows', (handlers) =
               omitUndefined({ ...showData, tags: tags ? [...tags] : undefined }),
               finalHostIds,
             )
-            .pipe(Effect.catchTag('ConflictError', () => new HttpApiError.Conflict())),
+            .pipe(
+              Effect.catchTag('ConflictError', () => new HttpApiError.Conflict()),
+              Effect.catchTag('ValidationError', () => new ValidationHttpError()),
+            ),
         )
 
         return {
@@ -140,6 +144,7 @@ export const ShowsHandlersLive = HttpApiBuilder.group(Api, 'shows', (handlers) =
             .pipe(
               Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
               Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized()),
+              Effect.catchTag('ValidationError', () => new ValidationHttpError()),
             ),
         )
 

@@ -21,6 +21,7 @@ import type {
   UpdatePlaylistInput,
   UpdateTrackInput,
 } from '@gbfm/api/music'
+import { ValidationHttpError } from '@gbfm/api/post'
 import { Effect, Schema } from 'effect'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
 
@@ -616,7 +617,9 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         const svc = yield* MusicEntityService
 
         const row = yield* dieOnDatabaseError(
-          svc.createLabel({ ...toLabelCreateFields(payload), createdById: user.id }),
+          svc
+            .createLabel({ ...toLabelCreateFields(payload), createdById: user.id })
+            .pipe(Effect.catchTag('ValidationError', () => new ValidationHttpError())),
         )
 
         return toLabelResponse(row)
@@ -666,9 +669,10 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         const svc = yield* MusicEntityService
 
         const row = yield* dieOnDatabaseError(
-          svc
-            .updateLabel(params.id, toLabelUpdateFields(payload))
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
+          svc.updateLabel(params.id, toLabelUpdateFields(payload)).pipe(
+            Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
+            Effect.catchTag('ValidationError', () => new ValidationHttpError()),
+          ),
         )
 
         return toLabelResponse(row)

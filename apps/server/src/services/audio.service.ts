@@ -25,10 +25,11 @@ import {
   getErrorMessage,
   NotFoundError,
   type UnauthorizedError,
+  type ValidationError,
 } from '@/errors'
 import { requireCreatorOrAdmin } from '@/lib/authorization'
 import { CryptoLive } from '@/lib/crypto'
-import { MdxService } from '@/lib/mdx'
+import { MdxService, validateCanonicalContent } from '@/lib/mdx'
 import { createPaginationMetadata, type PaginationMetadata } from '@/lib/pagination'
 import { recordAudioCreate } from '@/lib/performance-monitoring'
 import { ConfigService } from '@/services/config.service'
@@ -150,14 +151,17 @@ export interface AudioService {
     data: CreateAudioData,
     creatorIds: Array<string>,
     options: CreateAudioOptions,
-  ) => Effect.Effect<SelectAudio, DatabaseError | ConflictError>
+  ) => Effect.Effect<SelectAudio, DatabaseError | ConflictError | ValidationError>
   readonly update: (
     type: AudioType,
     slug: string,
     userId: string,
     userRole: string,
     data: Partial<InsertAudio> & { creatorIds?: Array<string> },
-  ) => Effect.Effect<SelectMdxCompiledAudio, DatabaseError | NotFoundError | UnauthorizedError>
+  ) => Effect.Effect<
+    SelectMdxCompiledAudio,
+    DatabaseError | NotFoundError | UnauthorizedError | ValidationError
+  >
   readonly trackPlay: (
     id: string,
     clientIp?: string,
@@ -365,6 +369,7 @@ const findAudioBySlug = (_type: AudioType, slug: string, mdx: MdxService, where:
     }
 
     let compiledContent = ''
+    const richContent = yield* mdx.render(audio.content)
 
     if (audio.content) {
       compiledContent = yield* mdx.compile(audio.content).pipe(Effect.orElseSucceed(() => ''))
@@ -387,6 +392,7 @@ const findAudioBySlug = (_type: AudioType, slug: string, mdx: MdxService, where:
       tags,
       thumbnailUrl: audioFields.thumbnailUrl ?? show?.thumbnailUrl ?? null,
       compiledContent,
+      richContent,
       creators: creators.map(({ creator }) => ({
         id: creator.id,
         name: creator.name,
@@ -430,6 +436,7 @@ const createEffect = (
   { actorId, idempotencyKey }: CreateAudioOptions,
 ) =>
   Effect.gen(function* () {
+    yield* validateCanonicalContent(data.content)
     const db = yield* Database
     const idempotencyFingerprint = yield* createAudioFingerprint(data, creatorIds)
     // thumbnailUrl is intentionally left as-is (NULL when not provided): the
@@ -591,6 +598,7 @@ const updateEffect = (
     }
 
     yield* requireCreatorOrAdmin('audio', existingAudio.id, userId, userRole)
+    yield* validateCanonicalContent(data.content)
 
     const { creatorIds, tags, ...updateData } = data
     let updatedAudio = existingAudio
@@ -678,6 +686,7 @@ const updateEffect = (
     })
 
     let compiledContent = ''
+    const richContent = yield* mdx.render(updatedAudio.content)
 
     if (updatedAudio.content) {
       compiledContent = yield* mdx
@@ -721,6 +730,7 @@ const updateEffect = (
       tags: projectedTags,
       thumbnailUrl: updatedAudio.thumbnailUrl ?? showThumbnailUrl,
       compiledContent,
+      richContent,
       creators: creatorRows.map(({ creator }) => ({
         id: creator.id,
         name: creator.name,

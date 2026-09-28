@@ -1,7 +1,9 @@
+import { RichContentDocument } from '@gbfm/rich-content/schema'
 import { Schema } from 'effect'
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/unstable/httpapi'
 
 import { AuthMiddleware } from './middleware/auth'
+import { ValidationHttpError } from './post'
 
 const UrlPattern = /^https?:\/\/.+/i
 
@@ -35,6 +37,7 @@ export const ReleaseResponse = Schema.Struct({
 export const CompiledReleaseResponse = Schema.Struct({
   ...ReleaseResponse.fields,
   compiledContent: Schema.String,
+  richContent: Schema.optional(RichContentDocument),
 })
 
 const baseReleaseFields = {
@@ -88,6 +91,7 @@ export const ReleaseGroup = HttpApiGroup.make('release')
         HttpApiError.Conflict,
         HttpApiError.NotFound,
         HttpApiError.Unauthorized,
+        ValidationHttpError,
         HttpApiError.InternalServerError,
       ],
     }).middleware(AuthMiddleware),
@@ -111,7 +115,12 @@ export const ReleaseGroup = HttpApiGroup.make('release')
       params: { slug: Schema.String },
       payload: UpdateReleaseInput,
       success: CompiledReleaseResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError],
+      error: [
+        HttpApiError.NotFound,
+        HttpApiError.Unauthorized,
+        ValidationHttpError,
+        HttpApiError.InternalServerError,
+      ],
     }).middleware(AuthMiddleware),
   )
   .add(

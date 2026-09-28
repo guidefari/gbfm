@@ -1,7 +1,9 @@
+import { RichContentDocument } from '@gbfm/rich-content/schema'
 import { Schema } from 'effect'
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/unstable/httpapi'
 
 import { AuthMiddleware } from './middleware/auth'
+import { ValidationHttpError } from './post'
 
 const UuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -35,6 +37,7 @@ const ShowWithHostsResponse = Schema.Struct({
 const CompiledShowResponse = Schema.Struct({
   ...ShowResponse.fields,
   compiledContent: Schema.String,
+  richContent: Schema.optional(RichContentDocument),
   hosts: Schema.optional(Schema.Array(ShowHost)),
 })
 
@@ -169,7 +172,12 @@ export const ShowsGroup = HttpApiGroup.make('shows')
     HttpApiEndpoint.post('createShow', '/api/shows', {
       payload: CreateShowInput,
       success: ShowResponse,
-      error: [HttpApiError.Forbidden, HttpApiError.Conflict, HttpApiError.InternalServerError],
+      error: [
+        HttpApiError.Forbidden,
+        HttpApiError.Conflict,
+        ValidationHttpError,
+        HttpApiError.InternalServerError,
+      ],
     }).middleware(AuthMiddleware),
   )
   .add(
@@ -177,7 +185,12 @@ export const ShowsGroup = HttpApiGroup.make('shows')
       params: { slug: Schema.String },
       payload: UpdateShowInput,
       success: CompiledShowResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError],
+      error: [
+        HttpApiError.NotFound,
+        HttpApiError.Unauthorized,
+        ValidationHttpError,
+        HttpApiError.InternalServerError,
+      ],
     }).middleware(AuthMiddleware),
   )
   .add(
