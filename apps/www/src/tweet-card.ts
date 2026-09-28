@@ -5,6 +5,7 @@ import { artwork } from './artwork'
 import { formatDate } from './format-date'
 import { iconPaths, lucide, spotifyIcon } from './icons'
 import { richContent } from './rich-content'
+import { richContentView } from './rich-content/render'
 
 export type TweetPost = MicroPostScreenResponse['post']
 
@@ -290,10 +291,14 @@ export const cardActions = (post: TweetPost, canEdit: boolean, replyCount: numbe
   )
 
 export const tweetBody = (post: TweetPost, size: 'base' | 'sm') =>
-  richContent(
-    post.content ?? '',
-    `prose ${size === 'base' ? 'prose-base' : 'prose-sm'} dark:prose-invert max-w-none prose-headings:font-black prose-headings:tracking-tighter prose-p:leading-relaxed prose-p:my-0 prose-a:text-foreground prose-a:underline`,
-  )
+  post.richContent
+    ? richContentView(post.richContent, h, {
+        className: `prose ${size === 'base' ? 'prose-base' : 'prose-sm'} dark:prose-invert max-w-none prose-headings:font-black prose-headings:tracking-tighter prose-p:leading-relaxed prose-p:my-0 prose-a:text-foreground prose-a:underline`,
+      })
+    : richContent(
+        post.content ?? '',
+        `prose ${size === 'base' ? 'prose-base' : 'prose-sm'} dark:prose-invert max-w-none prose-headings:font-black prose-headings:tracking-tighter prose-p:leading-relaxed prose-p:my-0 prose-a:text-foreground prose-a:underline`,
+      )
 
 export const replyCard = (reply: TweetPost, isLast: boolean, canEdit: boolean) =>
   h.div(

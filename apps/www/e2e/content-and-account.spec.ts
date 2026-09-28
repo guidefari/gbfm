@@ -42,7 +42,7 @@ test('releases show their release date and safe listening links', async ({ page 
   await expect(link).toHaveAttribute('rel', 'noopener noreferrer')
 })
 
-test('public writing renders Markdown and trusted legacy audio without executing arbitrary markup', async ({
+test('public writing renders canonical rich content without executing arbitrary markup', async ({
   page,
 }) => {
   await page.route('https://w.soundcloud.com/**', (route) => route.abort())
@@ -56,7 +56,7 @@ test('public writing renders Markdown and trusted legacy audio without executing
   await expect(page.locator('.rich-content iframe')).toHaveCount(1)
   await expect(page.locator('.rich-content iframe')).toHaveAttribute(
     'src',
-    /^https:\/\/w\.soundcloud\.com\/player\//,
+    'https://w.soundcloud.com/player/?url=https%3A%2F%2Fsoundcloud.com%2Fgbfm%2Flocal-frequencies',
   )
   await expect(page.locator('.rich-content a[href^="javascript:"]')).toHaveCount(0)
   await page.getByRole('button', { name: 'Add to queue', exact: true }).click()

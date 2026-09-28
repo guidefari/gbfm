@@ -4,6 +4,7 @@ import { MicroPostScreenResponse, MicroPostScreenRepliesResponse } from '@gbfm/a
 import { PublicProfileResponse } from '@gbfm/api/profile'
 import { ReleaseResponse } from '@gbfm/api/release'
 import { canCreatePosts, isRole } from '@gbfm/core/roles'
+import { RichContentDocument } from '@gbfm/rich-content/schema'
 import { SiteMetadata } from '@gbfm/site-metadata'
 import { Effect, HashMap, Layer, Match, Option, Result, Schema } from 'effect'
 import { AsyncData, Command, Navigation, Subscription, type Runtime, type Update } from 'foldkit'
@@ -27,6 +28,7 @@ import * as Player from './player'
 import * as PublicActions from './public-actions'
 import { profileView } from './public-profile'
 import { richContent } from './rich-content'
+import { richContentView } from './rich-content/render'
 import * as Search from './search'
 import { type Episode, ShowsDocument, showImages, showsView } from './shows'
 import { pageSkeleton } from './skeletons'
@@ -66,6 +68,7 @@ export const ContentItem = Schema.Struct({
   href: Schema.String,
   meta: Schema.NullOr(Schema.String),
   content: Schema.String,
+  richContent: Schema.NullOr(RichContentDocument),
   audioUrl: Schema.NullOr(Schema.String),
   audioType: Schema.NullOr(AudioResponse.fields.type),
   creators: AudioResponse.fields.creators,
@@ -90,7 +93,7 @@ export const Flags = Schema.Struct({
   dashboard: Schema.NullOr(DashboardDocument),
   profile: Schema.NullOr(PublicProfileResponse),
   shows: Schema.NullOr(ShowsDocument),
-  changelog: Schema.NullOr(Schema.String),
+  changelog: Schema.NullOr(RichContentDocument),
   publicAction: Schema.NullOr(PublicActions.Document),
   metadata: Schema.NullOr(SiteMetadata),
   failure: Schema.NullOr(Schema.String),
@@ -953,7 +956,7 @@ const detail = (model: Model, h: HtmlBuilder<Message>, kind: string) => {
         [h.Class('detail-actions'), h.AriaLabel('Content tags')],
         (item.tags ?? []).map((tag) => link(h, `/tags/${encodeURIComponent(tag)}`, `#${tag}`)),
       ),
-      richContent(item.content),
+      item.richContent === null ? richContent(item.content) : richContentView(item.richContent, h),
     ],
   )
 }
@@ -1395,7 +1398,9 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
                           ...(staticPages.get(page)?.paragraphs ?? []).map((text) =>
                             h.p([h.Class('content-paragraph')], [text]),
                           ),
-                          page === 'changelog' ? richContent(model.flags.changelog ?? '') : h.empty,
+                          page === 'changelog' && model.flags.changelog
+                            ? richContentView(model.flags.changelog, h)
+                            : h.empty,
                         ],
                       ),
             NotFound: () =>

@@ -1196,11 +1196,64 @@
   }
   .rich-content blockquote {
     border-left: 3px solid var(--highlight);
+    background: var(--muted);
+    color: var(--foreground);
     padding-left: 1rem;
+  }
+  .rich-content ul,
+  .rich-content ol {
+    padding-left: 1.5rem;
   }
   .rich-content ul {
     list-style: disc;
-    padding-left: 1.5rem;
+  }
+  .rich-content ol {
+    list-style: decimal;
+  }
+  .rich-content table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .rich-content th,
+  .rich-content td {
+    border: 1px solid var(--border);
+    padding: 0.5rem;
+  }
+  .rich-content img,
+  .rich-content iframe {
+    display: block;
+    max-width: 100%;
+  }
+  .rich-content-media > div {
+    overflow: hidden;
+    border-radius: var(--radius);
+    background: var(--muted);
+  }
+  .rich-content-music-card {
+    display: grid;
+    grid-template-columns: minmax(5rem, 8rem) 1fr;
+    gap: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+  }
+  .rich-content-music-card > img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+  }
+  .rich-content-card-group {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(18rem, 1fr);
+    gap: 1rem;
+    overflow-x: auto;
+  }
+  .rich-content-unavailable,
+  .rich-content-unsupported {
+    border-left: 3px solid var(--muted-foreground);
+    padding-left: 1rem;
+    color: var(--muted-foreground);
   }
   .rich-content pre {
     overflow-x: auto;

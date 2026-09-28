@@ -27,4 +27,4 @@ In Vite development, Effect exports SSR spans to `http://127.0.0.1:4318/v1/trace
 
 ## Changelog
 
-The repository root `CHANGELOG.md` is the only source of truth. `plugins/repo-changelog.ts` exposes its raw text as `virtual:repo-changelog` and watches it in development. `src/entry.server.ts` supplies it only to the changelog route; `src/rich-content.ts` renders writing as inert markup rather than evaluating compiled MDX. Do not create a second tracked changelog copy.
+The repository root `CHANGELOG.md` is the only source of truth. `plugins/repo-changelog.ts` parses it into the shared inert rich-content document exposed by `virtual:repo-changelog` and watches it in development. `src/entry.server.ts` supplies it only to the changelog route. Do not create a second tracked changelog copy.

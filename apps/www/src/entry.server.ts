@@ -12,6 +12,7 @@ import { ListDjsResponse } from '@gbfm/api/user'
 import { submitLocalRequestLog } from '@gbfm/core/observability/local-loki'
 import { resolveRequestId } from '@gbfm/core/observability/request-id'
 import { isRole } from '@gbfm/core/roles'
+import { RichContentDocument } from '@gbfm/rich-content/schema'
 import {
   makeStaticSiteMetadata,
   renderDocumentHead,
@@ -139,6 +140,11 @@ const contentItems = (payload: Schema.Json, path: string): ReadonlyArray<Content
     if (!item) return []
     const slug = text(item.slug, text(item.id))
     const content = text(item.content)
+
+    const richContent = Option.getOrNull(
+      Schema.decodeUnknownOption(RichContentDocument)(item.richContent),
+    )
+
     const title = text(item.title, text(item.name, text(item.username, content.slice(0, 80))))
 
     if (!slug) return []
@@ -149,6 +155,7 @@ const contentItems = (payload: Schema.Json, path: string): ReadonlyArray<Content
         slug,
         title,
         content,
+        richContent,
         description: text(item.description, text(item.bio)) || null,
         imageUrl: text(item.thumbnailUrl, text(item.imageUrl, text(item.image))) || null,
         audioUrl: text(item.url) || null,
