@@ -39,6 +39,17 @@ describe('legacy normalization', () => {
     })
   })
 
+  test('unwraps a presentational div around a static media iframe', () => {
+    const source =
+      '<div style={{ width: "100%" }}>\n<iframe src="https://www.youtube.com/embed/PA85ewEv5Aw" />\n</div>'
+
+    expect(normalizeRichContent(source)).toEqual({
+      source: '::media{url="https://www.youtube.com/embed/PA85ewEv5Aw"}',
+      changed: true,
+      unresolved: [],
+    })
+  })
+
   test('reports malformed legacy MDX without changing the source', () => {
     const source = 'A literal opening brace: {'
 

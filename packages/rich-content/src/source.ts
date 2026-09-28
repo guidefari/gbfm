@@ -176,7 +176,10 @@ const mediaReference = (
   }
 
   if (
-    (host === 'youtube.com' || host === 'www.youtube.com') &&
+    (host === 'youtube.com' ||
+      host === 'www.youtube.com' ||
+      host === 'youtube-nocookie.com' ||
+      host === 'www.youtube-nocookie.com') &&
     ((parts[0] === 'watch' && url.searchParams.has('v')) ||
       (parts[0] === 'embed' && parts.length === 2))
   )
@@ -230,6 +233,9 @@ const inlines = (
             children: inlines(node.children ?? [], diagnostics),
           },
         ]
+
+      if (!node.url) return inlines(node.children ?? [], diagnostics)
+
       diagnostics.push(
         diagnostic(
           node,

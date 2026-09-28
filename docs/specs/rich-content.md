@@ -13,11 +13,11 @@ GFM source plus allowlisted directives
   -> platform renderer
 ```
 
-The single forward source format is portable UTF-8 text: CommonMark plus GitHub Flavored Markdown, abbreviated GFM, with an allowlisted directive vocabulary. Existing `content` text columns can hold it without a schema change. The typed render document is derived and regenerable, not the only durable record. The server parses on read, caches by source hash and render schema version, resolves embeds into render-ready snapshots, and adds `richContent` to existing API responses. Existing `content` and `compiledContent` fields remain during the additive transition so deployed clients keep working.
+The single forward source format is portable UTF-8 text: CommonMark plus GitHub Flavored Markdown, abbreviated GFM, with an allowlisted directive vocabulary. Existing `content` text columns can hold it without a schema change. The typed render document is derived and regenerable, not the only durable record. The server parses on read, caches the render result, resolves embeds into render-ready snapshots, and adds `richContent` to existing API responses. Existing `content` and `compiledContent` fields remain during the additive transition so deployed clients keep working.
 
-The project converts every existing MDX-shaped source record to that canonical format in a coordinated hard cut after verification on a throwaway database and separate approval for the production operation. The literal-only MDX reader exists only in migration tooling. Runtime readers and writers accept only canonical source after cutover. No authored JavaScript, JSX expression, raw HTML, or compiled function body is evaluated or sent to a renderer.
+The project converts every existing MDX-shaped source record to that canonical format in a coordinated hard cut after verification against a read-only exported corpus and separate approval for the production update. The literal-only MDX reader exists only in migration tooling. Runtime readers and writers accept only canonical source after cutover. No authored JavaScript, JSX expression, raw HTML, or compiled function body is evaluated or sent to a renderer.
 
-This design requires no database schema change, although storage implementation is not part of the public contract. A future store may use files, text columns, or another system if it can losslessly import and export the canonical source. The design removes the stored XSS path, restores standard Markdown features, removes reader-side Spotify metadata waterfalls, keeps SSR and hydration deterministic, and leaves a direct path for a future mobile renderer.
+This design requires no database schema change, although storage implementation is not part of the public contract. A future store may use files, text columns, or another system if it can losslessly import and export the canonical source. Spotify track, album, and playlist references resolve only through GBFM music entities. Catalog creation and enrichment happen before cutover, never during a public read. The design removes the stored XSS path, restores standard Markdown features, removes reader-side Spotify metadata waterfalls, keeps SSR and hydration deterministic, and leaves a direct path for a future mobile renderer.
 
 ## Context and Current State
 
@@ -346,13 +346,14 @@ Portability means:
 
 Do not persist embed metadata into authored source or a new table. Resolve a snapshot for each response:
 
-1. Catalog-backed references read current catalog metadata and verified links.
-2. Spotify URL references first look for an existing catalog link.
-3. If no catalog match exists, the resolver may perform a read-only Spotify metadata lookup through `SpotifyService`.
-4. Public reads never create catalog records.
-5. External media resolution normalizes the URL and builds a trusted player URL on the server. Bandcamp oEmbed, when required, happens on the server.
-6. Successful render documents use a one-hour cache. Failed individual embeds use a short five-minute negative cache.
-7. Catalog edits may remain stale for at most one hour in the first implementation. Explicit catalog-driven cache invalidation is not worth a reverse dependency index yet.
+1. Catalog ID references read the corresponding GBFM entity, verified links, artwork, artists, description, and optional tracks.
+2. Spotify track, album, and playlist URLs normalize to canonical provider identities and look up an existing resolved identity claim.
+3. A matching GBFM entity produces a `MusicEmbed` snapshot. A missing, stale, or mismatched identity produces `UnavailableEmbed`.
+4. Public reads never call Spotify to fill a snapshot and never scrape, import, create, or update a catalog record.
+5. The pre-cutover bootstrap resolves every Spotify music identity through the existing authenticated resolution API. Existing import services scrape provider metadata, persist artwork and links, and create or reuse the GBFM entity. Playlist sync jobs are then queued through the existing `sync-links` endpoint.
+6. External media resolution normalizes the URL and builds a trusted player URL on the server. Spotify episodes and shows may remain external media because GBFM has no corresponding music entity type.
+7. Successful render documents use a one-hour in-process cache. Missing entities return a local unavailable block without failing the document.
+8. Catalog edits may remain stale for at most one hour in the first implementation. Explicit catalog-driven cache invalidation is not worth a reverse dependency index yet.
 
 The API document is a response snapshot. Clients do not refresh individual embeds. A page or navigation refresh receives a newer snapshot.
 
@@ -362,23 +363,24 @@ The API document is a response snapshot. Clients do not refresh individual embed
 
 ```text
 packages/rich-content
-  schema.ts              Render document DTO and Effect Schemas
-  source.ts              GFM/directive parsing and source validation
-  legacy-mdx.ts          Migration-only static legacy JSX extraction
-  normalize.ts           Migration-only canonical source conversion
-  limits.ts              Shared parser limits
+  src/schema.ts          Render document DTO and Effect Schemas
+  src/source.ts          GFM/directive parsing and source validation
+  src/legacy-mdx.ts      Migration-only static JSX and iframe extraction
+  src/normalize.ts       Migration-only canonical source conversion
+  src/limits.ts          Shared parser limits
 
 apps/server
-  rich-content/rich-content.service.ts
-  rich-content/embed-resolver.ts
-  rich-content/music-embed-resolver.ts
-  rich-content/media-embed-resolver.ts
-  rich-content/projection.ts
+  src/lib/mdx.ts                          Existing service boundary, now owning typed rendering
+  src/services/rich-content-music.service.ts  Read-only catalog snapshot resolver
+  src/services/canonical-music-identity/*     Provider identity lookup
 
 apps/www
-  rich-content/render.ts
-  rich-content/view.ts
-  creator preview Command and API call
+  src/rich-content/render.ts             Total typed Foldkit renderer
+  src/rich-content.ts                    Temporary raw-source fallback during additive rollout
+
+scripts
+  export-rich-content.sql                Portable content export query
+  normalize-rich-content.ts              JSON normalizer and guarded SQL generator
 
 apps/mobile
   future rich-content/render.tsx
@@ -386,7 +388,7 @@ apps/mobile
 
 `packages/rich-content` is a deep domain module. It owns canonical syntax, limits, migration conversion, and the serializable contract. It has no database, HTTP, Cloudflare, Foldkit, React, React Native, or Spotify dependency.
 
-`apps/server/src/rich-content` is the service module. It owns resolution orchestration and caching. Concrete catalog, Spotify, and Bandcamp access remain external adapters already available in the server.
+`apps/server/src/lib/mdx.ts` retains the existing `MdxService` ownership boundary while the API stays additive. Its `compile` method now returns the compatibility value expected by old contracts, while `render` parses canonical source and resolves a typed document. `apps/server/src/services/rich-content-music.service.ts` is the only rich-content catalog adapter. It queries canonical identities and music entities and performs no writes.
 
 Each UI owns only a renderer from `RichContentDocument` to its native view type.
 
@@ -808,17 +810,20 @@ Spotify episodes and shows remain external Spotify players because the GBFM cata
 
 ### Migration-only legacy JSX extraction
 
-The conversion tool scans block-level candidates and parses each isolated candidate as an MDX JSX fragment. It never compiles or evaluates the fragment. It accepts:
+The conversion tool parses the legacy document only to find candidate nodes, then parses each isolated candidate as an MDX JSX fragment or strict HTML fragment. It never compiles or evaluates the fragment. It accepts:
 
 - Quoted string attributes.
 - JSX expression containers containing only a string, number, or boolean literal.
+- Template literals with no expressions.
 - Array literals containing only string literals, for `genres` and `tracks`.
 - Static child embed elements inside `HorizontalScrollCards`.
+- Legacy provider iframes with one literal `src` for YouTube, YouTube nocookie, SoundCloud, Bandcamp, Spotify, Apple Music, or Tidal.
+- Presentational `div` wrappers, `hr`, and `br` when they have a deterministic inert Markdown equivalent.
 
 It rejects:
 
 - Imports, exports, and JavaScript expressions outside an allowlisted component.
-- Identifiers, member access, calls, operators, conditionals, template literals, objects, spreads, functions, and event props.
+- Identifiers, member access, calls, operators, conditionals, interpolated template literals, objects, spreads, functions, and event props.
 - Unknown components or props.
 - Dynamic children.
 
@@ -832,8 +837,14 @@ Mapping:
 | `ExternalMedia` | `ExternalMedia` reference. The provider prop must agree with the parsed URL |
 | `Tracklist` | `Tracklist` from a literal string array |
 | `HorizontalScrollCards` | `CardGroup` containing only successfully extracted child embeds |
+| Spotify track, album, or playlist iframe | Matching catalog directive using its canonical Spotify URL |
+| YouTube, SoundCloud, or Bandcamp iframe | `ExternalMedia` reference using a validated literal URL |
+| Apple Music or Tidal iframe | Ordinary safe provider link because there is no first-class player contract |
+| Presentational `div`, `hr`, or `br` | Unwrapped children, thematic break, or Markdown line break |
 
 `MusicEntityPending` is editor-temporary syntax. A saved record containing it fails automatic conversion and enters manual review. Conversion never mutates the catalog.
+
+An empty historical `<Track />` has no recoverable identity and degrades to inert explanatory copy. An empty Markdown link is likewise preserved as inert text instead of becoming a malformed link. These known historical cases are explicit conversion rules, not general error suppression.
 
 The old trusted SoundCloud iframe form recognized by `apps/www/src/rich-content.ts` gets one static conversion rule. Its `src` must parse to the exact `https://w.soundcloud.com/player/` origin and path with a valid SoundCloud API track URL. Any adjacent attribution HTML must have an explicitly tested canonical projection or the record enters manual review.
 
@@ -870,7 +881,7 @@ declare const parseSafeUrl: (
 
 ### Catalog and provider adapters
 
-`music-embed-resolver.ts` composes existing `MusicEntityService`, catalog link queries, and `SpotifyService`.
+`apps/server/src/services/rich-content-music.service.ts` composes `CanonicalMusicIdentityRepository` with existing track, album, playlist, link, and playlist-track queries.
 
 Resolution order:
 
@@ -882,35 +893,33 @@ catalog id reference
 
 Spotify URL reference
   -> normalize provider type and ID
-  -> find existing verified music_entity_links match
-  -> if found, project catalog entity
-  -> otherwise read metadata from SpotifyService
-  -> never import or write
+  -> look up the resolved canonical identity claim
+  -> require matching entity type and entity ID
+  -> project the existing catalog entity
+  -> otherwise return UnavailableEmbed
+  -> never call Spotify, import, scrape, or write
 ```
 
-Independent embeds resolve concurrently with bounded concurrency. The initial limit is 4 because Spotify and database pressure, not CPU, are the bottleneck. Make the limit a named service constant, not user configuration.
+Independent embeds resolve concurrently with bounded concurrency. The implementation limit is 8 because all runtime music work is bounded database lookup and projection. Keep the limit internal rather than exposing general configuration.
 
 ### Caching
 
-Use two bounded Effect caches inside `RichContentService`:
+Use the existing bounded caches inside `MdxService`:
 
 ```ts
-type ParseCacheKey = `${1}:${SourceSha256}`
-type RenderCacheKey = `${1}:${SourceSha256}:${ResolutionPolicyVersion}`
-
-parse cache:
-  capacity 512
-  success TTL 24 hours
+compiled compatibility cache:
+  key source string
+  capacity 256
+  success TTL 1 hour
   failure TTL zero
 
 render cache:
+  key source string
   capacity 256
-  complete success TTL 1 hour
-  document containing unavailable embeds TTL 5 minutes
-  catastrophic fallback TTL zero
+  TTL 1 hour
 ```
 
-SHA-256 is a cache key, not a security proof. Do not log it together with source. In-memory cache is intentionally per Worker isolate or Bun process. Do not add KV, D1, Durable Objects, or cache tables for the first version.
+The render schema is versioned inside the cached value, and a deployment starts new Worker isolates, so source plus deployed revision is a sufficient first cache key. In-memory cache is intentionally per Worker isolate or Bun process. Do not add KV, D1, Durable Objects, cache tables, source hashing, or reverse invalidation for the first version.
 
 ### Renderer boundary
 
@@ -1072,10 +1081,10 @@ malformed GFM or directive
   -> warning telemetry without source
   -> HTTP 200 public page
 
-catalog entity missing or provider unavailable
+catalog identity or entity missing
   -> typed EmbedLookupError
   -> UnavailableEmbed with safe label and validated fallback URL
-  -> short negative cache
+  -> contained inside the cached render document
   -> HTTP 200 public page
 
 unexpected parser defect
@@ -1090,8 +1099,8 @@ The safe plain-text fallback is built by splitting source into bounded text para
 ### Retry, cancellation, and idempotency flow
 
 - Reads are side-effect free, so provider retries cannot duplicate state.
-- Initial implementation uses the retry behavior already owned by `SpotifyService`. `RichContentService` does not add nested retries.
-- Caller cancellation reaches parse orchestration, bounded embed resolution, catalog calls where supported, Spotify fetches, Bandcamp fetches, and preview requests.
+- Runtime rendering does not call Spotify and adds no provider retry loop.
+- Caller cancellation reaches parse orchestration, bounded embed resolution, catalog calls where supported, and preview requests.
 - Cache lookup work is shared. Cancellation of one waiter must not corrupt the cached result for other waiters.
 - Save requests retain existing idempotency behavior. Rich content validation performs no writes.
 - The migration normalizer is idempotent: normalizing canonical output again returns `changed: false`.
@@ -1115,7 +1124,7 @@ richContent.resolveEmbed
   attributes:
     rich_content.embed_kind
     rich_content.provider
-    rich_content.resolution_source = catalog | provider | unavailable
+    rich_content.resolution_source = catalog | unavailable
     rich_content.cache_status
     error_tag when failed
 ```
@@ -1174,16 +1183,13 @@ The limits are named constants with behavior tests. They are not exposed as gene
 | `packages/rich-content/src/source.test.ts` | Parser behavior and security tests |
 | `packages/rich-content/src/legacy-mdx.test.ts` | Legacy conversion safety tests |
 | `packages/rich-content/src/normalize.test.ts` | Normalization idempotence tests |
-| `apps/server/src/rich-content/rich-content.service.ts` | Effect service, orchestration, cache, total public render |
-| `apps/server/src/rich-content/embed-resolver.ts` | Bounded block traversal and resolution |
-| `apps/server/src/rich-content/music-embed-resolver.ts` | Catalog and Spotify read-only projection |
-| `apps/server/src/rich-content/media-embed-resolver.ts` | Provider URL and trusted iframe projection |
-| `apps/server/src/rich-content/rich-content.service.test.ts` | Service behavior through resolver seams |
-| `apps/server/src/http/rich-content.handlers.ts` | Authenticated preview endpoint |
-| `apps/www/src/rich-content/render.ts` | Total Foldkit document renderer replacing parser behavior |
+| `apps/server/src/services/rich-content-music.service.ts` | Read-only canonical identity and GBFM catalog projection |
+| `apps/server/src/services/rich-content-music.service.d1.test.ts` | Resolver behavior against migrated D1 |
+| `apps/www/src/rich-content/render.ts` | Total Foldkit typed document renderer |
 | `apps/www/src/rich-content/render.test.ts` | Renderer module behavior, not route tests |
-| `scripts/convert-rich-content.ts` | Dry-run-first one-off source converter |
-| `docs/runbooks/rich-content-cutover.md` | Exact hard-cut prerequisites, commands, smoke checks, abort points, and restoration procedure |
+| `scripts/export-rich-content.sql` | Read-only union query for every stored content kind |
+| `scripts/normalize-rich-content.ts` | Offline JSON conversion, validation, and guarded SQL generation |
+| `docs/specs/rich-content.md` | Architecture, cutover commands, smoke checks, and restoration requirements |
 
 ### Change
 
@@ -1195,7 +1201,8 @@ The limits are named constants with behavior tests. They are not exposed as gene
 | `packages/api/src/release.ts` | Add optional `richContent` to detail contract |
 | `packages/api/src/music.ts` | Add optional `richContent` to label detail contract |
 | `packages/api/src/resolve.ts` | Replace compiled-only resolved show shape with additive rich content field |
-| `apps/server/src/runtime/services.ts` | Provide `RichContentService` and resolver Layers |
+| `apps/server/src/lib/mdx.ts` | Add typed parse, resolution, caching, validation, and compatibility behavior to `MdxService` |
+| `apps/server/src/runtime/services.ts` | Provide `MdxServiceCatalogLayer` and `RichContentMusicResolverLayer` |
 | Content services | Project `richContent` on public detail and screen reads and validate source on writes |
 | HTTP route registration and docs | Register preview endpoint and map validation errors to 413 or 422 |
 | `apps/www/src/application.ts` | Put `RichContentDocument` in `ContentItem` and `Flags`; render it instead of parsing source |
@@ -1394,11 +1401,11 @@ Add `remark-directive`, directive decoding, standalone provider URL promotion, n
 
 ### Phase 4: Add migration-only legacy conversion
 
-Add literal-only extraction for the eight legacy JSX components and trusted SoundCloud form, plus adversarial and conversion-idempotence tests. Export it only to scripts and tests. Runtime source parsing remains canonical-only.
+Add literal-only extraction for the eight legacy JSX components, static template literals, known provider iframes, presentational wrappers, `hr`, and `br`, plus adversarial and conversion-idempotence tests. Export it only to scripts and tests. Runtime source parsing remains canonical-only.
 
 ### Phase 5: Add the server orchestration service
 
-Add resolver seams, bounded traversal, block-local fallback, caches, Layers, telemetry, and deterministic service tests. Keep `MdxService` active. Existing APIs remain unchanged.
+Extend the existing `MdxService` boundary with typed rendering, bounded traversal, block-local fallback, a render cache, and deterministic tests. Add `RichContentMusicResolver` as the read-only catalog seam. Keep the compatibility `compile` operation active. Existing APIs remain unchanged.
 
 ### Phase 6: Add additive rich content API contracts
 
@@ -1422,11 +1429,11 @@ Port CodeMirror, Markdown commands, canonical directive insertion, paste-to-embe
 
 ### Phase 11: Add and verify conversion tooling
 
-Add the dry-run-first database script and fixtures. Run it only against a throwaway local D1 database copied from a sanitized export. Compare record counts, hashes of non-content columns, diagnostics, semantic documents, and a second idempotence run. Produce the cutover report. Do not touch production.
+Add `scripts/export-rich-content.sql` and `scripts/normalize-rich-content.ts`. The SQL exports only stable content identities and source. The Bun script reads JSON, normalizes every record, validates canonical output, writes normalized JSON, and optionally writes guarded SQL. Rehearse against an export copy, inspect visual samples, and run a second normalization pass. Produce the cutover report. Do not update production content in this phase.
 
 ### Phase 12: Resolve every conversion exception
 
-Manually specify canonical replacements for every record the converter cannot prove equivalent, add each shape as a fixture when generally useful, and rerun against the throwaway database. The hard-cut gate is zero unresolved records and zero semantic differences.
+Manually specify canonical replacements for every record the converter cannot prove equivalent, add each shape as a fixture when generally useful, and rerun against the exported corpus. The hard-cut gate is zero unresolved records and zero unexplained semantic differences.
 
 ### Phase 13: Finalize the cutover revision
 
@@ -1442,57 +1449,117 @@ After deployed-client policy permits it, make `richContent` required on applicab
 
 ### Hard-cut operation after Phase 13
 
-This is an operational action, not a code phase, and requires separate owner approval. Pause content writes and public traffic, take and verify a backup, run the approved text conversion, deploy the recorded server and WWW revisions, run smoke checks, and resume traffic. If conversion, deployment, or smoke checks fail, restore the backup and prior revisions before reopening traffic. There is no mixed-format runtime window.
+This is an operational action, not a code phase. Production content conversion requires separate owner approval. Before the window, finish catalog bootstrap and confirm that every supported Spotify reference either resolves to a GBFM entity or has an explicit editorial decision. During the window, pause writes and traffic, take and verify a D1 export, deploy the recorded additive server and WWW revisions, immediately run the guarded text conversion, run smoke checks, and resume traffic. If conversion, deployment, or smoke checks fail, restore the backup and prior revisions before reopening traffic. There is no supported mixed-format runtime window.
 
 ## One-Off Content Conversion Design
 
-The proposed command is intentionally safe by default:
-
-```sh
-bun run scripts/convert-rich-content.ts \
-  --database ./tmp/rich-content-verification.db \
-  --report ./tmp/rich-content-report.json
-```
-
-It defaults to dry-run. Applying requires both `--apply` and a local file path. The script refuses remote D1 identifiers, HTTP URLs, production binding names, and databases without the expected Drizzle migration history.
-
-After throwaway verification and explicit owner approval, add a separate production runner that imports the same conversion library and requires the exact reviewed database binding, backup identifier, report hash, and typed confirmation phrase. Keeping the production entry point absent until approval prevents the design phase or ordinary test commands from reaching production accidentally.
-
-Tables and identity columns:
+`scripts/export-rich-content.sql` reads only the five content-bearing tables and emits a portable array shape:
 
 ```ts
-const targets = [
-  { table: "posts", id: "id", content: "content" },
-  { table: "audio", id: "id", content: "content" },
-  { table: "shows", id: "id", content: "content" },
-  { table: "releases", id: "id", content: "content" },
-  { table: "music_labels", id: "id", content: "content" },
-] as const
+type ExportRecord = {
+  readonly kind: "post" | "audio" | "show" | "release" | "label"
+  readonly id: string
+  readonly content: string | null
+}
 ```
 
-Per record:
+The normalizer never connects to a database:
+
+```sh
+bun scripts/normalize-rich-content.ts export.json normalized.json migration.sql
+```
+
+It reports record, changed, and unresolved counts to stdout. Any unresolved conversion or canonical parser diagnostic exits nonzero and no SQL is written. When clean, optional SQL output contains one statement per changed record:
+
+```sql
+UPDATE "posts"
+SET "content" = '<canonical source>'
+WHERE "id" = '<record id>'
+  AND "content" = '<exact exported legacy source>';
+```
+
+The exact old-content guard makes each update compare-and-set and idempotent. A concurrent edit after export does not get overwritten. The post-apply export is the authoritative check for guarded statements that matched no row.
+
+### Rehearsal result
+
+The 2026-09-28 read-only production-content rehearsal exported 247 public records. The final converter changed 108 records and reported 0 unresolved records. A fresh scan of canonical output found 247 unique Spotify track, album, or playlist identities. Authenticated catalog bootstrap resolved 241 to GBFM entities and accepted sync jobs for all 51 resolved playlists. Six stale provider references could not be resolved: one album returned provider unavailable and five playlists returned bad request. Those six require an owner editorial decision to remove, replace, or intentionally render unavailable before cutover. The non-secret report is `.amp/in/artifacts/rich-content-catalog-bootstrap.json`. Visual verification must cover representative editorial content, especially `/editorial/lack`, before production content is rewritten.
+
+Per record, the tool:
 
 1. Read source and stable identity.
 2. Normalize statically recognized legacy syntax.
-3. Project the original through the literal-only converter and parse the normalized source through the canonical parser.
-4. Compare a semantic projection of both render documents using deterministic fake embed snapshots.
-5. If diagnostics contain errors or semantic comparison differs, report and do not update.
-6. If unchanged, report only.
-7. In apply mode, update `content` for the one row inside a short transaction and preserve every other column.
+3. Parse the normalized source through the canonical parser.
+4. If conversion or parser diagnostics remain, report the record and exit without SQL.
+5. If unchanged, preserve the record in normalized JSON and emit no SQL.
+6. If changed, preserve the new source in normalized JSON and emit one guarded update.
 
 The target end state is not a partially migrated dual-format corpus. Any skipped record enters a finite manual-review queue. The owner corrects or explicitly rewrites those records in canonical source, reruns the dry run, and proceeds to canonical-only write enforcement only when the audit reports zero legacy records.
 
-The report contains table, record ID, source hash before and after, changed flag, diagnostic codes, and semantic comparison result. It contains no source text.
+Rehearsal and cutover verification include:
 
-Throwaway verification must include:
-
-- a fresh backup copy;
-- schema migration to the same revision as production;
+- a fresh full D1 SQL export before any update;
 - row counts before and after;
-- hashes of all non-content projected columns before and after;
 - successful parser output for every changed row;
-- a second dry run with zero proposed changes;
+- a second normalization pass with zero proposed changes and byte-equivalent normalized JSON;
+- the generated SQL retained with the reviewed release artifacts;
 - selected visual comparisons in WWW for editorial, tweet, mix, release, label, and malformed fallback cases.
+
+## Post-Deploy Activation Commands
+
+Production content writes are external state and require explicit approval at execution time. Run these commands from the exact deployed revision during the write and traffic freeze. Replace the one placeholder with the `databaseName` printed by the production Alchemy deployment. Do not substitute a database ID.
+
+```sh
+set -euo pipefail
+
+export DB_NAME='<Alchemy production databaseName>'
+export CUTOVER_DIR=".amp/rich-content-cutover-$(date -u +%Y%m%dT%H%M%SZ)"
+mkdir -p "$CUTOVER_DIR"
+
+# 1. Create the full restoration artifact before any content update.
+bunx wrangler d1 export "$DB_NAME" \
+  --remote \
+  --output "$CUTOVER_DIR/pre-cutover.sql"
+test -s "$CUTOVER_DIR/pre-cutover.sql"
+
+# 2. Export only content rows in the normalizer's portable JSON shape.
+bunx wrangler d1 execute "$DB_NAME" \
+  --remote \
+  --file scripts/export-rich-content.sql \
+  --json > "$CUTOVER_DIR/export-response.json"
+jq '[.[].results[] | {kind, id, content}]' \
+  "$CUTOVER_DIR/export-response.json" > "$CUTOVER_DIR/content-before.json"
+
+# 3. Normalize locally and generate compare-and-set updates.
+bun scripts/normalize-rich-content.ts \
+  "$CUTOVER_DIR/content-before.json" \
+  "$CUTOVER_DIR/content-normalized.json" \
+  "$CUTOVER_DIR/migration.sql"
+test -s "$CUTOVER_DIR/migration.sql"
+
+# 4. Apply only the reviewed guarded updates.
+bunx wrangler d1 execute "$DB_NAME" \
+  --remote \
+  --file "$CUTOVER_DIR/migration.sql"
+
+# 5. Re-export and prove the live corpus is canonical and stable.
+bunx wrangler d1 execute "$DB_NAME" \
+  --remote \
+  --file scripts/export-rich-content.sql \
+  --json > "$CUTOVER_DIR/post-response.json"
+jq '[.[].results[] | {kind, id, content}]' \
+  "$CUTOVER_DIR/post-response.json" > "$CUTOVER_DIR/content-after.json"
+bun scripts/normalize-rich-content.ts \
+  "$CUTOVER_DIR/content-after.json" \
+  "$CUTOVER_DIR/content-after-normalized.json"
+cmp "$CUTOVER_DIR/content-after.json" "$CUTOVER_DIR/content-after-normalized.json"
+
+# 6. Keep the directory intact, run the smoke checks below, then resume traffic and writes.
+printf 'Cutover artifacts: %s\n' "$CUTOVER_DIR"
+```
+
+The second normalizer invocation must print `changed: 0` and `unresolved: 0`. `cmp` must exit 0. Then smoke test direct load and client navigation for `/editorial/lack`, one tweet thread, one mix, one release, and one label. Confirm music cards have title, artwork, and links; no directive or JSX source is visible; and browser network logs show no reader-side Spotify metadata request.
+
+The catalog bootstrap is separate from content rewriting and should already be complete before deployment. If a final pre-cutover inventory finds a new Spotify music identity, an authenticated admin resolves it through `POST /api/music/resolve` with `{ "url": "...", "origin": "editorial" }`. For each returned playlist entity ID, enqueue `POST /api/music/playlists/:id/sync-links` and wait for the existing enrichment queue. Do not put provider resolution into the SQL migration or public read path.
 
 ## Operational Rollback
 
@@ -1507,11 +1574,11 @@ Throwaway verification must include:
 
 ### Legacy syntax inventory is incomplete
 
-Production content may contain prop combinations absent from the repository. Mitigation: dry-run against a throwaway production copy and a manual-review queue that must reach zero before cutover. Do not expand the literal language to preserve arbitrary JavaScript.
+Production content may contain prop combinations absent from the repository. Mitigation: normalize the complete read-only export and use a manual-review queue that must reach zero before cutover. Do not expand the literal language to preserve arbitrary JavaScript.
 
-### Provider latency moves to the API
+### Catalog lookup latency moves to the API
 
-Server resolution can increase cold detail latency. Mitigation: catalog-first reads, bounded parallelism, one-hour document cache, short negative cache, and spans separating parse, catalog, and provider time. A page still renders if a provider is unavailable.
+Server resolution can increase cold detail latency. Mitigation: local D1 identity and entity reads only, bounded parallelism, a one-hour document cache, and spans separating parse and catalog time. A page still renders if an entity is unavailable. Provider latency occurs during the explicit pre-cutover bootstrap, not reader requests.
 
 ### Payload size increases
 
@@ -1531,14 +1598,13 @@ Mitigation: field removal is outside the additive rollout. Keep `content` indefi
 
 ## Open Decisions for the Owner
 
-The first two decisions block only the approved production operation, not implementation and throwaway verification. The remaining decisions do not block the recommended design.
+The first two decisions block only the approved production content operation, not implementation and rehearsal. The remaining decisions do not block the recommended design.
 
-1. **Hard-cut maintenance window.** Recommended: schedule the cut only after the throwaway report has zero unresolved records and zero unexplained semantic differences. Pause writes and traffic for conversion, deployment, and smoke checks rather than operating two formats. Explicit approval is required before the production operation.
-2. **Allowed downtime budget.** Recommended: set the window after timing the complete conversion and restore rehearsal on the throwaway copy. Abort before conversion if the measured backup or deployment readiness leaves insufficient rollback time. The owner must choose the actual budget before approving the runbook.
+1. **Hard-cut maintenance window.** Recommended: schedule the cut only after the full export report has zero unresolved records and zero unexplained semantic differences. Pause writes and traffic for conversion, deployment, and smoke checks rather than operating two formats. Explicit approval is required before the production content update.
+2. **Allowed downtime budget.** Recommended: set the window after timing the complete export, normalization, update, verification, and restoration rehearsal. Abort before conversion if backup or deployment readiness leaves insufficient rollback time. The owner must choose the actual budget before approving the runbook.
 3. **Mobile product surface.** Mobile currently consumes show and audio records but does not display body content. Recommended: do not build an unused mobile renderer now. Add it when a concrete show, mix, editorial, or tweet body screen is selected, using the shared schema and fixtures.
-4. **Spotify player versus GBFM catalog card for uncataloged URLs.** Recommended: return a server-resolved music card when Spotify metadata is available, with `entityId: null`, rather than an iframe. This keeps visual behavior close to legacy `Track`, `Album`, and `Playlist` components without mutating the catalog.
-5. **Unavailable embed copy.** Recommended: show a compact neutral fallback with a validated external link when available. Do not expose provider error details to readers.
-6. **Footnotes.** `remark-gfm` supports footnotes through its mdast extensions, but they are not in the initial DTO above. Recommended: omit them from the first release unless production content is found to use them. Add explicit `FootnoteReference` and `FootnoteDefinition` nodes rather than flattening them.
+4. **Unavailable embed copy.** Recommended: show a compact neutral fallback with a validated external link when available. Do not expose catalog or provider error details to readers.
+5. **Footnotes.** `remark-gfm` supports footnotes through its mdast extensions, but they are not in the initial DTO above. Recommended: omit them from the first release unless production content is found to use them. Add explicit `FootnoteReference` and `FootnoteDefinition` nodes rather than flattening them.
 
 ## Acceptance Criteria
 
@@ -1549,11 +1615,12 @@ The first two decisions block only the approved production operation, not implem
 - One malformed directive or failed provider leaves the page and surrounding content usable.
 - Direct load, hydration, and client navigation produce the same semantic document and no hydration mismatch.
 - WWW performs no content parsing and no per-embed Spotify metadata fetch.
+- Every rendered Spotify track, album, or playlist is backed by an existing GBFM music entity with a non-null entity ID. Missing identities render as unavailable and never trigger read-time catalog writes.
 - Existing `content` remains stored and returned unchanged during the additive rollout.
 - The approved hard cut converts every live record to canonical GFM plus directives before canonical-only runtime readers receive traffic. Unresolved records block the cut.
 - Canonical source exports and reimports as plain UTF-8 text without requiring a render AST or GBFM database schema.
 - Current mobile show, episode, mix, and player paths continue to decode responses and behave unchanged.
 - No database schema migration is required.
-- The migration tool is dry-run by default, verified only against a throwaway database during this project, and never run against production without separate owner approval.
+- The migration tool has no database access. It is rehearsed against exported JSON, emits guarded SQL only after zero unresolved diagnostics, and its SQL is never run against production without separate owner approval.
 - From the hard cut onward, reads and writes use only canonical GFM plus directives. There is no runtime legacy adapter or dual-format observation period.
 - `bun precommit`, focused package tests, server unit and D1 tests, WWW tests, and WWW build pass at each applicable rollout phase.

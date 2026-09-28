@@ -80,6 +80,15 @@ describe('canonical rich content source', () => {
     ).toBe(true)
   })
 
+  test('renders a historical empty link as inert label text', () => {
+    const result = parseRichContent('[Liquid dnb]()')
+
+    expect(result.diagnostics).toEqual([])
+    expect(result.document.blocks).toEqual([
+      { _tag: 'Paragraph', children: [{ _tag: 'Text', value: 'Liquid dnb' }] },
+    ])
+  })
+
   test('preserves rejected directive source as inert text', () => {
     const source = '::unknown{x="y"}'
 

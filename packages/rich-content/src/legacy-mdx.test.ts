@@ -46,10 +46,55 @@ describe('migration-only legacy JSX conversion', () => {
     })
   })
 
+  test('accepts static template literals without evaluating expressions', () => {
+    expect(
+      convertLegacyMdxFragment(
+        '<Track url="https://open.spotify.com/track/2Mf7lfHxdiABiO7j0BDbHc" blurb={`Static copy.`} />',
+      ),
+    ).toEqual({
+      component: 'Track',
+      canonical:
+        '::track{url="https://open.spotify.com/track/2Mf7lfHxdiABiO7j0BDbHc" blurb="Static copy."}',
+    })
+  })
+
+  test('converts an incomplete historical music placeholder to inert copy', () => {
+    expect(convertLegacyMdxFragment('<Track />')).toEqual({
+      component: 'Track',
+      canonical: '*Music embed unavailable.*',
+    })
+  })
+
+  test.each([
+    [
+      'YouTube',
+      '<iframe src="https://www.youtube-nocookie.com/embed/N98XIKgjRlM" allowFullScreen />',
+      '::media{url="https://www.youtube-nocookie.com/embed/N98XIKgjRlM"}',
+    ],
+    [
+      'Bandcamp',
+      '<iframe style={{ height: 120 }} src="https://bandcamp.com/EmbeddedPlayer/album=1/" />',
+      '::media{url="https://bandcamp.com/EmbeddedPlayer/album=1/"}',
+    ],
+    [
+      'Spotify playlist',
+      '<iframe src="https://open.spotify.com/embed/playlist/4NItiNFlA1wzj5dp7bRpFo" />',
+      '::playlist{url="https://open.spotify.com/playlist/4NItiNFlA1wzj5dp7bRpFo"}',
+    ],
+    [
+      'Apple Music',
+      '<iframe src="https://embed.music.apple.com/za/album/example/1" />',
+      '[Open on Apple Music](https://embed.music.apple.com/za/album/example/1)',
+    ],
+  ])('statically converts a legacy %s iframe', (_provider, source, canonical) => {
+    expect(convertLegacyMdxFragment(source)).toEqual({ component: 'iframe', canonical })
+  })
+
   test.each([
     '<Track {...props} />',
     '<Track url={value} />',
     '<Track url={getUrl()} />',
+    '<Track url={`https://open.spotify.com/track/${id}`} />',
     '<Track onClick="oops" url="https://open.spotify.com/track/abc" />',
     '<Unknown value="x" />',
     '<MusicEntityPending type="track" id="x" />',

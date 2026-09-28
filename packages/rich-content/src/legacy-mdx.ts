@@ -1,5 +1,6 @@
 /* oxlint-disable anti-slop/no-unknown-returns, anti-slop/no-runtime-typeof, anti-slop/no-unknown-parameters, anti-slop/no-unsafe-dictionary-type, anti-slop/no-array-filter-map -- This migration adapter exhaustively narrows ESTree literal values before returning domain values. */
 import { createProcessor } from '@mdx-js/mdx'
+import { parseFragment } from 'parse5'
 
 export interface LegacyConversion {
   readonly canonical: string
@@ -16,6 +17,8 @@ type Estree = {
   type: string
   value?: unknown
   elements?: Array<Estree | null>
+  expressions?: Array<Estree>
+  quasis?: Array<{ value?: { cooked?: string; raw?: string } }>
   body?: Array<{ expression?: Estree }>
 }
 
@@ -30,6 +33,7 @@ type MdxNode = {
   name?: string
   attributes?: Array<Attribute>
   children?: Array<MdxNode>
+  value?: string
   data?: { estree?: Estree }
 }
 
@@ -54,6 +58,13 @@ const expressionValue = (node: { data?: { estree?: Estree } }): unknown => {
     expression.elements?.every((item) => item?.type === 'Literal' && typeof item.value === 'string')
   )
     return expression.elements.map((item) => item?.value)
+
+  if (
+    expression.type === 'TemplateLiteral' &&
+    expression.expressions?.length === 0 &&
+    expression.quasis?.length === 1
+  )
+    return expression.quasis[0]?.value?.cooked ?? expression.quasis[0]?.value?.raw
 
   return undefined
 }
@@ -97,13 +108,155 @@ const attrs = (values: ReadonlyArray<readonly [string, string | boolean | null]>
     .map(([name, value]) => `${name}=${quote(String(value))}`)
     .join(' ')
 
+const iframeSource = (node: MdxNode) => {
+  let source: string | null = null
+
+  for (const attribute of node.attributes ?? []) {
+    if (attribute.type !== 'mdxJsxAttribute' || !attribute.name || attribute.name.startsWith('on'))
+      return null
+
+    if (attribute.name !== 'src') continue
+
+    if (typeof attribute.value === 'string') source = attribute.value
+    else if (attribute.value && typeof expressionValue(attribute.value) === 'string')
+      source = string(expressionValue(attribute.value))
+    else return null
+  }
+
+  return source
+}
+
+const iframe = (node: MdxNode): LegacyConversionResult => {
+  const source = iframeSource(node)
+
+  if (!source) return { reason: 'Iframe requires a literal src attribute' }
+  let url: URL
+
+  try {
+    url = new URL(source)
+  } catch {
+    return { reason: 'Iframe src is malformed' }
+  }
+
+  const host = url.hostname.toLowerCase()
+  const parts = url.pathname.split('/').filter(Boolean)
+
+  if (host === 'open.spotify.com' && parts[0] === 'embed') {
+    const entityType = parts[1]
+    const id = parts[2]
+
+    if (id && (entityType === 'track' || entityType === 'album' || entityType === 'playlist'))
+      return {
+        component: 'iframe',
+        canonical: `::${entityType}{url=${quote(`https://open.spotify.com/${entityType}/${id}`)}}`,
+      }
+
+    if (id && (entityType === 'episode' || entityType === 'show'))
+      return {
+        component: 'iframe',
+        canonical: `::media{url=${quote(`https://open.spotify.com/${entityType}/${id}`)}}`,
+      }
+  }
+
+  if (host === 'w.soundcloud.com') {
+    const canonical = url.searchParams.get('url')
+
+    if (canonical) return { component: 'iframe', canonical: `::media{url=${quote(canonical)}}` }
+  }
+
+  if (
+    host === 'youtube.com' ||
+    host === 'www.youtube.com' ||
+    host === 'youtube-nocookie.com' ||
+    host === 'www.youtube-nocookie.com' ||
+    host === 'bandcamp.com'
+  )
+    return { component: 'iframe', canonical: `::media{url=${quote(url.href)}}` }
+
+  if (host === 'embed.music.apple.com')
+    return { component: 'iframe', canonical: `[Open on Apple Music](${url.href})` }
+
+  if (host === 'embed.tidal.com')
+    return { component: 'iframe', canonical: `[Open on Tidal](${url.href})` }
+
+  return { reason: 'Iframe provider is unsupported' }
+}
+
+type HtmlNode = {
+  readonly nodeName: string
+  readonly attrs?: ReadonlyArray<{ readonly name: string; readonly value: string }>
+  readonly childNodes?: ReadonlyArray<HtmlNode>
+}
+
+const rawIframe = (source: string): LegacyConversionResult => {
+  // SAFETY: parse5's parsed fragment is traversed through its documented nodeName,
+  // attrs, and childNodes fields. All other parser-owned fields remain opaque.
+  // oxlint-disable-next-line typescript/consistent-type-assertions, typescript/no-unsafe-type-assertion, anti-slop/require-safety-comment-for-type-assertion
+  const fragment = parseFragment(source) as HtmlNode
+  const elements = (fragment.childNodes ?? []).filter((node) => node.nodeName !== '#text')
+  const element = elements[0]
+
+  if (elements.length !== 1 || element?.nodeName !== 'iframe')
+    return { reason: 'Expected one legacy iframe element' }
+  const src = element.attrs?.find((attribute) => attribute.name === 'src')?.value
+
+  return iframe({
+    type: 'mdxJsxFlowElement',
+    name: 'iframe',
+    attributes: [{ type: 'mdxJsxAttribute', name: 'src', value: src ?? null }],
+  })
+}
+
+const plainText = (node: MdxNode): string => {
+  if (node.type === 'text') return node.value ?? ''
+
+  if (node.type === 'mdxTextExpression') {
+    const value = expressionValue(node)
+
+    return typeof value === 'string' ? value : ''
+  }
+
+  return (node.children ?? []).map(plainText).join('')
+}
+
 const convertNode = (node: MdxNode): LegacyConversionResult => {
   const name = node.name ?? ''
+
+  if (name === 'iframe') return iframe(node)
+
+  if (name === 'hr') return { component: name, canonical: '---' }
+
+  if (name === 'br') return { component: name, canonical: '  \n' }
+
+  if (name === 'div') {
+    const meaningfulChildren = (node.children ?? []).filter(
+      (child) => child.type !== 'text' || child.value?.trim(),
+    )
+
+    const converted = meaningfulChildren.map(convertNode)
+
+    if (converted.length === 0 || converted.some((item) => 'reason' in item)) {
+      const text = plainText(node).trim()
+
+      return text
+        ? { component: name, canonical: text }
+        : { reason: 'Div wrapper requires static content' }
+    }
+
+    return {
+      component: name,
+      canonical: converted.map((item) => ('canonical' in item ? item.canonical : '')).join('\n\n'),
+    }
+  }
+
   const props = properties(node)
 
   if (!props) return { reason: 'Only literal attributes are allowed' }
 
   if (name === 'Track' || name === 'Album' || name === 'Playlist') {
+    if (Object.keys(props).length === 0)
+      return { component: name, canonical: '*Music embed unavailable.*' }
+
     if (!only(props, ['url', 'genres', 'blurb', 'tracks']) || !string(props.url))
       return { reason: `Invalid ${name} props` }
     const genreValues = props.genres === undefined ? [] : stringList(props.genres)
@@ -219,6 +372,17 @@ export const convertLegacyMdxFragment = (fragment: string): LegacyConversionResu
     // SAFETY: createProcessor.parse returns mdast/MDX nodes; conversion checks every consumed discriminant.
     // oxlint-disable-next-line typescript/consistent-type-assertions, typescript/no-unsafe-type-assertion, anti-slop/require-safety-comment-for-type-assertion
     const children = tree.children as Array<MdxNode>
+
+    if (children.length === 1 && children[0]?.type === 'html')
+      return rawIframe(children[0].value ?? '')
+
+    if (
+      children.length === 1 &&
+      children[0]?.type === 'paragraph' &&
+      children[0].children?.length === 1 &&
+      children[0].children[0]?.type === 'mdxJsxTextElement'
+    )
+      return convertNode(children[0].children[0])
 
     if (children.length !== 1 || children[0]?.type !== 'mdxJsxFlowElement')
       return { reason: 'Expected one block-level legacy component' }

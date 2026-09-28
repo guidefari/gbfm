@@ -17,11 +17,16 @@ const componentNames = [
   'ExternalMedia',
   'Tracklist',
   'HorizontalScrollCards',
+  'iframe',
+  'div',
+  'hr',
+  'br',
 ] as const
 
 type MdxNode = {
   readonly type: string
   readonly name?: string
+  readonly value?: string
   readonly children?: ReadonlyArray<MdxNode>
   readonly position?: {
     readonly start: { readonly offset?: number }
@@ -33,16 +38,34 @@ const processor = createProcessor()
 
 const candidates = (
   source: string,
-): ReadonlyArray<{ start: number; end: number; value: string }> => {
-  const found: Array<{ start: number; end: number; value: string }> = []
+): ReadonlyArray<{ start: number; end: number; value: string; inline: boolean }> => {
+  const found: Array<{ start: number; end: number; value: string; inline: boolean }> = []
 
   const visit = (node: MdxNode): void => {
-    if (node.type === 'mdxJsxFlowElement' && componentNames.some((name) => name === node.name)) {
+    if (node.type === 'html' && node.value?.trimStart().startsWith('<iframe')) {
       const start = node.position?.start.offset
       const end = node.position?.end.offset
 
       if (start !== undefined && end !== undefined)
-        found.push({ start, end, value: source.slice(start, end) })
+        found.push({ start, end, value: source.slice(start, end), inline: false })
+
+      return
+    }
+
+    if (
+      (node.type === 'mdxJsxFlowElement' || node.type === 'mdxJsxTextElement') &&
+      componentNames.some((name) => name === node.name)
+    ) {
+      const start = node.position?.start.offset
+      const end = node.position?.end.offset
+
+      if (start !== undefined && end !== undefined)
+        found.push({
+          start,
+          end,
+          value: source.slice(start, end),
+          inline: node.type === 'mdxJsxTextElement',
+        })
 
       return
     }
@@ -81,7 +104,11 @@ export const normalizeRichContent = (source: string): NormalizeResult => {
     if ('reason' in conversion) {
       output += candidate.value
       unresolved.push({ source: candidate.value, reason: conversion.reason })
-    } else output += conversion.canonical
+    } else
+      output +=
+        candidate.inline && conversion.component === 'iframe'
+          ? `\n\n${conversion.canonical}\n\n`
+          : conversion.canonical
     cursor = candidate.end
   }
 
