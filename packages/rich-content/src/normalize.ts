@@ -1,6 +1,7 @@
 import { createProcessor } from '@mdx-js/mdx'
 
 import { convertLegacyMdxFragment } from './legacy-mdx.ts'
+import { parseRichContent } from './source.ts'
 
 export interface NormalizeResult {
   readonly source: string
@@ -35,6 +36,8 @@ type MdxNode = {
 }
 
 const processor = createProcessor()
+
+const canonicalDirective = /(?:^|\n)\s*:::{0,1}[a-z][\w-]*(?:\{|\s|$)/
 
 const candidates = (
   source: string,
@@ -82,6 +85,9 @@ const candidates = (
 }
 
 export const normalizeRichContent = (source: string): NormalizeResult => {
+  if (canonicalDirective.test(source) && parseRichContent(source).diagnostics.length === 0)
+    return { source, changed: false, unresolved: [] }
+
   const unresolved: Array<{ source: string; reason: string }> = []
   let output = ''
   let cursor = 0

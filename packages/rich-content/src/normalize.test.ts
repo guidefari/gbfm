@@ -15,6 +15,13 @@ describe('legacy normalization', () => {
     expect(second).toEqual({ source: first.source, changed: false, unresolved: [] })
   })
 
+  test('recognizes canonical directives whose URLs contain query parameters', () => {
+    const source =
+      '::album{url="https://open.spotify.com/album/70hX7IYqmUGV97OXs2v848?si=HwnJM3EoQF2ATimtRUY2aQ" genres="pop"}'
+
+    expect(normalizeRichContent(source)).toEqual({ source, changed: false, unresolved: [] })
+  })
+
   test('does not rewrite component-shaped examples in fenced code', () => {
     const source =
       '```mdx\n<Track url="https://open.spotify.com/track/example" />\n```\n\n<Track url="https://open.spotify.com/track/live" />'
