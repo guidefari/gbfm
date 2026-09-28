@@ -1,7 +1,7 @@
 import type { HtmlBuilder } from 'foldkit/html'
 
-import { artworkUrl } from '../artwork'
-import { iconPaths, lucide } from '../icons'
+import { artworkUrl } from '../../view/artwork'
+import { iconPaths, lucide } from '../../view/icons'
 
 type NowPlaying = {
   readonly title: string

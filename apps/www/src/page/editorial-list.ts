@@ -2,9 +2,9 @@ import { getMixRecencyLabel } from '@gbfm/core/utils'
 import { inertHtml as h } from 'foldkit/html'
 
 import type { ContentItem } from '../application/model'
-import { artwork } from '../artwork'
-import { formatDate } from '../format-date'
-import { iconPaths, lucide } from '../icons'
+import { artwork } from '../view/artwork'
+import { formatDate } from '../view/format-date'
+import { iconPaths, lucide } from '../view/icons'
 
 const recency = (label: 'new' | 'recent') =>
   h.div(

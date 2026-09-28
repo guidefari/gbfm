@@ -2,8 +2,8 @@ import type { HtmlBuilder } from 'foldkit/html'
 
 import { Message } from '../application/message'
 import type { Model } from '../application/model'
-import { formatDate } from '../format-date'
-import { iconPaths, lucide } from '../icons'
+import { formatDate } from '../view/format-date'
+import { iconPaths, lucide } from '../view/icons'
 import {
   authorRow,
   cardActions,

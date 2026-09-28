@@ -1,16 +1,18 @@
 import { Layer } from 'effect'
 import { Runtime } from 'foldkit'
 
-import { applicationConfig, displayedPath, subscriptions } from './application'
-import { startArtworkFallback } from './artwork'
+import { applicationConfig } from './application/config'
+import { subscriptions } from './application/subscriptions'
+import { startTheme } from './application/theme'
+import { displayedPath } from './application/update'
 import * as Creator from './creator'
 import * as Dashboard from './dashboard'
 import * as Player from './player'
 import { startSearchShortcuts } from './search'
-import { SpotifyConnectionLive } from './spotify'
+import { SpotifyConnectionLive } from './spotify/connection'
 import { startBrowserTelemetry } from './telemetry/browser'
-import { startTheme } from './theme'
 import { startTweetShortcuts } from './tweet/navigation'
+import { startArtworkFallback } from './view/artwork'
 
 const clientResources = Layer.mergeAll(
   Player.playerClientLayer,

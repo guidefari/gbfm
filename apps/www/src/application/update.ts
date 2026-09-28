@@ -1,196 +1,27 @@
-import { MicroPostScreenRepliesResponse } from '@gbfm/api/post'
-import { canCreatePosts, isRole } from '@gbfm/core/roles'
-import { SiteMetadata } from '@gbfm/site-metadata'
-import { Effect, HashMap, Match, Option, Result, Schema } from 'effect'
-import { AsyncData, Command, Navigation, Subscription, type Runtime, type Update } from 'foldkit'
+import { HashMap, Match, Option, Result } from 'effect'
+import { AsyncData, Command, type Update } from 'foldkit'
 import { UrlRequest } from 'foldkit/navigation'
 import { toString as urlToString } from 'foldkit/url'
 
-import { preloadArtwork } from '../artwork'
 import * as Creator from '../creator'
 import * as Dashboard from '../dashboard'
-import { showImages } from '../page/shows'
 import * as Player from '../player'
 import * as PublicActions from '../public-actions'
 import * as Search from '../search'
-import type { SpotifyConnection } from '../spotify'
-import { tweetImages } from '../tweet/card'
-import { updateDocumentHead } from './document-head'
+import {
+  Leave,
+  LoadPage,
+  Navigate,
+  PauseCreatorUpload,
+  PrefetchPage,
+  SaveReadMode,
+  SetResolvedUrl,
+} from './commands'
+import { init, type Services } from './init'
 import { Message } from './message'
-import { Flags, type Model, type PageCache } from './model'
-import { isCacheable, pageKey, samePage } from './page-cache'
-import { isServerPath, parseRoute, Route } from './route'
-
-const settlePage = (
-  cache: PageCache,
-  key: string,
-  result: Result.Result<Flags, string>,
-): PageCache => {
-  if (!isCacheable(key)) return cache
-  const entry = AsyncData.fromOptionOrIdle(HashMap.get(cache, key))
-
-  return HashMap.set(cache, key, AsyncData.settle(entry, result))
-}
-
-const seedCache = (flags: Flags): PageCache =>
-  settlePage(HashMap.empty(), pageKey(flags.url), Result.succeed(flags))
-
-type Services =
-  | Player.PlayerClient
-  | Creator.CreatorService
-  | Creator.CreatorUpload
-  | Dashboard.DashboardService
-  | Dashboard.SessionService
-  | SpotifyConnection
-
-const StartClient = Command.define('Application.Start', {
-  messages: [Message.ClientStarted],
-  execute: Effect.succeed(Message.ClientStarted()),
-})
-
-const PauseCreatorUpload = Command.define('Application.PauseCreatorUpload', {
-  messages: [Message.NavigationCompleted],
-  execute: Effect.flatMap(Creator.CreatorUpload, (upload) => upload.pause).pipe(
-    Effect.as(Message.NavigationCompleted()),
-  ),
-})
-
-const LoadReplies = Command.define('Tweet.LoadReplies', {
-  args: { slug: Schema.String },
-  messages: [Message.LoadedReplies, Message.FailedReplies],
-  execute: ({ slug }) =>
-    Effect.tryPromise(async (signal) => {
-      const response = await fetch(
-        `/api/content/posts/micro/${encodeURIComponent(slug)}/screen/replies`,
-        { signal },
-      )
-
-      if (!response.ok) throw new Error('Replies unavailable')
-
-      return response.json()
-    }).pipe(
-      Effect.flatMap(Schema.decodeUnknownEffect(MicroPostScreenRepliesResponse)),
-      Effect.map((replies) => Message.LoadedReplies({ slug, replies })),
-      Effect.catch(() => Effect.succeed(Message.FailedReplies({ slug }))),
-    ),
-})
-
-const MarkSeen = Command.define('Tweet.MarkSeen', {
-  args: { slug: Schema.String },
-  messages: [Message.NavigationCompleted],
-  execute: ({ slug }) =>
-    Effect.tryPromise((signal) =>
-      fetch(`/api/content/posts/micro/${encodeURIComponent(slug)}/seen`, {
-        method: 'POST',
-        credentials: 'same-origin',
-        signal,
-      }),
-    ).pipe(
-      Effect.as(Message.NavigationCompleted()),
-      Effect.orElseSucceed(() => Message.NavigationCompleted()),
-    ),
-})
-
-const Navigate = Command.define('Navigation.Push', {
-  args: { href: Schema.String },
-  messages: [Message.NavigationCompleted],
-  execute: ({ href }) => Navigation.pushUrl(href).pipe(Effect.as(Message.NavigationCompleted())),
-})
-
-const SaveReadMode = Command.define('Tweet.SaveReadMode', {
-  args: { value: Schema.Boolean },
-  messages: [Message.NavigationCompleted, Message.ReadModeFailed],
-  execute: ({ value }) =>
-    Effect.tryPromise(async (signal) => {
-      const response = await fetch('/actions/tweet-read-mode', {
-        method: 'POST',
-        signal,
-        credentials: 'same-origin',
-        body: new URLSearchParams({ mode: value ? 'unread' : 'all' }),
-      })
-
-      if (!response.ok) throw new Error('Read mode save failed')
-    }).pipe(
-      Effect.as(Message.NavigationCompleted()),
-      Effect.orElseSucceed(() => Message.ReadModeFailed()),
-    ),
-})
-
-const Leave = Command.define('Navigation.Leave', {
-  args: { href: Schema.String },
-  messages: [Message.NavigationCompleted],
-  execute: ({ href }) => Navigation.load(href).pipe(Effect.as(Message.NavigationCompleted())),
-})
-
-const SetResolvedUrl = Command.define('Navigation.SetResolvedUrl', {
-  args: { href: Schema.String, metadata: Schema.NullOr(SiteMetadata), noindex: Schema.Boolean },
-  messages: [Message.NavigationCompleted],
-  execute: ({ href, metadata, noindex }) =>
-    Effect.sync(() => {
-      const target = new URL(href)
-
-      if (metadata) updateDocumentHead(metadata, noindex)
-
-      // Preserve Foldkit's history state without issuing a second loader request.
-      if (`${location.pathname}${location.search}` !== `${target.pathname}${target.search}`)
-        history.replaceState(history.state, '', `${target.pathname}${target.search}`)
-
-      return Message.NavigationCompleted()
-    }),
-})
-
-const fetchPage = (href: string) =>
-  Effect.tryPromise(async (signal) => {
-    const url = new URL(href, location.href)
-    url.searchParams.set('__data', '1')
-
-    const response = await fetch(url, {
-      headers: { accept: 'text/html' },
-      credentials: 'same-origin',
-      signal,
-    })
-
-    return await response.json()
-  }).pipe(Effect.flatMap(Schema.decodeUnknownEffect(Flags)))
-
-/** Warms the page cache and the images a neighbouring page paints first, without navigation telemetry. */
-const PrefetchPage = Command.define('Navigation.Prefetch', {
-  args: { href: Schema.String },
-  messages: [Message.PrefetchedPage, Message.NavigationCompleted],
-  execute: ({ href }) =>
-    fetchPage(href).pipe(
-      Effect.tap((flags) =>
-        Effect.promise(() =>
-          Promise.all(
-            [
-              ...(flags.tweet ? tweetImages(flags.tweet) : []),
-              ...(flags.shows ? showImages(flags.shows) : []),
-            ].map(({ src, sizes }) => preloadArtwork(src, sizes)),
-          ),
-        ),
-      ),
-      Effect.map((flags) => Message.PrefetchedPage({ flags, key: pageKey(href) })),
-      Effect.catch(() => Effect.succeed(Message.NavigationCompleted())),
-    ),
-})
-
-const LoadPage = Command.define('Navigation.Load', {
-  args: { href: Schema.String, navigationId: Schema.Number },
-  messages: [Message.LoadedPage, Message.FailedPage],
-  execute: ({ href, navigationId }) =>
-    Effect.sync(() => window.dispatchEvent(new Event('gbfm:navigation-start'))).pipe(
-      Effect.andThen(fetchPage(href)),
-      Effect.tap(() =>
-        Effect.sync(() => {
-          requestAnimationFrame(() =>
-            requestAnimationFrame(() => window.dispatchEvent(new Event('gbfm:navigation-end'))),
-          )
-        }),
-      ),
-      Effect.map((flags) => Message.LoadedPage({ flags, key: pageKey(href), navigationId })),
-      Effect.catch(() => Effect.succeed(Message.FailedPage({ key: pageKey(href), navigationId }))),
-    ),
-})
+import type { Flags, Model } from './model'
+import { isCacheable, pageKey, samePage, settlePage } from './page-cache'
+import { isServerPath, Route } from './route'
 
 const showPage = (
   model: Model,
@@ -439,100 +270,3 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
 /** The page the screen is showing: the pending destination while loading, else the loaded page. */
 export const displayedPath = (model: Model) =>
   model.loading && model.pendingPath ? model.pendingPath : new URL(model.flags.url).pathname
-
-export const init: Runtime.ApplicationInit<Model, Message, Flags, Services> = (flags) => {
-  const url = new URL(flags.url)
-  const route = parseRoute(url.pathname)
-  const role = flags.principal?.role ?? null
-
-  const creatorKind = Match.value(route).pipe(
-    Match.tag('Composer', ({ kind }) => kind),
-    Match.orElse(() => ''),
-  )
-
-  const creator = Creator.init({
-    kind: Match.value(creatorKind).pipe(
-      Match.when('mix', () => 'mix' as const),
-      Match.when('editorial', () => 'post' as const),
-      Match.orElse(() => 'micro' as const),
-    ),
-    editSlug: url.searchParams.get('edit'),
-    creatorId: flags.principal?.id ?? '',
-    authorized: canCreatePosts(role),
-  })
-
-  const section = Match.value(route).pipe(
-    Match.tag('Dashboard', ({ section }) => section),
-    Match.tag('Static', ({ page }) => (page === 'spotify-callback' ? page : '')),
-    Match.orElse(() => ''),
-  )
-
-  const dashboard = Dashboard.init(section || 'favorites', {
-    id: flags.principal?.id ?? '',
-    role: role && isRole(role) ? role : null,
-  })()
-
-  const preparedDashboard = flags.dashboard
-    ? Dashboard.update(dashboard.model, Dashboard.Message.Loaded({ document: flags.dashboard }))
-    : dashboard
-
-  return {
-    model: {
-      route,
-      flags,
-      menuOpen: false,
-      search: Search.initialModel,
-      skipSeen: flags.skipSeen,
-      loading: false,
-      pendingPath: null,
-      pageCache: seedCache(flags),
-      interactive: false,
-      navigationId: 0,
-      error: null,
-      repliesStatus: flags.tweet ? 'loading' : 'ready',
-      player: Player.initialModel,
-      publicAction: PublicActions.init(flags.publicAction),
-      creator: creator.model,
-      dashboard: preparedDashboard.model,
-    },
-    commands: [
-      StartClient(),
-      ...(flags.tweet
-        ? [
-            LoadReplies({ slug: flags.tweet.post.slug }),
-            MarkSeen({ slug: flags.tweet.post.slug }),
-            ...[
-              ...new Set(
-                [
-                  flags.neighbours?.newer,
-                  flags.neighbours?.older,
-                  flags.neighbours?.olderUnread,
-                ].flatMap((slug) => (slug ? [slug] : [])),
-              ),
-            ].map((slug) => PrefetchPage({ href: `/tweet/${encodeURIComponent(slug)}` })),
-          ]
-        : []),
-      ...(creatorKind
-        ? Command.mapMessages(creator.commands ?? [], (message) =>
-            Message.GotCreatorResult({ message, navigationId: 0 }),
-          )
-        : []),
-      ...(section && (flags.principal || section === 'spotify-callback')
-        ? Command.mapMessages(preparedDashboard.commands ?? [], (message) =>
-            Message.GotDashboardResult({ message, navigationId: 0 }),
-          )
-        : []),
-    ],
-  }
-}
-
-export const subscriptions = Subscription.aggregate(
-  Subscription.lift(Player.subscriptions)<Model, Message>({
-    toChildModel: (model) => model.player,
-    toParentMessage: (message) => Message.GotPlayerMessage({ message }),
-  }),
-  Subscription.lift(Creator.subscriptions)<Model, Message>({
-    toChildModel: (model) => model.creator,
-    toParentMessage: (message) => Message.GotCreatorMessage({ message }),
-  }),
-)

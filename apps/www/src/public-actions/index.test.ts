@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { init, Message, update } from './public-actions'
+import { init, Message, update } from './index'
 
 test('late mutations cannot update a different resource or resource kind', () => {
   const current = init({

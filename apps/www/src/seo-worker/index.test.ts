@@ -1,7 +1,7 @@
 import { makeSiteMetadata, type SiteMetadata } from '@gbfm/site-metadata'
 import { describe, expect, test, vi } from 'vitest'
 
-import worker, { handleRequest, type SeoWorkerEnv } from './seo-worker'
+import worker, { handleRequest, type SeoWorkerEnv } from './index'
 
 const indexHtml = `<!doctype html>
 <html lang="en">

@@ -8,7 +8,9 @@ import { Effect, Option, Schema } from 'effect'
 import * as Server from 'foldkit/experimental/server'
 import template from 'virtual:gbfm-document'
 
-import { applicationConfig, type Flags, Route } from '../application'
+import { applicationConfig } from '../application/config'
+import type { Flags } from '../application/model'
+import { Route } from '../application/route'
 import { apiRequest } from './api'
 import type { loadPageData } from './page-data'
 

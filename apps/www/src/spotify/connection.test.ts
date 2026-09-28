@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { consumeCallback, safeReturnPath } from './spotify'
+import { consumeCallback, safeReturnPath } from './connection'
 
 describe('Spotify authorization boundary', () => {
   it.each([

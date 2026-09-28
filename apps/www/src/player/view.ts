@@ -2,8 +2,8 @@ import type { QueueTrackType } from '@gbfm/player'
 import type { HtmlBuilder } from 'foldkit/html'
 import { defineView } from 'foldkit/submodel'
 
-import { artworkUrl } from '../artwork'
-import { iconPaths, lucide } from '../icons'
+import { artworkUrl } from '../view/artwork'
+import { iconPaths, lucide } from '../view/icons'
 import { Message, type Model } from './model'
 
 type H = HtmlBuilder<typeof Message.Type>
