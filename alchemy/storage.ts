@@ -1,3 +1,6 @@
+import { readdirSync } from 'node:fs'
+import { join } from 'node:path'
+
 import * as Alchemy from 'alchemy'
 import { adopt } from 'alchemy/AdoptPolicy'
 import * as Cloudflare from 'alchemy/Cloudflare'
@@ -8,21 +11,31 @@ import type { StageConfig } from './stage'
 
 export const storage = (config: StageConfig) =>
   Effect.gen(function* () {
+    const cloneImportDirectory = config.isLocalDev ? process.env.GBFM_DEV_DATABASE_CLONE : undefined
+
+    const cloneImportFiles = cloneImportDirectory
+      ? readdirSync(cloneImportDirectory)
+          .filter((file) => file.endsWith('.sql'))
+          .sort()
+          .map((file) => join(cloneImportDirectory, file))
+      : undefined
+
     const productionD1DatabaseName = config.isLocalDev
       ? (yield* Alchemy.stackRef<{ readonly databaseName: string }>('gbfm', {
           stage: 'prod',
         })).pipe(Output.map(({ databaseName }) => databaseName))
       : undefined
 
-    const databaseConfig: Alchemy.PropsInput<Cloudflare.D1.DatabaseProps> = {
+    const productionDb = yield* Cloudflare.D1.Database('Database', {
       ...(productionD1DatabaseName ? { name: productionD1DatabaseName } : undefined),
       ...(config.isLocalDev ? undefined : { migrations: './apps/server/drizzle-d1' }),
-    }
+    }).pipe(adopt(config.isLocalDev), Alchemy.remote(config.isLocalDev))
 
-    const db = yield* Cloudflare.D1.Database('Database', databaseConfig).pipe(
-      adopt(config.isLocalDev),
-      Alchemy.remote(config.isLocalDev),
-    )
+    const db = cloneImportFiles
+      ? yield* Cloudflare.D1.Database('DatabaseClone', {
+          importFiles: [...cloneImportFiles, './apps/server/drizzle-d1/0001_search_fts.sql'],
+        })
+      : productionDb
 
     // The browser PUTs image and audio bytes straight to the bucket with a
     // presigned URL, so the bucket itself has to allow the cross-origin PUT.
