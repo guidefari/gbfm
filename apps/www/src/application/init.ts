@@ -10,7 +10,7 @@ import * as Search from '../search'
 import type { SpotifyConnection } from '../spotify/connection'
 import { LoadReplies, MarkSeen, PrefetchPage, StartClient } from './commands'
 import { Message } from './message'
-import { type Flags, type Model } from './model'
+import type { Flags, Model } from './model'
 import { seedCache } from './page-cache'
 import { parseRoute } from './route'
 
