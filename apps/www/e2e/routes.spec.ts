@@ -95,6 +95,20 @@ test('auth forms reject a cross-origin submission', async ({ request }) => {
   expect(response.headers()['set-cookie']).toBeUndefined()
 })
 
+test('auth forms accept their forwarded development origin', async ({ request }) => {
+  const response = await request.post('/auth/sign-in', {
+    headers: {
+      origin: 'https://gbfm.localhost',
+      'x-forwarded-host': 'gbfm.localhost',
+      'x-forwarded-proto': 'https',
+    },
+    form: { email: 'nobody@invalid.example', password: 'wrong' },
+  })
+
+  expect(response.status()).toBe(401)
+  expect(await response.text()).toContain('Check your details')
+})
+
 test('playback advances and persists through client navigation', async ({ page }) => {
   await page.goto('/mixes')
 
