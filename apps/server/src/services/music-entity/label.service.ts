@@ -16,12 +16,7 @@ import {
   type SelectMusicLabel,
 } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
-import {
-  compileMDX,
-  isMDXCompilationResult,
-  renderRichContent,
-  validateCanonicalContent,
-} from '@/lib/mdx'
+import { MdxService, validateCanonicalContent } from '@/lib/mdx'
 import { omitUndefined } from '@/lib/omit-undefined'
 import { toSlug } from '@/services/to-slug'
 
@@ -188,25 +183,14 @@ export const getLabelBySlugEffect = (slug: string) =>
         }),
     })
 
-    let compiledContent = ''
-    let richContent = renderRichContent(projectedLabel.content)
+    const mdx = yield* MdxService
 
-    if (projectedLabel.content) {
-      const result = yield* Effect.tryPromise({
-        try: () => compileMDX(projectedLabel.content),
-        catch: (error) =>
-          new DatabaseError({
-            message: `Failed to compile label MDX: ${getErrorMessage(error)}`,
-            operation: 'mdx_compile',
-            table: 'music_labels',
-          }),
-      })
-
-      if (isMDXCompilationResult(result)) {
-        compiledContent = result.compiled
-        richContent = result.richContent
-      }
-    }
+    const [compiledContent, richContent] = yield* Effect.all([
+      projectedLabel.content
+        ? mdx.compile(projectedLabel.content).pipe(Effect.orElseSucceed(() => ''))
+        : Effect.succeed(''),
+      mdx.render(projectedLabel.content),
+    ])
 
     return {
       ...projectedLabel,

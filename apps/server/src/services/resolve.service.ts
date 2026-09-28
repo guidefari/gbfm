@@ -7,7 +7,7 @@ import { readEntityLabels } from '@/db/labels'
 import { Database } from '@/db/layer'
 import { showCreators, showsTable } from '@/db/show.schema'
 import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
-import { compileMDX, isMDXCompilationResult, renderRichContent } from '@/lib/mdx'
+import { MdxService } from '@/lib/mdx'
 import { isReservedSlug } from '@/lib/reserved-slugs'
 import { getPublicProfileEffect, type PublicProfile } from '@/services/profile.service'
 
@@ -127,26 +127,14 @@ const resolveEffect = (slug: string) =>
         username: h.username,
       }))
 
-      let compiledContent: string | null = null
       const contentToCompile = foundShow.content
-      let richContent = renderRichContent(contentToCompile)
+      const mdx = yield* MdxService
 
-      if (contentToCompile) {
-        const compiled = yield* Effect.tryPromise({
-          try: () => compileMDX(contentToCompile),
-          catch: () =>
-            new DatabaseError({
-              message: 'Failed to compile MDX content',
-              operation: 'compile',
-              table: 'shows',
-            }),
-        })
+      const compiledContent = contentToCompile
+        ? yield* mdx.compile(contentToCompile).pipe(Effect.orElseSucceed(() => null))
+        : null
 
-        if (isMDXCompilationResult(compiled)) {
-          compiledContent = compiled.compiled
-          richContent = compiled.richContent
-        }
-      }
+      const richContent = yield* mdx.render(contentToCompile)
 
       return {
         type: 'show' as const,
@@ -177,11 +165,13 @@ export const ResolveServiceLayer = Layer.effect(
   ResolveService,
   Effect.gen(function* () {
     const db = yield* Database
+    const mdx = yield* MdxService
 
     return {
       resolve: (slug) =>
         resolveEffect(slug).pipe(
           Effect.provideService(Database, db),
+          Effect.provideService(MdxService, mdx),
           Effect.withSpan('resolve.slug', { attributes: { slug } }),
         ),
     }

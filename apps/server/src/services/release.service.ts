@@ -20,12 +20,7 @@ import {
   type ValidationError,
 } from '@/errors'
 import { requireCreatorOrAdmin } from '@/lib/authorization'
-import {
-  compileMDX,
-  isMDXCompilationResult,
-  renderRichContent,
-  validateCanonicalContent,
-} from '@/lib/mdx'
+import { MdxService, validateCanonicalContent } from '@/lib/mdx'
 
 export interface ReleaseService {
   readonly getBySlug: (
@@ -119,34 +114,21 @@ const getBySlugEffect = (slug: string, includeDrafts = false) =>
         }),
     })
 
-    let processedRelease: SelectMdxCompiledRelease = {
+    const mdx = yield* MdxService
+
+    const [compiledContent, richContent] = yield* Effect.all([
+      release.content
+        ? mdx.compile(release.content).pipe(Effect.orElseSucceed(() => ''))
+        : Effect.succeed(''),
+      mdx.render(release.content),
+    ])
+
+    return {
       ...release,
       tags,
-      compiledContent: '',
-      richContent: renderRichContent(release.content),
-    }
-
-    if (release.content) {
-      const mdxResult = yield* Effect.tryPromise({
-        try: () => compileMDX(release.content),
-        catch: (error) =>
-          new DatabaseError({
-            message: `Failed to compile MDX: ${getErrorMessage(error)}`,
-            operation: 'mdx_compile',
-            table: 'releases',
-          }),
-      })
-
-      if (isMDXCompilationResult(mdxResult)) {
-        processedRelease = {
-          ...processedRelease,
-          compiledContent: mdxResult.compiled,
-          richContent: mdxResult.richContent,
-        }
-      }
-    }
-
-    return processedRelease
+      compiledContent,
+      richContent,
+    } satisfies SelectMdxCompiledRelease
   })
 
 const createEffect = (
@@ -357,34 +339,21 @@ const updateEffect = (
         }),
     })
 
-    const baseProcessedRelease: SelectMdxCompiledRelease = {
+    const mdx = yield* MdxService
+
+    const [compiledContent, richContent] = yield* Effect.all([
+      updatedRelease.content
+        ? mdx.compile(updatedRelease.content).pipe(Effect.orElseSucceed(() => ''))
+        : Effect.succeed(''),
+      mdx.render(updatedRelease.content),
+    ])
+
+    return {
       ...updatedRelease,
       tags: projectedTags,
-      compiledContent: '',
-      richContent: renderRichContent(updatedRelease.content),
-    }
-
-    if (updatedRelease.content) {
-      const mdxResult = yield* Effect.tryPromise({
-        try: () => compileMDX(updatedRelease.content),
-        catch: (error) =>
-          new DatabaseError({
-            message: `Failed to compile MDX: ${getErrorMessage(error)}`,
-            operation: 'mdx_compile',
-            table: 'releases',
-          }),
-      })
-
-      if (isMDXCompilationResult(mdxResult)) {
-        return {
-          ...baseProcessedRelease,
-          compiledContent: mdxResult.compiled,
-          richContent: mdxResult.richContent,
-        }
-      }
-    }
-
-    return baseProcessedRelease
+      compiledContent,
+      richContent,
+    } satisfies SelectMdxCompiledRelease
   })
 
 const deleteEffect = (slug: string, userId: string, userRole: string) =>
@@ -441,11 +410,12 @@ export const ReleaseServiceLayer = Layer.effect(
   ReleaseService,
   Effect.gen(function* () {
     const db = yield* Database
+    const mdx = yield* MdxService
     const provideDb = Effect.provideService(Database, db)
 
     return {
       getBySlug: (slug) =>
-        provideDb(getBySlugEffect(slug)).pipe(
+        provideDb(getBySlugEffect(slug).pipe(Effect.provideService(MdxService, mdx))).pipe(
           Effect.withSpan('release.getBySlug', { attributes: { slug } }),
         ),
       getBySlugForEdit: (slug, userId, userRole) =>
@@ -455,14 +425,14 @@ export const ReleaseServiceLayer = Layer.effect(
             yield* requireCreatorOrAdmin('label', release.labelId, userId, userRole)
 
             return release
-          }),
+          }).pipe(Effect.provideService(MdxService, mdx)),
         ).pipe(Effect.withSpan('release.getBySlugForEdit', { attributes: { slug } })),
       create: (data, userId, userRole) =>
         provideDb(createEffect(data, userId, userRole)).pipe(Effect.withSpan('release.create')),
       update: (slug, userId, userRole, data) =>
-        provideDb(updateEffect(slug, userId, userRole, data)).pipe(
-          Effect.withSpan('release.update', { attributes: { slug } }),
-        ),
+        provideDb(
+          updateEffect(slug, userId, userRole, data).pipe(Effect.provideService(MdxService, mdx)),
+        ).pipe(Effect.withSpan('release.update', { attributes: { slug } })),
       delete: (slug, userId, userRole) =>
         provideDb(deleteEffect(slug, userId, userRole)).pipe(
           Effect.withSpan('release.delete', { attributes: { slug } }),

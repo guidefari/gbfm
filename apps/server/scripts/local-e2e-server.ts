@@ -5,7 +5,12 @@ import { audioCreators, audioTable } from '@/db/audio.schema'
 import { user } from '@/db/auth.schema'
 import { replaceEntityLabels } from '@/db/labels'
 import { makeDatabaseClient } from '@/db/layer'
-import { musicEntityLinksTable, musicLabelsTable, musicTracksTable } from '@/db/music-entity.schema'
+import {
+  musicEntityLinksTable,
+  musicLabelsTable,
+  musicSourceIdentitiesTable,
+  musicTracksTable,
+} from '@/db/music-entity.schema'
 import { postCreators, postsTable } from '@/db/post.schema'
 import { releasesTable } from '@/db/release.schema'
 import { seedLocalUsers } from '@/db/seed-local-users'
@@ -89,6 +94,10 @@ const rootTrackId = '00000000-0000-4000-8000-000000000001'
 
 const replyTrackId = '00000000-0000-4000-8000-000000000002'
 
+const editorialTrackId = '00000000-0000-4000-8000-000000000003'
+const editorialSpotifyId = '2Mf7lfHxdiABiO7j0BDbHc'
+const editorialSpotifyUrl = `https://open.spotify.com/track/${editorialSpotifyId}`
+
 await database.batch([
   database.insert(musicTracksTable).values([
     {
@@ -103,6 +112,13 @@ await database.batch([
       title: 'Reply Frequency',
       slug: 'e2e-reply-frequency',
       artistNames: ['Echo Unit', 'Return Path'],
+      coverImageUrl: '/fav.png',
+    },
+    {
+      id: editorialTrackId,
+      title: 'Grapefruit',
+      slug: 'e2e-grapefruit',
+      artistNames: ['Lack'],
       coverImageUrl: '/fav.png',
     },
   ]),
@@ -121,7 +137,24 @@ await database.insert(musicEntityLinksTable).values([
     platform: 'bandcamp',
     url: 'https://example.bandcamp.com/track/e2e-reply',
   },
+  {
+    entityType: 'track',
+    entityId: editorialTrackId,
+    platform: 'spotify',
+    url: editorialSpotifyUrl,
+  },
 ])
+await database.insert(musicSourceIdentitiesTable).values({
+  sourceKey: `spotify:track:${editorialSpotifyId}`,
+  platform: 'spotify',
+  sourceEntityType: 'track',
+  externalId: editorialSpotifyId,
+  canonicalUrl: editorialSpotifyUrl,
+  state: 'resolved',
+  entityType: 'track',
+  entityId: editorialTrackId,
+  resolvedAt: new Date(),
+})
 
 const [rootPost] = await database
   .insert(postsTable)
@@ -142,7 +175,8 @@ const [editorial] = await database
   .values({
     slug: 'e2e-listening-notes',
     title: 'Local listening notes',
-    content: 'An editorial about independent music.',
+    content:
+      'An editorial about **independent music**, migrated from a legacy music embed.\n\n::track{url="https://open.spotify.com/track/2Mf7lfHxdiABiO7j0BDbHc" genres="experimental, dub" blurb="A catalog-backed selection from the original article."}',
     type: 'post',
     draft: false,
   })

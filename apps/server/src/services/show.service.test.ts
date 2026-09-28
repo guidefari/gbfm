@@ -10,6 +10,7 @@ import { beforeAll, describe, expect, test } from 'vitest'
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { user } from '@/db/auth.schema'
 import { NotFoundError } from '@/errors'
+import { MdxServiceLayer } from '@/lib/mdx'
 import { DatabaseTestLayer, db } from '@/test/database'
 import { withTestLayer } from '@/test/effect'
 
@@ -19,13 +20,18 @@ const hostId = `show-creators-${randomUUID()}`
 
 const otherHostId = `show-creators-other-${randomUUID()}`
 
+const ShowServiceTestLayer = ShowServiceLayer.pipe(
+  Layer.provide(MdxServiceLayer),
+  Layer.provide(DatabaseTestLayer),
+)
+
 const getService = () =>
   Effect.runPromise(
     withTestLayer(
       Effect.gen(function* () {
         return yield* ShowService
       }),
-      ShowServiceLayer.pipe(Layer.provide(DatabaseTestLayer)),
+      ShowServiceTestLayer,
     ),
   )
 
@@ -69,7 +75,7 @@ describe('ShowService creators', () => {
               service.getAllForEdit({ limit: 5, offset: 0 }, hostId, 'user'),
             ])
           }),
-          Layer.merge(ShowServiceLayer.pipe(Layer.provide(DatabaseTestLayer)), tracingLive),
+          Layer.merge(ShowServiceTestLayer, tracingLive),
         ),
       )
 

@@ -30,6 +30,30 @@ describe('MdxService', () => {
     })
   })
 
+  test.each([
+    [
+      'YouTube privacy-enhanced',
+      'https://www.youtube-nocookie.com/embed/N98XIKgjRlM',
+      { provider: 'youtube', embedUrl: 'https://www.youtube-nocookie.com/embed/N98XIKgjRlM' },
+    ],
+    [
+      'Bandcamp',
+      'https://bandcamp.com/EmbeddedPlayer/album=1658777641/size=large/',
+      {
+        provider: 'bandcamp',
+        embedUrl: 'https://bandcamp.com/EmbeddedPlayer/album=1658777641/size=large/',
+      },
+    ],
+  ])(
+    'renders migrated %s iframe sources through the media allowlist',
+    (_name, source, expected) => {
+      expect(renderRichContent(source).blocks[0]).toMatchObject({
+        _tag: 'ExternalMediaEmbed',
+        ...expected,
+      })
+    },
+  )
+
   test('rejects legacy JSX on canonical writes', async () => {
     await expect(
       Effect.runPromise(

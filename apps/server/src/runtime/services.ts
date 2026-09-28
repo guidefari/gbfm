@@ -2,7 +2,7 @@ import { Layer } from 'effect'
 
 import type { Database } from '@/db/layer'
 import { AuthLive } from '@/lib/auth'
-import { MdxServiceLayer } from '@/lib/mdx'
+import { MdxServiceCatalogLayer } from '@/lib/mdx'
 import type { SentryService } from '@/services/sentry.service'
 import type { SitemapCache } from '@/services/sitemap-cache'
 
@@ -38,6 +38,7 @@ import {
   RequestTelemetryUnavailableLayer,
 } from '@/services/request-telemetry.service'
 import { ResolveServiceLayer } from '@/services/resolve.service'
+import { RichContentMusicResolverLayer } from '@/services/rich-content-music.service'
 import { S3ServiceLayer } from '@/services/s3.service'
 import { SearchServiceLayer } from '@/services/search.service'
 import { ShowServiceLayer, ShowSubscriptionServiceLayer } from '@/services/show.service'
@@ -95,6 +96,11 @@ export const AppLayer = ({
 
   const UploadAssetDepsLive = Layer.mergeAll(configLive, UploadAssetServiceLayer)
 
+  const MdxLive = MdxServiceCatalogLayer.pipe(
+    Layer.provide(RichContentMusicResolverLayer),
+    Layer.provide(databaseLive),
+  )
+
   const BaseServicesLayer = Layer.mergeAll(
     EmailDeliveryWithDependencies,
     FavoriteServiceLayer,
@@ -113,16 +119,16 @@ export const AppLayer = ({
         Layer.mergeAll(SpotifyServiceLayer, DeezerServiceLayer, MusicBrainzIdentityLive),
       ),
     ),
-    AudioServiceLayer.pipe(Layer.provide(MdxServiceLayer), Layer.provide(UploadAssetDepsLive)),
-    PostServiceLayer.pipe(Layer.provide(MdxServiceLayer), Layer.provide(UploadAssetDepsLive)),
+    AudioServiceLayer.pipe(Layer.provide(MdxLive), Layer.provide(UploadAssetDepsLive)),
+    PostServiceLayer.pipe(Layer.provide(MdxLive), Layer.provide(UploadAssetDepsLive)),
     ProfileServiceLayer,
-    ResolveServiceLayer,
-    ReleaseServiceLayer,
+    ResolveServiceLayer.pipe(Layer.provide(MdxLive)),
+    ReleaseServiceLayer.pipe(Layer.provide(MdxLive)),
     S3ServiceLayer.pipe(Layer.provide(Layer.mergeAll(objectStoreLive, configLive))),
     SearchServiceLayer,
     sentryLive,
     tracingLive,
-    ShowServiceLayer,
+    ShowServiceLayer.pipe(Layer.provide(MdxLive)),
     ShowSubscriptionServiceLayer,
     UploadAssetServiceLayer,
     UserServiceLayer,
@@ -136,7 +142,7 @@ export const AppLayer = ({
   )
 
   const MusicEntityLive = MusicEntityServiceLayer.pipe(
-    Layer.provide(Layer.mergeAll(BaseServicesLayer, CanonicalMusicIdentityLive)),
+    Layer.provide(Layer.mergeAll(BaseServicesLayer, CanonicalMusicIdentityLive, MdxLive)),
   )
 
   const ServicesLayer = Layer.mergeAll(

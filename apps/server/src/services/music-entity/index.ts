@@ -15,6 +15,7 @@ import type {
   SelectMusicTrack,
 } from '@/db/music-entity.schema'
 import { type DatabaseError, NotFoundError, type ValidationError } from '@/errors'
+import { MdxService } from '@/lib/mdx'
 import { omitUndefined } from '@/lib/omit-undefined'
 import {
   CanonicalMusicIdentity,
@@ -355,6 +356,7 @@ export const MusicEntityServiceLayer = Layer.effect(
     const spotify = yield* SpotifyServiceTag
     const identity = yield* CanonicalMusicIdentity
     const db = yield* Database
+    const mdx = yield* MdxService
     const provideDb = Effect.provideService(Database, db)
 
     const releaseIdentityLink = (
@@ -512,7 +514,8 @@ export const MusicEntityServiceLayer = Layer.effect(
       createLabel: (data) => provideDb(createLabelEffect(data)),
       getLabels: (includeDrafts) => provideDb(getLabelsEffect(includeDrafts)),
       getLabelById: (id) => provideDb(getLabelByIdEffect(id)),
-      getLabelBySlug: (slug) => provideDb(getLabelBySlugEffect(slug)),
+      getLabelBySlug: (slug) =>
+        provideDb(getLabelBySlugEffect(slug).pipe(Effect.provideService(MdxService, mdx))),
       updateLabel: (id, data) => provideDb(updateLabelEffect(id, data)),
       deleteLabel: (id) => provideDb(deleteLabelEffect(id)),
 

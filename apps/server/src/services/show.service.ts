@@ -22,12 +22,7 @@ import {
   type ValidationError,
 } from '@/errors'
 import { requireCreatorOrAdmin } from '@/lib/authorization'
-import {
-  compileMDX,
-  isMDXCompilationResult,
-  renderRichContent,
-  validateCanonicalContent,
-} from '@/lib/mdx'
+import { MdxService, validateCanonicalContent } from '@/lib/mdx'
 import { createPaginationMetadata, type PaginationMetadata } from '@/lib/pagination'
 
 export { ShowSubscriptionService, ShowSubscriptionServiceLayer } from './show-subscription.service'
@@ -209,39 +204,26 @@ const getBySlugEffect = (slug: string, includeDrafts = false) =>
         }),
     })
 
-    let processedShow: SelectMdxCompiledShow = {
+    const mdx = yield* MdxService
+
+    const [compiledContent, richContent] = yield* Effect.all([
+      show.content
+        ? mdx.compile(show.content).pipe(Effect.orElseSucceed(() => ''))
+        : Effect.succeed(''),
+      mdx.render(show.content),
+    ])
+
+    return {
       ...showFields,
       tags,
-      compiledContent: '',
-      richContent: renderRichContent(show.content),
+      compiledContent,
+      richContent,
       hosts: hosts.map(({ creator }) => ({
         id: creator.id,
         name: creator.name,
         username: creator.username,
       })),
-    }
-
-    if (show.content) {
-      const mdxResult = yield* Effect.tryPromise({
-        try: () => compileMDX(show.content),
-        catch: (error) =>
-          new DatabaseError({
-            message: `Failed to compile MDX: ${getErrorMessage(error)}`,
-            operation: 'mdx_compile',
-            table: 'shows',
-          }),
-      })
-
-      if (isMDXCompilationResult(mdxResult)) {
-        processedShow = {
-          ...processedShow,
-          compiledContent: mdxResult.compiled,
-          richContent: mdxResult.richContent,
-        }
-      }
-    }
-
-    return processedShow
+    } satisfies SelectMdxCompiledShow
   })
 
 const createEffect = (data: InsertShow, hostIds: Array<string>) =>
@@ -422,39 +404,26 @@ const updateEffect = (
         }),
     })
 
-    const baseProcessedShow: SelectMdxCompiledShow = {
+    const mdx = yield* MdxService
+
+    const [compiledContent, richContent] = yield* Effect.all([
+      updatedShow.content
+        ? mdx.compile(updatedShow.content).pipe(Effect.orElseSucceed(() => ''))
+        : Effect.succeed(''),
+      mdx.render(updatedShow.content),
+    ])
+
+    return {
       ...updatedShow,
       tags: projectedTags,
-      compiledContent: '',
-      richContent: renderRichContent(updatedShow.content),
+      compiledContent,
+      richContent,
       hosts: hostRows.map(({ creator }) => ({
         id: creator.id,
         name: creator.name,
         username: creator.username,
       })),
-    }
-
-    if (updatedShow.content) {
-      const mdxResult = yield* Effect.tryPromise({
-        try: () => compileMDX(updatedShow.content),
-        catch: (error) =>
-          new DatabaseError({
-            message: `Failed to compile MDX: ${getErrorMessage(error)}`,
-            operation: 'mdx_compile',
-            table: 'shows',
-          }),
-      })
-
-      if (isMDXCompilationResult(mdxResult)) {
-        return {
-          ...baseProcessedShow,
-          compiledContent: mdxResult.compiled,
-          richContent: mdxResult.richContent,
-        }
-      }
-    }
-
-    return baseProcessedShow
+    } satisfies SelectMdxCompiledShow
   })
 
 const deleteEffect = (slug: string, userId: string, userRole: string) =>
@@ -615,6 +584,7 @@ export const ShowServiceLayer = Layer.effect(
   ShowService,
   Effect.gen(function* () {
     const db = yield* Database
+    const mdx = yield* MdxService
     const provideDb = Effect.provideService(Database, db)
 
     return {
@@ -631,7 +601,7 @@ export const ShowServiceLayer = Layer.effect(
           }),
         ),
       getBySlug: (slug) =>
-        provideDb(getBySlugEffect(slug)).pipe(
+        provideDb(getBySlugEffect(slug).pipe(Effect.provideService(MdxService, mdx))).pipe(
           Effect.withSpan('show.getBySlug', { attributes: { slug } }),
         ),
       getBySlugForEdit: (slug, userId, userRole) =>
@@ -641,14 +611,14 @@ export const ShowServiceLayer = Layer.effect(
             yield* requireCreatorOrAdmin('show', show.id, userId, userRole)
 
             return show
-          }),
+          }).pipe(Effect.provideService(MdxService, mdx)),
         ).pipe(Effect.withSpan('show.getBySlugForEdit', { attributes: { slug } })),
       create: (data, hostIds) =>
         provideDb(createEffect(data, hostIds)).pipe(Effect.withSpan('show.create')),
       update: (slug, userId, userRole, data) =>
-        provideDb(updateEffect(slug, userId, userRole, data)).pipe(
-          Effect.withSpan('show.update', { attributes: { slug } }),
-        ),
+        provideDb(
+          updateEffect(slug, userId, userRole, data).pipe(Effect.provideService(MdxService, mdx)),
+        ).pipe(Effect.withSpan('show.update', { attributes: { slug } })),
       delete: (slug, userId, userRole) =>
         provideDb(deleteEffect(slug, userId, userRole)).pipe(
           Effect.withSpan('show.delete', { attributes: { slug } }),
