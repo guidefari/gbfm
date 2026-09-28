@@ -66,6 +66,27 @@ test('public writing renders canonical rich content without executing arbitrary 
   )
 })
 
+test('a migrated legacy track renders from the GBFM catalog without client metadata fetches', async ({
+  page,
+}) => {
+  const spotifyRequests: Array<string> = []
+  page.on('request', (request) => {
+    const hostname = new URL(request.url()).hostname
+
+    if (hostname === 'open.spotify.com' || hostname.endsWith('.spotify.com'))
+      spotifyRequests.push(request.url())
+  })
+
+  await page.goto('/editorial/e2e-listening-notes')
+  const card = page.locator('.rich-content-music-card')
+  await expect(card).toContainText('Grapefruit')
+  await expect(card).toContainText('Lack')
+  await expect(card).toContainText('experimental')
+  await expect(card).toContainText('A catalog-backed selection from the original article.')
+  await expect(page.locator('.rich-content')).not.toContainText('::track')
+  expect(spotifyRequests).toEqual([])
+})
+
 test('reset form preserves its token and signing out invalidates the session', async ({ page }) => {
   await page.goto('/auth/reset-password?token=local-test-token')
   await expect(page.locator('input[name="token"]')).toHaveValue('local-test-token')
