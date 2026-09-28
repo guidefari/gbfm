@@ -1,4 +1,4 @@
-import type { Flags } from './application'
+import type { Flags } from './application/model'
 
 const uncachedPrefixes = ['/dashboard', '/new', '/mix-upload', '/auth', '/reminders', '/spotify']
 

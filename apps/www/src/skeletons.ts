@@ -1,7 +1,7 @@
 import { Match } from 'effect'
 import { inertHtml as h } from 'foldkit/html'
 
-import { Route } from './application'
+import { Route } from './application/route'
 
 const block = (className: string) => h.div([h.Class(className)], [])
 
