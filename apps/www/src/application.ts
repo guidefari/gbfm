@@ -4,7 +4,7 @@ import type { Url } from 'foldkit/url'
 import { Message } from './application/message'
 import { ContentItem, Flags, Model, Principal } from './application/model'
 import { parseRoute, Route } from './application/route'
-import { clientResources, displayedPath, init, subscriptions, update } from './application/update'
+import { displayedPath, init, subscriptions, update } from './application/update'
 import { view } from './application/view'
 
 export {
@@ -15,7 +15,6 @@ export {
   parseRoute,
   Principal,
   Route,
-  clientResources,
   displayedPath,
   init,
   subscriptions,

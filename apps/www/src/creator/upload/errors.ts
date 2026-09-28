@@ -1,6 +1,6 @@
 import { Data, Match } from 'effect'
 
-import type { PersistedResumableUpload } from '@/lib/upload/resumable-upload'
+import type { PersistedResumableUpload } from './protocol'
 
 export class NetworkError extends Data.TaggedError('NetworkError')<{
   readonly message: string

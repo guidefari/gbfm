@@ -4,7 +4,7 @@ export type { InitInput } from './model'
 
 export { CreatorService, CreatorServiceLive } from './services'
 
-export { CreatorUpload, CreatorUploadLive } from './upload'
+export { CreatorUpload, CreatorUploadLive } from './upload/runtime'
 
 export type { CreatorDraft, CreatorError, CreatorKind, CreatorOperations } from './services'
 

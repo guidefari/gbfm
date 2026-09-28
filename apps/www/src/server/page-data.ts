@@ -20,7 +20,7 @@ import { endpointFor as dashboardEndpointFor, isAdminSection } from '../dashboar
 import type { Document as PublicActionDocument } from '../public-actions'
 import type { ShowsDocument } from '../shows'
 import { staticPages } from '../static-pages'
-import { skipsSeenTweets } from '../tweet-navigation'
+import { skipsSeenTweets } from '../tweet/navigation'
 import { apiRequest, endpointFor } from './api'
 
 const JsonObject = Schema.Record(Schema.String, Schema.Json)

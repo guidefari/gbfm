@@ -3,9 +3,8 @@ import * as Effect from 'effect/Effect'
 import type * as Layer from 'effect/Layer'
 import { describe, expect, test } from 'vitest'
 
-import type { PersistedResumableUpload } from '@/lib/upload/resumable-upload'
-
-import { cancelProgram } from './service'
+import { cancelProgram } from './program'
+import type { PersistedResumableUpload } from './protocol'
 import { ResumableUploadStorage, ResumableUploadStorageInMemory } from './storage'
 
 const makePersisted = (

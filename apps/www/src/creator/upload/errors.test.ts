@@ -1,7 +1,5 @@
 import { describe, expect, test } from 'vitest'
 
-import type { PersistedResumableUpload } from '@/lib/upload/resumable-upload'
-
 import {
   AlreadyInProgressError,
   FileTooLargeError,
@@ -15,6 +13,7 @@ import {
   isFatalError,
   isRetryableError,
 } from './errors'
+import type { PersistedResumableUpload } from './protocol'
 
 const pausedCheckpoint: PersistedResumableUpload = {
   fileFingerprint: 'fp',

@@ -1,11 +1,25 @@
+import { Layer } from 'effect'
 import { Runtime } from 'foldkit'
 
-import { applicationConfig, clientResources, displayedPath, subscriptions } from './application'
+import { applicationConfig, displayedPath, subscriptions } from './application'
 import { startArtworkFallback } from './artwork'
+import * as Creator from './creator'
+import * as Dashboard from './dashboard'
+import * as Player from './player'
 import { startSearchShortcuts } from './search'
+import { SpotifyConnectionLive } from './spotify'
 import { startBrowserTelemetry } from './telemetry/browser'
 import { startTheme } from './theme'
-import { startTweetShortcuts } from './tweet-navigation'
+import { startTweetShortcuts } from './tweet/navigation'
+
+const clientResources = Layer.mergeAll(
+  Player.playerClientLayer,
+  Creator.CreatorServiceLive,
+  Creator.CreatorUploadLive,
+  Dashboard.DashboardServiceLive,
+  Dashboard.SessionServiceLive,
+  SpotifyConnectionLive,
+)
 
 const application = Runtime.makeApplication({
   ...applicationConfig,

@@ -8,7 +8,7 @@ import {
   relativeAge,
   timelineMonths,
   yearJumps,
-} from './tweet-timeline'
+} from './timeline'
 
 interface Jump {
   readonly label: string

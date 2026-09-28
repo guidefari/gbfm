@@ -7,7 +7,7 @@ import {
   relativeAge,
   timelineMonths,
   yearJumps,
-} from './tweet-timeline'
+} from './timeline'
 
 test('fills calendar gaps newest first and jumps to the newest tweet of each populated year', () => {
   const months = timelineMonths([

@@ -15,8 +15,8 @@ import {
   tagLinks,
   tweetBody,
   type TweetPost,
-} from '../tweet-card'
-import { tweetWayfinder } from '../tweet-wayfinder'
+} from './card'
+import { tweetWayfinder } from './wayfinder'
 
 const tweetArrow = (
   h: HtmlBuilder<Message>,

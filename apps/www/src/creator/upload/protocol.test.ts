@@ -16,7 +16,7 @@ import {
   splitFileIntoChunks,
   totalParts,
   withUpdatedPart,
-} from './resumable-upload'
+} from './protocol'
 
 const makeFile = (size: number, name = 'mix.mp3', lastModified = 1_700_000_000_000): File => {
   const blob = new Blob([new Uint8Array(size)], { type: 'audio/mpeg' })

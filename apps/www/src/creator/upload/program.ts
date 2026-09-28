@@ -3,6 +3,16 @@ import * as Predicate from 'effect/Predicate'
 import * as Schedule from 'effect/Schedule'
 
 import {
+  type ResumableUploadError,
+  FileTooLargeError,
+  HttpError,
+  InvalidResponseError,
+  NetworkError,
+  UploadAborted,
+  UploadPaused,
+  isRetryableError,
+} from './errors'
+import {
   type PersistedResumableUpload,
   type JsonInput,
   type ResumablePart,
@@ -18,18 +28,7 @@ import {
   parseStatusResponse,
   splitFileIntoChunks,
   withUpdatedPart,
-} from '@/lib/upload/resumable-upload'
-
-import {
-  type ResumableUploadError,
-  FileTooLargeError,
-  HttpError,
-  InvalidResponseError,
-  NetworkError,
-  UploadAborted,
-  UploadPaused,
-  isRetryableError,
-} from './errors'
+} from './protocol'
 import { type ResumableUploadStorage, clearCheckpoint, writeCheckpoint } from './storage'
 
 const MAX_PART_ATTEMPTS = 5

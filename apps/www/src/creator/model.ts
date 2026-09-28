@@ -4,7 +4,7 @@ import { defineMessageUnion } from 'foldkit/message'
 
 import type { CreatorDraft, CreatorError, CreatorKind } from './services'
 import { CreatorDraftSchema as Draft, CreatorService } from './services'
-import { CreatorUpload } from './upload'
+import { CreatorUpload } from './upload/runtime'
 
 const Kind = Schema.Literals(['micro', 'post', 'mix'])
 

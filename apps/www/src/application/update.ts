@@ -1,7 +1,7 @@
 import { MicroPostScreenRepliesResponse } from '@gbfm/api/post'
 import { canCreatePosts, isRole } from '@gbfm/core/roles'
 import { SiteMetadata } from '@gbfm/site-metadata'
-import { Effect, HashMap, Layer, Match, Option, Result, Schema } from 'effect'
+import { Effect, HashMap, Match, Option, Result, Schema } from 'effect'
 import { AsyncData, Command, Navigation, Subscription, type Runtime, type Update } from 'foldkit'
 import { UrlRequest } from 'foldkit/navigation'
 import { toString as urlToString } from 'foldkit/url'
@@ -15,8 +15,8 @@ import * as Player from '../player'
 import * as PublicActions from '../public-actions'
 import * as Search from '../search'
 import { showImages } from '../shows'
-import { type SpotifyConnection, SpotifyConnectionLive } from '../spotify'
-import { tweetImages } from '../tweet-card'
+import type { SpotifyConnection } from '../spotify'
+import { tweetImages } from '../tweet/card'
 import { Message } from './message'
 import { Flags, type Model, type PageCache } from './model'
 import { isServerPath, parseRoute, Route } from './route'
@@ -525,15 +525,6 @@ export const init: Runtime.ApplicationInit<Model, Message, Flags, Services> = (f
     ],
   }
 }
-
-export const clientResources = Layer.mergeAll(
-  Player.playerClientLayer,
-  Creator.CreatorServiceLive,
-  Creator.CreatorUploadLive,
-  Dashboard.DashboardServiceLive,
-  Dashboard.SessionServiceLive,
-  SpotifyConnectionLive,
-)
 
 export const subscriptions = Subscription.aggregate(
   Subscription.lift(Player.subscriptions)<Model, Message>({

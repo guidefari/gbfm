@@ -2,9 +2,8 @@ import * as Context from 'effect/Context'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
 
-import { parsePersistedUpload, type PersistedResumableUpload } from '@/lib/upload/resumable-upload'
-
 import { StorageQuotaError } from './errors'
+import { parsePersistedUpload, type PersistedResumableUpload } from './protocol'
 
 const KEY = (fingerprint: string) => `gbfm:resumable-upload:${fingerprint}`
 

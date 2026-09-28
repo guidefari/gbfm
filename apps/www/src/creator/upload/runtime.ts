@@ -1,20 +1,9 @@
 import { Context, Effect, Layer, Queue, Stream } from 'effect'
 
-import { computeFileFingerprint } from '@/lib/upload/resumable-upload'
-import {
-  AlreadyInProgressError,
-  InvalidResponseError,
-  type ResumableUploadError,
-} from '@/services/resumable-upload/errors'
-import {
-  cancelProgram,
-  uploadProgram,
-  type UploadProgress,
-} from '@/services/resumable-upload/service'
-import {
-  ResumableUploadStorage,
-  ResumableUploadStorageLive,
-} from '@/services/resumable-upload/storage'
+import { AlreadyInProgressError, InvalidResponseError, type ResumableUploadError } from './errors'
+import { cancelProgram, uploadProgram, type UploadProgress } from './program'
+import { computeFileFingerprint } from './protocol'
+import { ResumableUploadStorage, ResumableUploadStorageLive } from './storage'
 
 export class CreatorUpload extends Context.Service<
   CreatorUpload,
