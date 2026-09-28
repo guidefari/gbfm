@@ -2,10 +2,10 @@ import { GetAllShowsResponse, GetShowEpisodesResponse } from '@gbfm/api/shows'
 import { Schema } from 'effect'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
-import { artwork } from './artwork'
-import { formatDate } from './format-date'
-import { iconPaths, lucide } from './icons'
-import { episodeRowsSkeleton } from './skeletons'
+import { episodeRowsSkeleton } from '../application/skeletons'
+import { artwork } from '../artwork'
+import { formatDate } from '../format-date'
+import { iconPaths, lucide } from '../icons'
 
 /** The public show browser preserves selection in the URL and distinguishes failed episode reads from empty shows. */
 export const ShowsDocument = Schema.Struct({

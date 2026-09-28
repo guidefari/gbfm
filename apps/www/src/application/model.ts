@@ -11,10 +11,10 @@ import { AsyncData } from 'foldkit'
 import * as Creator from '../creator'
 import * as Dashboard from '../dashboard'
 import { DashboardDocument } from '../dashboard/document'
+import { ShowsDocument } from '../page/shows'
 import * as Player from '../player'
 import * as PublicActions from '../public-actions'
 import * as Search from '../search'
-import { ShowsDocument } from '../shows'
 import { Route } from './route'
 
 export const Principal = Schema.Struct({
