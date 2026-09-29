@@ -1,7 +1,6 @@
 import { Match } from 'effect'
 import { Command, type Update } from 'foldkit'
 
-import { entityRoute } from './catalog'
 import {
   ApplyTheme,
   Load,
@@ -14,10 +13,11 @@ import {
 } from './command'
 import { type CatalogOperation, Message } from './message'
 import type { Model } from './model'
-import * as Playlists from './playlists'
+import { entityRoute } from './page/catalog'
+import * as Playlists from './page/playlists'
+import * as Sessions from './page/sessions'
+import * as Shows from './page/shows'
 import { endpointFor } from './section'
-import * as Sessions from './sessions'
-import * as Shows from './shows'
 
 const writeCatalog = (
   model: Model,

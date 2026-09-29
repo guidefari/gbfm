@@ -3,9 +3,9 @@ import { Schema } from 'effect'
 
 import { SpotifyStatus } from '../../spotify/connection'
 import { DashboardDocument, Row } from './document'
-import * as Playlists from './playlists'
-import * as Sessions from './sessions'
-import * as Shows from './shows'
+import * as Playlists from './page/playlists'
+import * as Sessions from './page/sessions'
+import * as Shows from './page/shows'
 
 export const Role = Schema.NullOr(Schema.Literals(ROLES))
 

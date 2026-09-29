@@ -2,15 +2,15 @@ import { canCreatePosts } from '@gbfm/core/roles'
 import type { HtmlBuilder } from 'foldkit/html'
 import { defineView } from 'foldkit/submodel'
 
-import { catalogView, entityRoute } from './catalog'
 import { Message } from './message'
 import type { Model } from './model'
-import * as Playlists from './playlists'
+import { catalogView, entityRoute } from './page/catalog'
+import * as Playlists from './page/playlists'
+import * as Sessions from './page/sessions'
+import * as Shows from './page/shows'
+import { telemetryView } from './page/telemetry'
+import { usersView } from './page/users'
 import { isAdminSection } from './section'
-import * as Sessions from './sessions'
-import * as Shows from './shows'
-import { telemetryView } from './telemetry'
-import { usersView } from './users'
 
 export interface ViewInputs {
   readonly role: Model['principal']['role']

@@ -10,10 +10,10 @@ import {
 } from './command'
 import type { Message } from './message'
 import type { Model, Principal } from './model'
-import * as Playlists from './playlists'
+import * as Playlists from './page/playlists'
+import * as Sessions from './page/sessions'
+import * as Shows from './page/shows'
 import { endpointFor, isAdminSection } from './section'
-import * as Sessions from './sessions'
-import * as Shows from './shows'
 
 export const initialModel = (section: string, principal: Principal): Model => ({
   section,

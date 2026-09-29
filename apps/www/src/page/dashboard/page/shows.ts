@@ -4,7 +4,7 @@ import { Command, type Update } from 'foldkit'
 import { defineMessageUnion } from 'foldkit/message'
 import { defineView } from 'foldkit/submodel'
 
-import { DashboardService } from './service'
+import { DashboardService } from '../service'
 
 const fields = [
   'title',

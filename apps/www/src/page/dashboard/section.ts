@@ -1,4 +1,4 @@
-import { entityRoute, tabs } from './catalog'
+import { entityRoute, tabs } from './page/catalog'
 
 const adminSections = new Set([
   'admin',

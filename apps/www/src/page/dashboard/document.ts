@@ -19,8 +19,8 @@ import { GetAllShowsResponse } from '@gbfm/api/shows'
 import { UserProfileResponse } from '@gbfm/api/user'
 import { Data, Effect, Schema } from 'effect'
 
-import { parseCatalogDocument } from './catalog'
-import { AdminUsers } from './users'
+import { parseCatalogDocument } from './page/catalog'
+import { AdminUsers } from './page/users'
 
 export const Row = Schema.Struct({
   id: Schema.String,

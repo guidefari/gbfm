@@ -5,10 +5,10 @@ import { Command } from 'foldkit'
 
 import { disconnected, SpotifyConnection } from '../../spotify/connection'
 import { readTheme, saveTheme, Theme } from '../../theme'
-import { catalogPayload, Kind } from './catalog'
 import { CatalogOperation, Message } from './message'
+import { catalogPayload, Kind } from './page/catalog'
+import type * as Sessions from './page/sessions'
 import { DashboardService } from './service'
-import type * as Sessions from './sessions'
 
 export type Services = DashboardService | SpotifyConnection | Sessions.SessionService
 

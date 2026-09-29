@@ -6,7 +6,7 @@ export { Model, Principal, Role } from './model'
 
 export { DashboardService, DashboardServiceLive, makeDashboardServiceLayer } from './service'
 
-export { SessionService, SessionServiceLive } from './sessions'
+export { SessionService, SessionServiceLive } from './page/sessions'
 
 export { update } from './update'
 

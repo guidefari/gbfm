@@ -1,7 +1,7 @@
 import type { PlaylistResponse } from '@gbfm/api/music'
 import { describe, expect, it } from 'vitest'
 
-import * as Dashboard from '.'
+import * as Dashboard from '..'
 import { initialModel, Message, update } from './playlists'
 
 const playlist: PlaylistResponse = {
