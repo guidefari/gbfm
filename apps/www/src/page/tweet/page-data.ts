@@ -2,8 +2,8 @@ import { MicroPostNeighboursResponse } from '@gbfm/api/navigation'
 import { MicroPostScreenResponse } from '@gbfm/api/post'
 import { Effect, Option, Schema } from 'effect'
 
-import { optionalPageRequest } from './requests'
-import { json } from './shared'
+import { optionalPageRequest } from '../../server/page-data/requests'
+import { json } from '../../server/page-data/shared'
 
 export const loadTweetData = (request: Request, endpoint: string | null, slug: string | null) =>
   slug && endpoint

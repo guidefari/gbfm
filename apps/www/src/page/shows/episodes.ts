@@ -1,8 +1,8 @@
 import type { HtmlBuilder } from 'foldkit/html'
 
-import { artwork } from '../view/artwork'
-import { formatDate } from '../view/format-date'
-import { iconPaths, lucide } from '../view/icons'
+import { artwork } from '../../view/artwork'
+import { formatDate } from '../../view/format-date'
+import { iconPaths, lucide } from '../../view/icons'
 import type { Episode, ShowsDocument, ShowsPlayback } from './document'
 
 const episodeArtSizes = '64px'

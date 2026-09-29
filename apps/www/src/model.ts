@@ -8,14 +8,14 @@ import { SiteMetadata } from '@gbfm/site-metadata'
 import { type HashMap, Schema } from 'effect'
 import { AsyncData } from 'foldkit'
 
-import * as Creator from './creator'
-import * as Dashboard from './dashboard'
-import { DashboardDocument } from './dashboard/document'
+import * as Creator from './page/creator'
+import * as Dashboard from './page/dashboard'
+import { DashboardDocument } from './page/dashboard/document'
+import { ShowsDocument } from './page/shows/document'
 import * as Player from './player'
 import * as PublicActions from './public-actions'
 import { Route } from './route'
 import * as Search from './search'
-import { ShowsDocument } from './shows/document'
 
 export const Principal = Schema.Struct({
   id: Schema.String,

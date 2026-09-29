@@ -3,7 +3,7 @@ import { isRole } from '@gbfm/core/roles'
 import { Match, Option, Schema } from 'effect'
 import * as Server from 'foldkit/experimental/server'
 
-import { readModeCookie } from '../tweet/navigation'
+import { readModeCookie } from '../page/tweet/navigation'
 import { apiRequest } from './api'
 
 export const redirect = (location: string, cookies: ReadonlyArray<string> = []) => {

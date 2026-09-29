@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { Message as CreatorMessage } from './creator/model'
-import { Message as DashboardMessage } from './dashboard/model'
 import { init } from './init'
 import { Message } from './message'
 import type { Flags } from './model'
+import { Message as CreatorMessage } from './page/creator/model'
+import { Message as DashboardMessage } from './page/dashboard/model'
 import { parseRoute, Route } from './route'
 import { update } from './update'
 

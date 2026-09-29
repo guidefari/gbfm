@@ -1,9 +1,9 @@
 import type { HtmlBuilder } from 'foldkit/html'
 
-import { Message } from '../message'
-import type { ContentItem, Model } from '../model'
-import * as Player from '../player'
-import { artwork } from './artwork'
+import { Message } from '../../message'
+import type { ContentItem, Model } from '../../model'
+import * as Player from '../../player'
+import { artwork } from '../../view/artwork'
 
 const link = (h: HtmlBuilder<Message>, href: string, label: string, className = '') =>
   h.a([h.Href(href), h.Class(className)], [label])

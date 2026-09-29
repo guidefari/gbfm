@@ -1,7 +1,7 @@
 import type { PlayerPreferences } from '@gbfm/player'
 import { Context, Data, Effect, Layer } from 'effect'
 
-import { preferencesKey, readPlayerPreferences } from '../player/preferences'
+import { preferencesKey, readPlayerPreferences } from '../../player/preferences'
 import { type DashboardDocument, emptyDocument, parseDashboardDocument } from './document'
 
 export class DashboardRequestError extends Data.TaggedError('DashboardRequestError')<{

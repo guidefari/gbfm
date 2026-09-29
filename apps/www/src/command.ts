@@ -3,13 +3,13 @@ import { SiteMetadata } from '@gbfm/site-metadata'
 import { Effect, Schema } from 'effect'
 import { Command, Navigation } from 'foldkit'
 
-import * as Creator from './creator'
 import { updateDocumentHead } from './document-head'
 import { Message } from './message'
 import { Flags } from './model'
 import { pageKey } from './page-cache'
-import { showImages } from './shows/document'
-import { tweetImages } from './tweet/card'
+import * as Creator from './page/creator'
+import { showImages } from './page/shows/document'
+import { tweetImages } from './page/tweet/card'
 import { preloadArtwork } from './view/artwork'
 
 export const StartClient = Command.define('Application.Start', {

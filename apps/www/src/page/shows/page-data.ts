@@ -2,10 +2,10 @@ import { GetAllShowsResponse, GetShowEpisodesResponse } from '@gbfm/api/shows'
 import { SiteMetadata } from '@gbfm/site-metadata'
 import { Effect, Option, Schema } from 'effect'
 
-import { Route } from '../route'
-import { apiRequest } from '../server/api'
-import { optionalPageRequest } from '../server/page-data/requests'
-import { json } from '../server/page-data/shared'
+import { Route } from '../../route'
+import { apiRequest } from '../../server/api'
+import { optionalPageRequest } from '../../server/page-data/requests'
+import { json } from '../../server/page-data/shared'
 import type { ShowsDocument } from './document'
 
 export const loadShowsData = (

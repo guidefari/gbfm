@@ -6,16 +6,16 @@ import { Schema } from 'effect'
 import changelog from 'virtual:repo-changelog'
 
 import type { Flags } from '../../model'
-import { staticPages } from '../../page/static-pages'
+import { loadDashboardData } from '../../page/dashboard/page-data'
+import { loadShowsData } from '../../page/shows/page-data'
+import { staticPages } from '../../page/static/pages'
+import { skipsSeenTweets } from '../../page/tweet/navigation'
+import { loadTweetData } from '../../page/tweet/page-data'
 import type { Document as PublicActionDocument } from '../../public-actions'
 import { Route } from '../../route'
-import { loadShowsData } from '../../shows/page-data'
-import { skipsSeenTweets } from '../../tweet/navigation'
 import { apiRequest, endpointFor } from '../api'
-import { loadDashboardData } from './dashboard'
 import { loadIdentity, loadPublicActionState } from './identity'
 import { contentItems, json } from './shared'
-import { loadTweetData } from './tweet'
 
 export const loadPageData = async (
   ownedRequest: Request,

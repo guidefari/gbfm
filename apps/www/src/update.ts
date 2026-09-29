@@ -12,12 +12,12 @@ import {
   SaveReadMode,
   SetResolvedUrl,
 } from './command'
-import * as Creator from './creator'
-import * as Dashboard from './dashboard'
 import { init, type Services } from './init'
 import { Message } from './message'
 import type { Flags, Model } from './model'
 import { isCacheable, pageKey, samePage, settlePage } from './page-cache'
+import * as Creator from './page/creator'
+import * as Dashboard from './page/dashboard'
 import * as Player from './player'
 import * as PublicActions from './public-actions'
 import { isServerPath, Route } from './route'

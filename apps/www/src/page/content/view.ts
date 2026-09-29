@@ -1,12 +1,12 @@
 import type { HtmlBuilder } from 'foldkit/html'
 
-import { Message } from '../message'
-import type { ContentItem, Model } from '../model'
-import * as Player from '../player'
-import * as PublicActions from '../public-actions'
-import { richContent } from '../rich-content/fallback'
-import { richContentView } from '../rich-content/render'
-import { artwork } from './artwork'
+import { Message } from '../../message'
+import type { ContentItem, Model } from '../../model'
+import * as Player from '../../player'
+import * as PublicActions from '../../public-actions'
+import { richContent } from '../../rich-content/fallback'
+import { richContentView } from '../../rich-content/render'
+import { artwork } from '../../view/artwork'
 
 export const link = (h: HtmlBuilder<Message>, href: string, label: string, className = '') =>
   h.a([h.Href(href), h.Class(className)], [label])

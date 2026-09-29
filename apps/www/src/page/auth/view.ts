@@ -1,7 +1,7 @@
 import { Match } from 'effect'
 import type { HtmlBuilder } from 'foldkit/html'
 
-import type { Message } from '../message'
+import type { Message } from '../../message'
 
 const link = (h: HtmlBuilder<Message>, href: string, label: string) => h.a([h.Href(href)], [label])
 
