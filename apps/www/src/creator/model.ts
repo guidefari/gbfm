@@ -27,6 +27,12 @@ export const Model = Schema.Struct({
   tagsInput: Schema.String,
   creatorsInput: Schema.String,
   episodeInput: Schema.String,
+  editorMode: Schema.Literals(['source', 'preview']),
+  externalMediaUrl: Schema.String,
+  musicPreviewTitle: Schema.NullOr(Schema.String),
+  musicPreviewMeta: Schema.NullOr(Schema.String),
+  musicPreviewImage: Schema.NullOr(Schema.String),
+  quotePreview: Schema.NullOr(Schema.String),
   uploadPercent: Schema.Number,
   uploadState: Schema.Literals(['idle', 'running', 'pausing', 'paused', 'failed', 'cancelling']),
 })
@@ -49,6 +55,14 @@ export const Message = defineMessageUnion({
   TagsChanged: { value: Schema.String },
   CreatorsChanged: { value: Schema.String },
   QuoteChanged: { value: Schema.String },
+  QuoteUrlChanged: { value: Schema.String },
+  ResolveQuoteRequested: {},
+  QuoteResolved: {
+    id: Schema.String,
+    slug: Schema.String,
+    title: Schema.NullOr(Schema.String),
+    content: Schema.NullOr(Schema.String),
+  },
   ShowChanged: { value: Schema.String },
   EpisodeChanged: { value: Schema.String },
   MusicRemoved: {},
@@ -60,7 +74,16 @@ export const Message = defineMessageUnion({
     entityType: Schema.Literals(['album', 'track', 'playlist']),
     entityId: Schema.String,
     url: Schema.String,
+    title: Schema.String,
+    artistNames: Schema.Array(Schema.String),
+    coverImageUrl: Schema.NullOr(Schema.String),
   },
+  EditorModeChanged: { mode: Schema.Literals(['source', 'preview']) },
+  FormatInserted: { before: Schema.String, after: Schema.String, sample: Schema.String },
+  ExternalMediaChanged: { value: Schema.String },
+  ExternalMediaInserted: {},
+  MusicEmbedInserted: {},
+  DiscardRequested: {},
   PublishRequested: {},
   DraftSaveRequested: {},
   Saved: { slug: Schema.String, published: Schema.Boolean },
@@ -117,10 +140,27 @@ const ResolveMusic = Command.define('Creator.ResolveMusic', {
   messages: [Message.MusicResolved, Message.Failed],
   execute: ({ url, kind }) =>
     Effect.flatMap(CreatorService, (service) => service.resolveMusic(url, kind)).pipe(
-      Effect.map(({ entityType, entityId }) =>
-        Message.MusicResolved({ entityType, entityId, url }),
+      Effect.map(({ entityType, entityId, title, artistNames, coverImageUrl }) =>
+        Message.MusicResolved({
+          entityType,
+          entityId,
+          url,
+          title,
+          artistNames: [...artistNames],
+          coverImageUrl,
+        }),
       ),
       Effect.catch((error) => Effect.succeed(failure('resolve music')(error))),
+    ),
+})
+
+const ResolveQuote = Command.define('Creator.ResolveQuote', {
+  args: { slug: Schema.String },
+  messages: [Message.QuoteResolved, Message.Failed],
+  execute: ({ slug }) =>
+    Effect.flatMap(CreatorService, (service) => service.resolveQuote(slug)).pipe(
+      Effect.map(({ id, title, content }) => Message.QuoteResolved({ id, slug, title, content })),
+      Effect.catch((error) => Effect.succeed(failure('resolve quote')(error))),
     ),
 })
 
@@ -209,6 +249,26 @@ const changed = (
   commands: [PersistDraft({ key: keyOf(draft), draft })],
 })
 
+const appendBlock = (content: string, block: string) =>
+  content.trim().length === 0 ? block : `${content.replace(/\s+$/, '')}\n\n${block}`
+
+const tweetSlug = (value: string): string | null => {
+  const match = /(?:https?:\/\/[^\s/]+)?\/tweet\/([a-z0-9-]+)/i.exec(value.trim())
+
+  return match?.[1] ?? null
+}
+
+export const TWEET_MAX_LENGTH = 255
+
+export const draftValidationError = (draft: CreatorDraft): string | null => {
+  if (!draft.title.trim() && !draft.content.trim()) return 'Add a title or some content.'
+
+  if (draft.kind === 'micro' && draft.title.length > TWEET_MAX_LENGTH)
+    return `Tweets are capped at ${TWEET_MAX_LENGTH} characters.`
+
+  return null
+}
+
 export const update = (
   model: Model,
   message: Message,
@@ -234,6 +294,32 @@ export const update = (
       model.draft.editSlug
         ? { model }
         : changed(model, { ...model.draft, quotedPostId: value.trim() || null }),
+    QuoteUrlChanged: ({ value }) =>
+      model.draft.editSlug
+        ? { model }
+        : changed(
+            { ...model, quotePreview: null },
+            { ...model.draft, quoteUrl: value, quotedPostId: null },
+          ),
+    ResolveQuoteRequested: () => {
+      const slug = tweetSlug(model.draft.quoteUrl)
+
+      return slug
+        ? { model: { ...model, error: null }, commands: [ResolveQuote({ slug })] }
+        : {
+            model: {
+              ...model,
+              error: 'resolve quote: Paste a complete goosebumps.fm tweet URL.',
+            },
+          }
+    },
+    QuoteResolved: ({ id, slug, title, content }) =>
+      tweetSlug(model.draft.quoteUrl) !== slug
+        ? { model }
+        : changed(
+            { ...model, quotePreview: title ?? content ?? slug },
+            { ...model.draft, quotedPostId: id },
+          ),
     ShowChanged: ({ value }) => changed(model, { ...model.draft, showId: value.trim() || null }),
     EpisodeChanged: ({ value }) => {
       const episodeNumber = value.trim() ? Number(value) : null
@@ -252,7 +338,15 @@ export const update = (
           )
     },
     MusicRemoved: () =>
-      changed(model, { ...model.draft, musicUrl: '', musicEntityType: null, musicEntityId: null }),
+      changed(
+        {
+          ...model,
+          musicPreviewTitle: null,
+          musicPreviewMeta: null,
+          musicPreviewImage: null,
+        },
+        { ...model.draft, musicUrl: '', musicEntityType: null, musicEntityId: null },
+      ),
     TagsChanged: ({ value }) =>
       changed(
         { ...model, tagsInput: value },
@@ -276,12 +370,68 @@ export const update = (
       model: { ...model, error: null },
       commands: [ResolveMusic({ url: model.draft.musicUrl.trim(), kind: model.draft.kind })],
     }),
-    MusicResolved: ({ entityType, entityId, url }) =>
+    MusicResolved: ({ entityType, entityId, url, title, artistNames, coverImageUrl }) =>
       model.draft.musicUrl.trim() !== url
         ? { model }
-        : changed(model, { ...model.draft, musicEntityType: entityType, musicEntityId: entityId }),
+        : changed(
+            {
+              ...model,
+              musicPreviewTitle: title,
+              musicPreviewMeta: [entityType, artistNames.join(', ')].filter(Boolean).join(' · '),
+              musicPreviewImage: coverImageUrl,
+            },
+            { ...model.draft, musicEntityType: entityType, musicEntityId: entityId },
+          ),
+    EditorModeChanged: ({ mode }) => ({ model: { ...model, editorMode: mode } }),
+    FormatInserted: ({ before, after, sample }) =>
+      changed(model, {
+        ...model.draft,
+        content: `${model.draft.content}${before}${sample}${after}`,
+      }),
+    ExternalMediaChanged: ({ value }) => ({ model: { ...model, externalMediaUrl: value } }),
+    ExternalMediaInserted: () => {
+      const value = model.externalMediaUrl.trim()
+
+      return /^https?:\/\/\S+$/.test(value)
+        ? changed(
+            { ...model, externalMediaUrl: '' },
+            {
+              ...model.draft,
+              content: appendBlock(model.draft.content, `::media{url="${value}"}`),
+            },
+          )
+        : { model: { ...model, error: 'media: Enter a complete media URL.' } }
+    },
+    MusicEmbedInserted: () =>
+      model.draft.musicEntityType && model.draft.musicEntityId
+        ? changed(model, {
+            ...model.draft,
+            content: appendBlock(
+              model.draft.content,
+              `::music{type="${model.draft.musicEntityType}" id="${model.draft.musicEntityId}"}`,
+            ),
+          })
+        : { model },
+    DiscardRequested: () => {
+      const reset = initialModel({
+        kind: model.draft.kind,
+        editSlug: model.draft.editSlug,
+        creatorId: model.creatorId,
+        authorized: model.authorized,
+      })
+
+      return {
+        model: {
+          ...reset,
+          phase: 'writing',
+          saveState: 'unsaved',
+          draft: { ...reset.draft, creatorIds: model.draft.creatorIds },
+          creatorsInput: model.creatorsInput,
+        },
+      }
+    },
     DraftSaveRequested: () =>
-      model.draft.kind === 'mix' && model.episodeError
+      draftValidationError(model.draft) || (model.draft.kind === 'mix' && model.episodeError)
         ? { model }
         : model.authorized
           ? {
@@ -290,7 +440,7 @@ export const update = (
             }
           : { model: { ...model, phase: 'forbidden' } },
     PublishRequested: () =>
-      model.draft.kind === 'mix' && model.episodeError
+      draftValidationError(model.draft) || (model.draft.kind === 'mix' && model.episodeError)
         ? { model }
         : model.authorized
           ? {
@@ -409,6 +559,7 @@ export const initialModel = ({ kind, editSlug, creatorId, authorized }: InitInpu
     musicEntityType: null,
     musicEntityId: null,
     quotedPostId: null,
+    quoteUrl: '',
     audioUrl: '',
     showId: null,
     episodeNumber: null,
@@ -422,6 +573,12 @@ export const initialModel = ({ kind, editSlug, creatorId, authorized }: InitInpu
   tagsInput: '',
   creatorsInput: creatorId,
   episodeInput: '',
+  editorMode: 'source',
+  externalMediaUrl: '',
+  musicPreviewTitle: null,
+  musicPreviewMeta: null,
+  musicPreviewImage: null,
+  quotePreview: null,
   uploadPercent: 0,
   uploadState: 'idle',
 })
