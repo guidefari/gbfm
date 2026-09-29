@@ -1,0 +1,62 @@
+import type { Runtime } from 'foldkit'
+
+import { disconnected } from '../../spotify/connection'
+import {
+  Load,
+  RestorePlayerPreferences,
+  RestoreTheme,
+  type Services,
+  SpotifyRequest,
+} from './command'
+import type { Message } from './message'
+import type { Model, Principal } from './model'
+import * as Playlists from './playlists'
+import { endpointFor, isAdminSection } from './section'
+import * as Sessions from './sessions'
+import * as Shows from './shows'
+
+export const initialModel = (section: string, principal: Principal): Model => ({
+  section,
+  principal,
+  phase: 'loading',
+  rows: [],
+  fields: {},
+  toggles: {},
+  error: null,
+  spotify: disconnected,
+  sessions: Sessions.initialModel,
+  shows: Shows.initialModel,
+  playlists: Playlists.initialModel,
+  catalogRevision: 0,
+  catalogNotice: '',
+})
+
+export const init =
+  (
+    section: string,
+    principal: Principal,
+  ): Runtime.ApplicationInit<Model, Message, void, Services> =>
+  () => {
+    const model = initialModel(section, principal)
+    const endpoint = endpointFor(section)
+
+    if (isAdminSection(section) && principal.role !== 'admin')
+      return { model: { ...model, phase: 'error', error: 'Administrator access required.' } }
+
+    if (section === 'appearance')
+      return { model: { ...model, phase: 'ready' }, commands: [RestoreTheme()] }
+
+    if (section === 'player') return { model, commands: [RestorePlayerPreferences()] }
+
+    if (section === 'integrations' || section === 'spotify-callback')
+      return {
+        model,
+        commands: [
+          SpotifyRequest({ action: section === 'integrations' ? 'status' : 'completeCallback' }),
+        ],
+      }
+
+    return endpoint
+      ? { model, commands: [Load({ path: endpoint })] }
+      : { model: { ...model, phase: 'ready' } }
+  }

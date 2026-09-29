@@ -2,7 +2,10 @@ import { Effect, Exit } from 'effect'
 import { expect, test } from 'vitest'
 
 import { catalogPayload } from './catalog'
-import { endpointFor, init, initialModel, Message, update } from './model'
+import { init, initialModel } from './init'
+import { Message } from './message'
+import { endpointFor } from './section'
+import { update } from './update'
 
 test('catalog routes preserve the selected entity type and restrict dynamic editor routes to admins', () => {
   expect(endpointFor('music', new URLSearchParams({ tab: 'labels' }))).toBe(

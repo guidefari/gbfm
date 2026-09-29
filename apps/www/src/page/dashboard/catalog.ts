@@ -18,7 +18,8 @@ import { Effect, Match, Schema } from 'effect'
 import type { HtmlBuilder } from 'foldkit/html'
 
 import { type DashboardDocument, emptyDocument } from './document'
-import type { Message as DashboardMessage, Model } from './model'
+import type { Message as DashboardMessage } from './message'
+import type { Model } from './model'
 
 export const Kind = Schema.Literals(['artist', 'album', 'track', 'label'])
 

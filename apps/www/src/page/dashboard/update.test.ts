@@ -2,7 +2,10 @@ import { Effect } from 'effect'
 import { describe, expect, it } from 'vitest'
 
 import { emptyDocument, parseDashboardDocument } from './document'
-import { endpointFor, init, initialModel, Message, update } from './model'
+import { init, initialModel } from './init'
+import { Message } from './message'
+import { endpointFor } from './section'
+import { update } from './update'
 
 const member = { id: 'user-1', role: 'user' as const }
 

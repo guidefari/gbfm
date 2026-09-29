@@ -1,0 +1,262 @@
+import { Match } from 'effect'
+import { Command, type Update } from 'foldkit'
+
+import { entityRoute } from './catalog'
+import {
+  ApplyTheme,
+  Load,
+  LoadCatalogLinks,
+  SavePlayerPreferences,
+  type Services,
+  SpotifyRequest,
+  Write,
+  WriteCatalog,
+} from './command'
+import { type CatalogOperation, Message } from './message'
+import type { Model } from './model'
+import * as Playlists from './playlists'
+import { endpointFor } from './section'
+import * as Sessions from './sessions'
+import * as Shows from './shows'
+
+const writeCatalog = (
+  model: Model,
+  operation: typeof CatalogOperation.Type,
+  linkId = '',
+): Update.Return<Model, Message, Services> => {
+  const entity = entityRoute(model.section)
+
+  if (
+    model.principal.role !== 'admin' ||
+    model.phase === 'saving' ||
+    (entity && model.fields.id !== entity.id) ||
+    (!entity && operation !== 'create-label')
+  )
+    return { model }
+
+  return {
+    model: {
+      ...model,
+      phase: 'saving',
+      error: null,
+      catalogRevision: model.catalogRevision + 1,
+      catalogNotice: '',
+    },
+    commands: [
+      WriteCatalog({
+        operation,
+        kind: entity?.kind ?? 'label',
+        id: entity?.id ?? '',
+        fields: model.fields,
+        linkId,
+      }),
+    ],
+  }
+}
+
+export const update = (model: Model, message: Message): Update.Return<Model, Message, Services> =>
+  Message.match<Update.Return<Model, Message, Services>>(message, {
+    GotPlaylistMessage: ({ message }) => {
+      if (model.principal.role !== 'admin' || model.section !== 'playlists') return { model }
+      const child = Playlists.update(model.playlists, message)
+
+      return {
+        model: { ...model, playlists: child.model },
+        commands: Command.mapMessages(child.commands ?? [], (message) =>
+          Message.GotPlaylistMessage({ message }),
+        ),
+      }
+    },
+    SaveCatalogEntity: () => writeCatalog(model, 'save'),
+    DeleteCatalogEntity: () => writeCatalog(model, 'delete'),
+    AddCatalogLink: () => writeCatalog(model, 'add-link'),
+    DeleteCatalogLink: ({ id }) =>
+      model.rows.some((row) => row.id === id) ? writeCatalog(model, 'remove-link', id) : { model },
+    CreateLabel: () =>
+      model.section === 'music' ? writeCatalog(model, 'create-label') : { model },
+    CatalogLinksLoaded: ({ rows, revision }) =>
+      revision !== model.catalogRevision
+        ? { model }
+        : {
+            model: { ...model, rows, fields: { ...model.fields, linksError: '' } },
+          },
+    CatalogLinksFailed: ({ revision }) =>
+      revision !== model.catalogRevision
+        ? { model }
+        : {
+            model: {
+              ...model,
+              fields: { ...model.fields, linksError: 'Source links are unavailable.' },
+            },
+          },
+    CatalogCompleted: ({ operation }) => {
+      if (operation === 'delete')
+        return { model: { ...model, phase: 'ready', fields: { deleted: 'true' }, rows: [] } }
+
+      if (operation === 'create-label')
+        return {
+          model: { ...model, phase: 'loading' },
+          commands: [Load({ path: '/api/music/labels/manage' })],
+        }
+      const entity = entityRoute(model.section)
+
+      if (!entity) return { model }
+
+      return operation === 'save'
+        ? {
+            model: { ...model, phase: 'loading', catalogNotice: 'Entity saved.' },
+            commands: [Load({ path: entity.path })],
+          }
+        : {
+            model: { ...model, phase: 'ready', fields: { ...model.fields, linkUrl: '' } },
+            commands: [
+              LoadCatalogLinks({
+                kind: entity.kind,
+                id: entity.id,
+                revision: model.catalogRevision,
+              }),
+            ],
+          }
+    },
+    GotShowMessage: ({ message }) => {
+      if (model.principal.role !== 'admin' || model.section !== 'shows') return { model }
+      const child = Shows.update(model.shows, message)
+
+      return {
+        model: { ...model, shows: child.model },
+        commands: Command.mapMessages(child.commands ?? [], (message) =>
+          Message.GotShowMessage({ message }),
+        ),
+      }
+    },
+    GotSessionMessage: ({ message }) => {
+      if (model.principal.role !== 'admin' || model.section !== 'sessions') return { model }
+      const child = Sessions.update(model.sessions, message)
+
+      return {
+        model: { ...model, sessions: child.model },
+        commands: Command.mapMessages(child.commands ?? [], (message) =>
+          Message.GotSessionMessage({ message }),
+        ),
+      }
+    },
+    SpotifyRequested: ({ action }) => ({
+      model: { ...model, phase: 'loading', error: null },
+      commands: [SpotifyRequest({ action })],
+    }),
+    SpotifyLoaded: ({ status }) => ({
+      model: { ...model, phase: 'ready', spotify: status, error: null },
+    }),
+    ThemeSelected: ({ theme }) => ({ model, commands: [ApplyTheme({ theme })] }),
+    ThemeRestored: ({ theme }) => ({ model: { ...model, fields: { ...model.fields, theme } } }),
+    PlayerPreferencesLoaded: ({ preferences }) => ({
+      model: { ...model, phase: 'ready', toggles: preferences },
+    }),
+    LoadRequested: () => {
+      if (model.section === 'integrations')
+        return {
+          model: { ...model, phase: 'loading', error: null },
+          commands: [SpotifyRequest({ action: 'status' })],
+        }
+      const path = endpointFor(model.section)
+
+      return path
+        ? { model: { ...model, phase: 'loading', error: null }, commands: [Load({ path })] }
+        : { model }
+    },
+    Loaded: ({ document }) => {
+      const entity = entityRoute(model.section)
+
+      return {
+        model: {
+          ...model,
+          phase: 'ready',
+          rows: document.rows,
+          fields: document.fields,
+          toggles: document.toggles,
+          telemetry: document.telemetry,
+          users: document.users,
+          shows: { ...Shows.initialModel, listing: document.shows },
+          playlists: { ...Playlists.initialModel, listing: document.playlists ?? [] },
+          error: null,
+          catalogRevision: model.catalogRevision + 1,
+        },
+        commands: entity
+          ? [
+              LoadCatalogLinks({
+                kind: entity.kind,
+                id: entity.id,
+                revision: model.catalogRevision + 1,
+              }),
+            ]
+          : [],
+      }
+    },
+    Failed: ({ message: error }) => ({ model: { ...model, phase: 'error', error } }),
+    FieldChanged: ({ name, value }) => ({
+      model: { ...model, fields: { ...model.fields, [name]: value } },
+    }),
+    ToggleChanged: ({ name, value }) => ({
+      model: { ...model, toggles: { ...model.toggles, [name]: value } },
+    }),
+    SaveProfile: () => ({
+      model: { ...model, phase: 'saving' },
+      commands: [
+        Write({ path: '/api/user/profile', method: 'PATCH', body: JSON.stringify(model.fields) }),
+      ],
+    }),
+    SaveEmailPreferences: () => ({
+      model: { ...model, phase: 'saving' },
+      commands: [
+        Write({
+          path: '/api/user/email-preferences',
+          method: 'PATCH',
+          body: JSON.stringify(model.toggles),
+        }),
+      ],
+    }),
+    SavePlayerPreferences: () => ({
+      model: { ...model, phase: 'saving' },
+      commands: [
+        SavePlayerPreferences({
+          preferences: {
+            continueQueue: model.toggles.continueQueue ?? true,
+            restorePosition: model.toggles.restorePosition ?? true,
+          },
+        }),
+      ],
+    }),
+    SearchRequested: () => ({
+      model: { ...model, phase: 'loading' },
+      commands: [Load({ path: `/api/search?q=${encodeURIComponent(model.fields.query ?? '')}` })],
+    }),
+    DeleteRequested: ({ id }) => {
+      const row = model.rows.find((item) => item.id === id)
+      const actionId = row?.actionId
+
+      if (!actionId) return { model }
+
+      const path = Match.value(model.section).pipe(
+        Match.when('reminders', () => `/api/music-reminders/${encodeURIComponent(actionId)}`),
+        Match.when(
+          'favorites',
+          () => `/api/favorites/${actionId.split('/').map(encodeURIComponent).join('/')}`,
+        ),
+        Match.orElse(() => null),
+      )
+
+      return path
+        ? {
+            model: { ...model, phase: 'saving' },
+            commands: [Write({ path, method: 'DELETE', body: '' })],
+          }
+        : { model }
+    },
+    Saved: () => {
+      const path = endpointFor(model.section)
+
+      return path
+        ? { model: { ...model, phase: 'loading', error: null }, commands: [Load({ path })] }
+        : { model: { ...model, phase: 'ready' } }
+    },
+  })

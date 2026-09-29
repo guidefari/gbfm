@@ -4,7 +4,7 @@ import { init } from './init'
 import { Message } from './message'
 import type { Flags } from './model'
 import { Message as CreatorMessage } from './page/creator/message'
-import { Message as DashboardMessage } from './page/dashboard/model'
+import { Message as DashboardMessage } from './page/dashboard/message'
 import { parseRoute, Route } from './route'
 import { update } from './update'
 

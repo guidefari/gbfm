@@ -3,7 +3,7 @@ import { Effect } from 'effect'
 import { Route } from '../../route'
 import { apiRequest } from '../../server/api'
 import { parseDashboardDocument } from './document'
-import { endpointFor, isAdminSection } from './model'
+import { endpointFor, isAdminSection } from './section'
 
 export const loadDashboardData = async (
   request: Request,
