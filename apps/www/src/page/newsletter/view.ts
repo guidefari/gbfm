@@ -1,7 +1,7 @@
 import { inertHtml as h } from 'foldkit/html'
 
 /** Server-backed newsletter forms work before hydration and require an explicit token confirmation. */
-export const newsletterView = (mode: string, url: URL) => {
+export const view = (mode: string, url: URL) => {
   const subscribing = mode === 'subscribe'
   const token = url.searchParams.get('token')
   const complete = url.searchParams.get('complete')

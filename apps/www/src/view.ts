@@ -5,24 +5,12 @@ import type { Document, HtmlBuilder } from 'foldkit/html'
 
 import { Message } from './message'
 import type { Model } from './model'
-import { authView } from './page/auth/view'
-import { detailView, link, listingView, taggedPostsView } from './page/content/view'
-import * as Creator from './page/creator'
-import * as Dashboard from './page/dashboard'
-import { editorialList } from './page/editorial-list/view'
-import { homeView } from './page/home/view'
-import { invitationView } from './page/invitation/view'
-import { newsletterView } from './page/newsletter/view'
-import { profileView } from './page/profile/view'
-import type { Episode, ShowsDocument } from './page/shows/document'
-import { showsView } from './page/shows/view'
-import { staticPages } from './page/static/pages'
-import { tweetView } from './page/tweet/view'
+import * as Page from './page'
 import * as Player from './player'
 import * as PublicActions from './public-actions'
-import { richContentView } from './rich-content/render'
 import { parseRoute, Route } from './route'
 import * as Search from './search'
+import { link } from './view/link'
 import { pageSkeleton } from './view/skeletons'
 import { stationNav } from './view/station-nav'
 
@@ -40,7 +28,7 @@ const knownShows = (model: Model) =>
     .find((flags) => flags.shows !== null)?.shows ??
   null
 
-const pendingShowSlug = (route: Route, shows: ShowsDocument) =>
+const pendingShowSlug = (route: Route, shows: Page.Shows.ShowsDocument) =>
   Match.value(route).pipe(
     Match.tag('Detail', ({ kind, slug }) =>
       kind === 'shows' && shows.shows.some((show) => show.slug === slug) ? slug : null,
@@ -52,7 +40,7 @@ const pendingShowSlug = (route: Route, shows: ShowsDocument) =>
 export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
   const playback = {
     prefetch: (href: string) => Message.PrefetchRequested({ href }),
-    play: (episode: Episode) =>
+    play: (episode: Page.Shows.Episode) =>
       Message.GotPlayerMessage({ message: Player.Message.PlayTrack({ track: episode }) }),
     toggle: Message.GotPlayerMessage({ message: Player.Message.TogglePlayPause() }),
     currentId: model.player.snapshot.queue.current?.id ?? null,
@@ -63,7 +51,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
     model.flags.status === 404
       ? h.section([h.Class('page')], [h.h1([], ['Page not found']), link(h, '/', 'Return home')])
       : model.flags.shows
-        ? showsView(
+        ? Page.Shows.view(
             model.flags.shows,
             h,
             playback,
@@ -76,28 +64,28 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
             model.interactive,
           )
         : Route.match(model.route, {
-            Home: () => homeView(model, h),
+            Home: () => Page.Home.view(model, h),
             Listing: ({ kind }) =>
               kind === 'editorial'
-                ? editorialList(
+                ? Page.EditorialList.view(
                     model.flags.items,
                     model.flags.renderedAt,
                     model.flags.failure ?? null,
                   )
-                : listingView(model, h, kind),
+                : Page.Content.listingView(model, h, kind),
             Detail: ({ kind }) =>
               kind === 'tweets'
-                ? tweetView(model, h)
+                ? Page.Tweet.view(model, h)
                 : kind === 'tags'
-                  ? taggedPostsView(model, h)
+                  ? Page.Content.taggedPostsView(model, h)
                   : model.flags.profile
-                    ? profileView(model.flags.profile)
-                    : detailView(model, h, kind),
-            Auth: ({ action }) => authView(h, action, new URL(model.flags.url)),
+                    ? Page.Profile.view(model.flags.profile)
+                    : Page.Content.detailView(model, h, kind),
+            Auth: ({ action }) => Page.Auth.view(h, action, new URL(model.flags.url)),
             Composer: () =>
               h.submodel({
                 slotId: 'creator',
-                view: Creator.view,
+                view: Page.Creator.view,
                 model: model.creator,
                 viewInputs: { role: model.flags.principal?.role ?? null },
                 toParentMessage: (message) => Message.GotCreatorMessage({ message }),
@@ -106,37 +94,26 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
               model.flags.principal
                 ? h.submodel({
                     slotId: 'dashboard',
-                    view: Dashboard.view,
+                    view: Page.Dashboard.view,
                     model: model.dashboard,
                     viewInputs: { role: model.dashboard.principal.role, url: model.flags.url },
                     toParentMessage: (message) => Message.GotDashboardMessage({ message }),
                   })
-                : authView(h, 'sign-in', new URL(model.flags.url)),
+                : Page.Auth.view(h, 'sign-in', new URL(model.flags.url)),
             Static: ({ page }) =>
               page === 'invite/charlie3000'
-                ? invitationView()
+                ? Page.Invitation.view()
                 : page === 'spotify-callback'
                   ? h.submodel({
                       slotId: 'dashboard',
-                      view: Dashboard.view,
+                      view: Page.Dashboard.view,
                       model: model.dashboard,
                       viewInputs: { role: model.dashboard.principal.role, url: model.flags.url },
                       toParentMessage: (message) => Message.GotDashboardMessage({ message }),
                     })
                   : ['subscribe', 'unsubscribe'].includes(page)
-                    ? newsletterView(page, new URL(model.flags.url))
-                    : h.article(
-                        [h.Class('page prose')],
-                        [
-                          h.h1([], [model.flags.title]),
-                          ...(staticPages.get(page)?.paragraphs ?? []).map((text) =>
-                            h.p([h.Class('content-paragraph')], [text]),
-                          ),
-                          page === 'changelog' && model.flags.changelog
-                            ? richContentView(model.flags.changelog, h)
-                            : h.empty,
-                        ],
-                      ),
+                    ? Page.Newsletter.view(page, new URL(model.flags.url))
+                    : Page.Static.view(h, page, model.flags.title, model.flags.changelog),
             NotFound: () =>
               h.section(
                 [h.Class('page')],
@@ -150,7 +127,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
 
   const pendingShow =
     shows && showSlug
-      ? showsView(
+      ? Page.Shows.view(
           { ...shows, selectedSlug: showSlug, episodes: null },
           h,
           playback,

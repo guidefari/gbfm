@@ -126,7 +126,7 @@ const listItem = (item: ContentItem, renderedAt: number) => {
   )
 }
 
-export const editorialList = (
+export const view = (
   items: ReadonlyArray<ContentItem>,
   renderedAt: number,
   failure: string | null,

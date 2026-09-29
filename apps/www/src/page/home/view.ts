@@ -23,7 +23,7 @@ const playItem = (item: ContentItem, url: string) =>
     }),
   })
 
-export const homeView = (model: Model, h: HtmlBuilder<Message>) => {
+export const view = (model: Model, h: HtmlBuilder<Message>) => {
   const mix = model.flags.items[0]
 
   return h.section(

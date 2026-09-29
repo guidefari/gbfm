@@ -1,7 +1,7 @@
 import { inertHtml as h } from 'foldkit/html'
 
 /** The guest-mix invitation remains a public, server-rendered page. */
-export const invitationView = () =>
+export const view = () =>
   h.section(
     [h.Class('invitation')],
     [

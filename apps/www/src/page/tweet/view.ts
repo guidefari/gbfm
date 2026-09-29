@@ -52,7 +52,7 @@ const tweetArrow = (
   )
 }
 
-export const tweetView = (model: Model, h: HtmlBuilder<Message>) => {
+export const view = (model: Model, h: HtmlBuilder<Message>) => {
   const screen = model.flags.tweet
 
   if (!screen)

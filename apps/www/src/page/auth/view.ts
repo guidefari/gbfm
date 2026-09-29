@@ -5,7 +5,7 @@ import type { Message } from '../../message'
 
 const link = (h: HtmlBuilder<Message>, href: string, label: string) => h.a([h.Href(href)], [label])
 
-export const authView = (h: HtmlBuilder<Message>, action: string, url: URL) =>
+export const view = (h: HtmlBuilder<Message>, action: string, url: URL) =>
   action === 'verify-email'
     ? h.section(
         [h.Class('page narrow')],

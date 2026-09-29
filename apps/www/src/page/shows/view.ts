@@ -197,7 +197,7 @@ const masthead = <M>(
   )
 }
 
-export const showsView = <M>(
+export const view = <M>(
   document: ShowsDocument,
   h: HtmlBuilder<M>,
   playback: ShowsPlayback<M>,

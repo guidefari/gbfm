@@ -1,7 +1,7 @@
 import type { PublicProfileResponse } from '@gbfm/api/profile'
 import { inertHtml as h } from 'foldkit/html'
 
-export const profileView = (profile: PublicProfileResponse) => {
+export const view = (profile: PublicProfileResponse) => {
   const sections = [
     { title: 'Mixes', path: 'mixes', items: profile.content.mixes },
     { title: 'Shows', path: 'shows', items: profile.content.shows },
