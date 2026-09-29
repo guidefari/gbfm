@@ -4,10 +4,10 @@ import { Message } from '../../message'
 import type { ContentItem, Model } from '../../model'
 import * as Player from '../../player'
 import * as PublicActions from '../../public-actions'
-import { richContent } from '../../rich-content/fallback'
-import { richContentView } from '../../rich-content/render'
 import { artwork } from '../../view/artwork'
 import { link } from '../../view/link'
+import { richContent } from '../../view/rich-content/fallback'
+import { richContentView } from '../../view/rich-content/render'
 
 const playItem = (item: ContentItem, url: string) =>
   Message.GotPlayerMessage({

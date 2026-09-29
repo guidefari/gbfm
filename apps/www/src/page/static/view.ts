@@ -2,7 +2,7 @@ import type { RichContentDocument } from '@gbfm/rich-content/schema'
 import type { HtmlBuilder } from 'foldkit/html'
 
 import type { Message } from '../../message'
-import { richContentView } from '../../rich-content/render'
+import { richContentView } from '../../view/rich-content/render'
 import { staticPages } from './pages'
 
 export const view = (

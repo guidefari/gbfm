@@ -3,7 +3,7 @@ import { Match } from 'effect'
 import type { HtmlBuilder } from 'foldkit/html'
 import { defineView } from 'foldkit/submodel'
 
-import { richContent } from '../../rich-content/fallback'
+import { richContent } from '../../view/rich-content/fallback'
 import { Message } from './message'
 import type { Model } from './model'
 

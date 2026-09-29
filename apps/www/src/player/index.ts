@@ -9,6 +9,6 @@ export {
   type BrowserDependencies,
 } from './runtime'
 
-export { subscriptions } from './subscriptions'
+export { subscriptions } from './subscription'
 
 export { view } from './view'

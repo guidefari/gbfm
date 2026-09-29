@@ -1,11 +1,11 @@
 import type { MicroPostScreenResponse } from '@gbfm/api/post'
 import { inertHtml as h } from 'foldkit/html'
 
-import { richContent } from '../../rich-content/fallback'
-import { richContentView } from '../../rich-content/render'
 import { artwork } from '../../view/artwork'
 import { formatDate } from '../../view/format-date'
 import { iconPaths, lucide, spotifyIcon } from '../../view/icons'
+import { richContent } from '../../view/rich-content/fallback'
+import { richContentView } from '../../view/rich-content/render'
 
 export type TweetPost = MicroPostScreenResponse['post']
 
