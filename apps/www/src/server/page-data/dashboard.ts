@@ -1,8 +1,8 @@
 import { Effect } from 'effect'
 
-import { Route } from '../../application/route'
 import { parseDashboardDocument } from '../../dashboard/document'
 import { endpointFor, isAdminSection } from '../../dashboard/model'
+import { Route } from '../../route'
 import { apiRequest } from '../api'
 
 export const loadDashboardData = async (

@@ -4,12 +4,12 @@ import { defineMessageUnion } from 'foldkit/message'
 import { UrlRequest } from 'foldkit/navigation'
 import { Url } from 'foldkit/url'
 
-import * as Creator from '../creator'
-import * as Dashboard from '../dashboard'
-import * as Player from '../player'
-import * as PublicActions from '../public-actions'
-import * as Search from '../search'
+import * as Creator from './creator'
+import * as Dashboard from './dashboard'
 import { Flags } from './model'
+import * as Player from './player'
+import * as PublicActions from './public-actions'
+import * as Search from './search'
 
 export const Message = defineMessageUnion({
   ClientStarted: {},

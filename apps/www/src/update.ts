@@ -3,11 +3,6 @@ import { AsyncData, Command, type Update } from 'foldkit'
 import { UrlRequest } from 'foldkit/navigation'
 import { toString as urlToString } from 'foldkit/url'
 
-import * as Creator from '../creator'
-import * as Dashboard from '../dashboard'
-import * as Player from '../player'
-import * as PublicActions from '../public-actions'
-import * as Search from '../search'
 import {
   Leave,
   LoadPage,
@@ -16,12 +11,17 @@ import {
   PrefetchPage,
   SaveReadMode,
   SetResolvedUrl,
-} from './commands'
+} from './command'
+import * as Creator from './creator'
+import * as Dashboard from './dashboard'
 import { init, type Services } from './init'
 import { Message } from './message'
 import type { Flags, Model } from './model'
 import { isCacheable, pageKey, samePage, settlePage } from './page-cache'
+import * as Player from './player'
+import * as PublicActions from './public-actions'
 import { isServerPath, Route } from './route'
+import * as Search from './search'
 
 const showPage = (
   model: Model,

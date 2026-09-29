@@ -1,8 +1,8 @@
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
-import { episodeRowsSkeleton } from '../application/view/skeletons'
 import { artwork } from '../view/artwork'
 import { iconPaths, lucide } from '../view/icons'
+import { episodeRowsSkeleton } from '../view/skeletons'
 import type { Episode, ShowsDocument, ShowsPlayback } from './document'
 import { episodeList } from './episodes'
 

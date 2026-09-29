@@ -1,7 +1,7 @@
 import { RichContentDocument } from '@gbfm/rich-content/schema'
 import { Option, Schema } from 'effect'
 
-import { ContentItem } from '../../application/model'
+import { ContentItem } from '../../model'
 
 const JsonObject = Schema.Record(Schema.String, Schema.Json)
 

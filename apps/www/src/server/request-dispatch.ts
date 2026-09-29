@@ -2,7 +2,7 @@ import { resolveRequestId } from '@gbfm/core/observability/request-id'
 import { Option, Schema } from 'effect'
 import * as Server from 'foldkit/experimental/server'
 
-import { parseRoute, Route } from '../application/route'
+import { parseRoute, Route } from '../route'
 import { handleBrowserTelemetry } from '../telemetry/server'
 import { apiRequest } from './api'
 import { handleFormAction, redirect } from './form-actions'

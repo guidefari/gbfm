@@ -1,6 +1,6 @@
 import { resolveRequestId } from '@gbfm/core/observability/request-id'
 
-import { Route } from '../application/route'
+import { Route } from '../route'
 
 /** The original Request preserves streaming bodies, aborts and all response cookies. */
 export const apiRequest = async (

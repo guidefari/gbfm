@@ -1,9 +1,9 @@
 import { Subscription } from 'foldkit'
 
-import * as Creator from '../creator'
-import * as Player from '../player'
+import * as Creator from './creator'
 import { Message } from './message'
 import type { Model } from './model'
+import * as Player from './player'
 
 export const subscriptions = Subscription.aggregate(
   Subscription.lift(Player.subscriptions)<Model, Message>({

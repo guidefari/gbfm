@@ -2,7 +2,7 @@ import { GetFavoritesResponse } from '@gbfm/api/favorites'
 import { ShowSubscriptionStatusResponse } from '@gbfm/api/shows'
 import { Schema } from 'effect'
 
-import { Principal } from '../../application/model'
+import { Principal } from '../../model'
 import type { Document as PublicActionDocument } from '../../public-actions'
 import { apiRequest } from '../api'
 import { json, record, text } from './shared'

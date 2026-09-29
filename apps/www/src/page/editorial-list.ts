@@ -1,7 +1,7 @@
 import { getMixRecencyLabel } from '@gbfm/core/utils'
 import { inertHtml as h } from 'foldkit/html'
 
-import type { ContentItem } from '../application/model'
+import type { ContentItem } from '../model'
 import { artwork } from '../view/artwork'
 import { formatDate } from '../view/format-date'
 import { iconPaths, lucide } from '../view/icons'
