@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { Message, init, initialModel, update } from './model'
+import { init, initialModel } from './init'
+import { Message } from './message'
+import { update } from './update'
 
 describe('creator model', () => {
   const input = { kind: 'micro' as const, editSlug: null, creatorId: 'user-1', authorized: true }

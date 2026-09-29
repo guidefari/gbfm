@@ -4,7 +4,8 @@ import type { HtmlBuilder } from 'foldkit/html'
 import { defineView } from 'foldkit/submodel'
 
 import { richContent } from '../../rich-content/fallback'
-import { Message, type Model } from './model'
+import { Message } from './message'
+import type { Model } from './model'
 
 export interface ViewInputs {
   readonly role: string | null
