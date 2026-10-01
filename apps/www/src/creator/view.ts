@@ -33,28 +33,27 @@ const field = (
   )
 
 const publishType = (model: Model, h: Builder, busy: boolean) =>
-  h.label(
+  h.div(
     [h.Class('creator-type')],
     [
-      'Publish as',
-      h.select(
+      h.span([], ['Post type']),
+      h.div(
+        [h.Class('creator-type-options')],
         [
-          h.Value(model.draft.kind),
-          h.Disabled(busy || Boolean(model.draft.editSlug)),
-          h.OnChange((value) =>
-            Message.KindChanged({
-              kind: Match.value(value).pipe(
-                Match.when('post', () => 'post' as const),
-                Match.when('mix', () => 'mix' as const),
-                Match.orElse(() => 'micro' as const),
-              ),
-            }),
+          ...(['micro', 'post'] as const).map((kind) =>
+            h.button(
+              [
+                h.Type('button'),
+                h.AriaPressed(String(model.draft.kind === kind)),
+                h.Disabled(busy || Boolean(model.draft.editSlug)),
+                h.OnClick(Message.KindChanged({ kind })),
+              ],
+              [kind === 'micro' ? 'Tweet' : 'Editorial'],
+            ),
           ),
-        ],
-        [
-          h.option([h.Value('micro')], ['Tweet']),
-          h.option([h.Value('post')], ['Editorial']),
-          h.option([h.Value('mix')], ['Mix']),
+          model.draft.kind === 'mix'
+            ? h.button([h.Type('button'), h.AriaPressed('true'), h.Disabled(true)], ['Mix'])
+            : h.empty,
         ],
       ),
     ],
@@ -168,12 +167,23 @@ const musicSlot = (model: Model, h: Builder, busy: boolean): Html =>
             [h.Class('creator-music-actions')],
             [
               h.button(
-                [h.Type('button'), h.OnClick(Message.MusicEmbedInserted())],
-                ['Insert in story'],
+                [
+                  h.Type('button'),
+                  h.Title('Insert music in story'),
+                  h.AriaLabel('Insert music in story'),
+                  h.OnClick(Message.MusicEmbedInserted()),
+                ],
+                ['＋'],
               ),
               h.button(
-                [h.Type('button'), h.Disabled(busy), h.OnClick(Message.MusicRemoved())],
-                ['Remove'],
+                [
+                  h.Type('button'),
+                  h.Title('Remove music'),
+                  h.AriaLabel('Remove music'),
+                  h.Disabled(busy),
+                  h.OnClick(Message.MusicRemoved()),
+                ],
+                ['×'],
               ),
             ],
           ),
@@ -205,16 +215,61 @@ const musicSlot = (model: Model, h: Builder, busy: boolean): Html =>
       )
 
 const metadata = (model: Model, h: Builder, busy: boolean): Html =>
-  h.aside(
+  h.section(
     [h.Class('creator-metadata'), h.AriaLabel('Post details')],
     [
-      h.h2([], ['Post details']),
-      field(h, 'Story URL', model.draft.slug, 'slug', 'generated-from-title'),
       model.draft.kind === 'post'
-        ? field(h, 'Description', model.draft.description, 'description', 'A short introduction')
+        ? h.div(
+            [h.Key('editorial-artwork'), h.Class('creator-artwork')],
+            [
+              h.span([], ['Artwork']),
+              model.draft.thumbnailUrl
+                ? h.img([h.Src(model.draft.thumbnailUrl), h.Alt('Editorial artwork preview')])
+                : h.label(
+                    [h.Class('creator-artwork-upload')],
+                    [
+                      h.span([], ['Upload artwork']),
+                      h.input([
+                        h.Type('file'),
+                        h.Accept('image/*'),
+                        h.Disabled(busy),
+                        h.OnFileChange((files) => Message.ArtworkChosen({ files: [...files] })),
+                      ]),
+                    ],
+                  ),
+              field(h, 'Artwork URL', model.draft.thumbnailUrl, 'thumbnailUrl', 'Artwork URL'),
+            ],
+          )
         : h.empty,
+      h.div(
+        [h.Key('metadata-fields'), h.Class('creator-metadata-fields')],
+        [
+          model.draft.kind === 'post'
+            ? field(
+                h,
+                'Description',
+                model.draft.description,
+                'description',
+                'A short introduction',
+              )
+            : h.empty,
+          h.label(
+            [],
+            [
+              'Authors',
+              h.input([
+                h.Value(model.creatorsInput),
+                h.AriaLabel('Authors'),
+                h.Disabled(busy),
+                h.OnInput((value) => Message.CreatorsChanged({ value })),
+              ]),
+            ],
+          ),
+          field(h, 'Story URL', model.draft.slug, 'slug', 'generated-from-title'),
+        ],
+      ),
       h.label(
-        [],
+        [h.Key('tags-field'), h.Class('creator-tags-field')],
         [
           'Tags',
           h.input([
@@ -226,42 +281,13 @@ const metadata = (model: Model, h: Builder, busy: boolean): Html =>
           h.small([], ['Separate tags with commas.']),
         ],
       ),
-      h.label(
-        [],
-        [
-          'Authors',
-          h.input([
-            h.Value(model.creatorsInput),
-            h.AriaLabel('Authors'),
-            h.Disabled(busy),
-            h.OnInput((value) => Message.CreatorsChanged({ value })),
-          ]),
-          h.small([], ['Comma-separated creator IDs.']),
-        ],
-      ),
-      model.draft.kind === 'post'
-        ? h.div(
-            [h.Class('creator-artwork')],
-            [
-              model.draft.thumbnailUrl
-                ? h.img([h.Src(model.draft.thumbnailUrl), h.Alt('Editorial artwork preview')])
-                : h.empty,
-              field(h, 'Artwork URL', model.draft.thumbnailUrl, 'thumbnailUrl', 'https://…'),
-              h.label(
-                [],
-                [
-                  'Upload artwork',
-                  h.input([
-                    h.Type('file'),
-                    h.Accept('image/*'),
-                    h.Disabled(busy),
-                    h.OnFileChange((files) => Message.ArtworkChosen({ files: [...files] })),
-                  ]),
-                ],
-              ),
-            ],
-          )
-        : h.empty,
+    ],
+  )
+
+const composerExtras = (model: Model, h: Builder): Html =>
+  h.div(
+    [h.Class('creator-extras')],
+    [
       model.draft.kind !== 'mix' && !model.draft.editSlug
         ? h.div(
             [h.Class('creator-quote')],
@@ -375,54 +401,65 @@ const mixFields = (model: Model, h: Builder, busy: boolean): Html =>
 
 const review = (model: Model, h: Builder, busy: boolean, canContinue: boolean): Html =>
   h.div(
-    [h.Class('creator-review-shell')],
+    [h.Class('creator-review-backdrop')],
     [
-      h.article(
-        [h.Class('creator-review')],
+      h.section(
+        [h.Class('creator-review-shell'), h.Role('dialog'), h.AriaLabel('Publish post')],
         [
-          h.p([h.Class('eyebrow')], ['PREVIEW']),
-          model.draft.kind === 'post' && model.draft.thumbnailUrl
-            ? h.img([h.Src(model.draft.thumbnailUrl), h.Alt('Artwork preview')])
-            : h.empty,
-          h.h2([], [model.draft.title || 'Untitled']),
-          model.draft.kind === 'post' && model.draft.description
-            ? h.p([h.Class('creator-deck')], [model.draft.description])
-            : h.empty,
-          richContent(model.draft.content),
-          model.draft.musicEntityId
-            ? h.p(
-                [h.Class('creator-review-music')],
+          h.header(
+            [h.Class('creator-review-header')],
+            [
+              h.h2([], [model.draft.editSlug ? 'Update post' : 'Ready to publish']),
+              h.button(
                 [
-                  `♫ ${model.musicPreviewTitle ?? `Attached ${model.draft.musicEntityType ?? 'music'}`}`,
+                  h.Type('button'),
+                  h.AriaLabel('Close publish review'),
+                  h.OnClick(Message.ReviewClosed()),
+                ],
+                ['×'],
+              ),
+            ],
+          ),
+          publishType(model, h, busy),
+          model.draft.kind === 'micro' && model.draft.title.length > TWEET_MAX_LENGTH
+            ? h.p(
+                [h.Class('form-error')],
+                [
+                  `Tweets are capped at ${TWEET_MAX_LENGTH} characters (${model.draft.title.length}). Trim the title or switch to Editorial.`,
                 ],
               )
             : h.empty,
-          model.quotePreview ? h.blockquote([], [model.quotePreview]) : h.empty,
-          model.draft.tags.length
-            ? h.ul(
-                [h.Class('creator-tag-list'), h.AriaLabel('Tags')],
-                model.draft.tags.map((tag) => h.li([], [`#${tag}`])),
-              )
-            : h.empty,
-        ],
-      ),
-      h.aside(
-        [h.Class('creator-publish-panel')],
-        [
-          h.p([h.Class('eyebrow')], ['READY TO PUBLISH']),
-          h.h2([], [model.draft.editSlug ? 'Update post' : 'Final checks']),
-          publishType(model, h, busy),
-          h.dl(
-            [],
+          h.div(
+            [h.Class('creator-review-group')],
             [
-              h.dt([], ['Authors']),
-              h.dd([], [String(model.draft.creatorIds.length)]),
-              h.dt([], ['Tags']),
-              h.dd([], [String(model.draft.tags.length)]),
-              h.dt([], ['Status']),
-              h.dd([], [model.draft.editSlug ? 'Existing post' : 'New post']),
+              h.span([], ['Preview']),
+              h.article(
+                [h.Class('creator-review')],
+                [
+                  h.h3([], [model.draft.title || 'Untitled']),
+                  model.draft.content
+                    ? h.p([h.Class('creator-review-copy')], [model.draft.content])
+                    : h.empty,
+                  model.draft.musicEntityId
+                    ? h.p(
+                        [h.Class('creator-review-music')],
+                        [
+                          `♫ ${model.musicPreviewTitle ?? `Attached ${model.draft.musicEntityType ?? 'music'}`}`,
+                        ],
+                      )
+                    : h.empty,
+                  model.quotePreview ? h.blockquote([], [model.quotePreview]) : h.empty,
+                  model.draft.tags.length
+                    ? h.ul(
+                        [h.Class('creator-tag-list'), h.AriaLabel('Tags')],
+                        model.draft.tags.map((tag) => h.li([], [`#${tag}`])),
+                      )
+                    : h.empty,
+                ],
+              ),
             ],
           ),
+          metadata(model, h, busy),
           h.div(
             [h.Class('creator-publish-actions')],
             [
@@ -563,10 +600,10 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
                   ),
                   model.draft.kind !== 'mix' ? musicSlot(model, h, busy) : h.empty,
                   editor(model, h),
+                  composerExtras(model, h),
                   model.draft.kind === 'mix' ? mixFields(model, h, busy) : h.empty,
                 ],
               ),
-              metadata(model, h, busy),
             ],
           ),
     ],
