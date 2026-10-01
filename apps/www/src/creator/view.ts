@@ -79,17 +79,30 @@ const editor = (model: Model, h: Builder): Html => {
         [
           h.div(
             [h.Class('creator-editor-tools'), h.AriaLabel('Formatting controls')],
-            controls.map(([label, before, after, sample]) =>
-              h.button(
-                [
-                  h.Type('button'),
-                  h.Title(label),
-                  h.AriaLabel(label),
-                  h.OnClick(Message.FormatInserted({ before, after, sample })),
-                ],
-                [label],
+            [
+              ...controls.map(([label, before, after, sample]) =>
+                h.button(
+                  [
+                    h.Type('button'),
+                    h.Title(label),
+                    h.AriaLabel(label),
+                    h.OnClick(Message.FormatInserted({ before, after, sample })),
+                  ],
+                  [label],
+                ),
               ),
-            ),
+              model.draft.musicEntityId
+                ? h.button(
+                    [
+                      h.Type('button'),
+                      h.Title('Insert attached music'),
+                      h.AriaLabel('Insert attached music'),
+                      h.OnClick(Message.MusicEmbedInserted()),
+                    ],
+                    ['Music'],
+                  )
+                : h.empty,
+            ],
           ),
           h.div(
             [h.Class('creator-editor-modes'), h.AriaLabel('Editor view')],
@@ -169,21 +182,12 @@ const musicSlot = (model: Model, h: Builder, busy: boolean): Html =>
               h.button(
                 [
                   h.Type('button'),
-                  h.Title('Insert music in story'),
-                  h.AriaLabel('Insert music in story'),
-                  h.OnClick(Message.MusicEmbedInserted()),
-                ],
-                ['＋'],
-              ),
-              h.button(
-                [
-                  h.Type('button'),
                   h.Title('Remove music'),
                   h.AriaLabel('Remove music'),
                   h.Disabled(busy),
                   h.OnClick(Message.MusicRemoved()),
                 ],
-                ['×'],
+                ['Remove'],
               ),
             ],
           ),

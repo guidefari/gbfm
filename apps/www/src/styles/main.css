@@ -990,6 +990,13 @@
   padding: 0.45rem 0.9rem;
   font-size: 0.875rem;
 }
+.creator-actions button:first-child {
+  border-color: transparent;
+  background: transparent;
+}
+.creator-actions button:first-child:hover {
+  background: var(--muted);
+}
 .creator-actions button:last-child,
 .creator-publish-actions button:last-child {
   border-color: var(--pastel-green-2);
@@ -1104,14 +1111,15 @@
   gap: 0.25rem;
 }
 .creator-music-actions button {
-  width: 2rem;
+  width: auto;
   height: 2rem;
   min-height: 2rem;
-  padding: 0;
+  padding: 0 0.5rem;
   border-color: transparent;
   background: transparent;
   color: var(--muted-foreground);
   font-size: 0.75rem;
+  font-weight: 600;
 }
 .creator-music-actions button:hover {
   background: var(--muted);
@@ -1164,7 +1172,7 @@
 .creator-editor-bar button:hover,
 .creator-editor-bar button[aria-pressed='true'] {
   background: var(--primary);
-  color: var(--foreground);
+  color: var(--primary-foreground);
 }
 .creator-source textarea {
   min-height: 32rem;
