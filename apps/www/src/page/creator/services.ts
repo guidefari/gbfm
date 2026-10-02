@@ -16,6 +16,7 @@ export const CreatorDraftSchema = Schema.Struct({
   musicEntityType: Schema.NullOr(Schema.Literals(['album', 'track', 'playlist'])),
   musicEntityId: Schema.NullOr(Schema.String),
   quotedPostId: Schema.NullOr(Schema.String),
+  quoteUrl: Schema.String,
   audioUrl: Schema.String,
   showId: Schema.NullOr(Schema.String),
   episodeNumber: Schema.NullOr(Schema.Number),
@@ -70,6 +71,18 @@ export interface CreatorOperations {
     {
       readonly entityType: 'album' | 'track' | 'playlist'
       readonly entityId: string
+      readonly title: string
+      readonly artistNames: ReadonlyArray<string>
+      readonly coverImageUrl: string | null
+    },
+    CreatorRequestError
+  >
+  readonly resolveQuote: (slug: string) => Effect.Effect<
+    {
+      readonly id: string
+      readonly slug: string
+      readonly title: string | null
+      readonly content: string | null
     },
     CreatorRequestError
   >
@@ -103,7 +116,19 @@ const SavedResponse = Schema.Struct({ slug: Schema.String })
 
 const MusicResponse = Schema.Struct({
   entityType: Schema.String,
-  entity: Schema.Struct({ id: Schema.String }),
+  entity: Schema.Struct({
+    id: Schema.String,
+    title: Schema.String,
+    artistNames: Schema.optional(Schema.NullOr(Schema.Array(Schema.String))),
+  }),
+  coverImageUrl: Schema.NullOr(Schema.String),
+})
+
+const QuoteResponse = Schema.Struct({
+  id: Schema.String,
+  slug: Schema.String,
+  title: Schema.NullOr(Schema.String),
+  content: Schema.NullOr(Schema.String),
 })
 
 const ImageResponse = Schema.Struct({
@@ -215,6 +240,7 @@ export const CreatorServiceLive = Layer.succeed(CreatorService, {
               : null,
           musicEntityId: item.musicEntityId ?? null,
           quotedPostId: item.quotedPostId ?? null,
+          quoteUrl: '',
           audioUrl: item.url ?? '',
           showId: item.showId ?? null,
           episodeNumber: item.episodeNumber ?? null,
@@ -230,9 +256,15 @@ export const CreatorServiceLive = Layer.succeed(CreatorService, {
       '/music/resolve',
       json({ url, origin: kind === 'post' ? 'editorial' : 'tweet' }),
     ).pipe(
-      Effect.flatMap(({ entityType, entity }) =>
+      Effect.flatMap(({ entityType, entity, coverImageUrl }) =>
         entityType === 'album' || entityType === 'track' || entityType === 'playlist'
-          ? Effect.succeed({ entityType, entityId: entity.id })
+          ? Effect.succeed({
+              entityType,
+              entityId: entity.id,
+              title: entity.title,
+              artistNames: entity.artistNames ?? [],
+              coverImageUrl,
+            })
           : Effect.fail(
               new CreatorRequestError({
                 operation: 'resolve music',
@@ -241,6 +273,12 @@ export const CreatorServiceLive = Layer.succeed(CreatorService, {
               }),
             ),
       ),
+    ),
+  resolveQuote: (slug) =>
+    requestJson(
+      'resolve quoted tweet',
+      QuoteResponse,
+      `/content/posts/micro/${encodeURIComponent(slug)}`,
     ),
   save: ({ draft, creatorId, publish }) => {
     const slug =

@@ -27,27 +27,27 @@ test('mix creation satisfies the API contract and editing preserves audio and co
   const slug = `e2e-composer-mix-${Date.now()}`
   await page.goto('/new/mix')
   await page.getByRole('textbox', { name: 'Title', exact: true }).fill('A newly published mix')
-  await page.getByRole('textbox', { name: 'Slug', exact: true }).fill(slug)
   await page.getByRole('textbox', { name: 'Existing audio URL', exact: true }).fill(audioUrl)
-  await page
-    .getByRole('textbox', { name: 'Creator IDs (comma separated)', exact: true })
-    .fill(creatorIds.join(', '))
   await page.getByRole('textbox', { name: 'Show ID', exact: true }).fill(showId ?? '')
   await page.getByRole('spinbutton', { name: 'Episode number', exact: true }).fill('7')
   await page.getByRole('button', { name: 'Continue', exact: true }).click()
+  await page.getByRole('textbox', { name: 'Story URL', exact: true }).fill(slug)
+  await page.getByRole('textbox', { name: 'Authors', exact: true }).fill(creatorIds.join(', '))
   await page.getByRole('button', { name: 'Publish', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('Published.')
+  await expect(page.locator('.creator-published')).toContainText('Published.')
   await page.goto(`/new/mix?edit=${slug}`)
   await expect(page.getByRole('textbox', { name: 'Existing audio URL', exact: true })).toHaveValue(
     audioUrl,
   )
-  await expect(page.getByRole('combobox', { name: 'Publish as' })).toBeDisabled()
+  await page.getByRole('button', { name: 'Continue', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Tweet', exact: true })).toBeDisabled()
+  await page.getByRole('button', { name: 'Keep editing', exact: true }).click()
   await page
     .getByRole('textbox', { name: 'Title', exact: true })
     .fill('Edited mix with both creators')
   await page.getByRole('button', { name: 'Continue', exact: true }).click()
-  await page.getByRole('button', { name: 'Publish', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('Published.')
+  await page.getByRole('button', { name: 'Update', exact: true }).click()
+  await expect(page.locator('.creator-published')).toContainText('Published.')
   const response = await page.request.get(`/api/content/audio/mix/${slug}`)
   const mix = Schema.decodeUnknownSync(AudioResponse)(await response.json())
   expect(mix.title).toBe('Edited mix with both creators')
@@ -79,8 +79,8 @@ test('editorial editing with empty artwork preserves co-creators and saved conte
   )
   await page.getByRole('textbox', { name: 'Writing canvas' }).fill('The revised editorial body.')
   await page.getByRole('button', { name: 'Continue', exact: true }).click()
-  await page.getByRole('button', { name: 'Publish', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('Published.')
+  await page.getByRole('button', { name: 'Update', exact: true }).click()
+  await expect(page.locator('.creator-published')).toContainText('Published.')
   const response = await page.request.get(`/api/content/posts/${slug}/edit`)
   const post = Schema.decodeUnknownSync(CompiledPostResponse)(await response.json())
   expect(post.content).toBe('The revised editorial body.')
@@ -100,28 +100,41 @@ test('composer restores metadata, reviews type changes and publishes a quoted tw
   await page
     .getByRole('textbox', { name: 'Writing canvas', exact: true })
     .fill('Listening to **independent radio**.')
-  await page.getByRole('textbox', { name: 'Slug', exact: true }).fill(slug)
   await page
-    .getByRole('textbox', { name: 'Creator IDs (comma separated)', exact: true })
-    .fill(creatorIds.join(', '))
-  await page.getByRole('textbox', { name: 'Quoted post ID', exact: true }).fill(quoted.id)
+    .getByRole('textbox', { name: 'Quote a tweet', exact: true })
+    .fill('https://goosebumps.fm/tweet/e2e-music-thread')
+  await page.getByRole('button', { name: 'Attach quote', exact: true }).click()
+  await expect(page.getByText('Quoted tweet', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Continue', exact: true }).click()
+  await page.getByRole('textbox', { name: 'Story URL', exact: true }).fill(slug)
+  await page.getByRole('textbox', { name: 'Authors', exact: true }).fill(creatorIds.join(', '))
   const tags = page.getByRole('textbox', { name: 'Tags', exact: true })
   await tags.pressSequentially('radio, community')
   await tags.press('Tab')
   await expect(tags).toHaveValue('radio, community')
+  await page.getByRole('button', { name: 'Keep editing', exact: true }).click()
   await page.reload()
-  await expect(page.getByRole('textbox', { name: 'Quoted post ID', exact: true })).toHaveValue(
-    quoted.id,
+  await expect(page.getByRole('textbox', { name: 'Quote a tweet', exact: true })).toHaveValue(
+    'https://goosebumps.fm/tweet/e2e-music-thread',
   )
-  await expect(
-    page.getByRole('textbox', { name: 'Creator IDs (comma separated)', exact: true }),
-  ).toHaveValue(creatorIds.join(', '))
   await page.getByRole('button', { name: 'Continue', exact: true }).click()
-  await expect(page.locator('.creator-review strong')).toHaveText('independent radio')
-  await page.getByRole('combobox', { name: 'Publish as' }).selectOption('post')
-  await expect(page.locator('.creator-review')).toContainText('Type: post')
-  await page.getByRole('combobox', { name: 'Publish as' }).selectOption('micro')
-  await expect(page.locator('.creator-review')).toContainText('Type: micro')
+  await expect(page.getByRole('textbox', { name: 'Authors', exact: true })).toHaveValue(
+    creatorIds.join(', '),
+  )
+  await expect(page.getByRole('textbox', { name: 'Tags', exact: true })).toHaveValue(
+    'radio, community',
+  )
+  await expect(page.locator('.creator-review-copy')).toContainText('independent radio')
+  await page.getByRole('button', { name: 'Editorial', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Editorial', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await page.getByRole('button', { name: 'Tweet', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Tweet', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
   await page.getByRole('button', { name: 'Publish', exact: true }).scrollIntoViewIfNeeded()
   await testInfo.attach('composer-review-dark', {
     body: await page.screenshot(),
@@ -138,7 +151,7 @@ test('composer restores metadata, reviews type changes and publishes a quoted tw
     ),
   ).toBe(true)
   await page.getByRole('button', { name: 'Publish', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('Published.')
+  await expect(page.locator('.creator-published')).toContainText('Published.')
   const saved = Schema.decodeUnknownSync(CompiledPostResponse)(
     await (await page.request.get(`/api/content/posts/${slug}/edit`)).json(),
   )
@@ -146,5 +159,5 @@ test('composer restores metadata, reviews type changes and publishes a quoted tw
   expect(saved.tags).toEqual(['radio', 'community'])
   expect(saved.creators?.map(({ id }) => id).sort()).toEqual([...creatorIds].sort())
   await page.goto(`/new/tweet?edit=${slug}`)
-  await expect(page.getByRole('textbox', { name: 'Quoted post ID', exact: true })).toBeDisabled()
+  await expect(page.getByRole('textbox', { name: 'Quote a tweet', exact: true })).toHaveCount(0)
 })

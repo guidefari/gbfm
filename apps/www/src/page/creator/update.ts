@@ -5,12 +5,14 @@ import {
   PauseUpload,
   PersistDraft,
   ResolveMusic,
+  ResolveQuote,
   Save,
   UploadArtwork,
   UploadAudio,
 } from './command'
+import { initialModel } from './init'
 import { Message } from './message'
-import { keyOf, type Model } from './model'
+import { draftValidationError, keyOf, type Model } from './model'
 import type { CreatorDraft, CreatorService } from './services'
 import type { CreatorUpload } from './upload/runtime'
 
@@ -21,6 +23,15 @@ const changed = (
   model: { ...model, draft, saveState: 'unsaved', error: null },
   commands: [PersistDraft({ key: keyOf(draft), draft })],
 })
+
+const appendBlock = (content: string, block: string) =>
+  content.trim().length === 0 ? block : `${content.replace(/\s+$/, '')}\n\n${block}`
+
+const tweetSlug = (value: string): string | null => {
+  const match = /(?:https?:\/\/[^\s/]+)?\/tweet\/([a-z0-9-]+)/i.exec(value.trim())
+
+  return match?.[1] ?? null
+}
 
 export const update = (
   model: Model,
@@ -47,6 +58,32 @@ export const update = (
       model.draft.editSlug
         ? { model }
         : changed(model, { ...model.draft, quotedPostId: value.trim() || null }),
+    QuoteUrlChanged: ({ value }) =>
+      model.draft.editSlug
+        ? { model }
+        : changed(
+            { ...model, quotePreview: null },
+            { ...model.draft, quoteUrl: value, quotedPostId: null },
+          ),
+    ResolveQuoteRequested: () => {
+      const slug = tweetSlug(model.draft.quoteUrl)
+
+      return slug
+        ? { model: { ...model, error: null }, commands: [ResolveQuote({ slug })] }
+        : {
+            model: {
+              ...model,
+              error: 'resolve quote: Paste a complete goosebumps.fm tweet URL.',
+            },
+          }
+    },
+    QuoteResolved: ({ id, slug, title, content }) =>
+      tweetSlug(model.draft.quoteUrl) !== slug
+        ? { model }
+        : changed(
+            { ...model, quotePreview: title ?? content ?? slug },
+            { ...model.draft, quotedPostId: id },
+          ),
     ShowChanged: ({ value }) => changed(model, { ...model.draft, showId: value.trim() || null }),
     EpisodeChanged: ({ value }) => {
       const episodeNumber = value.trim() ? Number(value) : null
@@ -65,7 +102,15 @@ export const update = (
           )
     },
     MusicRemoved: () =>
-      changed(model, { ...model.draft, musicUrl: '', musicEntityType: null, musicEntityId: null }),
+      changed(
+        {
+          ...model,
+          musicPreviewTitle: null,
+          musicPreviewMeta: null,
+          musicPreviewImage: null,
+        },
+        { ...model.draft, musicUrl: '', musicEntityType: null, musicEntityId: null },
+      ),
     TagsChanged: ({ value }) =>
       changed(
         { ...model, tagsInput: value },
@@ -89,12 +134,68 @@ export const update = (
       model: { ...model, error: null },
       commands: [ResolveMusic({ url: model.draft.musicUrl.trim(), kind: model.draft.kind })],
     }),
-    MusicResolved: ({ entityType, entityId, url }) =>
+    MusicResolved: ({ entityType, entityId, url, title, artistNames, coverImageUrl }) =>
       model.draft.musicUrl.trim() !== url
         ? { model }
-        : changed(model, { ...model.draft, musicEntityType: entityType, musicEntityId: entityId }),
+        : changed(
+            {
+              ...model,
+              musicPreviewTitle: title,
+              musicPreviewMeta: [entityType, artistNames.join(', ')].filter(Boolean).join(' · '),
+              musicPreviewImage: coverImageUrl,
+            },
+            { ...model.draft, musicEntityType: entityType, musicEntityId: entityId },
+          ),
+    EditorModeChanged: ({ mode }) => ({ model: { ...model, editorMode: mode } }),
+    FormatInserted: ({ before, after, sample }) =>
+      changed(model, {
+        ...model.draft,
+        content: `${model.draft.content}${before}${sample}${after}`,
+      }),
+    ExternalMediaChanged: ({ value }) => ({ model: { ...model, externalMediaUrl: value } }),
+    ExternalMediaInserted: () => {
+      const value = model.externalMediaUrl.trim()
+
+      return /^https?:\/\/\S+$/.test(value)
+        ? changed(
+            { ...model, externalMediaUrl: '' },
+            {
+              ...model.draft,
+              content: appendBlock(model.draft.content, `::media{url="${value}"}`),
+            },
+          )
+        : { model: { ...model, error: 'media: Enter a complete media URL.' } }
+    },
+    MusicEmbedInserted: () =>
+      model.draft.musicEntityType && model.draft.musicEntityId
+        ? changed(model, {
+            ...model.draft,
+            content: appendBlock(
+              model.draft.content,
+              `::music{type="${model.draft.musicEntityType}" id="${model.draft.musicEntityId}"}`,
+            ),
+          })
+        : { model },
+    DiscardRequested: () => {
+      const reset = initialModel({
+        kind: model.draft.kind,
+        editSlug: model.draft.editSlug,
+        creatorId: model.creatorId,
+        authorized: model.authorized,
+      })
+
+      return {
+        model: {
+          ...reset,
+          phase: 'writing',
+          saveState: 'unsaved',
+          draft: { ...reset.draft, creatorIds: model.draft.creatorIds },
+          creatorsInput: model.creatorsInput,
+        },
+      }
+    },
     DraftSaveRequested: () =>
-      model.draft.kind === 'mix' && model.episodeError
+      draftValidationError(model.draft) || (model.draft.kind === 'mix' && model.episodeError)
         ? { model }
         : model.authorized
           ? {
@@ -103,7 +204,7 @@ export const update = (
             }
           : { model: { ...model, phase: 'forbidden' } },
     PublishRequested: () =>
-      model.draft.kind === 'mix' && model.episodeError
+      draftValidationError(model.draft) || (model.draft.kind === 'mix' && model.episodeError)
         ? { model }
         : model.authorized
           ? {

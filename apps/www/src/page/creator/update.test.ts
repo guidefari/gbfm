@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { init, initialModel } from './init'
 import { Message } from './message'
+import { draftValidationError } from './model'
 import { update } from './update'
 
 describe('creator model', () => {
@@ -71,7 +72,16 @@ describe('creator model', () => {
 
     const url = 'https://open.spotify.com/album/fixture'
     const entered = update(model, Message.Changed({ field: 'musicUrl', value: url })).model
-    const resolved = Message.MusicResolved({ entityType: 'album', entityId: 'album-1', url })
+
+    const resolved = Message.MusicResolved({
+      entityType: 'album',
+      entityId: 'album-1',
+      url,
+      title: 'Fixture album',
+      artistNames: ['Fixture artist'],
+      coverImageUrl: null,
+    })
+
     const attached = update(entered, resolved).model
     expect(attached.draft.musicEntityId).toBe('album-1')
     const removed = update(attached, Message.MusicRemoved()).model
@@ -82,6 +92,66 @@ describe('creator model', () => {
       musicEntityId: null,
     })
     expect(update(removed, resolved).model).toBe(removed)
+  })
+
+  it('enforces the tweet boundary in the model while editorials remain long-form', () => {
+    const tweet = {
+      ...initialModel(input).draft,
+      title: 'x'.repeat(256),
+    }
+
+    expect(draftValidationError(tweet)).toBe('Tweets are capped at 255 characters.')
+    expect(
+      update({ ...initialModel(input), draft: tweet }, Message.PublishRequested()).commands,
+    ).toBe(undefined)
+    expect(draftValidationError({ ...tweet, kind: 'post' })).toBeNull()
+  })
+
+  it('inserts canonical rich-content directives without replacing authored source', () => {
+    const model = {
+      ...initialModel(input),
+      externalMediaUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      draft: {
+        ...initialModel(input).draft,
+        content: 'Opening paragraph.',
+        musicEntityType: 'album' as const,
+        musicEntityId: 'album-1',
+      },
+    }
+
+    const media = update(model, Message.ExternalMediaInserted()).model
+    expect(media.draft.content).toBe(
+      'Opening paragraph.\n\n::media{url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"}',
+    )
+    const music = update(media, Message.MusicEmbedInserted()).model
+    expect(music.draft.content).toContain('::music{type="album" id="album-1"}')
+  })
+
+  it('accepts only the quote response matching the current URL', () => {
+    const entered = update(
+      initialModel(input),
+      Message.QuoteUrlChanged({ value: 'https://goosebumps.fm/tweet/current-thread' }),
+    ).model
+
+    const stale = update(
+      entered,
+      Message.QuoteResolved({ id: 'old-id', slug: 'old-thread', title: 'Old', content: null }),
+    ).model
+
+    expect(stale).toBe(entered)
+
+    const resolved = update(
+      stale,
+      Message.QuoteResolved({
+        id: 'current-id',
+        slug: 'current-thread',
+        title: null,
+        content: 'Current tweet',
+      }),
+    ).model
+
+    expect(resolved.draft.quotedPostId).toBe('current-id')
+    expect(resolved.quotePreview).toBe('Current tweet')
   })
 
   it('the pause checkpoint wins over delayed progress events', () => {

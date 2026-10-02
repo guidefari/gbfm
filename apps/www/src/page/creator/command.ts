@@ -40,10 +40,27 @@ export const ResolveMusic = Command.define('Creator.ResolveMusic', {
   messages: [Message.MusicResolved, Message.Failed],
   execute: ({ url, kind }) =>
     Effect.flatMap(CreatorService, (service) => service.resolveMusic(url, kind)).pipe(
-      Effect.map(({ entityType, entityId }) =>
-        Message.MusicResolved({ entityType, entityId, url }),
+      Effect.map(({ entityType, entityId, title, artistNames, coverImageUrl }) =>
+        Message.MusicResolved({
+          entityType,
+          entityId,
+          url,
+          title,
+          artistNames: [...artistNames],
+          coverImageUrl,
+        }),
       ),
       Effect.catch((error) => Effect.succeed(failure('resolve music')(error))),
+    ),
+})
+
+export const ResolveQuote = Command.define('Creator.ResolveQuote', {
+  args: { slug: Schema.String },
+  messages: [Message.QuoteResolved, Message.Failed],
+  execute: ({ slug }) =>
+    Effect.flatMap(CreatorService, (service) => service.resolveQuote(slug)).pipe(
+      Effect.map(({ id, title, content }) => Message.QuoteResolved({ id, slug, title, content })),
+      Effect.catch((error) => Effect.succeed(failure('resolve quote')(error))),
     ),
 })
 
