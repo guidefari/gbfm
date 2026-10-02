@@ -1,4 +1,7 @@
-import type { Flags } from './application'
+import { HashMap, Result } from 'effect'
+import { AsyncData } from 'foldkit'
+
+import type { Flags, PageCache } from './model'
 
 const uncachedPrefixes = ['/dashboard', '/new', '/mix-upload', '/auth', '/reminders', '/spotify']
 
@@ -23,3 +26,17 @@ const withoutVolatile = ({ renderedAt: _renderedAt, requestId: _requestId, ...re
 
 /** Revalidation only re-renders when the content changed, not when the request metadata did. */
 export const samePage = (a: Flags, b: Flags) => withoutVolatile(a) === withoutVolatile(b)
+
+export const settlePage = (
+  cache: PageCache,
+  key: string,
+  result: Result.Result<Flags, string>,
+): PageCache => {
+  if (!isCacheable(key)) return cache
+  const entry = AsyncData.fromOptionOrIdle(HashMap.get(cache, key))
+
+  return HashMap.set(cache, key, AsyncData.settle(entry, result))
+}
+
+export const seedCache = (flags: Flags): PageCache =>
+  settlePage(HashMap.empty(), pageKey(flags.url), Result.succeed(flags))

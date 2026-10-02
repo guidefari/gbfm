@@ -2,7 +2,7 @@
 @import 'tailwindcss';
 @import './scrollbar.css';
 @import '@gbfm/theme/styles.css';
-@import '../dashboard/dashboard.css';
+@import '../page/dashboard/dashboard.css';
 
 @plugin "@tailwindcss/typography";
 @plugin "tailwindcss-animate";
