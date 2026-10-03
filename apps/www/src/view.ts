@@ -157,9 +157,8 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
         stationNav(h, {
           pathname: model.pendingPath ?? new URL(model.flags.url).pathname,
           links: nav,
-          accountName: model.flags.principal
-            ? (model.flags.principal.name ?? model.flags.principal.username ?? '?')
-            : null,
+          principal: model.flags.principal,
+          closeAccountMenu: Message.AccountMenuClosed(),
           interactive: model.interactive,
           menuOpen: model.menuOpen,
           nowPlaying: model.player.snapshot.queue.current

@@ -14,6 +14,7 @@ import * as Search from './search'
 export const Message = defineMessageUnion({
   ClientStarted: {},
   MenuToggled: {},
+  AccountMenuClosed: {},
   GotSearchMessage: { message: Search.Message },
   GotPublicActionMessage: { message: PublicActions.Message },
   SkipSeenChanged: { value: Schema.Boolean },
