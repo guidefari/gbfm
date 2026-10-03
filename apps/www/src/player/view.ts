@@ -1,3 +1,4 @@
+import * as Dialog from '@foldkit/ui/dialog'
 import type { QueueTrackType } from '@gbfm/player'
 import type { HtmlBuilder } from 'foldkit/html'
 import { defineView } from 'foldkit/submodel'
@@ -5,10 +6,10 @@ import { defineView } from 'foldkit/submodel'
 import { artworkUrl } from '../view/artwork'
 import { iconPaths, lucide } from '../view/icons'
 import { Message, type Model } from './model'
+import { queueSheet } from './queue-view'
+import { fallbackArtwork, ghostButton, progressRangeClass, volumeRangeClass } from './view-styles'
 
 type H = HtmlBuilder<typeof Message.Type>
-
-const fallbackArtwork = 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'
 
 const pad = (value: number) => value.toString().padStart(2, '0')
 
@@ -19,15 +20,6 @@ const time = (seconds: number) => {
 
   return `${hours > 0 ? `${pad(hours)}:` : ''}${pad(minutes)}:${pad(Math.floor(safe % 60))}`
 }
-
-const ghostButton =
-  'inline-flex items-center justify-center rounded-sm border-0 bg-transparent p-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50'
-
-const progressRangeClass =
-  'h-2 w-full cursor-pointer appearance-none rounded-sm bg-muted accent-primary [&::-webkit-slider-thumb]:h-6 [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-lg [&::-moz-range-thumb]:h-6 [&::-moz-range-thumb]:w-6 [&::-moz-range-thumb]:rounded-sm [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-primary'
-
-const volumeRangeClass =
-  'h-2 flex-1 cursor-pointer appearance-none rounded-sm bg-muted accent-primary [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-lg [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:rounded-sm [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-primary'
 
 const creatorLinks = (h: H, track: QueueTrackType) => {
   const creators = track.creators ?? []
@@ -52,199 +44,6 @@ const creatorLinks = (h: H, track: QueueTrackType) => {
   )
 }
 
-const queueSheet = (model: Model, h: H) => {
-  if (!model.queueOpen) return h.empty
-  const { tracks, currentIndex, current } = model.snapshot.queue
-
-  return h.div(
-    [h.Class('fixed inset-0 z-[60]')],
-    [
-      h.button(
-        [
-          h.Type('button'),
-          h.AriaLabel('Close queue'),
-          h.OnClick(Message.CloseQueue()),
-          h.Class(
-            'absolute inset-0 border-0 bg-black/80 p-0 animate-in fade-in duration-200 cursor-default',
-          ),
-        ],
-        [],
-      ),
-      h.aside(
-        [
-          h.AriaLabel('Playback queue'),
-          h.Class(
-            'absolute inset-y-0 right-0 flex w-full flex-col gap-4 overflow-hidden border-l border-border bg-background p-6 shadow-lg animate-in slide-in-from-right duration-300 sm:w-80',
-          ),
-        ],
-        [
-          h.header(
-            [h.Class('flex items-center justify-between')],
-            [
-              h.h2([h.Class('m-0 text-lg font-semibold text-foreground')], ['Queue']),
-              h.button(
-                [
-                  h.Type('button'),
-                  h.AriaLabel('Close queue'),
-                  h.OnClick(Message.CloseQueue()),
-                  h.Class(
-                    `${ghostButton} h-8 w-8 text-muted-foreground hover:bg-muted hover:text-foreground`,
-                  ),
-                ],
-                [lucide(iconPaths.close, 'h-4 w-4')],
-              ),
-            ],
-          ),
-          h.div(
-            [h.Class('min-h-0 flex-1 overflow-y-auto px-2')],
-            [
-              current
-                ? h.div(
-                    [h.Class('mb-4 border-b border-border p-3')],
-                    [
-                      h.h3(
-                        [h.Class('m-0 mb-2 text-xs font-medium text-muted-foreground')],
-                        ['Now playing'],
-                      ),
-                      h.div(
-                        [h.Class('flex items-center gap-3')],
-                        [
-                          h.img([
-                            h.Src(artworkUrl(current.thumbnailUrl || fallbackArtwork, 160)),
-                            h.Alt(current.title),
-                            h.Class('h-12 w-12 shrink-0 rounded-sm object-cover'),
-                          ]),
-                          h.h4(
-                            [h.Class('m-0 min-w-0 flex-1 truncate text-base font-medium')],
-                            [current.title],
-                          ),
-                        ],
-                      ),
-                    ],
-                  )
-                : h.empty,
-              tracks.length === 0
-                ? h.div(
-                    [h.Class('flex flex-col items-center justify-center p-8 text-center')],
-                    [
-                      lucide(iconPaths.play, 'mb-4 h-8 w-8 text-muted-foreground'),
-                      h.h3([h.Class('m-0 mb-2 font-medium')], ['Your queue is empty']),
-                      h.p(
-                        [h.Class('text-base text-muted-foreground')],
-                        ['Add some tracks to get started'],
-                      ),
-                    ],
-                  )
-                : h.div(
-                    [],
-                    [
-                      h.h3(
-                        [h.Class('m-0 mb-3 text-base font-medium text-muted-foreground')],
-                        [`Up next (${tracks.length})`],
-                      ),
-                      h.ol(
-                        [h.Class('m-0 list-none space-y-1 p-0')],
-                        tracks.map((track, index) =>
-                          h.li(
-                            [
-                              h.Key(track.id),
-                              h.Draggable(true),
-                              h.OnDragStart(Message.DragStarted({ index })),
-                              h.OnDragOver(Message.OperationCompleted()),
-                              h.OnDrop(Message.DroppedAt({ index })),
-                              h.Class(
-                                `group m-0 flex list-none items-center gap-2 rounded-sm p-2 transition-colors hover:bg-muted ${
-                                  index === currentIndex ? 'bg-muted/60 text-highlight' : ''
-                                }`,
-                              ),
-                            ],
-                            [
-                              h.img([
-                                h.Src(artworkUrl(track.thumbnailUrl || fallbackArtwork, 96)),
-                                h.Alt(''),
-                                h.Class('h-10 w-10 shrink-0 rounded-sm object-cover'),
-                              ]),
-                              h.button(
-                                [
-                                  h.Type('button'),
-                                  h.OnClick(Message.PlayIndex({ index })),
-                                  h.Class(
-                                    'min-w-0 flex-1 border-0 bg-transparent p-0 text-left text-sm',
-                                  ),
-                                ],
-                                [
-                                  h.span([h.Class('block truncate font-medium')], [track.title]),
-                                  h.span(
-                                    [h.Class('block truncate text-xs text-muted-foreground')],
-                                    [
-                                      index === currentIndex
-                                        ? 'Now playing'
-                                        : track.creators?.map(({ name }) => name).join(', ') ||
-                                          'Unknown creator',
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              h.button(
-                                [
-                                  h.Type('button'),
-                                  h.OnClick(Message.Reorder({ from: index, to: index - 1 })),
-                                  h.Disabled(index === 0),
-                                  h.AriaLabel(`Move ${track.title} up`),
-                                  h.Class(
-                                    `${ghostButton} h-7 w-7 text-muted-foreground hover:text-foreground`,
-                                  ),
-                                ],
-                                [lucide('m18 15-6-6-6 6', 'h-3.5 w-3.5')],
-                              ),
-                              h.button(
-                                [
-                                  h.Type('button'),
-                                  h.OnClick(Message.Reorder({ from: index, to: index + 1 })),
-                                  h.Disabled(index === tracks.length - 1),
-                                  h.AriaLabel(`Move ${track.title} down`),
-                                  h.Class(
-                                    `${ghostButton} h-7 w-7 text-muted-foreground hover:text-foreground`,
-                                  ),
-                                ],
-                                [lucide(iconPaths.chevronDown, 'h-3.5 w-3.5')],
-                              ),
-                              h.button(
-                                [
-                                  h.Type('button'),
-                                  h.OnClick(Message.Remove({ index })),
-                                  h.AriaLabel(`Remove ${track.title}`),
-                                  h.Class(
-                                    `${ghostButton} h-7 w-7 text-muted-foreground hover:text-destructive`,
-                                  ),
-                                ],
-                                [lucide(iconPaths.close, 'h-3.5 w-3.5')],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-            ],
-          ),
-          h.button(
-            [
-              h.Type('button'),
-              h.OnClick(Message.Clear()),
-              h.Disabled(tracks.length === 0),
-              h.Class(
-                'h-9 w-full rounded-sm border border-border bg-transparent text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50',
-              ),
-            ],
-            ['Clear queue'],
-          ),
-        ],
-      ),
-    ],
-  )
-}
-
 const fullscreen = (model: Model, h: H, current: QueueTrackType) => {
   const { transport: playback, volume, queue } = model.snapshot
   const muted = volume.isMuted || volume.volume === 0
@@ -253,7 +52,7 @@ const fullscreen = (model: Model, h: H, current: QueueTrackType) => {
     [
       h.AriaLabel('Now playing'),
       h.Class(
-        'fixed inset-0 z-50 flex flex-col bg-background text-foreground animate-in slide-in-from-bottom fade-in duration-350 ease-[cubic-bezier(0.22,1,0.36,1)]',
+        'absolute inset-0 flex flex-col bg-background text-foreground animate-in slide-in-from-bottom fade-in duration-350 ease-[cubic-bezier(0.22,1,0.36,1)]',
       ),
     ],
     [
@@ -276,7 +75,7 @@ const fullscreen = (model: Model, h: H, current: QueueTrackType) => {
       h.div(
         [
           h.Class(
-            'flex min-h-0 flex-1 flex-col items-center overflow-hidden px-4 pb-6 sm:justify-center sm:px-8 sm:pb-8',
+            'flex min-h-0 flex-1 flex-col items-center overflow-y-auto overscroll-contain px-4 pb-6 sm:justify-center sm:px-8 sm:pb-8',
           ),
         ],
         [
@@ -467,20 +266,44 @@ const pendingQueue = (model: Model, h: H) =>
     ],
   )
 
-export const view = defineView<Model, typeof Message.Type>((model, h) => {
-  const current = model.snapshot.queue.current
+const playerDialog = (model: Model, h: H) =>
+  h.submodel({
+    slotId: 'player-dialog',
+    model: model.playerDialog,
+    view: Dialog.view,
+    viewInputs: {
+      toView: ({ dialog, panel, title, isVisible }) =>
+        h.dialog(
+          [...dialog, h.Class('overlay-dialog')],
+          isVisible
+            ? [
+                h.h2([...title, h.Class('sr-only')], ['Now playing']),
+                h.div(
+                  [...panel],
+                  [
+                    model.snapshot.queue.current
+                      ? fullscreen(model, h, model.snapshot.queue.current)
+                      : h.p([], ['Loading player…']),
+                  ],
+                ),
+              ]
+            : [],
+        ),
+    },
+    toParentMessage: (message) => Message.GotPlayerDialogMessage({ message }),
+  })
 
-  return h.div(
+export const view = defineView<Model, typeof Message.Type>((model, h) =>
+  h.div(
     [],
     [
-      current
-        ? model.fullscreen
-          ? fullscreen(model, h, current)
-          : h.empty
-        : model.snapshot.queue.tracks.length
-          ? pendingQueue(model, h)
-          : h.empty,
+      playerDialog(model, h),
+      !model.playerDialog.isOpen &&
+      !model.snapshot.queue.current &&
+      model.snapshot.queue.tracks.length
+        ? pendingQueue(model, h)
+        : h.empty,
       queueSheet(model, h),
     ],
-  )
-})
+  ),
+)

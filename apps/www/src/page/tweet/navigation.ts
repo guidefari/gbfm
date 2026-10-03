@@ -28,7 +28,7 @@ export const startTweetShortcuts = () => {
 
     if (
       document.querySelector(
-        ':popover-open, dialog[open], aside[aria-label="Menu"], details[name="tweet-jumps"][open]',
+        ':popover-open, dialog[open], #account-menu-button[aria-expanded="true"], details[name="tweet-jumps"][open]',
       )
     )
       return

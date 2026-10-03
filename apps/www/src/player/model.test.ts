@@ -5,12 +5,12 @@ import { initialModel, Message, update } from './model'
 describe('player submodel', () => {
   it('models queue and fullscreen visibility independently', () => {
     const open = update(initialModel, Message.ToggleQueue()).model
-    expect(open.queueOpen).toBe(true)
+    expect(open.queueDialog.isOpen).toBe(true)
     expect(update(open, Message.ToggleFullscreen()).model).toMatchObject({
-      queueOpen: true,
-      fullscreen: true,
+      queueDialog: { isOpen: true },
+      playerDialog: { isOpen: true },
     })
-    expect(update(open, Message.CloseQueue()).model.queueOpen).toBe(false)
+    expect(update(open, Message.CloseQueue()).model.queueDialog.isOpen).toBe(false)
   })
 
   it('turns transport requests into Effects without performing them in update', () => {

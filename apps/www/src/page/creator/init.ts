@@ -1,3 +1,4 @@
+import * as Dialog from '@foldkit/ui/dialog'
 import type { Update } from 'foldkit'
 
 import { Hydrate } from './command'
@@ -13,6 +14,7 @@ export interface InitInput {
 }
 
 export const initialModel = ({ kind, editSlug, creatorId, authorized }: InitInput): Model => ({
+  reviewDialog: Dialog.init({ id: 'publish-review' }),
   draft: {
     kind,
     editSlug,

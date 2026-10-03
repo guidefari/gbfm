@@ -1,3 +1,4 @@
+import * as Dialog from '@foldkit/ui/dialog'
 import { Schema } from 'effect'
 import { defineMessageUnion } from 'foldkit/message'
 
@@ -33,6 +34,7 @@ export const Message = defineMessageUnion({
   MusicRemoved: {},
   KindChanged: { kind: Kind },
   ReviewRequested: {},
+  GotReviewDialogMessage: { message: Dialog.Message },
   ReviewClosed: {},
   ResolveMusicRequested: {},
   MusicResolved: {

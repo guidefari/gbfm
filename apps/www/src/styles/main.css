@@ -812,26 +812,59 @@
 .profile-content {
   gap: 3rem;
 }
+.mobile-menu-dialog:not([open]) {
+  display: none;
+}
+.mobile-menu-dialog {
+  margin: 0;
+  overflow: hidden;
+  color: var(--foreground);
+}
+.mobile-menu-backdrop {
+  position: absolute;
+  inset: 0;
+  background: #0008;
+}
 .menu-sheet {
   position: fixed;
-  bottom: calc(3rem + env(safe-area-inset-bottom));
+  bottom: 0;
   left: 0;
   right: 0;
-  z-index: 50;
-  max-height: 80dvh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  max-height: min(80dvh, calc(100dvh - env(safe-area-inset-top) - 1rem));
+  overflow: hidden;
   background: var(--background);
   border-top: 1px solid var(--border);
-  padding: 1rem;
-  box-shadow: 0 -20px 100px #0008;
+  border-radius: 0.75rem 0.75rem 0 0;
+  padding: 1rem max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom))
+    max(1rem, env(safe-area-inset-left));
+  box-shadow: 0 -8px 32px #0003;
 }
 .menu-sheet header {
   display: flex;
+  flex-shrink: 0;
   justify-content: space-between;
   align-items: center;
+  padding-bottom: 0.5rem;
+}
+.menu-sheet header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+.menu-sheet header button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+}
+.menu-sheet-links {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
 .menu-sheet a {
   display: block;
+  min-height: 44px;
   padding: 0.6rem;
   text-decoration: none;
 }
@@ -839,9 +872,6 @@
   margin-top: 1rem;
   color: var(--muted-foreground);
   font-size: 0.75rem;
-}
-.search-dialog:not([open]) {
-  display: none;
 }
 .search-dialog {
   margin: 12dvh auto 0;
@@ -851,8 +881,24 @@
   color: var(--foreground);
   padding: 0;
 }
-.search-dialog::backdrop {
+.overlay-dialog:not([open]) {
+  display: none;
+}
+.overlay-dialog {
+  margin: 0;
+  overflow: hidden;
+  color: var(--foreground);
+}
+.overlay-backdrop {
+  position: absolute;
+  inset: 0;
   background: #000b;
+}
+.search-dialog {
+  position: relative;
+  max-height: 80dvh;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
 .search-dialog form {
   display: flex;
@@ -1266,9 +1312,11 @@
   backdrop-filter: blur(3px);
 }
 .creator-review-shell {
+  position: relative;
+  overscroll-behavior-y: contain;
   display: grid;
   width: min(100%, 42rem);
-  max-height: 85vh;
+  max-height: 85dvh;
   gap: 1.5rem;
   overflow-y: auto;
   padding: 1.5rem;
@@ -1811,8 +1859,7 @@
 }
 
 .account-menu {
-  position: fixed;
-  inset: auto 1.5rem 3.5rem auto;
+  z-index: 70;
   margin: 0;
   width: min(17rem, calc(100vw - 2rem));
   max-height: calc(100dvh - 5rem);
@@ -1826,7 +1873,14 @@
 }
 
 @media (width < 64rem) {
-  .account-menu:popover-open {
+  .account-menu,
+  .account-menu-backdrop {
     display: none;
   }
+}
+
+.account-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 39;
 }

@@ -6,7 +6,6 @@ import * as Creator from './page/creator'
 import * as Dashboard from './page/dashboard'
 import { startTweetShortcuts } from './page/tweet/navigation'
 import * as Player from './player'
-import { startSearchShortcuts } from './search'
 import { SpotifyConnectionLive } from './spotify/connection'
 import { subscriptions } from './subscription'
 import { startBrowserTelemetry } from './telemetry/browser'
@@ -36,8 +35,6 @@ const stopTheme = startTheme()
 
 const stopArtwork = startArtworkFallback()
 
-const stopSearchShortcuts = startSearchShortcuts()
-
 const stopTweetShortcuts = startTweetShortcuts()
 
 Runtime.hydrate(application, { buildId: import.meta.env.FOLDKIT_BUILD_ID })
@@ -62,8 +59,6 @@ const stopTelemetry = startBrowserTelemetry({
 import.meta.hot?.dispose(stopTelemetry)
 
 import.meta.hot?.dispose(stopTheme)
-
-import.meta.hot?.dispose(stopSearchShortcuts)
 
 import.meta.hot?.dispose(stopTweetShortcuts)
 

@@ -15,6 +15,7 @@ test.beforeEach(async ({ page }) => {
 
 test('desktop account actions support keyboard, dismissal, navigation and sign-out', async ({
   page,
+  browserName,
 }) => {
   await signIn(page, 'creator@gbfm.local')
   const trigger = page.getByRole('button', { name: 'Account menu', exact: true })
@@ -44,10 +45,11 @@ test('desktop account actions support keyboard, dismissal, navigation and sign-o
   await trigger.click()
   await expect(menu).not.toBeVisible()
   await trigger.click()
-  await page.getByRole('main').click({ position: { x: 20, y: 20 } })
+  await page.locator('.account-menu-backdrop').click({ position: { x: 20, y: 20 } })
   await expect(menu).not.toBeVisible()
   await trigger.click()
-  await page.keyboard.press('Tab')
+  await expect(menu.getByRole('link', { name: 'Dashboard', exact: true })).toBeFocused()
+  await page.keyboard.press(browserName === 'webkit' ? 'Alt+Tab' : 'Tab')
   await expect(menu.getByRole('link', { name: 'Edit profile', exact: true })).toBeFocused()
   await page.keyboard.press('Enter')
   await expect(page).toHaveURL(/\/dashboard\/profile$/)
@@ -76,7 +78,7 @@ test('listener menu hides creator actions and respects themes and mobile navigat
   await page.setViewportSize({ width: 390, height: 844 })
   await expect(trigger).not.toBeVisible()
   await page.getByRole('button', { name: 'Menu', exact: true }).click()
-  const mobileMenu = page.getByRole('complementary', { name: 'Menu', exact: true })
+  const mobileMenu = page.getByRole('dialog', { name: 'Menu', exact: true })
   await expect(mobileMenu).toBeVisible()
   await expect(mobileMenu.getByRole('link', { name: 'Dashboard', exact: true })).toBeVisible()
 })
@@ -98,10 +100,13 @@ test('account popover blocks tweet shortcuts and closes on browser history navig
   const trigger = page.getByRole('button', { name: 'Account menu', exact: true })
   const menu = page.getByRole('navigation', { name: 'Account', exact: true })
   await trigger.click()
+  await expect(menu.getByRole('link', { name: 'Dashboard', exact: true })).toBeFocused()
   await page.keyboard.press('ArrowLeft')
   await expect(page).toHaveURL(/\/tweet\/e2e-archive-one$/)
   await expect(menu).toBeVisible()
   await page.keyboard.press('Escape')
+  await expect(menu).not.toBeVisible()
+  await expect(trigger).toBeFocused()
   await page.getByRole('link', { name: 'Newer tweet', exact: true }).focus()
   await page.keyboard.press('ArrowLeft')
   await expect(page).toHaveURL(/\/tweet\/e2e-archive-two$/)

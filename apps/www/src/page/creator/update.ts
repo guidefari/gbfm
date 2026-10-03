@@ -1,4 +1,6 @@
-import type { Update } from 'foldkit'
+import * as Dialog from '@foldkit/ui/dialog'
+import { Option } from 'effect'
+import { Update } from 'foldkit'
 
 import {
   CancelUpload,
@@ -32,6 +34,24 @@ const tweetSlug = (value: string): string | null => {
 
   return match?.[1] ?? null
 }
+
+const reviewDialogFold = {
+  read: (model: Model) => Option.some(model.reviewDialog),
+  write: (model: Model, reviewDialog: Dialog.Model): Model => ({ ...model, reviewDialog }),
+  toParentMessage: (message: Dialog.Message) => Message.GotReviewDialogMessage({ message }),
+  foldOutMessage: Dialog.OutMessage.match<Update.Step<Model, Message>>({
+    Opened: () => (model) => ({ model: { ...model, phase: 'reviewing' } }),
+    Closed: () => (model) => ({
+      model: model.phase === 'reviewing' ? { ...model, phase: 'writing' } : model,
+    }),
+  }),
+}
+
+const updateReviewDialog = Update.foldChild({ ...reviewDialogFold, update: Dialog.update })
+
+const openReviewDialog = Update.foldChildStep({ ...reviewDialogFold, update: Dialog.open })
+
+const closeReviewDialog = Update.foldChildStep({ ...reviewDialogFold, update: Dialog.close })
 
 export const update = (
   model: Model,
@@ -128,8 +148,9 @@ export const update = (
       ),
     KindChanged: ({ kind }) =>
       model.draft.editSlug ? { model } : changed(model, { ...model.draft, kind }),
-    ReviewRequested: () => ({ model: { ...model, phase: 'reviewing' } }),
-    ReviewClosed: () => ({ model: { ...model, phase: 'writing' } }),
+    ReviewRequested: () => openReviewDialog(model),
+    ReviewClosed: () => closeReviewDialog(model),
+    GotReviewDialogMessage: ({ message }) => updateReviewDialog(model, message),
     ResolveMusicRequested: () => ({
       model: { ...model, error: null },
       commands: [ResolveMusic({ url: model.draft.musicUrl.trim(), kind: model.draft.kind })],
@@ -207,10 +228,13 @@ export const update = (
       draftValidationError(model.draft) || (model.draft.kind === 'mix' && model.episodeError)
         ? { model }
         : model.authorized
-          ? {
-              model: { ...model, phase: 'saving' },
-              commands: [Save({ draft: model.draft, creatorId: model.creatorId, publish: true })],
-            }
+          ? Update.combine(model, [
+              closeReviewDialog,
+              (model) => ({
+                model: { ...model, phase: 'saving' },
+                commands: [Save({ draft: model.draft, creatorId: model.creatorId, publish: true })],
+              }),
+            ])
           : { model: { ...model, phase: 'forbidden' } },
     Saved: ({ slug, published }) => ({
       model: {

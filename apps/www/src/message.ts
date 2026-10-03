@@ -1,3 +1,5 @@
+import * as Dialog from '@foldkit/ui/dialog'
+import * as Popover from '@foldkit/ui/popover'
 import { MicroPostScreenRepliesResponse } from '@gbfm/api/post'
 import { Schema } from 'effect'
 import { defineMessageUnion } from 'foldkit/message'
@@ -14,7 +16,9 @@ import * as Search from './search'
 export const Message = defineMessageUnion({
   ClientStarted: {},
   MenuToggled: {},
+  GotMobileMenuMessage: { message: Dialog.Message },
   AccountMenuClosed: {},
+  GotAccountMenuMessage: { message: Popover.Message },
   GotSearchMessage: { message: Search.Message },
   GotPublicActionMessage: { message: PublicActions.Message },
   SkipSeenChanged: { value: Schema.Boolean },

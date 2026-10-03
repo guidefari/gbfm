@@ -1,3 +1,5 @@
+import * as Dialog from '@foldkit/ui/dialog'
+import * as Popover from '@foldkit/ui/popover'
 import { AudioResponse } from '@gbfm/api/audio'
 import { MicroPostNeighboursResponse } from '@gbfm/api/navigation'
 import { MicroPostScreenResponse } from '@gbfm/api/post'
@@ -76,7 +78,8 @@ export type PageCache = HashMap.HashMap<string, AsyncData.AsyncData<Flags, strin
 export const Model = Schema.Struct({
   route: Route,
   flags: Flags,
-  menuOpen: Schema.Boolean,
+  mobileMenu: Dialog.Model,
+  accountMenu: Popover.Model,
   search: Search.Model,
   skipSeen: Schema.Boolean,
   loading: Schema.Boolean,

@@ -124,13 +124,13 @@ test('playback advances and persists through client navigation', async ({ page }
     .getByRole('button', { name: 'Play', exact: true })
     .click()
   expect((await recordedPlay).status()).toBe(200)
-  const player = page.getByRole('region', { name: 'Now playing' })
+  const player = page.getByRole('dialog', { name: 'Now playing', exact: true })
   await expect(player.getByRole('button', { name: 'Pause', exact: true })).toBeVisible()
   await expect
     .poll(async () =>
       Number(
         await page
-          .getByRole('region', { name: 'Now playing' })
+          .getByRole('dialog', { name: 'Now playing', exact: true })
           .getByRole('slider', { name: 'Playback position' })
           .inputValue(),
       ),
@@ -145,13 +145,17 @@ test('playback advances and persists through client navigation', async ({ page }
     .click()
   await expect(player.getByRole('button', { name: 'Pause', exact: true })).toBeVisible()
   await player.getByRole('button', { name: /^Queue \(/ }).click()
-  await expect(page.getByRole('complementary', { name: 'Playback queue' })).toContainText(
+  await expect(page.getByRole('dialog', { name: 'Playback queue' })).toContainText(
     'Local Frequencies',
   )
   await page
-    .getByRole('complementary', { name: 'Playback queue' })
+    .getByRole('dialog', { name: 'Playback queue' })
     .getByRole('button', { name: 'Close queue', exact: true })
     .click()
+  await expect(page.getByRole('dialog', { name: 'Playback queue' })).not.toBeVisible()
+  await expect
+    .poll(() => page.evaluate(() => getComputedStyle(document.documentElement).overflow))
+    .toBe('hidden')
   await player.getByRole('button', { name: 'Pause', exact: true }).click()
   await expect(player.getByRole('button', { name: 'Play', exact: true })).toBeVisible()
 })
@@ -169,15 +173,24 @@ test('creator restores an autosaved draft, publishes it, and reads its public SS
   await page
     .getByRole('textbox', { name: 'Writing canvas' })
     .fill('An independent signal from the Foldkit composer.')
-  await page.getByRole('textbox', { name: 'Slug', exact: true }).fill(slug)
   await page.reload()
   await expect(page.getByRole('textbox', { name: 'Writing canvas' })).toHaveValue(
     'An independent signal from the Foldkit composer.',
   )
-  await page.getByRole('button', { name: 'Continue', exact: true }).click()
-  await page.getByRole('button', { name: 'Publish', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('Published.')
-  await page.getByRole('link', { name: 'View published content' }).click()
+  const continueButton = page.getByRole('button', { name: 'Continue', exact: true })
+  await continueButton.focus()
+  await page.keyboard.press('Enter')
+  const review = page.getByRole('dialog', { name: 'Publish post', exact: true })
+  await expect(review).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(review).not.toBeVisible()
+  await expect(continueButton).toBeFocused()
+  await continueButton.click()
+  await expect(review).toBeVisible()
+  await review.getByRole('textbox', { name: 'Story URL', exact: true }).fill(slug)
+  await review.getByRole('button', { name: 'Publish', exact: true }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Published.' })).toBeVisible()
+  await page.getByRole('link', { name: 'View post' }).click()
   await expect(page).toHaveURL(new RegExp(`/tweet/${slug}$`))
   const response = await page.request.get(`/tweet/${slug}`)
   expect(response.status()).toBe(200)
@@ -189,6 +202,9 @@ test('bottom navigation search groups results and closes on selection', async ({
   await page.getByRole('button', { name: 'Search', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'Search', exact: true })
   await expect(dialog).toBeVisible()
+  await dialog.getByRole('searchbox', { name: 'Search query' }).focus()
+  await page.keyboard.press('Enter')
+  await expect(dialog).toBeVisible()
   await dialog.getByRole('searchbox', { name: 'Search query' }).fill('Local Frequencies')
   await expect(dialog.getByRole('heading', { name: 'Mixes', exact: true })).toBeVisible()
   await dialog.getByRole('link', { name: 'Local Frequencies', exact: true }).click()
@@ -199,10 +215,10 @@ test('bottom navigation search groups results and closes on selection', async ({
   await page.keyboard.press('Escape')
   await expect(dialog).not.toBeVisible()
   await page.getByRole('button', { name: 'Menu', exact: true }).click()
-  await expect(page.getByRole('complementary', { name: 'Menu', exact: true })).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Menu', exact: true })).toBeVisible()
   await page.getByRole('link', { name: 'Mixes', exact: true }).click()
   await expect(page).toHaveURL(/\/mixes$/)
-  await expect(page.getByRole('complementary', { name: 'Menu', exact: true })).not.toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Menu', exact: true })).not.toBeVisible()
 })
 
 test('appearance persists explicit themes and responds to system changes', async ({ page }) => {
@@ -298,7 +314,7 @@ test('show selection survives reload and history, with distinct populated and em
   await page.getByRole('button', { name: 'Play episode 1: Local Frequencies', exact: true }).click()
   await expect(
     page
-      .getByRole('region', { name: 'Now playing' })
+      .getByRole('dialog', { name: 'Now playing', exact: true })
       .getByRole('button', { name: 'Pause', exact: true }),
   ).toBeVisible()
 })

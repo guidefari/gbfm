@@ -12,17 +12,6 @@ import { showImages } from './page/shows/document'
 import { tweetImages } from './page/tweet/card'
 import { preloadArtwork } from './view/artwork'
 
-export const CloseAccountMenu = Command.define('Application.CloseAccountMenu', {
-  messages: [Message.NavigationCompleted],
-  execute: Effect.sync(() => {
-    const element = document.getElementById('account-menu')
-
-    if (element instanceof HTMLElement && element.matches(':popover-open')) element.hidePopover()
-
-    return Message.NavigationCompleted()
-  }),
-})
-
 export const StartClient = Command.define('Application.Start', {
   messages: [Message.ClientStarted],
   execute: Effect.succeed(Message.ClientStarted()),

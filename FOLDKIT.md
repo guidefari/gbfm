@@ -4,6 +4,10 @@ The WWW app uses Foldkit 0.163.0 (`apps/www/package.json`). Before changing its 
 
 The Model owns state, Messages describe events, `update` returns a Model and Commands, and `view` describes the UI. Runtime owns external work through Commands, Subscriptions, Mounts, Flags, Resources, and ManagedResource. Follow a navigation from `apps/www/src/entry.client.ts` through `apps/www/src/update.ts` and `apps/www/src/command.ts`, then into `apps/www/src/entry.server.ts` for server data requests. Keep side effects out of `view` and stateful behavior in the owning submodel.
 
+## UI primitives
+
+Use the pinned `@foldkit/ui` 0.163.0 primitives for dialogs and popovers. Mobile navigation, search, playback, publish review, and account actions fold their primitive Models and Messages into the owning submodel. Keep the dialog mounted while closed so its Commands can manage native modal focus and scroll locking. Preserve native selects, sliders, and disclosures when they already provide the required behavior.
+
 ## Layout
 
 `apps/www/src` follows Foldkit's [Project Organization](https://foldkit.dev/patterns/project-organization):

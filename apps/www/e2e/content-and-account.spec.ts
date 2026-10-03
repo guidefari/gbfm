@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 
 test('changelog renders release history without JavaScript', async ({ browser }) => {
   const context = await browser.newContext({ javaScriptEnabled: false })
+
   try {
     const page = await context.newPage()
     await page.goto(`${process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:5173'}/changelog`)
@@ -61,7 +62,7 @@ test('public writing renders canonical rich content without executing arbitrary 
   await expect(page.locator('.rich-content a[href^="javascript:"]')).toHaveCount(0)
   await page.getByRole('button', { name: 'Add to queue', exact: true }).click()
   await page.getByRole('button', { name: 'Open queue', exact: true }).click()
-  await expect(page.getByRole('complementary', { name: 'Playback queue' })).toContainText(
+  await expect(page.getByRole('dialog', { name: 'Playback queue' })).toContainText(
     'Local Frequencies',
   )
 })

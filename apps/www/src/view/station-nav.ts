@@ -1,7 +1,6 @@
-import type { HtmlBuilder } from 'foldkit/html'
+import type { Html, HtmlBuilder } from 'foldkit/html'
 
 import type { Principal } from '../model'
-import { accountMenu } from './account-menu'
 import { artworkUrl } from './artwork'
 import { iconPaths, lucide } from './icons'
 
@@ -16,7 +15,7 @@ export type StationNavProps<M> = {
   readonly pathname: string
   readonly links: ReadonlyArray<readonly [string, string]>
   readonly principal: Principal | null
-  readonly closeAccountMenu: M
+  readonly accountMenu: Html
   readonly interactive: boolean
   readonly menuOpen: boolean
   readonly nowPlaying: NowPlaying | null
@@ -140,7 +139,7 @@ export const stationNav = <M>(h: HtmlBuilder<M>, props: StationNavProps<M>) => {
               )
             : h.empty,
           props.principal
-            ? accountMenu(h, props.principal, props.closeAccountMenu, props.interactive)
+            ? props.accountMenu
             : h.a(
                 [
                   h.Href(`/auth/sign-in?returnTo=${encodeURIComponent(props.pathname)}`),
@@ -237,6 +236,8 @@ export const stationNav = <M>(h: HtmlBuilder<M>, props: StationNavProps<M>) => {
               h.AriaLabel('Menu'),
               h.Disabled(!props.interactive),
               h.AriaExpanded(props.menuOpen),
+              h.AriaHasPopup('dialog'),
+              h.AriaControls('mobile-menu'),
               h.OnClick(props.toggleMenu),
               h.Class(`${tabClass} ${props.menuOpen ? 'text-highlight' : ''}`),
             ],

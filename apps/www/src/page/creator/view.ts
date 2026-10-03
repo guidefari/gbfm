@@ -7,6 +7,7 @@ import { defineView } from 'foldkit/submodel'
 import { richContent } from '../../view/rich-content/fallback'
 import { Message } from './message'
 import { draftValidationError, TWEET_MAX_LENGTH, type Model } from './model'
+import { review } from './review-view'
 
 export interface ViewInputs {
   readonly role: string | null
@@ -404,88 +405,6 @@ const mixFields = (model: Model, h: Builder, busy: boolean): Html =>
     ],
   )
 
-const review = (model: Model, h: Builder, busy: boolean, canContinue: boolean): Html =>
-  h.div(
-    [h.Class('creator-review-backdrop')],
-    [
-      h.section(
-        [h.Class('creator-review-shell'), h.Role('dialog'), h.AriaLabel('Publish post')],
-        [
-          h.header(
-            [h.Class('creator-review-header')],
-            [
-              h.h2([], [model.draft.editSlug ? 'Update post' : 'Ready to publish']),
-              h.button(
-                [
-                  h.Type('button'),
-                  h.AriaLabel('Close publish review'),
-                  h.OnClick(Message.ReviewClosed()),
-                ],
-                ['×'],
-              ),
-            ],
-          ),
-          publishType(model, h, busy),
-          model.draft.kind === 'micro' && model.draft.title.length > TWEET_MAX_LENGTH
-            ? h.p(
-                [h.Class('form-error')],
-                [
-                  `Tweets are capped at ${TWEET_MAX_LENGTH} characters (${model.draft.title.length}). Trim the title or switch to Editorial.`,
-                ],
-              )
-            : h.empty,
-          h.div(
-            [h.Class('creator-review-group')],
-            [
-              h.span([], ['Preview']),
-              h.article(
-                [h.Class('creator-review')],
-                [
-                  h.h3([], [model.draft.title || 'Untitled']),
-                  model.draft.content
-                    ? h.p([h.Class('creator-review-copy')], [model.draft.content])
-                    : h.empty,
-                  model.draft.musicEntityId
-                    ? h.p(
-                        [h.Class('creator-review-music')],
-                        [
-                          `♫ ${model.musicPreviewTitle ?? `Attached ${model.draft.musicEntityType ?? 'music'}`}`,
-                        ],
-                      )
-                    : h.empty,
-                  model.quotePreview ? h.blockquote([], [model.quotePreview]) : h.empty,
-                  model.draft.tags.length
-                    ? h.ul(
-                        [h.Class('creator-tag-list'), h.AriaLabel('Tags')],
-                        model.draft.tags.map((tag) => h.li([], [`#${tag}`])),
-                      )
-                    : h.empty,
-                ],
-              ),
-            ],
-          ),
-          metadata(model, h, busy),
-          h.div(
-            [h.Class('creator-publish-actions')],
-            [
-              h.button([h.Type('button'), h.OnClick(Message.ReviewClosed())], ['Keep editing']),
-              h.button(
-                [
-                  h.Type('button'),
-                  h.OnClick(Message.PublishRequested()),
-                  h.Disabled(
-                    busy || !canContinue || (model.draft.kind === 'mix' && !model.draft.audioUrl),
-                  ),
-                ],
-                [busy ? 'Publishing…' : model.draft.editSlug ? 'Update' : 'Publish'],
-              ),
-            ],
-          ),
-        ],
-      ),
-    ],
-  )
-
 export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, inputs, h) => {
   if (!model.authorized || !canCreatePosts(inputs.role))
     return h.section(
@@ -576,8 +495,12 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
             ],
           )
         : h.empty,
+      review(model, h, busy, canContinue, {
+        publishType: publishType(model, h, busy),
+        metadata: metadata(model, h, busy),
+      }),
       model.phase === 'reviewing'
-        ? review(model, h, busy, canContinue)
+        ? h.empty
         : h.div(
             [h.Class('creator-workspace')],
             [

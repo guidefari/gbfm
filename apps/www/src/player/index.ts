@@ -1,4 +1,4 @@
-export { initialModel, Message, Model, Snapshot, update } from './model'
+export { closeOverlays, initialModel, Message, Model, Snapshot, update } from './model'
 
 export {
   makeHtmlAudioEngineLayer,

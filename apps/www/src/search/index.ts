@@ -1,10 +1,12 @@
+import * as Dialog from '@foldkit/ui/dialog'
 import { SearchResults, type SearchResultItem } from '@gbfm/api/search'
-import { Effect, Schema } from 'effect'
-import { Command, Navigation, type Update } from 'foldkit'
+import { Effect, Option, Schema } from 'effect'
+import { Command, Navigation, Subscription, Update } from 'foldkit'
 import { defineMessageUnion } from 'foldkit/message'
 import { defineView } from 'foldkit/submodel'
 
 export const Model = Schema.Struct({
+  dialog: Dialog.Model,
   query: Schema.String,
   status: Schema.Literals(['idle', 'loading', 'ready', 'error']),
   results: Schema.NullOr(SearchResults),
@@ -12,10 +14,16 @@ export const Model = Schema.Struct({
 
 export type Model = typeof Model.Type
 
-export const initialModel: Model = { query: '', status: 'idle', results: null }
+export const initialModel: Model = {
+  dialog: Dialog.init({ id: 'global-search' }),
+  query: '',
+  status: 'idle',
+  results: null,
+}
 
 export const Message = defineMessageUnion({
   Opened: {},
+  GotDialogMessage: { message: Dialog.Message },
   Closed: {},
   Changed: { query: Schema.String },
   CompletedCancelSearch: { query: Schema.String },
@@ -26,24 +34,6 @@ export const Message = defineMessageUnion({
 })
 
 export type Message = typeof Message.Type
-
-const dialog = () => {
-  const element = document.getElementById('global-search')
-
-  return element instanceof HTMLDialogElement ? element : null
-}
-
-const SetOpen = Command.define('Search.SetOpen', {
-  args: { open: Schema.Boolean },
-  messages: [Message.Completed],
-  execute: ({ open }) =>
-    Effect.sync(() => {
-      if (open) dialog()?.showModal()
-      else dialog()?.close()
-
-      return Message.Completed()
-    }),
-})
 
 const Search = Command.define('Search.Query', {
   args: { query: Schema.String },
@@ -85,22 +75,35 @@ export const resultHref = (result: SearchResultItem): string | null => {
 const Navigate = Command.define('Search.Navigate', {
   args: { href: Schema.String },
   messages: [Message.Completed],
-  execute: ({ href }) =>
-    Effect.sync(() => dialog()?.close()).pipe(
-      Effect.andThen(Navigation.pushUrl(href)),
-      Effect.as(Message.Completed()),
-    ),
+  execute: ({ href }) => Navigation.pushUrl(href).pipe(Effect.as(Message.Completed())),
 })
+
+const dialogFold = {
+  read: (model: Model) => Option.some(model.dialog),
+  write: (model: Model, dialog: Dialog.Model): Model => ({ ...model, dialog }),
+  toParentMessage: (message: Dialog.Message) => Message.GotDialogMessage({ message }),
+  foldOutMessage: Dialog.OutMessage.match<Update.Step<Model, Message>>({
+    Opened: () => (model) => ({ model }),
+    Closed: () => (model) => ({
+      model: { ...model, query: '', status: 'idle', results: null },
+      commands: [Search.Interrupt(() => Message.Completed())],
+    }),
+  }),
+}
+
+const updateDialog = Update.foldChild({ ...dialogFold, update: Dialog.update })
+
+const openDialog = Update.foldChildStep({ ...dialogFold, update: Dialog.open })
+
+export const close = Update.foldChildStep({ ...dialogFold, update: Dialog.close })
 
 export const update = (model: Model, message: Message): Update.Return<Model, Message> =>
   Message.match<Update.Return<Model, Message>>(message, {
-    Opened: () => ({ model, commands: [SetOpen({ open: true })] }),
-    Closed: () => ({
-      model: initialModel,
-      commands: [SetOpen({ open: false }), Search.Interrupt(() => Message.Completed())],
-    }),
+    Opened: () => openDialog(model),
+    GotDialogMessage: ({ message }) => updateDialog(model, message),
+    Closed: () => close(model),
     Changed: ({ query }) => ({
-      model: { query, results: null, status: query.trim() ? 'loading' : 'idle' },
+      model: { ...model, query, results: null, status: query.trim() ? 'loading' : 'idle' },
       commands: [Search.Interrupt(() => Message.CompletedCancelSearch({ query }))],
     }),
     CompletedCancelSearch: ({ query }) => ({
@@ -123,106 +126,127 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
 
       const href = first ? resultHref(first) : null
 
-      return { model, commands: href ? [Navigate({ href })] : [] }
+      if (!href) return { model }
+
+      const closed = close(model)
+
+      return {
+        ...closed,
+        commands: [...(closed.commands ?? []), Navigate({ href })],
+      }
     },
   })
 
 export const view = defineView<Model, Message>((model, h) =>
-  h.dialog(
-    [h.Id('global-search'), h.Class('search-dialog'), h.AriaLabel('Search')],
-    [
-      h.form(
-        [h.Role('search'), h.OnSubmit(Message.Submitted())],
-        [
-          h.input([
-            h.Type('search'),
-            h.AriaLabel('Search query'),
-            h.Value(model.query),
-            h.Placeholder('Search shows, mixes, tweets, editorial…'),
-            h.OnInput((query) => Message.Changed({ query })),
-          ]),
-          h.button(
-            [h.Type('button'), h.AriaLabel('Close search'), h.OnClick(Message.Closed())],
-            ['×'],
-          ),
-        ],
-      ),
-      model.status === 'loading' ? h.p([h.Role('status')], ['Searching…']) : h.empty,
-      model.status === 'error' ? h.p([h.Role('alert')], ['Search failed. Try again.']) : h.empty,
-      model.results
-        ? h.div(
-            [h.Class('search-results')],
-            [
-              ...(['shows', 'audio', 'posts'] as const).flatMap((group) => {
-                const items = model.results?.[group] ?? []
+  h.submodel({
+    slotId: 'search-dialog',
+    model: model.dialog,
+    view: Dialog.view,
+    viewInputs: {
+      toView: ({ dialog, backdrop, panel, title, isVisible }) =>
+        h.dialog(
+          [...dialog, h.Class('overlay-dialog')],
+          isVisible
+            ? [
+                h.div([...backdrop, h.Class('overlay-backdrop')]),
+                h.div(
+                  [...panel, h.Class('search-dialog')],
+                  [
+                    h.h2([...title, h.Class('sr-only')], ['Search']),
+                    h.form(
+                      [h.Role('search'), h.OnSubmit(Message.Submitted())],
+                      [
+                        h.input([
+                          h.Type('search'),
+                          h.AriaLabel('Search query'),
+                          h.Value(model.query),
+                          h.Placeholder('Search shows, mixes, tweets, editorial…'),
+                          h.OnInput((query) => Message.Changed({ query })),
+                        ]),
+                        h.button(
+                          [
+                            h.Type('button'),
+                            h.AriaLabel('Close search'),
+                            h.OnClick(Message.Closed()),
+                          ],
+                          ['×'],
+                        ),
+                      ],
+                    ),
+                    model.status === 'loading' ? h.p([h.Role('status')], ['Searching…']) : h.empty,
+                    model.status === 'error'
+                      ? h.p([h.Role('alert')], ['Search failed. Try again.'])
+                      : h.empty,
+                    model.results
+                      ? h.div(
+                          [h.Class('search-results')],
+                          [
+                            ...(['shows', 'audio', 'posts'] as const).flatMap((group) => {
+                              const items = model.results?.[group] ?? []
 
-                if (items.length === 0) return []
+                              if (items.length === 0) return []
 
-                return [
-                  h.section(
-                    [],
-                    [
-                      h.h2(
-                        [],
-                        [
-                          group === 'audio'
-                            ? 'Mixes'
-                            : group.charAt(0).toUpperCase() + group.slice(1),
-                        ],
-                      ),
-                      ...items.flatMap((item) => {
-                        const href = resultHref(item)
+                              return [
+                                h.section(
+                                  [],
+                                  [
+                                    h.h2(
+                                      [],
+                                      [
+                                        group === 'audio'
+                                          ? 'Mixes'
+                                          : group.charAt(0).toUpperCase() + group.slice(1),
+                                      ],
+                                    ),
+                                    ...items.flatMap((item) => {
+                                      const href = resultHref(item)
 
-                        return href
-                          ? [
-                              h.a(
-                                [h.Href(href), h.OnClick(Message.Closed())],
-                                [
-                                  item.thumbnailUrl
-                                    ? h.img([
-                                        h.Src(item.thumbnailUrl),
-                                        h.Alt(''),
-                                        h.Loading('lazy'),
-                                      ])
-                                    : h.empty,
-                                  h.span([], [item.title || item.slug]),
-                                ],
-                              ),
-                            ]
-                          : []
-                      }),
-                    ],
-                  ),
-                ]
-              }),
-              Object.values(model.results).every((items) => items.length === 0)
-                ? h.p([], [`No matches for “${model.query.trim()}”`])
-                : h.empty,
-            ],
-          )
-        : h.empty,
-    ],
-  ),
+                                      return href
+                                        ? [
+                                            h.a(
+                                              [h.Href(href), h.OnClick(Message.Closed())],
+                                              [
+                                                item.thumbnailUrl
+                                                  ? h.img([
+                                                      h.Src(item.thumbnailUrl),
+                                                      h.Alt(''),
+                                                      h.Loading('lazy'),
+                                                    ])
+                                                  : h.empty,
+                                                h.span([], [item.title || item.slug]),
+                                              ],
+                                            ),
+                                          ]
+                                        : []
+                                    }),
+                                  ],
+                                ),
+                              ]
+                            }),
+                            Object.values(model.results).every((items) => items.length === 0)
+                              ? h.p([], [`No matches for “${model.query.trim()}”`])
+                              : h.empty,
+                          ],
+                        )
+                      : h.empty,
+                  ],
+                ),
+              ]
+            : [],
+        ),
+    },
+    toParentMessage: (message) => Message.GotDialogMessage({ message }),
+  }),
 )
 
-export const startSearchShortcuts = () => {
-  const handle = (event: KeyboardEvent) => {
-    const typing =
-      event.target instanceof HTMLInputElement ||
-      event.target instanceof HTMLTextAreaElement ||
-      event.target instanceof HTMLSelectElement ||
-      (event.target instanceof HTMLElement && event.target.isContentEditable)
-
-    if (
-      !((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') &&
-      !(event.key === '/' && !typing)
-    )
-      return
-    event.preventDefault()
-    dialog()?.showModal()
-  }
-
-  window.addEventListener('keydown', handle)
-
-  return () => window.removeEventListener('keydown', handle)
-}
+export const subscriptions = Subscription.make<Model, Message>()(() => ({
+  shortcuts: Subscription.persistent(
+    Subscription.keyBindings({
+      bindings: [
+        { keys: 'Control+K', whileTyping: 'Allow', mapEvent: () => Message.Opened() },
+        { keys: 'Meta+K', whileTyping: 'Allow', mapEvent: () => Message.Opened() },
+        { keys: '/', mapEvent: () => Message.Opened() },
+      ],
+    }),
+  ),
+}))

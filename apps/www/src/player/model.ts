@@ -1,6 +1,7 @@
+import * as Dialog from '@foldkit/ui/dialog'
 import { QueueTrack, type PlaybackSnapshot } from '@gbfm/player'
-import { Effect, Schema } from 'effect'
-import { Command, type Update } from 'foldkit'
+import { Effect, Option, Schema } from 'effect'
+import { Command, Update } from 'foldkit'
 import { defineMessageUnion } from 'foldkit/message'
 
 import { PlayerClient, type PlayerClientValue } from './runtime'
@@ -26,8 +27,8 @@ export const Snapshot = Schema.Struct({ queue: QueueView, transport: Transport, 
 
 export const Model = Schema.Struct({
   snapshot: Snapshot,
-  queueOpen: Schema.Boolean,
-  fullscreen: Schema.Boolean,
+  queueDialog: Dialog.Model,
+  playerDialog: Dialog.Model,
   draggedIndex: Schema.NullOr(Schema.Number),
 })
 
@@ -48,8 +49,8 @@ export const initialSnapshot: PlaybackSnapshot = {
 
 export const initialModel: Model = {
   snapshot: initialSnapshot,
-  queueOpen: false,
-  fullscreen: false,
+  queueDialog: Dialog.init({ id: 'playback-queue' }),
+  playerDialog: Dialog.init({ id: 'fullscreen-player' }),
   draggedIndex: null,
 }
 
@@ -70,6 +71,8 @@ export const Message = defineMessageUnion({
   Remove: { index: Schema.Number },
   Reorder: { from: Schema.Number, to: Schema.Number },
   Clear: {},
+  GotQueueDialogMessage: { message: Dialog.Message },
+  GotPlayerDialogMessage: { message: Dialog.Message },
   ToggleQueue: {},
   CloseQueue: {},
   ToggleFullscreen: {},
@@ -177,6 +180,40 @@ const Reorder = operation<{ from: number; to: number }>(
   (client, { from, to }) => client.controller.reorderQueue(from, to),
 )
 
+const queueDialogFold = {
+  read: (model: Model) => Option.some(model.queueDialog),
+  write: (model: Model, queueDialog: Dialog.Model): Model => ({ ...model, queueDialog }),
+  toParentMessage: (message: Dialog.Message) => Message.GotQueueDialogMessage({ message }),
+  foldOutMessage: Dialog.OutMessage.match<Update.Step<Model, Message>>({
+    Opened: () => (model) => ({ model }),
+    Closed: () => (model) => ({ model }),
+  }),
+}
+
+const playerDialogFold = {
+  read: (model: Model) => Option.some(model.playerDialog),
+  write: (model: Model, playerDialog: Dialog.Model): Model => ({ ...model, playerDialog }),
+  toParentMessage: (message: Dialog.Message) => Message.GotPlayerDialogMessage({ message }),
+  foldOutMessage: Dialog.OutMessage.match<Update.Step<Model, Message>>({
+    Opened: () => (model) => ({ model }),
+    Closed: () => (model) => ({ model }),
+  }),
+}
+
+const updateQueueDialog = Update.foldChild({ ...queueDialogFold, update: Dialog.update })
+
+const updatePlayerDialog = Update.foldChild({ ...playerDialogFold, update: Dialog.update })
+
+const openQueueDialog = Update.foldChildStep({ ...queueDialogFold, update: Dialog.open })
+
+const closeQueueDialog = Update.foldChildStep({ ...queueDialogFold, update: Dialog.close })
+
+const openPlayerDialog = Update.foldChildStep({ ...playerDialogFold, update: Dialog.open })
+
+const closePlayerDialog = Update.foldChildStep({ ...playerDialogFold, update: Dialog.close })
+
+export const closeOverlays = Update.combine([closeQueueDialog, closePlayerDialog])
+
 export const update = (
   model: Model,
   message: Message,
@@ -188,32 +225,37 @@ export const update = (
     Jump: ({ seconds }) => ({ model, commands: [Jump({ seconds })] }),
     SetVolume: ({ volume }) => ({ model, commands: [SetVolume({ volume })] }),
     ToggleMute: () => ({ model, commands: [ToggleMute()] }),
-    PlayTrack: ({ track }) => ({
-      model: { ...model, fullscreen: true },
-      commands: [PlayTrack({ track })],
-    }),
-    PlayAll: ({ tracks }) => ({
-      model: { ...model, fullscreen: true },
-      commands: [PlayAll({ tracks })],
-    }),
+    PlayTrack: ({ track }) =>
+      Update.combine(model, [
+        openPlayerDialog,
+        (model) => ({ model, commands: [PlayTrack({ track })] }),
+      ]),
+    PlayAll: ({ tracks }) =>
+      Update.combine(model, [
+        openPlayerDialog,
+        (model) => ({ model, commands: [PlayAll({ tracks })] }),
+      ]),
     Enqueue: ({ track }) => ({ model, commands: [Enqueue({ track })] }),
     EnqueueAll: ({ tracks }) => ({ model, commands: [EnqueueAll({ tracks })] }),
-    PlayIndex: ({ index }) => ({
-      model: { ...model, fullscreen: true },
-      commands: [Index({ index })],
-    }),
+    PlayIndex: ({ index }) =>
+      Update.combine(model, [
+        openPlayerDialog,
+        (model) => ({ model, commands: [Index({ index })] }),
+      ]),
     Next: () => ({ model, commands: [Next()] }),
     Previous: () => ({ model, commands: [Previous()] }),
     Remove: ({ index }) => ({ model, commands: [Remove({ index })] }),
     Reorder: ({ from, to }) => ({ model, commands: [Reorder({ from, to })] }),
-    Clear: () => ({
-      model: { ...model, queueOpen: false, fullscreen: false },
-      commands: [Clear()],
-    }),
-    ToggleQueue: () => ({ model: { ...model, queueOpen: !model.queueOpen } }),
-    CloseQueue: () => ({ model: { ...model, queueOpen: false } }),
-    ToggleFullscreen: () => ({ model: { ...model, fullscreen: !model.fullscreen } }),
-    CloseFullscreen: () => ({ model: { ...model, fullscreen: false } }),
+    Clear: () =>
+      Update.combine(model, [closeOverlays, (model) => ({ model, commands: [Clear()] })]),
+    GotQueueDialogMessage: ({ message }) => updateQueueDialog(model, message),
+    GotPlayerDialogMessage: ({ message }) => updatePlayerDialog(model, message),
+    ToggleQueue: () =>
+      model.queueDialog.isOpen ? closeQueueDialog(model) : openQueueDialog(model),
+    CloseQueue: () => closeQueueDialog(model),
+    ToggleFullscreen: () =>
+      model.playerDialog.isOpen ? closeOverlays(model) : openPlayerDialog(model),
+    CloseFullscreen: () => closeOverlays(model),
     DragStarted: ({ index }) => ({ model: { ...model, draggedIndex: index } }),
     DroppedAt: ({ index }) =>
       model.draggedIndex === null
