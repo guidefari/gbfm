@@ -43,10 +43,7 @@ export const mobileMenu = (
                       ],
                       [
                         h.span([h.Class('player-drag-grip'), h.AriaHidden(true)]),
-                        h.button(
-                          [...closeButton, h.Class('menu-sheet-close'), h.AriaLabel('Close menu')],
-                          ['×'],
-                        ),
+                        h.button([...closeButton, h.Class('sr-only')], ['Close menu']),
                       ],
                     ),
                     h.nav(

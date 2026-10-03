@@ -856,32 +856,8 @@
   justify-content: center;
   align-items: center;
   min-height: 3rem;
-}
-.menu-sheet-close {
-  position: absolute;
-  right: 0;
-  top: 0.25rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--muted-foreground);
-  font-size: 1.5rem;
-  line-height: 1;
-  transition:
-    color 150ms,
-    background-color 150ms;
-}
-@media (hover: hover) {
-  .menu-sheet-close:hover {
-    background: var(--secondary);
-    color: var(--foreground);
-  }
+  margin: 0 calc(-1 * max(0.5rem, env(safe-area-inset-right))) 0
+    calc(-1 * max(0.5rem, env(safe-area-inset-left)));
 }
 .menu-sheet-links {
   min-height: 0;

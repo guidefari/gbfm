@@ -102,7 +102,7 @@ test('mobile menu slides up with the player timing and respects reduced motion',
   const sheet = page.locator('.menu-sheet')
   await expect(sheet).toBeVisible()
   expect(await sheet.evaluate((element) => getComputedStyle(element).transitionDuration)).toBe('0s')
-  await page.getByRole('button', { name: 'Close menu', exact: true }).click()
+  await page.keyboard.press('Escape')
   await expect(sheet).not.toBeVisible()
 })
 
