@@ -1,9 +1,9 @@
-import { canCreatePosts } from '@gbfm/core/roles'
 import type { HtmlBuilder } from 'foldkit/html'
 import { defineView } from 'foldkit/submodel'
 
 import { Message } from './message'
 import type { Model } from './model'
+import { navigation, sectionLabel } from './navigation'
 import { catalogView, entityRoute } from './page/catalog'
 import * as Playlists from './page/playlists'
 import * as Sessions from './page/sessions'
@@ -16,37 +16,6 @@ export interface ViewInputs {
   readonly role: Model['principal']['role']
   readonly url: string
 }
-
-const memberNav = [
-  ['overview', 'Home'],
-  ['profile', 'Profile'],
-  ['appearance', 'Appearance'],
-  ['email', 'Email'],
-  ['player', 'Player'],
-  ['integrations', 'Integrations'],
-  ['favorites', 'Favorites'],
-  ['reminders', 'Reminders'],
-] as const
-
-const creatorNav = [
-  ['content/mixes', 'My mixes'],
-  ['content/tweets', 'My tweets'],
-  ['content/editorial', 'My editorial'],
-] as const
-
-const adminNav = [
-  ['admin', 'Admin'],
-  ['users', 'Users'],
-  ['sessions', 'Sessions'],
-  ['shows', 'Shows'],
-  ['music', 'Music'],
-  ['playlists', 'Playlists'],
-  ['search', 'Search'],
-  ['newsletter', 'Newsletter'],
-  ['email-logs', 'Email logs'],
-  ['frontend-errors', 'Telemetry'],
-  ['all/mixes', 'All content'],
-] as const
 
 const input = (h: HtmlBuilder<Message>, model: Model, name: string, label: string, type = 'text') =>
   h.label(
@@ -78,7 +47,6 @@ const profile = (model: Model, h: HtmlBuilder<Message>) =>
   h.section(
     [h.Class('dashboard-panel dashboard-form')],
     [
-      h.h2([], ['Profile']),
       input(h, model, 'username', 'Username'),
       input(h, model, 'email', 'Email', 'email'),
       h.label(
@@ -93,7 +61,11 @@ const profile = (model: Model, h: HtmlBuilder<Message>) =>
         ],
       ),
       h.button(
-        [h.OnClick(Message.SaveProfile()), h.Disabled(model.phase === 'saving')],
+        [
+          h.Class('dashboard-button-primary'),
+          h.OnClick(Message.SaveProfile()),
+          h.Disabled(model.phase === 'saving'),
+        ],
         [model.phase === 'saving' ? 'Saving…' : 'Save profile'],
       ),
     ],
@@ -109,7 +81,11 @@ const preferences = (model: Model, h: HtmlBuilder<Message>) =>
       toggle(h, model, 'systemEnabled', 'System notifications'),
       toggle(h, model, 'globalUnsubscribe', 'Unsubscribe from all non-essential email'),
       h.button(
-        [h.OnClick(Message.SaveEmailPreferences()), h.Disabled(model.phase === 'saving')],
+        [
+          h.Class('dashboard-button-primary'),
+          h.OnClick(Message.SaveEmailPreferences()),
+          h.Disabled(model.phase === 'saving'),
+        ],
         ['Save email preferences'],
       ),
     ],
@@ -117,13 +93,19 @@ const preferences = (model: Model, h: HtmlBuilder<Message>) =>
 
 const rows = (model: Model, h: HtmlBuilder<Message>) =>
   h.section(
-    [h.Class('dashboard-panel')],
+    [h.Class('dashboard-panel dashboard-library')],
     [
-      h.h2([], [model.section.replaceAll('/', ' / ')]),
       model.rows.length === 0
-        ? h.p([h.Class('dashboard-empty')], ['No items found.'])
+        ? h.p(
+            [h.Class('dashboard-empty')],
+            [
+              model.section === 'favorites' || model.section === 'overview'
+                ? 'Your saved mixes and shows will appear here. Explore a show and save something you love.'
+                : 'No items found.',
+            ],
+          )
         : h.ul(
-            [h.Class('dashboard-list')],
+            [h.Class('dashboard-list dashboard-library-list')],
             model.rows.map((row) =>
               h.li(
                 [h.Key(row.id)],
@@ -136,7 +118,14 @@ const rows = (model: Model, h: HtmlBuilder<Message>) =>
                     ],
                   ),
                   model.section === 'favorites' || model.section === 'reminders'
-                    ? h.button([h.OnClick(Message.DeleteRequested({ id: row.id }))], ['Remove'])
+                    ? h.button(
+                        [
+                          h.Class('dashboard-button-quiet'),
+                          h.AriaLabel(`Remove ${row.title}`),
+                          h.OnClick(Message.DeleteRequested({ id: row.id })),
+                        ],
+                        ['Remove'],
+                      )
                     : h.empty,
                 ],
               ),
@@ -194,12 +183,6 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
         h.p([], ['This area is not available to your account.']),
       ],
     )
-
-  const links = [
-    ...memberNav,
-    ...(canCreatePosts(role) ? creatorNav : []),
-    ...(role === 'admin' ? adminNav : []),
-  ]
 
   const entity = entityRoute(model.section)
 
@@ -283,6 +266,7 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
                                     ),
                                     h.button(
                                       [
+                                        h.Class('dashboard-button-primary'),
                                         h.OnClick(Message.SavePlayerPreferences()),
                                         h.Disabled(model.phase === 'saving'),
                                       ],
@@ -331,24 +315,19 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
     [h.Class('gbfm-dashboard')],
     [
       h.aside(
-        [],
+        [h.Class('dashboard-sidebar')],
         [
           h.a([h.Href('/dashboard'), h.Class('dashboard-brand')], ['Dashboard']),
-          h.nav(
-            [h.AriaLabel('Dashboard')],
-            links.map(([section, label]) =>
-              h.a(
-                [
-                  h.Href(`/dashboard/${section}`),
-                  h.Class(section === model.section ? 'active' : ''),
-                ],
-                [label],
-              ),
-            ),
-          ),
-          h.form(
-            [h.Method('post'), h.Action('/actions/sign-out')],
-            [h.button([h.Type('submit')], ['Sign out'])],
+          navigation(h, model.section, role),
+        ],
+      ),
+      h.div(
+        [h.Class('dashboard-mobile-header')],
+        [
+          h.a([h.Href('/dashboard'), h.Class('dashboard-brand')], ['Dashboard']),
+          h.details(
+            [h.Key(model.section), h.Class('dashboard-section-picker')],
+            [h.summary([], ['Sections']), navigation(h, model.section, role)],
           ),
         ],
       ),
@@ -358,7 +337,6 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
           h.header(
             [h.Class('dashboard-heading')],
             [
-              h.p([], ['GOOSEBUMPS FM']),
               h.h1(
                 [],
                 [
@@ -366,7 +344,7 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
                     ? 'Your dashboard'
                     : entity
                       ? `Edit ${entity.kind}`
-                      : model.section.replaceAll('-', ' '),
+                      : sectionLabel(model.section, role),
                 ],
               ),
             ],
