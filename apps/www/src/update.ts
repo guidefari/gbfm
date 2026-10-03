@@ -194,6 +194,7 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
       }
 
       const commands = [
+        CloseAccountMenu(),
         ...(model.creator.uploadState === 'running' ? [PauseCreatorUpload()] : []),
         LoadPage({ href, navigationId }),
       ]

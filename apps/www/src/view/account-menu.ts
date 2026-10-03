@@ -28,7 +28,7 @@ export const accountMenu = <M>(
           h.Disabled(!interactive),
           h.Popovertarget('account-menu'),
           h.Class(
-            'flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-border bg-muted text-xs font-bold text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            'flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-border bg-muted p-0 text-xs font-bold text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           ),
         ],
         [name[0] ?? '?'],
