@@ -58,6 +58,16 @@ test('pulling the player follows the pointer, snaps back, and dismisses past the
     .getByRole('slider', { name: 'Playback position' })
     .dispatchEvent('pointerdown', { pointerId: 4, button: 0, clientY: 100 })
   await expect(panel).not.toHaveAttribute('data-dragging')
+  const grip = player.getByRole('button', { name: 'Collapse player', exact: true })
+  await expect(grip.locator('svg')).toHaveCount(0)
+  await grip.tap()
+  await expect(player).not.toBeVisible()
+  await page.getByRole('button', { name: 'Now playing', exact: true }).click()
+  await expect(player).toBeVisible()
+  await expect(panel).not.toHaveAttribute('data-transition')
+  await grip.focus()
+  await page.keyboard.press('Enter')
+  await expect(player).not.toBeVisible()
 })
 
 test('mobile touch pull dismisses the player', async ({ page, browserName }) => {

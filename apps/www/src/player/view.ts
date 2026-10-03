@@ -6,6 +6,7 @@ import { defineView } from 'foldkit/submodel'
 
 import { artworkUrl } from '../view/artwork'
 import { iconPaths, lucide } from '../view/icons'
+import { SuppressDragClick } from './drag-handle'
 import { Message, type Model } from './model'
 import { queueSheet } from './queue-view'
 import { fallbackArtwork, ghostButton, progressRangeClass, volumeRangeClass } from './view-styles'
@@ -45,10 +46,11 @@ const creatorLinks = (h: H, track: QueueTrackType) => {
   )
 }
 
-const dragAttributes = (h: H) => [
+const dragAttributes = (h: H, allowControls = false) => [
   h.OnPointerDown(
     (_pointerType, button, _screenX, _screenY, _timeStamp, _clientX, clientY, pointerId, target) =>
-      button !== 0 || (target instanceof Element && target.closest('button, a, input'))
+      button !== 0 ||
+      (!allowControls && target instanceof Element && target.closest('button, a, input'))
         ? Option.none()
         : Option.some(Message.PlayerDragStarted({ pointerId, clientY })),
   ),
@@ -67,23 +69,20 @@ const fullscreen = (model: Model, h: H, current: QueueTrackType) => {
       h.div(
         [
           ...dragAttributes(h),
-          h.Class(
-            'player-drag-surface relative flex shrink-0 items-center justify-between px-4 py-3 sm:p-6',
-          ),
+          h.Class('player-drag-surface flex shrink-0 items-center justify-center px-4 py-2 sm:p-4'),
         ],
         [
           h.button(
             [
+              ...dragAttributes(h, true),
+              h.OnMount(SuppressDragClick({})),
               h.Type('button'),
               h.AriaLabel('Collapse player'),
               h.OnClick(Message.CloseFullscreen()),
-              h.Class(
-                `${ghostButton} h-9 px-3 text-muted-foreground hover:bg-muted hover:text-foreground`,
-              ),
+              h.Class(`${ghostButton} player-drag-handle`),
             ],
-            [lucide(iconPaths.chevronDown, 'h-6 w-6')],
+            [h.span([h.Class('player-drag-grip'), h.AriaHidden(true)])],
           ),
-          h.span([h.Class('player-drag-grip'), h.AriaHidden(true)]),
         ],
       ),
       h.div(

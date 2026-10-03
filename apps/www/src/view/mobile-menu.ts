@@ -18,11 +18,12 @@ export const mobileMenu = (
     model,
     view: Dialog.view,
     viewInputs: {
-      toView: ({ dialog, backdrop, panel, title, closeButton, isVisible }) =>
+      toView: ({ dialog, backdrop, panel, title, initialFocus, closeButton, isVisible }) =>
         h.dialog(
           [...dialog, h.Class('mobile-menu-dialog')],
           isVisible
             ? [
+                h.span([...title, ...initialFocus, h.Tabindex(-1), h.Class('sr-only')], ['Menu']),
                 h.div([...backdrop, h.Class('mobile-menu-backdrop')]),
                 h.div(
                   [...panel, h.Class('menu-sheet')],
@@ -30,7 +31,7 @@ export const mobileMenu = (
                     h.header(
                       [],
                       [
-                        h.h2([...title], ['Menu']),
+                        h.h2([], ['Menu']),
                         h.button([...closeButton, h.AriaLabel('Close menu')], ['×']),
                       ],
                     ),
