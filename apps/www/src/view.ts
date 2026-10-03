@@ -164,6 +164,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
             : h.empty,
           interactive: model.interactive,
           menuOpen: model.mobileMenu.isOpen,
+          queueResolved: model.player.hasHadTrack,
           nowPlaying: model.player.snapshot.queue.current
             ? {
                 title: model.player.snapshot.queue.current.title,

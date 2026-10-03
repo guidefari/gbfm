@@ -683,6 +683,10 @@
     padding-bottom: calc(3rem + env(safe-area-inset-bottom));
   }
 }
+:root:not([data-queued]) .nav-queued-tab,
+:root[data-queued] .nav-idle-tab {
+  display: none;
+}
 .site > main {
   flex: 1;
 }

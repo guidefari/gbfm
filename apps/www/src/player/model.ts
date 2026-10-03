@@ -33,6 +33,7 @@ export const Model = Schema.Struct({
   draggedIndex: Schema.NullOr(Schema.Number),
   playerDrag: SheetDrag,
   playerOffset: Schema.Number,
+  hasHadTrack: Schema.Boolean,
 })
 
 export type Model = typeof Model.Type
@@ -57,6 +58,7 @@ export const initialModel: Model = {
   draggedIndex: null,
   playerDrag: null,
   playerOffset: 0,
+  hasHadTrack: false,
 }
 
 export const Message = defineMessageUnion({
@@ -232,7 +234,13 @@ export const update = (
   message: Message,
 ): Update.Return<Model, Message, PlayerClient> =>
   Message.match(message, {
-    SnapshotChanged: ({ snapshot }) => ({ model: { ...model, snapshot } }),
+    SnapshotChanged: ({ snapshot }) => ({
+      model: {
+        ...model,
+        snapshot,
+        hasHadTrack: model.hasHadTrack || snapshot.queue.current !== null,
+      },
+    }),
     TogglePlayPause: () => ({ model, commands: [Toggle()] }),
     SeekTo: ({ seconds }) => ({ model, commands: [Seek({ seconds })] }),
     Jump: ({ seconds }) => ({ model, commands: [Jump({ seconds })] }),

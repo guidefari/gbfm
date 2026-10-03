@@ -18,6 +18,7 @@ export type StationNavProps<M> = {
   readonly accountMenu: Html
   readonly interactive: boolean
   readonly menuOpen: boolean
+  readonly queueResolved: boolean
   readonly nowPlaying: NowPlaying | null
   readonly togglePlay: M
   readonly openPlayer: M
@@ -215,7 +216,45 @@ export const stationNav = <M>(h: HtmlBuilder<M>, props: StationNavProps<M>) => {
                   tabLabel(nowPlaying.isPlaying ? 'Playing' : 'Paused'),
                 ],
               )
-            : tabLink('/mixes', 'Mixes', iconPaths.disc),
+            : props.queueResolved
+              ? tabLink('/mixes', 'Mixes', iconPaths.disc)
+              : h.div(
+                  [h.Class('contents')],
+                  [
+                    h.button(
+                      [
+                        h.Type('button'),
+                        h.AriaLabel('Now playing'),
+                        h.OnClick(props.openPlayer),
+                        h.Class(`${tabClass} nav-queued-tab text-foreground`),
+                      ],
+                      [
+                        h.span(
+                          [
+                            h.Class(
+                              'relative flex size-[22px] shrink-0 items-center justify-center overflow-hidden rounded-sm border border-border bg-muted bg-cover bg-center [background-image:var(--queued-art)]',
+                            ),
+                          ],
+                          [
+                            h.span(
+                              [
+                                h.Class(
+                                  'absolute inset-0 flex items-center justify-center bg-background/40',
+                                ),
+                              ],
+                              [playIcon(false, 'h-3 w-3 text-white')],
+                            ),
+                          ],
+                        ),
+                        tabLabel('Paused'),
+                      ],
+                    ),
+                    h.div(
+                      [h.Class('nav-idle-tab contents')],
+                      [tabLink('/mixes', 'Mixes', iconPaths.disc)],
+                    ),
+                  ],
+                ),
           tabLink('/shows', 'Shows', iconPaths.radio),
           tabLink('/editorial', 'Editorial', iconPaths.book),
           h.button(
