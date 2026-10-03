@@ -26,7 +26,6 @@ const equalizer = <M>(h: HtmlBuilder<M>) =>
     ),
   )
 
-/** The episode number doubles as its play control: hover or focus swaps it for play or pause, playback shows the equalizer. */
 const episodePlay = <M>(
   h: HtmlBuilder<M>,
   episode: Episode,
@@ -47,7 +46,7 @@ const episodePlay = <M>(
       h.AriaLabel(`${playing ? 'Pause' : 'Play'} episode ${number}: ${episode.title}`),
       h.AriaPressed(String(playing)),
       h.Class(
-        'group/play relative -m-1 grid place-items-center rounded-sm border-0 bg-transparent p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50',
+        'episode-play-control group/play relative -m-1 grid place-items-center rounded-sm border-0 bg-transparent p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50',
       ),
     ],
     [
@@ -55,7 +54,7 @@ const episodePlay = <M>(
         [
           h.AriaHidden(true),
           h.Class(
-            `col-start-1 row-start-1 w-[3ch] text-2xl font-black tabular-nums tracking-tighter transition-opacity duration-150 sm:text-4xl ${conceal} ${
+            `episode-play-number col-start-1 row-start-1 w-[3ch] text-2xl font-black tabular-nums tracking-tighter transition-opacity duration-150 sm:text-4xl ${conceal} ${
               playing ? 'opacity-0' : ''
             } ${current ? 'text-highlight' : 'episode-tune text-muted-foreground/40'}`,
           ),
@@ -66,7 +65,9 @@ const episodePlay = <M>(
         ? h.span(
             [
               h.AriaHidden(true),
-              h.Class(`col-start-1 row-start-1 transition-opacity duration-150 ${conceal}`),
+              h.Class(
+                `episode-play-equalizer col-start-1 row-start-1 transition-opacity duration-150 ${conceal}`,
+              ),
             ],
             [equalizer(h)],
           )
@@ -75,22 +76,11 @@ const episodePlay = <M>(
         [
           h.AriaHidden(true),
           h.Class(
-            `col-start-1 row-start-1 flex h-10 w-10 scale-75 items-center justify-center rounded-sm bg-highlight text-highlight-foreground opacity-0 shadow-lg transition duration-150 group-hover/play:scale-100 group-focus-visible/play:scale-100 ${reveal}`,
+            `episode-play-icon col-start-1 row-start-1 flex h-10 w-10 scale-75 items-center justify-center rounded-sm bg-highlight text-highlight-foreground opacity-0 shadow-lg transition duration-150 group-hover/play:scale-100 group-focus-visible/play:scale-100 ${reveal}`,
           ),
         ],
         [lucide(playing ? iconPaths.pause : iconPaths.play, 'h-4 w-4 fill-current')],
       ),
-      playing
-        ? h.empty
-        : h.span(
-            [
-              h.AriaHidden(true),
-              h.Class(
-                'pointer-events-none absolute -left-1 top-0 hidden text-muted-foreground pointer-coarse:block',
-              ),
-            ],
-            [lucide(iconPaths.play, 'h-2.5 w-2.5 fill-current')],
-          ),
     ],
   )
 }

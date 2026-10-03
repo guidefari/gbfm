@@ -2009,3 +2009,40 @@
   inset: 0;
   z-index: 39;
 }
+
+@media (width < 40rem), (hover: none) {
+  .episode-play-control {
+    row-gap: 0.375rem;
+  }
+
+  .episode-play-control .episode-play-number {
+    grid-row: 2;
+    width: auto;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--muted-foreground);
+    opacity: 1;
+    animation: none;
+  }
+
+  .episode-play-control .episode-play-icon {
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 1px solid color-mix(in srgb, var(--highlight) 40%, transparent);
+    background: color-mix(in srgb, var(--highlight) 10%, transparent);
+    color: var(--highlight);
+    opacity: 1;
+    scale: 1;
+    box-shadow: none;
+  }
+
+  .episode-play-control[aria-pressed='true'] .episode-play-icon {
+    background: var(--highlight);
+    color: var(--highlight-foreground);
+  }
+
+  .episode-play-control .episode-play-equalizer {
+    display: none;
+  }
+}

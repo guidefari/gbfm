@@ -10,13 +10,16 @@ const signIn = async (page: Page) => {
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
   await expect(page).toHaveURL(/\/dashboard$/)
   const session = await page.request.get('/auth/get-session')
+
   const identity = Schema.decodeUnknownSync(
     Schema.Struct({ user: Schema.Struct({ id: Schema.String }) }),
   )(await session.json())
+
   const fixture = await page.request.get('/api/content/audio/mix/e2e-local-frequencies')
   const mix = Schema.decodeUnknownSync(AudioResponse)(await fixture.json())
   const creatorIds = [identity.user.id, ...(mix.creators ?? []).map(({ id }) => id)]
   expect(creatorIds).toHaveLength(2)
+
   return { creatorIds, audioUrl: mix.url, showId: mix.showId }
 }
 
@@ -62,6 +65,7 @@ test('editorial editing with empty artwork preserves co-creators and saved conte
 }) => {
   const { creatorIds } = await signIn(page)
   const slug = `e2e-composer-editorial-${Date.now()}`
+
   const created = await page.request.post('/api/content/post', {
     data: {
       type: 'post',
@@ -72,6 +76,7 @@ test('editorial editing with empty artwork preserves co-creators and saved conte
       creatorIds,
     },
   })
+
   expect(created.ok()).toBe(true)
   await page.goto(`/new/editorial?edit=${slug}`)
   await expect(page.getByRole('textbox', { name: 'Title', exact: true })).toHaveValue(
@@ -87,13 +92,81 @@ test('editorial editing with empty artwork preserves co-creators and saved conte
   expect(post.creators?.map(({ id }) => id).sort()).toEqual([...creatorIds].sort())
 })
 
+test('artwork upload failures are accessible in the open editorial review and can be retried', async ({
+  page,
+}, testInfo) => {
+  await signIn(page)
+  await page.route('**/api/upload/image/presign', (route) =>
+    route.fulfill({
+      json: {
+        uploadUrl: 'https://uploads.example.test/editorial.png',
+        publicUrl: 'https://cdn.example.test/editorial.png',
+        key: 'editorial.png',
+      },
+    }),
+  )
+  let uploads = 0
+  await page.route('https://uploads.example.test/editorial.png', (route) => {
+    uploads++
+
+    return route.fulfill({ status: uploads === 1 ? 503 : 200 })
+  })
+  await page.goto('/new/editorial')
+  await page.getByRole('textbox', { name: 'Title', exact: true }).fill('Artwork upload check')
+  await page.getByRole('button', { name: 'Continue', exact: true }).click()
+  const review = page.getByRole('dialog', { name: 'Publish post', exact: true })
+  const artwork = review.getByLabel('Upload artwork', { exact: true })
+
+  const file = {
+    name: 'editorial.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aF1cAAAAASUVORK5CYII=',
+      'base64',
+    ),
+  }
+
+  await artwork.setInputFiles(file)
+  await expect(review).toBeVisible()
+  await expect(review.getByRole('alert')).toHaveText('artwork upload: Artwork upload failed')
+  await expect(artwork).toBeEnabled()
+
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 768, height: 1024 },
+    { width: 1280, height: 800 },
+  ]) {
+    await page.setViewportSize(viewport)
+    await review.getByRole('alert').scrollIntoViewIfNeeded()
+    await expect(review.getByRole('alert')).toBeInViewport()
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+      ),
+    ).toBe(true)
+    await testInfo.attach(`artwork-error-${viewport.width}x${viewport.height}`, {
+      body: await page.screenshot(),
+      contentType: 'image/png',
+    })
+  }
+
+  await artwork.setInputFiles(file)
+  await expect(review.getByRole('textbox', { name: 'Artwork URL', exact: true })).toHaveValue(
+    'https://cdn.example.test/editorial.png',
+  )
+  await expect(review.getByRole('alert')).toHaveCount(0)
+  await expect(review).toBeVisible()
+})
+
 test('composer restores metadata, reviews type changes and publishes a quoted tweet with co-creators', async ({
   page,
 }, testInfo) => {
   const { creatorIds } = await signIn(page)
+
   const quoted = Schema.decodeUnknownSync(CompiledPostResponse)(
     await (await page.request.get('/api/content/posts/e2e-music-thread')).json(),
   )
+
   const slug = `e2e-quote-${Date.now()}`
   await page.goto('/new/tweet')
   await page.getByRole('textbox', { name: 'Title', exact: true }).fill('A quoted signal')
@@ -152,9 +225,11 @@ test('composer restores metadata, reviews type changes and publishes a quoted tw
   ).toBe(true)
   await page.getByRole('button', { name: 'Publish', exact: true }).click()
   await expect(page.locator('.creator-published')).toContainText('Published.')
+
   const saved = Schema.decodeUnknownSync(CompiledPostResponse)(
     await (await page.request.get(`/api/content/posts/${slug}/edit`)).json(),
   )
+
   expect(saved.quotedPostId).toBe(quoted.id)
   expect(saved.tags).toEqual(['radio', 'community'])
   expect(saved.creators?.map(({ id }) => id).sort()).toEqual([...creatorIds].sort())

@@ -87,6 +87,9 @@ export const review = (
                           ],
                         ),
                         inputs.metadata,
+                        model.error
+                          ? h.p([h.Class('form-error'), h.Role('alert')], [model.error])
+                          : h.empty,
                         h.div(
                           [h.Class('creator-publish-actions')],
                           [
