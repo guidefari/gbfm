@@ -1,3 +1,10 @@
+# [2.101.0](https://github.com/guidefari/gbfm/compare/v2.100.3...v2.101.0) (2026-10-03)
+
+
+### Features
+
+* **www:** introduce Foldkit SSR replacement (parity in progress) ([#356](https://github.com/guidefari/gbfm/issues/356)) ([24e19c1](https://github.com/guidefari/gbfm/commit/24e19c1a7bdbd40c813324cb2e86a2a5fd65095f)), closes [#365](https://github.com/guidefari/gbfm/issues/365)
+
 ## [2.100.3](https://github.com/guidefari/gbfm/compare/v2.100.2...v2.100.3) (2026-09-27)
 
 
