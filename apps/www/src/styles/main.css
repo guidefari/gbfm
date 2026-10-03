@@ -676,7 +676,12 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding-bottom: calc(3rem + env(safe-area-inset-bottom));
+  padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
+}
+@media (min-width: 64rem) {
+  .site {
+    padding-bottom: calc(3rem + env(safe-area-inset-bottom));
+  }
 }
 .site > main {
   flex: 1;
