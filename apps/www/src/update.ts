@@ -24,14 +24,15 @@ import * as Player from './player'
 import * as PublicActions from './public-actions'
 import { isServerPath, Route } from './route'
 import * as Search from './search'
+import { dragOffset, shouldDismiss, startDrag } from './sheet-drag'
 
 const mobileMenuFold = {
   read: (model: Model) => Option.some(model.mobileMenu),
   write: (model: Model, mobileMenu: Dialog.Model): Model => ({ ...model, mobileMenu }),
   toParentMessage: (message: Dialog.Message) => Message.GotMobileMenuMessage({ message }),
   foldOutMessage: Dialog.OutMessage.match<Update.Step<Model, Message>>({
-    Opened: () => (model) => ({ model }),
-    Closed: () => (model) => ({ model }),
+    Opened: () => (model) => ({ model: { ...model, menuDrag: null, menuOffset: 0 } }),
+    Closed: () => (model) => ({ model: { ...model, menuDrag: null } }),
   }),
 }
 
@@ -82,6 +83,8 @@ const showPage = (
       player: model.player,
       skipSeen: model.skipSeen,
       mobileMenu: model.mobileMenu,
+      menuDrag: model.menuDrag,
+      menuOffset: model.menuOffset,
       accountMenu: model.accountMenu,
       search: model.search,
       pageCache: model.pageCache,
@@ -120,6 +123,27 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
     GotAccountMenuMessage: ({ message }) => updateAccountMenu(model, message),
     MenuToggled: () => (model.mobileMenu.isOpen ? closeMobileMenu(model) : openMobileMenu(model)),
     GotMobileMenuMessage: ({ message }) => updateMobileMenu(model, message),
+    MenuDragStarted: ({ pointerId, clientY }) =>
+      !model.mobileMenu.isOpen ||
+      model.mobileMenu.animation.transitionState !== 'Idle' ||
+      model.menuDrag
+        ? { model }
+        : { model: { ...model, menuDrag: startDrag(pointerId, clientY, model.menuOffset) } },
+    MenuDragMoved: ({ pointerId, clientY }) =>
+      model.menuDrag?.pointerId === pointerId
+        ? { model: { ...model, menuOffset: dragOffset(model.menuDrag, clientY) } }
+        : { model },
+    MenuDragReleased: ({ pointerId, clientY, viewportHeight }) => {
+      if (model.menuDrag?.pointerId !== pointerId) return { model }
+      const offset = dragOffset(model.menuDrag, clientY)
+      const released = { ...model, menuDrag: null, menuOffset: offset }
+
+      return shouldDismiss(offset, viewportHeight)
+        ? closeMobileMenu(released)
+        : { model: { ...released, menuOffset: 0 } }
+    },
+    MenuDragCancelled: () =>
+      model.menuDrag ? { model: { ...model, menuDrag: null, menuOffset: 0 } } : { model },
     GotSearchMessage: ({ message }) => {
       const menu = Update.combine(model, [closeMobileMenu, closeAccountMenu])
       const child = Search.update(model.search, message)

@@ -18,6 +18,7 @@ import * as Player from './player'
 import * as PublicActions from './public-actions'
 import { Route } from './route'
 import * as Search from './search'
+import { SheetDrag } from './sheet-drag'
 
 export const Principal = Schema.Struct({
   id: Schema.String,
@@ -79,6 +80,8 @@ export const Model = Schema.Struct({
   route: Route,
   flags: Flags,
   mobileMenu: Dialog.Model,
+  menuDrag: SheetDrag,
+  menuOffset: Schema.Number,
   accountMenu: Popover.Model,
   search: Search.Model,
   skipSeen: Schema.Boolean,

@@ -105,3 +105,43 @@ test('mobile menu slides up with the player timing and respects reduced motion',
   await page.getByRole('button', { name: 'Close menu', exact: true }).click()
   await expect(sheet).not.toBeVisible()
 })
+
+test('pulling the mobile menu follows the pointer, snaps back, and dismisses past the threshold', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 800 })
+  await page.goto('/privacy')
+  const trigger = page.getByRole('button', { name: 'Menu', exact: true })
+  const sheet = page.locator('.menu-sheet')
+  await expect(trigger).toBeEnabled()
+  await trigger.focus()
+  await page.keyboard.press('Enter')
+  await expect(sheet).not.toHaveAttribute('data-transition')
+  const restingY = (await sheet.boundingBox())?.y ?? 0
+  const handle = sheet.locator('header')
+  const bounds = await handle.boundingBox()
+
+  if (!bounds) throw new Error('Expected the menu drag handle')
+  const x = bounds.x + bounds.width / 2
+  const y = bounds.y + bounds.height / 2
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await expect(sheet).toHaveAttribute('data-dragging')
+  await page.mouse.move(x, y + 80, { steps: 5 })
+  await expect.poll(async () => (await sheet.boundingBox())?.y).toBeCloseTo(restingY + 80)
+  await page.mouse.up()
+  await expect.poll(async () => (await sheet.boundingBox())?.y).toBeCloseTo(restingY)
+  await expect(sheet).toBeVisible()
+  await sheet
+    .getByRole('link', { name: 'Tweets', exact: true })
+    .dispatchEvent('pointerdown', { pointerId: 4, button: 0, clientY: 100 })
+  await expect(sheet).not.toHaveAttribute('data-dragging')
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.mouse.move(x, y + 200, { steps: 10 })
+  await page.mouse.up()
+  await expect(sheet).not.toBeVisible()
+  await expect
+    .poll(() => page.evaluate(() => getComputedStyle(document.documentElement).overflow))
+    .not.toBe('hidden')
+})

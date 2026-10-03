@@ -181,7 +181,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
           openSearch: Message.GotSearchMessage({ message: Search.Message.Opened() }),
           toggleMenu: Message.MenuToggled(),
         }),
-        mobileMenu(h, model.mobileMenu, model.flags.principal, nav),
+        mobileMenu(h, model, nav),
         h.submodel({
           slotId: 'search',
           model: model.search,

@@ -65,6 +65,8 @@ export const init: Runtime.ApplicationInit<Model, Message, Flags, Services> = (f
       route,
       flags,
       mobileMenu: Dialog.init({ id: 'mobile-menu', isAnimated: true }),
+      menuDrag: null,
+      menuOffset: 0,
       accountMenu: Popover.init({ id: 'account-menu', contentFocus: true }),
       search: Search.initialModel,
       skipSeen: flags.skipSeen,

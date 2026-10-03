@@ -3,12 +3,12 @@ import { canCreatePosts } from '@gbfm/core/roles'
 import type { HtmlBuilder } from 'foldkit/html'
 
 import { Message } from '../message'
-import type { Principal } from '../model'
+import type { Model } from '../model'
+import { onDragStart } from '../sheet-drag'
 
 export const mobileMenu = (
   h: HtmlBuilder<Message>,
-  model: Dialog.Model,
-  principal: Principal | null,
+  { mobileMenu: dialogModel, menuDrag, menuOffset, flags: { principal } }: Model,
   links: ReadonlyArray<readonly [string, string]>,
 ) => {
   const link = (href: string, label: string) => h.a([h.Href(href)], [label])
@@ -18,7 +18,7 @@ export const mobileMenu = (
 
   return h.submodel({
     slotId: 'mobile-menu',
-    model,
+    model: dialogModel,
     view: Dialog.view,
     viewInputs: {
       toView: ({ dialog, backdrop, panel, title, initialFocus, closeButton, isVisible }) =>
@@ -29,10 +29,18 @@ export const mobileMenu = (
                 h.span([...title, ...initialFocus, h.Tabindex(-1), h.Class('sr-only')], ['Menu']),
                 h.div([...backdrop, h.Class('mobile-menu-backdrop')]),
                 h.div(
-                  [...panel, h.Class('menu-sheet')],
+                  [
+                    ...panel,
+                    h.Class('menu-sheet'),
+                    h.Style({ '--player-drag-y': `${menuOffset}px` }),
+                    ...(menuDrag ? [h.DataAttribute('dragging', '')] : []),
+                  ],
                   [
                     h.header(
-                      [],
+                      [
+                        h.OnPointerDown(onDragStart(Message.MenuDragStarted)),
+                        h.Class('player-drag-surface'),
+                      ],
                       [
                         h.span([h.Class('player-drag-grip'), h.AriaHidden(true)]),
                         h.button(
