@@ -1,5 +1,6 @@
 import * as Dialog from '@foldkit/ui/dialog'
 import type { QueueTrackType } from '@gbfm/player'
+import { Option } from 'effect'
 import type { HtmlBuilder } from 'foldkit/html'
 import { defineView } from 'foldkit/submodel'
 
@@ -44,6 +45,15 @@ const creatorLinks = (h: H, track: QueueTrackType) => {
   )
 }
 
+const dragAttributes = (h: H) => [
+  h.OnPointerDown(
+    (_pointerType, button, _screenX, _screenY, _timeStamp, _clientX, clientY, pointerId, target) =>
+      button !== 0 || (target instanceof Element && target.closest('button, a, input'))
+        ? Option.none()
+        : Option.some(Message.PlayerDragStarted({ pointerId, clientY })),
+  ),
+]
+
 const fullscreen = (model: Model, h: H, current: QueueTrackType) => {
   const { transport: playback, volume, queue } = model.snapshot
   const muted = volume.isMuted || volume.volume === 0
@@ -55,7 +65,12 @@ const fullscreen = (model: Model, h: H, current: QueueTrackType) => {
     ],
     [
       h.div(
-        [h.Class('flex shrink-0 items-center justify-between px-4 py-3 sm:p-6')],
+        [
+          ...dragAttributes(h),
+          h.Class(
+            'player-drag-surface relative flex shrink-0 items-center justify-between px-4 py-3 sm:p-6',
+          ),
+        ],
         [
           h.button(
             [
@@ -68,6 +83,7 @@ const fullscreen = (model: Model, h: H, current: QueueTrackType) => {
             ],
             [lucide(iconPaths.chevronDown, 'h-6 w-6')],
           ),
+          h.span([h.Class('player-drag-grip'), h.AriaHidden(true)]),
         ],
       ),
       h.div(
@@ -81,11 +97,17 @@ const fullscreen = (model: Model, h: H, current: QueueTrackType) => {
             [h.Class('flex min-h-0 w-full max-w-2xl flex-1 flex-col')],
             [
               h.div(
-                [h.Class('mb-4 flex min-h-0 flex-1 items-center justify-center sm:mb-8')],
+                [
+                  ...dragAttributes(h),
+                  h.Class(
+                    'player-drag-surface mb-4 flex min-h-0 flex-1 items-center justify-center sm:mb-8',
+                  ),
+                ],
                 [
                   h.img([
                     h.Src(artworkUrl(current.thumbnailUrl || fallbackArtwork, 1280)),
                     h.Alt(current.title),
+                    h.Draggable(false),
                     h.Class('max-h-full max-w-full rounded-sm object-contain shadow-2xl'),
                   ]),
                 ],
@@ -280,7 +302,12 @@ const playerDialog = (model: Model, h: H) =>
                   ['Now playing'],
                 ),
                 h.div(
-                  [...panel, h.Class('player-panel')],
+                  [
+                    ...panel,
+                    h.Class('player-panel'),
+                    h.Style({ '--player-drag-y': `${model.playerOffset}px` }),
+                    ...(model.playerDrag ? [h.DataAttribute('dragging', '')] : []),
+                  ],
                   [
                     model.snapshot.queue.current
                       ? fullscreen(model, h, model.snapshot.queue.current)

@@ -26,3 +26,62 @@ describe('player submodel', () => {
     expect(dropped.commands?.[0]?.args).toEqual({ from: 2, to: 0 })
   })
 })
+
+describe('player pull gesture', () => {
+  const openPlayer = () => ({
+    ...initialModel,
+    playerDialog: { ...initialModel.playerDialog, isOpen: true },
+  })
+
+  it('follows the active pointer downward and snaps short pulls back', () => {
+    const started = update(
+      openPlayer(),
+      Message.PlayerDragStarted({ pointerId: 1, clientY: 100 }),
+    ).model
+
+    const moved = update(started, Message.PlayerDragMoved({ pointerId: 1, clientY: 180 })).model
+    expect(moved.playerOffset).toBe(80)
+    expect(update(moved, Message.PlayerDragMoved({ pointerId: 2, clientY: 400 })).model).toBe(moved)
+
+    const released = update(
+      moved,
+      Message.PlayerDragReleased({ pointerId: 1, clientY: 180, viewportHeight: 800 }),
+    ).model
+
+    expect(released.playerDrag).toBeNull()
+    expect(released.playerOffset).toBe(0)
+    expect(released.playerDialog.isOpen).toBe(true)
+  })
+
+  it('closes past the threshold while preserving the release position for the exit animation', () => {
+    const started = update(
+      openPlayer(),
+      Message.PlayerDragStarted({ pointerId: 1, clientY: 100 }),
+    ).model
+
+    const released = update(
+      started,
+      Message.PlayerDragReleased({ pointerId: 1, clientY: 270, viewportHeight: 800 }),
+    ).model
+
+    expect(released.playerDialog.isOpen).toBe(false)
+    expect(released.playerOffset).toBe(170)
+    expect(released.playerDrag).toBeNull()
+  })
+
+  it('clamps upward movement and cancels without closing', () => {
+    const started = update(
+      openPlayer(),
+      Message.PlayerDragStarted({ pointerId: 1, clientY: 100 }),
+    ).model
+
+    expect(
+      update(started, Message.PlayerDragMoved({ pointerId: 1, clientY: 80 })).model.playerOffset,
+    ).toBe(0)
+    const moved = update(started, Message.PlayerDragMoved({ pointerId: 1, clientY: 300 })).model
+    const cancelled = update(moved, Message.PlayerDragCancelled()).model
+    expect(cancelled.playerDialog.isOpen).toBe(true)
+    expect(cancelled.playerOffset).toBe(0)
+    expect(cancelled.playerDrag).toBeNull()
+  })
+})

@@ -896,8 +896,31 @@
   position: absolute;
   inset: 0;
   background: var(--background);
-  transform: translateY(0);
+  transform: translateY(var(--player-drag-y, 0px));
   transition: transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.player-panel[data-dragging] {
+  transition: none;
+  will-change: transform;
+}
+.player-drag-surface {
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+}
+.player-panel[data-dragging] .player-drag-surface {
+  cursor: grabbing;
+}
+.player-drag-grip {
+  position: absolute;
+  top: 0.75rem;
+  left: 50%;
+  width: 2.5rem;
+  height: 0.25rem;
+  border-radius: 999px;
+  background: var(--muted-foreground);
+  opacity: 0.5;
+  transform: translateX(-50%);
 }
 .player-panel[data-transition] {
   will-change: transform;

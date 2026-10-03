@@ -30,6 +30,8 @@ export const Model = Schema.Struct({
   queueDialog: Dialog.Model,
   playerDialog: Dialog.Model,
   draggedIndex: Schema.NullOr(Schema.Number),
+  playerDrag: Schema.NullOr(Schema.Struct({ pointerId: Schema.Number, startY: Schema.Number })),
+  playerOffset: Schema.Number,
 })
 
 export type Model = typeof Model.Type
@@ -52,6 +54,8 @@ export const initialModel: Model = {
   queueDialog: Dialog.init({ id: 'playback-queue' }),
   playerDialog: Dialog.init({ id: 'fullscreen-player', isAnimated: true }),
   draggedIndex: null,
+  playerDrag: null,
+  playerOffset: 0,
 }
 
 export const Message = defineMessageUnion({
@@ -77,6 +81,14 @@ export const Message = defineMessageUnion({
   CloseQueue: {},
   ToggleFullscreen: {},
   CloseFullscreen: {},
+  PlayerDragStarted: { pointerId: Schema.Number, clientY: Schema.Number },
+  PlayerDragMoved: { pointerId: Schema.Number, clientY: Schema.Number },
+  PlayerDragReleased: {
+    pointerId: Schema.Number,
+    clientY: Schema.Number,
+    viewportHeight: Schema.Number,
+  },
+  PlayerDragCancelled: {},
   DragStarted: { index: Schema.Number },
   DroppedAt: { index: Schema.Number },
   OperationCompleted: {},
@@ -195,8 +207,8 @@ const playerDialogFold = {
   write: (model: Model, playerDialog: Dialog.Model): Model => ({ ...model, playerDialog }),
   toParentMessage: (message: Dialog.Message) => Message.GotPlayerDialogMessage({ message }),
   foldOutMessage: Dialog.OutMessage.match<Update.Step<Model, Message>>({
-    Opened: () => (model) => ({ model }),
-    Closed: () => (model) => ({ model }),
+    Opened: () => (model) => ({ model: { ...model, playerDrag: null, playerOffset: 0 } }),
+    Closed: () => (model) => ({ model: { ...model, playerDrag: null } }),
   }),
 }
 
@@ -256,6 +268,27 @@ export const update = (
     ToggleFullscreen: () =>
       model.playerDialog.isOpen ? closeOverlays(model) : openPlayerDialog(model),
     CloseFullscreen: () => closeOverlays(model),
+    PlayerDragStarted: ({ pointerId, clientY }) =>
+      !model.playerDialog.isOpen ||
+      model.playerDialog.animation.transitionState !== 'Idle' ||
+      model.playerDrag
+        ? { model }
+        : { model: { ...model, playerDrag: { pointerId, startY: clientY - model.playerOffset } } },
+    PlayerDragMoved: ({ pointerId, clientY }) =>
+      model.playerDrag?.pointerId === pointerId
+        ? { model: { ...model, playerOffset: Math.max(0, clientY - model.playerDrag.startY) } }
+        : { model },
+    PlayerDragReleased: ({ pointerId, clientY, viewportHeight }) => {
+      if (model.playerDrag?.pointerId !== pointerId) return { model }
+      const offset = Math.max(0, clientY - model.playerDrag.startY)
+      const released = { ...model, playerDrag: null, playerOffset: offset }
+
+      return offset >= Math.min(160, viewportHeight * 0.2)
+        ? closeOverlays(released)
+        : { model: { ...released, playerOffset: 0 } }
+    },
+    PlayerDragCancelled: () =>
+      model.playerDrag ? { model: { ...model, playerDrag: null, playerOffset: 0 } } : { model },
     DragStarted: ({ index }) => ({ model: { ...model, draggedIndex: index } }),
     DroppedAt: ({ index }) =>
       model.draggedIndex === null
