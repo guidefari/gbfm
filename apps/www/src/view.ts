@@ -1,4 +1,3 @@
-import { canCreatePosts } from '@gbfm/core/roles'
 import { HashMap, Match, Option } from 'effect'
 import { AsyncData } from 'foldkit'
 import type { Document, HtmlBuilder } from 'foldkit/html'
@@ -10,7 +9,9 @@ import * as Player from './player'
 import * as PublicActions from './public-actions'
 import { parseRoute, Route } from './route'
 import * as Search from './search'
+import { accountMenu } from './view/account-menu'
 import { link } from './view/link'
+import { mobileMenu } from './view/mobile-menu'
 import { pageSkeleton } from './view/skeletons'
 import { stationNav } from './view/station-nav'
 
@@ -158,9 +159,12 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
           pathname: model.pendingPath ?? new URL(model.flags.url).pathname,
           links: nav,
           principal: model.flags.principal,
-          closeAccountMenu: Message.AccountMenuClosed(),
+          accountMenu: model.flags.principal
+            ? accountMenu(h, model.flags.principal, model.accountMenu, model.interactive)
+            : h.empty,
           interactive: model.interactive,
-          menuOpen: model.menuOpen,
+          menuOpen: model.mobileMenu.isOpen,
+          queueResolved: model.player.hasHadTrack,
           nowPlaying: model.player.snapshot.queue.current
             ? {
                 title: model.player.snapshot.queue.current.title,
@@ -178,46 +182,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
           openSearch: Message.GotSearchMessage({ message: Search.Message.Opened() }),
           toggleMenu: Message.MenuToggled(),
         }),
-        model.menuOpen
-          ? h.aside(
-              [h.Class('menu-sheet'), h.AriaLabel('Menu')],
-              [
-                h.header(
-                  [],
-                  [
-                    h.h2([], ['Menu']),
-                    h.button([h.AriaLabel('Close menu'), h.OnClick(Message.MenuToggled())], ['×']),
-                  ],
-                ),
-                h.h3([], ['Browse']),
-                ...nav.map(([href, label]) => link(h, href, label)),
-                link(h, '/mixes', 'Mixes'),
-                link(h, '/subscribe', 'Subscribe'),
-                ...(canCreatePosts(model.flags.principal?.role ?? null)
-                  ? [
-                      h.h3([], ['Create']),
-                      link(h, '/new', 'New post'),
-                      link(h, '/mix-upload', 'New mix'),
-                      link(h, '/dashboard/content', 'My content'),
-                    ]
-                  : []),
-                h.h3([], ['Follow']),
-                link(h, '/rss.xml', 'Mixes via RSS'),
-                link(h, 'https://youtube.com/@goosebumpsfm', 'Mixes via YouTube'),
-                link(
-                  h,
-                  model.flags.principal ? '/dashboard' : '/auth/sign-in',
-                  model.flags.principal ? 'Dashboard' : 'Log in',
-                ),
-                model.flags.principal
-                  ? h.form(
-                      [h.Method('post'), h.Action('/actions/sign-out')],
-                      [h.button([h.Type('submit')], ['Sign out'])],
-                    )
-                  : h.empty,
-              ],
-            )
-          : h.empty,
+        mobileMenu(h, model, nav),
         h.submodel({
           slotId: 'search',
           model: model.search,

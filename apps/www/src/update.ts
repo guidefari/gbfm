@@ -1,10 +1,11 @@
+import * as Dialog from '@foldkit/ui/dialog'
+import * as Popover from '@foldkit/ui/popover'
 import { HashMap, Match, Option, Result } from 'effect'
-import { AsyncData, Command, type Update } from 'foldkit'
+import { AsyncData, Command, Update } from 'foldkit'
 import { UrlRequest } from 'foldkit/navigation'
 import { toString as urlToString } from 'foldkit/url'
 
 import {
-  CloseAccountMenu,
   Leave,
   LoadPage,
   Navigate,
@@ -23,6 +24,50 @@ import * as Player from './player'
 import * as PublicActions from './public-actions'
 import { isServerPath, Route } from './route'
 import * as Search from './search'
+import { dragOffset, shouldDismiss, startDrag } from './sheet-drag'
+
+const mobileMenuFold = {
+  read: (model: Model) => Option.some(model.mobileMenu),
+  write: (model: Model, mobileMenu: Dialog.Model): Model => ({ ...model, mobileMenu }),
+  toParentMessage: (message: Dialog.Message) => Message.GotMobileMenuMessage({ message }),
+  foldOutMessage: Dialog.OutMessage.match<Update.Step<Model, Message>>({
+    Opened: () => (model) => ({ model: { ...model, menuDrag: null, menuOffset: 0 } }),
+    Closed: () => (model) => ({ model: { ...model, menuDrag: null } }),
+  }),
+}
+
+const updateMobileMenu = Update.foldChild({ ...mobileMenuFold, update: Dialog.update })
+
+const openMobileMenu = Update.foldChildStep({ ...mobileMenuFold, update: Dialog.open })
+
+const closeMobileMenu = Update.foldChildStep({ ...mobileMenuFold, update: Dialog.close })
+
+const accountMenuFold = {
+  read: (model: Model) => Option.some(model.accountMenu),
+  write: (model: Model, accountMenu: Popover.Model): Model => ({ ...model, accountMenu }),
+  toParentMessage: (message: Popover.Message) => Message.GotAccountMenuMessage({ message }),
+  foldOutMessage: Popover.OutMessage.match<Update.Step<Model, Message>>({
+    Opened: () => (model) => ({ model }),
+    Closed: () => (model) => ({ model }),
+  }),
+}
+
+const updateAccountMenu = Update.foldChild({ ...accountMenuFold, update: Popover.update })
+
+const closeAccountMenu = Update.foldChildStep({ ...accountMenuFold, update: Popover.close })
+
+const closeSearch = (model: Model): Update.Return<Model, Message> => {
+  const child = Search.close(model.search)
+
+  return {
+    model: { ...model, search: child.model },
+    commands: Command.mapMessages(child.commands ?? [], (message) =>
+      Message.GotSearchMessage({ message }),
+    ),
+  }
+}
+
+const closeOverlays = Update.combine([closeMobileMenu, closeAccountMenu, closeSearch])
 
 const showPage = (
   model: Model,
@@ -37,7 +82,10 @@ const showPage = (
       ...next.model,
       player: model.player,
       skipSeen: model.skipSeen,
-      menuOpen: model.menuOpen,
+      mobileMenu: model.mobileMenu,
+      menuDrag: model.menuDrag,
+      menuOffset: model.menuOffset,
+      accountMenu: model.accountMenu,
       search: model.search,
       pageCache: model.pageCache,
       navigationId,
@@ -71,15 +119,39 @@ const showPage = (
 export const update = (model: Model, message: Message): Update.Return<Model, Message, Services> =>
   Message.match<Update.Return<Model, Message, Services>>(message, {
     ClientStarted: () => ({ model: { ...model, interactive: true } }),
-    AccountMenuClosed: () => ({ model, commands: [CloseAccountMenu()] }),
-    MenuToggled: () => ({ model: { ...model, menuOpen: !model.menuOpen } }),
+    AccountMenuClosed: () => closeAccountMenu(model),
+    GotAccountMenuMessage: ({ message }) => updateAccountMenu(model, message),
+    MenuToggled: () => (model.mobileMenu.isOpen ? closeMobileMenu(model) : openMobileMenu(model)),
+    GotMobileMenuMessage: ({ message }) => updateMobileMenu(model, message),
+    MenuDragStarted: ({ pointerId, clientY }) =>
+      !model.mobileMenu.isOpen ||
+      model.mobileMenu.animation.transitionState !== 'Idle' ||
+      model.menuDrag
+        ? { model }
+        : { model: { ...model, menuDrag: startDrag(pointerId, clientY, model.menuOffset) } },
+    MenuDragMoved: ({ pointerId, clientY }) =>
+      model.menuDrag?.pointerId === pointerId
+        ? { model: { ...model, menuOffset: dragOffset(model.menuDrag, clientY) } }
+        : { model },
+    MenuDragReleased: ({ pointerId, clientY, viewportHeight }) => {
+      if (model.menuDrag?.pointerId !== pointerId) return { model }
+      const offset = dragOffset(model.menuDrag, clientY)
+      const released = { ...model, menuDrag: null, menuOffset: offset }
+
+      return shouldDismiss(offset, viewportHeight)
+        ? closeMobileMenu(released)
+        : { model: { ...released, menuOffset: 0 } }
+    },
+    MenuDragCancelled: () =>
+      model.menuDrag ? { model: { ...model, menuDrag: null, menuOffset: 0 } } : { model },
     GotSearchMessage: ({ message }) => {
+      const menu = Update.combine(model, [closeMobileMenu, closeAccountMenu])
       const child = Search.update(model.search, message)
 
       return {
-        model: { ...model, search: child.model, menuOpen: false },
+        model: { ...menu.model, search: child.model },
         commands: [
-          CloseAccountMenu(),
+          ...(menu.commands ?? []),
           ...Command.mapMessages(child.commands ?? [], (message) =>
             Message.GotSearchMessage({ message }),
           ),
@@ -157,18 +229,27 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
         : { model },
     RequestedUrl: ({ request }) =>
       UrlRequest.match<Update.Return<Model, Message, Services>>(request, {
-        Internal: ({ url }) => ({
-          model,
-          commands: [
-            CloseAccountMenu(),
-            isServerPath(url.pathname)
-              ? Leave({ href: urlToString(url) })
-              : Navigate({ href: urlToString(url) }),
-          ],
-        }),
-        External: ({ href }) => ({ model, commands: [CloseAccountMenu(), Leave({ href })] }),
+        Internal: ({ url }) => {
+          const menu = closeOverlays(model)
+
+          return {
+            model: menu.model,
+            commands: [
+              ...(menu.commands ?? []),
+              isServerPath(url.pathname)
+                ? Leave({ href: urlToString(url) })
+                : Navigate({ href: urlToString(url) }),
+            ],
+          }
+        },
+        External: ({ href }) => {
+          const menu = closeOverlays(model)
+
+          return { model: menu.model, commands: [...(menu.commands ?? []), Leave({ href })] }
+        },
       }),
     ChangedUrl: ({ url }) => {
+      const menu = closeOverlays(model)
       const href = urlToString(url)
       const key = pageKey(href)
       const navigationId = model.navigationId + 1
@@ -185,16 +266,20 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
           isCacheable(key) ? HashMap.set(model.pageCache, key, next) : model.pageCache,
       })
 
+      const player = Player.closeOverlays(model.player)
+
       const leaving = {
-        ...model,
+        ...menu.model,
         pageCache,
-        menuOpen: false,
         navigationId,
-        player: { ...model.player, fullscreen: false, queueOpen: false },
+        player: player.model,
       }
 
       const commands = [
-        CloseAccountMenu(),
+        ...(menu.commands ?? []),
+        ...Command.mapMessages(player.commands ?? [], (message) =>
+          Message.GotPlayerMessage({ message }),
+        ),
         ...(model.creator.uploadState === 'running' ? [PauseCreatorUpload()] : []),
         LoadPage({ href, navigationId }),
       ]

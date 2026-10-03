@@ -24,6 +24,21 @@
         document.documentElement.classList.add(resolved)
         document.documentElement.dataset.theme = resolved
       })()
+      ;(() => {
+        try {
+          const queue = JSON.parse(localStorage.getItem('gbfm-audio-queue.json') || 'null')
+          const current = queue && Array.isArray(queue.tracks) ? queue.tracks[queue.currentIndex] : null
+          if (!current) return
+          const art = new URL(current.thumbnailUrl || 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png')
+          if (art.hostname === 'cdn.goosebumps.fm') {
+            art.searchParams.set('w', '96')
+            art.searchParams.set('q', '80')
+            art.searchParams.set('f', 'webp')
+          }
+          document.documentElement.dataset.queued = ''
+          document.documentElement.style.setProperty('--queued-art', `url("${art.href}")`)
+        } catch {}
+      })()
     </script>
     <style>
       html[data-theme='dark'] {

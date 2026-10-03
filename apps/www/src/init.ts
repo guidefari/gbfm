@@ -1,3 +1,5 @@
+import * as Dialog from '@foldkit/ui/dialog'
+import * as Popover from '@foldkit/ui/popover'
 import { canCreatePosts, isRole } from '@gbfm/core/roles'
 import { Match } from 'effect'
 import { Command, type Runtime } from 'foldkit'
@@ -62,7 +64,10 @@ export const init: Runtime.ApplicationInit<Model, Message, Flags, Services> = (f
     model: {
       route,
       flags,
-      menuOpen: false,
+      mobileMenu: Dialog.init({ id: 'mobile-menu', isAnimated: true }),
+      menuDrag: null,
+      menuOffset: 0,
+      accountMenu: Popover.init({ id: 'account-menu', contentFocus: true }),
       search: Search.initialModel,
       skipSeen: flags.skipSeen,
       loading: false,

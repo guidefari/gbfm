@@ -1,7 +1,6 @@
-import type { HtmlBuilder } from 'foldkit/html'
+import type { Html, HtmlBuilder } from 'foldkit/html'
 
 import type { Principal } from '../model'
-import { accountMenu } from './account-menu'
 import { artworkUrl } from './artwork'
 import { iconPaths, lucide } from './icons'
 
@@ -16,9 +15,10 @@ export type StationNavProps<M> = {
   readonly pathname: string
   readonly links: ReadonlyArray<readonly [string, string]>
   readonly principal: Principal | null
-  readonly closeAccountMenu: M
+  readonly accountMenu: Html
   readonly interactive: boolean
   readonly menuOpen: boolean
+  readonly queueResolved: boolean
   readonly nowPlaying: NowPlaying | null
   readonly togglePlay: M
   readonly openPlayer: M
@@ -33,7 +33,9 @@ const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible
 const desktopLinkClass = `shrink-0 rounded-sm px-2 py-1 text-xs font-semibold tracking-wide no-underline transition-colors text-muted-foreground hover:text-foreground aria-[current=page]:text-highlight ${focusRing}`
 
 const tabClass =
-  'relative flex h-full min-w-0 flex-1 items-center justify-center border-0 bg-transparent p-0 no-underline text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring aria-[current=page]:text-highlight'
+  "relative flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-1 border-0 bg-transparent p-0 no-underline text-muted-foreground transition-colors before:absolute before:inset-x-1/4 before:top-0 before:h-0.5 before:rounded-b-sm before:bg-highlight before:opacity-0 before:transition-opacity before:content-[''] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring aria-[current=page]:text-highlight aria-[current=page]:before:opacity-100"
+
+const tabIconClass = 'size-[22px] shrink-0 [stroke-width:1.75]'
 
 const isActive = (pathname: string, href: string) =>
   pathname === href || pathname.startsWith(`${href}/`)
@@ -140,7 +142,7 @@ export const stationNav = <M>(h: HtmlBuilder<M>, props: StationNavProps<M>) => {
               )
             : h.empty,
           props.principal
-            ? accountMenu(h, props.principal, props.closeAccountMenu, props.interactive)
+            ? props.accountMenu
             : h.a(
                 [
                   h.Href(`/auth/sign-in?returnTo=${encodeURIComponent(props.pathname)}`),
@@ -155,16 +157,30 @@ export const stationNav = <M>(h: HtmlBuilder<M>, props: StationNavProps<M>) => {
     ],
   )
 
+  const tabLabel = (label: string) =>
+    h.span([h.Class('max-w-full truncate px-1 text-[11px] font-medium leading-none')], [label])
+
+  const tabLink = (href: string, label: string, icon: string) =>
+    h.a(
+      [
+        h.Href(href),
+        h.AriaLabel(label),
+        h.Class(tabClass),
+        ...(isActive(props.pathname, href) ? [h.AriaCurrent('page')] : []),
+      ],
+      [lucide(icon, tabIconClass), tabLabel(label)],
+    )
+
   const mobile = h.nav(
     [
       h.AriaLabel('Primary'),
       h.Class(
-        'fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] lg:hidden',
+        'fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden',
       ),
     ],
     [
       h.div(
-        [h.Class('grid h-11 grid-cols-5')],
+        [h.Class('grid h-14 grid-cols-5')],
         [
           nowPlaying
             ? h.button(
@@ -178,7 +194,7 @@ export const stationNav = <M>(h: HtmlBuilder<M>, props: StationNavProps<M>) => {
                   h.span(
                     [
                       h.Class(
-                        'relative flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-border',
+                        'relative flex size-[22px] shrink-0 items-center justify-center overflow-hidden rounded-sm border border-border',
                       ),
                     ],
                     [
@@ -197,30 +213,50 @@ export const stationNav = <M>(h: HtmlBuilder<M>, props: StationNavProps<M>) => {
                       ),
                     ],
                   ),
+                  tabLabel(nowPlaying.isPlaying ? 'Playing' : 'Paused'),
                 ],
               )
-            : h.a(
-                [h.Href('/shows'), h.AriaLabel('Now playing'), h.Class(tabClass)],
-                [lucide(iconPaths.disc, 'h-5 w-5 [stroke-width:1.75]')],
-              ),
-          h.a(
-            [
-              h.Href('/shows'),
-              h.AriaLabel('Shows'),
-              h.Class(tabClass),
-              ...(isActive(props.pathname, '/shows') ? [h.AriaCurrent('page')] : []),
-            ],
-            [lucide(iconPaths.disc, 'h-5 w-5 [stroke-width:1.75]')],
-          ),
-          h.a(
-            [
-              h.Href('/editorial'),
-              h.AriaLabel('Editorial'),
-              h.Class(tabClass),
-              ...(isActive(props.pathname, '/editorial') ? [h.AriaCurrent('page')] : []),
-            ],
-            [lucide(iconPaths.book, 'h-5 w-5 [stroke-width:1.75]')],
-          ),
+            : props.queueResolved
+              ? tabLink('/mixes', 'Mixes', iconPaths.disc)
+              : h.div(
+                  [h.Class('contents')],
+                  [
+                    h.button(
+                      [
+                        h.Type('button'),
+                        h.AriaLabel('Now playing'),
+                        h.OnClick(props.openPlayer),
+                        h.Class(`${tabClass} nav-queued-tab text-foreground`),
+                      ],
+                      [
+                        h.span(
+                          [
+                            h.Class(
+                              'relative flex size-[22px] shrink-0 items-center justify-center overflow-hidden rounded-sm border border-border bg-muted bg-cover bg-center [background-image:var(--queued-art)]',
+                            ),
+                          ],
+                          [
+                            h.span(
+                              [
+                                h.Class(
+                                  'absolute inset-0 flex items-center justify-center bg-background/40',
+                                ),
+                              ],
+                              [playIcon(false, 'h-3 w-3 text-white')],
+                            ),
+                          ],
+                        ),
+                        tabLabel('Paused'),
+                      ],
+                    ),
+                    h.div(
+                      [h.Class('nav-idle-tab contents')],
+                      [tabLink('/mixes', 'Mixes', iconPaths.disc)],
+                    ),
+                  ],
+                ),
+          tabLink('/shows', 'Shows', iconPaths.radio),
+          tabLink('/editorial', 'Editorial', iconPaths.book),
           h.button(
             [
               h.Type('button'),
@@ -229,7 +265,7 @@ export const stationNav = <M>(h: HtmlBuilder<M>, props: StationNavProps<M>) => {
               h.OnClick(props.openSearch),
               h.Class(tabClass),
             ],
-            [lucide(iconPaths.search, 'h-5 w-5 [stroke-width:1.75]')],
+            [lucide(iconPaths.search, tabIconClass), tabLabel('Search')],
           ),
           h.button(
             [
@@ -237,10 +273,12 @@ export const stationNav = <M>(h: HtmlBuilder<M>, props: StationNavProps<M>) => {
               h.AriaLabel('Menu'),
               h.Disabled(!props.interactive),
               h.AriaExpanded(props.menuOpen),
+              h.AriaHasPopup('dialog'),
+              h.AriaControls('mobile-menu'),
               h.OnClick(props.toggleMenu),
               h.Class(`${tabClass} ${props.menuOpen ? 'text-highlight' : ''}`),
             ],
-            [lucide(iconPaths.menu, 'h-5 w-5 [stroke-width:1.75]')],
+            [lucide(iconPaths.menu, tabIconClass), tabLabel('Menu')],
           ),
         ],
       ),

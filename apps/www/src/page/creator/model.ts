@@ -1,3 +1,4 @@
+import * as Dialog from '@foldkit/ui/dialog'
 import { Schema } from 'effect'
 
 import type { CreatorDraft } from './services'
@@ -7,6 +8,7 @@ export const Kind = Schema.Literals(['micro', 'post', 'mix'])
 
 export const Model = Schema.Struct({
   draft: Draft,
+  reviewDialog: Dialog.Model,
   creatorId: Schema.String,
   authorized: Schema.Boolean,
   phase: Schema.Literals([
