@@ -50,7 +50,7 @@ export const initialSnapshot: PlaybackSnapshot = {
 export const initialModel: Model = {
   snapshot: initialSnapshot,
   queueDialog: Dialog.init({ id: 'playback-queue' }),
-  playerDialog: Dialog.init({ id: 'fullscreen-player' }),
+  playerDialog: Dialog.init({ id: 'fullscreen-player', isAnimated: true }),
   draggedIndex: null,
 }
 

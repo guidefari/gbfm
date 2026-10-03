@@ -51,9 +51,7 @@ const fullscreen = (model: Model, h: H, current: QueueTrackType) => {
   return h.section(
     [
       h.AriaLabel('Now playing'),
-      h.Class(
-        'absolute inset-0 flex flex-col bg-background text-foreground animate-in slide-in-from-bottom fade-in duration-350 ease-[cubic-bezier(0.22,1,0.36,1)]',
-      ),
+      h.Class('absolute inset-0 flex flex-col bg-background text-foreground'),
     ],
     [
       h.div(
@@ -272,18 +270,21 @@ const playerDialog = (model: Model, h: H) =>
     model: model.playerDialog,
     view: Dialog.view,
     viewInputs: {
-      toView: ({ dialog, panel, title, isVisible }) =>
+      toView: ({ dialog, panel, title, initialFocus, isVisible }) =>
         h.dialog(
-          [...dialog, h.Class('overlay-dialog')],
+          [...dialog, h.Class('overlay-dialog player-dialog')],
           isVisible
             ? [
-                h.h2([...title, h.Class('sr-only')], ['Now playing']),
+                h.h2(
+                  [...title, ...initialFocus, h.Tabindex(-1), h.Class('sr-only')],
+                  ['Now playing'],
+                ),
                 h.div(
-                  [...panel],
+                  [...panel, h.Class('player-panel')],
                   [
                     model.snapshot.queue.current
                       ? fullscreen(model, h, model.snapshot.queue.current)
-                      : h.p([], ['Loading player…']),
+                      : h.p([h.Class('player-loading'), h.Role('status')], ['Loading player…']),
                   ],
                 ),
               ]
