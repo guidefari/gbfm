@@ -4,6 +4,7 @@ import { UrlRequest } from 'foldkit/navigation'
 import { toString as urlToString } from 'foldkit/url'
 
 import {
+  CloseAccountMenu,
   Leave,
   LoadPage,
   Navigate,
@@ -70,15 +71,19 @@ const showPage = (
 export const update = (model: Model, message: Message): Update.Return<Model, Message, Services> =>
   Message.match<Update.Return<Model, Message, Services>>(message, {
     ClientStarted: () => ({ model: { ...model, interactive: true } }),
+    AccountMenuClosed: () => ({ model, commands: [CloseAccountMenu()] }),
     MenuToggled: () => ({ model: { ...model, menuOpen: !model.menuOpen } }),
     GotSearchMessage: ({ message }) => {
       const child = Search.update(model.search, message)
 
       return {
         model: { ...model, search: child.model, menuOpen: false },
-        commands: Command.mapMessages(child.commands ?? [], (message) =>
-          Message.GotSearchMessage({ message }),
-        ),
+        commands: [
+          CloseAccountMenu(),
+          ...Command.mapMessages(child.commands ?? [], (message) =>
+            Message.GotSearchMessage({ message }),
+          ),
+        ],
       }
     },
     SkipSeenChanged: ({ value }) => ({
@@ -155,12 +160,13 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
         Internal: ({ url }) => ({
           model,
           commands: [
+            CloseAccountMenu(),
             isServerPath(url.pathname)
               ? Leave({ href: urlToString(url) })
               : Navigate({ href: urlToString(url) }),
           ],
         }),
-        External: ({ href }) => ({ model, commands: [Leave({ href })] }),
+        External: ({ href }) => ({ model, commands: [CloseAccountMenu(), Leave({ href })] }),
       }),
     ChangedUrl: ({ url }) => {
       const href = urlToString(url)
@@ -188,6 +194,7 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
       }
 
       const commands = [
+        CloseAccountMenu(),
         ...(model.creator.uploadState === 'running' ? [PauseCreatorUpload()] : []),
         LoadPage({ href, navigationId }),
       ]
