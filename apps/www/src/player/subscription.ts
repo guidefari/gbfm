@@ -1,6 +1,7 @@
 import { Effect, Queue, Schema, Stream } from 'effect'
 import { Subscription } from 'foldkit'
 
+import { dragEvents } from '../sheet-drag'
 import { Message, type Model } from './model'
 import { PlayerClient } from './runtime'
 
@@ -31,40 +32,11 @@ export const subscriptions = Subscription.make<Model, typeof Message.Type, Playe
         modelToDependencies: (model) => ({ isDragging: model.playerDrag !== null }),
         dependenciesToStream: ({ isDragging }) =>
           isDragging
-            ? Stream.mergeAll<typeof Message.Type, never, never>(
-                [
-                  Subscription.fromEvent({
-                    target: document,
-                    type: 'pointermove',
-                    mapEvent: (event) =>
-                      Message.PlayerDragMoved({
-                        pointerId: event.pointerId,
-                        clientY: event.clientY,
-                      }),
-                  }),
-                  Subscription.fromEvent({
-                    target: document,
-                    type: 'pointerup',
-                    mapEvent: (event) =>
-                      Message.PlayerDragReleased({
-                        pointerId: event.pointerId,
-                        clientY: event.clientY,
-                        viewportHeight: window.innerHeight,
-                      }),
-                  }),
-                  Subscription.fromEvent({
-                    target: document,
-                    type: 'pointercancel',
-                    mapEvent: () => Message.PlayerDragCancelled(),
-                  }),
-                  Subscription.fromEvent({
-                    target: window,
-                    type: 'blur',
-                    mapEvent: () => Message.PlayerDragCancelled(),
-                  }),
-                ],
-                { concurrency: 'unbounded' },
-              )
+            ? dragEvents<typeof Message.Type>({
+                moved: Message.PlayerDragMoved,
+                released: Message.PlayerDragReleased,
+                cancelled: Message.PlayerDragCancelled,
+              })
             : Stream.empty,
       },
     ),

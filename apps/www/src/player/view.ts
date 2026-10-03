@@ -1,9 +1,9 @@
 import * as Dialog from '@foldkit/ui/dialog'
 import type { QueueTrackType } from '@gbfm/player'
-import { Option } from 'effect'
 import type { HtmlBuilder } from 'foldkit/html'
 import { defineView } from 'foldkit/submodel'
 
+import { onDragStart } from '../sheet-drag'
 import { artworkUrl } from '../view/artwork'
 import { iconPaths, lucide } from '../view/icons'
 import { SuppressDragClick } from './drag-handle'
@@ -47,13 +47,7 @@ const creatorLinks = (h: H, track: QueueTrackType) => {
 }
 
 const dragAttributes = (h: H, allowControls = false) => [
-  h.OnPointerDown(
-    (_pointerType, button, _screenX, _screenY, _timeStamp, _clientX, clientY, pointerId, target) =>
-      button !== 0 ||
-      (!allowControls && target instanceof Element && target.closest('button, a, input'))
-        ? Option.none()
-        : Option.some(Message.PlayerDragStarted({ pointerId, clientY })),
-  ),
+  h.OnPointerDown(onDragStart(Message.PlayerDragStarted, allowControls)),
 ]
 
 const fullscreen = (model: Model, h: H, current: QueueTrackType) => {

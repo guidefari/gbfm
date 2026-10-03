@@ -4,6 +4,7 @@ import { Effect, Option, Schema } from 'effect'
 import { Command, Update } from 'foldkit'
 import { defineMessageUnion } from 'foldkit/message'
 
+import { dragOffset, SheetDrag, shouldDismiss, startDrag } from '../sheet-drag'
 import { PlayerClient, type PlayerClientValue } from './runtime'
 
 const QueueView = Schema.Struct({
@@ -30,7 +31,7 @@ export const Model = Schema.Struct({
   queueDialog: Dialog.Model,
   playerDialog: Dialog.Model,
   draggedIndex: Schema.NullOr(Schema.Number),
-  playerDrag: Schema.NullOr(Schema.Struct({ pointerId: Schema.Number, startY: Schema.Number })),
+  playerDrag: SheetDrag,
   playerOffset: Schema.Number,
 })
 
@@ -273,17 +274,17 @@ export const update = (
       model.playerDialog.animation.transitionState !== 'Idle' ||
       model.playerDrag
         ? { model }
-        : { model: { ...model, playerDrag: { pointerId, startY: clientY - model.playerOffset } } },
+        : { model: { ...model, playerDrag: startDrag(pointerId, clientY, model.playerOffset) } },
     PlayerDragMoved: ({ pointerId, clientY }) =>
       model.playerDrag?.pointerId === pointerId
-        ? { model: { ...model, playerOffset: Math.max(0, clientY - model.playerDrag.startY) } }
+        ? { model: { ...model, playerOffset: dragOffset(model.playerDrag, clientY) } }
         : { model },
     PlayerDragReleased: ({ pointerId, clientY, viewportHeight }) => {
       if (model.playerDrag?.pointerId !== pointerId) return { model }
-      const offset = Math.max(0, clientY - model.playerDrag.startY)
+      const offset = dragOffset(model.playerDrag, clientY)
       const released = { ...model, playerDrag: null, playerOffset: offset }
 
-      return offset >= Math.min(160, viewportHeight * 0.2)
+      return shouldDismiss(offset, viewportHeight)
         ? closeOverlays(released)
         : { model: { ...released, playerOffset: 0 } }
     },
