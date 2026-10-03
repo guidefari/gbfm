@@ -883,6 +883,7 @@
 .menu-sheet-section button {
   display: flex;
   align-items: center;
+  gap: 0.875rem;
   width: 100%;
   min-height: 2.75rem;
   padding: 0 0.75rem;
@@ -897,10 +898,29 @@
     background-color 150ms,
     color 150ms;
 }
+.menu-sheet-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+  color: var(--muted-foreground);
+  stroke-width: 1.75;
+  transition: color 150ms;
+}
+.menu-sheet a[aria-current='page'] {
+  background: var(--secondary);
+  color: var(--highlight);
+}
+.menu-sheet a[aria-current='page'] .menu-sheet-icon {
+  color: var(--highlight);
+}
 @media (hover: hover) {
   .menu-sheet a:hover,
   .menu-sheet-section button:hover {
     background: var(--secondary);
+    color: var(--highlight);
+  }
+  .menu-sheet a:hover .menu-sheet-icon,
+  .menu-sheet-section button:hover .menu-sheet-icon {
     color: var(--highlight);
   }
 }

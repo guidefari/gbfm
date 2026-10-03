@@ -5,13 +5,31 @@ import type { HtmlBuilder } from 'foldkit/html'
 import { Message } from '../message'
 import type { Model } from '../model'
 import { onDragStart } from '../sheet-drag'
+import { iconPaths, lucide } from './icons'
+
+const browseIcons = new Map([
+  ['/shows', iconPaths.radio],
+  ['/editorial', iconPaths.book],
+  ['/tweets', iconPaths.message],
+  ['/labels', iconPaths.album],
+])
 
 export const mobileMenu = (
   h: HtmlBuilder<Message>,
-  { mobileMenu: dialogModel, menuDrag, menuOffset, flags: { principal } }: Model,
+  { mobileMenu: dialogModel, menuDrag, menuOffset, pendingPath, flags: { principal, url } }: Model,
   links: ReadonlyArray<readonly [string, string]>,
 ) => {
-  const link = (href: string, label: string) => h.a([h.Href(href)], [label])
+  const pathname = pendingPath ?? new URL(url).pathname
+  const icon = (path: string) => lucide(path, 'menu-sheet-icon')
+
+  const link = (href: string, label: string, path: string) =>
+    h.a(
+      [
+        h.Href(href),
+        ...(pathname === href || pathname.startsWith(`${href}/`) ? [h.AriaCurrent('page')] : []),
+      ],
+      [icon(path), label],
+    )
 
   const section = (heading: string, items: ReadonlyArray<ReturnType<typeof link>>) =>
     h.section([h.Class('menu-sheet-section')], [h.h3([], [heading]), ...items])
@@ -50,30 +68,40 @@ export const mobileMenu = (
                       [h.Class('menu-sheet-links'), h.AriaLabel('Menu links')],
                       [
                         section('Browse', [
-                          ...links.map(([href, label]) => link(href, label)),
-                          link('/mixes', 'Mixes'),
-                          link('/subscribe', 'Subscribe'),
+                          ...links.map(([href, label]) =>
+                            link(href, label, browseIcons.get(href) ?? iconPaths.link),
+                          ),
+                          link('/mixes', 'Mixes', iconPaths.disc),
+                          link('/subscribe', 'Subscribe', iconPaths.mail),
                         ]),
                         canCreatePosts(principal?.role ?? null)
                           ? section('Create', [
-                              link('/new', 'New post'),
-                              link('/mix-upload', 'New mix'),
-                              link('/dashboard/content', 'My content'),
+                              link('/new', 'New post', iconPaths.edit),
+                              link('/mix-upload', 'New mix', iconPaths.upload),
+                              link('/dashboard/content', 'My content', iconPaths.list),
                             ])
                           : h.empty,
                         section('Follow', [
-                          link('/rss.xml', 'Mixes via RSS'),
-                          link('https://youtube.com/@goosebumpsfm', 'Mixes via YouTube'),
+                          link('/rss.xml', 'Mixes via RSS', iconPaths.rss),
+                          link(
+                            'https://youtube.com/@goosebumpsfm',
+                            'Mixes via YouTube',
+                            iconPaths.youtube,
+                          ),
                         ]),
                         section('Account', [
-                          link(
-                            principal ? '/dashboard' : '/auth/sign-in',
-                            principal ? 'Dashboard' : 'Log in',
-                          ),
+                          principal
+                            ? link('/dashboard', 'Dashboard', iconPaths.dashboard)
+                            : link('/auth/sign-in', 'Log in', iconPaths.logIn),
                           principal
                             ? h.form(
                                 [h.Method('post'), h.Action('/actions/sign-out')],
-                                [h.button([h.Type('submit')], ['Sign out'])],
+                                [
+                                  h.button(
+                                    [h.Type('submit')],
+                                    [icon(iconPaths.logOut), 'Sign out'],
+                                  ),
+                                ],
                               )
                             : h.empty,
                         ]),
