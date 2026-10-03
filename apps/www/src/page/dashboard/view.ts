@@ -1,6 +1,7 @@
 import type { HtmlBuilder } from 'foldkit/html'
 import { defineView } from 'foldkit/submodel'
 
+import { collection } from './collection'
 import { Message } from './message'
 import type { Model } from './model'
 import { navigation, sectionLabel } from './navigation'
@@ -88,49 +89,6 @@ const preferences = (model: Model, h: HtmlBuilder<Message>) =>
         ],
         ['Save email preferences'],
       ),
-    ],
-  )
-
-const rows = (model: Model, h: HtmlBuilder<Message>) =>
-  h.section(
-    [h.Class('dashboard-panel dashboard-library')],
-    [
-      model.rows.length === 0
-        ? h.p(
-            [h.Class('dashboard-empty')],
-            [
-              model.section === 'favorites' || model.section === 'overview'
-                ? 'Your saved mixes and shows will appear here. Explore a show and save something you love.'
-                : 'No items found.',
-            ],
-          )
-        : h.ul(
-            [h.Class('dashboard-list dashboard-library-list')],
-            model.rows.map((row) =>
-              h.li(
-                [h.Key(row.id)],
-                [
-                  h.div(
-                    [],
-                    [
-                      row.href ? h.a([h.Href(row.href)], [row.title]) : h.strong([], [row.title]),
-                      row.detail ? h.small([], [row.detail]) : h.empty,
-                    ],
-                  ),
-                  model.section === 'favorites' || model.section === 'reminders'
-                    ? h.button(
-                        [
-                          h.Class('dashboard-button-quiet'),
-                          h.AriaLabel(`Remove ${row.title}`),
-                          h.OnClick(Message.DeleteRequested({ id: row.id })),
-                        ],
-                        ['Remove'],
-                      )
-                    : h.empty,
-                ],
-              ),
-            ),
-          ),
     ],
   )
 
@@ -248,7 +206,7 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
                                   h.h2([], ['Search']),
                                   input(h, model, 'query', 'Query', 'search'),
                                   h.button([h.OnClick(Message.SearchRequested())], ['Search']),
-                                  rows(model, h),
+                                  collection(model, h),
                                 ],
                               )
                             : model.section === 'player'
@@ -309,7 +267,7 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
                                       ),
                                     ],
                                   )
-                                : rows(model, h)
+                                : collection(model, h)
 
   return h.div(
     [h.Class('gbfm-dashboard')],

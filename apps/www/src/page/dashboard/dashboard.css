@@ -291,6 +291,31 @@
   font-size: 0.75rem;
   line-height: 1.5;
 }
+.dashboard-library-list .dashboard-library-item {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+.dashboard-item-copy {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.dashboard-item-copy strong {
+  display: block;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+.dashboard-thumbnail {
+  flex: 0 0 64px;
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+}
+.dashboard-remove-icon {
+  display: none;
+}
 .dashboard-library .dashboard-empty {
   padding: 1.5rem 0;
   line-height: 1.6;
@@ -309,6 +334,7 @@
     display: none;
   }
   .dashboard-mobile-header {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -339,19 +365,20 @@
   .dashboard-section-picker[open] summary::after {
     content: '−';
   }
-  .dashboard-mobile-header:has(.dashboard-section-picker[open]) {
-    align-items: flex-start;
-    flex-wrap: wrap;
-  }
-  .dashboard-section-picker[open] {
-    flex-basis: 100%;
-  }
-  .dashboard-section-picker[open] summary {
-    width: fit-content;
-    margin-left: auto;
-  }
   .dashboard-section-picker .dashboard-navigation {
-    padding: 1rem 0 0.25rem;
+    position: absolute;
+    z-index: 30;
+    top: 100%;
+    right: 1rem;
+    left: 1rem;
+    max-height: min(70dvh, calc(100dvh - 9rem - env(safe-area-inset-bottom)));
+    box-sizing: border-box;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 1rem;
+    border: 1px solid var(--dash-line);
+    background: var(--dash-bg);
+    box-shadow: 0 0.75rem 1.5rem #0003;
   }
   .dashboard-navigation > nav {
     display: grid;
@@ -366,6 +393,26 @@
   }
   .dashboard-library {
     padding: 0 0.875rem;
+  }
+  .dashboard-thumbnail {
+    flex-basis: 48px;
+    width: 48px;
+    height: 48px;
+  }
+  .gbfm-dashboard .dashboard-remove {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    padding: 0.5rem;
+  }
+  .dashboard-remove-icon {
+    display: block;
+    width: 18px;
+    height: 18px;
+  }
+  .dashboard-remove-label {
+    display: none;
   }
   .dashboard-state,
   .dashboard-forbidden {

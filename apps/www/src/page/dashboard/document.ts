@@ -28,6 +28,7 @@ export const Row = Schema.Struct({
   detail: Schema.String,
   href: Schema.NullOr(Schema.String),
   actionId: Schema.NullOr(Schema.String),
+  thumbnailUrl: Schema.optional(Schema.NullOr(Schema.String)),
 })
 
 export const DashboardDocument = Schema.Struct({
@@ -163,6 +164,7 @@ export const parseDashboardDocument = (
                 id: favorite.id,
                 title: content?.title ?? 'Unavailable content',
                 detail: favorite.audio?.type ?? 'show',
+                thumbnailUrl: content?.thumbnailUrl ?? null,
                 href: content
                   ? `/${favorite.audio ? 'mixes' : 'shows'}/${encodeURIComponent(content.slug)}`
                   : null,
@@ -180,6 +182,7 @@ export const parseDashboardDocument = (
               id: item.id,
               title: item.musicTitle,
               detail: item.artistName,
+              thumbnailUrl: item.albumCoverUrl,
               href: item.musicUrl,
               actionId: item.id,
             })),
