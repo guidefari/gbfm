@@ -13,6 +13,9 @@ export const mobileMenu = (
 ) => {
   const link = (href: string, label: string) => h.a([h.Href(href)], [label])
 
+  const section = (heading: string, items: ReadonlyArray<ReturnType<typeof link>>) =>
+    h.section([h.Class('menu-sheet-section')], [h.h3([], [heading]), ...items])
+
   return h.submodel({
     slotId: 'mobile-menu',
     model,
@@ -31,38 +34,44 @@ export const mobileMenu = (
                     h.header(
                       [],
                       [
-                        h.h2([], ['Menu']),
-                        h.button([...closeButton, h.AriaLabel('Close menu')], ['×']),
+                        h.span([h.Class('player-drag-grip'), h.AriaHidden(true)]),
+                        h.button(
+                          [...closeButton, h.Class('menu-sheet-close'), h.AriaLabel('Close menu')],
+                          ['×'],
+                        ),
                       ],
                     ),
                     h.nav(
                       [h.Class('menu-sheet-links'), h.AriaLabel('Menu links')],
                       [
-                        h.h3([], ['Browse']),
-                        ...links.map(([href, label]) => link(href, label)),
-                        link('/mixes', 'Mixes'),
-                        link('/subscribe', 'Subscribe'),
-                        ...(canCreatePosts(principal?.role ?? null)
-                          ? [
-                              h.h3([], ['Create']),
+                        section('Browse', [
+                          ...links.map(([href, label]) => link(href, label)),
+                          link('/mixes', 'Mixes'),
+                          link('/subscribe', 'Subscribe'),
+                        ]),
+                        canCreatePosts(principal?.role ?? null)
+                          ? section('Create', [
                               link('/new', 'New post'),
                               link('/mix-upload', 'New mix'),
                               link('/dashboard/content', 'My content'),
-                            ]
-                          : []),
-                        h.h3([], ['Follow']),
-                        link('/rss.xml', 'Mixes via RSS'),
-                        link('https://youtube.com/@goosebumpsfm', 'Mixes via YouTube'),
-                        link(
-                          principal ? '/dashboard' : '/auth/sign-in',
-                          principal ? 'Dashboard' : 'Log in',
-                        ),
-                        principal
-                          ? h.form(
-                              [h.Method('post'), h.Action('/actions/sign-out')],
-                              [h.button([h.Type('submit')], ['Sign out'])],
-                            )
+                            ])
                           : h.empty,
+                        section('Follow', [
+                          link('/rss.xml', 'Mixes via RSS'),
+                          link('https://youtube.com/@goosebumpsfm', 'Mixes via YouTube'),
+                        ]),
+                        section('Account', [
+                          link(
+                            principal ? '/dashboard' : '/auth/sign-in',
+                            principal ? 'Dashboard' : 'Log in',
+                          ),
+                          principal
+                            ? h.form(
+                                [h.Method('post'), h.Action('/actions/sign-out')],
+                                [h.button([h.Type('submit')], ['Sign out'])],
+                              )
+                            : h.empty,
+                        ]),
                       ],
                     ),
                   ],

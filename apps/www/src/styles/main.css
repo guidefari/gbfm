@@ -845,41 +845,88 @@
   background: var(--background);
   border-top: 1px solid var(--border);
   border-radius: 0.75rem 0.75rem 0 0;
-  padding: 1rem max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom))
-    max(1rem, env(safe-area-inset-left));
+  padding: 0 max(0.5rem, env(safe-area-inset-right)) max(0.75rem, env(safe-area-inset-bottom))
+    max(0.5rem, env(safe-area-inset-left));
   box-shadow: 0 -8px 32px #0003;
 }
 .menu-sheet header {
+  position: relative;
   display: flex;
   flex-shrink: 0;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  padding-bottom: 0.5rem;
+  min-height: 2.75rem;
 }
-.menu-sheet header h2 {
-  margin: 0;
-  font-size: 1.25rem;
-}
-.menu-sheet header button {
-  min-width: 44px;
-  min-height: 44px;
+.menu-sheet-close {
+  position: absolute;
+  right: 0;
+  top: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
   padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 1.5rem;
+  line-height: 1;
+  transition:
+    color 150ms,
+    background-color 150ms;
+}
+@media (hover: hover) {
+  .menu-sheet-close:hover {
+    background: var(--secondary);
+    color: var(--foreground);
+  }
 }
 .menu-sheet-links {
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior-y: contain;
 }
-.menu-sheet a {
-  display: block;
-  min-height: 44px;
-  padding: 0.6rem;
-  text-decoration: none;
+.menu-sheet-section {
+  display: flex;
+  flex-direction: column;
+  padding-block: 0.5rem;
+}
+.menu-sheet-section + .menu-sheet-section {
+  border-top: 1px solid var(--border);
 }
 .menu-sheet h3 {
-  margin-top: 1rem;
+  margin: 0;
+  padding: 0.25rem 0.75rem;
   color: var(--muted-foreground);
   font-size: 0.75rem;
+  font-weight: 500;
+}
+.menu-sheet a,
+.menu-sheet-section button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0 0.75rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--foreground);
+  font-size: 0.95rem;
+  text-align: left;
+  text-decoration: none;
+  transition:
+    background-color 150ms,
+    color 150ms;
+}
+@media (hover: hover) {
+  .menu-sheet a:hover,
+  .menu-sheet-section button:hover {
+    background: var(--secondary);
+    color: var(--highlight);
+  }
 }
 .search-dialog {
   margin: 12dvh auto 0;
