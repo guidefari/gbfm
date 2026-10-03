@@ -2,7 +2,9 @@ import { Api } from '@gbfm/api/api'
 import { AuthSession } from '@gbfm/api/middleware/auth'
 import { Effect } from 'effect'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
+
 import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
+import { omitUndefined } from '@/lib/omit-undefined'
 import { MusicReminderService } from '@/services/music-reminder.service'
 import { ReminderSignalService } from '@/services/reminder-signal.service'
 
@@ -25,7 +27,7 @@ const toReminderResponse = (reminder: {
   ...reminder,
   reminderDate: reminder.reminderDate.toISOString(),
   createdAt: reminder.createdAt.toISOString(),
-  updatedAt: reminder.updatedAt.toISOString()
+  updatedAt: reminder.updatedAt.toISOString(),
 })
 
 export const MusicRemindersHandlersLive = HttpApiBuilder.group(Api, 'music-reminders', (handlers) =>
@@ -43,18 +45,19 @@ export const MusicRemindersHandlersLive = HttpApiBuilder.group(Api, 'music-remin
             musicUrl: payload.musicUrl,
             albumCoverUrl: payload.albumCoverUrl ?? null,
             reminderDate: new Date(payload.reminderDate),
-            notes: payload.notes ?? null
-          })
+            notes: payload.notes ?? null,
+          }),
         )
+
         const signal = yield* ReminderSignalService
         yield* signal.signal
 
         return {
           success: true,
           reminder: toReminderResponse(reminder),
-          message: 'Music reminder created successfully'
+          message: 'Music reminder created successfully',
         }
-      })
+      }),
     )
     .handle('getMusicReminders', () =>
       Effect.gen(function* () {
@@ -66,9 +69,9 @@ export const MusicRemindersHandlersLive = HttpApiBuilder.group(Api, 'music-remin
         return {
           success: true,
           reminders: reminders.map(toReminderResponse),
-          total: reminders.length
+          total: reminders.length,
         }
-      })
+      }),
     )
     .handle('updateMusicReminder', ({ params, payload }) =>
       Effect.gen(function* () {
@@ -77,28 +80,33 @@ export const MusicRemindersHandlersLive = HttpApiBuilder.group(Api, 'music-remin
 
         const reminder = yield* dieOnDatabaseError(
           svc
-            .update(params.id, user.id, {
-              musicTitle: payload.musicTitle,
-              artistName: payload.artistName,
-              musicUrl: payload.musicUrl,
-              albumCoverUrl: payload.albumCoverUrl,
-              reminderDate: payload.reminderDate ? new Date(payload.reminderDate) : undefined,
-              notes: payload.notes
-            })
+            .update(
+              params.id,
+              user.id,
+              omitUndefined({
+                musicTitle: payload.musicTitle,
+                artistName: payload.artistName,
+                musicUrl: payload.musicUrl,
+                albumCoverUrl: payload.albumCoverUrl,
+                reminderDate: payload.reminderDate ? new Date(payload.reminderDate) : undefined,
+                notes: payload.notes,
+              }),
+            )
             .pipe(
               Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
-              Effect.catchTag('UnauthorizedError', () => new HttpApiError.Forbidden())
-            )
+              Effect.catchTag('UnauthorizedError', () => new HttpApiError.Forbidden()),
+            ),
         )
+
         const signal = yield* ReminderSignalService
         yield* signal.signal
 
         return {
           success: true,
           reminder: toReminderResponse(reminder),
-          message: 'Music reminder updated successfully'
+          message: 'Music reminder updated successfully',
         }
-      })
+      }),
     )
     .handle('deleteMusicReminder', ({ params }) =>
       Effect.gen(function* () {
@@ -108,11 +116,11 @@ export const MusicRemindersHandlersLive = HttpApiBuilder.group(Api, 'music-remin
         yield* dieOnDatabaseError(
           svc.delete(params.id, user.id).pipe(
             Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
-            Effect.catchTag('UnauthorizedError', () => new HttpApiError.Forbidden())
-          )
+            Effect.catchTag('UnauthorizedError', () => new HttpApiError.Forbidden()),
+          ),
         )
 
         return { success: true, message: 'Music reminder deleted successfully' }
-      })
-    )
+      }),
+    ),
 )

@@ -1,14 +1,16 @@
 import { Effect } from 'effect'
 import { describe, expect, test } from 'vitest'
+
 import { Database } from '@/db/layer'
 import {
   musicAlbumsTable,
   musicArtistsTable,
   musicLabelsTable,
   musicPlaylistsTable,
-  musicTracksTable
+  musicTracksTable,
 } from '@/db/music-entity.schema'
 import { db } from '@/test/d1'
+
 import { getAlbumsEffect } from './album.service'
 import { getArtistsEffect } from './artist.service'
 import { getLabelsEffect } from './label.service'
@@ -19,6 +21,7 @@ const run = <A, E>(effect: Effect.Effect<A, E, Database>) =>
   Effect.runPromise(Effect.provideService(effect, Database, db))
 
 const TIED_CREATED_AT = new Date('2025-10-07T07:35:42.727Z')
+
 const PUBLISHED_AT = new Date('2020-01-01T00:00:00.000Z')
 
 describe('D1 list ordering ties on createdAt', () => {
@@ -26,7 +29,7 @@ describe('D1 list ordering ties on createdAt', () => {
     await db.insert(musicArtistsTable).values([
       { id: 'artist-c', name: 'C', slug: 'artist-c', createdAt: TIED_CREATED_AT },
       { id: 'artist-a', name: 'A', slug: 'artist-a', createdAt: TIED_CREATED_AT },
-      { id: 'artist-b', name: 'B', slug: 'artist-b', createdAt: TIED_CREATED_AT }
+      { id: 'artist-b', name: 'B', slug: 'artist-b', createdAt: TIED_CREATED_AT },
     ])
 
     const artists = await run(getArtistsEffect)
@@ -38,7 +41,7 @@ describe('D1 list ordering ties on createdAt', () => {
     await db.insert(musicAlbumsTable).values([
       { id: 'album-c', title: 'C', slug: 'album-c', createdAt: TIED_CREATED_AT },
       { id: 'album-a', title: 'A', slug: 'album-a', createdAt: TIED_CREATED_AT },
-      { id: 'album-b', title: 'B', slug: 'album-b', createdAt: TIED_CREATED_AT }
+      { id: 'album-b', title: 'B', slug: 'album-b', createdAt: TIED_CREATED_AT },
     ])
 
     const albums = await run(getAlbumsEffect)
@@ -50,7 +53,7 @@ describe('D1 list ordering ties on createdAt', () => {
     await db.insert(musicTracksTable).values([
       { id: 'track-c', title: 'C', slug: 'track-c', createdAt: TIED_CREATED_AT },
       { id: 'track-a', title: 'A', slug: 'track-a', createdAt: TIED_CREATED_AT },
-      { id: 'track-b', title: 'B', slug: 'track-b', createdAt: TIED_CREATED_AT }
+      { id: 'track-b', title: 'B', slug: 'track-b', createdAt: TIED_CREATED_AT },
     ])
 
     const tracks = await run(getTracksEffect)
@@ -62,7 +65,7 @@ describe('D1 list ordering ties on createdAt', () => {
     await db.insert(musicPlaylistsTable).values([
       { id: 'playlist-c', title: 'C', slug: 'playlist-c', createdAt: TIED_CREATED_AT },
       { id: 'playlist-a', title: 'A', slug: 'playlist-a', createdAt: TIED_CREATED_AT },
-      { id: 'playlist-b', title: 'B', slug: 'playlist-b', createdAt: TIED_CREATED_AT }
+      { id: 'playlist-b', title: 'B', slug: 'playlist-b', createdAt: TIED_CREATED_AT },
     ])
 
     const playlists = await run(getPlaylistsEffect)
@@ -77,22 +80,22 @@ describe('D1 list ordering ties on createdAt', () => {
         name: 'C',
         slug: 'label-c',
         createdAt: TIED_CREATED_AT,
-        publishedAt: PUBLISHED_AT
+        publishedAt: PUBLISHED_AT,
       },
       {
         id: 'label-a',
         name: 'A',
         slug: 'label-a',
         createdAt: TIED_CREATED_AT,
-        publishedAt: PUBLISHED_AT
+        publishedAt: PUBLISHED_AT,
       },
       {
         id: 'label-b',
         name: 'B',
         slug: 'label-b',
         createdAt: TIED_CREATED_AT,
-        publishedAt: PUBLISHED_AT
-      }
+        publishedAt: PUBLISHED_AT,
+      },
     ])
 
     const labels = await run(getLabelsEffect(true))

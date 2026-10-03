@@ -4,17 +4,21 @@ export function matchRoute<TBucket>(
   buckets: {
     readonly USER_CONTENT: TBucket
     readonly MIXES: TBucket
-  }
+  },
 ): { readonly bucket: TBucket; readonly key: string } | null {
   const userContentPrefix = '/user-content/'
+
   if (pathname.startsWith(userContentPrefix)) {
     const key = pathname.slice(userContentPrefix.length)
+
     return key.length === 0 ? null : { bucket: buckets.USER_CONTENT, key }
   }
 
   const mixesPrefix = '/mixes/'
+
   if (pathname.startsWith(mixesPrefix)) {
     const key = pathname.slice(mixesPrefix.length)
+
     return key.length === 0 ? null : { bucket: buckets.MIXES, key }
   }
 

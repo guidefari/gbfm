@@ -1,6 +1,7 @@
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as Effect from 'effect/Effect'
-import { workerObservability } from './observability'
+
+import { privateSourceMaps, workerObservability } from './observability'
 import { hostname, localDevPorts, type StageConfig } from './stage'
 import type { Storage } from './storage'
 
@@ -11,12 +12,14 @@ export const cdnRouter = (config: StageConfig, store: Storage) =>
       ...hostname(config, 'cdn.goosebumps.fm'),
       ...(config.isLocalDev ? { dev: { port: localDevPorts.cdn, strictPort: true } } : undefined),
       compatibility: { date: '2026-07-04' },
+      build: privateSourceMaps,
       observability: workerObservability(config.isProduction),
       env: {
+        APP_RELEASE: config.release,
         USER_CONTENT: store.userContent,
         MIXES: store.mixes,
-        IMAGES: Cloudflare.Images.Images('IMAGES')
-      }
+        IMAGES: Cloudflare.Images.Images('IMAGES'),
+      },
     })
   })
 

@@ -16,6 +16,6 @@ export const DocsLive = HttpApiScalar.layer(Api, {
   path: '/reference',
   scalar: {
     theme: 'kepler',
-    layout: 'classic'
-  }
+    layout: 'classic',
+  },
 })

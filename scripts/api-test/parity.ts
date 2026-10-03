@@ -31,7 +31,7 @@ const ENDPOINTS = [
   '/api/music/labels',
   '/api/music/playlists',
   '/api/search?q=ambient&limit=2',
-  '/api/profile/guidefari'
+  '/api/profile/guidefari',
 ] as const
 
 type Json = string | number | boolean | null | { [key: string]: Json } | Array<Json>
@@ -48,12 +48,12 @@ const isObject = (value: Json | undefined): value is { [key: string]: Json } =>
 const diff = (
   production: Json | undefined,
   candidate: Json | undefined,
-  path = ''
+  path = '',
 ): Array<Difference> => {
   if (Array.isArray(production) && Array.isArray(candidate)) {
     if (production.length !== candidate.length) {
       return [
-        { path: `${path}.length`, production: production.length, candidate: candidate.length }
+        { path: `${path}.length`, production: production.length, candidate: candidate.length },
       ]
     }
     return production.flatMap((row, index) => diff(row, candidate[index], `${path}[${index}]`))
@@ -62,7 +62,7 @@ const diff = (
   if (isObject(production) && isObject(candidate)) {
     const keys = new Set([...Object.keys(production), ...Object.keys(candidate)])
     return [...keys].flatMap((key) =>
-      diff(production[key], candidate[key], path === '' ? key : `${path}.${key}`)
+      diff(production[key], candidate[key], path === '' ? key : `${path}.${key}`),
     )
   }
 
@@ -92,7 +92,7 @@ const sortById = (value: Json): Json => {
 
 const fetchEndpoint = async (base: string, endpoint: string) => {
   const response = await fetch(`${base}${endpoint}`, {
-    headers: { accept: 'application/json' }
+    headers: { accept: 'application/json' },
   })
   const text = await response.text()
   try {
@@ -118,7 +118,7 @@ const summary: Array<{
 for (const endpoint of ENDPOINTS) {
   const [production, candidate] = await Promise.all([
     fetchEndpoint(PRODUCTION, endpoint),
-    fetchEndpoint(CANDIDATE, endpoint)
+    fetchEndpoint(CANDIDATE, endpoint),
   ])
 
   const status =
@@ -142,7 +142,7 @@ for (const endpoint of ENDPOINTS) {
     console.log(`\n${endpoint}`)
     for (const d of unordered.slice(0, 10)) {
       console.log(
-        `  ${d.path}\n    production: ${JSON.stringify(d.production)?.slice(0, 120)}\n    candidate:  ${JSON.stringify(d.candidate)?.slice(0, 120)}`
+        `  ${d.path}\n    production: ${JSON.stringify(d.production)?.slice(0, 120)}\n    candidate:  ${JSON.stringify(d.candidate)?.slice(0, 120)}`,
       )
     }
     if (unordered.length > 10) console.log(`  ... ${unordered.length - 10} more`)
@@ -155,5 +155,5 @@ const exact = summary.filter((s) => s.verdict === 'exact').length
 const orderOnly = summary.filter((s) => s.verdict === 'order only').length
 console.log(
   `\n${exact}/${summary.length} exact, ${orderOnly} order-only, ` +
-    `${summary.length - exact - orderOnly} with field differences`
+    `${summary.length - exact - orderOnly} with field differences`,
 )

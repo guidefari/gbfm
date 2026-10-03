@@ -1,17 +1,19 @@
 import { useState } from 'react'
+
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 import { type TrackEntry, TracklistEditor } from './tracklist-editor'
 
 export default {
-  title: '@gbfm/ui/Workflows/Tracklist editor'
+  title: '@gbfm/ui/Workflows/Tracklist editor',
 }
 
 export function Tracklist() {
-  const [tracks, setTracks] = useState<TrackEntry[]>([
+  const [tracks, setTracks] = useState<Array<TrackEntry>>([
     { id: 1, time: 0, title: 'Burial - Archangel' },
     { id: 2, time: 312, title: 'Four Tet - She Moves She' },
-    { id: 3, time: 667, title: 'Actress - Maze' }
+    { id: 3, time: 667, title: 'Actress - Maze' },
   ])
+
   const [currentTime] = useState(245)
 
   return (
@@ -34,7 +36,7 @@ export function Tracklist() {
           onRemoveTrack={(id) => {
             setTracks((prev) => prev.filter((t) => t.id !== id))
           }}
-          onSeekTo={(seconds) => console.log('seek to', seconds)}
+          onSeekTo={() => undefined}
         />
       </div>
     </div>

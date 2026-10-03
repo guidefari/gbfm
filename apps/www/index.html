@@ -2,7 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/fav.png" />
+    <link rel="icon" type="image/png" href="/fav.png" />
+    <link rel="stylesheet" href="/src/styles/main.css" />
     <link
       rel="preload"
       href="/fonts/JetBrainsMono-ExtraBold.woff2"
@@ -13,23 +14,31 @@
     <meta name="theme-color" content="<!-- theme-color:dark --><!-- /theme-color:dark -->" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="<!-- theme-color:light --><!-- /theme-color:light -->" media="(prefers-color-scheme: light)" />
     <title>goosebumps.fm</title>
+    <script>
+      (() => {
+        let saved = 'system'
+        try { saved = localStorage.getItem('vite-ui-theme') || 'system' } catch {}
+        const resolved = saved === 'light' || saved === 'dark'
+          ? saved
+          : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        document.documentElement.classList.add(resolved)
+        document.documentElement.dataset.theme = resolved
+      })()
+    </script>
     <style>
-      html,
-      body {
-        background-color: <!-- theme-color:dark --><!-- /theme-color:dark -->;
+      html[data-theme='dark'] {
+        color-scheme: dark;
+        background-color: #16415a;
       }
-
-      @media (prefers-color-scheme: light) {
-        html,
-        body {
-          background-color: <!-- theme-color:light --><!-- /theme-color:light -->;
-        }
+      html[data-theme='light'] {
+        color-scheme: light;
+        background-color: #e8eef7;
       }
     </style>
   </head>
 
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="/src/entry.client.ts"></script>
   </body>
 </html>

@@ -4,7 +4,7 @@ export {
   parsePersistedQueue,
   QueueTrack,
   type PersistedQueueType,
-  type QueueTrackType
+  type QueueTrackType,
 } from './persistedQueue'
 
 export { initialQueueState, mergeHydratedQueue, reduceQueue, type QueueAction } from './queueState'
@@ -15,16 +15,18 @@ export {
   DEDUP_WINDOW_MS,
   type AudioStorageAdapter,
   type PositionRecordType,
-  type VolumeRecordType
+  type VolumeRecordType,
 } from './audioStorage'
 
 export { createPlayDelivery } from './playDelivery'
+
+export { PlayerPreferences, defaultPlayerPreferences } from './preferences'
 
 export {
   PlayReporter,
   PlayReporterNoop,
   makePlayReporterLayer,
-  type PlayReporterContract
+  type PlayReporterContract,
 } from './playReporter'
 
 export {
@@ -33,7 +35,7 @@ export {
   type AudioEngineContract,
   type EngineStatus,
   type NowPlayingMetadata,
-  type PlaybackCommandHandlers
+  type PlaybackCommandHandlers,
 } from './engine'
 
 export {
@@ -51,7 +53,7 @@ export {
   saveQueue,
   saveVolume,
   type PlayerStorageContract,
-  type PositionRecord
+  type PositionRecord,
 } from './playerStorage'
 
 export {
@@ -62,7 +64,7 @@ export {
   type AudioPlaybackController,
   type PlaybackSnapshot,
   type PlaybackTransportSnapshot,
-  type QueueView
+  type QueueView,
 } from './audioPlayback'
 
 export { makePlayerCore, type PlayerCoreCallbacks, type PlayerCoreController } from './playerCore'
@@ -71,5 +73,5 @@ export {
   makeQueueAtom,
   type InternalQueueAction,
   type QueueAtomHandle,
-  type QueueAtomStorage
+  type QueueAtomStorage,
 } from './queueAtom'

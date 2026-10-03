@@ -4,21 +4,23 @@ import {
   Playlists,
   Search,
   type SpotifyRequestError,
-  Tracks
+  Tracks,
+  type PlaylistItem,
+  type Track as SpotifyTrack,
 } from '@spotify-effect/core'
-import type { PlaylistItem, Track as SpotifyTrack } from '@spotify-effect/core'
-import { Context, Effect, Layer } from 'effect'
+import { Context, Effect, Layer, Match } from 'effect'
+
 import {
   MusicProviderInvalidInput,
   MusicProviderMisconfigured,
   MusicProviderNotFound,
   MusicProviderRequestFailed,
-  MusicProviderResponseInvalid
+  MusicProviderResponseInvalid,
 } from '@/errors'
 import {
   calculateBandcampTotalDuration,
   extractBandcampArtist,
-  getBandcampMetadataWithSpan
+  getBandcampMetadataWithSpan,
 } from '@/services/bandcamp.service'
 import { ConfigService } from '@/services/config.service'
 import { collectSpotifyTrackPages } from '@/services/spotify-track-pages'
@@ -29,8 +31,9 @@ import {
   isAppleMusicUrl,
   isBandcampUrl,
   isSpotifyUrl,
-  isYouTubeUrl
+  isYouTubeUrl,
 } from '@/services/url-utils'
+
 import type { Album, Playlist, SearchAlbumsResponse, Track } from '../routes/spotify/spotify.types'
 
 const SPOTIFY_SEARCH_API_LIMIT = 50
@@ -44,14 +47,14 @@ export {
   isAppleMusicUrl,
   isBandcampUrl,
   isSpotifyUrl,
-  isYouTubeUrl
+  isYouTubeUrl,
 } from '@/services/url-utils'
 
 export interface SpotifyImportTrack {
   spotifyTrackId: string
   title: string
-  artistNames: string[]
-  artistSpotifyIds: string[]
+  artistNames: Array<string>
+  artistSpotifyIds: Array<string>
   albumName: string | null
   albumSpotifyId: string | null
   albumImageUrl: string | null
@@ -68,7 +71,7 @@ export interface SpotifyImportPlaylist {
   coverImageUrl: string | null
   ownerName: string | null
   playlistUrl: string
-  tracks: SpotifyImportTrack[]
+  tracks: Array<SpotifyImportTrack>
 }
 
 export interface EnrichedTrack {
@@ -76,9 +79,9 @@ export interface EnrichedTrack {
   artist: string
   url: string
   platform: 'spotify' | 'youtube' | 'apple_music' | 'bandcamp' | 'other'
-  thumbnailUrl?: string
-  album?: string
-  duration?: number
+  thumbnailUrl?: string | undefined
+  album?: string | undefined
+  duration?: number | undefined
 }
 
 export type SpotifySourceEntityType = 'track' | 'album' | 'playlist'
@@ -100,14 +103,14 @@ type SpotifySourceCandidateBase = {
   readonly externalId: string
   readonly title: string
   readonly url: string
-  readonly imageUrl?: string
+  readonly imageUrl?: string | undefined
 }
 
 export type SpotifySourceCandidate =
   | (SpotifySourceCandidateBase & {
       readonly entityType: 'track'
       readonly artists: string
-      readonly isrc?: string
+      readonly isrc?: string | undefined
       readonly crossPlatformEnrichment: 'allowed'
     })
   | (SpotifySourceCandidateBase & {
@@ -117,8 +120,8 @@ export type SpotifySourceCandidate =
     })
   | (SpotifySourceCandidateBase & {
       readonly entityType: 'playlist'
-      readonly description?: string
-      readonly ownerName?: string
+      readonly description?: string | undefined
+      readonly ownerName?: string | undefined
       readonly crossPlatformEnrichment: 'forbidden'
     })
 
@@ -127,46 +130,48 @@ export interface SpotifyService {
   readonly getAlbum: (id: string) => Effect.Effect<Album, SpotifyServiceError>
   readonly getPlaylist: (id: string) => Effect.Effect<Playlist, SpotifyServiceError>
   readonly getPlaylistForImport: (
-    id: string
+    id: string,
   ) => Effect.Effect<SpotifyImportPlaylist, SpotifyServiceError>
   readonly getTrackForImport: (id: string) => Effect.Effect<SpotifyImportTrack, SpotifyServiceError>
   readonly searchAlbums: (
     query: string,
     limit?: number,
-    offset?: number
+    offset?: number,
   ) => Effect.Effect<SearchAlbumsResponse, SpotifyServiceError>
   readonly searchTrackByIsrc: (
-    isrc: string
+    isrc: string,
   ) => Effect.Effect<
     { id: string; url: string; title: string; artist: string } | null,
     SpotifyServiceError
   >
   readonly searchAlbumByTitleArtist: (
     title: string,
-    artist: string
+    artist: string,
   ) => Effect.Effect<
     { id: string; url: string; title: string; artist: string } | null,
     SpotifyServiceError
   >
   readonly enrichTrackFromUrl: (url: string) => Effect.Effect<EnrichedTrack, SpotifyServiceError>
   readonly resolveSource: (
-    input: ResolveSpotifySourceInput
+    input: ResolveSpotifySourceInput,
   ) => Effect.Effect<SpotifySourceCandidate, SpotifyServiceError>
 }
 
 export const SpotifyService = Context.Service<SpotifyService>('SpotifyService')
 
 const describeSpotifyRequestError = (error: SpotifyRequestError) => {
-  switch (error._tag) {
-    case 'SpotifyHttpError':
-      return error.apiMessage ?? error.description ?? `HTTP ${error.status}`
-    case 'SpotifyRateLimitError':
-      return `Rate limited, retry after ${error.retryAfterSeconds}s`
-    case 'SpotifyConfigurationError':
-      return error.message
-    default:
-      return error.description ?? String(error.cause)
-  }
+  return Match.value(error).pipe(
+    Match.tag(
+      'SpotifyHttpError',
+      (failure) => failure.apiMessage ?? failure.description ?? `HTTP ${failure.status}`,
+    ),
+    Match.tag(
+      'SpotifyRateLimitError',
+      (failure) => `Rate limited, retry after ${failure.retryAfterSeconds}s`,
+    ),
+    Match.tag('SpotifyConfigurationError', (failure) => failure.message),
+    Match.orElse((failure) => failure.description ?? String(failure.cause)),
+  )
 }
 
 type SpotifyEntityRef = {
@@ -179,24 +184,30 @@ const toProviderError =
   (error: SpotifyRequestError) => {
     const message = `${prefix}: ${describeSpotifyRequestError(error)}`
 
-    switch (error._tag) {
-      case 'SpotifyConfigurationError':
-        return new MusicProviderMisconfigured({ message, operation })
-      case 'SpotifyParseError':
-        return new MusicProviderResponseInvalid({ message, operation })
-      case 'SpotifyRateLimitError':
-        return new MusicProviderRequestFailed({ message, operation, statusCode: 429 })
-      case 'SpotifyHttpError':
-        return error.status === 404 && entity
+    return Match.value(error).pipe(
+      Match.tag(
+        'SpotifyConfigurationError',
+        () => new MusicProviderMisconfigured({ message, operation }),
+      ),
+      Match.tag(
+        'SpotifyParseError',
+        () => new MusicProviderResponseInvalid({ message, operation }),
+      ),
+      Match.tag(
+        'SpotifyRateLimitError',
+        () => new MusicProviderRequestFailed({ message, operation, statusCode: 429 }),
+      ),
+      Match.tag('SpotifyHttpError', (failure) =>
+        failure.status === 404 && entity
           ? new MusicProviderNotFound({
               operation,
               entityType: entity.entityType,
-              externalId: entity.externalId
+              externalId: entity.externalId,
             })
-          : new MusicProviderRequestFailed({ message, operation, statusCode: error.status })
-      default:
-        return new MusicProviderRequestFailed({ message, operation })
-    }
+          : new MusicProviderRequestFailed({ message, operation, statusCode: failure.status }),
+      ),
+      Match.orElse(() => new MusicProviderRequestFailed({ message, operation })),
+    )
   }
 
 export const normalizeSpotifyIsrc = (isrc: string) =>
@@ -217,11 +228,11 @@ export const isExactSpotifyAlbumMatch = (
   requestedTitle: string,
   requestedArtist: string,
   returnedTitle: string,
-  returnedArtists: readonly string[]
+  returnedArtists: ReadonlyArray<string>,
 ) =>
   normalizeSpotifyMetadata(returnedTitle) === normalizeSpotifyMetadata(requestedTitle) &&
   returnedArtists.some(
-    (artist) => normalizeSpotifyMetadata(artist) === normalizeSpotifyMetadata(requestedArtist)
+    (artist) => normalizeSpotifyMetadata(artist) === normalizeSpotifyMetadata(requestedArtist),
   )
 
 const SPOTIFY_ID_PATTERN = /^[a-zA-Z0-9]{22}$/
@@ -232,6 +243,7 @@ const parseSpotifySourceId = ({ entityType, urlOrId }: ResolveSpotifySourceInput
   if (SPOTIFY_ID_PATTERN.test(input)) return input
 
   let url: URL
+
   try {
     url = new URL(input)
   } catch {
@@ -241,9 +253,11 @@ const parseSpotifySourceId = ({ entityType, urlOrId }: ResolveSpotifySourceInput
   if (url.protocol !== 'https:' || url.hostname !== 'open.spotify.com') return null
 
   const pathSegments = url.pathname.split('/').filter(Boolean)
+
   if (pathSegments.length !== 2 || pathSegments[0] !== entityType) return null
 
   const id = pathSegments[1]
+
   return id && SPOTIFY_ID_PATTERN.test(id) ? id : null
 }
 
@@ -251,20 +265,22 @@ type SpotifySourceLookups = Pick<SpotifyService, 'getTrack' | 'getAlbum' | 'getP
 
 export const resolveSpotifySourceEffect = (
   spotify: SpotifySourceLookups,
-  input: ResolveSpotifySourceInput
+  input: ResolveSpotifySourceInput,
 ): Effect.Effect<SpotifySourceCandidate, SpotifyServiceError> =>
   Effect.gen(function* () {
     const externalId = parseSpotifySourceId(input)
+
     if (!externalId) {
       return yield* new MusicProviderInvalidInput({
         message: `Invalid Spotify ${input.entityType} URL or ID`,
-        operation: 'resolveSource'
+        operation: 'resolveSource',
       })
     }
 
     switch (input.entityType) {
       case 'track': {
         const track = yield* spotify.getTrack(externalId)
+
         return {
           platform: 'spotify',
           entityType: 'track',
@@ -274,11 +290,13 @@ export const resolveSpotifySourceEffect = (
           isrc: track.isrc,
           url: track.trackUrl,
           imageUrl: track.albumImageUrl,
-          crossPlatformEnrichment: 'allowed'
+          crossPlatformEnrichment: 'allowed',
         }
       }
+
       case 'album': {
         const album = yield* spotify.getAlbum(externalId)
+
         return {
           platform: 'spotify',
           entityType: 'album',
@@ -287,11 +305,13 @@ export const resolveSpotifySourceEffect = (
           artists: album.artists,
           url: album.albumUrl,
           imageUrl: album.albumImageUrl,
-          crossPlatformEnrichment: 'allowed'
+          crossPlatformEnrichment: 'allowed',
         }
       }
+
       case 'playlist': {
         const playlist = yield* spotify.getPlaylist(externalId)
+
         return {
           platform: 'spotify',
           entityType: 'playlist',
@@ -301,11 +321,13 @@ export const resolveSpotifySourceEffect = (
           imageUrl: playlist.coverImageUrl,
           description: playlist.description,
           ownerName: playlist.ownerName,
-          crossPlatformEnrichment: 'forbidden'
+          crossPlatformEnrichment: 'forbidden',
         }
       }
+
       default: {
         const unexpectedEntityType: never = input.entityType
+
         return unexpectedEntityType
       }
     }
@@ -314,7 +336,7 @@ export const resolveSpotifySourceEffect = (
 const isPlaylistTrack = (item: PlaylistItem['track']): item is SpotifyTrack =>
   'type' in item && item.type === 'track'
 
-const playlistTracks = (items: ReadonlyArray<PlaylistItem>): SpotifyTrack[] =>
+const playlistTracks = (items: ReadonlyArray<PlaylistItem>): Array<SpotifyTrack> =>
   items.flatMap((item) => (isPlaylistTrack(item.track) ? [item.track] : []))
 
 const joinArtistNames = (artists: ReadonlyArray<{ name: string }>) =>
@@ -331,7 +353,7 @@ const toImportTrack = (track: SpotifyTrack): SpotifyImportTrack => ({
   trackUrl: track.external_urls.spotify ?? '',
   previewUrl: track.preview_url ?? null,
   durationMs: track.duration_ms ?? null,
-  trackNumber: track.track_number ?? null
+  trackNumber: track.track_number ?? null,
 })
 
 const getTrackEffect = (id: string) =>
@@ -341,18 +363,19 @@ const getTrackEffect = (id: string) =>
     if (!id || !sanitizedId) {
       return yield* new MusicProviderInvalidInput({
         message: 'Invalid track ID provided',
-        operation: 'getTrack'
+        operation: 'getTrack',
       })
     }
 
     const tracks = yield* Tracks
+
     const data = yield* tracks.getTrack(sanitizedId).pipe(
       Effect.mapError(
         toProviderError('getTrack', 'Failed to fetch track', {
           entityType: 'track',
-          externalId: sanitizedId
-        })
-      )
+          externalId: sanitizedId,
+        }),
+      ),
     )
 
     const track: Track = {
@@ -362,7 +385,7 @@ const getTrackEffect = (id: string) =>
       artists: joinArtistNames(data.artists),
       trackUrl: data.external_urls.spotify ?? '',
       isrc: data.external_ids.isrc,
-      previewUrl: data.preview_url ?? undefined
+      previewUrl: data.preview_url ?? undefined,
     }
 
     return track
@@ -375,29 +398,30 @@ const getAlbumEffect = (id: string) =>
     if (!id || !sanitizedId) {
       return yield* new MusicProviderInvalidInput({
         message: 'Invalid album ID provided',
-        operation: 'getAlbum'
+        operation: 'getAlbum',
       })
     }
 
     const albums = yield* Albums
+
     const data = yield* albums.getAlbum(sanitizedId).pipe(
       Effect.mapError(
         toProviderError('getAlbum', 'Failed to fetch album', {
           entityType: 'album',
-          externalId: sanitizedId
-        })
-      )
+          externalId: sanitizedId,
+        }),
+      ),
     )
 
     const tracks = yield* collectSpotifyTrackPages(data.tracks, (options) =>
-      albums.getAlbumTracks(sanitizedId, options)
+      albums.getAlbumTracks(sanitizedId, options),
     ).pipe(
       Effect.mapError(
         toProviderError('getAlbum', 'Failed to fetch album', {
           entityType: 'album',
-          externalId: sanitizedId
-        })
-      )
+          externalId: sanitizedId,
+        }),
+      ),
     )
 
     const album: Album = {
@@ -409,9 +433,9 @@ const getAlbumEffect = (id: string) =>
         title: track.name,
         artists: joinArtistNames(track.artists),
         previewUrl: track.preview_url ?? undefined,
-        trackUrl: track.external_urls.spotify ?? ''
+        trackUrl: track.external_urls.spotify ?? '',
       })),
-      albumUrl: data.external_urls.spotify ?? ''
+      albumUrl: data.external_urls.spotify ?? '',
     }
 
     return album
@@ -424,29 +448,30 @@ const getPlaylistEffect = (id: string) =>
     if (!id || !sanitizedId) {
       return yield* new MusicProviderInvalidInput({
         message: 'Invalid playlist ID provided',
-        operation: 'getPlaylist'
+        operation: 'getPlaylist',
       })
     }
 
     const playlists = yield* Playlists
+
     const data = yield* playlists.getPlaylist(sanitizedId).pipe(
       Effect.mapError(
         toProviderError('getPlaylist', 'Failed to fetch playlist', {
           entityType: 'playlist',
-          externalId: sanitizedId
-        })
-      )
+          externalId: sanitizedId,
+        }),
+      ),
     )
 
     const items = yield* collectSpotifyTrackPages(data.tracks, (options) =>
-      playlists.getPlaylistItems(sanitizedId, options)
+      playlists.getPlaylistItems(sanitizedId, options),
     ).pipe(
       Effect.mapError(
         toProviderError('getPlaylist', 'Failed to fetch playlist', {
           entityType: 'playlist',
-          externalId: sanitizedId
-        })
-      )
+          externalId: sanitizedId,
+        }),
+      ),
     )
 
     const playlist: Playlist = {
@@ -457,16 +482,17 @@ const getPlaylistEffect = (id: string) =>
         title: track.name,
         artists: joinArtistNames(track.artists),
         previewUrl: track.preview_url ?? undefined,
-        trackUrl: track.external_urls.spotify ?? ''
+        trackUrl: track.external_urls.spotify ?? '',
       })),
       ownerName: data.owner.display_name ?? undefined,
-      playlistUrl: data.external_urls.spotify ?? ''
+      playlistUrl: data.external_urls.spotify ?? '',
     }
 
     return playlist
   })
 
 const PLAYLIST_IMPORT_CACHE_TTL_MS = 60 * 60 * 1000
+
 const playlistImportCache = new Map<string, { value: SpotifyImportPlaylist; expiresAt: number }>()
 
 const getPlaylistForImportEffect = (id: string) =>
@@ -476,27 +502,29 @@ const getPlaylistForImportEffect = (id: string) =>
     if (!id || !sanitizedId) {
       return yield* new MusicProviderInvalidInput({
         message: 'Invalid playlist ID provided',
-        operation: 'getPlaylistForImport'
+        operation: 'getPlaylistForImport',
       })
     }
 
     const now = Date.now()
     const cached = playlistImportCache.get(sanitizedId)
+
     if (cached && cached.expiresAt > now) {
       return cached.value
     }
 
     const playlists = yield* Playlists
+
     const data = yield* playlists.getPlaylist(sanitizedId).pipe(
       Effect.mapError(
         toProviderError('getPlaylistForImport', 'Failed to fetch playlist', {
           entityType: 'playlist',
-          externalId: sanitizedId
-        })
-      )
+          externalId: sanitizedId,
+        }),
+      ),
     )
 
-    const tracks: SpotifyImportTrack[] = playlistTracks(data.tracks.items).map(toImportTrack)
+    const tracks: Array<SpotifyImportTrack> = playlistTracks(data.tracks.items).map(toImportTrack)
 
     const result: SpotifyImportPlaylist = {
       spotifyPlaylistId: data.id,
@@ -505,12 +533,12 @@ const getPlaylistForImportEffect = (id: string) =>
       coverImageUrl: data.images?.[0]?.url ?? null,
       ownerName: data.owner.display_name ?? null,
       playlistUrl: data.external_urls.spotify ?? '',
-      tracks
+      tracks,
     }
 
     playlistImportCache.set(sanitizedId, {
       value: result,
-      expiresAt: now + PLAYLIST_IMPORT_CACHE_TTL_MS
+      expiresAt: now + PLAYLIST_IMPORT_CACHE_TTL_MS,
     })
 
     return result
@@ -521,13 +549,14 @@ const searchAlbumsEffect = (query: string, limit = 10, offset = 0) =>
     if (!query || query.trim() === '') {
       return yield* new MusicProviderInvalidInput({
         message: 'Search query is required',
-        operation: 'searchAlbums'
+        operation: 'searchAlbums',
       })
     }
 
     const validatedLimit = Math.min(Math.max(1, limit), SPOTIFY_SEARCH_API_LIMIT)
 
     const search = yield* Search
+
     const data = yield* search
       .search(query, ['album'], { limit: SPOTIFY_SEARCH_API_LIMIT, offset })
       .pipe(Effect.mapError(toProviderError('searchAlbums', 'Failed to search albums')))
@@ -541,11 +570,11 @@ const searchAlbumsEffect = (query: string, limit = 10, offset = 0) =>
         releaseDate: album.release_date,
         albumImageUrl: album.images[0]?.url,
         albumUrl: album.external_urls.spotify ?? '',
-        totalTracks: album.total_tracks
+        totalTracks: album.total_tracks,
       })),
       total: data.albums?.total ?? 0,
       limit: validatedLimit,
-      offset: data.albums?.offset ?? offset
+      offset: data.albums?.offset ?? offset,
     }
 
     return searchResponse
@@ -556,23 +585,25 @@ const searchTrackByIsrcEffect = (isrc: string) =>
     if (!isrc || isrc.trim() === '') {
       return yield* new MusicProviderInvalidInput({
         message: 'ISRC is required',
-        operation: 'searchTrackByIsrc'
+        operation: 'searchTrackByIsrc',
       })
     }
 
     const search = yield* Search
+
     const data = yield* search
       .search(`isrc:${isrc}`, ['track'], { limit: 1 })
       .pipe(Effect.mapError(toProviderError('searchTrackByIsrc', 'Failed to search track by ISRC')))
 
     const track = data.tracks?.items[0]
+
     if (!track || !isExactSpotifyIsrcMatch(isrc, track.external_ids.isrc)) return null
 
     return {
       id: track.id,
       url: track.external_urls.spotify ?? '',
       title: track.name,
-      artist: joinArtistNames(track.artists)
+      artist: joinArtistNames(track.artists),
     }
   })
 
@@ -581,29 +612,31 @@ const searchAlbumByTitleArtistEffect = (title: string, artist: string) =>
     if (!title || title.trim() === '') {
       return yield* new MusicProviderInvalidInput({
         message: 'Album title is required',
-        operation: 'searchAlbumByTitleArtist'
+        operation: 'searchAlbumByTitleArtist',
       })
     }
 
     const query = artist ? `album:${title} artist:${artist}` : `album:${title}`
 
     const search = yield* Search
+
     const data = yield* search
       .search(query, ['album'], { limit: 1 })
       .pipe(
         Effect.mapError(
-          toProviderError('searchAlbumByTitleArtist', 'Failed to search album by title/artist')
-        )
+          toProviderError('searchAlbumByTitleArtist', 'Failed to search album by title/artist'),
+        ),
       )
 
     const album = data.albums?.items[0]
+
     if (
       !album ||
       !isExactSpotifyAlbumMatch(
         title,
         artist,
         album.name,
-        album.artists.map((albumArtist) => albumArtist.name)
+        album.artists.map((albumArtist) => albumArtist.name),
       )
     )
       return null
@@ -612,63 +645,69 @@ const searchAlbumByTitleArtistEffect = (title: string, artist: string) =>
       id: album.id,
       url: album.external_urls.spotify ?? '',
       title: album.name,
-      artist: joinArtistNames(album.artists)
+      artist: joinArtistNames(album.artists),
     }
   })
 
 const searchTrackByIsrcWithSpan = (isrc: string) =>
   searchTrackByIsrcEffect(isrc).pipe(
     Effect.withSpan('spotify.searchTrackByIsrc', {
-      attributes: { 'spotify.isrc': isrc, 'external.system': 'spotify' }
-    })
+      attributes: { 'spotify.isrc': isrc, 'external.system': 'spotify' },
+    }),
   )
 
 const searchAlbumByTitleArtistWithSpan = (title: string, artist: string) =>
   searchAlbumByTitleArtistEffect(title, artist).pipe(
     Effect.withSpan('spotify.searchAlbumByTitleArtist', {
-      attributes: { 'spotify.title': title, 'spotify.artist': artist, 'external.system': 'spotify' }
-    })
+      attributes: {
+        'spotify.title': title,
+        'spotify.artist': artist,
+        'external.system': 'spotify',
+      },
+    }),
   )
 
 const getTrackWithSpan = (id: string) =>
   getTrackEffect(id).pipe(
     Effect.withSpan('spotify.getTrack', {
-      attributes: { 'spotify.id': id, 'external.system': 'spotify' }
-    })
+      attributes: { 'spotify.id': id, 'external.system': 'spotify' },
+    }),
   )
 
 const getAlbumWithSpan = (id: string) =>
   getAlbumEffect(id).pipe(
     Effect.withSpan('spotify.getAlbum', {
-      attributes: { 'spotify.id': id, 'external.system': 'spotify' }
-    })
+      attributes: { 'spotify.id': id, 'external.system': 'spotify' },
+    }),
   )
 
 const getPlaylistWithSpan = (id: string) =>
   getPlaylistEffect(id).pipe(
     Effect.withSpan('spotify.getPlaylist', {
-      attributes: { 'spotify.id': id, 'external.system': 'spotify' }
-    })
+      attributes: { 'spotify.id': id, 'external.system': 'spotify' },
+    }),
   )
 
 const getTrackForImportEffect = (id: string) =>
   Effect.gen(function* () {
     const sanitizedId = cleanId(id)
+
     if (!id || !sanitizedId) {
       return yield* new MusicProviderInvalidInput({
         message: 'Invalid track ID provided',
-        operation: 'getTrackForImport'
+        operation: 'getTrackForImport',
       })
     }
 
     const tracks = yield* Tracks
+
     const data = yield* tracks.getTrack(sanitizedId).pipe(
       Effect.mapError(
         toProviderError('getTrackForImport', 'Failed to fetch track', {
           entityType: 'track',
-          externalId: sanitizedId
-        })
-      )
+          externalId: sanitizedId,
+        }),
+      ),
     )
 
     return toImportTrack(data)
@@ -677,15 +716,15 @@ const getTrackForImportEffect = (id: string) =>
 const getTrackForImportWithSpan = (id: string) =>
   getTrackForImportEffect(id).pipe(
     Effect.withSpan('spotify.getTrackForImport', {
-      attributes: { 'spotify.id': id, 'external.system': 'spotify' }
-    })
+      attributes: { 'spotify.id': id, 'external.system': 'spotify' },
+    }),
   )
 
 const getPlaylistForImportWithSpan = (id: string) =>
   getPlaylistForImportEffect(id).pipe(
     Effect.withSpan('spotify.getPlaylistForImport', {
-      attributes: { 'spotify.id': id, 'external.system': 'spotify' }
-    })
+      attributes: { 'spotify.id': id, 'external.system': 'spotify' },
+    }),
   )
 
 const searchAlbumsWithSpan = (query: string, limit = 10, offset = 0) =>
@@ -695,9 +734,9 @@ const searchAlbumsWithSpan = (query: string, limit = 10, offset = 0) =>
         'spotify.query_length': query.length,
         'spotify.limit': limit,
         'spotify.offset': offset,
-        'external.system': 'spotify'
-      }
-    })
+        'external.system': 'spotify',
+      },
+    }),
   )
 
 const enrichTrackFromUrlWithSpan = (url: string) =>
@@ -718,10 +757,11 @@ const enrichTrackFromUrlWithSpan = (url: string) =>
 
     if (isSpotifyUrl(url)) {
       const id = extractSpotifyId(url)
+
       if (!id) {
         return yield* new MusicProviderInvalidInput({
           message: 'Invalid Spotify URL',
-          operation: 'enrichTrackFromUrl'
+          operation: 'enrichTrackFromUrl',
         })
       }
 
@@ -730,13 +770,14 @@ const enrichTrackFromUrlWithSpan = (url: string) =>
 
       if (url.includes('/album/')) {
         const albums = yield* Albums
+
         const data = yield* albums.getAlbum(id).pipe(
           Effect.mapError(
             toProviderError('enrichTrackFromUrl', 'Failed to fetch Spotify album', {
               entityType: 'album',
-              externalId: id
-            })
-          )
+              externalId: id,
+            }),
+          ),
         )
 
         result = {
@@ -746,17 +787,18 @@ const enrichTrackFromUrlWithSpan = (url: string) =>
           platform: 'spotify',
           thumbnailUrl: data.images[0]?.url,
           album: data.name,
-          duration: data.tracks.items.reduce((total, track) => total + track.duration_ms, 0) / 1000
+          duration: data.tracks.items.reduce((total, track) => total + track.duration_ms, 0) / 1000,
         }
       } else {
         const tracks = yield* Tracks
+
         const data = yield* tracks.getTrack(id).pipe(
           Effect.mapError(
             toProviderError('enrichTrackFromUrl', 'Failed to fetch Spotify track', {
               entityType: 'track',
-              externalId: id
-            })
-          )
+              externalId: id,
+            }),
+          ),
         )
 
         result = {
@@ -766,15 +808,16 @@ const enrichTrackFromUrlWithSpan = (url: string) =>
           platform: 'spotify',
           thumbnailUrl: data.album.images[0]?.url,
           album: data.album.name,
-          duration: Math.floor(data.duration_ms / 1000)
+          duration: Math.floor(data.duration_ms / 1000),
         }
       }
     } else if (isYouTubeUrl(url)) {
       const videoId = extractYouTubeId(url)
+
       if (!videoId) {
         return yield* new MusicProviderInvalidInput({
           message: 'Invalid YouTube URL',
-          operation: 'enrichTrackFromUrl'
+          operation: 'enrichTrackFromUrl',
         })
       }
 
@@ -783,14 +826,14 @@ const enrichTrackFromUrlWithSpan = (url: string) =>
         artist: 'Unknown Artist',
         url: `https://www.youtube.com/watch?v=${videoId}`,
         platform: 'youtube',
-        thumbnailUrl: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
+        thumbnailUrl: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
       }
     } else if (isAppleMusicUrl(url)) {
       result = {
         title: 'Apple Music Track',
         artist: 'Unknown Artist',
         url: url,
-        platform: 'apple_music'
+        platform: 'apple_music',
       }
     } else if (isBandcampUrl(url)) {
       const metadata = yield* getBandcampMetadataWithSpan(url)
@@ -802,14 +845,14 @@ const enrichTrackFromUrlWithSpan = (url: string) =>
         platform: 'bandcamp',
         thumbnailUrl: metadata.image,
         album: metadata.name,
-        duration: calculateBandcampTotalDuration(metadata)
+        duration: calculateBandcampTotalDuration(metadata),
       }
     } else {
       result = {
         title: 'External Track',
         artist: 'Unknown Artist',
         url: url,
-        platform: 'other'
+        platform: 'other',
       }
     }
 
@@ -820,10 +863,12 @@ export const SpotifyServiceLayer = Layer.effect(
   SpotifyService,
   Effect.gen(function* () {
     const config = yield* ConfigService
+
     const spotifyLayer = makeSpotifyLayer({
       clientId: config.spotify.clientId,
-      clientSecret: config.spotify.clientSecret
+      clientSecret: config.spotify.clientSecret,
     })
+
     const context = yield* Layer.build(spotifyLayer)
 
     const provide = <A, E>(effect: Effect.Effect<A, E, Tracks | Albums | Playlists | Search>) =>
@@ -845,11 +890,12 @@ export const SpotifyServiceLayer = Layer.effect(
           Effect.withSpan('spotify.resolveSource', {
             attributes: {
               'spotify.entity_type': input.entityType,
-              'external.system': 'spotify'
-            }
-          })
-        )
+              'external.system': 'spotify',
+            },
+          }),
+        ),
     }
+
     return service
-  })
+  }),
 )

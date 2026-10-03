@@ -1,4 +1,5 @@
 import { describe, expect, test, vi } from 'vitest'
+
 import type { SitemapData } from './sitemap.utils'
 import { buildSitemapIndexXml, buildSitemapXml, buildUrlEntry, formatDate } from './sitemap.utils'
 
@@ -46,7 +47,7 @@ describe('sitemap.utils', () => {
     const mockData: SitemapData = {
       mixes: [
         { slug: 'summer-vibes', updatedAt: new Date('2024-06-01') },
-        { slug: 'chill-beats', updatedAt: new Date('2024-06-10') }
+        { slug: 'chill-beats', updatedAt: new Date('2024-06-10') },
       ],
       tracks: [{ slug: 'deep-cut', updatedAt: new Date('2024-06-11') }],
       shows: [{ slug: 'weekly-mix', updatedAt: new Date('2024-05-15') }],
@@ -54,16 +55,16 @@ describe('sitemap.utils', () => {
       labels: [{ slug: 'underground-sounds', updatedAt: new Date('2024-03-01') }],
       profiles: [
         { username: 'dj-cool', updatedAt: new Date('2024-06-12') },
-        { username: null, updatedAt: new Date('2024-06-12') } // Should be filtered out
+        { username: null, updatedAt: new Date('2024-06-12') }, // Should be filtered out
       ],
       posts: [
         {
           slug: 'my-editorial',
           updatedAt: new Date('2024-06-05'),
-          type: 'post'
+          type: 'post',
         },
-        { slug: 'my-tweet', updatedAt: new Date('2024-06-08'), type: 'micro' }
-      ]
+        { slug: 'my-tweet', updatedAt: new Date('2024-06-08'), type: 'micro' },
+      ],
     }
 
     test('generates valid sitemap XML structure', () => {
@@ -121,11 +122,13 @@ describe('sitemap.utils', () => {
       const xml = buildSitemapXml(mockData, 'https://goosebumps.fm')
 
       expect(xml).toContain('<loc>https://goosebumps.fm/releases/debut-album</loc>')
+
       // Check that releases have priority 0.6
       const releaseSection = xml.substring(
         xml.indexOf('releases/debut-album'),
-        xml.indexOf('releases/debut-album') + 200
+        xml.indexOf('releases/debut-album') + 200,
       )
+
       expect(releaseSection).toContain('<priority>0.6</priority>')
     })
 
@@ -144,6 +147,7 @@ describe('sitemap.utils', () => {
       // Should NOT include user without username (null username)
       // Count occurrences of profile URLs - should only be 1
       const profileMatches = xml.match(/goosebumps\.fm\/[a-z-]+<\/loc>/g)
+
       const nonStaticProfiles = profileMatches?.filter(
         (m) =>
           !m.includes('/mixes') &&
@@ -154,8 +158,9 @@ describe('sitemap.utils', () => {
           !m.includes('/editorial') &&
           !m.includes('/djs') &&
           !m.includes('/tags') &&
-          !m.includes('/tweet')
+          !m.includes('/tweet'),
       )
+
       expect(nonStaticProfiles).toHaveLength(1)
     })
 
@@ -174,8 +179,9 @@ describe('sitemap.utils', () => {
     test('null-type posts default to /editorial/:slug', () => {
       const data: SitemapData = {
         ...mockData,
-        posts: [{ slug: 'unknown-type', updatedAt: new Date(), type: null }]
+        posts: [{ slug: 'unknown-type', updatedAt: new Date(), type: null }],
       }
+
       const xml = buildSitemapXml(data, 'https://goosebumps.fm')
 
       expect(xml).toContain('<loc>https://goosebumps.fm/editorial/unknown-type</loc>')
@@ -198,14 +204,14 @@ describe('sitemap.utils', () => {
             {
               slug: 'test-post',
               updatedAt: new Date('2024-01-25'),
-              type: 'post'
+              type: 'post',
             },
             {
               slug: 'test-tweet',
               updatedAt: new Date('2024-01-26'),
-              type: 'micro'
-            }
-          ]
+              type: 'micro',
+            },
+          ],
         }
 
         const xml = buildSitemapXml(fixedData, 'https://goosebumps.fm')
@@ -216,7 +222,7 @@ describe('sitemap.utils', () => {
           .split('\n')
           .filter(
             (line) =>
-              line.includes('/test-') || line.includes('/testuser') || !line.includes('<loc>')
+              line.includes('/test-') || line.includes('/testuser') || !line.includes('<loc>'),
           )
           .join('\n')
 
@@ -244,7 +250,7 @@ describe('sitemap.utils', () => {
       // Replace date with placeholder for snapshot stability
       const normalized = xml.replace(
         /<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/,
-        '<lastmod>YYYY-MM-DD</lastmod>'
+        '<lastmod>YYYY-MM-DD</lastmod>',
       )
 
       expect(normalized).toMatchInlineSnapshot(`
@@ -268,7 +274,7 @@ describe('sitemap.utils', () => {
         releases: [],
         labels: [],
         profiles: [],
-        posts: []
+        posts: [],
       }
 
       const xml = buildSitemapXml(emptyData, 'https://goosebumps.fm')

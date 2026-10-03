@@ -2,6 +2,7 @@ import { SymbolView } from 'expo-symbols'
 import { useEffect, useRef, useState } from 'react'
 import { AccessibilityInfo, Animated, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
 import { useThemeColors, withAlpha } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
@@ -24,13 +25,15 @@ export function QueueToast() {
     progress.stopAnimation()
     progress.setValue(0)
     Animated.timing(progress, { toValue: 1, duration: 180, useNativeDriver: true }).start()
+
     const hide = setTimeout(() => {
       Animated.timing(progress, { toValue: 0, duration: 220, useNativeDriver: true }).start(
         ({ finished }) => {
           if (finished) setMessage(null)
-        }
+        },
       )
     }, VISIBLE_MS)
+
     return () => clearTimeout(hide)
   }, [queueNotice, progress])
 
@@ -48,8 +51,8 @@ export function QueueToast() {
         alignItems: 'center',
         opacity: progress,
         transform: [
-          { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }
-        ]
+          { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) },
+        ],
       }}>
       <View
         style={{
@@ -62,7 +65,7 @@ export function QueueToast() {
           borderColor: withAlpha(colors.accent, 0.35),
           backgroundColor: colors.surface,
           paddingHorizontal: 14,
-          paddingVertical: 10
+          paddingVertical: 10,
         }}>
         <SymbolView name={checkSymbol} size={12} tintColor={colors.accent} />
         <Text
@@ -71,7 +74,7 @@ export function QueueToast() {
             flexShrink: 1,
             color: colors.strong,
             fontFamily: fonts.mono,
-            fontSize: 12
+            fontSize: 12,
           }}>
           {message}
         </Text>

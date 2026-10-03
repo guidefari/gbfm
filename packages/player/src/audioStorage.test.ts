@@ -1,26 +1,30 @@
 import { Effect } from 'effect'
 import { describe, expect, test } from 'vitest'
+
 import {
   createAudioStorage,
   createWebAudioStorageAdapter,
-  type AudioStorageAdapter
+  type AudioStorageAdapter,
 } from './audioStorage'
 
 const createMemoryAdapter = (): AudioStorageAdapter & {
   readonly values: Map<string, string>
 } => {
   const values = new Map<string, string>()
+
   return {
     values,
     read: (key) => Promise.resolve(values.get(key) ?? null),
     write: (key, value) => {
       values.set(key, value)
+
       return Promise.resolve()
     },
     remove: (key) => {
       values.delete(key)
+
       return Promise.resolve()
-    }
+    },
   }
 }
 
@@ -38,7 +42,7 @@ describe('audio storage', () => {
     expect(await Effect.runPromise(storage.loadQueue())).toEqual(queue)
     expect(await Effect.runPromise(storage.loadPosition('track/1'))).toEqual({
       position: 42,
-      updatedAt: 123
+      updatedAt: 123,
     })
     expect(await Effect.runPromise(storage.loadVolume())).toEqual(volume)
     expect([...adapter.values.keys()]).toContain('gbfm-audio-volume.json')
@@ -46,18 +50,20 @@ describe('audio storage', () => {
 
   test('uses browser storage without native file objects', async () => {
     const values = new Map<string, string>()
+
     const adapter = createWebAudioStorageAdapter({
       getItem: (key) => values.get(key) ?? null,
       setItem: (key, value) => values.set(key, value),
-      removeItem: (key) => values.delete(key)
+      removeItem: (key) => values.delete(key),
     })
+
     const storage = createAudioStorage(adapter, () => 456)
 
     await Effect.runPromise(storage.saveVolume({ volume: 80, isMuted: false }))
 
     expect(await Effect.runPromise(storage.loadVolume())).toEqual({
       volume: 80,
-      isMuted: false
+      isMuted: false,
     })
   })
 

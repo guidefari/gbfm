@@ -14,9 +14,10 @@ export const ReminderSignalServiceLayer = Layer.effect(
   Effect.gen(function* () {
     // dropping(1): if the loop is already awake, extra signals are discarded
     const queue = yield* Queue.dropping<void>(1)
+
     return {
       signal: Queue.offer(queue, undefined).pipe(Effect.asVoid),
-      await: Queue.take(queue).pipe(Effect.asVoid)
+      await: Queue.take(queue).pipe(Effect.asVoid),
     }
-  })
+  }),
 )

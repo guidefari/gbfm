@@ -2,12 +2,13 @@
 
 import { createHash } from 'node:crypto'
 import { extname } from 'node:path'
+
 import {
   HeadObjectCommand,
   ListMultipartUploadsCommand,
   paginateListObjectsV2,
   S3Client,
-  type HeadObjectCommandOutput
+  type HeadObjectCommandOutput,
 } from '@aws-sdk/client-s3'
 
 const BUCKETS = ['gbfm-prod-usercontentbucket-cohrefob', 'gbfm-prod-mixesbucket-zftkfrfx'] as const
@@ -55,7 +56,7 @@ const redactObject = (object: ListedObject): RedactedObject => {
   return {
     keySha256: hashKey(object.key),
     extension: extension.length === 0 ? null : extension,
-    size: object.size
+    size: object.size,
   }
 }
 
@@ -71,7 +72,7 @@ const utf8Bytes = (value: string) => Buffer.byteLength(value, 'utf8')
 const metadataBytes = (metadata: Readonly<Record<string, string>>): number =>
   Object.entries(metadata).reduce(
     (total, [key, value]) => total + utf8Bytes(`x-amz-meta-${key}`) + utf8Bytes(value),
-    0
+    0,
   )
 
 const presentHttpMetadata = (head: HeadObjectCommandOutput) =>
@@ -81,15 +82,15 @@ const presentHttpMetadata = (head: HeadObjectCommandOutput) =>
     ['content-encoding', head.ContentEncoding],
     ['content-language', head.ContentLanguage],
     ['content-type', head.ContentType],
-    ['expires', head.Expires?.toISOString()]
+    ['expires', head.Expires?.toISOString()],
   ].flatMap(([name, value]) =>
-    typeof name === 'string' && typeof value === 'string' ? [{ name, value }] : []
+    typeof name === 'string' && typeof value === 'string' ? [{ name, value }] : [],
   )
 
 const inConcurrentChunks = async <Input, Output>(
   values: ReadonlyArray<Input>,
   concurrency: number,
-  transform: (value: Input) => Promise<Output>
+  transform: (value: Input) => Promise<Output>,
 ): Promise<ReadonlyArray<Output>> => {
   const results: Output[] = []
   for (let offset = 0; offset < values.length; offset += concurrency) {
@@ -101,7 +102,7 @@ const inConcurrentChunks = async <Input, Output>(
 
 const listObjects = async (
   client: S3Client,
-  bucket: string
+  bucket: string,
 ): Promise<ReadonlyArray<ListedObject>> => {
   const objects: ListedObject[] = []
   try {
@@ -111,7 +112,7 @@ const listObjects = async (
         objects.push({
           key: object.Key,
           size: object.Size ?? 0,
-          storageClass: object.StorageClass ?? 'STANDARD'
+          storageClass: object.StorageClass ?? 'STANDARD',
         })
       }
     }
@@ -124,7 +125,7 @@ const listObjects = async (
 const inventoryMetadata = async (
   client: S3Client,
   bucket: string,
-  objects: ReadonlyArray<ListedObject>
+  objects: ReadonlyArray<ListedObject>,
 ): Promise<{
   readonly metadata: MetadataSummary
   readonly archivalAccessTierObjects: ReadonlyArray<RedactedObject>
@@ -146,7 +147,7 @@ const inventoryMetadata = async (
         metadataBytes(customMetadata) +
         httpMetadata.reduce(
           (total, field) => total + utf8Bytes(field.name) + utf8Bytes(field.value),
-          0
+          0,
         )
 
       if (head.ContentType !== undefined) increment(contentTypes, head.ContentType)
@@ -158,13 +159,13 @@ const inventoryMetadata = async (
       for (const field of httpMetadata) increment(httpFieldsPresent, field.name)
       maximumEstimatedMetadataBytes = Math.max(
         maximumEstimatedMetadataBytes,
-        estimatedMetadataBytes
+        estimatedMetadataBytes,
       )
 
       return {
         object,
         archiveStatus: head.ArchiveStatus,
-        estimatedMetadataBytes
+        estimatedMetadataBytes,
       }
     } catch {
       throw new InventoryFailure(bucket, 'inspect metadata', object.key)
@@ -178,17 +179,17 @@ const inventoryMetadata = async (
       httpFieldsPresent: sortedRecord(httpFieldsPresent),
       serverSideEncryption: sortedRecord(serverSideEncryption),
       objectsWithCustomMetadata,
-      maximumEstimatedMetadataBytes
+      maximumEstimatedMetadataBytes,
     },
     archivalAccessTierObjects: inspected
       .filter(
         ({ archiveStatus }) =>
-          archiveStatus !== undefined && ARCHIVAL_ACCESS_TIERS.has(archiveStatus)
+          archiveStatus !== undefined && ARCHIVAL_ACCESS_TIERS.has(archiveStatus),
       )
       .map(({ object }) => redactObject(object)),
     oversizedMetadataObjects: inspected
       .filter(({ estimatedMetadataBytes }) => estimatedMetadataBytes > R2_MAX_METADATA_BYTES)
-      .map(({ object }) => redactObject(object))
+      .map(({ object }) => redactObject(object)),
   }
 }
 
@@ -207,8 +208,8 @@ const listIncompleteMultipartUploads = async (client: S3Client, bucket: string) 
         new ListMultipartUploadsCommand({
           Bucket: bucket,
           KeyMarker: keyMarker,
-          UploadIdMarker: uploadIdMarker
-        })
+          UploadIdMarker: uploadIdMarker,
+        }),
       )
       for (const upload of page.Uploads ?? []) {
         if (upload.Key === undefined) continue
@@ -216,7 +217,7 @@ const listIncompleteMultipartUploads = async (client: S3Client, bucket: string) 
         uploads.push({
           keySha256: hashKey(upload.Key),
           extension: extension.length === 0 ? null : extension,
-          initiated: upload.Initiated?.toISOString() ?? null
+          initiated: upload.Initiated?.toISOString() ?? null,
         })
       }
       isTruncated = page.IsTruncated === true
@@ -236,7 +237,7 @@ const inventoryBucket = async (client: S3Client, bucket: string) => {
   const objects = await listObjects(client, bucket)
   const [metadataResult, incompleteMultipartUploads] = await Promise.all([
     inventoryMetadata(client, bucket, objects),
-    listIncompleteMultipartUploads(client, bucket)
+    listIncompleteMultipartUploads(client, bucket),
   ])
   const storageClasses = new Map<string, number>()
   for (const object of objects) increment(storageClasses, object.storageClass)
@@ -250,7 +251,7 @@ const inventoryBucket = async (client: S3Client, bucket: string) => {
     .map(redactObject)
   const archivalObjects = [
     ...skippedStorageClassObjects,
-    ...metadataResult.archivalAccessTierObjects
+    ...metadataResult.archivalAccessTierObjects,
   ]
 
   return {
@@ -272,8 +273,8 @@ const inventoryBucket = async (client: S3Client, bucket: string) => {
       keysAboveR2Limit: objects
         .filter((object) => utf8Bytes(object.key) > R2_MAX_KEY_BYTES)
         .map(redactObject),
-      metadataAboveR2Limit: metadataResult.oversizedMetadataObjects
-    }
+      metadataAboveR2Limit: metadataResult.oversizedMetadataObjects,
+    },
   }
 }
 
@@ -291,13 +292,13 @@ try {
           expectedMaximumObjectBytes: EXPECTED_MAX_OBJECT_BYTES,
           superSlurperMaximumObjectBytes: SUPER_SLURPER_MAX_OBJECT_BYTES,
           r2MaximumKeyBytes: R2_MAX_KEY_BYTES,
-          r2MaximumMetadataBytes: R2_MAX_METADATA_BYTES
+          r2MaximumMetadataBytes: R2_MAX_METADATA_BYTES,
         },
-        buckets
+        buckets,
       },
       null,
-      2
-    )
+      2,
+    ),
   )
 } catch (error: unknown) {
   console.error(error instanceof InventoryFailure ? error.message : 'Bucket inventory failed')

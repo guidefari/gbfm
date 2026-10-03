@@ -1,31 +1,36 @@
 import { LINK_STATUS, type LinkStatus } from '@gbfm/core/status'
-import { and, eq, sql } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { Effect } from 'effect'
+
 import { Database } from '@/db/layer'
 import {
   type InsertMusicEntityLink,
   type MusicEntityType,
-  musicEntityLinksTable
+  musicEntityLinksTable,
 } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
+
 import { requireInserted, requireOne } from './shared'
 
 export const getLinksForEntityEffect = (
   entityType: MusicEntityType,
   entityId: string,
-  statusFilter?: LinkStatus
+  statusFilter?: LinkStatus,
 ) =>
   Effect.gen(function* () {
     const db = yield* Database
+
     return yield* Effect.tryPromise({
       try: () => {
         const conditions = [
           eq(musicEntityLinksTable.entityType, entityType),
-          eq(musicEntityLinksTable.entityId, entityId)
+          eq(musicEntityLinksTable.entityId, entityId),
         ]
+
         if (statusFilter) {
           conditions.push(eq(musicEntityLinksTable.status, statusFilter))
         }
+
         return db
           .select()
           .from(musicEntityLinksTable)
@@ -36,31 +41,35 @@ export const getLinksForEntityEffect = (
         new DatabaseError({
           message: `Failed to get links: ${getErrorMessage(e)}`,
           operation: 'select',
-          table: 'music_entity_links'
-        })
+          table: 'music_entity_links',
+        }),
     })
   }).pipe(
     Effect.withSpan('musicEntity.getLinksForEntity.query', {
-      attributes: { entityType, entityId }
+      attributes: { entityType, entityId },
     }),
     Effect.tap((rows) => Effect.annotateCurrentSpan('resultCount', rows.length)),
     Effect.withSpan('musicEntity.getLinksForEntity', {
-      attributes: { entityType, entityId }
-    })
+      attributes: { entityType, entityId },
+    }),
   )
 
 export const addLinkEffect = Effect.fn('musicEntity.addLink')(function* (
-  data: InsertMusicEntityLink
+  data: InsertMusicEntityLink,
 ) {
   const db = yield* Database
+
   const updateData: Partial<typeof musicEntityLinksTable.$inferInsert> = {
     url: data.url,
     status: data.status ?? LINK_STATUS.VERIFIED,
     metadata: data.metadata,
-    updatedAt: new Date()
+    updatedAt: new Date(),
   }
+
   if (data.scrapedAt) updateData.scrapedAt = data.scrapedAt
+
   if (data.verifiedAt) updateData.verifiedAt = data.verifiedAt
+
   const rows = yield* Effect.tryPromise({
     try: () =>
       db
@@ -70,18 +79,19 @@ export const addLinkEffect = Effect.fn('musicEntity.addLink')(function* (
           target: [
             musicEntityLinksTable.entityType,
             musicEntityLinksTable.entityId,
-            musicEntityLinksTable.platform
+            musicEntityLinksTable.platform,
           ],
-          set: updateData
+          set: updateData,
         })
         .returning(),
     catch: (e) =>
       new DatabaseError({
         message: `Failed to add link: ${getErrorMessage(e)}`,
         operation: 'insert',
-        table: 'music_entity_links'
-      })
+        table: 'music_entity_links',
+      }),
   })
+
   return yield* requireInserted(rows, 'music_entity_links')
 })
 
@@ -91,22 +101,26 @@ export const updateLinkStatusEffect = (
   linkId: string,
   status: LinkStatus,
   verifiedBy?: string,
-  metadata?: InsertMusicEntityLink['metadata']
+  metadata?: InsertMusicEntityLink['metadata'],
 ) =>
   Effect.gen(function* () {
     const db = yield* Database
     const now = new Date()
+
     const updateData: Partial<typeof musicEntityLinksTable.$inferInsert> = {
       status,
-      updatedAt: now
+      updatedAt: now,
     }
+
     if (status === LINK_STATUS.VERIFIED) {
       updateData.verifiedAt = now
       updateData.verifiedBy = verifiedBy
     }
+
     if (metadata) {
       updateData.metadata = metadata
     }
+
     const rows = yield* Effect.tryPromise({
       try: () =>
         db
@@ -116,27 +130,29 @@ export const updateLinkStatusEffect = (
             and(
               eq(musicEntityLinksTable.entityType, entityType),
               eq(musicEntityLinksTable.entityId, entityId),
-              eq(musicEntityLinksTable.id, linkId)
-            )
+              eq(musicEntityLinksTable.id, linkId),
+            ),
           )
           .returning(),
       catch: (e) =>
         new DatabaseError({
           message: `Failed to update link status: ${getErrorMessage(e)}`,
           operation: 'update',
-          table: 'music_entity_links'
-        })
+          table: 'music_entity_links',
+        }),
     })
+
     return yield* requireOne(rows, 'MusicEntityLink', linkId)
   }).pipe(
     Effect.withSpan('musicEntity.updateLinkStatus', {
-      attributes: { entityType, entityId, linkId, status, verifiedBy }
-    })
+      attributes: { entityType, entityId, linkId, status, verifiedBy },
+    }),
   )
 
 export const deleteLinkEffect = (entityType: MusicEntityType, entityId: string, linkId: string) =>
   Effect.gen(function* () {
     const db = yield* Database
+
     const rows = yield* Effect.tryPromise({
       try: () =>
         db
@@ -145,20 +161,21 @@ export const deleteLinkEffect = (entityType: MusicEntityType, entityId: string, 
             and(
               eq(musicEntityLinksTable.entityType, entityType),
               eq(musicEntityLinksTable.entityId, entityId),
-              eq(musicEntityLinksTable.id, linkId)
-            )
+              eq(musicEntityLinksTable.id, linkId),
+            ),
           )
           .returning({ id: musicEntityLinksTable.id }),
       catch: (e) =>
         new DatabaseError({
           message: `Failed to delete link: ${getErrorMessage(e)}`,
           operation: 'delete',
-          table: 'music_entity_links'
-        })
+          table: 'music_entity_links',
+        }),
     })
+
     yield* requireOne(rows, 'MusicEntityLink', linkId)
   }).pipe(
     Effect.withSpan('musicEntity.deleteLink', {
-      attributes: { entityType, entityId, linkId }
-    })
+      attributes: { entityType, entityId, linkId },
+    }),
   )

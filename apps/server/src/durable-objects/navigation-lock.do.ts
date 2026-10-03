@@ -1,4 +1,5 @@
 import { DurableObject } from 'cloudflare:workers'
+import { Data } from 'effect'
 
 export type NavigationLockRequestDto = {
   readonly sessionId: string | null
@@ -11,6 +12,8 @@ export type NavigationLockDecisionDto =
   | { readonly _tag: 'Duplicate'; readonly sessionId: string }
   | { readonly _tag: 'Retry' }
   | { readonly _tag: 'Proceed'; readonly sessionId: string | null; readonly position: number }
+
+const NavigationLockDecisionDto = Data.taggedEnum<NavigationLockDecisionDto>()
 
 export type NavigationLockCommitDto = {
   readonly sessionId: string
@@ -66,31 +69,35 @@ export class NavigationLockDurableObject extends DurableObject<NavigationLockEnv
 
   setIdentity(canonicalName: string): IdentityRow {
     const existing = this.getIdentity()
+
     if (existing) return existing
     const createdAtMs = Date.now()
     this.ctx.storage.sql.exec(
       'INSERT INTO _identity (canonical_name, created_at_ms) VALUES (?, ?)',
       canonicalName,
-      createdAtMs
+      createdAtMs,
     )
+
     return { canonicalName, createdAtMs }
   }
 
   getIdentity(): IdentityRow | null {
     const row = [
       ...this.ctx.storage.sql.exec<IdentityRow>(
-        'SELECT canonical_name as canonicalName, created_at_ms as createdAtMs FROM _identity LIMIT 1'
-      )
+        'SELECT canonical_name as canonicalName, created_at_ms as createdAtMs FROM _identity LIMIT 1',
+      ),
     ][0]
+
     return row ?? null
   }
 
   private readSession(): SessionRow | null {
     const row = [
       ...this.ctx.storage.sql.exec<SessionRow>(
-        'SELECT session_id as sessionId, cursor, updated_at_ms as updatedAtMs, last_intent_token as lastIntentToken FROM session_state WHERE id = 0'
-      )
+        'SELECT session_id as sessionId, cursor, updated_at_ms as updatedAtMs, last_intent_token as lastIntentToken FROM session_state WHERE id = 0',
+      ),
     ][0]
+
     return row ?? null
   }
 
@@ -106,7 +113,7 @@ export class NavigationLockDurableObject extends DurableObject<NavigationLockEnv
       session.sessionId,
       session.cursor,
       session.updatedAtMs,
-      session.lastIntentToken
+      session.lastIntentToken,
     )
   }
 
@@ -114,11 +121,11 @@ export class NavigationLockDurableObject extends DurableObject<NavigationLockEnv
     const local = this.readSession()
 
     if (local?.lastIntentToken === request.intentToken && local.sessionId) {
-      return { _tag: 'Duplicate', sessionId: local.sessionId }
+      return NavigationLockDecisionDto.Duplicate({ sessionId: local.sessionId })
     }
 
     if (local && (local.cursor !== request.cursor || local.updatedAtMs !== request.updatedAtMs)) {
-      return { _tag: 'Retry' }
+      return NavigationLockDecisionDto.Retry()
     }
 
     const position = (local?.cursor ?? request.cursor ?? -1) + 1
@@ -127,9 +134,10 @@ export class NavigationLockDurableObject extends DurableObject<NavigationLockEnv
       sessionId,
       cursor: position,
       updatedAtMs: request.updatedAtMs,
-      lastIntentToken: null
+      lastIntentToken: null,
     })
-    return { _tag: 'Proceed', sessionId, position }
+
+    return NavigationLockDecisionDto.Proceed({ sessionId, position })
   }
 
   commit(input: NavigationLockCommitDto): void {
@@ -137,7 +145,7 @@ export class NavigationLockDurableObject extends DurableObject<NavigationLockEnv
       sessionId: input.sessionId,
       cursor: input.position,
       updatedAtMs: input.updatedAtMs,
-      lastIntentToken: input.intentToken
+      lastIntentToken: input.intentToken,
     })
   }
 
@@ -152,6 +160,7 @@ export class NavigationLockDurableObject extends DurableObject<NavigationLockEnv
   heartbeat(): NavigationLockHeartbeat {
     const identity = this.getIdentity()
     const session = this.readSession()
+
     return { canonicalName: identity?.canonicalName ?? null, hasSession: session !== null }
   }
 }

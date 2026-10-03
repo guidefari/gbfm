@@ -1,16 +1,17 @@
 /* oxlint-disable effecttsgo/strict-effect-provide -- Each test invokes Effect.runPromise, making it an Effect application entry point. */
 import { Effect, Layer, PubSub, Stream } from 'effect'
 import { describe, expect, it } from 'vitest'
+
 import {
   AudioEngine,
   PlaybackRejected,
   type AudioEngineContract,
-  type EngineStatus
+  type EngineStatus,
 } from './engine'
 import type { QueueTrackType } from './persistedQueue'
-import { PlayReporter } from './playReporter'
 import { makePlayerCore } from './playerCore'
 import { PlayerStorage, type PositionRecord } from './playerStorage'
+import { PlayReporter } from './playReporter'
 
 const track: QueueTrackType = {
   id: 'track-1',
@@ -19,7 +20,7 @@ const track: QueueTrackType = {
   url: 'https://cdn.example/test.mp3',
   thumbnailUrl: null,
   type: 'mix',
-  creators: [{ id: 'c1', name: 'Tester', username: 'tester' }]
+  creators: [{ id: 'c1', name: 'Tester', username: 'tester' }],
 }
 
 const idleStatus: EngineStatus = {
@@ -29,7 +30,7 @@ const idleStatus: EngineStatus = {
   didJustFinish: false,
   currentTime: 0,
   duration: 0,
-  isBuffering: false
+  isBuffering: false,
 }
 
 const makeRecordingEngine = (options: { readonly rejectPlay?: boolean } = {}) =>
@@ -51,6 +52,7 @@ const makeRecordingEngine = (options: { readonly rejectPlay?: boolean } = {}) =>
       play: options.rejectPlay
         ? Effect.suspend(() => {
             calls.push('play:rejected')
+
             return Effect.fail(new PlaybackRejected({}))
           })
         : Effect.sync(() => {
@@ -78,12 +80,13 @@ const makeRecordingEngine = (options: { readonly rejectPlay?: boolean } = {}) =>
           calls.push(`nowPlaying:${metadata ? metadata.title : 'null'}`)
         }),
       setPositionState: () => Effect.void,
-      setCommandHandlers: () => Effect.void
+      setCommandHandlers: () => Effect.void,
     }
 
     const emit = (next: Partial<EngineStatus>) =>
       Effect.suspend(() => {
         status = { ...status, ...next }
+
         return PubSub.publish(pubsub, status)
       })
 
@@ -116,7 +119,7 @@ const makeRecordingStorage = (stored: PositionRecord | null = null) => {
         cleared.push(id)
       }),
     recordPlay: () => Effect.void,
-    isWithinDedupWindow: () => Effect.succeed(false)
+    isWithinDedupWindow: () => Effect.succeed(false),
   })
 
   return { layer, saved, cleared }
@@ -124,12 +127,14 @@ const makeRecordingStorage = (stored: PositionRecord | null = null) => {
 
 const makeRecordingReporter = () => {
   const reported: Array<string> = []
+
   const layer = Layer.succeed(PlayReporter, {
     recordPlay: (trackId: string) =>
       Effect.sync(() => {
         reported.push(trackId)
-      })
+      }),
   })
+
   return { layer, reported }
 }
 
@@ -142,11 +147,11 @@ describe('makePlayerCore', () => {
 
       const core = yield* makePlayerCore({
         onStatus: () => {},
-        onTrackFinished: () => {}
+        onTrackFinished: () => {},
       }).pipe(
         Effect.provide(
-          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer)
-        )
+          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer),
+        ),
       )
 
       yield* core.requestPlayOnReady(track.id)
@@ -179,11 +184,11 @@ describe('makePlayerCore', () => {
 
       const core = yield* makePlayerCore({
         onStatus: () => {},
-        onTrackFinished: () => {}
+        onTrackFinished: () => {},
       }).pipe(
         Effect.provide(
-          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer)
-        )
+          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer),
+        ),
       )
 
       yield* core.requestPlayOnReady(track.id)
@@ -215,11 +220,11 @@ describe('makePlayerCore', () => {
 
       const core = yield* makePlayerCore({
         onStatus: () => {},
-        onTrackFinished: () => {}
+        onTrackFinished: () => {},
       }).pipe(
         Effect.provide(
-          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer)
-        )
+          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer),
+        ),
       )
 
       yield* core.requestPlayOnReady(track.id)
@@ -251,11 +256,11 @@ describe('makePlayerCore', () => {
         onStatus: () => {},
         onTrackFinished: () => {
           finished += 1
-        }
+        },
       }).pipe(
         Effect.provide(
-          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer)
-        )
+          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer),
+        ),
       )
 
       yield* core.requestPlayOnReady(track.id)
@@ -275,7 +280,7 @@ describe('makePlayerCore', () => {
         beforeReadyFinish,
         beforeCompletionFinish,
         finished,
-        cleared: storage.cleared
+        cleared: storage.cleared,
       }
     }).pipe(Effect.scoped)
 
@@ -299,11 +304,11 @@ describe('makePlayerCore', () => {
         onStatus: () => {},
         onTrackFinished: () => {
           finished += 1
-        }
+        },
       }).pipe(
         Effect.provide(
-          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer)
-        )
+          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer),
+        ),
       )
 
       yield* core.requestPlayOnReady(track.id)
@@ -342,11 +347,11 @@ describe('makePlayerCore', () => {
         onStatus: () => {},
         onTrackFinished: () => {
           finished += 1
-        }
+        },
       }).pipe(
         Effect.provide(
-          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer)
-        )
+          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer),
+        ),
       )
 
       yield* core.requestPlayOnReady(track.id)
@@ -381,11 +386,11 @@ describe('makePlayerCore', () => {
 
       const core = yield* makePlayerCore({
         onStatus: () => {},
-        onTrackFinished: () => {}
+        onTrackFinished: () => {},
       }).pipe(
         Effect.provide(
-          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer)
-        )
+          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer),
+        ),
       )
 
       yield* core.requestPlayOnReady(track.id)
@@ -407,7 +412,7 @@ describe('makePlayerCore', () => {
     expect(saved).toEqual([
       { id: track.id, position: 120 },
       { id: track.id, position: 150 },
-      { id: track.id, position: 30 }
+      { id: track.id, position: 30 },
     ])
   })
 
@@ -419,11 +424,11 @@ describe('makePlayerCore', () => {
 
       const core = yield* makePlayerCore({
         onStatus: () => {},
-        onTrackFinished: () => {}
+        onTrackFinished: () => {},
       }).pipe(
         Effect.provide(
-          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer)
-        )
+          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer),
+        ),
       )
 
       yield* core.requestPlayOnReady(track.id)
@@ -452,11 +457,11 @@ describe('makePlayerCore', () => {
         onTrackFinished: () => {
           finished += 1
         },
-        onError: (message) => errors.push(message)
+        onError: (message) => errors.push(message),
       }).pipe(
         Effect.provide(
-          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer)
-        )
+          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer),
+        ),
       )
 
       yield* core.requestPlayOnReady(track.id)
@@ -470,7 +475,7 @@ describe('makePlayerCore', () => {
         reported: reporter.reported,
         desired: yield* core.isDesiredPlaying,
         errors,
-        finished
+        finished,
       }
     }).pipe(Effect.scoped)
 
@@ -490,11 +495,11 @@ describe('makePlayerCore', () => {
 
       const core = yield* makePlayerCore({
         onStatus: () => {},
-        onTrackFinished: () => {}
+        onTrackFinished: () => {},
       }).pipe(
         Effect.provide(
-          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer)
-        )
+          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer),
+        ),
       )
 
       yield* setStatus({ isLoaded: true, duration: 300 })
@@ -521,7 +526,7 @@ describe('makePlayerCore', () => {
     const nextTrack: QueueTrackType = {
       ...track,
       id: 'track-2',
-      url: 'https://cdn.example/next.mp3'
+      url: 'https://cdn.example/next.mp3',
     }
 
     const program = Effect.gen(function* () {
@@ -535,11 +540,11 @@ describe('makePlayerCore', () => {
         onStatus: (status) => observed.push(status),
         onTrackFinished: () => {
           finished += 1
-        }
+        },
       }).pipe(
         Effect.provide(
-          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer)
-        )
+          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer),
+        ),
       )
 
       yield* setStatus({ isLoaded: true, duration: 300 })
@@ -554,7 +559,7 @@ describe('makePlayerCore', () => {
         isLoaded: true,
         duration: 300,
         playing: false,
-        didJustFinish: true
+        didJustFinish: true,
       })
       yield* Effect.yieldNow
 
@@ -563,7 +568,7 @@ describe('makePlayerCore', () => {
         sourceGeneration: 2,
         isLoaded: true,
         duration: 300,
-        didJustFinish: false
+        didJustFinish: false,
       })
       yield* Effect.yieldNow
 
@@ -573,7 +578,7 @@ describe('makePlayerCore', () => {
         callsAfterStaleStatus,
         finished,
         observed,
-        trackId: yield* core.currentTrackId
+        trackId: yield* core.currentTrackId,
       }
     }).pipe(Effect.scoped)
 
@@ -581,7 +586,7 @@ describe('makePlayerCore', () => {
 
     expect(result.callsAfterStaleStatus).toBe(result.callsBeforeStaleStatus)
     expect(
-      result.observed.some((status) => status.sourceGeneration === 1 && status.didJustFinish)
+      result.observed.some((status) => status.sourceGeneration === 1 && status.didJustFinish),
     ).toBe(false)
     expect(result.calls).toContain('play')
     expect(result.finished).toBe(0)
@@ -600,11 +605,11 @@ describe('makePlayerCore', () => {
         onStatus: (status) => observed.push(status),
         onTrackFinished: () => {
           finished += 1
-        }
+        },
       }).pipe(
         Effect.provide(
-          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer)
-        )
+          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer),
+        ),
       )
 
       yield* setStatus({ isLoaded: true, duration: 300 })
@@ -619,7 +624,7 @@ describe('makePlayerCore', () => {
         isLoaded: true,
         duration: 300,
         playing: false,
-        didJustFinish: true
+        didJustFinish: true,
       })
       yield* Effect.yieldNow
 
@@ -628,7 +633,7 @@ describe('makePlayerCore', () => {
         beforeLateStatus,
         afterLateStatus: observed.length,
         finished,
-        trackId: yield* core.currentTrackId
+        trackId: yield* core.currentTrackId,
       }
     }).pipe(Effect.scoped)
 
@@ -637,7 +642,9 @@ describe('makePlayerCore', () => {
     expect(result.trackId).toBeNull()
     expect(result.afterLateStatus).toBe(result.beforeLateStatus)
     expect(
-      result.observed.slice(result.beforeLateStatus).some((status) => status.sourceGeneration === 1)
+      result.observed
+        .slice(result.beforeLateStatus)
+        .some((status) => status.sourceGeneration === 1),
     ).toBe(false)
     expect(result.finished).toBe(0)
   })
@@ -668,12 +675,12 @@ describe('makePlayerCore', () => {
           Stream.ensuring(
             Effect.sync(() => {
               finalized = true
-            })
-          )
+            }),
+          ),
         ),
         setNowPlaying: () => Effect.void,
         setPositionState: () => Effect.void,
-        setCommandHandlers: () => Effect.void
+        setCommandHandlers: () => Effect.void,
       }
 
       const storage = makeRecordingStorage()
@@ -683,18 +690,18 @@ describe('makePlayerCore', () => {
         onStatus: () => {
           callbacksAfterDispose += 1
         },
-        onTrackFinished: () => {}
+        onTrackFinished: () => {},
       }).pipe(
         Effect.provide(
-          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer)
-        )
+          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer),
+        ),
       )
 
       yield* PubSub.publish(pubsub, {
         ...idleStatus,
         sourceGeneration: 1,
         isLoaded: true,
-        duration: 300
+        duration: 300,
       })
       yield* Effect.yieldNow
 

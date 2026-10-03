@@ -1,0 +1,226 @@
+import { QueueTrack, type PlaybackSnapshot } from '@gbfm/player'
+import { Effect, Schema } from 'effect'
+import { Command, type Update } from 'foldkit'
+import { defineMessageUnion } from 'foldkit/message'
+
+import { PlayerClient, type PlayerClientValue } from './runtime'
+
+const QueueView = Schema.Struct({
+  tracks: Schema.Array(QueueTrack),
+  currentIndex: Schema.Number,
+  current: Schema.NullOr(QueueTrack),
+})
+
+const Transport = Schema.Struct({
+  isInitialized: Schema.Boolean,
+  isLoaded: Schema.Boolean,
+  isPlaying: Schema.Boolean,
+  isBuffering: Schema.Boolean,
+  currentTime: Schema.Number,
+  duration: Schema.Number,
+})
+
+const Volume = Schema.Struct({ volume: Schema.Number, isMuted: Schema.Boolean })
+
+export const Snapshot = Schema.Struct({ queue: QueueView, transport: Transport, volume: Volume })
+
+export const Model = Schema.Struct({
+  snapshot: Snapshot,
+  queueOpen: Schema.Boolean,
+  fullscreen: Schema.Boolean,
+  draggedIndex: Schema.NullOr(Schema.Number),
+})
+
+export type Model = typeof Model.Type
+
+export const initialSnapshot: PlaybackSnapshot = {
+  queue: { tracks: [], currentIndex: -1, current: null },
+  transport: {
+    isInitialized: false,
+    isLoaded: false,
+    isPlaying: false,
+    isBuffering: false,
+    currentTime: 0,
+    duration: 0,
+  },
+  volume: { volume: 100, isMuted: false },
+}
+
+export const initialModel: Model = {
+  snapshot: initialSnapshot,
+  queueOpen: false,
+  fullscreen: false,
+  draggedIndex: null,
+}
+
+export const Message = defineMessageUnion({
+  SnapshotChanged: { snapshot: Snapshot },
+  TogglePlayPause: {},
+  SeekTo: { seconds: Schema.Number },
+  Jump: { seconds: Schema.Number },
+  SetVolume: { volume: Schema.Number },
+  ToggleMute: {},
+  PlayTrack: { track: QueueTrack },
+  PlayAll: { tracks: Schema.Array(QueueTrack) },
+  Enqueue: { track: QueueTrack },
+  EnqueueAll: { tracks: Schema.Array(QueueTrack) },
+  PlayIndex: { index: Schema.Number },
+  Next: {},
+  Previous: {},
+  Remove: { index: Schema.Number },
+  Reorder: { from: Schema.Number, to: Schema.Number },
+  Clear: {},
+  ToggleQueue: {},
+  CloseQueue: {},
+  ToggleFullscreen: {},
+  CloseFullscreen: {},
+  DragStarted: { index: Schema.Number },
+  DroppedAt: { index: Schema.Number },
+  OperationCompleted: {},
+})
+
+export type Message = typeof Message.Type
+
+const operation = <A>(
+  name: string,
+  fields: Schema.Struct.Fields,
+  run: (client: PlayerClientValue, args: A) => Effect.Effect<void>,
+) =>
+  Command.define(name, {
+    args: fields,
+    messages: [Message.OperationCompleted],
+    execute: (args) =>
+      PlayerClient.pipe(
+        // SAFETY: each private command definition supplies fields matching A.
+        // oxlint-disable-next-line typescript/consistent-type-assertions, typescript/no-unsafe-type-assertion
+        Effect.flatMap((client) => run(client, args as A)),
+        Effect.as(Message.OperationCompleted()),
+      ),
+  })
+
+const noArgOperation = (name: string, run: (client: PlayerClientValue) => Effect.Effect<void>) =>
+  Command.define(name, {
+    messages: [Message.OperationCompleted],
+    execute: PlayerClient.pipe(Effect.flatMap(run), Effect.as(Message.OperationCompleted())),
+  })
+
+const Toggle = noArgOperation('PlayerToggle', (client) => client.controller.togglePlayPause)
+
+const Next = noArgOperation('PlayerNext', (client) => client.controller.playNext)
+
+const Previous = noArgOperation('PlayerPrevious', (client) => client.controller.playPrevious)
+
+const Clear = noArgOperation('PlayerClear', (client) => client.controller.clearQueue)
+
+const ToggleMute = noArgOperation('PlayerToggleMute', (client) => client.controller.toggleMute)
+
+const Seek = operation<{ seconds: number }>(
+  'PlayerSeek',
+  { seconds: Schema.Number },
+  (client, { seconds }) => client.controller.seekTo(seconds),
+)
+
+const Jump = operation<{ seconds: number }>(
+  'PlayerJump',
+  { seconds: Schema.Number },
+  (client, { seconds }) =>
+    seconds >= 0
+      ? client.controller.jumpForward(seconds)
+      : client.controller.jumpBackward(-seconds),
+)
+
+const SetVolume = operation<{ volume: number }>(
+  'PlayerSetVolume',
+  { volume: Schema.Number },
+  (client, { volume }) => client.controller.setVolume(volume),
+)
+
+const PlayTrack = operation<{ track: typeof QueueTrack.Type }>(
+  'PlayerPlayTrack',
+  { track: QueueTrack },
+  (client, { track }) => client.controller.playTrack(track),
+)
+
+const PlayAll = operation<{ tracks: ReadonlyArray<typeof QueueTrack.Type> }>(
+  'PlayerPlayAll',
+  { tracks: Schema.Array(QueueTrack) },
+  (client, { tracks }) => client.controller.playAll(tracks),
+)
+
+const Enqueue = operation<{ track: typeof QueueTrack.Type }>(
+  'PlayerEnqueue',
+  { track: QueueTrack },
+  (client, { track }) => client.controller.enqueue(track),
+)
+
+const EnqueueAll = operation<{ tracks: ReadonlyArray<typeof QueueTrack.Type> }>(
+  'PlayerEnqueueAll',
+  { tracks: Schema.Array(QueueTrack) },
+  (client, { tracks }) => client.controller.enqueueAll(tracks),
+)
+
+const Index = operation<{ index: number }>(
+  'PlayerPlayIndex',
+  { index: Schema.Number },
+  (client, { index }) => client.controller.playFromQueue(index),
+)
+
+const Remove = operation<{ index: number }>(
+  'PlayerRemove',
+  { index: Schema.Number },
+  (client, { index }) => client.controller.removeFromQueue(index),
+)
+
+const Reorder = operation<{ from: number; to: number }>(
+  'PlayerReorder',
+  { from: Schema.Number, to: Schema.Number },
+  (client, { from, to }) => client.controller.reorderQueue(from, to),
+)
+
+export const update = (
+  model: Model,
+  message: Message,
+): Update.Return<Model, Message, PlayerClient> =>
+  Message.match(message, {
+    SnapshotChanged: ({ snapshot }) => ({ model: { ...model, snapshot } }),
+    TogglePlayPause: () => ({ model, commands: [Toggle()] }),
+    SeekTo: ({ seconds }) => ({ model, commands: [Seek({ seconds })] }),
+    Jump: ({ seconds }) => ({ model, commands: [Jump({ seconds })] }),
+    SetVolume: ({ volume }) => ({ model, commands: [SetVolume({ volume })] }),
+    ToggleMute: () => ({ model, commands: [ToggleMute()] }),
+    PlayTrack: ({ track }) => ({
+      model: { ...model, fullscreen: true },
+      commands: [PlayTrack({ track })],
+    }),
+    PlayAll: ({ tracks }) => ({
+      model: { ...model, fullscreen: true },
+      commands: [PlayAll({ tracks })],
+    }),
+    Enqueue: ({ track }) => ({ model, commands: [Enqueue({ track })] }),
+    EnqueueAll: ({ tracks }) => ({ model, commands: [EnqueueAll({ tracks })] }),
+    PlayIndex: ({ index }) => ({
+      model: { ...model, fullscreen: true },
+      commands: [Index({ index })],
+    }),
+    Next: () => ({ model, commands: [Next()] }),
+    Previous: () => ({ model, commands: [Previous()] }),
+    Remove: ({ index }) => ({ model, commands: [Remove({ index })] }),
+    Reorder: ({ from, to }) => ({ model, commands: [Reorder({ from, to })] }),
+    Clear: () => ({
+      model: { ...model, queueOpen: false, fullscreen: false },
+      commands: [Clear()],
+    }),
+    ToggleQueue: () => ({ model: { ...model, queueOpen: !model.queueOpen } }),
+    CloseQueue: () => ({ model: { ...model, queueOpen: false } }),
+    ToggleFullscreen: () => ({ model: { ...model, fullscreen: !model.fullscreen } }),
+    CloseFullscreen: () => ({ model: { ...model, fullscreen: false } }),
+    DragStarted: ({ index }) => ({ model: { ...model, draggedIndex: index } }),
+    DroppedAt: ({ index }) =>
+      model.draggedIndex === null
+        ? { model }
+        : {
+            model: { ...model, draggedIndex: null },
+            commands: [Reorder({ from: model.draggedIndex, to: index })],
+          },
+    OperationCompleted: () => ({ model }),
+  })

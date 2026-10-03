@@ -1,29 +1,30 @@
 import { cva, type VariantProps } from 'class-variance-authority'
 import type * as React from 'react'
+
 import { cn } from '../lib/cn'
 
 const artworkVariants = cva('overflow-hidden bg-background', {
   variants: {
     aspect: {
       square: 'aspect-square',
-      auto: ''
+      auto: '',
     },
     radius: {
       none: 'rounded-none',
       sm: 'rounded-[2px]',
-      md: 'rounded-[4px]'
+      md: 'rounded-[4px]',
     },
     border: {
       none: '',
       thin: 'border border-border',
-      thick: 'border-2 border-border'
-    }
+      thick: 'border-2 border-border',
+    },
   },
   defaultVariants: {
     aspect: 'square',
     radius: 'sm',
-    border: 'thin'
-  }
+    border: 'thin',
+  },
 })
 
 const hoverVariants = cva('group relative', {
@@ -32,12 +33,12 @@ const hoverVariants = cva('group relative', {
       none: '',
       fade: '',
       zoom: '',
-      ring: 'transition-shadow duration-300 hover:ring-4 hover:ring-highlight'
-    }
+      ring: 'transition-shadow duration-300 hover:ring-4 hover:ring-highlight',
+    },
   },
   defaultVariants: {
-    hover: 'none'
-  }
+    hover: 'none',
+  },
 })
 
 const imageVariants = cva('h-full w-full object-cover', {
@@ -46,17 +47,17 @@ const imageVariants = cva('h-full w-full object-cover', {
       none: '',
       fade: 'transition-opacity duration-300 group-hover:opacity-80',
       zoom: 'transition duration-300 group-hover:scale-105',
-      ring: ''
+      ring: '',
     },
     loading: {
       true: 'scale-102 blur-2xl',
-      false: 'scale-100 blur-0'
-    }
+      false: 'scale-100 blur-0',
+    },
   },
   defaultVariants: {
     hover: 'none',
-    loading: false
-  }
+    loading: false,
+  },
 })
 
 export interface ArtworkProps
@@ -92,7 +93,7 @@ function Artwork({
       className={cn(
         artworkVariants({ aspect, radius, border }),
         hoverVariants({ hover }),
-        className
+        className,
       )}>
       <img
         src={src || fallbackSrc}

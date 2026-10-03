@@ -5,9 +5,9 @@ import { Context, Data, Effect, Schema } from 'effect'
 const TaggedResourceResponse = Schema.Struct({
   ResourceTagMappingList: Schema.Array(
     Schema.Struct({
-      ResourceARN: Schema.String
-    })
-  )
+      ResourceARN: Schema.String,
+    }),
+  ),
 })
 
 const EcsDeployment = Schema.Struct({
@@ -16,7 +16,7 @@ const EcsDeployment = Schema.Struct({
   runningCount: Schema.Number,
   pendingCount: Schema.Number,
   failedTasks: Schema.Number,
-  taskDefinition: Schema.String
+  taskDefinition: Schema.String,
 })
 
 const DescribeServicesResponse = Schema.Struct({
@@ -27,10 +27,10 @@ const DescribeServicesResponse = Schema.Struct({
       desiredCount: Schema.Number,
       runningCount: Schema.Number,
       pendingCount: Schema.Number,
-      deployments: Schema.Array(EcsDeployment)
-    })
+      deployments: Schema.Array(EcsDeployment),
+    }),
   ),
-  failures: Schema.Array(Schema.Unknown)
+  failures: Schema.Array(Schema.Unknown),
 })
 
 const DescribeTaskDefinitionResponse = Schema.Struct({
@@ -40,12 +40,12 @@ const DescribeTaskDefinitionResponse = Schema.Struct({
         environment: Schema.Array(
           Schema.Struct({
             name: Schema.String,
-            value: Schema.String
-          })
-        )
-      })
-    )
-  })
+            value: Schema.String,
+          }),
+        ),
+      }),
+    ),
+  }),
 })
 
 const SentrySpan = Schema.Struct({
@@ -64,16 +64,19 @@ const SentrySpan = Schema.Struct({
   'gbfm.db.instrumentation': Schema.NullOr(Schema.String),
   'db.statement': Schema.NullOr(Schema.String),
   'db.query': Schema.NullOr(Schema.String),
-  'db.query.text': Schema.NullOr(Schema.String)
+  'db.query.text': Schema.NullOr(Schema.String),
 })
 
 const SentrySpansResponse = Schema.Struct({
-  data: Schema.Array(SentrySpan)
+  data: Schema.Array(SentrySpan),
 })
 
 const SAFE_DATABASE_OPERATION = /^(?:SELECT|INSERT|UPDATE|DELETE|QUERY)$/
+
 const SAFE_DATABASE_COLLECTION = /^(?:unknown|[A-Za-z_][\w$]*)$/
+
 const SAFE_DATABASE_SUMMARY = /^(?:SELECT|INSERT|UPDATE|DELETE|QUERY)(?: [A-Za-z_][\w$]*)?$/
+
 const REQUIRED_STABLE_SENTRY_POLLS = 3
 
 type VerificationPhase =
@@ -158,16 +161,16 @@ export type ProductionVerificationConfig = {
 export interface ProductionVerificationPort {
   readonly discoverEcsResources: (
     app: string,
-    stage: string
+    stage: string,
   ) => Effect.Effect<unknown, ProductionVerificationError>
   readonly describeEcsService: (
-    resources: EcsResources
+    resources: EcsResources,
   ) => Effect.Effect<unknown, ProductionVerificationError>
   readonly describeTaskDefinition: (
-    taskDefinitionArn: string
+    taskDefinitionArn: string,
   ) => Effect.Effect<unknown, ProductionVerificationError>
   readonly probe: (
-    request: ProbeRequest
+    request: ProbeRequest,
   ) => Effect.Effect<ProbeResponse, ProductionVerificationError>
   readonly querySpans: (query: SpanQuery) => Effect.Effect<unknown, ProductionVerificationError>
   readonly wait: (milliseconds: number) => Effect.Effect<void>
@@ -177,7 +180,7 @@ export interface ProductionVerificationPort {
  * Effect service seam for production AWS, HTTP, and Sentry operations.
  */
 export const ProductionVerificationPort = Context.Service<ProductionVerificationPort>(
-  'ProductionVerificationPort'
+  'ProductionVerificationPort',
 )
 
 /**
@@ -196,7 +199,7 @@ export type ProductionVerificationReport = {
 
 const fail = (
   phase: VerificationPhase,
-  summary: string
+  summary: string,
 ): Effect.Effect<never, ProductionVerificationError> =>
   Effect.fail(new ProductionVerificationError({ phase, summary }))
 
@@ -206,9 +209,9 @@ const decodeResources = <Input>(input: Input) =>
       () =>
         new ProductionVerificationError({
           phase: 'resource-discovery',
-          summary: 'AWS returned an invalid tagged-resource response'
-        })
-    )
+          summary: 'AWS returned an invalid tagged-resource response',
+        }),
+    ),
   )
 
 const decodeEcsService = <Input>(input: Input) =>
@@ -217,9 +220,9 @@ const decodeEcsService = <Input>(input: Input) =>
       () =>
         new ProductionVerificationError({
           phase: 'ecs-rollout',
-          summary: 'AWS returned an invalid ECS service response'
-        })
-    )
+          summary: 'AWS returned an invalid ECS service response',
+        }),
+    ),
   )
 
 const decodeTaskDefinition = <Input>(input: Input) =>
@@ -228,9 +231,9 @@ const decodeTaskDefinition = <Input>(input: Input) =>
       () =>
         new ProductionVerificationError({
           phase: 'ecs-rollout',
-          summary: 'AWS returned an invalid ECS task-definition response'
-        })
-    )
+          summary: 'AWS returned an invalid ECS task-definition response',
+        }),
+    ),
   )
 
 const decodeSentrySpans = <Input>(input: Input, phase: 'sentry-ingestion' | 'sentry-privacy') =>
@@ -239,41 +242,45 @@ const decodeSentrySpans = <Input>(input: Input, phase: 'sentry-ingestion' | 'sen
       () =>
         new ProductionVerificationError({
           phase,
-          summary: 'Sentry returned an invalid spans response'
-        })
-    )
+          summary: 'Sentry returned an invalid spans response',
+        }),
+    ),
   )
 
 const parseEcsResources = <Input>(
-  input: Input
+  input: Input,
 ): Effect.Effect<EcsResources, ProductionVerificationError> =>
   Effect.gen(function* () {
     const response = yield* decodeResources(input)
+
     const clusterArns = response.ResourceTagMappingList.flatMap(({ ResourceARN }) =>
-      ResourceARN.includes(':cluster/') ? [ResourceARN] : []
+      ResourceARN.includes(':cluster/') ? [ResourceARN] : [],
     )
+
     const serviceArns = response.ResourceTagMappingList.flatMap(({ ResourceARN }) =>
-      ResourceARN.includes(':service/') ? [ResourceARN] : []
+      ResourceARN.includes(':service/') ? [ResourceARN] : [],
     )
 
     if (clusterArns.length !== 1 || serviceArns.length !== 1) {
       return yield* fail(
         'resource-discovery',
-        `Expected one production ECS cluster and service, found ${clusterArns.length} cluster(s) and ${serviceArns.length} service(s)`
+        `Expected one production ECS cluster and service, found ${clusterArns.length} cluster(s) and ${serviceArns.length} service(s)`,
       )
     }
 
     const clusterArn = clusterArns[0]
     const serviceArn = serviceArns[0]
+
     if (clusterArn === undefined || serviceArn === undefined) {
       return yield* fail('resource-discovery', 'AWS resource discovery returned no usable ARN')
     }
 
     const clusterName = clusterArn.split('/').at(-1)
+
     if (clusterName === undefined || !serviceArn.includes(`:service/${clusterName}/`)) {
       return yield* fail(
         'resource-discovery',
-        'The discovered ECS service does not belong to the discovered cluster'
+        'The discovered ECS service does not belong to the discovered cluster',
       )
     }
 
@@ -282,7 +289,7 @@ const parseEcsResources = <Input>(
 
 const waitForStableEcsService = (
   resources: EcsResources,
-  config: ProductionVerificationConfig['ecs']
+  config: ProductionVerificationConfig['ecs'],
 ): Effect.Effect<string, ProductionVerificationError, ProductionVerificationPort> =>
   Effect.gen(function* () {
     const port = yield* ProductionVerificationPort
@@ -296,11 +303,12 @@ const waitForStableEcsService = (
       if (response.failures.length > 0 || response.services.length !== 1) {
         return yield* fail(
           'ecs-rollout',
-          'AWS did not return exactly one healthy ECS service result'
+          'AWS did not return exactly one healthy ECS service result',
         )
       }
 
       const service = response.services[0]
+
       if (service === undefined) {
         return yield* fail('ecs-rollout', 'AWS returned no ECS service')
       }
@@ -325,32 +333,35 @@ const waitForStableEcsService = (
       if (isStable) return deployment.taskDefinition
 
       lastState = `desired=${service.desiredCount}, running=${service.runningCount}, pending=${service.pendingCount}, deployments=${service.deployments.length}, rollout=${deployment?.rolloutState ?? 'unknown'}`
+
       if (attempt < config.attempts) yield* port.wait(config.intervalMs)
     }
 
     return yield* fail(
       'ecs-rollout',
-      `ECS did not reach steady state after ${config.attempts} attempts (${lastState})`
+      `ECS did not reach steady state after ${config.attempts} attempts (${lastState})`,
     )
   })
 
 const verifyTaskDefinitionRelease = (
   taskDefinitionArn: string,
-  release: string
+  release: string,
 ): Effect.Effect<void, ProductionVerificationError, ProductionVerificationPort> =>
   Effect.gen(function* () {
     const port = yield* ProductionVerificationPort
+
     const response = yield* port
       .describeTaskDefinition(taskDefinitionArn)
       .pipe(Effect.flatMap(decodeTaskDefinition))
+
     const releases = response.taskDefinition.containerDefinitions.flatMap(({ environment }) =>
-      environment.flatMap(({ name, value }) => (name === 'SENTRY_RELEASE' ? [value] : []))
+      environment.flatMap(({ name, value }) => (name === 'SENTRY_RELEASE' ? [value] : [])),
     )
 
     if (releases.length !== 1 || releases[0] !== release) {
       return yield* fail(
         'ecs-rollout',
-        'The stable ECS task definition does not contain the deployed Sentry release'
+        'The stable ECS task definition does not contain the deployed Sentry release',
       )
     }
 
@@ -358,7 +369,7 @@ const verifyTaskDefinitionRelease = (
   })
 
 const verifyHealthProbe = (
-  baseUrl: URL
+  baseUrl: URL,
 ): Effect.Effect<number, ProductionVerificationError, ProductionVerificationPort> =>
   Effect.gen(function* () {
     const port = yield* ProductionVerificationPort
@@ -373,21 +384,23 @@ const verifyHealthProbe = (
         () =>
           new ProductionVerificationError({
             phase: 'health-probe',
-            summary: 'Health probe returned an invalid readiness response'
-          })
-      )
+            summary: 'Health probe returned an invalid readiness response',
+          }),
+      ),
     )
+
     return response.status
   })
 
 const verifyProfileProbe = (
-  config: ProductionVerificationConfig
+  config: ProductionVerificationConfig,
 ): Effect.Effect<number, ProductionVerificationError, ProductionVerificationPort> =>
   Effect.gen(function* () {
     const port = yield* ProductionVerificationPort
+
     const response = yield* port.probe({
       url: new URL(config.profilePath, config.baseUrl),
-      traceparent: `00-${config.traceId}-${config.parentSpanId}-01`
+      traceparent: `00-${config.traceId}-${config.parentSpanId}-01`,
     })
 
     if (response.status !== 200) {
@@ -399,16 +412,17 @@ const verifyProfileProbe = (
         () =>
           new ProductionVerificationError({
             phase: 'profile-probe',
-            summary: 'Profile probe returned an invalid public-profile response'
-          })
-      )
+            summary: 'Profile probe returned an invalid public-profile response',
+          }),
+      ),
     )
+
     return response.status
   })
 
 const spanHasExpectedCorrelation = (
   span: typeof SentrySpan.Type,
-  config: ProductionVerificationConfig
+  config: ProductionVerificationConfig,
 ) =>
   span.parent_span !== null &&
   span['span.op'] === 'db.query' &&
@@ -433,18 +447,19 @@ const spanHasSafeDatabaseData = (span: typeof SentrySpan.Type) =>
 
 const validateDatabaseSpans = (
   spans: ReadonlyArray<typeof SentrySpan.Type>,
-  config: ProductionVerificationConfig
+  config: ProductionVerificationConfig,
 ): ProductionVerificationError | undefined => {
   if (!spans.every((span) => spanHasExpectedCorrelation(span, config))) {
     return new ProductionVerificationError({
       phase: 'sentry-correlation',
-      summary: 'Sentry returned a database span with missing or mismatched trace correlation'
+      summary: 'Sentry returned a database span with missing or mismatched trace correlation',
     })
   }
+
   if (!spans.every(spanHasSafeDatabaseData)) {
     return new ProductionVerificationError({
       phase: 'sentry-privacy',
-      summary: 'Sentry returned an automatic or privacy-unsafe database span'
+      summary: 'Sentry returned an automatic or privacy-unsafe database span',
     })
   }
 
@@ -471,13 +486,13 @@ const databaseSpanFingerprint = (spans: ReadonlyArray<typeof SentrySpan.Type>) =
         instrumentation: span['gbfm.db.instrumentation'],
         statement: span['db.statement'],
         query: span['db.query'],
-        queryText: span['db.query.text']
-      }))
+        queryText: span['db.query.text'],
+      })),
   )
 
 const queryDatabaseSpans = (
   config: ProductionVerificationConfig,
-  phase: 'sentry-ingestion' | 'sentry-privacy'
+  phase: 'sentry-ingestion' | 'sentry-privacy',
 ): Effect.Effect<
   ReadonlyArray<typeof SentrySpan.Type>,
   ProductionVerificationError,
@@ -485,19 +500,21 @@ const queryDatabaseSpans = (
 > =>
   Effect.gen(function* () {
     const port = yield* ProductionVerificationPort
+
     const response = yield* port
       .querySpans({
         environment: config.environment,
         operation: 'db.query',
         release: config.release,
-        traceId: config.traceId
+        traceId: config.traceId,
       })
       .pipe(Effect.flatMap((input) => decodeSentrySpans(input, phase)))
+
     return response.data
   })
 
 const waitForDatabaseSpans = (
-  config: ProductionVerificationConfig
+  config: ProductionVerificationConfig,
 ): Effect.Effect<void, ProductionVerificationError, ProductionVerificationPort> =>
   Effect.gen(function* () {
     const port = yield* ProductionVerificationPort
@@ -512,12 +529,12 @@ const waitForDatabaseSpans = (
 
     return yield* fail(
       'sentry-ingestion',
-      `No database spans arrived for the verification trace after ${config.sentry.ingestionAttempts} attempts`
+      `No database spans arrived for the verification trace after ${config.sentry.ingestionAttempts} attempts`,
     )
   })
 
 const verifySettledDatabaseSpans = (
-  config: ProductionVerificationConfig
+  config: ProductionVerificationConfig,
 ): Effect.Effect<number, ProductionVerificationError, ProductionVerificationPort> =>
   Effect.gen(function* () {
     const port = yield* ProductionVerificationPort
@@ -527,11 +544,12 @@ const verifySettledDatabaseSpans = (
 
     for (let attempt = 1; attempt <= config.sentry.settlementAttempts; attempt += 1) {
       const spans = yield* queryDatabaseSpans(config, 'sentry-privacy')
+
       const violation =
         spans.length === 0
           ? new ProductionVerificationError({
               phase: 'sentry-ingestion',
-              summary: 'Database spans disappeared during Sentry ingestion settlement'
+              summary: 'Database spans disappeared during Sentry ingestion settlement',
             })
           : validateDatabaseSpans(spans, config)
 
@@ -540,6 +558,7 @@ const verifySettledDatabaseSpans = (
         stablePolls = fingerprint === previousFingerprint ? stablePolls + 1 : 1
         previousFingerprint = fingerprint
         lastViolation = undefined
+
         if (stablePolls >= REQUIRED_STABLE_SENTRY_POLLS) return spans.length
       } else {
         stablePolls = 0
@@ -551,30 +570,32 @@ const verifySettledDatabaseSpans = (
     }
 
     if (lastViolation !== undefined) return yield* Effect.fail(lastViolation)
+
     return yield* fail(
       'sentry-ingestion',
-      `Database spans did not converge after ${config.sentry.settlementAttempts} settlement attempts`
+      `Database spans did not converge after ${config.sentry.settlementAttempts} settlement attempts`,
     )
   })
 
 const verifyNoAutomaticDatabaseSpans = (
-  config: ProductionVerificationConfig
+  config: ProductionVerificationConfig,
 ): Effect.Effect<void, ProductionVerificationError, ProductionVerificationPort> =>
   Effect.gen(function* () {
     const port = yield* ProductionVerificationPort
+
     const response = yield* port
       .querySpans({
         environment: config.environment,
         operation: 'db',
         release: config.release,
-        traceId: config.traceId
+        traceId: config.traceId,
       })
       .pipe(Effect.flatMap((input) => decodeSentrySpans(input, 'sentry-privacy')))
 
     if (response.data.length > 0) {
       return yield* fail(
         'sentry-privacy',
-        `Sentry returned ${response.data.length} forbidden automatic database span(s)`
+        `Sentry returned ${response.data.length} forbidden automatic database span(s)`,
       )
     }
 
@@ -586,7 +607,7 @@ const verifyNoAutomaticDatabaseSpans = (
  * Sentry database telemetry and privacy invariants.
  */
 export const verifyProductionDeployment = (
-  config: ProductionVerificationConfig
+  config: ProductionVerificationConfig,
 ): Effect.Effect<
   ProductionVerificationReport,
   ProductionVerificationError,
@@ -594,9 +615,11 @@ export const verifyProductionDeployment = (
 > =>
   Effect.gen(function* () {
     const port = yield* ProductionVerificationPort
+
     const resources = yield* port
       .discoverEcsResources(config.app, config.stage)
       .pipe(Effect.flatMap(parseEcsResources))
+
     const taskDefinition = yield* waitForStableEcsService(resources, config.ecs)
     yield* verifyTaskDefinitionRelease(taskDefinition, config.release)
     const healthStatus = yield* verifyHealthProbe(config.baseUrl)
@@ -613,6 +636,6 @@ export const verifyProductionDeployment = (
       traceId: config.traceId,
       databaseSpanCount,
       healthStatus,
-      profileStatus
+      profileStatus,
     }
   })

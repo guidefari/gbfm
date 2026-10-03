@@ -8,5 +8,5 @@ export type LinkStatus = Schema.Schema.Type<typeof linkStatusSchema>
 
 export const LINK_STATUS = {
   VERIFIED: LINK_STATUSES[0],
-  REJECTED: LINK_STATUSES[1]
+  REJECTED: LINK_STATUSES[1],
 } as const

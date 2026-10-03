@@ -1,5 +1,6 @@
 import { Cause, Effect, Exit } from 'effect'
 import { describe, expect, test, vi } from 'vitest'
+
 import {
   cleanId,
   extractSpotifyId,
@@ -10,7 +11,7 @@ import {
   isAppleMusicUrl,
   isSpotifyUrl,
   isYouTubeUrl,
-  resolveSpotifySourceEffect
+  resolveSpotifySourceEffect,
 } from './spotify.service'
 import type { SpotifyService } from './spotify.service'
 
@@ -23,8 +24,8 @@ const makeSourceLookups = () => ({
       artists: 'Artist',
       trackUrl: `https://open.spotify.com/track/${spotifyId}`,
       isrc: 'USRC17607839',
-      albumImageUrl: 'https://image.example/track.jpg'
-    })
+      albumImageUrl: 'https://image.example/track.jpg',
+    }),
   ),
   getAlbum: vi.fn<SpotifyService['getAlbum']>(() =>
     Effect.succeed({
@@ -32,8 +33,8 @@ const makeSourceLookups = () => ({
       title: 'Album title',
       artists: 'Artist',
       albumUrl: `https://open.spotify.com/album/${spotifyId}`,
-      tracks: []
-    })
+      tracks: [],
+    }),
   ),
   getPlaylist: vi.fn<SpotifyService['getPlaylist']>(() =>
     Effect.succeed({
@@ -41,19 +42,20 @@ const makeSourceLookups = () => ({
       description: 'Playlist description',
       ownerName: 'Playlist owner',
       playlistUrl: `https://open.spotify.com/playlist/${spotifyId}`,
-      tracks: []
-    })
-  )
+      tracks: [],
+    }),
+  ),
 })
 
 describe('resolveSpotifySourceEffect', () => {
   test('resolves a track URL to the canonical Spotify source', async () => {
     const spotify = makeSourceLookups()
+
     const candidate = await Effect.runPromise(
       resolveSpotifySourceEffect(spotify, {
         entityType: 'track',
-        urlOrId: `https://open.spotify.com/track/${spotifyId}?si=abc123`
-      })
+        urlOrId: `https://open.spotify.com/track/${spotifyId}?si=abc123`,
+      }),
     )
 
     expect(candidate).toEqual({
@@ -65,15 +67,16 @@ describe('resolveSpotifySourceEffect', () => {
       isrc: 'USRC17607839',
       url: `https://open.spotify.com/track/${spotifyId}`,
       imageUrl: 'https://image.example/track.jpg',
-      crossPlatformEnrichment: 'allowed'
+      crossPlatformEnrichment: 'allowed',
     })
     expect(spotify.getTrack).toHaveBeenCalledWith(spotifyId)
   })
 
   test('resolves a raw album ID using the expected source type', async () => {
     const spotify = makeSourceLookups()
+
     const candidate = await Effect.runPromise(
-      resolveSpotifySourceEffect(spotify, { entityType: 'album', urlOrId: spotifyId })
+      resolveSpotifySourceEffect(spotify, { entityType: 'album', urlOrId: spotifyId }),
     )
 
     expect(candidate.entityType).toBe('album')
@@ -84,11 +87,12 @@ describe('resolveSpotifySourceEffect', () => {
 
   test('marks an exact playlist source as forbidden from cross-platform enrichment', async () => {
     const spotify = makeSourceLookups()
+
     const candidate = await Effect.runPromise(
       resolveSpotifySourceEffect(spotify, {
         entityType: 'playlist',
-        urlOrId: `https://open.spotify.com/playlist/${spotifyId}`
-      })
+        urlOrId: `https://open.spotify.com/playlist/${spotifyId}`,
+      }),
     )
 
     expect(candidate).toMatchObject({
@@ -96,23 +100,25 @@ describe('resolveSpotifySourceEffect', () => {
       entityType: 'playlist',
       externalId: spotifyId,
       url: `https://open.spotify.com/playlist/${spotifyId}`,
-      crossPlatformEnrichment: 'forbidden'
+      crossPlatformEnrichment: 'forbidden',
     })
     expect(spotify.getPlaylist).toHaveBeenCalledWith(spotifyId)
   })
 
   test('rejects a mismatched source URL before calling Spotify', async () => {
     const spotify = makeSourceLookups()
+
     const error = await Effect.runPromise(
       Effect.flip(
         resolveSpotifySourceEffect(spotify, {
           entityType: 'track',
-          urlOrId: `https://open.spotify.com/album/${spotifyId}`
-        })
-      )
+          urlOrId: `https://open.spotify.com/album/${spotifyId}`,
+        }),
+      ),
     )
 
-    expect(error).toMatchObject({ _tag: 'MusicProviderInvalidInput', operation: 'resolveSource' })
+    expect(error._tag).toBe('MusicProviderInvalidInput')
+    expect(error).toMatchObject({ operation: 'resolveSource' })
     expect(spotify.getTrack).not.toHaveBeenCalled()
     expect(spotify.getAlbum).not.toHaveBeenCalled()
     expect(spotify.getPlaylist).not.toHaveBeenCalled()
@@ -124,9 +130,11 @@ describe('resolveSpotifySourceEffect', () => {
 
     for (const urlOrId of inputs) {
       const error = await Effect.runPromise(
-        Effect.flip(resolveSpotifySourceEffect(spotify, { entityType: 'track', urlOrId }))
+        Effect.flip(resolveSpotifySourceEffect(spotify, { entityType: 'track', urlOrId })),
       )
-      expect(error).toMatchObject({ _tag: 'MusicProviderInvalidInput', operation: 'resolveSource' })
+
+      expect(error._tag).toBe('MusicProviderInvalidInput')
+      expect(error).toMatchObject({ operation: 'resolveSource' })
     }
 
     expect(spotify.getTrack).not.toHaveBeenCalled()
@@ -136,14 +144,16 @@ describe('resolveSpotifySourceEffect', () => {
     const spotify: Pick<SpotifyService, 'getTrack' | 'getAlbum' | 'getPlaylist'> = {
       getTrack: () => Effect.never,
       getAlbum: () => Effect.die('unexpected album lookup'),
-      getPlaylist: () => Effect.die('unexpected playlist lookup')
+      getPlaylist: () => Effect.die('unexpected playlist lookup'),
     }
+
     const controller = new AbortController()
 
     const exitPromise = Effect.runPromiseExit(
       resolveSpotifySourceEffect(spotify, { entityType: 'track', urlOrId: spotifyId }),
-      { signal: controller.signal }
+      { signal: controller.signal },
     )
+
     controller.abort()
 
     const exit = await exitPromise
@@ -161,10 +171,10 @@ describe('Spotify exact search matching', () => {
   test('requires an exact normalized album title and artist', () => {
     expect(isExactSpotifyAlbumMatch('Déjà Vu', 'Beyoncé', 'Deja Vu', ['Beyonce'])).toBe(true)
     expect(
-      isExactSpotifyAlbumMatch('Discovery', 'Daft Punk', 'Discovery Deluxe', ['Daft Punk'])
+      isExactSpotifyAlbumMatch('Discovery', 'Daft Punk', 'Discovery Deluxe', ['Daft Punk']),
     ).toBe(false)
     expect(
-      isExactSpotifyAlbumMatch('Discovery', 'Daft Punk', 'Discovery', ['Various Artists'])
+      isExactSpotifyAlbumMatch('Discovery', 'Daft Punk', 'Discovery', ['Various Artists']),
     ).toBe(false)
   })
 })
@@ -192,8 +202,9 @@ describe('cleanId', () => {
 
   test('extracts ID from encoded Spotify URL', () => {
     const encodedUrl = encodeURIComponent(
-      'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh?si=abc'
+      'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh?si=abc',
     )
+
     expect(cleanId(encodedUrl)).toBe('4iV5W9uYEdYUVa79Axb7Rh')
   })
 })
@@ -245,19 +256,19 @@ describe('isAppleMusicUrl', () => {
 describe('extractSpotifyId', () => {
   test('extracts track ID from Spotify URL', () => {
     expect(extractSpotifyId('https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh')).toBe(
-      '4iV5W9uYEdYUVa79Axb7Rh'
+      '4iV5W9uYEdYUVa79Axb7Rh',
     )
   })
 
   test('extracts album ID from Spotify URL', () => {
     expect(extractSpotifyId('https://open.spotify.com/album/1DFixLWuPkv3KT3TnV35m3')).toBe(
-      '1DFixLWuPkv3KT3TnV35m3'
+      '1DFixLWuPkv3KT3TnV35m3',
     )
   })
 
   test('extracts playlist ID from Spotify URL', () => {
     expect(extractSpotifyId('https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M')).toBe(
-      '37i9dQZF1DXcBWIGoYBM5M'
+      '37i9dQZF1DXcBWIGoYBM5M',
     )
   })
 
@@ -267,7 +278,7 @@ describe('extractSpotifyId', () => {
 
   test('extracts ID from URL with query params', () => {
     expect(
-      extractSpotifyId('https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh?si=abc123')
+      extractSpotifyId('https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh?si=abc123'),
     ).toBe('4iV5W9uYEdYUVa79Axb7Rh')
   })
 

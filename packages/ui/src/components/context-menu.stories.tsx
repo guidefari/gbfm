@@ -9,12 +9,12 @@ import {
   ContextMenuSub,
   ContextMenuSubContent,
   ContextMenuSubTrigger,
-  ContextMenuTrigger
+  ContextMenuTrigger,
 } from './context-menu'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Primitives/Context menu'
+  title: '@gbfm/ui/Primitives/Context menu',
 }
 
 export function ContextMenus() {

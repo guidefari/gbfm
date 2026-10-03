@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
-import { initialQueueState, mergeHydratedQueue, reduceQueue } from './queueState'
+
 import type { QueueTrackType } from './persistedQueue'
+import { initialQueueState, mergeHydratedQueue, QueueAction, reduceQueue } from './queueState'
 
 const track = (id: string): QueueTrackType => ({
   id,
@@ -8,7 +9,7 @@ const track = (id: string): QueueTrackType => ({
   slug: id,
   url: `https://example.com/${id}.mp3`,
   thumbnailUrl: null,
-  type: 'mix'
+  type: 'mix',
 })
 
 describe('audio queue state', () => {
@@ -16,8 +17,8 @@ describe('audio queue state', () => {
     const current = track('current')
     const state = { tracks: [current], currentIndex: 0 }
 
-    const appended = reduceQueue(state, { _tag: 'enqueue', track: track('next') })
-    const inserted = reduceQueue(state, { _tag: 'enqueue', track: track('before'), at: 0 })
+    const appended = reduceQueue(state, QueueAction.enqueue({ track: track('next') }))
+    const inserted = reduceQueue(state, QueueAction.enqueue({ track: track('before'), at: 0 }))
 
     expect(appended.currentIndex).toBe(0)
     expect(appended.tracks[appended.currentIndex]?.id).toBe('current')
@@ -26,10 +27,12 @@ describe('audio queue state', () => {
   })
 
   test('enqueueAll remains unselected when nothing is playing', () => {
-    const state = reduceQueue(initialQueueState, {
-      _tag: 'enqueueAll',
-      tracks: [track('one'), track('two')]
-    })
+    const state = reduceQueue(
+      initialQueueState,
+      QueueAction.enqueueAll({
+        tracks: [track('one'), track('two')],
+      }),
+    )
 
     expect(state.currentIndex).toBe(-1)
     expect(state.tracks.map(({ id }) => id)).toEqual(['one', 'two'])
@@ -38,7 +41,7 @@ describe('audio queue state', () => {
   test('playAll atomically replaces the queue and selects its first unique track', () => {
     const state = reduceQueue(
       { tracks: [track('old')], currentIndex: 0 },
-      { _tag: 'playAll', tracks: [track('one'), track('one'), track('two')] }
+      QueueAction.playAll({ tracks: [track('one'), track('one'), track('two')] }),
     )
 
     expect(state.currentIndex).toBe(0)
@@ -49,8 +52,8 @@ describe('audio queue state', () => {
     const stored = { tracks: [track('stored')], currentIndex: 0 }
 
     const hydrated = mergeHydratedQueue(stored, [
-      { _tag: 'enqueue', track: track('early') },
-      { _tag: 'playIndex', index: 1 }
+      QueueAction.enqueue({ track: track('early') }),
+      QueueAction.playIndex({ index: 1 }),
     ])
 
     expect(hydrated.tracks.map(({ id }) => id)).toEqual(['stored', 'early'])
@@ -59,7 +62,7 @@ describe('audio queue state', () => {
 
   test('replays pending actions over an empty fallback when hydration fails', () => {
     const hydrated = mergeHydratedQueue(initialQueueState, [
-      { _tag: 'enqueue', track: track('early') }
+      QueueAction.enqueue({ track: track('early') }),
     ])
 
     expect(hydrated).toEqual({ tracks: [track('early')], currentIndex: -1 })
@@ -68,7 +71,7 @@ describe('audio queue state', () => {
   test('selects the following track when the current track is removed', () => {
     const state = reduceQueue(
       { tracks: [track('one'), track('two'), track('three')], currentIndex: 1 },
-      { _tag: 'remove', index: 1 }
+      QueueAction.remove({ index: 1 }),
     )
 
     expect(state.tracks.map(({ id }) => id)).toEqual(['one', 'three'])
@@ -76,8 +79,8 @@ describe('audio queue state', () => {
   })
 
   test('clear removes both tracks and current selection', () => {
-    expect(reduceQueue({ tracks: [track('one')], currentIndex: 0 }, { _tag: 'clear' })).toEqual(
-      initialQueueState
+    expect(reduceQueue({ tracks: [track('one')], currentIndex: 0 }, QueueAction.clear())).toEqual(
+      initialQueueState,
     )
   })
 })

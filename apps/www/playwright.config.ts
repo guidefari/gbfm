@@ -10,7 +10,9 @@ export default defineConfig({
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:5173',
     trace: 'on-first-retry',
-    colorScheme: 'dark'
+    video: process.env.RECORD_E2E ? 'on' : 'retain-on-failure',
+    screenshot: 'only-on-failure',
+    colorScheme: 'dark',
   },
   projects: [
     {
@@ -19,16 +21,23 @@ export default defineConfig({
         ...devices['Pixel 5'],
         colorScheme: 'dark',
         launchOptions: {
-          executablePath: process.env.CHROMIUM_PATH || undefined
-        }
-      }
-    }
+          executablePath: process.env.CHROMIUM_PATH || undefined,
+        },
+      },
+    },
   ],
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined
-    : {
-        command: 'bun dev',
-        url: 'http://127.0.0.1:5173',
-        reuseExistingServer: !process.env.CI
-      }
+    : [
+        {
+          command: 'PORT=3003 FRONTEND_URL=http://127.0.0.1:5173 bun run --cwd ../server dev:e2e',
+          url: 'http://127.0.0.1:3003/health',
+          reuseExistingServer: !process.env.CI,
+        },
+        {
+          command: 'VITE_SPOTIFY_CLIENT_ID=gbfm-local-e2e bunx vite --host 127.0.0.1 --port 5173',
+          url: 'http://127.0.0.1:5173',
+          reuseExistingServer: !process.env.CI,
+        },
+      ],
 })

@@ -1,7 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+
 import { d1 } from '@/test/database'
 import { createTestWebHandler } from '@/test/http-handler'
-import { createWebHandler } from './routes'
+
+import type { createWebHandler } from './routes'
 
 // Step 3b (docs/migration-effect-http-api.md): validates AuthMiddleware's
 // cookie-reading and 401 path against a real HttpApiEndpoint, ahead of any
@@ -35,8 +37,8 @@ describe('AuthMiddleware (internal group)', () => {
   it('GET /api/internal/whoami returns 401 with an invalid session cookie', async () => {
     const res = await webHandler.handler(
       new Request('http://localhost/api/internal/whoami', {
-        headers: { cookie: 'better-auth.session_token=not-a-real-session' }
-      })
+        headers: { cookie: 'better-auth.session_token=not-a-real-session' },
+      }),
     )
 
     expect(res.status).toBe(401)

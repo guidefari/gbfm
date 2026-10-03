@@ -1,6 +1,7 @@
 import { Skeleton } from './skeleton'
 
 const railKeys = Array.from({ length: 6 }, (_, index) => `show-rail-${index}`)
+
 const episodeKeys = Array.from({ length: 5 }, (_, index) => `show-episode-${index}`)
 
 function ShowListItemSkeleton() {

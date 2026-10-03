@@ -2,10 +2,11 @@ import { Artwork as ArtworkComponent } from './artwork'
 import { mediaExamples, StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/New/Artwork'
+  title: '@gbfm/ui/New/Artwork',
 }
 
 const FALLBACK = 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'
+
 const [primary] = mediaExamples
 
 export function Artwork() {

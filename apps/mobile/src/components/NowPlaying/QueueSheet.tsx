@@ -1,13 +1,14 @@
 import { SymbolView } from 'expo-symbols'
 import { useState } from 'react'
 import { FlatList, Image, Modal, Pressable, Text, View } from 'react-native'
+
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
 import { useThemeColors, withAlpha } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
 
 const symbols = {
   remove: { ios: 'xmark', android: 'close', web: 'close' },
-  open: { ios: 'chevron.up', android: 'expand_less', web: 'expand_less' }
+  open: { ios: 'chevron.up', android: 'expand_less', web: 'expand_less' },
 } as const
 
 export function QueueSheet() {
@@ -31,7 +32,7 @@ export function QueueSheet() {
           justifyContent: 'space-between',
           paddingVertical: 6,
           paddingHorizontal: 2,
-          opacity: pressed ? 0.6 : 1
+          opacity: pressed ? 0.6 : 1,
         })}>
         <Text
           style={{
@@ -39,7 +40,7 @@ export function QueueSheet() {
             fontFamily: fonts.monoSemiBold,
             fontSize: 11,
             textTransform: 'uppercase',
-            letterSpacing: 2
+            letterSpacing: 2,
           }}>
           {queueLabel}
         </Text>
@@ -57,6 +58,7 @@ export function QueueSheet() {
             .slice(Math.max(0, queue.currentIndex), queue.currentIndex + 2)
             .map((track) => {
               const isCurrent = track.id === queue.current?.id
+
               return (
                 <View
                   key={track.id}
@@ -66,7 +68,7 @@ export function QueueSheet() {
                     gap: 10,
                     padding: 8,
                     borderRadius: 10,
-                    backgroundColor: isCurrent ? withAlpha(colors.accent, 0.12) : 'transparent'
+                    backgroundColor: isCurrent ? withAlpha(colors.accent, 0.12) : 'transparent',
                   }}>
                   {track.thumbnailUrl ? (
                     <Image
@@ -80,7 +82,7 @@ export function QueueSheet() {
                         width: 36,
                         height: 36,
                         borderRadius: 6,
-                        backgroundColor: withAlpha(colors.muted, 0.2)
+                        backgroundColor: withAlpha(colors.muted, 0.2),
                       }}
                     />
                   )}
@@ -89,7 +91,7 @@ export function QueueSheet() {
                       flex: 1,
                       color: isCurrent ? colors.accent : colors.strong,
                       fontFamily: fonts.monoSemiBold,
-                      fontSize: 12
+                      fontSize: 12,
                     }}
                     numberOfLines={1}>
                     {track.title}
@@ -100,7 +102,7 @@ export function QueueSheet() {
                         color: colors.accent,
                         fontFamily: fonts.mono,
                         fontSize: 9,
-                        letterSpacing: 1.5
+                        letterSpacing: 1.5,
                       }}>
                       PLAYING
                     </Text>
@@ -115,7 +117,7 @@ export function QueueSheet() {
             color: withAlpha(colors.muted, 0.75),
             fontFamily: fonts.mono,
             fontSize: 12,
-            paddingHorizontal: 2
+            paddingHorizontal: 2,
           }}>
           Your queue is empty.
         </Text>
@@ -136,13 +138,13 @@ export function QueueSheet() {
               paddingTop: 18,
               paddingBottom: 12,
               borderBottomWidth: 1,
-              borderBottomColor: withAlpha(colors.muted, 0.25)
+              borderBottomColor: withAlpha(colors.muted, 0.25),
             }}>
             <Text
               style={{
                 color: colors.strong,
                 fontFamily: fonts.monoSemiBold,
-                fontSize: 16
+                fontSize: 16,
               }}>
               {queueLabel}
             </Text>
@@ -151,7 +153,7 @@ export function QueueSheet() {
                 style={{
                   color: colors.accent,
                   fontFamily: fonts.monoSemiBold,
-                  fontSize: 14
+                  fontSize: 14,
                 }}>
                 Done
               </Text>
@@ -165,14 +167,14 @@ export function QueueSheet() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 padding: 32,
-                gap: 8
+                gap: 8,
               }}>
               <Text
                 style={{
                   color: colors.muted,
                   fontFamily: fonts.monoSemiBold,
                   fontSize: 16,
-                  textAlign: 'center'
+                  textAlign: 'center',
                 }}>
                 Nothing queued yet
               </Text>
@@ -181,7 +183,7 @@ export function QueueSheet() {
                   color: withAlpha(colors.text, 0.6),
                   fontFamily: fonts.mono,
                   fontSize: 12,
-                  textAlign: 'center'
+                  textAlign: 'center',
                 }}>
                 Add tracks from a show or mix to build your queue.
               </Text>
@@ -196,6 +198,7 @@ export function QueueSheet() {
               windowSize={7}
               renderItem={({ item: track, index }) => {
                 const isCurrent = index === queue.currentIndex
+
                 return (
                   <View
                     key={track.id}
@@ -205,7 +208,7 @@ export function QueueSheet() {
                       gap: 12,
                       padding: 10,
                       borderRadius: 10,
-                      backgroundColor: isCurrent ? withAlpha(colors.accent, 0.14) : colors.surface
+                      backgroundColor: isCurrent ? withAlpha(colors.accent, 0.14) : colors.surface,
                     }}>
                     <Pressable
                       accessibilityRole='button'
@@ -220,7 +223,7 @@ export function QueueSheet() {
                         flexDirection: 'row',
                         alignItems: 'center',
                         gap: 12,
-                        opacity: pressed ? 0.7 : 1
+                        opacity: pressed ? 0.7 : 1,
                       })}>
                       {track.thumbnailUrl ? (
                         <Image
@@ -234,7 +237,7 @@ export function QueueSheet() {
                             width: 44,
                             height: 44,
                             borderRadius: 6,
-                            backgroundColor: withAlpha(colors.muted, 0.25)
+                            backgroundColor: withAlpha(colors.muted, 0.25),
                           }}
                         />
                       )}
@@ -243,7 +246,7 @@ export function QueueSheet() {
                           style={{
                             color: isCurrent ? colors.accent : colors.strong,
                             fontFamily: fonts.monoSemiBold,
-                            fontSize: 14
+                            fontSize: 14,
                           }}
                           numberOfLines={1}>
                           {track.title}
@@ -252,7 +255,7 @@ export function QueueSheet() {
                           style={{
                             color: colors.muted,
                             fontFamily: fonts.mono,
-                            fontSize: 11
+                            fontSize: 11,
                           }}
                           numberOfLines={1}>
                           {track.creators?.map((c) => c.name).join(', ') ?? track.type}
@@ -271,7 +274,7 @@ export function QueueSheet() {
                         justifyContent: 'center',
                         borderRadius: 15,
                         backgroundColor: withAlpha(colors.muted, 0.18),
-                        opacity: pressed ? 0.6 : 1
+                        opacity: pressed ? 0.6 : 1,
                       })}>
                       <SymbolView name={symbols.remove} size={12} tintColor={colors.muted} />
                     </Pressable>

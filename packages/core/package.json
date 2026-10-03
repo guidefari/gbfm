@@ -7,6 +7,8 @@
     "./utils/slug": "./src/utils/slug.ts",
     "./api": "./src/api/index.ts",
     "./feature-flags": "./src/feature-flags/index.ts",
+    "./observability/request-id": "./src/observability/request-id.ts",
+    "./observability/local-loki": "./src/observability/local-loki.ts",
     "./observability/trace-sampling": "./src/observability/trace-sampling.ts",
     "./roles": "./src/roles/index.ts",
     "./status": "./src/status/index.ts"
@@ -17,7 +19,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "effect": "4.0.0-rc.117"
+    "effect": "4.0.0-rc.116"
   },
   "devDependencies": {
     "@types/bun": "1.4.2",

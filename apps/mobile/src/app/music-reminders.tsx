@@ -1,18 +1,18 @@
-import { Stack, useRouter } from 'expo-router'
+import { Stack } from 'expo-router'
 import { SymbolView } from 'expo-symbols'
 import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native'
+
 import { useAuthStore } from '@/store/auth'
 import { useThemeColors } from '@/theme/colors'
 
 const symbols = {
   add: { ios: 'plus', android: 'add', web: 'add' },
   complete: { ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' },
-  construction: { ios: 'hammer.fill', android: 'construction', web: 'construction' }
+  construction: { ios: 'hammer.fill', android: 'construction', web: 'construction' },
 } as const
 
 export default function MusicReminders() {
   const user = useAuthStore((state) => state.user)
-  const _router = useRouter()
   const colors = useThemeColors()
 
   if (!user) {
@@ -20,7 +20,7 @@ export default function MusicReminders() {
       <>
         <Stack.Screen
           options={{
-            title: 'Music Reminders'
+            title: 'Music Reminders',
           }}
         />
         <View className='flex-1 items-center justify-center p-4'>
@@ -43,13 +43,13 @@ export default function MusicReminders() {
                 Alert.alert(
                   'Coming Soon',
                   'Mobile music reminders are coming soon! For now, use the web app at goosebumps.fm/reminders',
-                  [{ text: 'OK' }]
+                  [{ text: 'OK' }],
                 )
               }}
               className='mr-4'>
               <SymbolView name={symbols.add} size={20} tintColor={colors.overlayText} />
             </TouchableOpacity>
-          )
+          ),
         }}
       />
       <ScrollView className='flex-1 p-4'>
@@ -77,9 +77,9 @@ export default function MusicReminders() {
                     onPress: () => {
                       // In a real app, you'd use Linking.openURL()
                       Alert.alert('Web App', 'goosebumps.fm/reminders')
-                    }
-                  }
-                ]
+                    },
+                  },
+                ],
               )
             }}
             className='bg-blue-600 rounded-lg py-3 px-6'>

@@ -1,0 +1,73 @@
+import { Schema } from 'effect'
+import { defineMessageUnion } from 'foldkit/message'
+
+import { Kind } from './model'
+import { CreatorDraftSchema as Draft } from './services'
+
+export const Message = defineMessageUnion({
+  Changed: {
+    field: Schema.Literals([
+      'title',
+      'slug',
+      'content',
+      'description',
+      'musicUrl',
+      'thumbnailUrl',
+      'audioUrl',
+    ]),
+    value: Schema.String,
+  },
+  TagsChanged: { value: Schema.String },
+  CreatorsChanged: { value: Schema.String },
+  QuoteChanged: { value: Schema.String },
+  QuoteUrlChanged: { value: Schema.String },
+  ResolveQuoteRequested: {},
+  QuoteResolved: {
+    id: Schema.String,
+    slug: Schema.String,
+    title: Schema.NullOr(Schema.String),
+    content: Schema.NullOr(Schema.String),
+  },
+  ShowChanged: { value: Schema.String },
+  EpisodeChanged: { value: Schema.String },
+  MusicRemoved: {},
+  KindChanged: { kind: Kind },
+  ReviewRequested: {},
+  ReviewClosed: {},
+  ResolveMusicRequested: {},
+  MusicResolved: {
+    entityType: Schema.Literals(['album', 'track', 'playlist']),
+    entityId: Schema.String,
+    url: Schema.String,
+    title: Schema.String,
+    artistNames: Schema.Array(Schema.String),
+    coverImageUrl: Schema.NullOr(Schema.String),
+  },
+  EditorModeChanged: { mode: Schema.Literals(['source', 'preview']) },
+  FormatInserted: { before: Schema.String, after: Schema.String, sample: Schema.String },
+  ExternalMediaChanged: { value: Schema.String },
+  ExternalMediaInserted: {},
+  MusicEmbedInserted: {},
+  DiscardRequested: {},
+  PublishRequested: {},
+  DraftSaveRequested: {},
+  Saved: { slug: Schema.String, published: Schema.Boolean },
+  Failed: { operation: Schema.String, message: Schema.String },
+  Hydrated: { draft: Schema.NullOr(Draft) },
+  LocallySaved: {},
+  ArtworkChosen: { files: Schema.Array(Schema.instanceOf(File)) },
+  ArtworkUploaded: { url: Schema.String },
+  AudioChosen: { files: Schema.Array(Schema.instanceOf(File)) },
+  AudioUploaded: { url: Schema.String },
+  UploadProgressed: { percent: Schema.Number },
+  UploadPauseRequested: {},
+  UploadPauseAcknowledged: {},
+  UploadPaused: { percent: Schema.Number },
+  UploadResumeRequested: {},
+  UploadCancelRequested: {},
+  UploadCancelled: {},
+  UploadFailed: { message: Schema.String },
+  UploadUnavailable: { message: Schema.String },
+})
+
+export type Message = typeof Message.Type

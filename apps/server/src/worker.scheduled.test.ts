@@ -1,10 +1,11 @@
 import { expect, test } from 'vitest'
+
 import {
   dispatchScheduledJob,
   maintenanceSweepCron,
   reminderSweepCron,
   sitemapRegenerationCron,
-  type ScheduledJobs
+  type ScheduledJobs,
 } from './scheduled'
 
 test('scheduled jobs dispatch only the job assigned to each cron', async () => {
@@ -41,7 +42,7 @@ const createRecordingJobs = () => {
     },
     runMaintenance: async () => {
       maintenanceRuns += 1
-    }
+    },
   }
 
   return {
@@ -54,6 +55,6 @@ const createRecordingJobs = () => {
     },
     get maintenanceRuns() {
       return maintenanceRuns
-    }
+    },
   }
 }

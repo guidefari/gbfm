@@ -1,9 +1,12 @@
 import { randomUUID } from 'node:crypto'
+
 import { and, eq, inArray, notInArray } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
-import { db } from '@/test/database'
+
 import { blueskyPostSources } from '@/db/external-account.schema'
 import { postsTable } from '@/db/post.schema'
+import { db } from '@/test/database'
+
 import { importedPostIds } from './post.service'
 
 /**
@@ -13,8 +16,11 @@ import { importedPostIds } from './post.service'
  */
 
 const importedId = randomUUID()
+
 const nativeId = randomUUID()
+
 const slugPrefix = `source-filter-${randomUUID().slice(0, 8)}`
+
 const seededIds = [importedId, nativeId]
 
 beforeAll(async () => {
@@ -25,7 +31,7 @@ beforeAll(async () => {
       title: 'Imported from Bluesky',
       content: 'ambient set recommendation',
       draft: true,
-      type: 'micro'
+      type: 'micro',
     },
     {
       id: nativeId,
@@ -33,8 +39,8 @@ beforeAll(async () => {
       title: 'Written here',
       content: 'ambient set recommendation',
       draft: true,
-      type: 'micro'
-    }
+      type: 'micro',
+    },
   ])
 
   await db.insert(blueskyPostSources).values({
@@ -42,7 +48,7 @@ beforeAll(async () => {
     authorDid: 'did:plc:sourcefilter',
     atUri: `at://did:plc:sourcefilter/app.bsky.feed.post/${slugPrefix}`,
     publicUrl: 'https://bsky.app/profile/test/post/1',
-    sourceCreatedAt: new Date()
+    sourceCreatedAt: new Date(),
   })
 })
 
@@ -63,6 +69,7 @@ const seededMatching = (condition: ReturnType<typeof inArray>) =>
         .from(postsTable)
         .where(condition)
         .then((rows) => rows.map((row) => row.id))
+
       return allSeeded.filter((id) => filtered.includes(id))
     })
 
@@ -88,14 +95,14 @@ describe('imported drafts review query', () => {
       slug: `${slugPrefix}-published`,
       content: 'already published import',
       draft: false,
-      type: 'micro'
+      type: 'micro',
     })
     await db.insert(blueskyPostSources).values({
       postId: publishedId,
       authorDid: 'did:plc:sourcefilter',
       atUri: `at://did:plc:sourcefilter/app.bsky.feed.post/${slugPrefix}-pub`,
       publicUrl: 'https://bsky.app/profile/test/post/2',
-      sourceCreatedAt: new Date()
+      sourceCreatedAt: new Date(),
     })
 
     const rows = await db
@@ -106,8 +113,8 @@ describe('imported drafts review query', () => {
           inArray(postsTable.id, importedPostIds(db)),
           eq(postsTable.type, 'micro'),
           eq(postsTable.draft, true),
-          inArray(postsTable.id, [importedId, publishedId])
-        )
+          inArray(postsTable.id, [importedId, publishedId]),
+        ),
       )
 
     expect(rows.map((row) => row.id)).toEqual([importedId])

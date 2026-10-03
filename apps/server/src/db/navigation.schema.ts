@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
+
 import { user } from './auth.schema'
 import { postsTable } from './post.schema'
 
@@ -18,7 +19,7 @@ export const navigationSessions = sqliteTable(
       .notNull(),
     updatedAt: integer('updatedAt', { mode: 'timestamp_ms' })
       .$defaultFn(() => new Date())
-      .notNull()
+      .notNull(),
   },
   (table) => [
     uniqueIndex('navigation_sessions_user_uq')
@@ -26,8 +27,8 @@ export const navigationSessions = sqliteTable(
       .where(sql`${table.userId} IS NOT NULL`),
     uniqueIndex('navigation_sessions_device_uq')
       .on(table.deviceToken)
-      .where(sql`${table.deviceToken} IS NOT NULL`)
-  ]
+      .where(sql`${table.deviceToken} IS NOT NULL`),
+  ],
 )
 
 export const navigationSeenPosts = sqliteTable(
@@ -36,12 +37,12 @@ export const navigationSeenPosts = sqliteTable(
     sessionId: text('sessionId')
       .notNull()
       .references(() => navigationSessions.id, { onDelete: 'cascade' }),
-    slug: text('slug').notNull()
+    slug: text('slug').notNull(),
   },
   (table) => [
     uniqueIndex('navigation_seen_session_slug_uq').on(table.sessionId, table.slug),
-    index('navigation_seen_slug_session_idx').on(table.slug, table.sessionId)
-  ]
+    index('navigation_seen_slug_session_idx').on(table.slug, table.sessionId),
+  ],
 )
 
 export const navigationTrailEntries = sqliteTable(
@@ -61,11 +62,11 @@ export const navigationTrailEntries = sqliteTable(
     arrivedBy: text('arrivedBy').notNull(),
     visitedAt: integer('visitedAt', { mode: 'timestamp_ms' })
       .$defaultFn(() => new Date())
-      .notNull()
+      .notNull(),
   },
   (table) => [
     uniqueIndex('navigation_trail_session_position_uq').on(table.sessionId, table.position),
     index('navigation_trail_session_slug_idx').on(table.sessionId, table.slug),
-    index('navigation_trail_session_post_idx').on(table.sessionId, table.postId)
-  ]
+    index('navigation_trail_session_post_idx').on(table.sessionId, table.postId),
+  ],
 )

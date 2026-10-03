@@ -1,5 +1,6 @@
 import { Exit, Schema } from 'effect'
 import { describe, expect, it } from 'vitest'
+
 import {
   AddEntityLinkInput,
   CreateAlbumInput,
@@ -16,7 +17,7 @@ import {
   UpdateEntityLinkStatusInput,
   UpdateLabelInput,
   UpdatePlaylistInput,
-  UpdateTrackInput
+  UpdateTrackInput,
 } from './music'
 
 describe('music API contract', () => {
@@ -56,8 +57,9 @@ describe('music API contract', () => {
         coverImageUrl: null,
         releaseDate: null,
         genres: null,
-        artistIds: null
+        artistIds: null,
       })
+
       expect(result.coverImageUrl).toBeNull()
       expect(result.releaseDate).toBeNull()
     })
@@ -66,8 +68,9 @@ describe('music API contract', () => {
       const result = Schema.decodeUnknownSync(UpdateTrackInput)({
         coverImageUrl: null,
         albumId: null,
-        trackNumber: null
+        trackNumber: null,
       })
+
       expect(result.coverImageUrl).toBeNull()
       expect(result.albumId).toBeNull()
     })
@@ -75,8 +78,9 @@ describe('music API contract', () => {
     it('UpdatePlaylistInput accepts null for description/curatorId', () => {
       const result = Schema.decodeUnknownSync(UpdatePlaylistInput)({
         description: null,
-        curatorId: null
+        curatorId: null,
       })
+
       expect(result.description).toBeNull()
     })
 
@@ -87,8 +91,9 @@ describe('music API contract', () => {
         bannerImageUrl: null,
         tags: null,
         genres: null,
-        publishedAt: null
+        publishedAt: null,
       })
+
       expect(result.publishedAt).toBeNull()
     })
   })
@@ -98,8 +103,9 @@ describe('music API contract', () => {
       publishedAt: null,
       createdById: null,
       createdAt: '2026-03-01T00:00:00.000Z',
-      updatedAt: '2026-03-01T00:00:00.000Z'
+      updatedAt: '2026-03-01T00:00:00.000Z',
     }
+
     const artist = {
       id: 'artist-1',
       name: 'Artist',
@@ -107,8 +113,9 @@ describe('music API contract', () => {
       imageUrl: 'https://cdn.example.com/artist.jpg',
       genres: ['ambient'],
       slug: 'artist',
-      ...timestamps
+      ...timestamps,
     }
+
     const album = {
       id: 'album-1',
       title: 'Album',
@@ -118,8 +125,9 @@ describe('music API contract', () => {
       genres: [],
       albumType: null,
       slug: 'album',
-      ...timestamps
+      ...timestamps,
     }
+
     const track = {
       id: 'track-1',
       title: 'Track',
@@ -128,8 +136,9 @@ describe('music API contract', () => {
       albumId: null,
       trackNumber: 1,
       slug: 'track',
-      ...timestamps
+      ...timestamps,
     }
+
     const playlist = {
       id: 'playlist-1',
       title: 'Playlist',
@@ -138,7 +147,7 @@ describe('music API contract', () => {
       curatorId: null,
       slug: 'playlist',
       spotifyUrl: 'https://open.spotify.com/playlist/playlist-1',
-      ...timestamps
+      ...timestamps,
     }
 
     it('accepts all four correlated variants', () => {
@@ -146,14 +155,15 @@ describe('music API contract', () => {
         { entityType: 'artist', entity: artist, coverImageUrl: artist.imageUrl },
         { entityType: 'album', entity: album, coverImageUrl: album.coverImageUrl },
         { entityType: 'track', entity: track, coverImageUrl: track.coverImageUrl },
-        { entityType: 'playlist', entity: playlist, coverImageUrl: playlist.coverImageUrl }
+        { entityType: 'playlist', entity: playlist, coverImageUrl: playlist.coverImageUrl },
       ] as const
 
       for (const variant of variants) {
         const result = Schema.decodeUnknownSync(ResolvedMusicEntityResponse)({
           ...variant,
-          links: []
+          links: [],
         })
+
         expect(result.entityType).toBe(variant.entityType)
         expect(result.entity.id).toBe(variant.entity.id)
       }
@@ -164,15 +174,16 @@ describe('music API contract', () => {
         { entityType: 'artist', entity: album },
         { entityType: 'album', entity: track },
         { entityType: 'track', entity: playlist },
-        { entityType: 'playlist', entity: artist }
+        { entityType: 'playlist', entity: artist },
       ] as const
 
       for (const mismatch of mismatches) {
         const result = Schema.decodeUnknownExit(ResolvedMusicEntityResponse)({
           ...mismatch,
           links: [],
-          coverImageUrl: null
+          coverImageUrl: null,
         })
+
         expect(Exit.isFailure(result)).toBe(true)
       }
     })
@@ -194,10 +205,11 @@ describe('music API contract', () => {
           content: '',
           tags: null,
           genres: null,
-          ...timestamps
+          ...timestamps,
         },
-        links: []
+        links: [],
       })
+
       expect(Exit.isFailure(labelResult)).toBe(true)
     })
   })
@@ -212,14 +224,16 @@ describe('music API contract', () => {
     const url = 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh'
 
     expect(Schema.decodeUnknownSync(ResolveMusicEntityInput)({ url })).toEqual({ url })
+
     for (const origin of ['editorial', 'tweet', 'reply'] as const) {
       expect(Schema.decodeUnknownSync(ResolveMusicEntityInput)({ url, origin })).toEqual({
         url,
-        origin
+        origin,
       })
     }
+
     expect(
-      Exit.isFailure(Schema.decodeUnknownExit(ResolveMusicEntityInput)({ url, origin: 'manual' }))
+      Exit.isFailure(Schema.decodeUnknownExit(ResolveMusicEntityInput)({ url, origin: 'manual' })),
     ).toBe(true)
   })
 
@@ -229,16 +243,18 @@ describe('music API contract', () => {
     it('rejects a non-URL string for url', () => {
       const result = Schema.decodeUnknownExit(AddEntityLinkInput)({
         platform: 'spotify',
-        url: 'not-a-url'
+        url: 'not-a-url',
       })
+
       expect(Exit.isFailure(result)).toBe(true)
     })
 
     it('accepts a real URL', () => {
       const result = Schema.decodeUnknownSync(AddEntityLinkInput)({
         platform: 'spotify',
-        url: 'https://open.spotify.com/artist/x'
+        url: 'https://open.spotify.com/artist/x',
       })
+
       expect(result.url).toBe('https://open.spotify.com/artist/x')
     })
   })
@@ -250,8 +266,9 @@ describe('music API contract', () => {
     it('accepts null for metadata', () => {
       const result = Schema.decodeUnknownSync(UpdateEntityLinkStatusInput)({
         status: 'verified',
-        metadata: null
+        metadata: null,
       })
+
       expect(result.metadata).toBeNull()
     })
   })

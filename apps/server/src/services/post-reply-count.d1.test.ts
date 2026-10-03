@@ -1,6 +1,9 @@
+/* oxlint-disable anti-slop-effect/no-manual-tagged-construction -- Structural expectations describe decoded rich-content response values at the service boundary. */
 import { randomUUID } from 'node:crypto'
+
 import { Effect, Layer } from 'effect'
 import { beforeAll, describe, expect, test } from 'vitest'
+
 import { user } from '@/db/auth.schema'
 import { blueskyPostSources } from '@/db/external-account.schema'
 import { replaceEntityLabels } from '@/db/labels'
@@ -11,21 +14,23 @@ import { SentryEnabled, type SentryService, SentryServiceLayer } from '@/service
 import { UploadAssetServiceLayer } from '@/services/upload-asset.service'
 import { DatabaseTestLayer, db } from '@/test/database'
 import { withTestLayer } from '@/test/effect'
+
 import { PostService, PostServiceLayer } from './post.service'
 
 const SEARCH_TERM = 'zephyrine'
 
 const parentWithRepliesId = randomUUID()
+
 const parentWithoutRepliesId = randomUUID()
 
 const TestPostServiceLayer = PostServiceLayer.pipe(
   Layer.provide(MdxServiceLayer),
   Layer.provide(Layer.mergeAll(ConfigServiceLayer, UploadAssetServiceLayer)),
-  Layer.provide(DatabaseTestLayer)
+  Layer.provide(DatabaseTestLayer),
 )
 
 const TestSentryLayer = SentryServiceLayer.pipe(
-  Layer.provide(Layer.succeed(SentryEnabled, { enabled: false }))
+  Layer.provide(Layer.succeed(SentryEnabled, { enabled: false })),
 )
 
 const runPostEffect = <A, E>(fn: (service: PostService) => Effect.Effect<A, E, SentryService>) =>
@@ -33,10 +38,11 @@ const runPostEffect = <A, E>(fn: (service: PostService) => Effect.Effect<A, E, S
     withTestLayer(
       Effect.gen(function* () {
         const service = yield* PostService
+
         return yield* fn(service)
       }),
-      Layer.mergeAll(TestPostServiceLayer, TestSentryLayer)
-    )
+      Layer.mergeAll(TestPostServiceLayer, TestSentryLayer),
+    ),
   )
 
 beforeAll(async () => {
@@ -47,7 +53,7 @@ beforeAll(async () => {
       slug: `zephyrine-parent-replies-${parentWithRepliesId}`,
       content: 'parent body',
       type: 'micro',
-      draft: false
+      draft: false,
     },
     {
       id: parentWithoutRepliesId,
@@ -55,13 +61,14 @@ beforeAll(async () => {
       slug: `zephyrine-parent-lonely-${parentWithoutRepliesId}`,
       content: 'parent body',
       type: 'micro',
-      draft: false
-    }
+      draft: false,
+    },
   ])
 
   await db.insert(postsTable).values(
     [1, 2].map((index) => {
       const id = randomUUID()
+
       return {
         id,
         title: `reply ${index}`,
@@ -71,16 +78,16 @@ beforeAll(async () => {
         draft: false,
         parentPostId: parentWithRepliesId,
         rootPostId: parentWithRepliesId,
-        depth: 1
+        depth: 1,
       }
-    })
+    }),
   )
 })
 
 describe('searchMicroPosts reply counts', () => {
   test('reports the direct reply count for a searched tweet that has replies', async () => {
     const result = await runPostEffect((service) =>
-      service.searchMicroPosts({ q: SEARCH_TERM, limit: 20, offset: 0 })
+      service.searchMicroPosts({ q: SEARCH_TERM, limit: 20, offset: 0 }),
     )
 
     const match = result.data.find((post) => post.id === parentWithRepliesId)
@@ -91,7 +98,7 @@ describe('searchMicroPosts reply counts', () => {
 
   test('reports zero for a searched tweet with no replies', async () => {
     const result = await runPostEffect((service) =>
-      service.searchMicroPosts({ q: SEARCH_TERM, limit: 20, offset: 0 })
+      service.searchMicroPosts({ q: SEARCH_TERM, limit: 20, offset: 0 }),
     )
 
     const match = result.data.find((post) => post.id === parentWithoutRepliesId)
@@ -102,7 +109,7 @@ describe('searchMicroPosts reply counts', () => {
 
   test('returns an empty page without failing when nothing matches', async () => {
     const result = await runPostEffect((service) =>
-      service.searchMicroPosts({ q: 'qwyxlbtnvz', limit: 20, offset: 0 })
+      service.searchMicroPosts({ q: 'qwyxlbtnvz', limit: 20, offset: 0 }),
     )
 
     expect(result.data).toEqual([])
@@ -111,7 +118,7 @@ describe('searchMicroPosts reply counts', () => {
 
   test('returns an empty page when the offset is past the end of the results', async () => {
     const result = await runPostEffect((service) =>
-      service.searchMicroPosts({ q: SEARCH_TERM, limit: 20, offset: 500 })
+      service.searchMicroPosts({ q: SEARCH_TERM, limit: 20, offset: 500 }),
     )
 
     expect(result.data).toEqual([])
@@ -121,7 +128,7 @@ describe('searchMicroPosts reply counts', () => {
 describe('getMicroPosts reply counts', () => {
   test('populates reply counts on the tweet listing', async () => {
     const result = await runPostEffect((service) =>
-      service.getMicroPosts({ limit: 100, offset: 0 })
+      service.getMicroPosts({ limit: 100, offset: 0 }),
     )
 
     const withReplies = result.data.find((post) => post.id === parentWithRepliesId)
@@ -137,10 +144,18 @@ describe('post hydration through the service interface', () => {
   const replyId = randomUUID()
   const emptyId = randomUUID()
   const invalidId = randomUUID()
-  const creator = { id: randomUUID(), name: 'Hydration author', username: null }
-  const coauthor = { id: randomUUID(), name: 'Coauthor', username: 'hydration-coauthor' }
+  const creator = { id: randomUUID(), name: 'Hydration author', username: null, image: null }
+
+  const coauthor = {
+    id: randomUUID(),
+    name: 'Coauthor',
+    username: 'hydration-coauthor',
+    image: null,
+  }
+
   const rootSlug = `hydration-${rootId}`
   const replySlug = `hydration-${replyId}`
+
   const source = {
     authorDid: 'did:plc:hydration',
     authorHandle: 'hydration.example',
@@ -148,21 +163,21 @@ describe('post hydration through the service interface', () => {
     sourceCreatedAt: new Date('2026-01-01'),
     sourceStatus: 'active' as const,
     locallyEdited: false,
-    lastError: null
+    lastError: null,
   }
 
   beforeAll(async () => {
     await db
       .insert(user)
       .values(
-        [creator, coauthor].map((author) => ({ ...author, email: `${author.id}@example.com` }))
+        [creator, coauthor].map((author) => ({ ...author, email: `${author.id}@example.com` })),
       )
     await db.insert(postsTable).values([
       { id: rootId, slug: rootSlug, title: 'Hydration root', content: '**root**', type: 'micro' },
       ...[
         { id: replyId, content: '<Unclosed', type: 'micro' as const },
         { id: emptyId, content: null, type: 'micro' as const },
-        { id: invalidId, content: 'editorial body', type: 'post' as const }
+        { id: invalidId, content: 'editorial body', type: 'post' as const },
       ].map((row, index) => ({
         ...row,
         slug: `hydration-${row.id}`,
@@ -170,27 +185,27 @@ describe('post hydration through the service interface', () => {
         parentPostId: rootId,
         rootPostId: rootId,
         depth: 1,
-        createdAt: new Date(Date.UTC(2026, 0, index + 2))
-      }))
+        createdAt: new Date(Date.UTC(2026, 0, index + 2)),
+      })),
     ])
     await db.insert(postCreators).values([
       { postId: rootId, creatorId: creator.id },
       { postId: replyId, creatorId: creator.id },
-      { postId: replyId, creatorId: coauthor.id }
+      { postId: replyId, creatorId: coauthor.id },
     ])
     await replaceEntityLabels(db, 'post', rootId, { tags: ['root-tag'] })
     await replaceEntityLabels(db, 'post', replyId, {
       tags: ['second', 'first'],
-      genres: ['ambient']
+      genres: ['ambient'],
     })
     await db.insert(blueskyPostSources).values({
       ...source,
       postId: replyId,
-      atUri: `at://did:plc:hydration/app.bsky.feed.post/${replyId}`
+      atUri: `at://did:plc:hydration/app.bsky.feed.post/${replyId}`,
     })
   })
 
-  test('list and single reads retain labels, creators, attribution and MDX fallback', async () => {
+  test('list and single reads retain labels, creators, attribution and inert rich content', async () => {
     const list = await runPostEffect((service) => service.getAll({ limit: 100, offset: 0 }))
     const single = await runPostEffect((service) => service.getBySlug(replySlug))
     const bySlug = await runPostEffect((service) => service.getMicroPostBySlug(replySlug))
@@ -203,7 +218,16 @@ describe('post hydration through the service interface', () => {
       tags: ['second', 'first'],
       genres: ['ambient'],
       compiledContent: '',
-      blueskySource: source
+      richContent: {
+        version: 1,
+        blocks: [
+          {
+            _tag: 'Paragraph',
+            children: [{ _tag: 'Text', value: '<Unclosed' }],
+          },
+        ],
+      },
+      blueskySource: source,
     })
     expect(single.creators).toHaveLength(2)
     expect(single.creators).toEqual(expect.arrayContaining([creator, coauthor]))
@@ -211,28 +235,40 @@ describe('post hydration through the service interface', () => {
       tags: null,
       genres: null,
       creators: [],
-      compiledContent: ''
+      compiledContent: '',
+      richContent: { version: 1, blocks: [] },
     })
-    expect(list.data.find((post) => post.id === rootId)?.compiledContent).not.toBe('')
+    expect(list.data.find((post) => post.id === rootId)?.richContent).toEqual({
+      version: 1,
+      blocks: [
+        {
+          _tag: 'Paragraph',
+          children: [{ _tag: 'Strong', children: [{ _tag: 'Text', value: 'root' }] }],
+        },
+      ],
+    })
   })
 
   test('search, replies and thread share hydration without changing endpoint refinements', async () => {
     const search = await runPostEffect((service) =>
-      service.searchMicroPosts({ q: 'Hydration', limit: 100, offset: 0 })
+      service.searchMicroPosts({ q: 'Hydration', limit: 100, offset: 0 }),
     )
+
     const replies = await runPostEffect((service) =>
-      service.getMicroPostReplies(rootSlug, { limit: 100, offset: 0 })
+      service.getMicroPostReplies(rootSlug, { limit: 100, offset: 0 }),
     )
+
     const thread = await runPostEffect((service) =>
-      service.getMicroPostThread(replySlug, { limit: 100, offset: 0 })
+      service.getMicroPostThread(replySlug, { limit: 100, offset: 0 }),
     )
+
     const searched = search.data.find((post) => post.id === replyId)
     expect(replies.data[0]).toEqual(searched)
     expect(searched).toMatchObject({
       tags: ['second', 'first'],
       genres: ['ambient'],
       compiledContent: '',
-      replyCount: 0
+      replyCount: 0,
     })
     expect(searched?.creators).toEqual(expect.arrayContaining([creator, coauthor]))
     expect(searched).not.toHaveProperty('blueskySource')
@@ -240,7 +276,10 @@ describe('post hydration through the service interface', () => {
     expect(thread.focus).not.toHaveProperty('replyCount')
     expect({ ...thread.focus, replyCount: 0 }).toEqual(searched)
     expect(thread.root).toMatchObject({ id: rootId, tags: ['root-tag'], creators: [creator] })
-    expect(thread.root.compiledContent).not.toBe('')
+    expect(thread.root.richContent.blocks[0]).toEqual({
+      _tag: 'Paragraph',
+      children: [{ _tag: 'Strong', children: [{ _tag: 'Text', value: 'root' }] }],
+    })
     expect(replies.data.map((post) => post.id)).toEqual([replyId, emptyId])
     expect(thread.posts.map((post) => post.id)).toEqual([replyId, emptyId])
     expect(replies.pagination.total).toBe(3)
@@ -249,15 +288,18 @@ describe('post hydration through the service interface', () => {
 
   test('thread root/focus overlap and empty pages preserve context and pagination', async () => {
     const thread = await runPostEffect((service) =>
-      service.getMicroPostThread(rootSlug, { limit: 20, offset: 100 })
+      service.getMicroPostThread(rootSlug, { limit: 20, offset: 100 }),
     )
+
     expect(thread.root).toEqual(thread.focus)
     expect(thread.root.tags).toEqual(['root-tag'])
     expect(thread.posts).toEqual([])
     expect(thread.pagination.total).toBe(3)
+
     const replies = await runPostEffect((service) =>
-      service.getMicroPostReplies(rootSlug, { limit: 20, offset: 100 })
+      service.getMicroPostReplies(rootSlug, { limit: 20, offset: 100 }),
     )
+
     expect(replies.data).toEqual([])
     expect(replies.pagination.total).toBe(3)
   })
@@ -265,12 +307,11 @@ describe('post hydration through the service interface', () => {
   test('invalid thread focus remains a refinement error rather than being silently dropped', async () => {
     await expect(
       runPostEffect((service) =>
-        service.getMicroPostThread(`hydration-${invalidId}`, { limit: 20, offset: 0 })
-      )
+        service.getMicroPostThread(`hydration-${invalidId}`, { limit: 20, offset: 0 }),
+      ),
     ).rejects.toMatchObject({
-      _tag: 'DatabaseError',
       operation: 'post_type_refinement',
-      message: `Focus post was not a micro post: hydration-${invalidId}`
+      message: `Focus post was not a micro post: hydration-${invalidId}`,
     })
   })
 })

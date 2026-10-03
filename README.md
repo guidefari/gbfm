@@ -1,7 +1,9 @@
 ## Local development
 
-Run `bun dev`, then open `https://gbfm.localhost`. Portless creates and trusts its local HTTPS
-certificate on first use.
+With the `cmdz` executable installed, run `bun dev`, then open `https://gbfm.localhost`.
+Cmdz starts Alchemy and the web app; Mobile, UI Playground, Email Preview, and Jaeger are
+available as opt-in commands. Alchemy attaches to the externally managed web server rather
+than starting a duplicate. Portless creates and trusts its local HTTPS certificate on first use.
 
 ## Current architecture
 

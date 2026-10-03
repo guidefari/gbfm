@@ -1,12 +1,13 @@
 #!/usr/bin/env bun
 
 import { createHash } from 'node:crypto'
+
 import {
   GetObjectCommand,
   HeadObjectCommand,
   paginateListObjectsV2,
   S3Client,
-  type HeadObjectCommandOutput
+  type HeadObjectCommandOutput,
 } from '@aws-sdk/client-s3'
 
 const DEFAULT_SOURCE_BUCKET = 'gbfm-prod-mixesbucket-zftkfrfx'
@@ -69,7 +70,7 @@ const hashKey = (key: string) => createHash('sha256').update(key).digest('hex')
 
 const inventorySummary = (objects: ReadonlyArray<ObjectInventory>): InventorySummary => ({
   objectCount: objects.length,
-  totalBytes: objects.reduce((total, object) => total + object.size, 0)
+  totalBytes: objects.reduce((total, object) => total + object.size, 0),
 })
 
 const sortedRecord = (record: Readonly<Record<string, string>>) =>
@@ -77,7 +78,7 @@ const sortedRecord = (record: Readonly<Record<string, string>>) =>
 
 const differingMetadataFields = (
   source: ObjectMetadata,
-  destination: ObjectMetadata
+  destination: ObjectMetadata,
 ): ReadonlyArray<string> => {
   const fields: string[] = []
   if (source.cacheControl !== destination.cacheControl) fields.push('cacheControl')
@@ -108,7 +109,7 @@ export const compareContentHashSample = (sample: ReadonlyArray<ContentHashSample
 
 export const compareInventories = (
   source: ReadonlyArray<ObjectInventory>,
-  destination: ReadonlyArray<ObjectInventory>
+  destination: ReadonlyArray<ObjectInventory>,
 ): InventoryComparison => {
   const destinationByKey = new Map(destination.map((object) => [object.key, object]))
   const sourceKeys = new Set(source.map((object) => object.key))
@@ -126,7 +127,7 @@ export const compareInventories = (
         kind: 'Size',
         keySha256,
         source: sourceObject.size,
-        destination: destinationObject.size
+        destination: destinationObject.size,
       })
     }
     const fields = differingMetadataFields(sourceObject.metadata, destinationObject.metadata)
@@ -137,7 +138,7 @@ export const compareInventories = (
     if (!sourceKeys.has(destinationObject.key)) {
       mismatches.push({
         kind: 'UnexpectedInDestination',
-        keySha256: hashKey(destinationObject.key)
+        keySha256: hashKey(destinationObject.key),
       })
     }
   }
@@ -145,7 +146,7 @@ export const compareInventories = (
   return {
     source: inventorySummary(source),
     destination: inventorySummary(destination),
-    mismatches
+    mismatches,
   }
 }
 
@@ -157,7 +158,7 @@ type ListedObject = {
 const listObjects = async (
   client: S3Client,
   bucket: string,
-  side: 'source' | 'destination'
+  side: 'source' | 'destination',
 ): Promise<ReadonlyArray<ListedObject>> => {
   const objects: ListedObject[] = []
   try {
@@ -179,7 +180,7 @@ const normalizedMetadata = (head: HeadObjectCommandOutput): ObjectMetadata => ({
   contentLanguage: head.ContentLanguage ?? null,
   contentType: head.ContentType ?? null,
   expires: head.Expires?.toISOString() ?? null,
-  custom: sortedRecord(head.Metadata ?? {})
+  custom: sortedRecord(head.Metadata ?? {}),
 })
 
 const inspectObjects = async (
@@ -187,7 +188,7 @@ const inspectObjects = async (
   bucket: string,
   side: 'source' | 'destination',
   listed: ReadonlyArray<ListedObject>,
-  concurrency: number
+  concurrency: number,
 ): Promise<ReadonlyArray<ObjectInventory>> => {
   const inventory: ObjectInventory[] = []
   for (let offset = 0; offset < listed.length; offset += concurrency) {
@@ -197,18 +198,18 @@ const inspectObjects = async (
         chunk.map(async (object) => {
           try {
             const head = await client.send(
-              new HeadObjectCommand({ Bucket: bucket, Key: object.key })
+              new HeadObjectCommand({ Bucket: bucket, Key: object.key }),
             )
             return {
               key: object.key,
               size: head.ContentLength ?? object.size,
-              metadata: normalizedMetadata(head)
+              metadata: normalizedMetadata(head),
             }
           } catch {
             throw new ParityFailure(side, 'inspect metadata', object.key)
           }
-        })
-      ))
+        }),
+      )),
     )
   }
   return inventory
@@ -218,7 +219,7 @@ const contentSha256 = async (
   client: S3Client,
   bucket: string,
   side: 'source' | 'destination',
-  key: string
+  key: string,
 ): Promise<string> => {
   try {
     const response = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }))
@@ -240,7 +241,7 @@ const contentSha256 = async (
 
 const selectSample = (
   objects: ReadonlyArray<ObjectInventory>,
-  requestedSize: number
+  requestedSize: number,
 ): ReadonlyArray<ObjectInventory> => {
   if (requestedSize <= 0 || objects.length === 0) return []
   if (requestedSize >= objects.length) return objects
@@ -292,13 +293,13 @@ const run = async () => {
   const destinationClient = new S3Client({
     endpoint,
     region: 'auto',
-    credentials: { accessKeyId, secretAccessKey }
+    credentials: { accessKeyId, secretAccessKey },
   })
 
   try {
     const [sourceListed, destinationListed] = await Promise.all([
       listObjects(sourceClient, sourceBucket, 'source'),
-      listObjects(destinationClient, destinationBucket, 'destination')
+      listObjects(destinationClient, destinationBucket, 'destination'),
     ])
     const [source, destination] = await Promise.all([
       inspectObjects(sourceClient, sourceBucket, 'source', sourceListed, headConcurrency),
@@ -307,21 +308,21 @@ const run = async () => {
         destinationBucket,
         'destination',
         destinationListed,
-        headConcurrency
-      )
+        headConcurrency,
+      ),
     ])
     const comparison = compareInventories(source, destination)
     const destinationKeys = new Set(destination.map((object) => object.key))
     const sample = selectSample(
       source.filter((object) => destinationKeys.has(object.key)),
-      hashSampleSize
+      hashSampleSize,
     )
     const contentHashes: ContentHashSample[] = []
 
     for (const object of sample) {
       const [sourceSha256, destinationSha256] = await Promise.all([
         contentSha256(sourceClient, sourceBucket, 'source', object.key),
-        contentSha256(destinationClient, destinationBucket, 'destination', object.key)
+        contentSha256(destinationClient, destinationBucket, 'destination', object.key),
       ])
       contentHashes.push({ key: object.key, sourceSha256, destinationSha256 })
     }
@@ -335,8 +336,8 @@ const run = async () => {
       contentHashSample: {
         requested: hashSampleSize,
         compared: sample.length,
-        mismatches: hashMismatches
-      }
+        mismatches: hashMismatches,
+      },
     }
     console.log(JSON.stringify(result, null, 2))
     if (comparison.mismatches.length > 0 || hashMismatches.length > 0) process.exitCode = 1

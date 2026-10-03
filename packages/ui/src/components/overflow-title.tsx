@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+
 import { cn } from '../lib/cn'
 
 type OverflowTitleStyle = CSSProperties & {
@@ -18,7 +19,7 @@ export function OverflowTitle({
   text,
   className,
   textClassName,
-  animationClassName
+  animationClassName,
 }: OverflowTitleProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const measureRef = useRef<HTMLSpanElement>(null)
@@ -28,6 +29,7 @@ export function OverflowTitle({
     const measure = () => {
       const container = containerRef.current
       const content = measureRef.current
+
       if (!container || !content) return
       const overflow = Math.max(0, content.scrollWidth - container.clientWidth)
       setOverflowPx(overflow > 1 ? overflow : 0)
@@ -37,7 +39,9 @@ export function OverflowTitle({
 
     const raf = requestAnimationFrame(measure)
     const observer = new ResizeObserver(measure)
+
     if (containerRef.current) observer.observe(containerRef.current)
+
     if (measureRef.current) observer.observe(measureRef.current)
 
     window.addEventListener('resize', measure)
@@ -53,9 +57,10 @@ export function OverflowTitle({
   const marqueeStyle = useMemo(() => {
     if (overflowPx <= 0) return undefined
     const durationSeconds = Math.max(9, Math.min(20, 8 + overflowPx / 18))
+
     const style: OverflowTitleStyle = {
       '--overflow-distance': `${overflowPx}px`,
-      '--overflow-duration': `${durationSeconds}s`
+      '--overflow-duration': `${durationSeconds}s`,
     }
 
     return style

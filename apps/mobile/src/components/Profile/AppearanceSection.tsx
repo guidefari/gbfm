@@ -1,9 +1,10 @@
 import { brandDark, brandLight } from '@gbfm/theme/tokens'
 import { Pressable, Text, useColorScheme, View } from 'react-native'
+
 import {
   type ColorSchemePreference,
   useColorSchemePreference,
-  useSetColorSchemePreference
+  useSetColorSchemePreference,
 } from '@/store/preferences'
 
 const choices: ReadonlyArray<{
@@ -13,7 +14,7 @@ const choices: ReadonlyArray<{
 }> = [
   { value: 'system', label: 'System', description: 'Follow your device appearance.' },
   { value: 'light', label: 'Light', description: 'Use the light theme everywhere.' },
-  { value: 'dark', label: 'Dark', description: 'Use the dark theme everywhere.' }
+  { value: 'dark', label: 'Dark', description: 'Use the dark theme everywhere.' },
 ]
 
 export function AppearanceSection() {
@@ -30,6 +31,7 @@ export function AppearanceSection() {
       </Text>
       {choices.map((choice) => {
         const selected = choice.value === preference
+
         return (
           <Pressable
             accessibilityRole='radio'
@@ -45,7 +47,7 @@ export function AppearanceSection() {
               borderWidth: 1,
               borderColor: selected ? colors['pastel-green-1'] : `${colors['pastel-green-2']}55`,
               backgroundColor: colors.darkerBg,
-              opacity: pressed ? 0.8 : 1
+              opacity: pressed ? 0.8 : 1,
             })}>
             <View
               style={{
@@ -55,7 +57,7 @@ export function AppearanceSection() {
                 borderWidth: 2,
                 borderColor: colors['pastel-green-1'],
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
               }}>
               {selected ? (
                 <View
@@ -63,7 +65,7 @@ export function AppearanceSection() {
                     width: 10,
                     height: 10,
                     borderRadius: 1,
-                    backgroundColor: colors['pastel-green-1']
+                    backgroundColor: colors['pastel-green-1'],
                   }}
                 />
               ) : null}

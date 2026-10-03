@@ -46,7 +46,7 @@ const endpointMap: Record<string, string> = {
   profile: `/s/profile/${slug}`,
   release: `/s/release/${slug}`,
   label: `/s/label/${slug}`,
-  'catch-all': `/s/${slug}`
+  'catch-all': `/s/${slug}`,
 }
 
 const endpoint = endpointMap[type]

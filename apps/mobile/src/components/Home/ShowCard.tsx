@@ -1,12 +1,14 @@
 import { useRouter } from 'expo-router'
 import { Image, Pressable, Text, View } from 'react-native'
-import { useThemeColors } from '@/theme/colors'
+
 import type { Show } from '@/api/shows'
+import { useThemeColors } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
 
 // Fixed geometry, mirrored by the skeleton in ShowsSection, so that
 // loading -> loaded never shifts layout.
 export const SHOW_CARD_WIDTH = 150
+
 export const SHOW_CARD_HEIGHT = 150 + 8 + 36
 
 export function ShowCard({ show }: { show: Show }) {
@@ -29,7 +31,7 @@ export function ShowCard({ show }: { show: Show }) {
             height: 150,
             borderRadius: 4,
             borderWidth: 2,
-            borderColor: colors.muted
+            borderColor: colors.muted,
           }}
           resizeMode='cover'
         />
@@ -41,7 +43,7 @@ export function ShowCard({ show }: { show: Show }) {
             borderRadius: 4,
             borderWidth: 2,
             borderColor: colors.muted,
-            backgroundColor: colors.surface
+            backgroundColor: colors.surface,
           }}
         />
       )}
@@ -51,7 +53,7 @@ export function ShowCard({ show }: { show: Show }) {
             color: colors.strong,
             fontFamily: fonts.monoSemiBold,
             fontSize: 14,
-            lineHeight: 18
+            lineHeight: 18,
           }}
           numberOfLines={1}>
           {show.title}

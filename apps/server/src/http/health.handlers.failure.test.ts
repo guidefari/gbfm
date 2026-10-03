@@ -2,16 +2,17 @@ import { ReadinessCheckFailedError } from '@gbfm/api/errors'
 import { decodeResponseBody } from '@gbfm/api/testing'
 import { Effect } from 'effect'
 import { describe, expect, it } from 'vitest'
+
 import { DatabaseLayer } from '@/db/layer'
-import { AppLayer } from '@/runtime/services'
 import { WorkerTracingLive } from '@/runtime/sentry-worker'
-import { NavigationLockLocalLayer } from '@/services/navigation-lock'
-import { PlaylistEnrichmentQueueTestLayer } from '@/services/playlist-enrichment-queue'
-import { SpotifyImportResolverLocalLayer } from '@/services/spotify-import-resolver.service'
+import { AppLayer } from '@/runtime/services'
 import { RecordingEmailTransportLayer } from '@/services/email-transport.service'
+import { PlaylistEnrichmentQueueTestLayer } from '@/services/playlist-enrichment-queue'
 import { SitemapCacheLayer } from '@/services/sitemap-cache'
+import { SpotifyImportResolverLocalLayer } from '@/services/spotify-import-resolver.service'
 import { d1 } from '@/test/database'
 import { testSentryServiceLive } from '@/test/http-handler'
+
 import { createWebHandler } from './routes'
 
 // Mirrors worker.ts's per-request AppLayer composition instead of the
@@ -25,14 +26,13 @@ const testAppServicesLive = AppLayer({
   database: DatabaseLayer(d1),
   sitemapCache: SitemapCacheLayer({
     get: async () => null,
-    put: async () => {}
+    put: async () => {},
   }),
-  navigationLock: NavigationLockLocalLayer,
   spotifyImportResolver: SpotifyImportResolverLocalLayer,
   playlistEnrichmentQueue: PlaylistEnrichmentQueueTestLayer,
   sentry: testSentryServiceLive,
   tracing: WorkerTracingLive,
-  emailTransport: RecordingEmailTransportLayer
+  emailTransport: RecordingEmailTransportLayer,
 })
 
 // Separate file (docs/migration-effect-http-api.md, step 3a): each
@@ -43,13 +43,14 @@ const testAppServicesLive = AppLayer({
 describe('health readiness failure + cache', () => {
   it('caches a failing readiness check and does not re-run it within the window', async () => {
     let checks = 0
+
     const scoped = createWebHandler({
       healthDatabaseCheck: Effect.sync(() => {
         checks += 1
       }).pipe(
-        Effect.flatMap(() => Effect.fail(new ReadinessCheckFailedError({ dbConnected: false })))
+        Effect.flatMap(() => Effect.fail(new ReadinessCheckFailedError({ dbConnected: false }))),
       ),
-      appServicesLive: testAppServicesLive
+      appServicesLive: testAppServicesLive,
     })
 
     try {
@@ -72,17 +73,18 @@ describe('health readiness failure + cache', () => {
 
   it('concurrent requests on a cold cache share one in-flight check, not one each', async () => {
     let checks = 0
+
     const scoped = createWebHandler({
       healthDatabaseCheck: Effect.sync(() => {
         checks += 1
       }).pipe(Effect.delay('20 millis')),
-      appServicesLive: testAppServicesLive
+      appServicesLive: testAppServicesLive,
     })
 
     try {
       const [first, second] = await Promise.all([
         scoped.handler(new Request('http://localhost/health/ready')),
-        scoped.handler(new Request('http://localhost/health/ready'))
+        scoped.handler(new Request('http://localhost/health/ready')),
       ])
 
       expect(first.status).toBe(200)

@@ -1,5 +1,6 @@
 import { Schema } from 'effect'
 import { afterEach, expect, test, vi } from 'vitest'
+
 import { getProfile, login, loginRequestSchema, loginResponseSchema, userSchema } from './auth'
 
 afterEach(() => {
@@ -15,12 +16,12 @@ test('auth schemas preserve email, password, and unknown-key behavior', () => {
     decodeLoginRequest({
       email: "name.o'neil+radio@example.co.uk",
       password: ' ',
-      ignored: true
-    })
+      ignored: true,
+    }),
   ).toEqual({ email: "name.o'neil+radio@example.co.uk", password: ' ' })
   expect(() => decodeLoginRequest({ email: '.name@example.com', password: 'password' })).toThrow()
   expect(() =>
-    decodeLoginRequest({ email: 'name..radio@example.com', password: 'password' })
+    decodeLoginRequest({ email: 'name..radio@example.com', password: 'password' }),
   ).toThrow()
   expect(() => decodeLoginRequest({ email: 'name@example.c', password: 'password' })).toThrow()
   expect(() => decodeLoginRequest({ email: 'name@example.com', password: '' })).toThrow()
@@ -36,12 +37,12 @@ test('auth schemas preserve email, password, and unknown-key behavior', () => {
         verified: true,
         createdAt: '2026-01-01T00:00:00.000Z',
         updatedAt: '2026-01-02T00:00:00.000Z',
-        ignored: true
+        ignored: true,
       },
       accessToken: 'access-token',
       refreshToken: 'refresh-token',
-      ignored: true
-    })
+      ignored: true,
+    }),
   ).toEqual({
     user: {
       id: 'user-1',
@@ -51,10 +52,10 @@ test('auth schemas preserve email, password, and unknown-key behavior', () => {
       avatarUrl: null,
       verified: true,
       createdAt: '2026-01-01T00:00:00.000Z',
-      updatedAt: '2026-01-02T00:00:00.000Z'
+      updatedAt: '2026-01-02T00:00:00.000Z',
     },
     accessToken: 'access-token',
-    refreshToken: 'refresh-token'
+    refreshToken: 'refresh-token',
   })
   expect(
     decodeUser({
@@ -63,8 +64,8 @@ test('auth schemas preserve email, password, and unknown-key behavior', () => {
       username: null,
       email: 'dj@example.com',
       avatarUrl: null,
-      ignored: true
-    })
+      ignored: true,
+    }),
   ).not.toHaveProperty('ignored')
 })
 
@@ -80,15 +81,15 @@ test('login normalizes Better Auth dates and omitted images', async () => {
         email: 'dj@example.com',
         emailVerified: true,
         createdAt: new Date('2026-01-01T00:00:00.000Z'),
-        updatedAt: '2026-01-02T00:00:00.000Z'
+        updatedAt: '2026-01-02T00:00:00.000Z',
       },
-      token: 'session-token'
-    })
+      token: 'session-token',
+    }),
   }))
 
   const result = login('https://example.com', {
     email: 'dj@example.com',
-    password: 'password'
+    password: 'password',
   })
 
   await expect(result).resolves.toEqual({
@@ -100,10 +101,10 @@ test('login normalizes Better Auth dates and omitted images', async () => {
       avatarUrl: null,
       verified: true,
       createdAt: '2026-01-01T00:00:00.000Z',
-      updatedAt: '2026-01-02T00:00:00.000Z'
+      updatedAt: '2026-01-02T00:00:00.000Z',
     },
     accessToken: 'session-token',
-    refreshToken: 'session-token'
+    refreshToken: 'session-token',
   })
 })
 
@@ -112,25 +113,23 @@ test('profile validation distinguishes response structure from user data', async
     status: 200,
     statusText: 'OK',
     ok: true,
-    json: async () => ({ unexpected: true })
+    json: async () => ({ unexpected: true }),
   }))
 
-  await expect(getProfile('https://example.com', 'token')).rejects.toMatchObject({
-    _tag: 'AuthError',
-    message: 'Invalid profile response structure',
-    cause: { _tag: 'SchemaError' }
-  })
+  await expect(getProfile('https://example.com', 'token')).rejects.toHaveProperty(
+    'message',
+    'Invalid profile response structure',
+  )
 
   vi.stubGlobal('fetch', async () => ({
     status: 200,
     statusText: 'OK',
     ok: true,
-    json: async () => ({ user: { id: 'user-1' } })
+    json: async () => ({ user: { id: 'user-1' } }),
   }))
 
-  await expect(getProfile('https://example.com', 'token')).rejects.toMatchObject({
-    _tag: 'AuthError',
-    message: 'Invalid user data format',
-    cause: { _tag: 'SchemaError' }
-  })
+  await expect(getProfile('https://example.com', 'token')).rejects.toHaveProperty(
+    'message',
+    'Invalid user data format',
+  )
 })

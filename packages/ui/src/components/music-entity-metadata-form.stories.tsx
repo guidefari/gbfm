@@ -2,7 +2,7 @@ import { MusicEntityMetadataForm } from './music-entity-metadata-form'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Forms/Music entity metadata'
+  title: '@gbfm/ui/Forms/Music entity metadata',
 }
 
 export function AlbumMetadataForm() {
@@ -23,9 +23,9 @@ export function AlbumMetadataForm() {
           genres: ['dubstep', 'ambient'],
           albumType: 'LP',
           slug: 'untrue',
-          publishedAt: new Date('2023-06-01')
+          publishedAt: new Date('2023-06-01'),
         }}
-        onSubmit={(data) => console.log('save album', data)}
+        onSubmit={() => undefined}
       />
     </div>
   )

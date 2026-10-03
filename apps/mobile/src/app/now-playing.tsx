@@ -3,6 +3,7 @@ import { SymbolView } from 'expo-symbols'
 import { useRef } from 'react'
 import type { AccessibilityActionEvent, LayoutChangeEvent } from 'react-native'
 import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native'
+
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
 import { QueueSheet } from '@/components/NowPlaying/QueueSheet'
 import { Screen } from '@/components/Screen'
@@ -14,7 +15,7 @@ const symbols = {
   play: { ios: 'play.fill', android: 'play_arrow', web: 'play_arrow' },
   pause: { ios: 'pause.fill', android: 'pause', web: 'pause' },
   next: { ios: 'forward.end.fill', android: 'skip_next', web: 'skip_next' },
-  artwork: { ios: 'music.note', android: 'music_note', web: 'music_note' }
+  artwork: { ios: 'music.note', android: 'music_note', web: 'music_note' },
 } as const
 
 const SEEK_STEP_SECONDS = 15
@@ -23,6 +24,7 @@ function formatTime(seconds: number) {
   if (!Number.isFinite(seconds) || seconds < 0) return '0:00'
   const mins = Math.floor(seconds / 60)
   const secs = Math.floor(seconds % 60)
+
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
@@ -37,8 +39,9 @@ export default function NowPlaying() {
     seekTo,
     skipNext,
     skipPrevious,
-    queue
+    queue,
   } = useNowPlaying()
+
   const router = useRouter()
   const colors = useThemeColors()
 
@@ -55,6 +58,7 @@ export default function NowPlaying() {
 
   const handleScrub = (x: number) => {
     const width = scrubWidthRef.current
+
     if (width > 0 && duration > 0) {
       const ratio = Math.max(0, Math.min(1, x / width))
       seekTo(ratio * duration)
@@ -78,7 +82,7 @@ export default function NowPlaying() {
           height: 4,
           borderRadius: 2,
           backgroundColor: withAlpha(colors.muted, 0.45),
-          marginTop: 8
+          marginTop: 8,
         }}
       />
 
@@ -114,7 +118,7 @@ export default function NowPlaying() {
                 shadowOffset: { width: 0, height: 8 },
                 shadowOpacity: 0.25,
                 shadowRadius: 16,
-                elevation: 6
+                elevation: 6,
               }}>
               {displayTrack.thumbnailUrl ? (
                 <Image
@@ -139,7 +143,7 @@ export default function NowPlaying() {
                   color: colors.strong,
                   fontFamily: fonts.monoSemiBold,
                   fontSize: 20,
-                  lineHeight: 26
+                  lineHeight: 26,
                 }}
                 numberOfLines={2}>
                 {displayTrack.title}
@@ -160,11 +164,11 @@ export default function NowPlaying() {
                   min: 0,
                   max: Math.max(0, Math.round(duration)),
                   now: Math.max(0, Math.min(Math.round(duration), Math.round(currentTime))),
-                  text: `${formatTime(currentTime)} of ${formatTime(duration)}`
+                  text: `${formatTime(currentTime)} of ${formatTime(duration)}`,
                 }}
                 accessibilityActions={[
                   { name: 'increment', label: 'Seek forward 15 seconds' },
-                  { name: 'decrement', label: 'Seek backward 15 seconds' }
+                  { name: 'decrement', label: 'Seek backward 15 seconds' },
                 ]}
                 onAccessibilityAction={handleScrubAccessibilityAction}
                 onPress={(event) => handleScrub(event.nativeEvent.locationX)}
@@ -172,20 +176,20 @@ export default function NowPlaying() {
                 style={({ pressed }) => ({
                   height: 44,
                   justifyContent: 'center',
-                  opacity: pressed ? 0.85 : 1
+                  opacity: pressed ? 0.85 : 1,
                 })}>
                 <View
                   style={{
                     height: 4,
                     backgroundColor: withAlpha(colors.muted, 0.3),
-                    borderRadius: 2
+                    borderRadius: 2,
                   }}>
                   <View
                     style={{
                       height: '100%',
                       width: `${progress * 100}%`,
                       borderRadius: 2,
-                      backgroundColor: colors.accent
+                      backgroundColor: colors.accent,
                     }}
                   />
                 </View>
@@ -199,7 +203,7 @@ export default function NowPlaying() {
                     borderRadius: 7,
                     backgroundColor: colors.accent,
                     borderWidth: 2,
-                    borderColor: colors.background
+                    borderColor: colors.background,
                   }}
                 />
               </Pressable>
@@ -218,7 +222,7 @@ export default function NowPlaying() {
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 40
+                gap: 40,
               }}>
               <Pressable
                 accessibilityRole='button'
@@ -231,7 +235,7 @@ export default function NowPlaying() {
                   height: 44,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  opacity: !canSkipPrev ? 0.35 : pressed ? 0.6 : 1
+                  opacity: !canSkipPrev ? 0.35 : pressed ? 0.6 : 1,
                 })}>
                 <SymbolView name={symbols.previous} size={26} tintColor={colors.accent} />
               </Pressable>
@@ -247,7 +251,7 @@ export default function NowPlaying() {
                   justifyContent: 'center',
                   borderRadius: 36,
                   backgroundColor: colors.accent,
-                  opacity: pressed ? 0.85 : 1
+                  opacity: pressed ? 0.85 : 1,
                 })}>
                 {isBuffering ? (
                   <ActivityIndicator size='large' color={colors.onAccent} />
@@ -271,7 +275,7 @@ export default function NowPlaying() {
                   height: 44,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  opacity: !canSkipNext ? 0.35 : pressed ? 0.6 : 1
+                  opacity: !canSkipNext ? 0.35 : pressed ? 0.6 : 1,
                 })}>
                 <SymbolView name={symbols.next} size={26} tintColor={colors.accent} />
               </Pressable>

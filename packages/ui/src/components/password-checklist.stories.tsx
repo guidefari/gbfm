@@ -1,11 +1,12 @@
 import { useState } from 'react'
+
 import { Input } from './input'
 import { Label } from './label'
 import { PasswordChecklist } from './password-checklist'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Forms/Password checklist'
+  title: '@gbfm/ui/Forms/Password checklist',
 }
 
 export function PasswordChecklists() {

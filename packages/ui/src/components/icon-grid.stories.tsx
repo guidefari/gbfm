@@ -1,9 +1,10 @@
 import { Heart, Music, Radio, Search, Settings, User } from 'lucide-react'
+
 import { IconGrid } from './icon-grid'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Content/Icon grid'
+  title: '@gbfm/ui/Content/Icon grid',
 }
 
 const tiles = [
@@ -12,43 +13,43 @@ const tiles = [
     label: 'Mixes',
     icon: Music,
     onSelect: () => {},
-    shortcut: 'M'
+    shortcut: 'M',
   },
   {
     id: 'radio',
     label: 'Radio',
     icon: Radio,
     onSelect: () => {},
-    shortcut: 'R'
+    shortcut: 'R',
   },
   {
     id: 'profile',
     label: 'Profile',
     icon: User,
     onSelect: () => {},
-    shortcut: 'P'
+    shortcut: 'P',
   },
   {
     id: 'search',
     label: 'Search',
     icon: Search,
     onSelect: () => {},
-    shortcut: 'S'
+    shortcut: 'S',
   },
   {
     id: 'favourites',
     label: 'Favourites',
     icon: Heart,
     onSelect: () => {},
-    requiresAuth: true
+    requiresAuth: true,
   },
   {
     id: 'settings',
     label: 'Settings',
     icon: Settings,
     onSelect: () => {},
-    requiresAuth: true
-  }
+    requiresAuth: true,
+  },
 ]
 
 export function IconGridAuthenticated() {
@@ -62,13 +63,13 @@ export function IconGridAuthenticated() {
       <div className='space-y-6'>
         <div>
           <p className='text-xs text-muted-foreground mb-2'>Authenticated (all tiles visible)</p>
-          <IconGrid tiles={tiles} onTileSelect={(t) => console.log(t.id)} isAuthenticated={true} />
+          <IconGrid tiles={tiles} onTileSelect={() => undefined} isAuthenticated={true} />
         </div>
         <div>
           <p className='text-xs text-muted-foreground mb-2'>
             Unauthenticated (auth-required tiles hidden)
           </p>
-          <IconGrid tiles={tiles} onTileSelect={(t) => console.log(t.id)} isAuthenticated={false} />
+          <IconGrid tiles={tiles} onTileSelect={() => undefined} isAuthenticated={false} />
         </div>
       </div>
     </div>

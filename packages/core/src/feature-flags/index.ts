@@ -6,7 +6,7 @@ export type FeatureFlags = Record<FeatureFlagKey, boolean>
 
 const LOCAL_FEATURE_FLAGS: FeatureFlags = Object.freeze({
   'ui.share': true,
-  'ui.queue': false
+  'ui.queue': false,
 })
 
 export const getFeatureFlags = (): FeatureFlags => LOCAL_FEATURE_FLAGS

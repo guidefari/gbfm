@@ -7,6 +7,7 @@ import { Context, Effect, Layer } from 'effect'
 // This service must not import either platform SDK directly, or it drags that
 // platform's Node/workerd-only init code into every consumer.
 type MonitorConfig = NonNullable<Parameters<typeof Sentry.captureCheckIn>[1]>
+
 type CaptureContext = Sentry.Extras
 
 export interface SentryService {
@@ -14,12 +15,12 @@ export interface SentryService {
   readonly captureMessage: (message: string, level?: Sentry.SeverityLevel) => Effect.Effect<void>
   readonly startCheckIn: (
     monitorSlug: string,
-    monitorConfig: MonitorConfig
+    monitorConfig: MonitorConfig,
   ) => Effect.Effect<string | undefined>
   readonly finishCheckIn: (
     monitorSlug: string,
     checkInId: string | undefined,
-    status: 'ok' | 'error'
+    status: 'ok' | 'error',
   ) => Effect.Effect<void>
 }
 
@@ -50,13 +51,14 @@ export const SentryServiceLayer = Layer.effect(
       startCheckIn: (monitorSlug, monitorConfig) =>
         Effect.sync(() => {
           if (!enabled) return undefined
+
           return Sentry.captureCheckIn({ monitorSlug, status: 'in_progress' }, monitorConfig)
         }),
       finishCheckIn: (monitorSlug, checkInId, status) =>
         Effect.sync(() => {
           if (!enabled || !checkInId) return
           Sentry.captureCheckIn({ monitorSlug, checkInId, status })
-        })
+        }),
     }
-  })
+  }),
 )

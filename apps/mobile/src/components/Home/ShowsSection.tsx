@@ -1,6 +1,7 @@
 import { useAtomRefresh, useAtomValue } from '@effect/atom-react'
 import { AsyncResult } from 'effect/unstable/reactivity'
 import { Pressable, ScrollView, Text, View } from 'react-native'
+
 import type { Show } from '@/api/shows'
 import { SHOW_CARD_HEIGHT, SHOW_CARD_WIDTH, ShowCard } from '@/components/Home/ShowCard'
 import { showsAtom } from '@/store/atoms/shows'
@@ -8,6 +9,7 @@ import { useThemeColors } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
 
 const placeholder = 'hsla(198, 45%, 52%, 0.25)'
+
 const placeholderSoft = 'hsla(198, 45%, 52%, 0.12)'
 
 function ShowCardSkeleton() {
@@ -22,7 +24,7 @@ function ShowCardSkeleton() {
           borderRadius: 4,
           borderWidth: 2,
           borderColor: colors.muted,
-          backgroundColor: placeholderSoft
+          backgroundColor: placeholderSoft,
         }}
       />
       <View style={{ gap: 6, height: 36, justifyContent: 'center' }}>
@@ -45,7 +47,7 @@ export function ShowsSection() {
           color: colors.text,
           fontFamily: fonts.monoSemiBold,
           fontSize: 18,
-          lineHeight: 22
+          lineHeight: 22,
         }}>
         radio shows
       </Text>
@@ -78,7 +80,7 @@ export function ShowsSection() {
             borderColor: colors.muted,
             borderRadius: 4,
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
           }}>
           <Text style={{ color: colors.text, fontFamily: fonts.mono, fontSize: 13 }}>
             no shows yet
@@ -95,7 +97,7 @@ export function ShowsSection() {
             borderRadius: 4,
             alignItems: 'center',
             justifyContent: 'center',
-            opacity: pressed ? 0.7 : 1
+            opacity: pressed ? 0.7 : 1,
           })}>
           <Text style={{ color: colors.text, fontFamily: fonts.mono, fontSize: 13 }}>
             couldn't load shows, tap to retry

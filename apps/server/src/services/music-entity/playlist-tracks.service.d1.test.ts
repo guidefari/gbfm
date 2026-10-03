@@ -1,44 +1,48 @@
 import { eq } from 'drizzle-orm'
 import { Effect, Exit, Layer } from 'effect'
 import { beforeAll, describe, expect, test } from 'vitest'
+
 import { Database } from '@/db/layer'
-import { ConfigService, createConfig } from '@/services/config.service'
 import {
   musicEntityLinksTable,
   musicEntityTypesTable,
   musicPlatformsTable,
   musicPlaylistsTable,
   musicPlaylistTracksTable,
-  musicTracksTable
+  musicTracksTable,
 } from '@/db/music-entity.schema'
 import {
   CanonicalMusicIdentity,
   CanonicalMusicIdentityLayer,
-  type CanonicalMusicIdentityService
+  type CanonicalMusicIdentityService,
 } from '@/services/canonical-music-identity'
+import { ConfigService, createConfig } from '@/services/config.service'
 import {
   MusicLinkScraperService,
   MusicScraperError,
-  type MusicScrapeInput
+  type MusicScrapeInput,
 } from '@/services/music-link-scraper.service'
 import { S3Service } from '@/services/s3.service'
 import type {
   SpotifyImportPlaylist,
   SpotifyImportTrack,
-  SpotifyService
+  SpotifyService,
 } from '@/services/spotify.service'
 import { db } from '@/test/d1'
 import { withTestLayer } from '@/test/effect'
 import { makeTestS3Service } from '@/test/s3'
+
 import {
   addSpotifyTrackToPlaylistEffect,
   enrichPlaylistLinksEffect,
   importSpotifyPlaylistEffect,
-  syncPlaylistLinksEffect
+  syncPlaylistLinksEffect,
 } from './playlist-tracks.service'
 
 const externalId = () => crypto.randomUUID().replaceAll('-', '').slice(0, 22)
+
 let nextDeezerId = Date.now()
+
 const deezerId = () => String(nextDeezerId++)
 
 beforeAll(async () => {
@@ -48,14 +52,14 @@ beforeAll(async () => {
       { id: 'artist', displayName: 'Artist' },
       { id: 'album', displayName: 'Album' },
       { id: 'track', displayName: 'Track' },
-      { id: 'playlist', displayName: 'Playlist' }
+      { id: 'playlist', displayName: 'Playlist' },
     ])
     .onConflictDoNothing()
   await db
     .insert(musicPlatformsTable)
     .values([
       { id: 'spotify', displayName: 'Spotify' },
-      { id: 'deezer', displayName: 'Deezer' }
+      { id: 'deezer', displayName: 'Deezer' },
     ])
     .onConflictDoNothing()
 })
@@ -71,25 +75,27 @@ const trackFixture = (spotifyTrackId: string): SpotifyImportTrack => ({
   trackUrl: `https://open.spotify.com/track/${spotifyTrackId}`,
   previewUrl: null,
   durationMs: null,
-  trackNumber: null
+  trackNumber: null,
 })
 
 const runWithIdentity = <A, E>(
   scraper: MusicLinkScraperService,
-  use: (identity: CanonicalMusicIdentityService) => Effect.Effect<A, E, Database>
+  use: (identity: CanonicalMusicIdentityService) => Effect.Effect<A, E, Database>,
 ) => {
   const dependencies = Layer.mergeAll(
     Layer.succeed(Database, db),
     Layer.succeed(MusicLinkScraperService, scraper),
     Layer.succeed(ConfigService, createConfig()),
-    Layer.succeed(S3Service, makeTestS3Service())
+    Layer.succeed(S3Service, makeTestS3Service()),
   )
+
   const identityLayer = CanonicalMusicIdentityLayer.pipe(Layer.provide(dependencies))
+
   return Effect.runPromise(
     withTestLayer(
       Effect.flatMap(CanonicalMusicIdentity, use).pipe(Effect.provideService(Database, db)),
-      identityLayer
-    )
+      identityLayer,
+    ),
   )
 }
 
@@ -102,20 +108,20 @@ type PlaylistTrackSeed = {
 const seedPreBackfillPlaylist = async (
   playlistId: string,
   spotifyPlaylistId: string,
-  tracks: readonly PlaylistTrackSeed[]
+  tracks: ReadonlyArray<PlaylistTrackSeed>,
 ) => {
   await db.insert(musicPlaylistsTable).values({
     id: playlistId,
     title: 'Pre-backfill playlist',
-    slug: playlistId
+    slug: playlistId,
   })
   await db.insert(musicTracksTable).values(
     tracks.map((track) => ({
       id: track.trackId,
       title: `Track ${track.spotifyTrackId}`,
       artistNames: ['Artist'],
-      slug: track.trackId
-    }))
+      slug: track.trackId,
+    })),
   )
   await db
     .insert(musicPlaylistTracksTable)
@@ -125,7 +131,7 @@ const seedPreBackfillPlaylist = async (
       entityType: 'playlist',
       entityId: playlistId,
       platform: 'spotify',
-      url: `https://open.spotify.com/playlist/${spotifyPlaylistId}`
+      url: `https://open.spotify.com/playlist/${spotifyPlaylistId}`,
     },
     ...tracks.flatMap((track) => [
       {
@@ -133,7 +139,7 @@ const seedPreBackfillPlaylist = async (
         entityId: track.trackId,
         platform: 'spotify' as const,
         url: `https://open.spotify.com/track/${track.spotifyTrackId}`,
-        metadata: { confidence: 'exact_source' as const }
+        metadata: { confidence: 'exact_source' as const },
       },
       ...(track.additionalExactDeezerUrl
         ? [
@@ -142,11 +148,11 @@ const seedPreBackfillPlaylist = async (
               entityId: track.trackId,
               platform: 'deezer' as const,
               url: track.additionalExactDeezerUrl,
-              metadata: { confidence: 'exact_source' as const }
-            }
+              metadata: { confidence: 'exact_source' as const },
+            },
           ]
-        : [])
-    ])
+        : []),
+    ]),
   ])
 }
 
@@ -158,18 +164,21 @@ describe('playlist Spotify caller migration', () => {
     await db.insert(musicPlaylistsTable).values({
       id: playlistId,
       title: 'Target playlist',
-      slug: playlistId
+      slug: playlistId,
     })
     let providerCalls = 0
+
     const spotify: Pick<SpotifyService, 'getTrackForImport'> = {
       getTrackForImport: () => {
         providerCalls += 1
+
         return Effect.die('Canonical hit must not invoke Spotify')
-      }
+      },
     }
+
     const scraper: MusicLinkScraperService = {
       scrape: () => Effect.die('Canonical hit must not scrape'),
-      discoverCrossPlatformLinks: () => Effect.succeed({ links: [] })
+      discoverCrossPlatformLinks: () => Effect.succeed({ links: [] }),
     }
 
     const result = await runWithIdentity(scraper, (identity) =>
@@ -179,16 +188,17 @@ describe('playlist Spotify caller migration', () => {
             entityType: 'track',
             sourceUrl: track.trackUrl,
             title: track.title,
-            artistNames: track.artistNames
+            artistNames: track.artistNames,
           },
           origin: 'spotify_import',
-          artworkDelivery: 'preserve'
+          artworkDelivery: 'preserve',
         })
+
         return yield* addSpotifyTrackToPlaylistEffect(spotify, identity)(
           playlistId,
-          `${track.trackUrl}?si=test`
+          `${track.trackUrl}?si=test`,
         )
-      })
+      }),
     )
 
     expect(providerCalls).toBe(0)
@@ -202,37 +212,41 @@ describe('playlist Spotify caller migration', () => {
     const spotifyTrackId = externalId()
     const discoveredDeezerId = deezerId()
     await seedPreBackfillPlaylist(playlistId, spotifyPlaylistId, [{ trackId, spotifyTrackId }])
-    const inputs: MusicScrapeInput[] = []
+    const inputs: Array<MusicScrapeInput> = []
+
     const scraper: MusicLinkScraperService = {
       scrape: () => Effect.die('Playlist refresh should be skipped without exact-source metadata'),
       discoverCrossPlatformLinks: (input) => {
         inputs.push(input)
+
         return Effect.succeed({
           links: [
             {
               platform: 'deezer',
               url: `https://www.deezer.com/track/${discoveredDeezerId}`,
-              scrapedAt: new Date()
-            }
-          ]
+              scrapedAt: new Date(),
+            },
+          ],
         })
-      }
+      },
     }
 
     const result = await runWithIdentity(scraper, (identity) =>
       Effect.gen(function* () {
         return yield* syncPlaylistLinksEffect(identity)(playlistId)
-      })
+      }),
     )
 
     expect(result).toEqual({ playlistId, trackCount: 1, insertedCount: 1 })
     expect(inputs.map((input) => input.url)).toEqual([
-      `https://open.spotify.com/track/${spotifyTrackId}`
+      `https://open.spotify.com/track/${spotifyTrackId}`,
     ])
+
     const links = await db
       .select()
       .from(musicEntityLinksTable)
       .where(eq(musicEntityLinksTable.entityId, trackId))
+
     expect(links.some((link) => link.platform === 'deezer')).toBe(true)
   })
 
@@ -248,39 +262,44 @@ describe('playlist Spotify caller migration', () => {
       {
         trackId: failingTrackId,
         spotifyTrackId: failingSpotifyTrackId,
-        additionalExactDeezerUrl: `https://www.deezer.com/track/${deezerId()}`
+        additionalExactDeezerUrl: `https://www.deezer.com/track/${deezerId()}`,
       },
-      { trackId: laterTrackId, spotifyTrackId: laterSpotifyTrackId }
+      { trackId: laterTrackId, spotifyTrackId: laterSpotifyTrackId },
     ])
-    const inputs: MusicScrapeInput[] = []
+    const inputs: Array<MusicScrapeInput> = []
+
     const scraper: MusicLinkScraperService = {
       scrape: () => Effect.die('Playlist refresh should be skipped without exact-source metadata'),
       discoverCrossPlatformLinks: (input) => {
         inputs.push(input)
+
         if (input.trackTitle === `Track ${failingSpotifyTrackId}`) {
           return Effect.fail(
             new MusicScraperError({
               message: 'Provider response contained private request details',
               provider: 'odesli',
-              statusCode: 503
-            })
+              statusCode: 503,
+            }),
           )
         }
+
         return Effect.succeed({
-          links: [{ platform: 'deezer', url: laterDiscoveredDeezerUrl, scrapedAt: new Date() }]
+          links: [{ platform: 'deezer', url: laterDiscoveredDeezerUrl, scrapedAt: new Date() }],
         })
-      }
+      },
     }
 
     const exit = await runWithIdentity(scraper, (identity) =>
-      Effect.exit(syncPlaylistLinksEffect(identity)(playlistId))
+      Effect.exit(syncPlaylistLinksEffect(identity)(playlistId)),
     )
 
     expect(Exit.isFailure(exit)).toBe(true)
+
     const links = await db
       .select({ entityId: musicEntityLinksTable.entityId })
       .from(musicEntityLinksTable)
       .where(eq(musicEntityLinksTable.url, laterDiscoveredDeezerUrl))
+
     expect(links.map((link) => link.entityId)).toEqual([laterTrackId])
     expect(inputs).toHaveLength(2)
   })
@@ -289,6 +308,7 @@ describe('playlist Spotify caller migration', () => {
     const spotifyTrackId = externalId()
     const playlistSpotifyId = externalId()
     const track = trackFixture(spotifyTrackId)
+
     const playlist: SpotifyImportPlaylist = {
       spotifyPlaylistId: playlistSpotifyId,
       title: 'Imported playlist',
@@ -296,32 +316,37 @@ describe('playlist Spotify caller migration', () => {
       coverImageUrl: null,
       ownerName: null,
       playlistUrl: `https://open.spotify.com/playlist/${playlistSpotifyId}`,
-      tracks: [track, track]
+      tracks: [track, track],
     }
+
     let enrichmentCalls = 0
     let playlistCalls = 0
-    const inputs: MusicScrapeInput[] = []
+    const inputs: Array<MusicScrapeInput> = []
+
     const scraper: MusicLinkScraperService = {
       scrape: () => Effect.die('Automatic enrichment must not refresh provider metadata'),
       discoverCrossPlatformLinks: (input) => {
         enrichmentCalls += 1
         inputs.push(input)
+
         return Effect.succeed({
           links: [
             {
               platform: 'deezer',
               url: `https://www.deezer.com/track/${Date.now()}`,
-              scrapedAt: new Date()
-            }
-          ]
+              scrapedAt: new Date(),
+            },
+          ],
         })
-      }
+      },
     }
+
     const spotify: Pick<SpotifyService, 'getPlaylistForImport'> = {
       getPlaylistForImport: () => {
         playlistCalls += 1
+
         return Effect.succeed(playlist)
-      }
+      },
     }
 
     const results = await runWithIdentity(scraper, (identity) =>
@@ -331,23 +356,28 @@ describe('playlist Spotify caller migration', () => {
             entityType: 'track',
             sourceUrl: track.trackUrl,
             title: track.title,
-            artistNames: track.artistNames
+            artistNames: track.artistNames,
           },
           origin: 'spotify_import',
-          artworkDelivery: 'preserve'
+          artworkDelivery: 'preserve',
         })
+
         const first = yield* importSpotifyPlaylistEffect(
           spotify,
-          identity
+          identity,
         )(`${playlist.playlistUrl}?si=test`)
+
         yield* enrichPlaylistLinksEffect(identity)(first.playlist.id)
+
         const second = yield* importSpotifyPlaylistEffect(
           spotify,
-          identity
+          identity,
         )(`${playlist.playlistUrl}?si=test`)
+
         yield* enrichPlaylistLinksEffect(identity)(second.playlist.id)
+
         return { reused, first, second }
-      })
+      }),
     )
 
     expect(results.first.reusedTrackCount).toBe(2)

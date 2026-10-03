@@ -1,4 +1,5 @@
 import { expect, test } from 'vitest'
+
 import { getSlugSuffix, stripSlugSuffix, toSlug } from './to-slug'
 
 test('generates unique URL-safe slugs for the titles users submit', () => {
@@ -10,7 +11,7 @@ test('generates unique URL-safe slugs for the titles users submit', () => {
     ['---Burial---', 'burial'],
     ['Björk', 'bj-rk'],
     ['Album 2024', 'album-2024'],
-    ['!!!', 'item']
+    ['!!!', 'item'],
   ] as const
 
   for (const [title, expectedBase] of userTitles) {
@@ -21,6 +22,7 @@ test('generates unique URL-safe slugs for the titles users submit', () => {
 
   const longTitle =
     'This is a very long title that should not keep going forever in the generated slug'
+
   expect(stripSlugSuffix(toSlug(longTitle))).toBe('this-is-a-very-long-title-that-s')
 
   const first = toSlug('Same Title')

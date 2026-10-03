@@ -2,6 +2,7 @@ import * as Context from 'effect/Context'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
 import * as Semaphore from 'effect/Semaphore'
+
 import { createPlayDelivery } from './playDelivery'
 import { PlayerStorage } from './playerStorage'
 
@@ -12,17 +13,17 @@ export interface PlayReporterContract {
 }
 
 export class PlayReporter extends Context.Service<PlayReporter, PlayReporterContract>()(
-  '@gbfm/player/PlayReporter'
+  '@gbfm/player/PlayReporter',
 ) {}
 
 export const PlayReporterNoop = Layer.succeed(PlayReporter, {
-  recordPlay: () => Effect.void
+  recordPlay: () => Effect.void,
 })
 
 /** Shared deduped delivery + semaphore serialization. Platforms only supply the
  *  API deliver operation; storage and ordering policy stay in @gbfm/player. */
 export const makePlayReporterLayer = <DeliveryError>(
-  deliver: (trackId: string) => Effect.Effect<void, DeliveryError>
+  deliver: (trackId: string) => Effect.Effect<void, DeliveryError>,
 ): Layer.Layer<PlayReporter, never, PlayerStorage> =>
   Layer.effect(
     PlayReporter,
@@ -33,7 +34,7 @@ export const makePlayReporterLayer = <DeliveryError>(
         isWithinDedupWindow: storage.isWithinDedupWindow,
         deliver,
         remember: storage.recordPlay,
-        now: Date.now
+        now: Date.now,
       })
 
       const lock = yield* Semaphore.make(1)
@@ -42,8 +43,8 @@ export const makePlayReporterLayer = <DeliveryError>(
         recordPlay: (trackId: string) =>
           deliverPlayIfFresh(trackId).pipe(
             Semaphore.withPermits(lock, 1),
-            Effect.catchCause(() => Effect.void)
-          )
+            Effect.catchCause(() => Effect.void),
+          ),
       }
-    })
+    }),
   )

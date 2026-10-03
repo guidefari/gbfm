@@ -1,5 +1,6 @@
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
 import { index, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
+
 import { user } from './auth.schema'
 
 // Lifecycle: pending (presigned URL/multipart upload issued, bytes not yet
@@ -53,23 +54,24 @@ export const uploadAssetsTable = sqliteTable(
     // Populated at insert time (createdAt + a fixed pending-window constant
     // owned by the upload handlers, not this schema file) so a future cleanup
     // job can select on it directly instead of recomputing per row.
-    expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull()
+    expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
   },
   (table) => [
     unique('upload_assets_key_unique').on(table.key),
     index('upload_assets_user_id_idx').on(table.userId),
     index('upload_assets_status_idx').on(table.status),
     index('upload_assets_expires_at_idx').on(table.expiresAt),
-    index('upload_assets_attached_to_idx').on(table.attachedToTable, table.attachedToId)
-  ]
+    index('upload_assets_attached_to_idx').on(table.attachedToTable, table.attachedToId),
+  ],
 )
 
 export const uploadAssetsRelations = relations(uploadAssetsTable, ({ one }) => ({
   user: one(user, {
     fields: [uploadAssetsTable.userId],
-    references: [user.id]
-  })
+    references: [user.id],
+  }),
 }))
 
 export type SelectUploadAsset = InferSelectModel<typeof uploadAssetsTable>
+
 export type InsertUploadAsset = InferInsertModel<typeof uploadAssetsTable>

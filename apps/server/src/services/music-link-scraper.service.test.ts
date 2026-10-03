@@ -1,6 +1,9 @@
 import { Effect } from 'effect'
 import { describe, expect, test } from 'vitest'
+
 import { MusicProviderInvalidInput, MusicProviderNotFound } from '@/errors'
+
+import { DeezerService } from './deezer.service'
 import {
   type CrossPlatformLinkDiscovery,
   type MusicDataProvider,
@@ -10,15 +13,14 @@ import {
   noCrossPlatformDiscovery,
   type ProviderResult,
   type ScrapeResult,
-  scrapeEffect
+  scrapeEffect,
 } from './music-link-scraper.service'
-import { DeezerService } from './deezer.service'
 import {
   MusicBrainzIdentityService,
   MusicBrainzNotFound,
   MusicBrainzRequestFailed,
   type MusicBrainzIdentityCandidate,
-  type MusicBrainzIdentityServiceContract
+  type MusicBrainzIdentityServiceContract,
 } from './musicbrainz-identity.service'
 import { SpotifyService } from './spotify.service'
 
@@ -29,7 +31,7 @@ type ScrapeRequirements =
   | MusicBrainzIdentityService
 
 interface ScrapeDeps {
-  readonly providers?: readonly MusicDataProvider[]
+  readonly providers?: ReadonlyArray<MusicDataProvider>
   readonly discovery?: CrossPlatformLinkDiscovery
   readonly spotify?: SpotifyService
   readonly deezer?: DeezerService
@@ -42,11 +44,11 @@ const provideDeps =
     effect.pipe(
       Effect.provideService(MusicScraperProviders, {
         providers: deps.providers ?? [],
-        discovery: deps.discovery ?? noCrossPlatformDiscovery
+        discovery: deps.discovery ?? noCrossPlatformDiscovery,
       }),
       Effect.provideService(SpotifyService, deps.spotify ?? spotify),
       Effect.provideService(DeezerService, deps.deezer ?? deezer),
-      Effect.provideService(MusicBrainzIdentityService, deps.musicbrainz ?? musicbrainz)
+      Effect.provideService(MusicBrainzIdentityService, deps.musicbrainz ?? musicbrainz),
     )
 
 const runScrape = (deps: ScrapeDeps, input: MusicScrapeInput): Promise<ScrapeResult> =>
@@ -62,9 +64,9 @@ const unavailableOdesli: CrossPlatformLinkDiscovery = {
       new MusicScraperError({
         message: 'Odesli unavailable',
         provider: 'odesli',
-        statusCode: 502
-      })
-    )
+        statusCode: 502,
+      }),
+    ),
 }
 
 const spotify: SpotifyService = {
@@ -74,7 +76,7 @@ const spotify: SpotifyService = {
       albumImageUrl: 'https://example.com/cover.jpg',
       title: 'Fallback Track',
       artists: 'Fallback Artist',
-      trackUrl: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh'
+      trackUrl: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh',
     }),
   getAlbum: () => Effect.die('unexpected getAlbum call'),
   getPlaylist: () => Effect.die('unexpected getPlaylist call'),
@@ -93,7 +95,7 @@ const spotify: SpotifyService = {
           title: 'Source Playlist',
           url: 'https://open.spotify.com/playlist/4iV5W9uYEdYUVa79Axb7Rh',
           ownerName: 'Owner',
-          crossPlatformEnrichment: 'forbidden'
+          crossPlatformEnrichment: 'forbidden',
         })
       : Effect.succeed({
           platform: 'spotify',
@@ -103,14 +105,14 @@ const spotify: SpotifyService = {
           artists: 'Fallback Artist',
           url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh',
           imageUrl: 'https://example.com/cover.jpg',
-          crossPlatformEnrichment: 'allowed'
-        })
+          crossPlatformEnrichment: 'allowed',
+        }),
 }
 
 const deezer: DeezerService = {
   resolve: () => Effect.die('unexpected Deezer resolve call'),
   searchTrackByIsrc: () => Effect.succeed(null),
-  searchAlbumByTitleArtist: () => Effect.succeed(null)
+  searchAlbumByTitleArtist: () => Effect.succeed(null),
 }
 
 const musicbrainz: MusicBrainzIdentityServiceContract = {
@@ -119,31 +121,31 @@ const musicbrainz: MusicBrainzIdentityServiceContract = {
     Effect.fail(
       new MusicBrainzNotFound({
         operation: 'lookupRecordingByIsrc',
-        identifier: isrc
-      })
+        identifier: isrc,
+      }),
     ),
   lookupByExternalUrl: ({ url }) =>
     Effect.fail(
       new MusicBrainzNotFound({
         operation: 'lookupByExternalUrl',
-        identifier: url
-      })
+        identifier: url,
+      }),
     ),
   lookupCoverArt: (releaseMbid) =>
     Effect.fail(
       new MusicBrainzNotFound({
         operation: 'lookupCoverArt',
-        identifier: releaseMbid
-      })
+        identifier: releaseMbid,
+      }),
     ),
-  searchCandidates: () => Effect.die('unexpected MusicBrainz search')
+  searchCandidates: () => Effect.die('unexpected MusicBrainz search'),
 }
 
 describe('scrapeEffect', () => {
   test('falls back to Spotify track metadata when Odesli is unavailable', async () => {
     const result = await runScrape(
       { discovery: unavailableOdesli },
-      { url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh' }
+      { url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh' },
     )
 
     expect(result).toEqual({
@@ -155,16 +157,16 @@ describe('scrapeEffect', () => {
           metadata: {
             discoveredBy: 'spotify',
             confidence: 'exact_source',
-            externalId: '4iV5W9uYEdYUVa79Axb7Rh'
-          }
-        }
+            externalId: '4iV5W9uYEdYUVa79Axb7Rh',
+          },
+        },
       ],
       entityMeta: {
         title: 'Fallback Track',
         artistName: 'Fallback Artist',
         thumbnailUrl: 'https://example.com/cover.jpg',
-        type: 'song'
-      }
+        type: 'song',
+      },
     })
   })
 
@@ -177,19 +179,20 @@ describe('scrapeEffect', () => {
             {
               platform: 'bandcamp',
               url: 'https://artist.bandcamp.com/track/example',
-              scrapedAt: new Date('2026-08-16T00:00:00.000Z')
-            }
+              scrapedAt: new Date('2026-08-16T00:00:00.000Z'),
+            },
           ],
           entityMeta: {
             title: 'Example',
             artistName: 'Artist',
-            type: 'song'
-          }
-        } satisfies ProviderResult)
+            type: 'song',
+          },
+        } satisfies ProviderResult),
     }
+
     const result = await runScrape(
       { providers: [successfulProvider], discovery: unavailableOdesli },
-      { url: 'https://artist.bandcamp.com/track/example' }
+      { url: 'https://artist.bandcamp.com/track/example' },
     )
 
     expect(result).toEqual({
@@ -197,19 +200,20 @@ describe('scrapeEffect', () => {
         {
           platform: 'bandcamp',
           url: 'https://artist.bandcamp.com/track/example',
-          scrapedAt: new Date('2026-08-16T00:00:00.000Z')
-        }
+          scrapedAt: new Date('2026-08-16T00:00:00.000Z'),
+        },
       ],
       entityMeta: {
         title: 'Example',
         artistName: 'Artist',
-        type: 'song'
-      }
+        type: 'song',
+      },
     })
   })
 
   test('keeps exact Deezer source metadata when Odesli is unavailable', async () => {
-    const lookedUpIsrcs: string[] = []
+    const lookedUpIsrcs: Array<string> = []
+
     const sourceDeezer: DeezerService = {
       ...deezer,
       resolve: () =>
@@ -224,31 +228,34 @@ describe('scrapeEffect', () => {
           albumTitle: 'Source Album',
           durationSeconds: 180,
           identifiers: { deezerId: '3135556', isrc: 'GBUM71029604' },
-          match: 'exact_source'
-        })
+          match: 'exact_source',
+        }),
     }
+
     const recordingMusicBrainz: MusicBrainzIdentityServiceContract = {
       ...musicbrainz,
       lookupRecordingByIsrc: (isrc) => {
         lookedUpIsrcs.push(isrc)
+
         return Effect.fail(
           new MusicBrainzNotFound({
             operation: 'lookupRecordingByIsrc',
-            identifier: isrc
-          })
+            identifier: isrc,
+          }),
         )
-      }
+      },
     }
+
     const result = await runScrape(
       {
         deezer: sourceDeezer,
         musicbrainz: recordingMusicBrainz,
-        discovery: unavailableOdesli
+        discovery: unavailableOdesli,
       },
       {
         entityType: 'track',
-        url: 'https://www.deezer.com/track/3135556'
-      }
+        url: 'https://www.deezer.com/track/3135556',
+      },
     )
 
     expect(result.entityMeta).toEqual({
@@ -256,7 +263,7 @@ describe('scrapeEffect', () => {
       artistName: 'Source Artist',
       thumbnailUrl: 'https://example.com/deezer.jpg',
       type: 'song',
-      isrc: 'GBUM71029604'
+      isrc: 'GBUM71029604',
     })
     expect(lookedUpIsrcs).toEqual(['GBUM71029604'])
     expect(result.links).toEqual([
@@ -267,9 +274,9 @@ describe('scrapeEffect', () => {
         metadata: {
           discoveredBy: 'deezer',
           confidence: 'exact_source',
-          externalId: '3135556'
-        }
-      }
+          externalId: '3135556',
+        },
+      },
     ])
   })
 
@@ -287,9 +294,10 @@ describe('scrapeEffect', () => {
           albumTitle: 'Source Album',
           durationSeconds: 180,
           identifiers: { deezerId: '3135556', isrc: 'GBUM71029604' },
-          match: 'exact_source'
-        })
+          match: 'exact_source',
+        }),
     }
+
     const odesli: CrossPlatformLinkDiscovery = {
       name: 'odesli',
       discoverLinks: () =>
@@ -298,27 +306,28 @@ describe('scrapeEffect', () => {
             {
               platform: 'spotify',
               url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh',
-              scrapedAt: new Date('2026-08-16T00:00:00.000Z')
+              scrapedAt: new Date('2026-08-16T00:00:00.000Z'),
             },
             {
               platform: 'deezer',
               url: 'https://www.deezer.com/track/wrong',
-              scrapedAt: new Date('2026-08-16T00:00:00.000Z')
-            }
+              scrapedAt: new Date('2026-08-16T00:00:00.000Z'),
+            },
           ],
           entityMeta: {
             title: 'Odesli Title',
             artistName: 'Odesli Artist',
-            type: 'song'
-          }
-        })
+            type: 'song',
+          },
+        }),
     }
+
     const result = await runScrape(
       { deezer: sourceDeezer, discovery: odesli },
       {
         entityType: 'track',
-        url: 'https://www.deezer.com/track/3135556'
-      }
+        url: 'https://www.deezer.com/track/3135556',
+      },
     )
 
     expect(result.entityMeta?.title).toBe('Exact Source Title')
@@ -326,17 +335,19 @@ describe('scrapeEffect', () => {
       { platform: 'deezer', url: 'https://www.deezer.com/track/3135556' },
       {
         platform: 'spotify',
-        url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh'
-      }
+        url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh',
+      },
     ])
   })
 
   test('only invokes the exact source service for playlists', async () => {
-    const calls: string[] = []
+    const calls: Array<string> = []
+
     const provider = (name: string): MusicDataProvider => ({
       name,
       fetchLinks: () => {
         calls.push(name)
+
         return Effect.succeed({
           links:
             name === 'spotify'
@@ -344,61 +355,65 @@ describe('scrapeEffect', () => {
                   {
                     platform: 'spotify',
                     url: 'https://open.spotify.com/playlist/source',
-                    scrapedAt: new Date('2026-08-16T00:00:00.000Z')
-                  }
+                    scrapedAt: new Date('2026-08-16T00:00:00.000Z'),
+                  },
                 ]
-              : []
+              : [],
         })
-      }
+      },
     })
+
     const result = await runScrape(
       {
         providers: [
           provider('odesli'),
           provider('musicbrainz'),
           provider('spotify'),
-          provider('deezer')
-        ]
+          provider('deezer'),
+        ],
       },
       {
         entityType: 'playlist',
         url: 'https://open.spotify.com/playlist/4iV5W9uYEdYUVa79Axb7Rh',
         mbid: '12345678-1234-4234-8234-123456789abc',
-        isrc: 'GBUM71029604'
-      }
+        isrc: 'GBUM71029604',
+      },
     )
 
     expect(calls).toEqual([])
     expect(result.links.map(({ platform, url }) => ({ platform, url }))).toEqual([
       {
         platform: 'spotify',
-        url: 'https://open.spotify.com/playlist/4iV5W9uYEdYUVa79Axb7Rh'
-      }
+        url: 'https://open.spotify.com/playlist/4iV5W9uYEdYUVa79Axb7Rh',
+      },
     ])
   })
 
   test('does not invoke any discovery provider for an unknown playlist source', async () => {
-    const calls: string[] = []
+    const calls: Array<string> = []
+
     const provider = (name: string): MusicDataProvider => ({
       name,
       fetchLinks: () => {
         calls.push(name)
+
         return Effect.succeed({ links: [] })
-      }
+      },
     })
+
     const result = await runScrape(
       {
         providers: [
           provider('odesli'),
           provider('musicbrainz'),
           provider('spotify'),
-          provider('deezer')
-        ]
+          provider('deezer'),
+        ],
       },
       {
         entityType: 'playlist',
-        url: 'https://example.com/playlist/source'
-      }
+        url: 'https://example.com/playlist/source',
+      },
     )
 
     expect(calls).toEqual([])
@@ -406,30 +421,34 @@ describe('scrapeEffect', () => {
   })
 
   test('fails a mismatched exact source without invoking Odesli', async () => {
-    const calls: string[] = []
+    const calls: Array<string> = []
+
     const mismatchSpotify: SpotifyService = {
       ...spotify,
       resolveSource: () =>
         Effect.fail(
           new MusicProviderInvalidInput({
             message: 'Mismatched Spotify source type',
-            operation: 'resolveSource'
-          })
-        )
+            operation: 'resolveSource',
+          }),
+        ),
     }
+
     const odesli: CrossPlatformLinkDiscovery = {
       name: 'odesli',
       discoverLinks: () => {
         calls.push('odesli')
+
         return Effect.succeed({ links: [] })
-      }
+      },
     }
+
     const error = await runScrapeError(
       { spotify: mismatchSpotify, discovery: odesli },
       {
         entityType: 'album',
-        url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh'
-      }
+        url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh',
+      },
     )
 
     expect(error).toMatchObject({ provider: 'spotify', statusCode: 400 })
@@ -444,16 +463,17 @@ describe('scrapeEffect', () => {
           new MusicProviderNotFound({
             operation: 'getTrack',
             entityType: 'track',
-            externalId: '4iV5W9uYEdYUVa79Axb7Rh'
-          })
-        )
+            externalId: '4iV5W9uYEdYUVa79Axb7Rh',
+          }),
+        ),
     }
+
     const error = await runScrapeError(
       { spotify: missingSpotify },
       {
         entityType: 'track',
-        url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh'
-      }
+        url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh',
+      },
     )
 
     expect(error).toMatchObject({ provider: 'spotify', statusCode: 404 })
@@ -467,21 +487,22 @@ describe('scrapeEffect', () => {
           new MusicScraperError({
             message: 'Second unavailable',
             provider: 'second',
-            statusCode: 502
-          })
-        )
+            statusCode: 502,
+          }),
+        ),
     }
+
     const error = await runScrapeError(
       { providers: [secondUnavailable], discovery: unavailableOdesli },
-      { url: 'https://example.com' }
+      { url: 'https://example.com' },
     )
 
     expect(error).toEqual(
       new MusicScraperError({
         message: 'All applicable music providers are unavailable',
         provider: 'all',
-        statusCode: 503
-      })
+        statusCode: 503,
+      }),
     )
   })
 
@@ -497,19 +518,21 @@ describe('scrapeEffect', () => {
         source: 'musicbrainz',
         confidence: 'exact_mbid',
         lookupAt: '2026-08-16T00:00:00.000Z',
-        canonicalMbid: '12345678-1234-4234-8234-123456789abc'
-      }
+        canonicalMbid: '12345678-1234-4234-8234-123456789abc',
+      },
     }
+
     const exactMusicBrainz: MusicBrainzIdentityServiceContract = {
       ...musicbrainz,
-      lookupByMbid: () => Effect.succeed(candidate)
+      lookupByMbid: () => Effect.succeed(candidate),
     }
+
     const result = await runScrape(
       { musicbrainz: exactMusicBrainz },
       {
         entityType: 'track',
-        mbid: '12345678-1234-4234-8234-123456789abc'
-      }
+        mbid: '12345678-1234-4234-8234-123456789abc',
+      },
     )
 
     expect(result).toEqual({
@@ -525,16 +548,16 @@ describe('scrapeEffect', () => {
             mbidType: 'recording',
             lookupAt: '2026-08-16T00:00:00.000Z',
             canonicalMbid: '12345678-1234-4234-8234-123456789abc',
-            matchedIdentifiers: { isrcs: ['GBUM71029604'] }
-          }
-        }
+            matchedIdentifiers: { isrcs: ['GBUM71029604'] },
+          },
+        },
       ],
       entityMeta: {
         title: 'Exact Recording',
         artistName: 'Exact Artist',
         type: 'song',
-        isrc: 'GBUM71029604'
-      }
+        isrc: 'GBUM71029604',
+      },
     })
   })
 
@@ -553,21 +576,22 @@ describe('scrapeEffect', () => {
             source: 'musicbrainz',
             confidence: 'exact_isrc',
             lookupAt: '2026-08-16T00:00:00.000Z',
-            canonicalMbid: '12345678-1234-4234-8234-123456789abc'
-          }
-        })
+            canonicalMbid: '12345678-1234-4234-8234-123456789abc',
+          },
+        }),
     }
+
     const result = await runScrape(
       { musicbrainz: exactMusicBrainz },
-      { entityType: 'track', isrc: 'GB-UM7-10-29604' }
+      { entityType: 'track', isrc: 'GB-UM7-10-29604' },
     )
 
     expect(result.links[0]).toMatchObject({
       platform: 'musicbrainz',
       metadata: {
         confidence: 'exact_isrc',
-        matchedIdentifiers: { isrcs: ['GBUM71029604'] }
-      }
+        matchedIdentifiers: { isrcs: ['GBUM71029604'] },
+      },
     })
   })
 
@@ -579,32 +603,34 @@ describe('scrapeEffect', () => {
       artistNames: ['Artist'],
       releaseGroup: {
         mbid: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
-        primaryType: 'Album'
+        primaryType: 'Album',
       },
       editionRelease: {
         mbid: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
         country: 'ZA',
         date: '2026-08-16',
-        barcode: '1234567890'
+        barcode: '1234567890',
       },
       provenance: {
         source: 'musicbrainz',
         confidence: 'exact_mbid',
         lookupAt: '2026-08-16T00:00:00.000Z',
         requestedMbid: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
-        canonicalMbid: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
-      }
+        canonicalMbid: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      },
     }
+
     const exactMusicBrainz: MusicBrainzIdentityServiceContract = {
       ...musicbrainz,
-      lookupByMbid: () => Effect.succeed(album)
+      lookupByMbid: () => Effect.succeed(album),
     }
+
     const result = await runScrape(
       { musicbrainz: exactMusicBrainz },
       {
         entityType: 'album',
-        mbid: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
-      }
+        mbid: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      },
     )
 
     expect(result.links[0]).toMatchObject({
@@ -618,28 +644,31 @@ describe('scrapeEffect', () => {
           mbid: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
           country: 'ZA',
           date: '2026-08-16',
-          barcode: '1234567890'
-        }
-      }
+          barcode: '1234567890',
+        },
+      },
     })
   })
 
   test('does not auto-link metadata-only MusicBrainz candidates', async () => {
-    const candidates: string[] = []
+    const candidates: Array<string> = []
+
     const recordingMusicBrainz: MusicBrainzIdentityServiceContract = {
       ...musicbrainz,
       searchCandidates: () => {
         candidates.push('searched')
+
         return Effect.succeed([])
-      }
+      },
     }
+
     const result = await runScrape(
       { musicbrainz: recordingMusicBrainz },
       {
         entityType: 'track',
         artistName: 'Artist',
-        trackTitle: 'Track'
-      }
+        trackTitle: 'Track',
+      },
     )
 
     expect(candidates).toEqual([])
@@ -647,11 +676,13 @@ describe('scrapeEffect', () => {
   })
 
   test('attaches an exact MusicBrainz URL relationship without text search', async () => {
-    const calls: string[] = []
+    const calls: Array<string> = []
+
     const exactMusicBrainz: MusicBrainzIdentityServiceContract = {
       ...musicbrainz,
       lookupByExternalUrl: ({ url }) => {
         calls.push(`url:${url}`)
+
         return Effect.succeed({
           source: 'musicbrainz',
           entityType: 'track',
@@ -664,29 +695,31 @@ describe('scrapeEffect', () => {
             confidence: 'exact_url',
             lookupAt: '2026-08-16T00:00:00.000Z',
             canonicalMbid: '12345678-1234-4234-8234-123456789abc',
-            matchedUrl: url
-          }
+            matchedUrl: url,
+          },
         })
       },
       searchCandidates: () => {
         calls.push('search')
+
         return Effect.succeed([])
-      }
+      },
     }
+
     const result = await runScrape(
       { musicbrainz: exactMusicBrainz },
       {
         entityType: 'track',
-        url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh'
-      }
+        url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh',
+      },
     )
 
     expect(calls).toEqual(['url:https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh'])
     expect(result.links).toContainEqual(
       expect.objectContaining({
         platform: 'musicbrainz',
-        metadata: expect.objectContaining({ confidence: 'exact_url' })
-      })
+        metadata: expect.objectContaining({ confidence: 'exact_url' }),
+      }),
     )
   })
 
@@ -702,9 +735,10 @@ describe('scrapeEffect', () => {
         source: 'musicbrainz',
         confidence: 'exact_mbid',
         lookupAt: '2026-08-16T00:00:00.000Z',
-        canonicalMbid: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
-      }
+        canonicalMbid: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      },
     }
+
     const exactMusicBrainz: MusicBrainzIdentityServiceContract = {
       ...musicbrainz,
       lookupByMbid: () => Effect.succeed(album),
@@ -717,24 +751,25 @@ describe('scrapeEffect', () => {
           lookupAt: '2026-08-16T00:00:00.000Z',
           approved: true,
           rights: 'not_asserted',
-          storage: 'remote_reference'
-        })
+          storage: 'remote_reference',
+        }),
     }
+
     const result = await runScrape(
       { musicbrainz: exactMusicBrainz },
       {
         entityType: 'album',
-        mbid: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
-      }
+        mbid: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      },
     )
 
     expect(result.entityMeta?.thumbnailUrl).toBe(
-      'https://coverartarchive.org/release/release-id/front-500.jpg'
+      'https://coverartarchive.org/release/release-id/front-500.jpg',
     )
     expect(result.links[0]?.metadata?.coverArt).toMatchObject({
       source: 'cover_art_archive',
       rights: 'not_asserted',
-      storage: 'remote_reference'
+      storage: 'remote_reference',
     })
   })
 
@@ -746,17 +781,18 @@ describe('scrapeEffect', () => {
           new MusicBrainzRequestFailed({
             operation: 'lookupRecordingByIsrc',
             statusCode: 503,
-            cause: 'MusicBrainz unavailable'
-          })
-        )
+            cause: 'MusicBrainz unavailable',
+          }),
+        ),
     }
+
     const result = await runScrape(
       { musicbrainz: unavailableMusicBrainz, discovery: unavailableOdesli },
       {
         entityType: 'track',
         url: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh',
-        isrc: 'GBUM71029604'
-      }
+        isrc: 'GBUM71029604',
+      },
     )
 
     expect(result.links).toEqual([
@@ -767,9 +803,9 @@ describe('scrapeEffect', () => {
         metadata: {
           discoveredBy: 'spotify',
           confidence: 'exact_source',
-          externalId: '4iV5W9uYEdYUVa79Axb7Rh'
-        }
-      }
+          externalId: '4iV5W9uYEdYUVa79Axb7Rh',
+        },
+      },
     ])
     expect(result.entityMeta?.title).toBe('Fallback Track')
   })

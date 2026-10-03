@@ -12,6 +12,7 @@
  * These placeholders get replaced with hex values from packages/theme/src/tokens/shadcn.ts
  */
 import type { Plugin } from 'vite'
+
 import { dark, light } from '../../../packages/theme/src/tokens/shadcn.ts'
 
 export const transformThemeColors = (html: string) =>
@@ -23,6 +24,6 @@ export function themeColorsPlugin(): Plugin {
   return {
     name: 'theme-colors',
     enforce: 'pre',
-    transformIndexHtml: transformThemeColors
+    transformIndexHtml: transformThemeColors,
   }
 }

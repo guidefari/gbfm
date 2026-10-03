@@ -7,7 +7,8 @@ export const InternalHandlersLive = HttpApiBuilder.group(Api, 'internal', (handl
   handlers.handle('whoami', () =>
     Effect.gen(function* () {
       const { user } = yield* AuthSession
+
       return { userId: user.id, email: user.email }
-    })
-  )
+    }),
+  ),
 )

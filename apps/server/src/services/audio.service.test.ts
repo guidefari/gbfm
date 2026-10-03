@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto'
+
 import { count, eq } from 'drizzle-orm'
 import { Effect, Layer } from 'effect'
 import { beforeAll, describe, expect, test } from 'vitest'
-import { DatabaseTestLayer, db } from '@/test/database'
-import { withTestLayer } from '@/test/effect'
+
 import { audioTable } from '@/db/audio.schema'
 import { user } from '@/db/auth.schema'
 import { showsTable } from '@/db/show.schema'
@@ -11,9 +11,13 @@ import { CryptoLive } from '@/lib/crypto'
 import { MdxServiceLayer } from '@/lib/mdx'
 import { ConfigServiceLayer } from '@/services/config.service'
 import { UploadAssetServiceLayer } from '@/services/upload-asset.service'
+import { DatabaseTestLayer, db } from '@/test/database'
+import { withTestLayer } from '@/test/effect'
+
 import { AudioService, AudioServiceLayer, createAudioFingerprint } from './audio.service'
 
 const actorId = `audio-idempotency-${randomUUID()}`
+
 const otherActorId = `audio-other-${randomUUID()}`
 
 const makeAudio = (slug: string) => ({
@@ -21,7 +25,7 @@ const makeAudio = (slug: string) => ({
   slug,
   content: '',
   type: 'mix' as const,
-  url: 'https://example.com/audio.mp3'
+  url: 'https://example.com/audio.mp3',
 })
 
 const getService = () =>
@@ -33,9 +37,9 @@ const getService = () =>
       AudioServiceLayer.pipe(
         Layer.provide(MdxServiceLayer),
         Layer.provide(Layer.mergeAll(ConfigServiceLayer, UploadAssetServiceLayer)),
-        Layer.provide(DatabaseTestLayer)
-      )
-    )
+        Layer.provide(DatabaseTestLayer),
+      ),
+    ),
   )
 
 beforeAll(async () => {
@@ -43,13 +47,13 @@ beforeAll(async () => {
     {
       id: actorId,
       name: 'Audio idempotency actor',
-      email: `${actorId}@example.com`
+      email: `${actorId}@example.com`,
     },
     {
       id: otherActorId,
       name: 'Audio other actor',
-      email: `${otherActorId}@example.com`
-    }
+      email: `${otherActorId}@example.com`,
+    },
   ])
 })
 
@@ -60,18 +64,20 @@ describe('AudioService.getByTypeForEdit visibility', () => {
     const otherSlug = `other-${randomUUID()}`
 
     const own = await Effect.runPromise(
-      service.create(makeAudio(ownSlug), [actorId], { actorId, idempotencyKey: randomUUID() })
+      service.create(makeAudio(ownSlug), [actorId], { actorId, idempotencyKey: randomUUID() }),
     )
+
     const other = await Effect.runPromise(
       service.create(makeAudio(otherSlug), [otherActorId], {
         actorId: otherActorId,
-        idempotencyKey: randomUUID()
-      })
+        idempotencyKey: randomUUID(),
+      }),
     )
 
     const { data } = await Effect.runPromise(
-      service.getByTypeForEdit('mix', { limit: 200, offset: 0 }, actorId, 'user')
+      service.getByTypeForEdit('mix', { limit: 200, offset: 0 }, actorId, 'user'),
     )
+
     const ids = data.map((audio) => audio.id)
 
     expect(ids).toContain(own.id)
@@ -85,12 +91,12 @@ describe('AudioService.getByTypeForEdit visibility', () => {
     const other = await Effect.runPromise(
       service.create(makeAudio(otherSlug), [otherActorId], {
         actorId: otherActorId,
-        idempotencyKey: randomUUID()
-      })
+        idempotencyKey: randomUUID(),
+      }),
     )
 
     const { data } = await Effect.runPromise(
-      service.getByTypeForEdit('mix', { limit: 200, offset: 0 }, actorId, 'admin')
+      service.getByTypeForEdit('mix', { limit: 200, offset: 0 }, actorId, 'admin'),
     )
 
     expect(data.map((audio) => audio.id)).toContain(other.id)
@@ -105,12 +111,12 @@ describe('AudioService.getBySlug draft visibility', () => {
     await Effect.runPromise(
       service.create({ ...makeAudio(slug), draft: true }, [actorId], {
         actorId,
-        idempotencyKey: randomUUID()
-      })
+        idempotencyKey: randomUUID(),
+      }),
     )
 
     const audio = await Effect.runPromise(
-      service.getBySlug('mix', slug, { userId: actorId, userRole: 'user' })
+      service.getBySlug('mix', slug, { userId: actorId, userRole: 'user' }),
     )
 
     expect(audio.slug).toBe(slug)
@@ -123,12 +129,12 @@ describe('AudioService.getBySlug draft visibility', () => {
     await Effect.runPromise(
       service.create({ ...makeAudio(slug), draft: true }, [otherActorId], {
         actorId: otherActorId,
-        idempotencyKey: randomUUID()
-      })
+        idempotencyKey: randomUUID(),
+      }),
     )
 
     const audio = await Effect.runPromise(
-      service.getBySlug('mix', slug, { userId: actorId, userRole: 'admin' })
+      service.getBySlug('mix', slug, { userId: actorId, userRole: 'admin' }),
     )
 
     expect(audio.slug).toBe(slug)
@@ -138,12 +144,13 @@ describe('AudioService.getBySlug draft visibility', () => {
 describe('AudioService.create idempotency', () => {
   test('normalizes creator order without hiding changed content', async () => {
     const audio = makeAudio('fingerprint')
-    const fingerprint = (data: typeof audio, creatorIds: readonly string[]) =>
+
+    const fingerprint = (data: typeof audio, creatorIds: ReadonlyArray<string>) =>
       Effect.runPromise(withTestLayer(createAudioFingerprint(data, creatorIds), CryptoLive))
 
     expect(await fingerprint(audio, ['b', 'a'])).toBe(await fingerprint(audio, ['a', 'b']))
     expect(await fingerprint(audio, ['a'])).not.toBe(
-      await fingerprint({ ...audio, title: 'Changed' }, ['a'])
+      await fingerprint({ ...audio, title: 'Changed' }, ['a']),
     )
   })
 
@@ -153,13 +160,14 @@ describe('AudioService.create idempotency', () => {
     const idempotencyKey = randomUUID()
 
     const first = await Effect.runPromise(
-      service.create(makeAudio(slug), [actorId], { actorId, idempotencyKey })
+      service.create(makeAudio(slug), [actorId], { actorId, idempotencyKey }),
     )
+
     const replay = await Effect.runPromise(
       service.create(makeAudio(slug), [actorId], {
         actorId,
-        idempotencyKey
-      })
+        idempotencyKey,
+      }),
     )
 
     expect(replay.id).toBe(first.id)
@@ -177,10 +185,10 @@ describe('AudioService.create idempotency', () => {
       Effect.runPromise(
         service.create({ ...makeAudio(slug), title: 'Changed retry body' }, [actorId], {
           actorId,
-          idempotencyKey
-        })
-      )
-    ).rejects.toMatchObject({ _tag: 'ConflictError' })
+          idempotencyKey,
+        }),
+      ),
+    ).rejects.toMatchObject({ resource: 'audio' })
   })
 
   test('atomically replays one row across concurrent create attempts', async () => {
@@ -190,9 +198,10 @@ describe('AudioService.create idempotency', () => {
 
     const results = await Promise.all(
       Array.from({ length: 6 }, () =>
-        Effect.runPromise(service.create(makeAudio(slug), [actorId], { actorId, idempotencyKey }))
-      )
+        Effect.runPromise(service.create(makeAudio(slug), [actorId], { actorId, idempotencyKey })),
+      ),
     )
+
     const [rowCount] = await db
       .select({ count: count() })
       .from(audioTable)
@@ -209,18 +218,18 @@ describe('AudioService.create idempotency', () => {
     await Effect.runPromise(
       service.create(makeAudio(slug), [actorId], {
         actorId,
-        idempotencyKey: randomUUID()
-      })
+        idempotencyKey: randomUUID(),
+      }),
     )
 
     await expect(
       Effect.runPromise(
         service.create(makeAudio(slug), [actorId], {
           actorId,
-          idempotencyKey: randomUUID()
-        })
-      )
-    ).rejects.toMatchObject({ _tag: 'ConflictError' })
+          idempotencyKey: randomUUID(),
+        }),
+      ),
+    ).rejects.toMatchObject({ resource: 'audio' })
   })
 })
 
@@ -232,40 +241,43 @@ describe('AudioService creators', () => {
     const created = await Effect.runPromise(
       service.create(makeAudio(slug), [actorId], {
         actorId,
-        idempotencyKey: randomUUID()
-      })
+        idempotencyKey: randomUUID(),
+      }),
     )
 
     const bySlug = await Effect.runPromise(service.getBySlug('mix', slug))
     expect(bySlug.creators).toEqual([
-      expect.objectContaining({ id: actorId, name: 'Audio idempotency actor' })
+      expect.objectContaining({ id: actorId, name: 'Audio idempotency actor' }),
     ])
 
     const { data: byType } = await Effect.runPromise(
-      service.getByType('mix', { limit: 100, offset: 0 })
+      service.getByType('mix', { limit: 100, offset: 0 }),
     )
+
     const match = byType.find((audio) => audio.id === created.id)
     expect(match?.creators).toEqual([
-      expect.objectContaining({ id: actorId, name: 'Audio idempotency actor' })
+      expect.objectContaining({ id: actorId, name: 'Audio idempotency actor' }),
     ])
   })
 })
 
 const makeShow = async (thumbnailUrl: string | null) => {
   const slug = `show-${randomUUID()}`
+
   const [show] = await db
     .insert(showsTable)
     .values({
       title: `Show ${slug}`,
       slug,
       content: '',
-      thumbnailUrl
+      thumbnailUrl,
     })
     .returning()
 
   if (!show) {
     throw new Error('Failed to insert show fixture')
   }
+
   return show
 }
 
@@ -278,8 +290,8 @@ describe('AudioService show thumbnailUrl fallback', () => {
     const created = await Effect.runPromise(
       service.create({ ...makeAudio(slug), showId: show.id }, [actorId], {
         actorId,
-        idempotencyKey: randomUUID()
-      })
+        idempotencyKey: randomUUID(),
+      }),
     )
 
     const [row] = await db.select().from(audioTable).where(eq(audioTable.id, created.id))
@@ -294,16 +306,17 @@ describe('AudioService show thumbnailUrl fallback', () => {
     const created = await Effect.runPromise(
       service.create({ ...makeAudio(slug), showId: show.id }, [actorId], {
         actorId,
-        idempotencyKey: randomUUID()
-      })
+        idempotencyKey: randomUUID(),
+      }),
     )
 
     const bySlug = await Effect.runPromise(service.getBySlug('mix', slug))
     expect(bySlug.thumbnailUrl).toBe('https://example.com/show-art.png')
 
     const { data: byType } = await Effect.runPromise(
-      service.getByType('mix', { limit: 100, offset: 0 })
+      service.getByType('mix', { limit: 100, offset: 0 }),
     )
+
     const match = byType.find((audio) => audio.id === created.id)
     expect(match?.thumbnailUrl).toBe('https://example.com/show-art.png')
   })
@@ -316,8 +329,8 @@ describe('AudioService show thumbnailUrl fallback', () => {
     await Effect.runPromise(
       service.create({ ...makeAudio(slug), showId: show.id }, [actorId], {
         actorId,
-        idempotencyKey: randomUUID()
-      })
+        idempotencyKey: randomUUID(),
+      }),
     )
 
     await db
@@ -339,11 +352,11 @@ describe('AudioService show thumbnailUrl fallback', () => {
         {
           ...makeAudio(slug),
           showId: show.id,
-          thumbnailUrl: 'https://example.com/own-art.png'
+          thumbnailUrl: 'https://example.com/own-art.png',
         },
         [actorId],
-        { actorId, idempotencyKey: randomUUID() }
-      )
+        { actorId, idempotencyKey: randomUUID() },
+      ),
     )
 
     const [row] = await db.select().from(audioTable).where(eq(audioTable.id, created.id))

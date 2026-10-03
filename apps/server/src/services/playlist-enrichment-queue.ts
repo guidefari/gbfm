@@ -1,16 +1,17 @@
 import { Context, Effect, Layer, Schema } from 'effect'
+
 import { PlaylistEnrichmentQueueUnavailable } from '@/errors'
 
-export const PlaylistEnrichmentJob = Schema.Struct({
-  _tag: Schema.Literal('PlaylistEnrichmentJob'),
+export const PlaylistEnrichmentJob = Schema.TaggedStruct('PlaylistEnrichmentJob', {
   playlistId: Schema.String,
-  reason: Schema.Literals(['after_import', 'manual'])
+  reason: Schema.Literals(['after_import', 'manual']),
 })
+
 export type PlaylistEnrichmentJob = typeof PlaylistEnrichmentJob.Type
 
 export interface PlaylistEnrichmentQueue {
   readonly enqueue: (
-    job: PlaylistEnrichmentJob
+    job: PlaylistEnrichmentJob,
   ) => Effect.Effect<void, PlaylistEnrichmentQueueUnavailable>
 }
 
@@ -18,7 +19,7 @@ export const PlaylistEnrichmentQueue =
   Context.Service<PlaylistEnrichmentQueue>('PlaylistEnrichmentQueue')
 
 export interface PlaylistEnrichmentQueueSender {
-  send(message: PlaylistEnrichmentJob): Promise<unknown>
+  send(message: PlaylistEnrichmentJob): Promise<object | void>
 }
 
 export const PlaylistEnrichmentQueueLayer = (queue: PlaylistEnrichmentQueueSender) =>
@@ -26,10 +27,10 @@ export const PlaylistEnrichmentQueueLayer = (queue: PlaylistEnrichmentQueueSende
     enqueue: (job) =>
       Effect.tryPromise({
         try: () => queue.send(job),
-        catch: () => new PlaylistEnrichmentQueueUnavailable({ playlistId: job.playlistId })
-      }).pipe(Effect.asVoid)
+        catch: () => new PlaylistEnrichmentQueueUnavailable({ playlistId: job.playlistId }),
+      }).pipe(Effect.asVoid),
   })
 
 export const PlaylistEnrichmentQueueTestLayer = Layer.succeed(PlaylistEnrichmentQueue, {
-  enqueue: () => Effect.void
+  enqueue: () => Effect.void,
 })

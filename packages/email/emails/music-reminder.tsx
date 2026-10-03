@@ -8,9 +8,10 @@ import {
   Link,
   Preview,
   Section,
-  Text
+  Text,
 } from '@react-email/components'
 import type * as React from 'react'
+
 import { EmailHead } from './email-head'
 import { emailTheme } from './theme'
 
@@ -32,10 +33,10 @@ export const MusicReminderEmail: React.FC<Readonly<MusicReminderEmailProps>> = (
   reminderDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
   }),
   notes,
-  albumCoverUrl
+  albumCoverUrl,
 }) => {
   return (
     <Html>
@@ -107,20 +108,20 @@ export const MusicReminderEmail: React.FC<Readonly<MusicReminderEmailProps>> = (
 // Styles
 const main = {
   backgroundColor: emailTheme.colors.mono.page,
-  fontFamily: emailTheme.typography.sansAlt
+  fontFamily: emailTheme.typography.sansAlt,
 }
 
 const container = {
   backgroundColor: emailTheme.colors.mono.page,
   margin: '0 auto',
   padding: '0',
-  maxWidth: '600px'
+  maxWidth: '600px',
 }
 
 const header = {
   padding: '40px 20px 30px',
   textAlign: 'center' as const,
-  borderBottom: `1px solid ${emailTheme.colors.mono.border}`
+  borderBottom: `1px solid ${emailTheme.colors.mono.border}`,
 }
 
 const logoText = {
@@ -129,7 +130,7 @@ const logoText = {
   letterSpacing: '4px',
   color: emailTheme.colors.mono.white,
   margin: '0 0 4px',
-  textTransform: 'uppercase' as const
+  textTransform: 'uppercase' as const,
 }
 
 const tagline = {
@@ -137,12 +138,12 @@ const tagline = {
   letterSpacing: '2px',
   color: emailTheme.colors.mono.textMuted,
   margin: '0',
-  textTransform: 'uppercase' as const
+  textTransform: 'uppercase' as const,
 }
 
 const hero = {
   padding: '60px 20px',
-  textAlign: 'center' as const
+  textAlign: 'center' as const,
 }
 
 const reminderLabel = {
@@ -150,26 +151,26 @@ const reminderLabel = {
   letterSpacing: '3px',
   color: emailTheme.colors.mono.textSecondary,
   margin: '0 0 20px',
-  textTransform: 'uppercase' as const
+  textTransform: 'uppercase' as const,
 }
 
 const content = {
   padding: '40px 40px 60px',
-  textAlign: 'center' as const
+  textAlign: 'center' as const,
 }
 
 const greeting = {
   fontSize: '16px',
   color: emailTheme.colors.mono.white,
   margin: '0 0 16px',
-  fontWeight: '500'
+  fontWeight: '500',
 }
 
 const bodyText = {
   fontSize: '16px',
   lineHeight: '24px',
   color: emailTheme.colors.mono.textSecondary,
-  margin: '0 0 32px'
+  margin: '0 0 32px',
 }
 
 const notesText = {
@@ -177,7 +178,7 @@ const notesText = {
   lineHeight: '24px',
   color: emailTheme.colors.mono.textTertiary,
   margin: '0 0 32px',
-  fontStyle: 'italic'
+  fontStyle: 'italic',
 }
 
 const ctaButton = {
@@ -191,13 +192,13 @@ const ctaButton = {
   borderRadius: emailTheme.radius.pill,
   textDecoration: 'none',
   display: 'inline-block',
-  margin: '0 0 24px'
+  margin: '0 0 24px',
 }
 
 const dateInfo = {
   fontSize: '13px',
   color: emailTheme.colors.mono.textMuted,
-  margin: '0'
+  margin: '0',
 }
 
 const musicTitleStyles = {
@@ -205,44 +206,44 @@ const musicTitleStyles = {
   fontSize: '28px',
   fontWeight: 'bold',
   margin: '24px 0 8px',
-  textAlign: 'center' as const
+  textAlign: 'center' as const,
 }
 
 const artistText = {
   color: emailTheme.colors.mono.textTertiary,
   fontSize: '18px',
   margin: '0 0 8px',
-  textAlign: 'center' as const
+  textAlign: 'center' as const,
 }
 
 const albumCoverWrapper = {
   marginBottom: '32px',
-  textAlign: 'center' as const
+  textAlign: 'center' as const,
 }
 
 const albumCover = {
   margin: '0 auto',
   borderRadius: emailTheme.radius.lg,
   border: `1px solid ${emailTheme.colors.mono.border}`,
-  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
+  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
 }
 
 const footer = {
   borderTop: `1px solid ${emailTheme.colors.mono.border}`,
   padding: '32px 24px',
-  textAlign: 'center' as const
+  textAlign: 'center' as const,
 }
 
 const footerText = {
   color: emailTheme.colors.mono.textMuted,
   fontSize: '12px',
   lineHeight: '18px',
-  margin: '0 0 8px'
+  margin: '0 0 8px',
 }
 
 const footerLink = {
   color: emailTheme.colors.mono.textPrimary,
-  textDecoration: 'none'
+  textDecoration: 'none',
 }
 
 export default MusicReminderEmail

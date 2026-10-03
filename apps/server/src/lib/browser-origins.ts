@@ -7,9 +7,9 @@ const staticBrowserOrigins = [
   'https://gbfm.localhost',
   'https://gbfm.test',
   'https://www.goosebumps.fm',
-  'https://goosebumps.fm'
+  'https://goosebumps.fm',
 ] as const
 
 export const browserOrigins = (frontend: string): Array<string> => [
-  ...new Set([frontend, ...staticBrowserOrigins])
+  ...new Set([frontend, ...staticBrowserOrigins]),
 ]

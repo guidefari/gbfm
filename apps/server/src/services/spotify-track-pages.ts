@@ -9,8 +9,8 @@ type TrackPage<A> = {
 
 export const collectSpotifyTrackPages = <A, E, R>(
   initialPage: TrackPage<A>,
-  loadPage: (options: { offset: number; limit: number }) => Effect.Effect<TrackPage<A>, E, R>
-): Effect.Effect<A[], E, R> => {
+  loadPage: (options: { offset: number; limit: number }) => Effect.Effect<TrackPage<A>, E, R>,
+): Effect.Effect<Array<A>, E, R> => {
   type PageEffect = Effect.Effect<TrackPage<A>, E, R>
 
   return Stream.paginate<PageEffect, A, E, R>(Effect.succeed(initialPage), (pageEffect) =>
@@ -19,8 +19,8 @@ export const collectSpotifyTrackPages = <A, E, R>(
         page.items,
         page.next === null
           ? Option.none()
-          : Option.some(loadPage({ offset: page.offset + page.limit, limit: 50 }))
-      ])
-    )
+          : Option.some(loadPage({ offset: page.offset + page.limit, limit: 50 })),
+      ]),
+    ),
   ).pipe(Stream.runCollect)
 }

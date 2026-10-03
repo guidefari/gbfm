@@ -4,7 +4,7 @@ const TrackSummarySchema = Schema.Struct({
   title: Schema.String,
   artists: Schema.String,
   previewUrl: Schema.optional(Schema.String),
-  trackUrl: Schema.String
+  trackUrl: Schema.String,
 })
 
 export const TrackSchema = Schema.Struct({
@@ -14,7 +14,7 @@ export const TrackSchema = Schema.Struct({
   artists: Schema.String,
   trackUrl: Schema.String,
   isrc: Schema.optional(Schema.String),
-  previewUrl: Schema.optional(Schema.String)
+  previewUrl: Schema.optional(Schema.String),
 })
 
 export const AlbumSchema = Schema.Struct({
@@ -23,7 +23,7 @@ export const AlbumSchema = Schema.Struct({
   title: Schema.String,
   artists: Schema.String,
   tracks: Schema.Array(TrackSummarySchema),
-  albumUrl: Schema.String
+  albumUrl: Schema.String,
 })
 
 export const PlaylistSchema = Schema.Struct({
@@ -32,7 +32,7 @@ export const PlaylistSchema = Schema.Struct({
   description: Schema.optional(Schema.String),
   tracks: Schema.Array(TrackSummarySchema),
   ownerName: Schema.optional(Schema.String),
-  playlistUrl: Schema.String
+  playlistUrl: Schema.String,
 })
 
 export const AlbumSearchResultSchema = Schema.Struct({
@@ -43,18 +43,22 @@ export const AlbumSearchResultSchema = Schema.Struct({
   releaseDate: Schema.String,
   albumImageUrl: Schema.optional(Schema.String),
   albumUrl: Schema.String,
-  totalTracks: Schema.Number
+  totalTracks: Schema.Number,
 })
 
 export const SearchAlbumsResponseSchema = Schema.Struct({
   albums: Schema.Array(AlbumSearchResultSchema),
   total: Schema.Number,
   limit: Schema.Number,
-  offset: Schema.Number
+  offset: Schema.Number,
 })
 
 export type Track = typeof TrackSchema.Type
+
 export type Album = typeof AlbumSchema.Type
+
 export type Playlist = typeof PlaylistSchema.Type
+
 export type AlbumSearchResult = typeof AlbumSearchResultSchema.Type
+
 export type SearchAlbumsResponse = typeof SearchAlbumsResponseSchema.Type

@@ -1,4 +1,5 @@
 import { Context, Effect, Layer, Option } from 'effect'
+
 import { SitemapCacheError } from '@/errors'
 
 export interface SitemapXml {
@@ -7,12 +8,12 @@ export interface SitemapXml {
 }
 
 export interface SitemapCacheService {
-  readonly read: Effect.Effect<Option.Option<SitemapXml>, never>
+  readonly read: Effect.Effect<Option.Option<SitemapXml>>
   readonly write: (xml: SitemapXml) => Effect.Effect<void, SitemapCacheError>
 }
 
 export class SitemapCache extends Context.Service<SitemapCache, SitemapCacheService>()(
-  'SitemapCache'
+  'SitemapCache',
 ) {}
 
 const SITEMAP_KEY = 'sitemap.xml'
@@ -33,20 +34,20 @@ export const SitemapCacheLayer = (kv: SitemapKv) =>
       Effect.map((stored) =>
         stored
           ? Option.some({ xml: stored.xml, generatedAt: new Date(stored.generatedAt) })
-          : Option.none()
+          : Option.none(),
       ),
-      Effect.catch(() => Effect.succeed(Option.none<SitemapXml>()))
+      Effect.catch(() => Effect.succeed(Option.none<SitemapXml>())),
     ),
     write: (sitemap) =>
       Effect.tryPromise({
         try: () =>
           kv.put(
             SITEMAP_KEY,
-            JSON.stringify({ xml: sitemap.xml, generatedAt: sitemap.generatedAt.toISOString() })
+            JSON.stringify({ xml: sitemap.xml, generatedAt: sitemap.generatedAt.toISOString() }),
           ),
         catch: (error) =>
           new SitemapCacheError({
-            message: `Failed to write sitemap cache: ${error instanceof Error ? error.message : String(error)}`
-          })
-      })
+            message: `Failed to write sitemap cache: ${error instanceof Error ? error.message : String(error)}`,
+          }),
+      }),
   })

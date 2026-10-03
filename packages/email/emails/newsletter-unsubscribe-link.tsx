@@ -6,8 +6,9 @@ import {
   Link,
   Preview,
   Section,
-  Text
+  Text,
 } from '@react-email/components'
+
 import { EmailHead } from './email-head'
 import { EmailHeader } from './email-header'
 import { emailTheme } from './theme'
@@ -17,7 +18,7 @@ interface NewsletterUnsubscribeLinkProps {
 }
 
 export function NewsletterUnsubscribeLink({
-  unsubscribeUrl = 'https://goosebumps.fm/unsubscribe'
+  unsubscribeUrl = 'https://goosebumps.fm/unsubscribe',
 }: NewsletterUnsubscribeLinkProps) {
   return (
     <Html>
@@ -51,32 +52,32 @@ export function NewsletterUnsubscribeLink({
 
 const main = {
   backgroundColor: emailTheme.colors.mono.page,
-  fontFamily: emailTheme.typography.sansAlt
+  fontFamily: emailTheme.typography.sansAlt,
 }
 
 const container = {
   backgroundColor: emailTheme.colors.mono.page,
   margin: '0 auto',
   padding: '0',
-  maxWidth: '600px'
+  maxWidth: '600px',
 }
 
 const body = {
-  padding: '48px 40px 32px'
+  padding: '48px 40px 32px',
 }
 
 const text = {
   fontSize: '16px',
   lineHeight: '26px',
   color: emailTheme.colors.mono.textSecondary,
-  margin: '0 0 24px'
+  margin: '0 0 24px',
 }
 
 const small = {
   fontSize: '13px',
   lineHeight: '20px',
   color: emailTheme.colors.mono.textMuted,
-  margin: '16px 0 0'
+  margin: '16px 0 0',
 }
 
 const ctaButton = {
@@ -89,12 +90,12 @@ const ctaButton = {
   padding: '14px 40px',
   borderRadius: emailTheme.radius.pill,
   textDecoration: 'none',
-  display: 'inline-block'
+  display: 'inline-block',
 }
 
 const linkStyle = {
   color: emailTheme.colors.mono.textMuted,
-  wordBreak: 'break-all' as const
+  wordBreak: 'break-all' as const,
 }
 
 export default NewsletterUnsubscribeLink

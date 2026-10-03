@@ -1,10 +1,10 @@
-import '../global.css'
+import { RegistryProvider, useAtomMount } from '@effect/atom-react'
+import { brandDark, brandLight } from '@gbfm/theme'
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
-import { RegistryProvider, useAtomMount } from '@effect/atom-react'
-import { brandDark, brandLight } from '@gbfm/theme'
 import { useColorScheme } from 'react-native'
+
 import { NowPlayingProvider } from '@/audio/NowPlayingProvider'
 import { QueueToast } from '@/components/NowPlaying/QueueToast'
 import { SpotifyConnectionProvider } from '@/spotify/connection'
@@ -13,15 +13,20 @@ import { AuthProvider } from '@/store/auth'
 import { useColorSchemePreference } from '@/store/preferences'
 import { useStackScreenOptions } from '@/theme/navigation'
 
+import * as globalStyles from '../global.css'
+
 void SplashScreen.preventAutoHideAsync()
+
+void globalStyles
 
 const darkTheme = {
   ...DarkTheme,
-  colors: { ...DarkTheme.colors, background: brandDark.bg }
+  colors: { ...DarkTheme.colors, background: brandDark.bg },
 }
+
 const lightTheme = {
   ...DefaultTheme,
-  colors: { ...DefaultTheme.colors, background: brandLight.bg }
+  colors: { ...DefaultTheme.colors, background: brandLight.bg },
 }
 
 export default function Layout() {
@@ -48,7 +53,7 @@ export default function Layout() {
                         presentation: 'modal',
                         headerShown: false,
                         animation: 'slide_from_bottom',
-                        contentStyle: { backgroundColor: isDark ? brandDark.bg : brandLight.bg }
+                        contentStyle: { backgroundColor: isDark ? brandDark.bg : brandLight.bg },
                       }}
                     />
                     <Stack.Screen name='music-reminders' options={{ title: 'Music Reminders' }} />
@@ -67,6 +72,8 @@ export default function Layout() {
 function SplashGate({ children }: { children: React.ReactNode }) {
   const fontsReady = useFontsReady()
   useAtomMount(splashHideAtom)
+
   if (!fontsReady) return null
+
   return <>{children}</>
 }

@@ -44,7 +44,7 @@ export const AudioPlayerWithTimestamp = forwardRef<HTMLAudioElement, AudioPlayer
         />
       </div>
     )
-  }
+  },
 )
 
 AudioPlayerWithTimestamp.displayName = 'AudioPlayerWithTimestamp'

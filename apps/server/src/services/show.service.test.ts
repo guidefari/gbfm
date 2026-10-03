@@ -1,14 +1,29 @@
 import { randomUUID } from 'node:crypto'
+
+import { OtelTracer, Resource } from '@effect/opentelemetry'
+import { trace } from '@opentelemetry/api'
+import { InMemorySpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
+import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
 import { Effect, Layer } from 'effect'
 import { beforeAll, describe, expect, test } from 'vitest'
-import { DatabaseTestLayer, db } from '@/test/database'
-import { withTestLayer } from '@/test/effect'
+
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { user } from '@/db/auth.schema'
+import { NotFoundError } from '@/errors'
+import { MdxServiceLayer } from '@/lib/mdx'
+import { DatabaseTestLayer, db } from '@/test/database'
+import { withTestLayer } from '@/test/effect'
+
 import { ShowService, ShowServiceLayer } from './show.service'
 
 const hostId = `show-creators-${randomUUID()}`
+
 const otherHostId = `show-creators-other-${randomUUID()}`
+
+const ShowServiceTestLayer = ShowServiceLayer.pipe(
+  Layer.provide(MdxServiceLayer),
+  Layer.provide(DatabaseTestLayer),
+)
 
 const getService = () =>
   Effect.runPromise(
@@ -16,8 +31,8 @@ const getService = () =>
       Effect.gen(function* () {
         return yield* ShowService
       }),
-      ShowServiceLayer.pipe(Layer.provide(DatabaseTestLayer))
-    )
+      ShowServiceTestLayer,
+    ),
   )
 
 beforeAll(async () => {
@@ -25,17 +40,83 @@ beforeAll(async () => {
     {
       id: hostId,
       name: 'Show host actor',
-      email: `${hostId}@example.com`
+      email: `${hostId}@example.com`,
     },
     {
       id: otherHostId,
       name: 'Other show host actor',
-      email: `${otherHostId}@example.com`
-    }
+      email: `${otherHostId}@example.com`,
+    },
   ])
 })
 
 describe('ShowService creators', () => {
+  test('getAll and getAllForEdit trace count, list, and labels under their request spans', async () => {
+    const exporter = new InMemorySpanExporter()
+
+    const provider = new NodeTracerProvider({
+      spanProcessors: [new SimpleSpanProcessor(exporter)],
+    })
+
+    provider.register()
+
+    const tracingLive = OtelTracer.layerGlobal.pipe(
+      Layer.provide(Resource.layer({ serviceName: 'show-service-test' })),
+    )
+
+    try {
+      const results = await Effect.runPromise(
+        withTestLayer(
+          Effect.gen(function* () {
+            const service = yield* ShowService
+
+            return yield* Effect.all([
+              service.getAll({ limit: 5, offset: 0 }),
+              service.getAllForEdit({ limit: 5, offset: 0 }, hostId, 'user'),
+            ])
+          }),
+          Layer.merge(ShowServiceTestLayer, tracingLive),
+        ),
+      )
+
+      await provider.forceFlush()
+
+      const spans = exporter.getFinishedSpans()
+
+      const parents = spans.filter((span) =>
+        ['show.getAll', 'show.getAllForEdit'].includes(span.name),
+      )
+
+      expect(parents).toHaveLength(2)
+
+      for (const parent of parents) {
+        const result = results[parent.name === 'show.getAll' ? 0 : 1]
+
+        expect(parent.attributes).toMatchObject({
+          limit: 5,
+          offset: 0,
+          resultCount: result?.data.length,
+          totalCount: result?.pagination.total,
+        })
+
+        for (const name of ['show.getAll.count', 'show.getAll.list', 'show.getAll.labels']) {
+          expect(
+            spans.filter(
+              (span) =>
+                span.name === name &&
+                span.parentSpanContext?.spanId === parent.spanContext().spanId,
+            ),
+          ).toHaveLength(1)
+        }
+      }
+
+      expect(JSON.stringify(spans.map((span) => span.attributes))).not.toContain(hostId)
+    } finally {
+      await provider.shutdown()
+      trace.disable()
+    }
+  })
+
   test('getAll attaches hosts and getEpisodes attaches episode creators', async () => {
     const service = await getService()
     const slug = `show-${randomUUID()}`
@@ -45,13 +126,14 @@ describe('ShowService creators', () => {
         {
           title: `Show ${slug}`,
           slug,
-          content: ''
+          content: '',
         },
-        [hostId]
-      )
+        [hostId],
+      ),
     )
 
     const episodeSlug = `episode-${randomUUID()}`
+
     const [episode] = await db
       .insert(audioTable)
       .values({
@@ -60,7 +142,7 @@ describe('ShowService creators', () => {
         content: '',
         type: 'mix',
         url: 'https://example.com/audio.mp3',
-        showId: show.id
+        showId: show.id,
       })
       .returning()
 
@@ -70,7 +152,7 @@ describe('ShowService creators', () => {
 
     await db.insert(audioCreators).values({
       audioId: episode.id,
-      creatorId: hostId
+      creatorId: hostId,
     })
 
     const { data: shows } = await Effect.runPromise(service.getAll({ limit: 100, offset: 0 }))
@@ -78,8 +160,9 @@ describe('ShowService creators', () => {
     expect(matchedShow?.hosts).toEqual([expect.objectContaining({ id: hostId })])
 
     const { data: episodes } = await Effect.runPromise(
-      service.getEpisodes(slug, { limit: 100, offset: 0 })
+      service.getEpisodes(slug, { limit: 100, offset: 0 }),
     )
+
     expect(episodes).toHaveLength(1)
     expect(episodes[0]?.creators).toEqual([expect.objectContaining({ id: hostId })])
   })
@@ -90,15 +173,17 @@ describe('ShowService creators', () => {
     const otherSlug = `show-other-${randomUUID()}`
 
     const ownShow = await Effect.runPromise(
-      service.create({ title: `Show ${ownSlug}`, slug: ownSlug, content: '' }, [hostId])
+      service.create({ title: `Show ${ownSlug}`, slug: ownSlug, content: '' }, [hostId]),
     )
+
     const otherShow = await Effect.runPromise(
-      service.create({ title: `Show ${otherSlug}`, slug: otherSlug, content: '' }, [otherHostId])
+      service.create({ title: `Show ${otherSlug}`, slug: otherSlug, content: '' }, [otherHostId]),
     )
 
     const { data: shows } = await Effect.runPromise(
-      service.getAllForEdit({ limit: 100, offset: 0 }, hostId, 'user')
+      service.getAllForEdit({ limit: 100, offset: 0 }, hostId, 'user'),
     )
+
     const ids = shows.map((s) => s.id)
 
     expect(ids).toContain(ownShow.id)
@@ -110,11 +195,11 @@ describe('ShowService creators', () => {
     const otherSlug = `show-admin-${randomUUID()}`
 
     const otherShow = await Effect.runPromise(
-      service.create({ title: `Show ${otherSlug}`, slug: otherSlug, content: '' }, [otherHostId])
+      service.create({ title: `Show ${otherSlug}`, slug: otherSlug, content: '' }, [otherHostId]),
     )
 
     const { data: shows } = await Effect.runPromise(
-      service.getAllForEdit({ limit: 100, offset: 0 }, hostId, 'admin')
+      service.getAllForEdit({ limit: 100, offset: 0 }, hostId, 'admin'),
     )
 
     expect(shows.map((s) => s.id)).toContain(otherShow.id)
@@ -130,13 +215,14 @@ describe('ShowService creators', () => {
           title: `Show ${slug}`,
           slug,
           content: '',
-          thumbnailUrl: 'https://example.com/show-art.png'
+          thumbnailUrl: 'https://example.com/show-art.png',
         },
-        [hostId]
-      )
+        [hostId],
+      ),
     )
 
     const episodeSlug = `episode-${randomUUID()}`
+
     const [episode] = await db
       .insert(audioTable)
       .values({
@@ -145,7 +231,7 @@ describe('ShowService creators', () => {
         content: '',
         type: 'mix',
         url: 'https://example.com/audio.mp3',
-        showId: show.id
+        showId: show.id,
       })
       .returning()
 
@@ -155,27 +241,85 @@ describe('ShowService creators', () => {
 
     await db.insert(audioCreators).values({
       audioId: episode.id,
-      creatorId: hostId
+      creatorId: hostId,
     })
 
     const { data: episodesBefore } = await Effect.runPromise(
-      service.getEpisodes(slug, { limit: 100, offset: 0 })
+      service.getEpisodes(slug, { limit: 100, offset: 0 }),
     )
+
     expect(episodesBefore.find((e) => e.id === episode.id)?.thumbnailUrl).toBe(
-      'https://example.com/show-art.png'
+      'https://example.com/show-art.png',
     )
 
     await Effect.runPromise(
       service.update(slug, hostId, 'admin', {
-        thumbnailUrl: 'https://example.com/new-show-art.png'
-      })
+        thumbnailUrl: 'https://example.com/new-show-art.png',
+      }),
     )
 
     const { data: episodesAfter } = await Effect.runPromise(
-      service.getEpisodes(slug, { limit: 100, offset: 0 })
+      service.getEpisodes(slug, { limit: 100, offset: 0 }),
     )
+
     expect(episodesAfter.find((e) => e.id === episode.id)?.thumbnailUrl).toBe(
-      'https://example.com/new-show-art.png'
+      'https://example.com/new-show-art.png',
     )
+  })
+
+  test('getEpisodes keeps published-show and pagination semantics', async () => {
+    const service = await getService()
+    const slug = `show-episodes-${randomUUID()}`
+    const draftSlug = `show-draft-${randomUUID()}`
+
+    const show = await Effect.runPromise(
+      service.create({ title: slug, slug, content: '' }, [hostId]),
+    )
+
+    await Effect.runPromise(
+      service.create({ title: draftSlug, slug: draftSlug, content: '', draft: true }, [hostId]),
+    )
+
+    const empty = await Effect.runPromise(service.getEpisodes(slug, { limit: 1, offset: 0 }))
+    expect(empty).toMatchObject({ data: [], pagination: { total: 0, hasMore: false } })
+
+    await db.insert(audioTable).values([
+      {
+        title: 'Published episode',
+        slug: `published-${randomUUID()}`,
+        content: '',
+        type: 'mix',
+        url: 'https://example.com/published.mp3',
+        showId: show.id,
+      },
+      {
+        title: 'Draft episode',
+        slug: `draft-${randomUUID()}`,
+        content: '',
+        type: 'mix',
+        url: 'https://example.com/draft.mp3',
+        showId: show.id,
+        draft: true,
+      },
+    ])
+
+    const pastEnd = await Effect.runPromise(service.getEpisodes(slug, { limit: 1, offset: 10 }))
+    expect(pastEnd).toMatchObject({ data: [], pagination: { total: 1, hasMore: false } })
+
+    const admin = await Effect.runPromise(
+      service.getEpisodes(slug, { limit: 10, offset: 0 }, { userId: hostId, userRole: 'admin' }),
+    )
+
+    expect(admin.data).toHaveLength(2)
+    expect(admin.pagination.total).toBe(2)
+
+    for (const missingSlug of [draftSlug, `missing-${randomUUID()}`]) {
+      const failure = await Effect.runPromise(
+        Effect.flip(service.getEpisodes(missingSlug, { limit: 10, offset: 0 })),
+      )
+
+      expect(failure).toBeInstanceOf(NotFoundError)
+      expect(failure).toMatchObject({ resource: 'show' })
+    }
   })
 })

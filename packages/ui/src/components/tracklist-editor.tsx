@@ -1,5 +1,6 @@
 import { Clock, Play, Plus, X } from 'lucide-react'
 import type { ChangeEvent } from 'react'
+
 import { formatTime } from '../lib/format'
 import { Button } from './button'
 import { Input } from './input'
@@ -12,7 +13,7 @@ export interface TrackEntry {
 }
 
 interface TracklistEditorProps {
-  tracklist: TrackEntry[]
+  tracklist: Array<TrackEntry>
   currentTime: number
   onAddTrack: () => void
   onUpdateTrack: (index: number, title: string) => void
@@ -26,7 +27,7 @@ export function TracklistEditor({
   onAddTrack,
   onUpdateTrack,
   onRemoveTrack,
-  onSeekTo
+  onSeekTo,
 }: TracklistEditorProps) {
   return (
     <div className='space-y-4'>

@@ -1,7 +1,8 @@
 import { and, eq } from 'drizzle-orm'
-import { Effect } from 'effect'
-import { Database } from '@/db/layer'
+import { Effect, Match } from 'effect'
+
 import { audioCreators } from '@/db/audio.schema'
+import { Database } from '@/db/layer'
 import { musicLabelCreatorsTable } from '@/db/music-entity.schema'
 import { postCreators } from '@/db/post.schema'
 import { showCreators } from '@/db/show.schema'
@@ -12,36 +13,34 @@ type CreatorTableType = 'show' | 'audio' | 'label' | 'post'
 export function checkCreatorAuthorship(
   tableType: CreatorTableType,
   resourceId: string,
-  userId: string
+  userId: string,
 ) {
   return Effect.gen(function* () {
     const db = yield* Database
-    const table =
-      tableType === 'show'
-        ? showCreators
-        : tableType === 'audio'
-          ? audioCreators
-          : tableType === 'label'
-            ? musicLabelCreatorsTable
-            : postCreators
 
-    const idColumn =
-      tableType === 'show'
-        ? showCreators.showId
-        : tableType === 'audio'
-          ? audioCreators.audioId
-          : tableType === 'label'
-            ? musicLabelCreatorsTable.labelId
-            : postCreators.postId
+    const table = Match.value(tableType).pipe(
+      Match.when('show', () => showCreators),
+      Match.when('audio', () => audioCreators),
+      Match.when('label', () => musicLabelCreatorsTable),
+      Match.when('post', () => postCreators),
+      Match.exhaustive,
+    )
 
-    const creatorColumn =
-      tableType === 'show'
-        ? showCreators.creatorId
-        : tableType === 'audio'
-          ? audioCreators.creatorId
-          : tableType === 'label'
-            ? musicLabelCreatorsTable.creatorId
-            : postCreators.creatorId
+    const idColumn = Match.value(tableType).pipe(
+      Match.when('show', () => showCreators.showId),
+      Match.when('audio', () => audioCreators.audioId),
+      Match.when('label', () => musicLabelCreatorsTable.labelId),
+      Match.when('post', () => postCreators.postId),
+      Match.exhaustive,
+    )
+
+    const creatorColumn = Match.value(tableType).pipe(
+      Match.when('show', () => showCreators.creatorId),
+      Match.when('audio', () => audioCreators.creatorId),
+      Match.when('label', () => musicLabelCreatorsTable.creatorId),
+      Match.when('post', () => postCreators.creatorId),
+      Match.exhaustive,
+    )
 
     const authorship = yield* Effect.tryPromise({
       try: () =>
@@ -54,8 +53,8 @@ export function checkCreatorAuthorship(
         new DatabaseError({
           message: `Failed to check authorship: ${getErrorMessage(error)}`,
           operation: 'select',
-          table: `${tableType}_creators`
-        })
+          table: `${tableType}_creators`,
+        }),
     })
 
     return authorship.length > 0
@@ -66,7 +65,7 @@ export function requireCreatorOrAdmin(
   tableType: CreatorTableType,
   resourceId: string,
   userId: string,
-  userRole: string
+  userRole: string,
 ) {
   return Effect.gen(function* () {
     if (userRole === 'admin') {
@@ -78,7 +77,7 @@ export function requireCreatorOrAdmin(
     if (!isCreator) {
       return yield* new UnauthorizedError({
         message: 'Not authorized to modify this resource',
-        userId
+        userId,
       })
     }
 
@@ -93,7 +92,7 @@ export function requireCreator(tableType: CreatorTableType, resourceId: string, 
     if (!isCreator) {
       return yield* new UnauthorizedError({
         message: 'Not authorized to modify this resource',
-        userId
+        userId,
       })
     }
 

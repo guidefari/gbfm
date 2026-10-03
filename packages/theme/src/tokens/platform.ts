@@ -7,7 +7,7 @@ export const platformColors = {
   tidal: '#000000',
   discord: '#5865F2',
   instagram: '#E4405F',
-  twitter: '#000000'
+  twitter: '#000000',
 } as const
 
 export type PlatformColors = typeof platformColors

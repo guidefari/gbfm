@@ -1,44 +1,30 @@
 # `@gbfm/www`
 
-## Changelog page
+Foldkit renders public pages on the server and keeps the audio player alive across client navigation. Effect owns application services and commands. The Cloudflare Worker forwards API requests through its `API` service binding; browser credentials remain same-origin.
 
-`src/routes/changelog.tsx` renders the repo root `CHANGELOG.md` as the public changelog page.
+## Development and verification
 
-The repo intentionally uses `CHANGELOG.md` as the only source of truth.
+From the repository root:
 
-We do not keep a second tracked copy under `apps/www/src/` anymore because that drifted after releases:
+```sh
+bun run --cwd apps/www dev
+bun precommit
+bun run --cwd apps/www unit
+bun run --cwd apps/www build
+```
 
-- `semantic-release` updates the root `CHANGELOG.md`
-- the old `sync-changelog.ts` script copied it into the app
-- local `dev` or `build` runs would then create seemingly random diffs when the copied file lagged behind
+`VPS_PROXY_TARGET` selects the development API origin (default `http://127.0.0.1:3003`). Do not set a browser API origin: it would bypass the same-origin session cookie. `VITE_SPOTIFY_CLIENT_ID` configures Spotify PKCE.
 
-## Why there is a Vite plugin
+Development uses Foldkit's standalone SSR and view-identity plugins. The aggregate plugin's reload preservation caches a model on the Vite server by runtime ID, not browser session; it can replace a fresh visitor's SSR state after code changes. We deliberately forgo that preservation for this authenticated app. Production still uses the aggregate build plugin.
 
-Yes: `plugins/repo-changelog.ts` is a small manually written Vite plugin.
+Browser tests use `PLAYWRIGHT_BASE_URL` and an optional `CHROMIUM_PATH`. `bun run --cwd apps/server dev:e2e` starts the disposable, migrated D1 fixture API, including local creator/admin/listener accounts. This does not seed a shared database. Set `FRONTEND_URL` to the test web origin and `PORT` to the API port; point the web process's `VPS_PROXY_TARGET` at that API. Then run `bun run --cwd apps/www e2e`.
 
-It exists because the app needs the root `CHANGELOG.md` content at build/dev time, but importing `.md` directly from the app goes through the MDX pipeline. For the changelog route we want the raw file contents first, then we compile that content intentionally inside the route loader.
+## Observability
 
-The plugin provides a virtual module called `virtual:repo-changelog` that:
+Every server request receives an `x-request-id`, also forwarded to the API. Completion/failure logs use bounded route names and exclude request bodies, cookies and raw URLs. Browser telemetry covers navigation, Web Vitals and player events.
 
-- reads `../../CHANGELOG.md` from the repo root
-- returns the file contents as a string export
-- watches that file during dev so edits trigger reloads
+In Vite development, Effect exports SSR spans to `http://127.0.0.1:4318/v1/traces`. Set `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` to select another local collector. The request's W3C `traceparent` reaches downstream API requests. Export is batched, and Vite module disposal flushes/closes the tracer. Production does not bundle this local exporter: Cloudflare logs/traces are configured in `alchemy/observability.ts`. Local export tests are not proof of production ingestion or alert delivery.
 
-Then `src/routes/changelog.tsx`:
+## Changelog
 
-- imports `virtual:repo-changelog`
-- compiles the string with `@mdx-js/mdx`
-- renders it with `MDXRendrr`
-
-## Files involved
-
-- `CHANGELOG.md`
-- `apps/www/plugins/repo-changelog.ts`
-- `apps/www/src/routes/changelog.tsx`
-- `apps/www/src/virtual-modules.d.ts`
-
-## References
-
-- Vite plugin API: `https://vite.dev/guide/api-plugin.html`
-- Vite virtual modules convention: `https://vite.dev/guide/api-plugin.html#virtual-modules-convention`
-- MDX package docs: `https://mdxjs.com/packages/mdx/`
+The repository root `CHANGELOG.md` is the only source of truth. `plugins/repo-changelog.ts` parses it into the shared inert rich-content document exposed by `virtual:repo-changelog` and watches it in development. `src/entry.server.ts` supplies it only to the changelog route. Do not create a second tracked changelog copy.

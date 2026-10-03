@@ -1,9 +1,10 @@
-import type { FullUser } from '@gbfm/core/api'
-import * as Atom from 'effect/unstable/reactivity/Atom'
 import { useAtomMount, useAtomSet, useAtomValue } from '@effect/atom-react'
-import { type PropsWithChildren, useMemo } from 'react'
+import type { FullUser } from '@gbfm/core/api'
 import { Effect, Schema } from 'effect'
+import * as Atom from 'effect/unstable/reactivity/Atom'
 import * as SecureStore from 'expo-secure-store'
+import { type PropsWithChildren, useMemo } from 'react'
+
 import { getSession, SessionExpired } from '@/api/auth'
 
 export type AuthSession = {
@@ -22,12 +23,13 @@ const PersistedAuthSession = Schema.Struct({
     avatarUrl: Schema.NullOr(Schema.String),
     verified: Schema.Boolean,
     createdAt: Schema.String,
-    updatedAt: Schema.String
+    updatedAt: Schema.String,
   }),
-  sessionToken: Schema.String
+  sessionToken: Schema.String,
 })
 
 const storageKey = 'gbfm.auth-session'
+
 export const authState = Atom.make<AuthSession>(emptyAuthState).pipe(Atom.keepAlive)
 
 const persistAuth = (session: AuthSession) =>
@@ -38,16 +40,19 @@ const persistAuth = (session: AuthSession) =>
 const makeRestoreAuth = (setState: (session: AuthSession) => void) =>
   Effect.gen(function* () {
     const stored = yield* Effect.tryPromise(() => SecureStore.getItemAsync(storageKey)).pipe(
-      Effect.catch(() => Effect.succeed(null))
+      Effect.catch(() => Effect.succeed(null)),
     )
+
     if (!stored) return
 
     const cached = yield* Effect.try({ try: () => JSON.parse(stored), catch: () => null }).pipe(
       Effect.flatMap((value) => Schema.decodeUnknownEffect(PersistedAuthSession)(value)),
-      Effect.catch(() => Effect.succeed(null))
+      Effect.catch(() => Effect.succeed(null)),
     )
+
     if (!cached) {
       yield* Effect.tryPromise(() => SecureStore.deleteItemAsync(storageKey)).pipe(Effect.ignore)
+
       return
     }
 
@@ -59,7 +64,7 @@ const makeRestoreAuth = (setState: (session: AuthSession) => void) =>
           const refreshed = { user, sessionToken: cached.sessionToken }
           setState(refreshed)
           yield* persistAuth(refreshed)
-        })
+        }),
       ),
       Effect.catch((error) =>
         error instanceof SessionExpired
@@ -67,8 +72,8 @@ const makeRestoreAuth = (setState: (session: AuthSession) => void) =>
               setState(emptyAuthState)
               yield* persistAuth(emptyAuthState)
             })
-          : Effect.void
-      )
+          : Effect.void,
+      ),
     )
   })
 
@@ -82,21 +87,26 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const setState = useAtomSet(authState)
   const restoreAtom = useMemo(() => makeRestoreAuthAtom(setState), [setState])
   useAtomMount(restoreAtom)
+
   return children
 }
 
 export const useSetAuth = () => {
   const setState = useAtomSet(authState)
+
   return (session: AuthSession) => {
     setState(session)
+
     return persistAuth(session)
   }
 }
 
 export const useClearAuth = () => {
   const setState = useAtomSet(authState)
+
   return () => {
     setState(emptyAuthState)
+
     return persistAuth(emptyAuthState)
   }
 }

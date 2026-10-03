@@ -12,18 +12,19 @@ export const QueueTrack = Schema.Struct({
       Schema.Struct({
         id: Schema.String,
         name: Schema.String,
-        username: Schema.NullOr(Schema.String)
-      })
-    )
-  )
+        username: Schema.NullOr(Schema.String),
+      }),
+    ),
+  ),
 })
 
 export const PersistedQueue = Schema.Struct({
   tracks: Schema.Array(QueueTrack),
-  currentIndex: Schema.Number
+  currentIndex: Schema.Number,
 })
 
 export type QueueTrackType = (typeof QueueTrack)['Type']
+
 export type PersistedQueueType = (typeof PersistedQueue)['Type']
 
 export class AudioStorageError extends Error {
@@ -31,7 +32,7 @@ export class AudioStorageError extends Error {
 
   constructor(
     readonly operation: 'read' | 'write' | 'delete' | 'parse',
-    cause?: unknown
+    cause?: unknown,
   ) {
     super(`Unable to ${operation} audio playback state`, { cause })
   }
@@ -40,8 +41,8 @@ export class AudioStorageError extends Error {
 /** Decode and validate persisted queue state. Rejects fractional/out-of-range
  *  indexes, invalid empty-queue indexes, and duplicate track IDs. */
 export const parsePersistedQueue = (
-  value: Schema.Json
-): Effect.Effect<PersistedQueueType, AudioStorageError, never> =>
+  value: Schema.Json,
+): Effect.Effect<PersistedQueueType, AudioStorageError> =>
   Schema.decodeUnknownEffect(PersistedQueue)(value).pipe(
     Effect.mapError((cause) => new AudioStorageError('parse', cause)),
     Effect.filterOrFail(
@@ -51,11 +52,12 @@ export const parsePersistedQueue = (
           (queue.tracks.length === 0
             ? queue.currentIndex === -1
             : queue.currentIndex >= -1 && queue.currentIndex < queue.tracks.length)
+
         return (
           indexIsValid &&
           new Set(queue.tracks.map((track) => track.id)).size === queue.tracks.length
         )
       },
-      () => new AudioStorageError('parse')
-    )
+      () => new AudioStorageError('parse'),
+    ),
   )

@@ -1,5 +1,6 @@
 import { Schema } from 'effect'
 import { expect, test } from 'vitest'
+
 import { paginationQuerySchema } from './pagination'
 
 const decodePaginationQuery = Schema.decodeUnknownSync(paginationQuerySchema)

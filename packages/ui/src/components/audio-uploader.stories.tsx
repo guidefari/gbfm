@@ -1,9 +1,10 @@
 import { useState } from 'react'
+
 import { AudioUploader } from './audio-uploader'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Workflows/Audio uploader'
+  title: '@gbfm/ui/Workflows/Audio uploader',
 }
 
 export function AudioUploaders() {
@@ -13,6 +14,7 @@ export function AudioUploaders() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] ?? null
     setFile(f)
+
     if (f) setPreview(URL.createObjectURL(f))
   }
 

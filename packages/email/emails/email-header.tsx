@@ -1,4 +1,5 @@
 import { Section, Text } from '@react-email/components'
+
 import { emailTheme } from './theme'
 
 interface EmailHeaderProps {
@@ -19,11 +20,11 @@ export function EmailHeader({ tagline = 'curated mixes' }: EmailHeaderProps) {
 const header = {
   padding: '40px 20px 30px',
   textAlign: 'center' as const,
-  borderBottom: `1px solid ${emailTheme.colors.mono.border}`
+  borderBottom: `1px solid ${emailTheme.colors.mono.border}`,
 }
 
 const logoFm = {
-  color: `rgb(155, 253, 158)`
+  color: `rgb(155, 253, 158)`,
 }
 
 const logoText = {
@@ -32,7 +33,7 @@ const logoText = {
   letterSpacing: '4px',
   color: emailTheme.colors.mono.white,
   margin: '0 0 4px',
-  textTransform: 'uppercase' as const
+  textTransform: 'uppercase' as const,
 }
 
 const taglineStyle = {
@@ -40,5 +41,5 @@ const taglineStyle = {
   letterSpacing: '2px',
   color: emailTheme.colors.mono.textMuted,
   margin: '0',
-  textTransform: 'uppercase' as const
+  textTransform: 'uppercase' as const,
 }
