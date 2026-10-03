@@ -4,6 +4,10 @@
 
 ## Agent skills
 
+### Pull requests
+
+Use the `pr-description` skill when creating or updating PR descriptions. For UI changes verified in a browser, use the `pr-screenshot-evidence` skill to embed real screenshots in a `Test evidence` section of the PR description. Keep screenshots out of git and use disposable fixtures without real user data or secrets.
+
 ### Issue tracker
 
 Issues are tracked on GitHub. See `docs/agents/issue-tracker.md`.
