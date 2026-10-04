@@ -17,6 +17,7 @@ import {
 } from '@gbfm/social-card'
 import { Effect, Match } from 'effect'
 
+import type { SelectMdxCompiledAudio } from '@/db/audio.schema'
 import { AudioService } from '@/services/audio.service'
 import { ConfigService } from '@/services/config.service'
 import { MusicEntityService } from '@/services/music-entity'
@@ -81,32 +82,41 @@ const presentationFromProfile = (profile: PublicProfile, slug: string, siteUrl: 
   })
 }
 
+export const presentationFromAudio = (
+  kind: 'mix' | 'track',
+  audio: SelectMdxCompiledAudio,
+  siteUrl: string,
+) => {
+  const creators = audio.creators?.map((creator) => creator.name) ?? []
+
+  const metadata = makeAudioSiteMetadata({
+    kind,
+    slug: audio.slug,
+    title: audio.title,
+    description: audio.description,
+    imageUrl: audio.thumbnailUrl,
+    creators,
+    publishedAt: iso(audio.createdAt),
+    modifiedAt: iso(audio.updatedAt),
+    audioUrl: audio.url,
+    siteUrl,
+  })
+
+  return present(metadata, {
+    kind,
+    slug: audio.slug,
+    title: metadata.title,
+    creators,
+    imageUrl: audio.thumbnailUrl,
+  })
+}
+
 const presentationForAudio = (kind: 'mix' | 'track', slug: string, siteUrl: string) =>
   Effect.gen(function* () {
     const service = yield* AudioService
     const audio = yield* service.getBySlug(kind, slug)
-    const creators = audio.creators?.map((creator) => creator.name) ?? []
 
-    const metadata = makeAudioSiteMetadata({
-      kind,
-      slug,
-      title: audio.title,
-      description: audio.description,
-      imageUrl: audio.thumbnailUrl,
-      creators,
-      publishedAt: iso(audio.createdAt),
-      modifiedAt: iso(audio.updatedAt),
-      audioUrl: audio.url,
-      siteUrl,
-    })
-
-    return yield* present(metadata, {
-      kind,
-      slug,
-      title: metadata.title,
-      creators,
-      imageUrl: audio.thumbnailUrl,
-    })
+    return yield* presentationFromAudio(kind, audio, siteUrl)
   })
 
 const presentationForShow = (slug: string, siteUrl: string) =>

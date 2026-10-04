@@ -1,4 +1,5 @@
 import { RichContentDocument } from '@gbfm/rich-content/schema'
+import { SiteMetadata } from '@gbfm/site-metadata'
 import { Schema } from 'effect'
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/unstable/httpapi'
 
@@ -51,6 +52,31 @@ export const CompiledAudioResponse = Schema.Struct({
   compiledContent: Schema.String,
   richContent: Schema.optional(RichContentDocument),
 })
+
+export const AudioPagePrincipal = Schema.Struct({
+  id: Schema.String,
+  name: Schema.NullOr(Schema.String),
+  username: Schema.NullOr(Schema.String),
+  image: Schema.NullOr(Schema.String),
+  role: Schema.String,
+})
+
+export type AudioPagePrincipal = typeof AudioPagePrincipal.Type
+
+const pagePrincipal = Schema.NullOr(AudioPagePrincipal)
+
+export const AudioPageResponse = Schema.TaggedUnion({
+  Ready: {
+    principal: pagePrincipal,
+    audio: CompiledAudioResponse,
+    metadata: Schema.NullOr(SiteMetadata),
+    favorite: Schema.Literals(['anonymous', 'active', 'inactive', 'unavailable']),
+  },
+  NotFound: { principal: pagePrincipal },
+  Unavailable: { principal: pagePrincipal },
+})
+
+export type AudioPageResponse = typeof AudioPageResponse.Type
 
 const PaginationMeta = Schema.Struct({
   total: Schema.Number,
@@ -182,6 +208,13 @@ export const AudioGroup = HttpApiGroup.make('audio')
       params: AudioTypeSlugParams,
       success: CompiledAudioResponse,
       error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+    }),
+  )
+  .add(
+    HttpApiEndpoint.get('getAudioPage', '/api/content/audio/:type/:slug/page', {
+      params: AudioTypeSlugParams,
+      success: AudioPageResponse,
+      error: HttpApiError.InternalServerError,
     }),
   )
   .add(

@@ -35,6 +35,10 @@ type FavoriteWithContent = {
 
 // Service interface
 export interface FavoriteService {
+  readonly hasAudioFavorite: (
+    userId: string,
+    audioId: string,
+  ) => Effect.Effect<boolean, DatabaseError>
   readonly addFavorite: (
     userId: string,
     audioId: string,
@@ -439,6 +443,37 @@ const getFavoritesEffect = (
     }),
   )
 
+const hasAudioFavoriteEffect = Effect.fn('favorite.hasAudio')(function* (
+  userId: string,
+  audioId: string,
+) {
+  const db = yield* Database
+
+  const rows = yield* Effect.tryPromise({
+    try: () =>
+      db
+        .select({ id: favoritesTable.id })
+        .from(favoritesTable)
+        .innerJoin(audioTable, eq(favoritesTable.audioId, audioTable.id))
+        .where(
+          and(
+            eq(favoritesTable.userId, userId),
+            eq(favoritesTable.audioId, audioId),
+            eq(audioTable.draft, false),
+          ),
+        )
+        .limit(1),
+    catch: () =>
+      new DatabaseError({
+        message: 'Failed to read audio favorite membership',
+        operation: 'select',
+        table: 'favorites',
+      }),
+  })
+
+  return rows.length > 0
+})
+
 // Implementation - simple layer that provides access to the Effects
 export const FavoriteServiceLayer = Layer.effect(
   FavoriteService,
@@ -447,6 +482,7 @@ export const FavoriteServiceLayer = Layer.effect(
     const provideDb = Effect.provideService(Database, db)
 
     return {
+      hasAudioFavorite: (userId, audioId) => provideDb(hasAudioFavoriteEffect(userId, audioId)),
       addFavorite: (userId, audioId) => provideDb(addFavoriteEffect(userId, audioId)),
       addShowFavorite: (userId, showId) => provideDb(addShowFavoriteEffect(userId, showId)),
       removeFavorite: (userId, audioId) => provideDb(removeFavoriteEffect(userId, audioId)),

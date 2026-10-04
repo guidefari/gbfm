@@ -11,8 +11,11 @@ import {
   getOptionalActor,
 } from '@/http/handler-utils'
 import { omitUndefined } from '@/lib/omit-undefined'
+import { loadAudioPage } from '@/services/audio-page'
 import { AudioService } from '@/services/audio.service'
 import { QRCodeService } from '@/services/qrcode.service'
+
+import { resolvePageSession } from './page-session'
 
 const dieOnDatabaseError = makeDieOnDatabaseError('audio')
 
@@ -114,6 +117,13 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
           data: result.data.map(toDateStrings),
           pagination: result.pagination,
         }
+      }),
+    )
+    .handle('getAudioPage', ({ params }) =>
+      Effect.gen(function* () {
+        const principal = yield* resolvePageSession()
+
+        return yield* loadAudioPage(params.type, params.slug, principal)
       }),
     )
     .handle('getAudioBySlug', ({ params }) =>
