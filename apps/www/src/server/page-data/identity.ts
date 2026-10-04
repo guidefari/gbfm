@@ -22,6 +22,7 @@ export const loadIdentity = async (request: Request) => {
         id: text(user.id),
         name: text(user.name) || null,
         username: text(user.username) || null,
+        image: text(user.image) || null,
         role: text(user.role, 'user'),
       })
     : null
