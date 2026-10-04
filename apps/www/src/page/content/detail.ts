@@ -49,11 +49,14 @@ const sectionCrumb = (kind: string) =>
     Match.orElse(() => null),
   )
 
-const trail = (item: ContentItem, kind: string) => {
+const ancestors = (item: ContentItem, kind: string) => {
   const section = sectionCrumb(kind)
-  const current = { label: item.title, href: item.href }
 
-  return section ? [section, current] : [current]
+  if (!section) return []
+
+  return item.show
+    ? [section, { label: item.show.title, href: `/shows/${encodeURIComponent(item.show.slug)}` }]
+    : [section]
 }
 
 const creatorLinks = (h: HtmlBuilder<Message>, item: ContentItem) =>
@@ -226,7 +229,7 @@ export const detailView = (model: Model, h: HtmlBuilder<Message>, kind: string) 
   return h.article(
     [h.Class('content-detail mx-auto max-w-5xl px-4 pb-32 pt-6')],
     [
-      breadcrumbs(trail(item, kind)),
+      breadcrumbs(ancestors(item, kind), item.slug),
       masthead(h, item, kind),
       controls(model, h, item),
       item.description

@@ -51,6 +51,7 @@ export const contentItems = (payload: Schema.Json, path: string): ReadonlyArray<
         audioType: Option.getOrNull(
           Schema.decodeUnknownOption(ContentItem.fields.audioType)(item.type),
         ),
+        show: Option.getOrNull(Schema.decodeUnknownOption(ContentItem.fields.show)(item.show)),
         creators: Option.getOrUndefined(
           Schema.decodeUnknownOption(ContentItem.fields.creators)(item.creators),
         ),
