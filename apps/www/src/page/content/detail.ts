@@ -6,6 +6,7 @@ import type { ContentItem, Model } from '../../model'
 import * as Player from '../../player'
 import * as PublicActions from '../../public-actions'
 import { artwork } from '../../view/artwork'
+import { breadcrumbs } from '../../view/breadcrumbs'
 import { formatDate } from '../../view/format-date'
 import { iconPaths, lucide } from '../../view/icons'
 import { richContent } from '../../view/rich-content/fallback'
@@ -37,16 +38,23 @@ const track = (item: ContentItem, url: string) => ({
   creators: item.creators,
 })
 
-const backLink = (h: HtmlBuilder<Message>) =>
-  h.a(
-    [
-      h.Href('/shows'),
-      h.Class(
-        'inline-flex items-center gap-1 text-sm text-muted-foreground no-underline transition-colors hover:text-foreground',
-      ),
-    ],
-    [lucide(iconPaths.chevronLeft, 'h-4 w-4'), 'Radio shows'],
+const sectionCrumb = (kind: string) =>
+  Match.value(kind).pipe(
+    Match.when('mixes', () => ({ label: 'Radio shows', href: '/shows' })),
+    Match.when('editorial', () => ({ label: 'Editorial', href: '/editorial' })),
+    Match.when('labels', () => ({ label: 'Record labels', href: '/labels' })),
+    Match.when('releases', () => ({ label: 'Releases', href: '/releases' })),
+    Match.when('tracks', () => ({ label: 'Tracks', href: '/tracks' })),
+    Match.when('djs', () => ({ label: 'DJs', href: '/djs' })),
+    Match.orElse(() => null),
   )
+
+const trail = (item: ContentItem, kind: string) => {
+  const section = sectionCrumb(kind)
+  const current = { label: item.title, href: item.href }
+
+  return section ? [section, current] : [current]
+}
 
 const creatorLinks = (h: HtmlBuilder<Message>, item: ContentItem) =>
   (item.creators ?? []).flatMap((creator, index) => [
@@ -218,7 +226,7 @@ export const detailView = (model: Model, h: HtmlBuilder<Message>, kind: string) 
   return h.article(
     [h.Class('content-detail mx-auto max-w-5xl px-4 pb-32 pt-6')],
     [
-      kind === 'mixes' ? backLink(h) : h.empty,
+      breadcrumbs(trail(item, kind)),
       masthead(h, item, kind),
       controls(model, h, item),
       item.description
