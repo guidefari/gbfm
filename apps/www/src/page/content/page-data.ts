@@ -47,7 +47,7 @@ export const loadAudioDetailData = async (
   const title = ready?.audio.title ?? 'Not found'
 
   const description =
-    ready?.audio.description ?? 'Independent music, mixes and stories on goosebumps.fm.'
+    items[0]?.description ?? 'Independent music, mixes and stories on goosebumps.fm.'
 
   const flags: Flags = {
     url: url.href,

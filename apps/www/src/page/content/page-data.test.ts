@@ -174,6 +174,19 @@ describe('Audio detail WWW data loading', () => {
     expect(calls).toHaveLength(1)
   })
 
+  test('empty descriptions retain the existing site description fallback', async () => {
+    payload = Schema.decodeUnknownSync(Schema.Json)(
+      AudioPageResponse.cases.Ready.make({
+        ...ready,
+        audio: { ...ready.audio, description: '' },
+        metadata: null,
+      }),
+    )
+    const { flags } = await load()
+    expect(flags.description).toBe('Independent music, mixes and stories on goosebumps.fm.')
+    expect(flags.items[0]?.description).toBeNull()
+  })
+
   test('track routes and encoded slugs use the dedicated page endpoint', async () => {
     await load('track', 'fixture / track')
     expect(calls[0]?.path).toBe('/api/content/audio/track/fixture%20%2F%20track/page')
