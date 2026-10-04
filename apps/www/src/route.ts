@@ -69,7 +69,10 @@ export const parseRoute = (pathname: string): Route => {
 
   if (first === 'mix-upload') return Route.cases.Composer.make({ kind: 'mix' })
 
-  if (['privacy', 'terms', 'changelog', 'subscribe', 'unsubscribe'].includes(first) && !second)
+  if (
+    ['about', 'privacy', 'terms', 'changelog', 'subscribe', 'unsubscribe'].includes(first) &&
+    !second
+  )
     return Route.cases.Static.make({ page: first })
 
   if (listingKinds.has(first))

@@ -32,6 +32,7 @@ type MetadataRoute = {
 const decodeMetadata = Schema.decodeUnknownSync(SiteMetadata)
 
 const reservedTopLevelRoutes = new Set([
+  'about',
   'auth',
   'changelog',
   'dashboard',

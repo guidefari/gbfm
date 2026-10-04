@@ -68,11 +68,14 @@ export const mobileMenu = (
                       [h.Class('menu-sheet-links'), h.AriaLabel('Menu links')],
                       [
                         section('Browse', [
-                          ...links.map(([href, label]) =>
-                            link(href, label, browseIcons.get(href) ?? iconPaths.link),
+                          ...links.flatMap(([href, label]) =>
+                            href === '/about'
+                              ? []
+                              : [link(href, label, browseIcons.get(href) ?? iconPaths.link)],
                           ),
                           link('/mixes', 'Mixes', iconPaths.disc),
                           link('/subscribe', 'Subscribe', iconPaths.mail),
+                          link('/about', 'About', iconPaths.info),
                         ]),
                         canCreatePosts(principal?.role ?? null)
                           ? section('Create', [

@@ -41,6 +41,7 @@ export function routeTemplate(routeId: string | null | undefined, pathname: stri
   if (
     first &&
     [
+      'about',
       'privacy',
       'terms',
       'changelog',

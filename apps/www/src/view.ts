@@ -20,6 +20,7 @@ const nav = [
   ['/editorial', 'Editorial'],
   ['/tweets', 'Tweets'],
   ['/labels', 'Record Labels'],
+  ['/about', 'About'],
 ] as const
 
 const knownShows = (model: Model) =>
@@ -232,25 +233,6 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
           view: Player.view,
           toParentMessage: (message) => Message.GotPlayerMessage({ message }),
         }),
-        h.footer(
-          [h.Class('mx-auto flex w-full max-w-5xl gap-5 px-4 pb-8 pt-12 text-xs')],
-          [
-            ['/privacy', 'Privacy'],
-            ['/terms', 'Terms'],
-            ['/rss.xml', 'RSS'],
-          ].map(([href, label]) =>
-            h.a(
-              [
-                h.Key(href),
-                h.Href(href),
-                h.Class(
-                  'text-muted-foreground no-underline transition-colors hover:text-foreground',
-                ),
-              ],
-              [label],
-            ),
-          ),
-        ),
       ],
     ),
   }

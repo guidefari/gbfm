@@ -2,6 +2,15 @@ export const staticPages = new Map([
   ['spotify-callback', { title: 'Spotify connection', paragraphs: [] }],
   ['invite/charlie3000', { title: 'An invitation for Charlie3000', paragraphs: [] }],
   [
+    'about',
+    {
+      title: 'About',
+      paragraphs: [
+        'goosebumps.fm is home to radio shows, mixes and editorial from the people behind them.',
+      ],
+    },
+  ],
+  [
     'privacy',
     {
       title: 'Privacy Policy',
@@ -34,3 +43,22 @@ export const staticPages = new Map([
     },
   ],
 ])
+
+export const aboutLinks = [
+  {
+    heading: 'Follow',
+    links: [
+      ['/rss.xml', 'Mixes via RSS'],
+      ['https://youtube.com/@goosebumpsfm', 'Mixes via YouTube'],
+      ['/subscribe', 'Email updates'],
+    ],
+  },
+  {
+    heading: 'Site',
+    links: [
+      ['/changelog', 'Changelog'],
+      ['/privacy', 'Privacy policy'],
+      ['/terms', 'Terms of service'],
+    ],
+  },
+] as const
