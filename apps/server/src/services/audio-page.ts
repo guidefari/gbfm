@@ -1,5 +1,5 @@
 import { AudioPageResponse, type AudioPagePrincipal } from '@gbfm/api/audio'
-import { Effect } from 'effect'
+import { Cause, Effect } from 'effect'
 
 import { AudioService } from './audio.service'
 import { ConfigService } from './config.service'
@@ -23,8 +23,16 @@ export const loadAudioPage = Effect.fn('audio.page')(function* (
       {
         metadata:
           !audio.draft && (type === 'mix' || type === 'track')
-            ? presentationFromAudio(type, audio, config.urls.frontend).pipe(
+            ? Effect.suspend(() => presentationFromAudio(type, audio, config.urls.frontend)).pipe(
                 Effect.map((presentation) => presentation.metadata),
+                Effect.catchCause((cause) =>
+                  Cause.hasInterrupts(cause)
+                    ? Effect.failCause(cause)
+                    : Effect.logWarning({
+                        operation: 'audio.page.metadata',
+                        errorTag: 'MetadataUnavailable',
+                      }).pipe(Effect.as(null)),
+                ),
               )
             : Effect.succeed(null),
         favorite: principal
