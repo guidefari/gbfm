@@ -14,6 +14,19 @@ test('primary tweet and structured metadata are rendered before replies', async 
   expect(response.headers()['x-request-id']).toBeTruthy()
 })
 
+test('tweet detail highlights Tweets in both navigation menus', async ({ page }) => {
+  await page.goto('/tweet/e2e-music-thread')
+  await expect(page.locator('nav[aria-label="Primary"] a[href="/tweets"]')).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+  await page.getByRole('button', { name: 'Menu', exact: true }).click()
+  await expect(page.locator('.menu-sheet').getByRole('link', { name: 'Tweets' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+})
+
 test('anonymous public navigation hydrates and missing pages return real 404s', async ({
   page,
 }) => {

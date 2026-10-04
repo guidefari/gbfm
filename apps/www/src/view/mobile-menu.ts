@@ -6,6 +6,7 @@ import { Message } from '../message'
 import type { Model } from '../model'
 import { onDragStart } from '../sheet-drag'
 import { iconPaths, lucide } from './icons'
+import { isActiveNavLink } from './nav-active'
 
 const browseIcons = new Map([
   ['/shows', iconPaths.radio],
@@ -24,10 +25,7 @@ export const mobileMenu = (
 
   const link = (href: string, label: string, path: string) =>
     h.a(
-      [
-        h.Href(href),
-        ...(pathname === href || pathname.startsWith(`${href}/`) ? [h.AriaCurrent('page')] : []),
-      ],
+      [h.Href(href), ...(isActiveNavLink(pathname, href) ? [h.AriaCurrent('page')] : [])],
       [icon(path), label],
     )
 

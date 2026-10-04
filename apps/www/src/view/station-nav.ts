@@ -3,6 +3,7 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 import type { Principal } from '../model'
 import { artworkUrl } from './artwork'
 import { iconPaths, lucide } from './icons'
+import { isActiveNavLink } from './nav-active'
 import { wordmark } from './wordmark'
 
 type NowPlaying = {
@@ -37,9 +38,6 @@ const tabClass =
   "relative flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-1 border-0 bg-transparent p-0 no-underline text-muted-foreground transition-colors before:absolute before:inset-x-1/4 before:top-0 before:h-0.5 before:rounded-b-sm before:bg-highlight before:opacity-0 before:transition-opacity before:content-[''] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring aria-[current=page]:text-highlight aria-[current=page]:before:opacity-100"
 
 const tabIconClass = 'size-[22px] shrink-0 [stroke-width:1.75]'
-
-const isActive = (pathname: string, href: string) =>
-  pathname === href || pathname.startsWith(`${href}/`)
 
 const playIcon = (isPlaying: boolean, className: string) =>
   lucide(isPlaying ? iconPaths.pause : iconPaths.play, `${className} fill-current`)
@@ -88,7 +86,7 @@ export const stationNav = <M>(h: HtmlBuilder<M>, props: StationNavProps<M>) => {
               h.Key(href),
               h.Href(href),
               h.Class(desktopLinkClass),
-              ...(isActive(props.pathname, href) ? [h.AriaCurrent('page')] : []),
+              ...(isActiveNavLink(props.pathname, href) ? [h.AriaCurrent('page')] : []),
             ],
             [label],
           ),
@@ -167,7 +165,7 @@ export const stationNav = <M>(h: HtmlBuilder<M>, props: StationNavProps<M>) => {
         h.Href(href),
         h.AriaLabel(label),
         h.Class(tabClass),
-        ...(isActive(props.pathname, href) ? [h.AriaCurrent('page')] : []),
+        ...(isActiveNavLink(props.pathname, href) ? [h.AriaCurrent('page')] : []),
       ],
       [lucide(icon, tabIconClass), tabLabel(label)],
     )
