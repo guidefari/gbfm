@@ -3,6 +3,8 @@ import { Command, type Update } from 'foldkit'
 import type { HtmlBuilder } from 'foldkit/html'
 import { defineMessageUnion } from 'foldkit/message'
 
+import { iconPaths, lucide } from '../view/icons'
+
 export const Target = Schema.Struct({
   id: Schema.String,
   kind: Schema.Literals(['audio', 'show']),
@@ -104,6 +106,7 @@ export const view = <M>(
   h: HtmlBuilder<M>,
   message: (message: Message) => M,
   interactive: boolean,
+  iconOnly = false,
 ) => {
   const document = model.document
 
@@ -115,7 +118,17 @@ export const view = <M>(
     Match.orElse(() => (active ? 'Remove from favorites' : 'Add to favorites')),
   )
 
-  const outline =
+  const signInLabel = `Sign in to ${document.target.kind === 'show' ? 'subscribe' : 'favorite'}`
+
+  const icon = lucide(
+    document.target.kind === 'show' ? iconPaths.rss : iconPaths.heart,
+    `h-5 w-5 ${active ? 'fill-current' : ''}`,
+  )
+
+  const iconButton =
+    'inline-flex h-11 w-11 items-center justify-center rounded-sm border-0 bg-transparent p-0 text-muted-foreground no-underline transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50 aria-pressed:text-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+
+  const outlineButton =
     'inline-flex h-10 items-center gap-2 rounded-sm border border-border bg-transparent px-4 text-sm font-semibold text-foreground no-underline transition-colors hover:border-foreground hover:bg-muted disabled:opacity-50 aria-pressed:border-highlight aria-pressed:text-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
   return h.div(
@@ -126,9 +139,10 @@ export const view = <M>(
           h.a(
             [
               h.Href(`/auth/sign-in?returnTo=${encodeURIComponent(document.path)}`),
-              h.Class(outline),
+              ...(iconOnly ? [h.AriaLabel(signInLabel), h.Title(signInLabel)] : []),
+              h.Class(iconOnly ? iconButton : outlineButton),
             ],
-            [`Sign in to ${document.target.kind === 'show' ? 'subscribe' : 'favorite'}`],
+            [iconOnly ? icon : signInLabel],
           ),
         ),
         Match.when('unavailable', () =>
@@ -144,9 +158,10 @@ export const view = <M>(
               h.Disabled(model.busy || !interactive),
               h.AriaPressed(String(active)),
               h.OnClick(message(Message.Toggle())),
-              h.Class(outline),
+              ...(iconOnly ? [h.AriaLabel(label), h.Title(label)] : []),
+              h.Class(iconOnly ? iconButton : outlineButton),
             ],
-            [model.busy ? 'Saving…' : label],
+            [iconOnly ? icon : model.busy ? 'Saving…' : label],
           ),
         ),
       ),
