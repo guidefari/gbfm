@@ -348,7 +348,7 @@ const findAudioBySlug = (_type: AudioType, slug: string, mdx: MdxService, where:
               with: { creator: true },
             },
             show: {
-              columns: { thumbnailUrl: true },
+              columns: { thumbnailUrl: true, slug: true, title: true },
             },
           },
         }),
@@ -394,6 +394,7 @@ const findAudioBySlug = (_type: AudioType, slug: string, mdx: MdxService, where:
       ...audioFields,
       tags,
       thumbnailUrl: audioFields.thumbnailUrl ?? show?.thumbnailUrl ?? null,
+      show: show ? { slug: show.slug, title: show.title } : null,
       compiledContent,
       richContent,
       creators: creators.map(({ creator }) => ({

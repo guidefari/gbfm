@@ -40,8 +40,14 @@ export const AudioResponse = Schema.Struct({
   creators: Schema.optional(Schema.Array(Creator)),
 })
 
+export const AudioShow = Schema.Struct({
+  slug: Schema.String,
+  title: Schema.String,
+})
+
 export const CompiledAudioResponse = Schema.Struct({
   ...AudioResponse.fields,
+  show: Schema.optional(Schema.NullOr(AudioShow)),
   compiledContent: Schema.String,
   richContent: Schema.optional(RichContentDocument),
 })

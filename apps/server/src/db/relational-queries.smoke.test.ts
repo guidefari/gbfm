@@ -47,7 +47,7 @@ describe('relational query smoke matrix', () => {
         where: and(eq(audioTable.type, 'mix'), eq(audioTable.slug, 'smoke-missing')),
         with: {
           audioCreators: { with: { creator: true } },
-          show: { columns: { thumbnailUrl: true } },
+          show: { columns: { thumbnailUrl: true, slug: true, title: true } },
         },
       }),
     ).resolves.toBeUndefined()
