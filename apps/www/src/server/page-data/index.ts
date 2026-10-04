@@ -6,6 +6,7 @@ import { Schema } from 'effect'
 import changelog from 'virtual:repo-changelog'
 
 import type { Flags } from '../../model'
+import { loadAudioDetailData } from '../../page/content/page-data'
 import { loadDashboardData } from '../../page/dashboard/page-data'
 import { loadShowsData } from '../../page/shows/page-data'
 import { staticPages } from '../../page/static/pages'
@@ -24,6 +25,17 @@ export const loadPageData = async (
   route: Route,
   requestId: string,
 ) => {
+  if (Route.guards.Detail(route) && (route.kind === 'mixes' || route.kind === 'tracks'))
+    return loadAudioDetailData(
+      ownedRequest,
+      request,
+      url,
+      route,
+      requestId,
+      route.kind === 'mixes' ? 'mix' : 'track',
+      route.slug,
+    )
+
   const endpoint = endpointFor(route)
   const tweetSlug = Route.guards.Detail(route) && route.kind === 'tweets' ? route.slug : null
   const tweetPromise = loadTweetData(ownedRequest, endpoint, tweetSlug)

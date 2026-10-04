@@ -77,7 +77,8 @@ export const createPageResponse = async (
       : undefined
 
   const publicMetadata =
-    showDetailSlug && response?.ok
+    flags.metadata ??
+    (showDetailSlug && response?.ok
       ? showMetadata
       : tweetData && status === 200
         ? await (tweetData.metadata?.ok
@@ -100,7 +101,7 @@ export const createPageResponse = async (
                   : null,
               )
               .catch(() => null)
-          : null
+          : null)
 
   const sourceMetadata =
     publicMetadata ?? makeStaticSiteMetadata(title, flags.description, url.pathname)
