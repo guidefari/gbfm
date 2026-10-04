@@ -358,7 +358,7 @@ const findAudioBySlug = (_type: AudioType, slug: string, mdx: MdxService, where:
           operation: 'select',
           table: 'audio',
         }),
-    })
+    }).pipe(Effect.withSpan('audio.findBySlug.query'))
 
     if (!audio) {
       return yield* new NotFoundError({
@@ -369,7 +369,10 @@ const findAudioBySlug = (_type: AudioType, slug: string, mdx: MdxService, where:
     }
 
     let compiledContent = ''
-    const richContent = yield* mdx.render(audio.content)
+
+    const richContent = yield* mdx
+      .render(audio.content)
+      .pipe(Effect.withSpan('audio.renderContent'))
 
     if (audio.content) {
       compiledContent = yield* mdx.compile(audio.content).pipe(Effect.orElseSucceed(() => ''))
@@ -385,7 +388,7 @@ const findAudioBySlug = (_type: AudioType, slug: string, mdx: MdxService, where:
           operation: 'select',
           table: 'labels',
         }),
-    })
+    }).pipe(Effect.withSpan('audio.projectLabels'))
 
     return {
       ...audioFields,

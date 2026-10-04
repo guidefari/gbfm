@@ -14,7 +14,10 @@ export const getOptionalActor = Effect.gen(function* () {
   const session = yield* Effect.tryPromise({
     try: () => auth.api.getSession({ headers: new Headers(request.headers) }),
     catch: () => null,
-  }).pipe(Effect.orElseSucceed(() => null))
+  }).pipe(
+    Effect.orElseSucceed(() => null),
+    Effect.withSpan('auth.resolveOptionalActor'),
+  )
 
   return session ? { userId: session.user.id, userRole: session.user.role ?? 'user' } : undefined
 })

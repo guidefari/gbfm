@@ -26,6 +26,7 @@ export const AuthMiddlewareLive = Layer.effect(
             }),
           ),
           Effect.mapError(() => new HttpApiError.Unauthorized()),
+          Effect.withSpan('auth.resolveRequiredSession'),
         )
 
         if (!session) {

@@ -77,7 +77,8 @@ const makeService = (
             attributes: { 'mdx.contentLength': content.length },
           }),
         ),
-      render: (content) => Cache.get(renderCache, content),
+      render: (content) =>
+        Cache.get(renderCache, content).pipe(Effect.withSpan('richContent.render')),
       invalidateAll: Cache.invalidateAll(compiledCache).pipe(
         Effect.andThen(Cache.invalidateAll(renderCache)),
       ),
