@@ -66,9 +66,13 @@ test('signed-in audio SSR contains listener identity and current favorite state'
   request,
   baseURL,
 }) => {
-  const login = await request.post('/auth/sign-in/email', {
+  const login = await request.post('/auth/sign-up/email', {
     headers: { origin: baseURL ?? 'http://127.0.0.1:5173' },
-    data: { email: 'listener@gbfm.local', password: 'LocalTest123!' },
+    data: {
+      name: 'Audio page test listener',
+      email: `audio-page-${crypto.randomUUID()}@gbfm.local`,
+      password: 'LocalTest123!',
+    },
   })
 
   expect(login.ok()).toBe(true)
@@ -77,7 +81,7 @@ test('signed-in audio SSR contains listener identity and current favorite state'
   expect(response.headers()['cache-control']).toBe('private, no-store')
   expect(await response.json()).toMatchObject({
     status: 200,
-    principal: { name: 'Local Listener' },
+    principal: { name: 'Audio page test listener' },
     publicAction: { target: { kind: 'audio' }, state: 'inactive' },
   })
 })
