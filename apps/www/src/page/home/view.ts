@@ -4,6 +4,7 @@ import { Message } from '../../message'
 import type { ContentItem, Model } from '../../model'
 import * as Player from '../../player'
 import { artwork } from '../../view/artwork'
+import { iconPaths, lucide } from '../../view/icons'
 
 const link = (h: HtmlBuilder<Message>, href: string, label: string, className = '') =>
   h.a([h.Href(href), h.Class(className)], [label])
@@ -57,9 +58,10 @@ export const view = (model: Model, h: HtmlBuilder<Message>) => {
                         ? h.button(
                             [
                               h.Disabled(!model.interactive),
+                              h.Type('button'),
                               h.OnClick(playItem(mix, mix.audioUrl)),
                             ],
-                            ['▶ Play mix'],
+                            [lucide(iconPaths.play, 'size-5'), h.span([], ['Play mix'])],
                           )
                         : h.empty,
                     ],
@@ -68,7 +70,10 @@ export const view = (model: Model, h: HtmlBuilder<Message>) => {
               ),
             ],
           ),
-          link(h, '/shows', '◉ Browse radio shows', 'browse-shows'),
+          h.a(
+            [h.Href('/shows'), h.Class('browse-shows')],
+            [lucide(iconPaths.radio, 'size-4'), h.span([], ['Browse radio shows'])],
+          ),
         ],
       ),
     ],

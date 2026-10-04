@@ -3,6 +3,7 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 import type { Principal } from '../model'
 import { artworkUrl } from './artwork'
 import { iconPaths, lucide } from './icons'
+import { wordmark } from './wordmark'
 
 type NowPlaying = {
   readonly title: string
@@ -77,7 +78,7 @@ export const stationNav = <M>(h: HtmlBuilder<M>, props: StationNavProps<M>) => {
             'group flex shrink-0 items-center text-foreground no-underline transition-colors hover:text-highlight',
           ),
         ],
-        [h.span([h.Class('wordmark'), h.AriaHidden(true)], [])],
+        [wordmark()],
       ),
       h.nav(
         [h.AriaLabel('Primary'), h.Class('flex shrink-0 items-center gap-1')],
