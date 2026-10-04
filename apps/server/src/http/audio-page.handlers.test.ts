@@ -195,6 +195,21 @@ describe('Audio detail page HTTP read', () => {
     expect(page.principal).toBeNull()
   })
 
+  test('the page projection never exposes session tokens, user email or persistence-only fields', async () => {
+    const response = await webHandler.handler(
+      new Request(`http://localhost/api/content/audio/mix/${publicSlug}/page`, {
+        headers: { authorization: `Bearer token-${listenerId}` },
+      }),
+    )
+
+    const body = await response.text()
+    expect(body).not.toContain(`token-${listenerId}`)
+    expect(body).not.toContain('audio-page-listener@example.com')
+    expect(body).not.toContain('idempotencyKey')
+    expect(body).not.toContain('idempotencyActorId')
+    expect(body).not.toContain('idempotencyFingerprint')
+  })
+
   test('a revoked session loses draft access on the next request', async () => {
     const token = 'audio-page-revoked-token'
     await db.insert(session).values({
