@@ -55,3 +55,10 @@ Full output and screenshots/videos are outside git under the session shell outpu
 ## Scope
 
 The change covers mix and track detail. Other page loaders retain their current behavior. The earlier numbered spec layers remain drafts, not a completed design-review process.
+
+## 2026-10-05 follow-up
+
+- New signed-in traces confirm one audio page request and one session resolution. Two mix samples took 1.05 and 1.14 seconds; a later mix took 9.36 seconds while two overlapping show pages took 11.96 and 15.93 seconds.
+- Forty-eight anonymous probe reads did not reproduce the long spike. A subsequent browser probe found five database-backed WWW 503 responses; two later serial mix reads succeeded again. The failures and the original slow requests are distinct observations, with no proven shared cause.
+- No application fix was made without a reproducible cause. Authenticated replay needs an accessible signed-in browser session; trace cookies are redacted.
+- Evidence, request IDs, limits and next probes: [Local backend latency investigation](02-latency-investigation.md).
