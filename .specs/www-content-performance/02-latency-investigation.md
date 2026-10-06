@@ -77,3 +77,26 @@ Next evidence needed:
 3. A local process responsiveness measurement alongside the database read, to separate transport waits from a blocked process.
 
 Do not add retries, caching, indexes or a framework change based on the current evidence. Do not claim the backend spike is fixed. Show-page read consolidation remains a separate improvement, not a proven remedy for the shared slowdown.
+
+## 2026-10-06 authenticated follow-up
+
+Installed `2password` 0.2.0 at the user's request. Added its upstream skill to `~/dotfiles/agents/.agents/skills/2password/SKILL.md`; OpenCode detected it. Desktop approval initially failed, then worked after the user checked the integration settings. Selected the login whose website is `gbfm.localhost`, not a database or infrastructure credential.
+
+The disposable `authenticated-latency-probe.mjs` receives username and password through `2password run` environment injection. It posts only to `https://gbfm.localhost`, disables redirects, holds response cookies in memory and prints only status, timing, signed-in boolean and request IDs. No credentials or cookies were printed or written to disk. Bun needed `--use-system-ca` to trust the existing local certificate; certificate verification was not disabled.
+
+Both logins succeeded. All 19 authenticated page reads returned 200 with a principal:
+
+- First pass: four serial reads, then two concurrent reads. Mixes took 1,006 to 1,123 ms; shows took 1,477 to 1,512 ms.
+- Second pass: four serial reads, then three rounds of three concurrent reads, separated by ten seconds. Mixes took 1,034 to 1,137 ms; shows took 1,443 to 1,715 ms.
+- Neither pass reproduced the earlier 9 to 16-second spike or the anonymous database failures. Three overlapping authenticated page reads alone did not reproduce the symptom.
+
+Representative traces:
+
+| Trace | Evidence |
+| --- | --- |
+| `6e69c1701cc2b4fbbdd75f9e649f758b` | Mix `fer-1`: WWW 1,108 ms; one page API request; session 428 ms; audio query 208 ms; labels 215 ms; favorite 231 ms; rendering 7 ms. |
+| `597b3165efd7cafebecaca1020d7c8e3` | Mix `gb51`: WWW 1,056 ms; session 422 ms; audio query 204 ms; labels 214 ms; favorite 200 ms. |
+| `0afd6da0a4155cf98b6db97f07bc8a51` | Show `farendradio`: WWW 1,470 ms; six API requests; episodes 863 ms, followed by subscription 564 ms. |
+| `47e77288e52f83f726d44b08d1ddfe24` | Concurrent show read: WWW 1,501 ms; still six API requests; episodes 853 ms, followed by subscription 608 ms. |
+
+Authenticated access is no longer the blocker. The remaining blocker is reproducing the transient backend condition and capturing its transport/provider cause. The stable signed-in traces strengthen the evidence for removing redundant show-page reads, but do not identify the cause of the shared spike.

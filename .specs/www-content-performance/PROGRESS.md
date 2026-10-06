@@ -62,3 +62,10 @@ The change covers mix and track detail. Other page loaders retain their current 
 - Forty-eight anonymous probe reads did not reproduce the long spike. A subsequent browser probe found five database-backed WWW 503 responses; two later serial mix reads succeeded again. The failures and the original slow requests are distinct observations, with no proven shared cause.
 - No application fix was made without a reproducible cause. Authenticated replay needs an accessible signed-in browser session; trace cookies are redacted.
 - Evidence, request IDs, limits and next probes: [Local backend latency investigation](02-latency-investigation.md).
+
+## 2026-10-06 authenticated follow-up
+
+- Installed `2password` and its upstream skill in the user's dotfiles. Resumed local testing with credentials injected into a trusted probe, without printing or persisting passwords or cookies.
+- Nineteen authenticated page reads passed, including three rounds of three overlapping requests. Mixes took 1.01 to 1.14 seconds; shows took 1.44 to 1.72 seconds.
+- Fresh traces confirm one session/audio/favorite read for mix pages and the six-request episodes-then-subscription path for show pages.
+- The original spike and later database failures did not reproduce. Authenticated access is now available; root cause remains unproven. No application change was made.
