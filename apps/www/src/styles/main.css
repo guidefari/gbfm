@@ -1696,7 +1696,7 @@
 .tweet-jump summary {
   cursor: pointer;
   list-style: none;
-  padding: 0.3rem;
+  padding: 0.3rem 0;
 }
 .tweet-jump summary::-webkit-details-marker {
   display: none;

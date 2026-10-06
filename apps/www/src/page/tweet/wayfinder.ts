@@ -1,6 +1,8 @@
 import type { MicroPostNeighboursResponse } from '@gbfm/api/navigation'
 import { inertHtml as h } from 'foldkit/html'
 
+import { breadcrumbs, crumbLink } from '../../view/breadcrumbs'
+import { iconPaths, lucide } from '../../view/icons'
 import {
   markerPercent,
   monthLabel,
@@ -22,7 +24,15 @@ const jumpMenu = (label: string, title: string, items: ReadonlyArray<Jump>) =>
   h.details(
     [h.Class('tweet-jump'), h.Name('tweet-jumps')],
     [
-      h.summary([h.AriaLabel(title)], [label, ' ▾']),
+      h.summary(
+        [
+          h.AriaLabel(title),
+          h.Class(
+            'flex items-center gap-1 text-muted-foreground transition-colors hover:text-foreground',
+          ),
+        ],
+        [label, lucide(iconPaths.chevronDown, 'h-3.5 w-3.5')],
+      ),
       h.nav(
         [h.Class('tweet-jump-options'), h.AriaLabel(title)],
         items.map((item) =>
@@ -63,33 +73,33 @@ export const tweetWayfinder = (
       h.div(
         [h.Class('tweet-breadcrumb')],
         [
-          h.a([h.Href('/tweets')], ['Tweets']),
-          h.span([h.AriaHidden(true)], ['/']),
-          jumpMenu(
-            currentYear,
-            'Jump to year',
-            yearJumps(months).map((year) => ({
-              label: year.year,
-              slug: year.newestSlug,
-              current: year.year === currentYear,
-              total: year.total,
-              unread: year.unread,
-            })),
-          ),
-          h.span([h.AriaHidden(true)], ['/']),
-          jumpMenu(
-            monthLabel(currentMonth).slice(0, 3),
-            `Jump within ${currentYear}`,
-            months
-              .filter((month) => month.month.startsWith(currentYear))
-              .map((month) => ({
-                label: monthLabel(month.month).slice(0, 3),
-                slug: month.newestSlug,
-                current: month.month === currentMonth,
-                total: month.total,
-                unread: month.unread,
+          breadcrumbs([
+            crumbLink({ label: 'Tweets', href: '/tweets' }),
+            jumpMenu(
+              currentYear,
+              'Jump to year',
+              yearJumps(months).map((year) => ({
+                label: year.year,
+                slug: year.newestSlug,
+                current: year.year === currentYear,
+                total: year.total,
+                unread: year.unread,
               })),
-          ),
+            ),
+            jumpMenu(
+              monthLabel(currentMonth).slice(0, 3),
+              `Jump within ${currentYear}`,
+              months
+                .filter((month) => month.month.startsWith(currentYear))
+                .map((month) => ({
+                  label: monthLabel(month.month).slice(0, 3),
+                  slug: month.newestSlug,
+                  current: month.month === currentMonth,
+                  total: month.total,
+                  unread: month.unread,
+                })),
+            ),
+          ]),
           h.span([h.Class('tweet-age')], [relativeAge(at, now)]),
           neighbours?.unreadCount
             ? h.span([h.Class('tweet-unread')], [`${neighbours.unreadCount} new`])

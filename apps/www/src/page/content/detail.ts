@@ -6,7 +6,7 @@ import type { ContentItem, Model } from '../../model'
 import * as Player from '../../player'
 import * as PublicActions from '../../public-actions'
 import { artwork } from '../../view/artwork'
-import { breadcrumbs } from '../../view/breadcrumbs'
+import { breadcrumbs, crumbCurrent, crumbLink } from '../../view/breadcrumbs'
 import { formatDate } from '../../view/format-date'
 import { iconPaths, lucide } from '../../view/icons'
 import { richContent } from '../../view/rich-content/fallback'
@@ -229,7 +229,7 @@ export const detailView = (model: Model, h: HtmlBuilder<Message>, kind: string) 
   return h.article(
     [h.Class('content-detail mx-auto max-w-5xl px-4 pb-32 pt-6')],
     [
-      breadcrumbs(ancestors(item, kind), item.slug),
+      breadcrumbs([...ancestors(item, kind).map(crumbLink), crumbCurrent(item.slug)]),
       masthead(h, item, kind),
       controls(model, h, item),
       item.description
