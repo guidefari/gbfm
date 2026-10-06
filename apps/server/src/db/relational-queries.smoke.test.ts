@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { and, asc, desc, eq, like, or, sql } from 'drizzle-orm'
 import { describe, expect, test } from 'vitest'
 
+import { audioTagsProjection } from '@/db/audio-label-projection'
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { audioIdsForCreator, showIdsForCreator } from '@/db/creator-membership'
 import { showCreators, showsTable } from '@/db/show.schema'
@@ -45,6 +46,7 @@ describe('relational query smoke matrix', () => {
     await expect(
       db.query.audioTable.findFirst({
         where: and(eq(audioTable.type, 'mix'), eq(audioTable.slug, 'smoke-missing')),
+        extras: (audio) => ({ tagsJson: audioTagsProjection(audio.id) }),
         with: {
           audioCreators: { with: { creator: true } },
           show: { columns: { thumbnailUrl: true, slug: true, title: true } },

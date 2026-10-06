@@ -186,6 +186,54 @@ describe('Audio page failure boundaries and read ownership', () => {
     expect(Cause.hasInterrupts(result.cause)).toBe(true)
   })
 
+  test('favorite interruption is not converted into unavailable action state', async () => {
+    const result = await Effect.runPromiseExit(
+      withTestLayer(
+        Effect.gen(function* () {
+          const favorites = yield* FavoriteService
+
+          return yield* loadAudioPage('mix', slug, principal).pipe(
+            Effect.provideService(FavoriteService, {
+              ...favorites,
+              hasAudioFavorite: () => Effect.interrupt,
+            }),
+          )
+        }),
+        services,
+      ),
+    )
+
+    if (!Exit.isFailure(result)) throw new Error('Expected interrupted favorite read')
+    expect(Cause.hasInterrupts(result.cause)).toBe(true)
+  })
+
+  test('unavailable audio does not start favorite membership reads', async () => {
+    const memberships: Array<string> = []
+
+    const page = await Effect.runPromise(
+      withTestLayer(
+        Effect.gen(function* () {
+          const favorites = yield* FavoriteService
+
+          return yield* loadAudioPage('mix', 'audio-page-missing', principal).pipe(
+            Effect.provideService(FavoriteService, {
+              ...favorites,
+              hasAudioFavorite: (userId, audioId) => {
+                memberships.push(audioId)
+
+                return favorites.hasAudioFavorite(userId, audioId)
+              },
+            }),
+          )
+        }),
+        services,
+      ),
+    )
+
+    expect(page).toEqual(AudioPageResponse.cases.NotFound.make({ principal }))
+    expect(memberships).toEqual([])
+  })
+
   test('membership reads the target even when it lies beyond the first collection page', async () => {
     const audio = Array.from({ length: 105 }, (_, index) => ({
       id: `membership-${index}`,

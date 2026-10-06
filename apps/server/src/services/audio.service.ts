@@ -1,6 +1,7 @@
 import { and, asc, count, desc, eq, or, type SQL, sql } from 'drizzle-orm'
 import { Context, Crypto, Effect, Encoding, Layer } from 'effect'
 
+import { audioTagsProjection, decodeAudioTags } from '@/db/audio-label-projection'
 import {
   audioCreators,
   audioTable,
@@ -340,9 +341,10 @@ const findAudioBySlug = (_type: AudioType, slug: string, mdx: MdxService, where:
     const db = yield* Database
 
     const audio = yield* Effect.tryPromise({
-      try: () =>
-        db.query.audioTable.findFirst({
+      try: async () => {
+        const audio = await db.query.audioTable.findFirst({
           where,
+          extras: (audio) => ({ tagsJson: audioTagsProjection(audio.id) }),
           with: {
             audioCreators: {
               with: { creator: true },
@@ -351,7 +353,14 @@ const findAudioBySlug = (_type: AudioType, slug: string, mdx: MdxService, where:
               columns: { thumbnailUrl: true, slug: true, title: true },
             },
           },
-        }),
+        })
+
+        if (!audio) return undefined
+
+        const { tagsJson, ...fields } = audio
+
+        return { ...fields, tags: decodeAudioTags(tagsJson) }
+      },
       catch: (error) =>
         new DatabaseError({
           message: `Failed to fetch audio: ${getErrorMessage(error)}`,
@@ -380,19 +389,8 @@ const findAudioBySlug = (_type: AudioType, slug: string, mdx: MdxService, where:
 
     const { audioCreators: creators, show, ...audioFields } = audio
 
-    const { tags } = yield* Effect.tryPromise({
-      try: () => projectEntityLabels(db, 'audio', audioFields),
-      catch: (error) =>
-        new DatabaseError({
-          message: getErrorMessage(error),
-          operation: 'select',
-          table: 'labels',
-        }),
-    }).pipe(Effect.withSpan('audio.projectLabels'))
-
     return {
       ...audioFields,
-      tags,
       thumbnailUrl: audioFields.thumbnailUrl ?? show?.thumbnailUrl ?? null,
       show: show ? { slug: show.slug, title: show.title } : null,
       compiledContent,
