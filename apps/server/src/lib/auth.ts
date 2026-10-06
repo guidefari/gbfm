@@ -49,6 +49,7 @@ const makeAuth = (
 ) =>
   betterAuth({
     database: drizzleAdapter(database, { provider: 'sqlite', schema: authSchema }),
+    advanced: { database: { joins: true } },
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false,

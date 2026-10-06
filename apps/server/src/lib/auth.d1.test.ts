@@ -1,10 +1,12 @@
 import type { D1Database } from '@cloudflare/workers-types'
 import { eq } from 'drizzle-orm'
+import { drizzle } from 'drizzle-orm/d1'
 import { Clock, Effect, Layer, Schema } from 'effect'
 import { describe, expect, test } from 'vitest'
 
 import { session, user } from '@/db/auth.schema'
 import { emailDeliveryLogsTable } from '@/db/email.schema'
+import * as databaseSchema from '@/db/exports'
 import { Database, DatabaseLayer } from '@/db/layer'
 import { ConfigService, createConfig, type WorkerConfigBindings } from '@/services/config.service'
 import { EmailDeliveryLive } from '@/services/email-delivery.service'
@@ -74,8 +76,23 @@ const makeDeferredTransport = () => {
 const authLayer = (
   d1: D1Database,
   transport: ReturnType<typeof makeDeferredTransport>['layer'],
+  queries?: Array<string>,
 ) => {
-  const database = DatabaseLayer(d1)
+  const database =
+    queries === undefined
+      ? DatabaseLayer(d1)
+      : Layer.succeed(
+          Database,
+          drizzle(d1, {
+            schema: databaseSchema,
+            logger: {
+              logQuery: (query) => {
+                queries.push(query)
+              },
+            },
+          }),
+        )
+
   const config = Layer.succeed(ConfigService, createConfig(workerBindings()))
 
   const clock = Layer.succeed(Clock.Clock, {
@@ -138,7 +155,7 @@ describe('AuthLive password-reset delivery', () => {
   })
 })
 
-test('session cookies cannot retain old roles or authenticate after D1 revocation', async () => {
+test('joined cookie sessions read current roles, renew cookies and reject immediate revocation', async () => {
   await using d1Resource = await createMigratedD1Database()
   const database = Effect.runSync(withTestLayer(Database, DatabaseLayer(d1Resource.database)))
 
@@ -146,8 +163,10 @@ test('session cookies cannot retain old roles or authenticate after D1 revocatio
     send: () => Effect.succeed({ provider: 'cloudflare' as const, messageId: 'local-receipt' }),
   })
 
+  const queries: Array<string> = []
+
   const auth = await Effect.runPromise(
-    withTestLayer(Auth, authLayer(d1Resource.database, transport)),
+    withTestLayer(Auth, authLayer(d1Resource.database, transport, queries)),
   )
 
   const signup = await auth.handler(
@@ -177,13 +196,144 @@ test('session cookies cannot retain old roles or authenticate after D1 revocatio
     auth.handler(new Request('http://localhost/auth/get-session', { headers: { cookie } }))
 
   const sessionIdentity = Schema.Struct({ user: Schema.Struct({ role: Schema.String }) })
+  queries.length = 0
   expect(Schema.decodeUnknownSync(sessionIdentity)(await (await read()).json()).user.role).toBe(
     'user',
   )
+  expect(queries).toHaveLength(1)
+  expect(queries[0]).toContain('json_array')
+  expect(queries[0]).toContain('"session"')
+  expect(queries[0]).toContain('"user"')
   await database.update(user).set({ role: 'creator' }).where(eq(user.id, identity.user.id))
+  queries.length = 0
   expect(Schema.decodeUnknownSync(sessionIdentity)(await (await read()).json()).user.role).toBe(
     'creator',
   )
+  expect(queries).toHaveLength(1)
+  expect((await read()).headers.getSetCookie()).toHaveLength(0)
+  const previousExpiry = new Date(Date.now() + 6 * 24 * 60 * 60 * 1000 - 60_000)
+  await database
+    .update(session)
+    .set({ expiresAt: previousExpiry })
+    .where(eq(session.userId, identity.user.id))
+  queries.length = 0
+
+  const renewed = await auth.api.getSession({
+    headers: new Headers({ cookie }),
+    returnHeaders: true,
+  })
+
+  const renewedIdentity = renewed.response
+  expect(renewedIdentity).not.toBeNull()
+
+  if (renewedIdentity === null) throw new Error('Session did not renew')
+  expect(renewedIdentity.user.role).toBe('creator')
+  expect(renewedIdentity.session.expiresAt.getTime()).toBeGreaterThan(previousExpiry.getTime())
+  expect(
+    renewed.headers.getSetCookie().some((value) => value.startsWith('better-auth.session_token=')),
+  ).toBe(true)
+  expect(queries).toHaveLength(2)
+
+  const [persistedSession] = await database
+    .select()
+    .from(session)
+    .where(eq(session.userId, identity.user.id))
+
+  expect(persistedSession?.expiresAt.toISOString()).toBe(
+    renewedIdentity.session.expiresAt.toISOString(),
+  )
+  expect(persistedSession).toBeDefined()
+
+  if (persistedSession === undefined) throw new Error('Renewed session was not persisted')
+  queries.length = 0
+  const bearerHeaders = new Headers({ authorization: `Bearer ${persistedSession.token}` })
+  const bearerIdentity = await auth.api.getSession({ headers: bearerHeaders })
+  expect(bearerIdentity?.user.role).toBe('creator')
+  expect(queries).toHaveLength(1)
+  await database.update(user).set({ role: 'user' }).where(eq(user.id, identity.user.id))
+  queries.length = 0
+  expect(Schema.decodeUnknownSync(sessionIdentity)(await (await read()).json()).user.role).toBe(
+    'user',
+  )
+  expect(queries).toHaveLength(1)
   await database.delete(session).where(eq(session.userId, identity.user.id))
+  queries.length = 0
   expect((await (await read()).json()) === null).toBe(true)
+  expect(queries).toHaveLength(1)
+  expect(await auth.api.getSession({ headers: bearerHeaders })).toBeNull()
+})
+
+test('joined session reads isolate users and reject missing or expired tokens', async () => {
+  await using d1Resource = await createMigratedD1Database()
+  const database = Effect.runSync(withTestLayer(Database, DatabaseLayer(d1Resource.database)))
+
+  const transport = Layer.succeed(EmailTransport, {
+    send: () => Effect.succeed({ provider: 'cloudflare' as const, messageId: 'local-receipt' }),
+  })
+
+  const queries: Array<string> = []
+
+  const auth = await Effect.runPromise(
+    withTestLayer(Auth, authLayer(d1Resource.database, transport, queries)),
+  )
+
+  const now = Date.now()
+  await database.insert(user).values([
+    {
+      id: 'session-owner',
+      name: 'Session owner',
+      email: 'owner@example.test',
+      role: 'creator',
+      username: 'session-owner',
+      displayUsername: 'Session-Owner',
+    },
+    { id: 'other-user', name: 'Other user', email: 'other@example.test', role: 'admin' },
+  ])
+  await database.insert(session).values([
+    {
+      id: 'owner-session',
+      userId: 'session-owner',
+      token: 'owner-token',
+      expiresAt: new Date(now + 7 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(now),
+      impersonatedBy: 'other-user',
+    },
+    {
+      id: 'expired-session',
+      userId: 'other-user',
+      token: 'expired-token',
+      expiresAt: new Date(now - 60_000),
+      updatedAt: new Date(now),
+    },
+  ])
+
+  const read = (token: string) =>
+    auth.api.getSession({ headers: new Headers({ authorization: `Bearer ${token}` }) })
+
+  queries.length = 0
+  const identity = await read('owner-token')
+  expect(identity?.user).toMatchObject({
+    id: 'session-owner',
+    role: 'creator',
+    username: 'session-owner',
+    displayUsername: 'Session-Owner',
+  })
+  expect(identity?.session).toMatchObject({
+    id: 'owner-session',
+    userId: 'session-owner',
+    impersonatedBy: 'other-user',
+  })
+  expect(identity?.session.expiresAt).toBeInstanceOf(Date)
+  expect(identity?.user.createdAt).toBeInstanceOf(Date)
+  expect(queries).toHaveLength(1)
+  queries.length = 0
+  expect(await auth.api.getSession({ headers: new Headers() })).toBeNull()
+  expect(queries).toHaveLength(0)
+  expect(await read('missing-token')).toBeNull()
+  expect(queries).toHaveLength(1)
+  expect(await read('expired-token')).toBeNull()
+  expect(
+    await database.select().from(session).where(eq(session.id, 'expired-session')),
+  ).toHaveLength(0)
+  expect((await read('owner-token'))?.user.id).toBe('session-owner')
 })
