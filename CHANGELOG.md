@@ -1,3 +1,60 @@
+# Unreleased
+
+## Session recap: faster mix and show pages (2026-10-06)
+
+### In brief
+
+Reduced authenticated page-loading times while keeping real remote D1 reads. Mix pages measured **0.63–0.71 seconds**, down from **1.00–1.14 seconds**; show pages measured **0.68–0.77 seconds**, down from **1.44–1.72 seconds**. Changes are committed locally, not pushed or deployed; these are local-to-remote measurements, not production benchmarks.
+
+### Narrative
+
+The earlier audio-page consolidation removed duplicate requests, but signed-in pages still spent roughly a second waiting on sequential database reads. Anonymous probes did not reproduce an intermittent 9–16-second spike and later exposed transient database failures. Authenticated testing became available through secret injection with 2password.
+
+The key correction was to stop treating “the spike did not reproduce” as a reason to stop improving normal response times. Three GPT-6.1 Sol agents worked on audio queries, show-page composition, and authentication/transport. The first integrated measurements improved mixes but left shows above a second. Traces then identified separate show-label reads as the next avoidable cost; combining those queries brought shows below 0.8 seconds in the final sample.
+
+### Decisions and lessons
+
+- Fetch session and user together in one D1 statement. Keep cookie caching disabled so revocation and role changes take effect on the next authenticated request.
+- Fetch ordered tags within audio/show content queries instead of making separate label requests. Preserve empty-tag semantics, pagination, and draft visibility.
+- Load show detail through one API request instead of six. Reuse loaded content for metadata and run episodes, navigation, and subscription reads concurrently once the show is available.
+- Keep remote D1 for latency measurements and disposable D1 for correctness fixtures. Final measurements included 13 successful authenticated reads, both serial and with three concurrent callers.
+- D1 uses Worker bindings, not an application-managed database connection pool. Local remote development adds a preview-worker network leg that production does not use. Fewer database round trips benefit both paths, but production gains still need measurement.
+
+### Work and references
+
+- Audio query projection: `apps/server/src/services/audio.service.ts` and `apps/server/src/db/entity-label-projection.ts`.
+- Authentication: `apps/server/src/lib/auth.ts` and disposable-D1 coverage in `auth.d1.test.ts`.
+- Show composition: `apps/server/src/services/show-page.ts`, `packages/api/src/shows.ts`, and `apps/www/src/page/shows/detail-page-data.ts`.
+- Browser coverage: `apps/www/e2e/show-page.spec.ts`.
+- Plan: `.specs/www-content-performance/03-read-latency-plan.md`.
+- Transport findings: `.specs/www-content-performance/04-session-transport-findings.md`.
+- Measurements, trace IDs, and verification details: `.specs/www-content-performance/05-read-latency-results.md`.
+
+### Commands and verification
+
+- `bun precommit`: passed after integration and after the final label-query changes.
+- `bun run test` in `apps/server`: 647 tests passed before the final label follow-up; that follow-up passed 67 targeted tests across eight suites.
+- `bun run unit` in `apps/www`: 132 tests passed. API tests: 30 passed.
+- `bun run build` in `apps/www`: passed; the existing large-client-chunk warning remains.
+- Audio/show Playwright coverage initially passed all 16 Mobile Safari/Chrome cases. After the final query changes, 15 passed and one Safari navigation case was blocked by a Vite/Foldkit request-body error overlay. Both navigation cases passed in isolation; the parallel run is not claimed fully green.
+
+### Commits
+
+- `dba98f42`: plan parallel read-latency improvements.
+- `43bf9ac9`: load audio detail tags in the authorized query.
+- `0d2f0fbe`: resolve sessions and users in one D1 read.
+- `9fbc5bc4`: compose show pages in one API request.
+- `fd6b92d1`: cover composed show pages in mobile browsers.
+- `b091bc69`: project show and episode labels within content queries.
+- `37252c13`: record remote latency gains and validation.
+
+### Open threads
+
+- The remaining critical path is approximately three sequential remote waits. Investigate further overlap or deployment placement with measurements rather than adding speculative caching or retries.
+- The earlier intermittent latency spike and database failures remain unexplained, not fixed by assertion.
+- Investigate the Vite/Foldkit “Response body object should not be disturbed or locked” error seen during parallel browser testing.
+- Smart Placement and selective replica reads remain proposals. Neither was applied; authentication consistency must be preserved.
+
 # [2.101.0](https://github.com/guidefari/gbfm/compare/v2.100.3...v2.101.0) (2026-10-03)
 
 
