@@ -132,6 +132,23 @@ describe('relational query smoke matrix', () => {
     ).resolves.toBeDefined()
   })
 
+  test('show page episodes use the loaded ID with public and admin visibility', async () => {
+    for (const draftCondition of [eq(audioTable.draft, false), undefined]) {
+      await expect(
+        db.query.audioTable.findMany({
+          where: and(eq(audioTable.showId, 'smoke-loaded-show'), draftCondition),
+          limit: 100,
+          offset: 0,
+          orderBy: desc(audioTable.createdAt),
+          with: {
+            audioCreators: { with: { creator: true } },
+            show: { columns: { thumbnailUrl: true } },
+          },
+        }),
+      ).resolves.toBeDefined()
+    }
+  })
+
   test('search.service audio search', async () => {
     await expect(
       db.query.audioTable.findMany({

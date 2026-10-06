@@ -1,6 +1,5 @@
 import { GetAllShowsResponse, GetShowEpisodesResponse } from '@gbfm/api/shows'
-import { SiteMetadata } from '@gbfm/site-metadata'
-import { Effect, Option, Schema } from 'effect'
+import { Effect, Schema } from 'effect'
 
 import { Route } from '../../route'
 import { apiRequest } from '../../server/api'
@@ -15,52 +14,24 @@ export const loadShowsData = (
   url: URL,
 ) => {
   const listing = Route.guards.Listing(route) && route.kind === 'shows'
-  const detailSlug = Route.guards.Detail(route) && route.kind === 'shows' ? route.slug : null
 
-  if (!endpoint || (!listing && !detailSlug)) return null
+  if (!endpoint || !listing) return null
 
-  const responsePromise = Effect.runPromise(optionalPageRequest(request, endpoint))
-
-  const detailPromise = detailSlug
-    ? Effect.runPromise(
-        Effect.all(
-          {
-            list: optionalPageRequest(request, '/api/shows?limit=100&offset=0'),
-            episodes: optionalPageRequest(
-              request,
-              `/api/shows/${encodeURIComponent(detailSlug)}/episodes?limit=100&offset=0`,
-            ),
-            metadata: optionalPageRequest(
-              request,
-              `/api/site-metadata/show/${encodeURIComponent(detailSlug)}`,
-            ),
-          },
-          { concurrency: 'unbounded' },
-        ),
-      )
-    : null
-
-  return Promise.all([responsePromise, detailPromise]).then(async ([response, detail]) => {
+  return Effect.runPromise(optionalPageRequest(request, endpoint)).then(async (response) => {
     const payload = response?.ok ? await json(response) : null
-    const allResponse = listing ? response : (detail?.list ?? null)
-
-    const all = allResponse?.ok
-      ? Schema.decodeUnknownSync(GetAllShowsResponse)(listing ? payload : await json(allResponse))
-      : null
+    const all = response?.ok ? Schema.decodeUnknownSync(GetAllShowsResponse)(payload) : null
 
     let shows: ShowsDocument | null = null
 
     if (all) {
-      const selectedSlug = detailSlug ?? url.searchParams.get('show') ?? all.data[0]?.slug ?? null
+      const selectedSlug = url.searchParams.get('show') ?? all.data[0]?.slug ?? null
 
       const episodesResponse = selectedSlug
-        ? detailSlug
-          ? (detail?.episodes ?? null)
-          : await apiRequest(
-              request,
-              `/api/shows/${encodeURIComponent(selectedSlug)}/episodes?limit=100&offset=0`,
-              { method: 'GET' },
-            ).catch(() => null)
+        ? await apiRequest(
+            request,
+            `/api/shows/${encodeURIComponent(selectedSlug)}/episodes?limit=100&offset=0`,
+            { method: 'GET' },
+          ).catch(() => null)
         : null
 
       shows = {
@@ -76,11 +47,8 @@ export const loadShowsData = (
       response,
       payload,
       shows,
-      detailSlug,
-      metadata:
-        response?.ok && detail?.metadata?.ok
-          ? Option.getOrNull(Schema.decodeUnknownOption(SiteMetadata)(await detail.metadata.json()))
-          : null,
+      detailSlug: null,
+      metadata: null,
     }
   })
 }

@@ -8,6 +8,7 @@ import changelog from 'virtual:repo-changelog'
 import type { Flags } from '../../model'
 import { loadAudioDetailData } from '../../page/content/page-data'
 import { loadDashboardData } from '../../page/dashboard/page-data'
+import { loadShowDetailData } from '../../page/shows/detail-page-data'
 import { loadShowsData } from '../../page/shows/page-data'
 import { staticPages } from '../../page/static/pages'
 import { skipsSeenTweets } from '../../page/tweet/navigation'
@@ -25,6 +26,9 @@ export const loadPageData = async (
   route: Route,
   requestId: string,
 ) => {
+  if (Route.guards.Detail(route) && route.kind === 'shows')
+    return loadShowDetailData(ownedRequest, request, url, route, requestId, route.slug)
+
   if (Route.guards.Detail(route) && (route.kind === 'mixes' || route.kind === 'tracks'))
     return loadAudioDetailData(
       ownedRequest,

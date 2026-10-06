@@ -18,6 +18,7 @@ import {
 import { Effect, Match } from 'effect'
 
 import type { SelectMdxCompiledAudio } from '@/db/audio.schema'
+import type { SelectMdxCompiledShow } from '@/db/show.schema'
 import { AudioService } from '@/services/audio.service'
 import { ConfigService } from '@/services/config.service'
 import { MusicEntityService } from '@/services/music-entity'
@@ -119,10 +120,9 @@ const presentationForAudio = (kind: 'mix' | 'track', slug: string, siteUrl: stri
     return yield* presentationFromAudio(kind, audio, siteUrl)
   })
 
-const presentationForShow = (slug: string, siteUrl: string) =>
+export const presentationFromShow = (show: SelectMdxCompiledShow, siteUrl: string) =>
   Effect.gen(function* () {
-    const service = yield* ShowService
-    const show = yield* service.getBySlug(slug)
+    const slug = show.slug
     const creators = show.hosts?.map((host) => host.name) ?? []
     const imageUrl = show.bannerImageUrl ?? show.thumbnailUrl
 
@@ -145,6 +145,14 @@ const presentationForShow = (slug: string, siteUrl: string) =>
       detail: creators.length > 0 ? `Hosted by ${creators.join(', ')}` : null,
       imageUrl,
     })
+  })
+
+const presentationForShow = (slug: string, siteUrl: string) =>
+  Effect.gen(function* () {
+    const service = yield* ShowService
+    const show = yield* service.getBySlug(slug)
+
+    return yield* presentationFromShow(show, siteUrl)
   })
 
 const presentationForRelease = (slug: string, siteUrl: string) =>

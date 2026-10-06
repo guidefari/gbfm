@@ -1,7 +1,9 @@
 import { RichContentDocument } from '@gbfm/rich-content/schema'
+import { SiteMetadata } from '@gbfm/site-metadata'
 import { Schema } from 'effect'
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/unstable/httpapi'
 
+import { AudioPagePrincipal } from './audio'
 import { AuthMiddleware } from './middleware/auth'
 import { ValidationHttpError } from './post'
 
@@ -92,6 +94,21 @@ export const GetShowEpisodesResponse = Schema.Struct({
   pagination: PaginationMeta,
 })
 
+export const ShowPageResponse = Schema.TaggedUnion({
+  Ready: {
+    principal: Schema.NullOr(AudioPagePrincipal),
+    show: CompiledShowResponse,
+    shows: Schema.Array(ShowWithHostsResponse),
+    episodes: Schema.NullOr(GetShowEpisodesResponse),
+    metadata: Schema.NullOr(SiteMetadata),
+    subscription: Schema.Literals(['anonymous', 'active', 'inactive', 'unavailable']),
+  },
+  NotFound: { principal: Schema.NullOr(AudioPagePrincipal) },
+  Unavailable: { principal: Schema.NullOr(AudioPagePrincipal) },
+})
+
+export type ShowPageResponse = typeof ShowPageResponse.Type
+
 export const CreateShowInput = Schema.Struct({
   title: Schema.NonEmptyString,
   description: Schema.optional(Schema.String),
@@ -140,6 +157,12 @@ export const QRPdfResponse = Schema.Struct({
 })
 
 export const ShowsGroup = HttpApiGroup.make('shows')
+  .add(
+    HttpApiEndpoint.get('getShowPage', '/api/shows/:slug/page', {
+      params: { slug: Schema.String },
+      success: ShowPageResponse,
+    }),
+  )
   .add(
     HttpApiEndpoint.get('getAllShows', '/api/shows', {
       query: PaginationQuery,

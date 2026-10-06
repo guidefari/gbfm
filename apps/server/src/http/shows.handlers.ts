@@ -10,12 +10,22 @@ import {
 } from '@/http/handler-utils'
 import { omitUndefined } from '@/lib/omit-undefined'
 import { QRCodeService } from '@/services/qrcode.service'
+import { loadShowPage } from '@/services/show-page'
 import { ShowService, ShowSubscriptionService } from '@/services/show.service'
+
+import { resolvePageSession } from './page-session'
 
 const dieOnDatabaseError = makeDieOnDatabaseError('shows')
 
 export const ShowsHandlersLive = HttpApiBuilder.group(Api, 'shows', (handlers) =>
   handlers
+    .handle('getShowPage', ({ params }) =>
+      Effect.gen(function* () {
+        const principal = yield* resolvePageSession()
+
+        return yield* loadShowPage(params.slug, principal)
+      }),
+    )
     .handle('getAllShows', ({ query }) =>
       Effect.gen(function* () {
         const svc = yield* ShowService

@@ -32,6 +32,15 @@ type ShowWithHosts = SelectShow & {
 }
 
 export interface ShowService {
+  readonly getNavigationShows: Effect.Effect<Array<ShowWithHosts>, DatabaseError>
+  readonly getEpisodesForShow: (
+    show: SelectMdxCompiledShow,
+    options: { limit: number; offset: number },
+    actor?: { userId: string; userRole: string },
+  ) => Effect.Effect<
+    { data: Array<SelectAudio>; pagination: PaginationMetadata },
+    DatabaseError | NotFoundError
+  >
   readonly getAll: (options: {
     limit: number
     offset: number
@@ -85,6 +94,7 @@ export const ShowService = Context.Service<ShowService>('ShowService')
 const getAllEffect = (
   options: { limit: number; offset: number },
   actor?: { userId: string; userRole: string },
+  includeCount = true,
 ) =>
   Effect.gen(function* () {
     const db = yield* Database
@@ -98,15 +108,17 @@ const getAllEffect = (
 
     const [countResult, shows] = yield* Effect.all(
       [
-        Effect.tryPromise({
-          try: () => db.select({ total: count() }).from(showsTable).where(whereCondition),
-          catch: (error) =>
-            new DatabaseError({
-              message: `Failed to count shows: ${getErrorMessage(error)}`,
-              operation: 'select',
-              table: 'shows',
-            }),
-        }).pipe(Effect.withSpan('show.getAll.count')),
+        includeCount
+          ? Effect.tryPromise({
+              try: () => db.select({ total: count() }).from(showsTable).where(whereCondition),
+              catch: (error) =>
+                new DatabaseError({
+                  message: `Failed to count shows: ${getErrorMessage(error)}`,
+                  operation: 'select',
+                  table: 'shows',
+                }),
+            }).pipe(Effect.withSpan('show.getAll.count'))
+          : Effect.succeed([]),
         Effect.tryPromise({
           try: () =>
             db.query.showsTable.findMany({
@@ -480,8 +492,12 @@ const getEpisodesEffect = (
   showSlug: string,
   options: { limit: number; offset: number },
   actor?: { userId: string; userRole: string },
+  loadedShow?: SelectMdxCompiledShow,
 ) =>
   Effect.gen(function* () {
+    if (loadedShow?.draft)
+      return yield* new NotFoundError({ message: 'Show not found', resource: 'show', id: showSlug })
+
     const db = yield* Database
     const { limit, offset } = options
 
@@ -493,19 +509,24 @@ const getEpisodesEffect = (
       .where(and(eq(showsTable.slug, showSlug), eq(showsTable.draft, false)))
       .limit(1)
 
-    const whereCondition = and(inArray(audioTable.showId, publishedShow), draftCondition)
+    const whereCondition = and(
+      loadedShow ? eq(audioTable.showId, loadedShow.id) : inArray(audioTable.showId, publishedShow),
+      draftCondition,
+    )
 
     const [showRecords, countResult, episodes] = yield* Effect.all(
       [
-        Effect.tryPromise({
-          try: () => publishedShow,
-          catch: (error) =>
-            new DatabaseError({
-              message: `Failed to fetch show: ${getErrorMessage(error)}`,
-              operation: 'select',
-              table: 'shows',
+        loadedShow
+          ? Effect.succeed([{ id: loadedShow.id }])
+          : Effect.tryPromise({
+              try: () => publishedShow,
+              catch: (error) =>
+                new DatabaseError({
+                  message: `Failed to fetch show: ${getErrorMessage(error)}`,
+                  operation: 'select',
+                  table: 'shows',
+                }),
             }),
-        }),
         Effect.tryPromise({
           try: () => db.select({ total: count() }).from(audioTable).where(whereCondition),
           catch: (error) =>
@@ -588,6 +609,14 @@ export const ShowServiceLayer = Layer.effect(
     const provideDb = Effect.provideService(Database, db)
 
     return {
+      getEpisodesForShow: (show, options, actor) =>
+        provideDb(getEpisodesEffect(show.slug, options, actor, show)).pipe(
+          Effect.withSpan('show.getEpisodesForShow', { attributes: { showId: show.id } }),
+        ),
+      getNavigationShows: provideDb(getAllEffect({ limit: 100, offset: 0 }, undefined, false)).pipe(
+        Effect.map((result) => result.data),
+        Effect.withSpan('show.getNavigationShows'),
+      ),
       getAll: (options) =>
         provideDb(getAllEffect(options)).pipe(
           Effect.withSpan('show.getAll', {
