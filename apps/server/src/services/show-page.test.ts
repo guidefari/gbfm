@@ -91,7 +91,17 @@ describe('Show page composition read ownership and failure boundaries', () => {
     expect(
       queries.filter(({ sql }) => sql.includes('from "audio"') && sql.includes('count(*)')),
     ).toHaveLength(1)
-    expect(queries).toHaveLength(8)
+    expect(queries).toHaveLength(5)
+    expect(queries.filter(({ sql }) => sql.includes('json_group_array(name)'))).toHaveLength(3)
+
+    queries.length = 0
+
+    const anonymous = await Effect.runPromise(
+      withTestLayer(loadShowPage(slug, null), trackedServices),
+    )
+
+    expect(ShowPageResponse.guards.Ready(anonymous)).toBe(true)
+    expect(queries).toHaveLength(4)
   })
 
   test('content failure returns unavailable and retains the resolved principal', async () => {

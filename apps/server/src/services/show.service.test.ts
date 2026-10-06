@@ -51,7 +51,7 @@ beforeAll(async () => {
 })
 
 describe('ShowService creators', () => {
-  test('getAll and getAllForEdit trace count, list, and labels under their request spans', async () => {
+  test('getAll and getAllForEdit trace count and the combined list under their request spans', async () => {
     const exporter = new InMemorySpanExporter()
 
     const provider = new NodeTracerProvider({
@@ -99,7 +99,7 @@ describe('ShowService creators', () => {
           totalCount: result?.pagination.total,
         })
 
-        for (const name of ['show.getAll.count', 'show.getAll.list', 'show.getAll.labels']) {
+        for (const name of ['show.getAll.count', 'show.getAll.list']) {
           expect(
             spans.filter(
               (span) =>

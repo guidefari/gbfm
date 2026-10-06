@@ -1,7 +1,6 @@
 import { and, asc, count, desc, eq, or, type SQL, sql } from 'drizzle-orm'
 import { Context, Crypto, Effect, Encoding, Layer } from 'effect'
 
-import { audioTagsProjection, decodeAudioTags } from '@/db/audio-label-projection'
 import {
   audioCreators,
   audioTable,
@@ -10,6 +9,7 @@ import {
   type SelectMdxCompiledAudio,
 } from '@/db/audio.schema'
 import { audioIdsForCreator } from '@/db/creator-membership'
+import { decodeEntityTags, entityTagsProjection } from '@/db/entity-label-projection'
 import {
   hasEntityLabel,
   projectEntityLabels,
@@ -344,7 +344,7 @@ const findAudioBySlug = (_type: AudioType, slug: string, mdx: MdxService, where:
       try: async () => {
         const audio = await db.query.audioTable.findFirst({
           where,
-          extras: (audio) => ({ tagsJson: audioTagsProjection(audio.id) }),
+          extras: (audio) => ({ tagsJson: entityTagsProjection('audio', audio.id) }),
           with: {
             audioCreators: {
               with: { creator: true },
@@ -359,7 +359,7 @@ const findAudioBySlug = (_type: AudioType, slug: string, mdx: MdxService, where:
 
         const { tagsJson, ...fields } = audio
 
-        return { ...fields, tags: decodeAudioTags(tagsJson) }
+        return { ...fields, tags: decodeEntityTags(tagsJson) }
       },
       catch: (error) =>
         new DatabaseError({

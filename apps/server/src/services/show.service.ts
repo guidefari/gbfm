@@ -3,7 +3,8 @@ import { Context, Effect, Layer } from 'effect'
 
 import { audioTable, type SelectAudio } from '@/db/audio.schema'
 import { showIdsForCreator } from '@/db/creator-membership'
-import { projectEntityLabels, projectEntityLabelsForRows, replaceEntityLabels } from '@/db/labels'
+import { decodeEntityTags, entityTagsProjection } from '@/db/entity-label-projection'
+import { projectEntityLabels, replaceEntityLabels } from '@/db/labels'
 import { Database } from '@/db/layer'
 import {
   type InsertShow,
@@ -120,9 +121,10 @@ const getAllEffect = (
             }).pipe(Effect.withSpan('show.getAll.count'))
           : Effect.succeed([]),
         Effect.tryPromise({
-          try: () =>
-            db.query.showsTable.findMany({
+          try: async () => {
+            const shows = await db.query.showsTable.findMany({
               where: whereCondition,
+              extras: (show) => ({ tagsJson: entityTagsProjection('show', show.id) }),
               limit,
               offset,
               orderBy: [desc(showsTable.createdAt), asc(showsTable.title)],
@@ -131,7 +133,13 @@ const getAllEffect = (
                   with: { creator: true },
                 },
               },
-            }),
+            })
+
+            return shows.map(({ tagsJson, ...show }) => ({
+              ...show,
+              tags: decodeEntityTags(tagsJson),
+            }))
+          },
           catch: (error) =>
             new DatabaseError({
               message: `Failed to fetch shows: ${getErrorMessage(error)}`,
@@ -145,19 +153,9 @@ const getAllEffect = (
 
     const total = countResult[0]?.total ?? 0
 
-    const projectedShows = yield* Effect.tryPromise({
-      try: () => projectEntityLabelsForRows(db, 'show', shows),
-      catch: (error) =>
-        new DatabaseError({
-          message: getErrorMessage(error),
-          operation: 'select',
-          table: 'labels',
-        }),
-    }).pipe(Effect.withSpan('show.getAll.labels'))
-
     yield* Effect.annotateCurrentSpan({ resultCount: shows.length, totalCount: total })
 
-    const data = projectedShows.map(({ showCreators: hosts, ...show }) => ({
+    const data = shows.map(({ showCreators: hosts, ...show }) => ({
       ...show,
       hosts: hosts.map(({ creator }) => ({
         id: creator.id,
@@ -177,17 +175,25 @@ const getBySlugEffect = (slug: string, includeDrafts = false) =>
     const db = yield* Database
 
     const show = yield* Effect.tryPromise({
-      try: () =>
-        db.query.showsTable.findFirst({
+      try: async () => {
+        const show = await db.query.showsTable.findFirst({
           where: includeDrafts
             ? eq(showsTable.slug, slug)
             : and(eq(showsTable.slug, slug), eq(showsTable.draft, false)),
+          extras: (show) => ({ tagsJson: entityTagsProjection('show', show.id) }),
           with: {
             showCreators: {
               with: { creator: true },
             },
           },
-        }),
+        })
+
+        if (!show) return undefined
+
+        const { tagsJson, ...fields } = show
+
+        return { ...fields, tags: decodeEntityTags(tagsJson) }
+      },
       catch: (error) =>
         new DatabaseError({
           message: `Failed to fetch show: ${getErrorMessage(error)}`,
@@ -206,16 +212,6 @@ const getBySlugEffect = (slug: string, includeDrafts = false) =>
 
     const { showCreators: hosts, ...showFields } = show
 
-    const { tags } = yield* Effect.tryPromise({
-      try: () => projectEntityLabels(db, 'show', showFields),
-      catch: (error) =>
-        new DatabaseError({
-          message: getErrorMessage(error),
-          operation: 'select',
-          table: 'labels',
-        }),
-    })
-
     const mdx = yield* MdxService
 
     const [compiledContent, richContent] = yield* Effect.all([
@@ -227,7 +223,6 @@ const getBySlugEffect = (slug: string, includeDrafts = false) =>
 
     return {
       ...showFields,
-      tags,
       compiledContent,
       richContent,
       hosts: hosts.map(({ creator }) => ({
@@ -537,9 +532,10 @@ const getEpisodesEffect = (
             }),
         }),
         Effect.tryPromise({
-          try: () =>
-            db.query.audioTable.findMany({
+          try: async () => {
+            const episodes = await db.query.audioTable.findMany({
               where: whereCondition,
+              extras: (audio) => ({ tagsJson: entityTagsProjection('audio', audio.id) }),
               limit,
               offset,
               orderBy: desc(audioTable.createdAt),
@@ -551,7 +547,13 @@ const getEpisodesEffect = (
                   columns: { thumbnailUrl: true },
                 },
               },
-            }),
+            })
+
+            return episodes.map(({ tagsJson, ...episode }) => ({
+              ...episode,
+              tags: decodeEntityTags(tagsJson),
+            }))
+          },
           catch: (error) =>
             new DatabaseError({
               message: `Failed to fetch episodes: ${getErrorMessage(error)}`,
@@ -573,27 +575,15 @@ const getEpisodesEffect = (
 
     const total = countResult[0]?.total ?? 0
 
-    const projectedEpisodes = yield* Effect.tryPromise({
-      try: () => projectEntityLabelsForRows(db, 'audio', episodes),
-      catch: (error) =>
-        new DatabaseError({
-          message: getErrorMessage(error),
-          operation: 'select',
-          table: 'labels',
-        }),
-    })
-
-    const data = projectedEpisodes.map(
-      ({ audioCreators: creators, show: episodeShow, ...episode }) => ({
-        ...episode,
-        thumbnailUrl: episode.thumbnailUrl ?? episodeShow?.thumbnailUrl ?? null,
-        creators: creators.map(({ creator }) => ({
-          id: creator.id,
-          name: creator.name,
-          username: creator.username,
-        })),
-      }),
-    )
+    const data = episodes.map(({ audioCreators: creators, show: episodeShow, ...episode }) => ({
+      ...episode,
+      thumbnailUrl: episode.thumbnailUrl ?? episodeShow?.thumbnailUrl ?? null,
+      creators: creators.map(({ creator }) => ({
+        id: creator.id,
+        name: creator.name,
+        username: creator.username,
+      })),
+    }))
 
     return {
       data,

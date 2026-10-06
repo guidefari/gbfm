@@ -3,9 +3,9 @@ import { randomUUID } from 'node:crypto'
 import { and, asc, desc, eq, like, or, sql } from 'drizzle-orm'
 import { describe, expect, test } from 'vitest'
 
-import { audioTagsProjection } from '@/db/audio-label-projection'
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { audioIdsForCreator, showIdsForCreator } from '@/db/creator-membership'
+import { entityTagsProjection } from '@/db/entity-label-projection'
 import { showCreators, showsTable } from '@/db/show.schema'
 import { db } from '@/test/database'
 
@@ -46,7 +46,7 @@ describe('relational query smoke matrix', () => {
     await expect(
       db.query.audioTable.findFirst({
         where: and(eq(audioTable.type, 'mix'), eq(audioTable.slug, 'smoke-missing')),
-        extras: (audio) => ({ tagsJson: audioTagsProjection(audio.id) }),
+        extras: (audio) => ({ tagsJson: entityTagsProjection('audio', audio.id) }),
         with: {
           audioCreators: { with: { creator: true } },
           show: { columns: { thumbnailUrl: true, slug: true, title: true } },
@@ -93,6 +93,7 @@ describe('relational query smoke matrix', () => {
     const query = (where: ReturnType<typeof and>) =>
       db.query.showsTable.findMany({
         where,
+        extras: (show) => ({ tagsJson: entityTagsProjection('show', show.id) }),
         limit: 1,
         offset: 0,
         orderBy: [desc(showsTable.createdAt), asc(showsTable.title)],
@@ -107,6 +108,7 @@ describe('relational query smoke matrix', () => {
     await expect(
       db.query.showsTable.findFirst({
         where: and(eq(showsTable.slug, 'smoke-missing'), eq(showsTable.draft, false)),
+        extras: (show) => ({ tagsJson: entityTagsProjection('show', show.id) }),
         with: { showCreators: { with: { creator: true } } },
       }),
     ).resolves.toBeUndefined()
@@ -114,6 +116,7 @@ describe('relational query smoke matrix', () => {
     await expect(
       db.query.audioTable.findMany({
         where: eq(audioTable.showId, randomUUID()),
+        extras: (audio) => ({ tagsJson: entityTagsProjection('audio', audio.id) }),
         limit: 1,
         offset: 0,
         orderBy: desc(audioTable.createdAt),
@@ -137,6 +140,7 @@ describe('relational query smoke matrix', () => {
       await expect(
         db.query.audioTable.findMany({
           where: and(eq(audioTable.showId, 'smoke-loaded-show'), draftCondition),
+          extras: (audio) => ({ tagsJson: entityTagsProjection('audio', audio.id) }),
           limit: 100,
           offset: 0,
           orderBy: desc(audioTable.createdAt),
