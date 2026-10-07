@@ -346,18 +346,25 @@ export const replyCard = (reply: TweetPost, isLast: boolean, canEdit: boolean) =
     ],
   )
 
-export const replySkeleton = () =>
+export const replySkeleton = (count: number) =>
   h.div(
     [h.Class('space-y-2'), h.Role('status'), h.AriaLabel('Loading replies')],
-    [0, 1].map((index) =>
+    Array.from({ length: Math.min(count, 3) }, (_, index) =>
       h.div(
         [
           h.Key(String(index)),
           h.Class('animate-pulse space-y-2 rounded-lg border border-border/40 bg-card/40 p-3'),
         ],
         [
-          h.div([h.Class('h-3 w-24 rounded-full bg-muted')], []),
+          h.div(
+            [h.Class('flex items-center gap-3')],
+            [
+              h.div([h.Class('h-10 w-10 rounded-sm bg-muted')], []),
+              h.div([h.Class('h-3 w-24 rounded-full bg-muted')], []),
+            ],
+          ),
           h.div([h.Class('h-3 w-2/3 rounded-full bg-muted')], []),
+          h.div([h.Class('h-3 w-16 rounded-full bg-muted/60')], []),
         ],
       ),
     ),

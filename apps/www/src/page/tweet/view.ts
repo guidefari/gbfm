@@ -80,6 +80,9 @@ export const view = (model: Model, h: HtmlBuilder<Message>) => {
   const editedAt = post.updatedAt > post.createdAt ? post.updatedAt : null
   const replies = screen.replies
 
+  const replyCount =
+    model.repliesStatus === 'ready' ? replies.length : (post.replyCount ?? replies.length)
+
   const timelineNeighbours = neighbours ?? (model.interactive ? model.tweetReader.lastKnown : null)
 
   return h.div(
@@ -144,7 +147,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>) => {
           post.tags?.length ? h.div([h.Class('pt-1')], [tagLinks(post.tags)]) : h.empty,
           h.div(
             [h.Class('border-t border-border/40 pt-3')],
-            [cardActions(post, canEdit(post), replies.length)],
+            [cardActions(post, canEdit(post), replyCount)],
           ),
         ],
       ),
@@ -194,7 +197,9 @@ export const view = (model: Model, h: HtmlBuilder<Message>) => {
                   ' to reply',
                 ],
               ),
-          model.repliesStatus === 'loading' ? replySkeleton() : h.empty,
+          model.repliesStatus === 'loading' && (post.replyCount ?? 2) > 0
+            ? replySkeleton(post.replyCount ?? 2)
+            : h.empty,
           model.repliesStatus === 'error'
             ? h.p(
                 [h.Role('alert'), h.Class('text-sm text-muted-foreground')],
