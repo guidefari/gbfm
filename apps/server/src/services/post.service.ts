@@ -1394,7 +1394,7 @@ const getMicroPostBySlugEffect = (slug: string, mdx: MdxService) =>
       )
       .limit(1)
 
-    const [postRecords, blueskySources, creators, labels] = yield* Effect.tryPromise({
+    const [postRecords, blueskySources, creators, labels, replyCounts] = yield* Effect.tryPromise({
       try: () =>
         db.batch([
           db
@@ -1442,6 +1442,10 @@ const getMicroPostBySlugEffect = (slug: string, mdx: MdxService) =>
               ),
             )
             .orderBy(asc(labelsTable.kind), asc(entityLabelsTable.position)),
+          db
+            .select({ total: count() })
+            .from(postsTable)
+            .where(inArray(postsTable.parentPostId, postIds)),
         ]),
       catch: (error) =>
         new DatabaseError({
@@ -1470,7 +1474,11 @@ const getMicroPostBySlugEffect = (slug: string, mdx: MdxService) =>
       genres: genres.length > 0 ? genres : null,
     }
 
-    const compiled = yield* compilePost(projectedPost, creators, mdx)
+    const compiled = {
+      ...(yield* compilePost(projectedPost, creators, mdx)),
+      replyCount: replyCounts[0]?.total ?? 0,
+    }
+
     const blueskySource = blueskySources[0]
     const enriched = blueskySource ? { ...compiled, blueskySource } : compiled
 

@@ -139,6 +139,21 @@ describe('getMicroPosts reply counts', () => {
   })
 })
 
+describe('getMicroPostBySlug reply counts', () => {
+  test('reports direct replies so the tweet screen can size its replies area up front', async () => {
+    const withReplies = await runPostEffect((service) =>
+      service.getMicroPostBySlug(`zephyrine-parent-replies-${parentWithRepliesId}`),
+    )
+
+    const withoutReplies = await runPostEffect((service) =>
+      service.getMicroPostBySlug(`zephyrine-parent-lonely-${parentWithoutRepliesId}`),
+    )
+
+    expect(withReplies.replyCount).toBe(2)
+    expect(withoutReplies.replyCount).toBe(0)
+  })
+})
+
 describe('post hydration through the service interface', () => {
   const rootId = randomUUID()
   const replyId = randomUUID()
@@ -212,7 +227,7 @@ describe('post hydration through the service interface', () => {
     const byId = await runPostEffect((service) => service.getMicroPostById(replyId))
     const listed = list.data.find((post) => post.id === replyId)
     expect(listed).toEqual(single)
-    expect(bySlug).toEqual(single)
+    expect(bySlug).toEqual({ ...single, replyCount: 0 })
     expect(byId).toEqual(single)
     expect(single).toMatchObject({
       tags: ['second', 'first'],
