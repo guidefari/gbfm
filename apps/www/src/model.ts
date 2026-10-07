@@ -14,6 +14,7 @@ import * as Creator from './page/creator'
 import * as Dashboard from './page/dashboard'
 import { DashboardDocument } from './page/dashboard/document'
 import { ShowsDocument } from './page/shows/document'
+import * as TweetReader from './page/tweet/reader'
 import * as Player from './player'
 import * as PublicActions from './public-actions'
 import { Route } from './route'
@@ -92,6 +93,7 @@ export const Model = Schema.Struct({
   pageCache: Schema.HashMap(Schema.String, PageData.schema),
   interactive: Schema.Boolean,
   navigationId: Schema.Number,
+  tweetReader: TweetReader.Model,
   error: Schema.NullOr(Schema.String),
   repliesStatus: Schema.Literals(['loading', 'ready', 'error']),
   player: Player.Model,

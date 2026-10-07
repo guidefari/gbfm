@@ -1,4 +1,12 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
+
+const chooseTweets = async (page: Page) => {
+  await page.getByRole('button', { name: 'Menu', exact: true }).click()
+  await page
+    .getByRole('dialog', { name: 'Menu', exact: true })
+    .getByRole('link', { name: 'Tweets', exact: true })
+    .click()
+}
 
 test('year and month jumps navigate the archive without triggering background keyboard shortcuts', async ({
   page,
@@ -39,28 +47,18 @@ test('archive disclosures and links remain usable without JavaScript', async ({ 
   await context.close()
 })
 
-test('tweet read mode persists across reload and keyboard navigation falls back when all older tweets were seen', async ({
-  page,
-  context,
-}) => {
+test('chronological arrows stay adjacent regardless of seen history', async ({ page }) => {
   await page.goto('/tweet/e2e-archive-one')
-  await expect(page.getByRole('checkbox', { name: 'Skip seen' })).toBeChecked()
-  await page.getByRole('checkbox', { name: 'Skip seen' }).uncheck()
-  await expect
-    .poll(
-      async () =>
-        (await context.cookies()).find((cookie) => cookie.name === 'gbfm-tweet-read-mode')?.value,
-    )
-    .toBe('all')
-  expect(
-    (await context.cookies()).find((cookie) => cookie.name === 'gbfm-tweet-read-mode')?.httpOnly,
-  ).toBe(true)
   await page.reload()
-  await expect(page.getByRole('checkbox', { name: 'Skip seen' })).not.toBeChecked()
+  await expect(page.getByRole('checkbox', { name: 'Skip seen' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Menu', exact: true })).toBeEnabled()
+  await expect(page.getByRole('link', { name: 'Newer tweet', exact: true })).toHaveAttribute(
+    'href',
+    '/tweet/e2e-archive-two',
+  )
   await page.getByRole('link', { name: 'Newer tweet', exact: true }).focus()
   await page.keyboard.press('ArrowLeft')
   await expect(page).toHaveURL(/\/tweet\/e2e-archive-two$/)
-  await page.getByRole('checkbox', { name: 'Skip seen' }).check()
   await expect(page.getByRole('link', { name: 'Older tweet', exact: true })).toHaveAttribute(
     'href',
     '/tweet/e2e-archive-one',
@@ -69,7 +67,7 @@ test('tweet read mode persists across reload and keyboard navigation falls back 
   await page.keyboard.press('ArrowRight')
   await expect(page).toHaveURL(/\/tweet\/e2e-archive-one$/)
   await page.getByRole('button', { name: 'Menu', exact: true }).click()
-  await expect(page.getByRole('complementary', { name: 'Menu', exact: true })).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Menu', exact: true })).toBeVisible()
   await page.keyboard.press('ArrowLeft')
   await expect(page).toHaveURL(/\/tweet\/e2e-archive-one$/)
 })
@@ -92,6 +90,238 @@ test('random unread form loads another published tweet through the local API', a
   expect((await seen).ok()).toBe(true)
   await page.getByRole('button', { name: 'Random unread', exact: true }).click()
   await expect(page).toHaveURL(/\/tweet\/(?!e2e-archive-one)[^?]+$/)
-  await expect(page.getByRole('checkbox', { name: 'Skip seen' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Latest', exact: true })).toBeVisible()
   await expect(page.getByText('No unread tweet could be loaded. Try again.')).toHaveCount(0)
+})
+
+test('Tweets resumes the last successful visit across leaving and reload, while direct URLs and Back win', async ({
+  page,
+}) => {
+  await page.goto('/tweet/e2e-archive-one')
+  await expect(page.getByRole('button', { name: 'Menu', exact: true })).toBeEnabled()
+  await page.goto('/about')
+  await page.reload()
+  await chooseTweets(page)
+  await expect(page).toHaveURL(/\/tweet\/e2e-archive-one$/)
+  await page.getByRole('link', { name: 'Latest', exact: true }).click()
+  await expect(page).toHaveURL(/\/tweet\/(?!latest|e2e-archive-one)[^?]+$/)
+  await page.goBack()
+  await expect(page).toHaveURL(/\/tweet\/e2e-archive-one$/)
+  await page.goto('/tweet/e2e-archive-two')
+  await expect(page.getByRole('button', { name: 'Menu', exact: true })).toBeEnabled()
+  await page.goto('/tweets')
+  await expect(page).toHaveURL(/\/tweet\/e2e-archive-two$/)
+})
+
+test('hard Tweets entry preserves resume intent without marking latest and prefetched content is not a visit', async ({
+  page,
+}) => {
+  await page.goto('/tweet/latest')
+  const latest = new URL(page.url()).pathname
+
+  const prefetched = page.waitForResponse((response) =>
+    response.url().includes('/tweet/e2e-archive-two?__data=1'),
+  )
+
+  await page.goto('/tweet/e2e-archive-one')
+  expect((await prefetched).ok()).toBe(true)
+  await expect
+    .poll(() => page.evaluate(() => sessionStorage.getItem('gbfm:tweet-checkpoint')))
+    .toBe('e2e-archive-one')
+  const writes: Array<string> = []
+  page.on('request', (request) => {
+    if (request.method() === 'POST' && request.url().endsWith('/seen'))
+      writes.push(new URL(request.url()).pathname)
+  })
+  await page.goto('/tweets')
+  await expect(page).toHaveURL(/\/tweet\/e2e-archive-one$/)
+  await expect
+    .poll(() => page.evaluate(() => sessionStorage.getItem('gbfm:tweet-checkpoint')))
+    .toBe('e2e-archive-one')
+  expect(writes).not.toContain(`/api/content/posts/micro/${latest.split('/').pop()}/seen`)
+})
+
+test('a deleted automatic checkpoint falls back once, but a direct missing URL stays missing', async ({
+  page,
+}) => {
+  await page.goto('/about')
+  await page.evaluate(() => sessionStorage.setItem('gbfm:tweet-checkpoint', 'e2e-deleted-tweet'))
+  await page.goto('/tweets')
+  await expect(page).toHaveURL(/\/tweet\/(?!latest|e2e-deleted-tweet)[^?]+$/)
+  await expect(page.getByRole('link', { name: 'Latest', exact: true })).toBeVisible()
+  await page.goto('/tweet/e2e-deleted-tweet')
+  await expect(page).toHaveURL(/\/tweet\/e2e-deleted-tweet$/)
+  await expect(page.getByText('Tweet not found.', { exact: true })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Latest', exact: true })).toBeVisible()
+})
+
+test('storage denial degrades to latest and independent tabs do not share checkpoints', async ({
+  page,
+  context,
+}) => {
+  await page.goto('/tweet/e2e-archive-one')
+  await expect
+    .poll(() => page.evaluate(() => sessionStorage.getItem('gbfm:tweet-checkpoint')))
+    .toBe('e2e-archive-one')
+  const other = await context.newPage()
+  await other.goto('/tweets')
+  await expect(other).toHaveURL(/\/tweet\/(?!latest|e2e-archive-one)[^?]+$/)
+  await other.close()
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'sessionStorage', {
+      get() {
+        throw new DOMException('Storage denied', 'SecurityError')
+      },
+    })
+  })
+  await page.goto('/tweets')
+  await expect(page).toHaveURL(/\/tweet\/(?!latest|e2e-archive-one)[^?]+$/)
+})
+
+test('tweet search URLs do not resume and unread failures do not claim caught up', async ({
+  page,
+}) => {
+  await page.goto('/tweets?q=archive')
+  await expect(page).toHaveURL(/\/tweets\?q=archive$/)
+  await page.route('**/api/content/posts/micro/*/neighbours', (route) =>
+    route.fulfill({ status: 500, body: '{}' }),
+  )
+  await page.goto('/tweet/e2e-archive-one')
+  await expect(page.getByText('Unread navigation unavailable', { exact: true })).toBeVisible()
+  await expect(page.getByText('Caught up', { exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Retry navigation', exact: true })).toBeVisible()
+})
+
+test('Next unread goes older first, then clearly changes to newer, and reports caught up only at zero', async ({
+  page,
+}) => {
+  await page.goto('/tweet/e2e-archive-two')
+  await expect(
+    page.getByRole('link', { name: 'Next unread (older)', exact: true }),
+  ).toHaveAttribute('href', '/tweet/e2e-archive-one')
+  await expect(page.getByRole('button', { name: 'Menu', exact: true })).toBeEnabled()
+  await page.getByRole('link', { name: 'Next unread (older)', exact: true }).click()
+  await expect(page).toHaveURL(/\/tweet\/e2e-archive-one$/)
+  await expect(
+    page.getByRole('link', { name: 'Next unread (newer)', exact: true }),
+  ).toHaveAttribute('href', '/tweet/e2e-music-thread')
+  await page.getByRole('link', { name: 'Next unread (newer)', exact: true }).click()
+  await expect(page.getByText('Caught up', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Random unread', exact: true })).toBeDisabled()
+})
+
+test('network failure during resume preserves the checkpoint', async ({ page }) => {
+  await page.goto('/tweet/e2e-archive-one')
+  await expect
+    .poll(() => page.evaluate(() => sessionStorage.getItem('gbfm:tweet-checkpoint')))
+    .toBe('e2e-archive-one')
+  await page.route('**/tweet/e2e-archive-one?__data=1', (route) => route.abort())
+  await page.goto('/tweets')
+  await expect(
+    page.getByText('This page could not be loaded. Please try again.', { exact: true }),
+  ).toBeVisible()
+  expect(await page.evaluate(() => sessionStorage.getItem('gbfm:tweet-checkpoint'))).toBe(
+    'e2e-archive-one',
+  )
+})
+
+test('seen write failures are visible and retryable', async ({ page }) => {
+  await page.route('**/api/content/posts/micro/*/seen', (route) =>
+    route.fulfill({ status: 500, body: '{}' }),
+  )
+  await page.goto('/tweet/e2e-archive-one')
+  await expect(
+    page.getByRole('button', { name: 'Retry saving history', exact: true }),
+  ).toBeVisible()
+  await page.unroute('**/api/content/posts/micro/*/seen')
+  await page.getByRole('button', { name: 'Retry saving history', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Retry saving history', exact: true })).toHaveCount(
+    0,
+  )
+  await expect(page.getByRole('link', { name: 'Next unread (newer)', exact: true })).toBeVisible()
+})
+
+test('random immediate click records the submitted tweet before leaving', async ({
+  page,
+  request,
+}) => {
+  await page.route('**/api/content/posts/micro/e2e-archive-one/seen', (route) => route.abort())
+  await page.goto('/tweet/e2e-archive-one')
+  await page.getByRole('button', { name: 'Random unread', exact: true }).click()
+  await expect(page).toHaveURL(/\/tweet\/(?!e2e-archive-one)[^?]+$/)
+  const cookies = await page.context().cookies()
+
+  const response = await request.get('/api/content/posts/micro/e2e-archive-one/neighbours', {
+    headers: { cookie: cookies.map(({ name, value }) => `${name}=${value}`).join('; ') },
+  })
+
+  expect((await response.json()).seen).toBe(true)
+})
+
+test('Tweets entry without JavaScript still opens latest', async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false })
+  const page = await context.newPage()
+  await page.goto('/tweets')
+  await expect(page).toHaveURL(/\/tweet\/(?!latest)[^?]+$/)
+  await expect(page.getByRole('link', { name: 'Latest', exact: true })).toBeVisible()
+  await context.close()
+})
+
+test('a modified Latest click opens a separate tab without changing the current visit', async ({
+  page,
+  context,
+}) => {
+  await page.goto('/tweet/e2e-archive-one')
+  await expect(page.getByRole('button', { name: 'Menu', exact: true })).toBeEnabled()
+
+  const [other] = await Promise.all([
+    context.waitForEvent('page'),
+    page.getByRole('link', { name: 'Latest', exact: true }).click({ modifiers: ['Meta'] }),
+  ])
+
+  await other.waitForURL(/\/tweet\/(?!latest|e2e-archive-one)[^?]+$/)
+  await expect(page).toHaveURL(/\/tweet\/e2e-archive-one$/)
+  expect(await page.evaluate(() => sessionStorage.getItem('gbfm:tweet-checkpoint'))).toBe(
+    'e2e-archive-one',
+  )
+  await other.close()
+})
+
+test('late prefetched and loaded tweet responses cannot change a superseding page or checkpoint', async ({
+  page,
+}) => {
+  let release = () => {}
+
+  const gate = new Promise<void>((resolve) => {
+    release = resolve
+  })
+
+  await page.route('**/tweet/e2e-archive-two?__data=1', async (route) => {
+    const response = await route.fetch()
+    await gate
+    await route.fulfill({ response })
+  })
+  await page.goto('/tweet/e2e-archive-one')
+  await expect(page.getByRole('button', { name: 'Menu', exact: true })).toBeEnabled()
+  await page.getByRole('link', { name: 'Newer tweet', exact: true }).click()
+  await expect(page).toHaveURL(/\/tweet\/e2e-archive-two$/)
+  await page.getByRole('button', { name: 'Menu', exact: true }).click()
+  await page
+    .getByRole('dialog', { name: 'Menu', exact: true })
+    .getByRole('link', { name: 'About', exact: true })
+    .click()
+  await expect(page.getByRole('heading', { name: 'About', exact: true })).toBeVisible()
+
+  const late = page.waitForResponse((response) =>
+    response.url().includes('/tweet/e2e-archive-two?__data=1'),
+  )
+
+  release()
+  await late
+  await page.waitForLoadState('networkidle')
+  await expect(page).toHaveURL(/\/about$/)
+  await expect(page.getByRole('heading', { name: 'About', exact: true })).toBeVisible()
+  expect(await page.evaluate(() => sessionStorage.getItem('gbfm:tweet-checkpoint'))).toBe(
+    'e2e-archive-one',
+  )
 })

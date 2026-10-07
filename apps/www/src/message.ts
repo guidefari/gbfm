@@ -9,12 +9,14 @@ import { Url } from 'foldkit/url'
 import { Flags } from './model'
 import * as Creator from './page/creator'
 import * as Dashboard from './page/dashboard'
+import * as TweetReader from './page/tweet/reader'
 import * as Player from './player'
 import * as PublicActions from './public-actions'
 import * as Search from './search'
 
 export const Message = defineMessageUnion({
   ClientStarted: {},
+  GotTweetReaderMessage: { message: TweetReader.Message },
   MenuToggled: {},
   GotMobileMenuMessage: { message: Dialog.Message },
   MenuDragStarted: { pointerId: Schema.Number, clientY: Schema.Number },
@@ -40,8 +42,12 @@ export const Message = defineMessageUnion({
   ChangedUrl: { url: Url },
   LoadedPage: { flags: Flags, key: Schema.String, navigationId: Schema.Number },
   FailedPage: { key: Schema.String, navigationId: Schema.Number },
-  LoadedReplies: { slug: Schema.String, replies: MicroPostScreenRepliesResponse },
-  FailedReplies: { slug: Schema.String },
+  LoadedReplies: {
+    slug: Schema.String,
+    replies: MicroPostScreenRepliesResponse,
+    navigationId: Schema.Number,
+  },
+  FailedReplies: { slug: Schema.String, navigationId: Schema.Number },
   NavigationCompleted: {},
   PrefetchedPage: { flags: Flags, key: Schema.String },
   PrefetchRequested: { href: Schema.String },

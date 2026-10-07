@@ -4,12 +4,13 @@ import { canCreatePosts, isRole } from '@gbfm/core/roles'
 import { Match } from 'effect'
 import { Command, type Runtime } from 'foldkit'
 
-import { LoadReplies, MarkSeen, PrefetchPage, StartClient } from './command'
+import { StartClient } from './command'
 import { Message } from './message'
 import type { Flags, Model } from './model'
 import { seedCache } from './page-cache'
 import * as Creator from './page/creator'
 import * as Dashboard from './page/dashboard'
+import * as TweetReader from './page/tweet/reader'
 import * as Player from './player'
 import * as PublicActions from './public-actions'
 import { parseRoute } from './route'
@@ -75,6 +76,7 @@ export const init: Runtime.ApplicationInit<Model, Message, Flags, Services> = (f
       pageCache: seedCache(flags),
       interactive: false,
       navigationId: 0,
+      tweetReader: TweetReader.init(flags.principal?.id ?? 'anonymous'),
       error: null,
       repliesStatus: flags.tweet ? 'loading' : 'ready',
       player: Player.initialModel,
@@ -84,21 +86,6 @@ export const init: Runtime.ApplicationInit<Model, Message, Flags, Services> = (f
     },
     commands: [
       StartClient(),
-      ...(flags.tweet
-        ? [
-            LoadReplies({ slug: flags.tweet.post.slug }),
-            MarkSeen({ slug: flags.tweet.post.slug }),
-            ...[
-              ...new Set(
-                [
-                  flags.neighbours?.newer,
-                  flags.neighbours?.older,
-                  flags.neighbours?.olderUnread,
-                ].flatMap((slug) => (slug ? [slug] : [])),
-              ),
-            ].map((slug) => PrefetchPage({ href: `/tweet/${encodeURIComponent(slug)}` })),
-          ]
-        : []),
       ...(creatorKind
         ? Command.mapMessages(creator.commands ?? [], (message) =>
             Message.GotCreatorResult({ message, navigationId: 0 }),

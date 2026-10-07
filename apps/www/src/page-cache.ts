@@ -2,6 +2,7 @@ import { HashMap, Result } from 'effect'
 import { AsyncData } from 'foldkit'
 
 import type { Flags, PageCache } from './model'
+import { isEntry } from './page/tweet/reader'
 
 const uncachedPrefixes = ['/dashboard', '/new', '/mix-upload', '/auth', '/reminders', '/spotify']
 
@@ -15,6 +16,8 @@ export const pageKey = (href: string) => {
 /** Account, composer and auth screens always load fresh so drafts and permissions are never stale. */
 export const isCacheable = (key: string) => {
   const pathname = key.split('?')[0] ?? key
+
+  if (isEntry(key) || pathname === '/tweet/latest') return false
 
   return !uncachedPrefixes.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
@@ -35,7 +38,11 @@ export const settlePage = (
   if (!isCacheable(key)) return cache
   const entry = AsyncData.fromOptionOrIdle(HashMap.get(cache, key))
 
-  return HashMap.set(cache, key, AsyncData.settle(entry, result))
+  const content = Result.map(result, (flags) =>
+    flags.tweet ? { ...flags, neighbours: null } : flags,
+  )
+
+  return HashMap.set(cache, key, AsyncData.settle(entry, content))
 }
 
 export const seedCache = (flags: Flags): PageCache =>

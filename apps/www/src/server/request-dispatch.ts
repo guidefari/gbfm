@@ -2,6 +2,7 @@ import { resolveRequestId } from '@gbfm/core/observability/request-id'
 import { Option, Schema } from 'effect'
 import * as Server from 'foldkit/experimental/server'
 
+import { parseCheckpoint } from '../page/tweet/reader'
 import { parseRoute, Route } from '../route'
 import { handleBrowserTelemetry } from '../telemetry/server'
 import { apiRequest } from './api'
@@ -15,7 +16,9 @@ const latestTweetSlug = async (response: Response) => {
   const payload = Schema.decodeUnknownSync(Schema.Json)(await response.json())
   const record = Option.getOrNull(Schema.decodeUnknownOption(JsonObject)(payload))
 
-  return Option.getOrElse(Schema.decodeUnknownOption(Schema.String)(record?.slug), () => '')
+  return (
+    parseCheckpoint(Option.getOrNull(Schema.decodeUnknownOption(Schema.String)(record?.slug))) ?? ''
+  )
 }
 
 export const renderResponse = async (request: Request): Promise<Server.Responded> => {
@@ -87,18 +90,28 @@ export const renderResponse = async (request: Request): Promise<Server.Responded
     return redirect(`${target.pathname}${target.search}`)
   }
 
-  if (['/tweet/latest', '/tweet'].includes(url.pathname)) return redirectPage('/tweets')
+  if (url.pathname === '/tweet') return redirectPage('/tweets')
 
   if (url.pathname === '/tweet/new') return redirectPage('/new/tweet')
 
-  if (url.pathname === '/tweets' && !url.searchParams.has('q')) {
+  if (url.pathname === '/tweet/latest') {
     const latest = await apiRequest(ownedRequest, '/api/content/posts/micro/latest', {
       method: 'GET',
-    })
+    }).catch(() => null)
 
-    const slug = await latestTweetSlug(latest)
+    const slug = latest?.ok ? await latestTweetSlug(latest).catch(() => '') : ''
 
     if (slug) return redirectPage(`/tweet/${encodeURIComponent(slug)}`)
+
+    if (!latest?.ok) {
+      const page = await loadPageData(ownedRequest, request, url, route, requestId)
+
+      if (!page.redirect)
+        return createPageResponse(request, ownedRequest, dataRequest, startedAt, {
+          ...page,
+          flags: { ...page.flags, status: 503, failure: 'Latest tweet is unavailable right now.' },
+        })
+    }
   }
 
   const page = await loadPageData(ownedRequest, request, url, route, requestId)

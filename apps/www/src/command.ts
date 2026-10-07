@@ -10,6 +10,7 @@ import { pageKey } from './page-cache'
 import * as Creator from './page/creator'
 import { showImages } from './page/shows/document'
 import { tweetImages } from './page/tweet/card'
+import { StoreCheckpoint } from './page/tweet/reader'
 import { preloadArtwork } from './view/artwork'
 
 export const StartClient = Command.define('Application.Start', {
@@ -25,9 +26,9 @@ export const PauseCreatorUpload = Command.define('Application.PauseCreatorUpload
 })
 
 export const LoadReplies = Command.define('Tweet.LoadReplies', {
-  args: { slug: Schema.String },
+  args: { slug: Schema.String, navigationId: Schema.Number },
   messages: [Message.LoadedReplies, Message.FailedReplies],
-  execute: ({ slug }) =>
+  execute: ({ slug, navigationId }) =>
     Effect.tryPromise(async (signal) => {
       const response = await fetch(
         `/api/content/posts/micro/${encodeURIComponent(slug)}/screen/replies`,
@@ -39,25 +40,34 @@ export const LoadReplies = Command.define('Tweet.LoadReplies', {
       return response.json()
     }).pipe(
       Effect.flatMap(Schema.decodeUnknownEffect(MicroPostScreenRepliesResponse)),
-      Effect.map((replies) => Message.LoadedReplies({ slug, replies })),
-      Effect.catch(() => Effect.succeed(Message.FailedReplies({ slug }))),
+      Effect.map((replies) => Message.LoadedReplies({ slug, replies, navigationId })),
+      Effect.catch(() => Effect.succeed(Message.FailedReplies({ slug, navigationId }))),
     ),
 })
 
-export const MarkSeen = Command.define('Tweet.MarkSeen', {
-  args: { slug: Schema.String },
+export const Replace = Command.define('Navigation.Replace', {
+  args: { href: Schema.String, expected: Schema.String },
   messages: [Message.NavigationCompleted],
-  execute: ({ slug }) =>
-    Effect.tryPromise((signal) =>
-      fetch(`/api/content/posts/micro/${encodeURIComponent(slug)}/seen`, {
-        method: 'POST',
-        credentials: 'same-origin',
-        signal,
-      }),
-    ).pipe(
-      Effect.as(Message.NavigationCompleted()),
-      Effect.orElseSucceed(() => Message.NavigationCompleted()),
+  execute: ({ href, expected }) =>
+    Effect.suspend(() =>
+      pageKey(location.href) === expected
+        ? Navigation.replaceUrl(href).pipe(Effect.as(Message.NavigationCompleted()))
+        : Effect.succeed(Message.NavigationCompleted()),
     ),
+})
+
+export const ResetTweetEntry = Command.define('TweetReader.ResetEntry', {
+  args: { expected: Schema.String },
+  messages: [Message.NavigationCompleted],
+  execute: ({ expected }) =>
+    Effect.gen(function* () {
+      if (pageKey(location.href) === expected) {
+        yield* StoreCheckpoint({ slug: null }).effect
+        yield* Navigation.replaceUrl('/tweet/latest')
+      }
+
+      return Message.NavigationCompleted()
+    }),
 })
 
 export const Navigate = Command.define('Navigation.Push', {
@@ -92,10 +102,16 @@ export const Leave = Command.define('Navigation.Leave', {
 })
 
 export const SetResolvedUrl = Command.define('Navigation.SetResolvedUrl', {
-  args: { href: Schema.String, metadata: Schema.NullOr(SiteMetadata), noindex: Schema.Boolean },
+  args: {
+    href: Schema.String,
+    expected: Schema.String,
+    metadata: Schema.NullOr(SiteMetadata),
+    noindex: Schema.Boolean,
+  },
   messages: [Message.NavigationCompleted],
-  execute: ({ href, metadata, noindex }) =>
+  execute: ({ href, expected, metadata, noindex }) =>
     Effect.sync(() => {
+      if (pageKey(location.href) !== expected) return Message.NavigationCompleted()
       const target = new URL(href)
 
       if (metadata) updateDocumentHead(metadata, noindex)

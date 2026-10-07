@@ -13,6 +13,7 @@ import { loadShowsData } from '../../page/shows/page-data'
 import { staticPages } from '../../page/static/pages'
 import { skipsSeenTweets } from '../../page/tweet/navigation'
 import { loadTweetData } from '../../page/tweet/page-data'
+import { isEntry } from '../../page/tweet/reader'
 import type { Document as PublicActionDocument } from '../../public-actions'
 import { Route } from '../../route'
 import { apiRequest, endpointFor } from '../api'
@@ -40,7 +41,7 @@ export const loadPageData = async (
       route.slug,
     )
 
-  const endpoint = endpointFor(route)
+  const endpoint = isEntry(url.href) ? null : endpointFor(route)
   const tweetSlug = Route.guards.Detail(route) && route.kind === 'tweets' ? route.slug : null
   const tweetPromise = loadTweetData(ownedRequest, endpoint, tweetSlug)
   const showsPromise = loadShowsData(ownedRequest, endpoint, route, url)

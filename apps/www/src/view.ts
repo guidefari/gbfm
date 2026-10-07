@@ -5,6 +5,7 @@ import type { Document, HtmlBuilder } from 'foldkit/html'
 import { Message } from './message'
 import type { Model } from './model'
 import * as Page from './page'
+import { isEntry } from './page/tweet/reader'
 import * as Player from './player'
 import * as PublicActions from './public-actions'
 import { parseRoute, Route } from './route'
@@ -50,7 +51,8 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
   }
 
   const page =
-    model.flags.status === 404
+    model.flags.status === 404 &&
+    !(Route.guards.Detail(model.route) && model.route.kind === 'tweets')
       ? h.section([h.Class('page')], [h.h1([], ['Page not found']), link(h, '/', 'Return home')])
       : model.flags.shows
         ? Page.Shows.view(
@@ -68,13 +70,21 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
         : Route.match(model.route, {
             Home: () => Page.Home.view(model, h),
             Listing: ({ kind }) =>
-              kind === 'editorial'
-                ? Page.EditorialList.view(
-                    model.flags.items,
-                    model.flags.renderedAt,
-                    model.flags.failure ?? null,
+              kind === 'tweets' && isEntry(model.flags.url)
+                ? h.section(
+                    [h.Class('page')],
+                    [
+                      h.p([h.Role('status')], ['Opening Tweets…']),
+                      link(h, '/tweet/latest', 'Latest'),
+                    ],
                   )
-                : Page.Content.listingView(model, h, kind),
+                : kind === 'editorial'
+                  ? Page.EditorialList.view(
+                      model.flags.items,
+                      model.flags.renderedAt,
+                      model.flags.failure ?? null,
+                    )
+                  : Page.Content.listingView(model, h, kind),
             Detail: ({ kind }) =>
               kind === 'tweets'
                 ? Page.Tweet.view(model, h)

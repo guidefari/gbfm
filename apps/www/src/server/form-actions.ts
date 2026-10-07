@@ -1,10 +1,10 @@
-import { MicroPostRandomUnreadResponse } from '@gbfm/api/navigation'
 import { isRole } from '@gbfm/core/roles'
 import { Match, Option, Schema } from 'effect'
 import * as Server from 'foldkit/experimental/server'
 
 import { readModeCookie } from '../page/tweet/navigation'
 import { apiRequest } from './api'
+import { randomTweet } from './tweet-random'
 
 export const redirect = (location: string, cookies: ReadonlyArray<string> = []) => {
   const headers = new Headers({ location, 'cache-control': 'private, no-store' })
@@ -94,17 +94,9 @@ export const handleFormAction = async (request: Request): Promise<Server.Respond
   }
 
   if (action === '/actions/tweet-random') {
-    const response = await apiRequest(
-      request,
-      `/api/content/posts/micro/${encodeURIComponent(field('slug'))}/random`,
-      { method: 'GET' },
-    )
+    const result = await randomTweet(request, field('slug'), apiRequest)
 
-    if (!response.ok)
-      return redirect(`/tweet/${encodeURIComponent(field('slug'))}?random=unavailable`)
-    const result = Schema.decodeUnknownSync(MicroPostRandomUnreadResponse)(await response.json())
-
-    return redirect(`/tweet/${encodeURIComponent(result.slug)}`)
+    return redirect(result.location, result.cookies)
   }
 
   if (action === '/actions/sign-out') {

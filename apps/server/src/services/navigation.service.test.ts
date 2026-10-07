@@ -99,4 +99,5 @@ test('adjacent and unread neighbours use timestamp and slug ordering, excluding 
   const exhausted = await neighbours(b)
   expect(exhausted.olderUnread).toBeNull()
   expect(exhausted.newerUnread).toBeNull()
+  expect(exhausted.unreadCount).toBe(0)
 })

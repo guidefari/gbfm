@@ -1,6 +1,6 @@
 import type { HtmlBuilder } from 'foldkit/html'
 
-import { Message } from '../../message'
+import type { Message } from '../../message'
 import type { Model } from '../../model'
 import { formatDate } from '../../view/format-date'
 import { iconPaths, lucide } from '../../view/icons'
@@ -16,6 +16,7 @@ import {
   tweetBody,
   type TweetPost,
 } from './card'
+import { readerControls } from './reader-controls'
 import { tweetWayfinder } from './wayfinder'
 
 const tweetArrow = (
@@ -58,10 +59,14 @@ export const view = (model: Model, h: HtmlBuilder<Message>) => {
   if (!screen)
     return h.div(
       [h.Class('max-w-3xl px-4 pt-8 mx-auto')],
-      [h.p([h.Role('alert')], [model.flags.failure ?? 'Tweet not found.'])],
+      [
+        h.p([h.Role('alert')], [model.flags.failure ?? 'Tweet not found.']),
+        h.a([h.Href('/tweet/latest')], ['Latest']),
+      ],
     )
-  const neighbours = model.flags.neighbours
-  const older = model.skipSeen ? (neighbours?.olderUnread ?? neighbours?.older) : neighbours?.older
+  const neighbours = model.interactive ? model.tweetReader.neighbours : model.flags.neighbours
+  const chronological = model.flags.neighbours ?? neighbours
+  const older = chronological?.older
   const post = screen.post
   const principal = model.flags.principal
 
@@ -85,46 +90,23 @@ export const view = (model: Model, h: HtmlBuilder<Message>) => {
           h.div(
             [h.Class('flex items-center gap-1 lg:hidden')],
             [
-              tweetArrow(h, 'newer', neighbours?.newer, false),
+              tweetArrow(h, 'newer', chronological?.newer, false),
               tweetArrow(h, 'older', older, false),
             ],
           ),
-          h.form(
-            [h.Method('post'), h.Action('/actions/tweet-random'), h.Class('m-0')],
-            [
-              h.input([h.Type('hidden'), h.Name('slug'), h.Value(post.slug)]),
-              h.button(
-                [
-                  h.Type('submit'),
-                  h.Disabled(!neighbours?.unreadCount),
-                  h.Class(
-                    'inline-flex h-8 items-center gap-1.5 rounded-sm border-0 bg-transparent px-2 text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40',
-                  ),
-                ],
-                [lucide(iconPaths.shuffle, 'h-3.5 w-3.5'), 'Random unread'],
-              ),
-            ],
-          ),
-          h.label(
-            [h.Class('ml-auto inline-flex cursor-pointer items-center gap-2')],
-            [
-              h.input([
-                h.Type('checkbox'),
-                h.Disabled(!model.interactive),
-                h.Checked(model.skipSeen),
-                h.OnClick(Message.SkipSeenChanged({ value: !model.skipSeen })),
-              ]),
-              'Skip seen',
-            ],
-          ),
+          readerControls(model, h, post.slug, neighbours),
         ],
       ),
-      tweetArrow(h, 'newer', neighbours?.newer, true),
+      tweetArrow(h, 'newer', chronological?.newer, true),
       tweetArrow(h, 'older', older, true),
       new URL(model.flags.url).searchParams.has('random')
         ? h.p(
             [h.Role('alert'), h.Class('mb-4 text-sm text-destructive')],
-            ['No unread tweet could be loaded. Try again.'],
+            [
+              new URL(model.flags.url).searchParams.get('random') === 'exhausted'
+                ? 'Caught up. No unread tweets remain.'
+                : 'Random unread is unavailable. Try again.',
+            ],
           )
         : h.empty,
       post.parentPostId && screen.root.id !== post.id ? parentPreview(screen.root) : h.empty,

@@ -1,6 +1,6 @@
 import * as Dialog from '@foldkit/ui/dialog'
 import * as Popover from '@foldkit/ui/popover'
-import { HashMap, Match, Option, Result } from 'effect'
+import { HashMap, Match, Option, Predicate, Result } from 'effect'
 import { AsyncData, Command, Update } from 'foldkit'
 import { UrlRequest } from 'foldkit/navigation'
 import { toString as urlToString } from 'foldkit/url'
@@ -8,18 +8,22 @@ import { toString as urlToString } from 'foldkit/url'
 import {
   Leave,
   LoadPage,
+  LoadReplies,
   Navigate,
   PauseCreatorUpload,
   PrefetchPage,
+  Replace,
+  ResetTweetEntry,
   SaveReadMode,
   SetResolvedUrl,
 } from './command'
 import { init, type Services } from './init'
 import { Message } from './message'
-import type { Flags, Model } from './model'
+import type { Flags, Model, PageCache } from './model'
 import { isCacheable, pageKey, samePage, settlePage } from './page-cache'
 import * as Creator from './page/creator'
 import * as Dashboard from './page/dashboard'
+import * as TweetReader from './page/tweet/reader'
 import * as Player from './player'
 import * as PublicActions from './public-actions'
 import { isServerPath, Route } from './route'
@@ -69,17 +73,65 @@ const closeSearch = (model: Model): Update.Return<Model, Message> => {
 
 const closeOverlays = Update.combine([closeMobileMenu, closeAccountMenu, closeSearch])
 
+const acceptTweet = (model: Model, initial = false): Update.Return<Model, Message> => {
+  const slug = TweetReader.concreteSlug(model.flags.url)
+  const post = model.flags.tweet?.post
+
+  if (model.flags.status !== 200 || !slug || post?.slug !== slug) return { model }
+  const identity = model.flags.principal?.id ?? 'anonymous'
+
+  const reader =
+    identity === model.tweetReader.identity
+      ? model.tweetReader
+      : { ...TweetReader.init(identity), checkpoint: model.tweetReader.checkpoint }
+
+  const visited = TweetReader.visit(
+    reader,
+    slug,
+    model.navigationId,
+    initial ? model.flags.neighbours : null,
+    post.parentPostId ? null : new Date(post.createdAt).toISOString().slice(0, 7),
+  )
+
+  return {
+    model: { ...model, tweetReader: visited.model },
+    commands: [
+      ...Command.mapMessages(visited.commands ?? [], (message) =>
+        Message.GotTweetReaderMessage({ message }),
+      ),
+      ...(reader.current === slug && reader.navigationId === model.navigationId
+        ? []
+        : [LoadReplies({ slug, navigationId: model.navigationId })]),
+    ],
+  }
+}
+
 const showPage = (
   model: Model,
   flags: Flags,
   navigationId: number,
+  expected: string,
 ): Update.Return<Model, Message, Services> => {
   const next = init(flags)
+  const identityChanged = next.model.tweetReader.identity !== model.tweetReader.identity
+
+  const sameTweet =
+    !identityChanged &&
+    flags.tweet &&
+    model.flags.tweet &&
+    flags.tweet.post.slug === model.flags.tweet.post.slug &&
+    navigationId === model.navigationId &&
+    model.tweetReader.current === flags.tweet.post.slug
 
   return {
     ...next,
     model: {
       ...next.model,
+      flags:
+        sameTweet && flags.tweet && model.flags.tweet
+          ? { ...flags, tweet: { ...flags.tweet, replies: model.flags.tweet.replies } }
+          : flags,
+      repliesStatus: sameTweet ? model.repliesStatus : next.model.repliesStatus,
       player: model.player,
       skipSeen: model.skipSeen,
       mobileMenu: model.mobileMenu,
@@ -87,7 +139,11 @@ const showPage = (
       menuOffset: model.menuOffset,
       accountMenu: model.accountMenu,
       search: model.search,
-      pageCache: model.pageCache,
+      pageCache: identityChanged ? next.model.pageCache : model.pageCache,
+      tweetReader: identityChanged
+        ? { ...next.model.tweetReader, checkpoint: model.tweetReader.checkpoint }
+        : model.tweetReader,
+      interactive: model.interactive,
       navigationId,
     },
     commands: [
@@ -104,6 +160,7 @@ const showPage = (
       ),
       SetResolvedUrl({
         href: flags.url,
+        expected,
         metadata: flags.metadata,
         noindex:
           flags.status !== 200 ||
@@ -118,7 +175,83 @@ const showPage = (
 
 export const update = (model: Model, message: Message): Update.Return<Model, Message, Services> =>
   Message.match<Update.Return<Model, Message, Services>>(message, {
-    ClientStarted: () => ({ model: { ...model, interactive: true } }),
+    ClientStarted: () => {
+      if (model.interactive) return { model }
+      const started = { ...model, interactive: true }
+
+      return TweetReader.isEntry(model.flags.url)
+        ? {
+            model: started,
+            commands: [
+              Command.mapMessage(
+                TweetReader.ResolveEntry({
+                  checkpoint: model.tweetReader.checkpoint,
+                  navigationId: model.navigationId,
+                }),
+                (message) => Message.GotTweetReaderMessage({ message }),
+              ),
+            ],
+          }
+        : acceptTweet(started, true)
+    },
+    GotTweetReaderMessage: ({ message }) => {
+      if (Predicate.isTagged(message, 'EntryResolved')) {
+        if (
+          message.navigationId !== model.navigationId ||
+          !TweetReader.isEntry(model.pendingPath ?? model.flags.url)
+        )
+          return { model }
+
+        return {
+          model: { ...model, tweetReader: { ...model.tweetReader, resumeSlug: message.slug } },
+          commands: [
+            Replace({
+              href: message.slug ? `/tweet/${encodeURIComponent(message.slug)}` : '/tweet/latest',
+              expected: pageKey(model.pendingPath ?? model.flags.url),
+            }),
+          ],
+        }
+      }
+
+      const child = TweetReader.update(model.tweetReader, message)
+      const next = { ...model, tweetReader: child.model }
+
+      const commands: Array<Command.Command<Message, never, Services>> = [
+        ...Command.mapMessages(child.commands ?? [], (message) =>
+          Message.GotTweetReaderMessage({ message }),
+        ),
+      ]
+
+      if (Predicate.isTagged(message, 'LoadedNavigation') && child.model !== model.tweetReader) {
+        const slugs = new Set([
+          message.neighbours.newer,
+          message.neighbours.older,
+          message.neighbours.olderUnread,
+          message.neighbours.newerUnread,
+        ])
+
+        let prefetched = next
+
+        for (const slug of slugs) {
+          if (!slug) continue
+
+          const step = update(
+            prefetched,
+            Message.PrefetchRequested({ href: `/tweet/${encodeURIComponent(slug)}` }),
+          )
+
+          prefetched = step.model
+          commands.push(...(step.commands ?? []))
+        }
+
+        return { model: prefetched, commands }
+      }
+
+      return {
+        model: next,
+        commands,
+      }
+    },
     AccountMenuClosed: () => closeAccountMenu(model),
     GotAccountMenuMessage: ({ message }) => updateAccountMenu(model, message),
     MenuToggled: () => (model.mobileMenu.isOpen ? closeMobileMenu(model) : openMobileMenu(model)),
@@ -175,8 +308,8 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
     ReadModeFailed: () => ({
       model: { ...model, error: 'Could not save your tweet reading preference. Try again.' },
     }),
-    LoadedReplies: ({ slug, replies }) =>
-      model.flags.tweet?.post.slug === slug
+    LoadedReplies: ({ slug, replies, navigationId }) =>
+      model.navigationId === navigationId && model.flags.tweet?.post.slug === slug
         ? {
             model: {
               ...model,
@@ -185,8 +318,8 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
             },
           }
         : { model },
-    FailedReplies: ({ slug }) =>
-      model.flags.tweet?.post.slug === slug
+    FailedReplies: ({ slug, navigationId }) =>
+      model.navigationId === navigationId && model.flags.tweet?.post.slug === slug
         ? { model: { ...model, repliesStatus: 'error' } }
         : { model },
     GotPlayerMessage: ({ message }) => {
@@ -254,9 +387,14 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
       const key = pageKey(href)
       const navigationId = model.navigationId + 1
 
-      const entry = isCacheable(key)
-        ? AsyncData.fromOptionOrIdle(HashMap.get(model.pageCache, key))
-        : AsyncData.Idle()
+      const entry =
+        isCacheable(key) &&
+        !(
+          model.tweetReader.resumeSlug &&
+          TweetReader.concreteSlug(href) === model.tweetReader.resumeSlug
+        )
+          ? AsyncData.fromOptionOrIdle(HashMap.get(model.pageCache, key))
+          : AsyncData.Idle()
 
       const transition = AsyncData.revalidateOrLoad(entry)
 
@@ -273,7 +411,33 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
         pageCache,
         navigationId,
         player: player.model,
+        tweetReader: {
+          ...model.tweetReader,
+          current: null,
+          neighbours: null,
+          navigationId,
+          resumeSlug:
+            TweetReader.concreteSlug(href) === model.tweetReader.resumeSlug
+              ? model.tweetReader.resumeSlug
+              : null,
+        },
       }
+
+      if (TweetReader.isEntry(href))
+        return {
+          model: { ...leaving, loading: true, pendingPath: key },
+          commands: [
+            ...(menu.commands ?? []),
+            ...Command.mapMessages(player.commands ?? [], (message) =>
+              Message.GotPlayerMessage({ message }),
+            ),
+            ...(model.creator.uploadState === 'running' ? [PauseCreatorUpload()] : []),
+            Command.mapMessage(
+              TweetReader.ResolveEntry({ checkpoint: model.tweetReader.checkpoint, navigationId }),
+              (message) => Message.GotTweetReaderMessage({ message }),
+            ),
+          ],
+        }
 
       const commands = [
         ...(menu.commands ?? []),
@@ -290,9 +454,19 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
           commands,
         }),
         onSome: (flags) => {
-          const shown = showPage(leaving, flags, navigationId)
+          if (
+            pageKey(flags.url) !== key ||
+            flags.status !== 200 ||
+            flags.principal?.id !== model.flags.principal?.id
+          )
+            return { model: { ...leaving, loading: true, pendingPath: key }, commands }
+          const shown = showPage(leaving, flags, navigationId, key)
+          const accepted = acceptTweet(shown.model)
 
-          return { ...shown, commands: [...commands, ...(shown.commands ?? [])] }
+          return {
+            model: accepted.model,
+            commands: [...commands, ...(shown.commands ?? []), ...(accepted.commands ?? [])],
+          }
         },
       })
     },
@@ -323,20 +497,46 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
       },
     }),
     LoadedPage: ({ flags, key, navigationId }) => {
+      if (navigationId !== model.navigationId) return { model }
+
+      if (
+        flags.status === 404 &&
+        model.tweetReader.resumeSlug &&
+        TweetReader.concreteSlug(flags.url) === model.tweetReader.resumeSlug
+      )
+        return {
+          model: {
+            ...model,
+            tweetReader: { ...model.tweetReader, checkpoint: null, resumeSlug: null },
+          },
+          commands: [ResetTweetEntry({ expected: key })],
+        }
+
+      const sourceCache: PageCache =
+        (flags.principal?.id ?? 'anonymous') === model.tweetReader.identity
+          ? model.pageCache
+          : HashMap.empty()
+
       const pageCache = settlePage(
-        settlePage(model.pageCache, key, Result.succeed(flags)),
+        settlePage(sourceCache, key, Result.succeed(flags)),
         pageKey(flags.url),
         Result.succeed(flags),
       )
 
-      if (navigationId !== model.navigationId || (!model.loading && samePage(model.flags, flags)))
-        return { model: { ...model, pageCache } }
+      if (!model.loading && samePage(model.flags, flags))
+        return acceptTweet({ ...model, pageCache })
 
-      const shown = showPage(model, flags, navigationId)
+      const shown = showPage(model, flags, navigationId, key)
+      const accepted = acceptTweet(shown.model)
 
-      return { ...shown, model: { ...shown.model, pageCache } }
+      return {
+        model: { ...accepted.model, pageCache },
+        commands: [...(shown.commands ?? []), ...(accepted.commands ?? [])],
+      }
     },
     FailedPage: ({ key, navigationId }) => {
+      if (navigationId !== model.navigationId) return { model }
+
       const pageCache = settlePage(
         model.pageCache,
         key,

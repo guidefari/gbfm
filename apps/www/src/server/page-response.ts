@@ -10,6 +10,7 @@ import template from 'virtual:gbfm-document'
 
 import { applicationConfig } from '../config'
 import type { Flags } from '../model'
+import { isEntry } from '../page/tweet/reader'
 import { Route } from '../route'
 import { apiRequest } from './api'
 import type { loadPageData } from './page-data'
@@ -137,6 +138,9 @@ export const createPageResponse = async (
             ],
       )
       .join('') +
+    (isEntry(url.href)
+      ? '<noscript><meta http-equiv="refresh" content="0;url=/tweet/latest"></noscript>'
+      : '') +
     head.scripts
       .map(
         (script) =>
