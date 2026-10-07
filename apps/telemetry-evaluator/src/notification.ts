@@ -236,7 +236,7 @@ export const renderNotification = (
     : undefined
 
   const releaseLabel = releaseUrl ? config.release.slice(0, 8) : config.release
-  const status = recovered ? 'RECOVERED' : 'ACTION NEEDED'
+  const status = recovered ? 'Recovered' : 'Action needed'
   const color = recovered ? '#166534' : '#9f1239'
 
   const text = [
@@ -254,7 +254,7 @@ export const renderNotification = (
 <body style="margin:0;background:#f4f4f0;color:#202420;font-family:Arial,Helvetica,sans-serif">
 <table role="presentation" style="width:100%;border-collapse:collapse"><tr><td style="padding:24px 12px">
 <table role="presentation" style="width:100%;max-width:600px;margin:auto;border-collapse:collapse;background:#ffffff;border-top:4px solid ${color}"><tr><td style="padding:28px 24px">
-<p style="margin:0 0 20px;font-size:12px;letter-spacing:1px;color:#626862">GBFM MONITORING · ${escapeHtml(config.environment.toUpperCase())}</p>
+<p style="margin:0 0 20px;font-size:12px;letter-spacing:1px;color:#626862">GBFM monitoring · ${escapeHtml(config.environment)}</p>
 <p style="margin:0 0 8px;color:${color};font-size:12px;font-weight:bold">${status}</p>
 <h1 style="margin:0 0 16px;font-size:26px;line-height:1.2">${escapeHtml(title)}</h1>
 <p style="font-size:16px;line-height:1.5;margin:0 0 24px">${escapeHtml(summary)}</p>
@@ -262,7 +262,7 @@ export const renderNotification = (
 <div style="background:#f4f4f0;padding:16px;margin:0 0 24px"><h2 style="font-size:15px;margin:0 0 8px">Next action</h2><p style="font-size:14px;line-height:1.5;margin:0">${escapeHtml(action)}</p></div>
 <table style="width:100%;border-collapse:collapse;font-size:13px;line-height:1.5"><caption style="text-align:left;font-weight:bold;padding-bottom:8px">Current evidence</caption>${rows.map(([label, value]) => `<tr><th scope="row" style="width:34%;padding:10px 8px 10px 0;border-top:1px solid #e5e7e2;text-align:left;vertical-align:top;font-weight:normal;color:#626862">${escapeHtml(label)}</th><td style="padding:10px 0;border-top:1px solid #e5e7e2">${escapeHtml(value)}</td></tr>`).join('')}</table>
 <p style="margin:24px 0 0;font-size:14px"><a style="color:#185a43" href="${escapeHtml(config.investigationUrl)}">View monitoring in Cloudflare</a></p>
-<p style="font-size:12px;color:#626862;line-height:1.5;margin:20px 0 0">Release: ${releaseUrl ? `<a style="color:#626862" href="${escapeHtml(releaseUrl)}">${escapeHtml(releaseLabel)}</a>` : escapeHtml(releaseLabel)}<br>Incident reference: <a href="${escapeHtml(config.investigationUrl)}" style="color:#626862;overflow-wrap:anywhere;word-break:break-all">${escapeHtml(notification.incidentKey)}</a></p>
+<p style="font-size:12px;color:#626862;line-height:1.5;margin:20px 0 0">Release: ${releaseUrl ? `<a style="color:#626862" href="${escapeHtml(releaseUrl)}">${escapeHtml(releaseLabel)}</a>` : escapeHtml(releaseLabel)}<br>Incident reference: <span style="overflow-wrap:anywhere;word-break:break-all">${escapeHtml(notification.incidentKey)}</span></p>
 </td></tr></table></td></tr></table></body></html>`
 
   return {

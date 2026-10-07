@@ -1,3 +1,5 @@
+import { Result } from 'effect'
+
 export const signals = [
   'availability',
   'api-latency',
@@ -100,8 +102,12 @@ const unavailable = (
           },
   )
 
-export const evaluate = (data: QueryData | QueryDiagnostic): ReadonlyArray<Metric> => {
-  if ('reason' in data) return unavailable('query-failure', data)
+export const evaluate = (
+  result: Result.Result<QueryData, QueryDiagnostic>,
+): ReadonlyArray<Metric> => {
+  if (Result.isFailure(result)) return unavailable('query-failure', result.failure)
+
+  const data = result.success
 
   const browserMeasurements = data.lcpSamples + data.inpSamples + data.clsSamples
 

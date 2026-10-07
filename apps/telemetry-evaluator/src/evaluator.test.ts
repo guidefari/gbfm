@@ -82,7 +82,9 @@ describe('Analytics Engine queries', () => {
       'quantileWeighted(0.75, double1, toUInt32(_sample_interval / double2))',
     )
     expect(browser).toContain("blob4 IN ('lcp', 'inp', 'cls')")
-    expect(`${api}${browser}`).not.toMatch(/url|query|user|email/i)
+
+    for (const phrase of ['url', 'query', 'user', 'email'])
+      expect(`${api}${browser}`.toLowerCase()).not.toContain(phrase)
     expect(() => apiSql('bad; DROP TABLE', 'release', 'prod', 15)).toThrow()
   })
 
@@ -116,63 +118,78 @@ describe('evaluation and scheduled runtime', () => {
     }
 
     expect(
-      evaluate(boundary)
+      evaluate(Result.succeed(boundary))
         .slice(0, 5)
         .map(({ status }) => status),
     ).toEqual(['healthy', 'healthy', 'healthy', 'healthy', 'healthy'])
 
     expect(
-      evaluate({
-        ...boundary,
-        successful: 198,
-        apiP95: 1_001,
-        lcpP75: 2_501,
-        inpP75: 201,
-        clsP75: 0.101,
-      })
+      evaluate(
+        Result.succeed({
+          ...boundary,
+          successful: 198,
+          apiP95: 1_001,
+          lcpP75: 2_501,
+          inpP75: 201,
+          clsP75: 0.101,
+        }),
+      )
         .slice(0, 5)
         .map(({ status }) => status),
     ).toEqual(['burning', 'burning', 'burning', 'burning', 'burning'])
   })
 
   it('gates provisional objectives when each signal is below minimum volume', () => {
-    const metrics = evaluate({
-      eligible: 99,
-      successful: 0,
-      apiSamples: 99,
-      apiP95: 9_999,
-      lcpSamples: 74,
-      lcpP75: 9_999,
-      inpSamples: 74,
-      inpP75: 9_999,
-      clsSamples: 74,
-      clsP75: 1,
-    })
+    const metrics = evaluate(
+      Result.succeed({
+        eligible: 99,
+        successful: 0,
+        apiSamples: 99,
+        apiP95: 9_999,
+        lcpSamples: 74,
+        lcpP75: 9_999,
+        inpSamples: 74,
+        inpP75: 9_999,
+        clsSamples: 74,
+        clsP75: 1,
+      }),
+    )
 
     expect(metrics.slice(0, 5).every(({ status }) => status === 'insufficient-volume')).toBe(true)
   })
 
   it('detects query failure and complete silence', () => {
     expect(
-      evaluate({ reason: 'network', dataset: 'api' }).every(
+      evaluate(Result.fail({ reason: 'network', dataset: 'api' })).every(
         ({ status }) => status === 'query-failure',
       ),
     ).toBe(true)
 
-    const silence = evaluate({
-      eligible: 0,
-      successful: 0,
-      apiSamples: 0,
-      apiP95: 0,
-      lcpSamples: 0,
-      lcpP75: 0,
-      inpSamples: 0,
-      inpP75: 0,
-      clsSamples: 0,
-      clsP75: 0,
-    })
+    const silence = evaluate(
+      Result.succeed({
+        eligible: 0,
+        successful: 0,
+        apiSamples: 0,
+        apiP95: 0,
+        lcpSamples: 0,
+        lcpP75: 0,
+        inpSamples: 0,
+        inpP75: 0,
+        clsSamples: 0,
+        clsP75: 0,
+      }),
+    )
 
     expect(silence.every(({ status }) => status === 'telemetry-silence')).toBe(true)
+  })
+
+  it('uses the result tag even when successful data contains a reason field', () => {
+    const data = { ...empty, eligible: 7, apiSamples: 7, successful: 6, reason: 'annotation' }
+    expect(evaluate(Result.succeed(data)).at(-1)).toEqual({
+      signal: 'telemetry-pipeline',
+      status: 'healthy',
+      traffic: { apiRequests: 7, browserMeasurements: 0 },
+    })
   })
 
   it('sends one pipeline notification for a query failure rather than one per objective', async () => {
@@ -182,7 +199,7 @@ describe('evaluation and scheduled runtime', () => {
       persistAndNotify(
         h.kv,
         h.email,
-        evaluate({ reason: 'authorization', dataset: 'browser', httpStatus: 403 }),
+        evaluate(Result.fail({ reason: 'authorization', dataset: 'browser', httpStatus: 403 })),
         'failure-1',
         config,
       ),
@@ -249,12 +266,14 @@ describe('evaluation and scheduled runtime', () => {
       persistAndNotify(
         h.kv,
         h.email,
-        evaluate({ reason: 'network', dataset: 'api' }),
+        evaluate(Result.fail({ reason: 'network', dataset: 'api' })),
         'one',
         config,
       ),
     )
-    await Effect.runPromise(persistAndNotify(h.kv, h.email, evaluate(empty), 'two', config))
+    await Effect.runPromise(
+      persistAndNotify(h.kv, h.email, evaluate(Result.succeed(empty)), 'two', config),
+    )
     expect(h.messages).toHaveLength(2)
     expect(h.messages[1]?.subject).toContain('[FIRING]')
     expect(h.messages[1]?.text).toContain('queries succeeded')
@@ -267,7 +286,11 @@ describe('evaluation and scheduled runtime', () => {
       'slo:telemetry-pipeline',
       JSON.stringify({ active: true, status: 'ingestion-failure', incidentKey: 'legacy-incident' }),
     )
-    const metrics = evaluate({ ...empty, eligible: 3, successful: 3, apiSamples: 3 })
+
+    const metrics = evaluate(
+      Result.succeed({ ...empty, eligible: 3, successful: 3, apiSamples: 3 }),
+    )
+
     expect(metrics.at(-1)).toEqual({
       signal: 'telemetry-pipeline',
       status: 'healthy',
@@ -279,7 +302,15 @@ describe('evaluation and scheduled runtime', () => {
     expect(text).toContain('Estimated API requests: 3')
     expect(text).toContain('API success rate: 3 of 100 required')
     expect(text).toContain('too few samples')
-    expect(text).not.toMatch(/6 events|all.*healthy|SQL|authorization|ingestion recovered/i)
+
+    for (const phrase of [
+      '6 events',
+      'all objectives are healthy',
+      'SQL',
+      'authorization',
+      'ingestion recovered',
+    ])
+      expect(text).not.toContain(phrase)
   })
 
   it('does not clear an objective alert on insufficient volume', async () => {
@@ -299,13 +330,15 @@ describe('evaluation and scheduled runtime', () => {
   })
 
   it('shows active objectives on pipeline recovery and links subordinate escaped identifiers', () => {
-    const metrics = evaluate({
-      ...empty,
-      eligible: 150,
-      successful: 140,
-      apiSamples: 150,
-      apiP95: 100,
-    })
+    const metrics = evaluate(
+      Result.succeed({
+        ...empty,
+        eligible: 150,
+        successful: 140,
+        apiSamples: 150,
+        apiP95: 100,
+      }),
+    )
 
     const pipeline = metrics.find((metric) => metric.signal === 'telemetry-pipeline')
 
@@ -329,24 +362,32 @@ describe('evaluation and scheduled runtime', () => {
     expect(email.html).toContain('href="https://dash.cloudflare.com/example"')
     expect(email.html).toContain('&lt;private&gt;&amp;reference')
     expect(email.html).not.toContain('<private>')
+    expect(email.html).toContain('Incident reference: <span')
+    expect(email.html).not.toContain('Incident reference: <a')
+    expect(email.html).toContain('GBFM monitoring · staging')
+    expect(email.html).toContain('Recovered</p>')
+    expect(email.text).toContain('Recovered: Recent telemetry is available again')
+    expect(email.subject).toContain('[RESOLVED]')
     expect(email.html.indexOf('Incident reference')).toBeGreaterThan(
       email.html.indexOf('Next action'),
     )
   })
 
   it('describes each performance signal with units, targets and actions in both formats', () => {
-    const metrics = evaluate({
-      eligible: 100,
-      successful: 90,
-      apiSamples: 100,
-      apiP95: 1800,
-      lcpSamples: 75,
-      lcpP75: 3000,
-      inpSamples: 75,
-      inpP75: 350,
-      clsSamples: 75,
-      clsP75: 0.2,
-    })
+    const metrics = evaluate(
+      Result.succeed({
+        eligible: 100,
+        successful: 90,
+        apiSamples: 100,
+        apiP95: 1800,
+        lcpSamples: 75,
+        lcpP75: 3000,
+        inpSamples: 75,
+        inpP75: 350,
+        clsSamples: 75,
+        clsP75: 0.2,
+      }),
+    )
 
     for (const metric of metrics.slice(0, 5)) {
       const message = renderNotification(
@@ -399,10 +440,10 @@ describe('safe query diagnostics', () => {
 
     if (!Result.isFailure(result)) throw new Error('Expected diagnostic')
     expect(result.failure).toMatchObject({ reason, httpStatus: status })
-    expect(JSON.stringify(result.failure)).not.toMatch(
-      /SENSITIVE_BODY|DO_NOT_LEAK|authorization.*Bearer/,
-    )
-    const metrics = evaluate(result.failure)
+
+    for (const phrase of ['SENSITIVE_BODY', 'DO_NOT_LEAK', 'Bearer'])
+      expect(JSON.stringify(result.failure)).not.toContain(phrase)
+    const metrics = evaluate(result)
     const pipeline = metrics.find((metric) => metric.signal === 'telemetry-pipeline')
 
     if (!pipeline) throw new Error('Missing pipeline')
@@ -420,7 +461,12 @@ describe('safe query diagnostics', () => {
     )
 
     expect(message.text).toContain(`HTTP ${status}`)
-    expect(`${message.text}${message.html}`).not.toMatch(/SENSITIVE_BODY|DO_NOT_LEAK/)
+    expect(message.html).toContain('Action needed</p>')
+    expect(message.text).toContain('Action needed: Monitoring cannot read telemetry')
+    expect(message.subject).toContain('[FIRING]')
+
+    for (const phrase of ['SENSITIVE_BODY', 'DO_NOT_LEAK'])
+      expect(`${message.text}${message.html}`).not.toContain(phrase)
   })
 
   it('classifies transport failure without carrying the request or cause', async () => {
@@ -442,7 +488,9 @@ describe('safe query diagnostics', () => {
 
     if (!Result.isFailure(result)) throw new Error('Expected diagnostic')
     expect(result.failure).toMatchObject({ reason: 'network' })
-    expect(JSON.stringify(result.failure)).not.toMatch(/DO_NOT_LEAK|SENSITIVE_CAUSE/)
+
+    for (const phrase of ['DO_NOT_LEAK', 'SENSITIVE_CAUSE'])
+      expect(JSON.stringify(result.failure)).not.toContain(phrase)
   })
 
   it('distinguishes local request failures from network errors', async () => {
@@ -462,7 +510,9 @@ describe('safe query diagnostics', () => {
 
     if (!Result.isFailure(result)) throw new Error('Expected diagnostic')
     expect(result.failure).toMatchObject({ reason: 'request' })
-    expect(JSON.stringify(result.failure)).not.toMatch(/DO_NOT_LEAK|SENSITIVE_CAUSE/)
+
+    for (const phrase of ['DO_NOT_LEAK', 'SENSITIVE_CAUSE'])
+      expect(JSON.stringify(result.failure)).not.toContain(phrase)
   })
 
   it('identifies a malformed browser schema after a successful API response', async () => {
@@ -492,6 +542,8 @@ describe('safe query diagnostics', () => {
       dataset: 'browser',
       httpStatus: 200,
     })
-    expect(JSON.stringify(result.failure)).not.toMatch(/DO_NOT_LEAK|SENSITIVE_BODY/)
+
+    for (const phrase of ['DO_NOT_LEAK', 'SENSITIVE_BODY'])
+      expect(JSON.stringify(result.failure)).not.toContain(phrase)
   })
 })

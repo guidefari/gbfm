@@ -1,4 +1,4 @@
-import { Effect, ManagedRuntime, Result } from 'effect'
+import { Effect, ManagedRuntime } from 'effect'
 import { FetchHttpClient, type HttpClient } from 'effect/unstable/http'
 
 import { querySlos } from './analytics'
@@ -55,25 +55,18 @@ const scheduled = (
           release: env.APP_RELEASE,
           stage: env.APP_ENVIRONMENT,
           windowMinutes: alertConfig.windowMinutes,
-        }),
+        }).pipe(
+          Effect.tapError((error) =>
+            Effect.logWarning('Telemetry query failed', {
+              reason: error.reason,
+              dataset: error.dataset,
+              httpStatus: error.httpStatus,
+            }),
+          ),
+        ),
       )
 
-      const data = Result.isFailure(result)
-        ? {
-            reason: result.failure.reason,
-            dataset: result.failure.dataset,
-            httpStatus: result.failure.httpStatus,
-          }
-        : result.success
-
-      if (Result.isFailure(result))
-        yield* Effect.logWarning('Telemetry query failed', {
-          reason: result.failure.reason,
-          dataset: result.failure.dataset,
-          httpStatus: result.failure.httpStatus,
-        })
-
-      yield* persistAndNotify(env.SLO_STATE, env.EMAIL, evaluate(data), evaluationId, alertConfig)
+      yield* persistAndNotify(env.SLO_STATE, env.EMAIL, evaluate(result), evaluationId, alertConfig)
     }
   })
 
