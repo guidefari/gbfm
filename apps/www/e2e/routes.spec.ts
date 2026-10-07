@@ -39,7 +39,7 @@ test('anonymous public navigation hydrates and missing pages return real 404s', 
     'href',
     'https://example.bandcamp.com/track/e2e-reply',
   )
-  await expect(page.getByRole('link', { name: 'Latest', exact: true })).toBeVisible()
+  await expect(page.locator('summary[aria-label="Reading options"]')).toBeVisible()
   await expect(page.getByRole('checkbox', { name: 'Skip seen' })).toHaveCount(0)
   const response = await page.goto('/not-a-route')
   expect(response?.status()).toBe(404)

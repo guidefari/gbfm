@@ -3,7 +3,6 @@ import type { HtmlBuilder } from 'foldkit/html'
 import type { Message } from '../../message'
 import type { Model } from '../../model'
 import { formatDate } from '../../view/format-date'
-import { iconPaths, lucide } from '../../view/icons'
 import {
   authorRow,
   cardActions,
@@ -16,42 +15,9 @@ import {
   tweetBody,
   type TweetPost,
 } from './card'
-import { readerControls } from './reader-controls'
-import { tweetWayfinder } from './wayfinder'
-
-const tweetArrow = (
-  h: HtmlBuilder<Message>,
-  direction: 'newer' | 'older',
-  slug: string | null | undefined,
-  flank: boolean,
-) => {
-  const path = direction === 'newer' ? iconPaths.chevronLeft : iconPaths.chevronRight
-  const iconClassName = flank ? 'h-6 w-6' : 'h-4 w-4'
-
-  const base = flank
-    ? `fixed top-1/2 z-30 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground transition-colors lg:flex ${
-        direction === 'newer'
-          ? 'left-[max(1rem,calc(50%-30rem))]'
-          : 'right-[max(1rem,calc(50%-30rem))]'
-      }`
-    : 'inline-flex h-8 w-8 items-center justify-center rounded-sm text-muted-foreground transition-colors'
-
-  if (!slug)
-    return h.span(
-      [h.AriaHidden(true), h.Class(`${base} cursor-not-allowed text-muted-foreground/20`)],
-      [lucide(path, iconClassName)],
-    )
-
-  return h.a(
-    [
-      ...(flank ? [h.Id(`tweet-${direction}`)] : []),
-      h.Href(`/tweet/${encodeURIComponent(slug)}`),
-      h.AriaLabel(direction === 'newer' ? 'Newer tweet' : 'Older tweet'),
-      h.Class(`${base} no-underline hover:bg-muted/60 hover:text-foreground`),
-    ],
-    [lucide(path, iconClassName)],
-  )
-}
+import { readerDock } from './dock'
+import { tweetHeading } from './heading'
+import { readerNotices } from './notices'
 
 export const view = (model: Model, h: HtmlBuilder<Message>) => {
   const screen = model.flags.tweet
@@ -86,34 +52,10 @@ export const view = (model: Model, h: HtmlBuilder<Message>) => {
   const timelineNeighbours = neighbours ?? (model.interactive ? model.tweetReader.lastKnown : null)
 
   return h.div(
-    [h.Class('max-w-3xl px-4 py-8 mx-auto')],
+    [h.Class('max-w-3xl px-4 pt-8 pb-28 mx-auto')],
     [
-      tweetWayfinder(timelineNeighbours, post.createdAt, model.flags.renderedAt),
-      h.div(
-        [h.Class('mb-6 flex items-center gap-1 text-xs text-muted-foreground')],
-        [
-          h.div(
-            [h.Class('flex items-center gap-1 lg:hidden')],
-            [
-              tweetArrow(h, 'newer', chronological?.newer, false),
-              tweetArrow(h, 'older', older, false),
-            ],
-          ),
-          readerControls(model, h, post.slug, neighbours),
-        ],
-      ),
-      tweetArrow(h, 'newer', chronological?.newer, true),
-      tweetArrow(h, 'older', older, true),
-      new URL(model.flags.url).searchParams.has('random')
-        ? h.p(
-            [h.Role('alert'), h.Class('mb-4 text-sm text-destructive')],
-            [
-              new URL(model.flags.url).searchParams.get('random') === 'exhausted'
-                ? 'Caught up. No unread tweets remain.'
-                : 'Random unread is unavailable. Try again.',
-            ],
-          )
-        : h.empty,
+      tweetHeading(post.createdAt, model.flags.renderedAt),
+      readerNotices(model, h, post.slug),
       post.parentPostId && screen.root.id !== post.id ? parentPreview(screen.root) : h.empty,
       h.article(
         [
@@ -216,6 +158,16 @@ export const view = (model: Model, h: HtmlBuilder<Message>) => {
             : h.empty,
         ],
       ),
+      readerDock(h, {
+        slug: post.slug,
+        at: post.createdAt,
+        newer: chronological?.newer,
+        older,
+        neighbours,
+        timeline: timelineNeighbours,
+        checking: model.interactive && model.tweetReader.metadataStatus === 'loading',
+        failed: model.tweetReader.metadataStatus === 'error',
+      }),
     ],
   )
 }

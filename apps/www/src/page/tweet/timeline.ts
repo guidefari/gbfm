@@ -36,26 +36,6 @@ export const timelineMonths = (timeline: ReadonlyArray<RailMonth>): ReadonlyArra
   return months
 }
 
-/** Timestamp position on the newest-first rail, as a percentage. */
-export const markerPercent = (months: ReadonlyArray<RailMonth>, at: string) => {
-  if (!months.length) return 0
-  const date = new Date(at)
-
-  const index = months.findIndex(
-    (entry) => entry.month === monthKey(date.getUTCFullYear(), date.getUTCMonth()),
-  )
-
-  if (index < 0) return 0
-
-  const daysInMonth = new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0),
-  ).getUTCDate()
-
-  const throughMonth = (date.getUTCDate() - 0.5) / daysInMonth
-
-  return ((index + 1 - throughMonth) / months.length) * 100
-}
-
 export const monthLabel = (month: string) => {
   const { year, monthIndex } = parseMonth(month)
 
@@ -83,26 +63,4 @@ export const relativeAge = (at: string, now: number) => {
   if (days < 365) return format.format(-Math.floor(days / 30), 'month')
 
   return format.format(-Math.floor(days / 365), 'year')
-}
-
-/** One jump per populated year, pointing at that year's newest tweet. */
-export const yearJumps = (months: ReadonlyArray<RailMonth>) => {
-  const years = new Map<
-    string,
-    { year: string; newestSlug: string; total: number; unread: number }
-  >()
-
-  for (const month of months) {
-    if (!month.newestSlug) continue
-    const year = month.month.slice(0, 4)
-    const current = years.get(year)
-    years.set(year, {
-      year,
-      newestSlug: current?.newestSlug ?? month.newestSlug,
-      total: (current?.total ?? 0) + month.total,
-      unread: (current?.unread ?? 0) + month.unread,
-    })
-  }
-
-  return [...years.values()]
 }
