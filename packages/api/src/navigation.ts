@@ -36,6 +36,10 @@ export const MicroPostSeenResponse = Schema.Struct({ recorded: Schema.Boolean })
 
 export type MicroPostSeenResponse = typeof MicroPostSeenResponse.Type
 
+export const ReadingHistoryResetResponse = Schema.Struct({ reset: Schema.Boolean })
+
+export type ReadingHistoryResetResponse = typeof ReadingHistoryResetResponse.Type
+
 export const NavigationGroup = HttpApiGroup.make('navigation')
   .add(
     HttpApiEndpoint.get('getMicroPostNeighbours', '/api/content/posts/micro/:slug/neighbours', {
@@ -56,5 +60,11 @@ export const NavigationGroup = HttpApiGroup.make('navigation')
       params: SlugParam,
       success: MicroPostSeenResponse,
       error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+    }),
+  )
+  .add(
+    HttpApiEndpoint.delete('resetReadingHistory', '/api/navigation/reading-history', {
+      success: ReadingHistoryResetResponse,
+      error: HttpApiError.InternalServerError,
     }),
   )

@@ -46,5 +46,13 @@ export const NavigationHandlersLive = HttpApiBuilder.group(Api, 'navigation', (h
         Effect.catchTag('MicroPostMissing', () => new HttpApiError.NotFound()),
         Effect.catchTag('DatabaseError', () => new HttpApiError.InternalServerError()),
       ),
+    )
+    .handle('resetReadingHistory', () =>
+      Effect.gen(function* () {
+        const { identity, navigation } = yield* withIdentity
+        yield* navigation.resetSeen(identity)
+
+        return { reset: true }
+      }).pipe(Effect.catchTag('DatabaseError', () => new HttpApiError.InternalServerError())),
     ),
 )

@@ -26,6 +26,7 @@ export interface NavigationService {
     identity: NavigationIdentity,
     slug: string,
   ) => Effect.Effect<void, MicroPostMissing | DatabaseError>
+  readonly resetSeen: (identity: NavigationIdentity) => Effect.Effect<void, DatabaseError>
 }
 
 export const NavigationService = Context.Service<NavigationService>('NavigationService')
@@ -247,6 +248,15 @@ export const NavigationServiceLayer = Layer.effect(
         }).pipe(Effect.asVoid)
       }).pipe(Effect.withSpan('navigation.markSeen', { attributes: { slug } }))
 
-    return { neighbours, randomUnread, markSeen }
+    const resetSeen = (identity: NavigationIdentity) =>
+      Effect.tryPromise({
+        try: () =>
+          db
+            .delete(navigationSeenPosts)
+            .where(inArray(navigationSeenPosts.sessionId, sessionIds(identity))),
+        catch: (error) => databaseError('reset', error),
+      }).pipe(Effect.asVoid, Effect.withSpan('navigation.resetSeen'))
+
+    return { neighbours, randomUnread, markSeen, resetSeen }
   }),
 )

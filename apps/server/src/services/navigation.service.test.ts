@@ -30,6 +30,18 @@ const neighbours = (slug: string) =>
     ),
   )
 
+const reset = () =>
+  Effect.runPromise(
+    withTestLayer(
+      Effect.flatMap(NavigationService, (service) => service.resetSeen(identity)),
+      layer,
+    ),
+  )
+
+const otherIdentity = Data.taggedEnum<NavigationIdentity>().Anonymous({
+  deviceToken: crypto.randomUUID(),
+})
+
 const seen = (slug: string) =>
   Effect.runPromise(
     withTestLayer(
@@ -73,7 +85,9 @@ afterAll(async () => {
   await db.delete(postsTable).where(inArray(postsTable.slug, slugs))
   await db
     .delete(navigationSessions)
-    .where(eq(navigationSessions.deviceToken, identity.deviceToken))
+    .where(
+      inArray(navigationSessions.deviceToken, [identity.deviceToken, otherIdentity.deviceToken]),
+    )
 })
 
 test('adjacent and unread neighbours use timestamp and slug ordering, excluding replies and drafts', async () => {
@@ -100,4 +114,31 @@ test('adjacent and unread neighbours use timestamp and slug ordering, excluding 
   expect(exhausted.olderUnread).toBeNull()
   expect(exhausted.newerUnread).toBeNull()
   expect(exhausted.unreadCount).toBe(0)
+})
+
+test('resetting reading history marks every tweet unread again for that identity only', async () => {
+  await seen(a)
+  await seen(c)
+  await Effect.runPromise(
+    withTestLayer(
+      Effect.flatMap(NavigationService, (service) => service.markSeen(otherIdentity, a)),
+      layer,
+    ),
+  )
+
+  await reset()
+
+  const afterReset = await neighbours(b)
+  expect(afterReset.seen).toBe(false)
+  expect(afterReset.olderUnread).toBe(a)
+  expect(afterReset.newerUnread).toBe(c)
+
+  const other = await Effect.runPromise(
+    withTestLayer(
+      Effect.flatMap(NavigationService, (service) => service.neighbours(otherIdentity, b)),
+      layer,
+    ),
+  )
+
+  expect(other.olderUnread).toBeNull()
 })
