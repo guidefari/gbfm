@@ -1,3 +1,10 @@
+## [2.102.2](https://github.com/guidefari/gbfm/compare/v2.102.1...v2.102.2) (2026-10-07)
+
+
+### Bug Fixes
+
+* **telemetry:** make failure and recovery emails actionable ([#372](https://github.com/guidefari/gbfm/issues/372)) ([ffb9317](https://github.com/guidefari/gbfm/commit/ffb9317ad07a5f0282bb289099013c2e38346bcf))
+
 ## [2.102.1](https://github.com/guidefari/gbfm/compare/v2.102.0...v2.102.1) (2026-10-07)
 
 
