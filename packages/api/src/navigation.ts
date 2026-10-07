@@ -20,6 +20,7 @@ export const MicroPostNeighboursResponse = Schema.Struct({
   newer: Schema.NullOr(Slug),
   older: Schema.NullOr(Slug),
   olderUnread: Schema.NullOr(Slug),
+  newerUnread: Schema.optionalKey(Schema.NullOr(Slug)),
   seen: Schema.Boolean,
   unreadCount: Schema.Number,
   timeline: Schema.Array(MicroPostTimelineMonth),

@@ -19,6 +19,7 @@ export type MicroPostNeighbours = {
   readonly newer: Slug | null
   readonly older: Slug | null
   readonly olderUnread: Slug | null
+  readonly newerUnread: Slug | null
   readonly seen: boolean
   readonly unreadCount: number
   readonly timeline: ReadonlyArray<MicroPostTimelineMonth>

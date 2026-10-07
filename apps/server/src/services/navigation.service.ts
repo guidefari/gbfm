@@ -141,6 +141,9 @@ export const NavigationServiceLayer = Layer.effect(
               .orderBy(desc(postsTable.createdAt), desc(postsTable.slug))
               .limit(1),
             feed(older).orderBy(desc(postsTable.createdAt), desc(postsTable.slug)).limit(1),
+            unreadFeed(identity, newer)
+              .orderBy(asc(postsTable.createdAt), asc(postsTable.slug))
+              .limit(1),
             unreadCount(identity, ne(postsTable.slug, slug)),
             timeline(identity),
             db
@@ -157,13 +160,23 @@ export const NavigationServiceLayer = Layer.effect(
         catch: (error) => databaseError('read', error),
       }).pipe(
         Effect.flatMap(
-          ([current, newerRows, olderUnread, olderRows, unreadRows, months, seenRows]) => {
+          ([
+            current,
+            newerRows,
+            olderUnread,
+            olderRows,
+            newerUnread,
+            unreadRows,
+            months,
+            seenRows,
+          ]) => {
             if (!current[0]) return Effect.fail(new MicroPostMissing({ slug }))
 
             return Effect.succeed({
               newer: newerRows[0] ? asSlug(newerRows[0].slug) : null,
               older: olderRows[0] ? asSlug(olderRows[0].slug) : null,
               olderUnread: olderUnread[0] ? asSlug(olderUnread[0].slug) : null,
+              newerUnread: newerUnread[0] ? asSlug(newerUnread[0].slug) : null,
               seen: seenRows.length > 0,
               unreadCount: unreadRows[0]?.count ?? 0,
               timeline: months.map(({ month, total, unread, newestSlug }) => ({
