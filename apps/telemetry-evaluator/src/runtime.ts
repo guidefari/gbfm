@@ -1,32 +1,18 @@
 import { Data, Effect, Schema } from 'effect'
 
-import type { AlertState, Metric, Notification, Signal } from './domain'
+import type { AlertState, Metric, Signal } from './domain'
 import { transition } from './domain'
+import { renderNotification, type AlertConfig, type EmailMessage } from './notification'
+
+export type { AlertConfig, EmailMessage } from './notification'
 
 export interface KvStore {
   readonly get: (key: string) => Promise<string | null>
   readonly put: (key: string, value: string) => Promise<void>
 }
 
-export interface EmailMessage {
-  readonly from: { readonly email: string; readonly name: string }
-  readonly to: string
-  readonly subject: string
-  readonly html: string
-  readonly text: string
-}
-
 export interface EmailBinding {
   readonly send: (message: EmailMessage) => Promise<{ readonly messageId: string }>
-}
-
-export interface AlertConfig {
-  readonly release: string
-  readonly environment: string
-  readonly fromEmail: string
-  readonly fromName: string
-  readonly toEmail: string
-  readonly investigationUrl: string
 }
 
 export class TelemetryRuntimeError extends Data.TaggedError('TelemetryRuntimeError')<{
@@ -41,6 +27,7 @@ const StoredState = Schema.Struct({
       'burning',
       'insufficient-volume',
       'telemetry-silence',
+      'query-failure',
       'ingestion-failure',
     ]),
   ),
@@ -57,28 +44,16 @@ const readState = (kv: KvStore, signal: Signal) =>
         ? Effect.succeed({ active: false } satisfies AlertState)
         : Effect.try(() => JSON.parse(value)).pipe(
             Effect.flatMap((unknownState) => Schema.decodeUnknownEffect(StoredState)(unknownState)),
+            Effect.map(
+              (state): AlertState => ({
+                ...state,
+                status: state.status === 'ingestion-failure' ? 'query-failure' : state.status,
+              }),
+            ),
             Effect.mapError(() => new TelemetryRuntimeError({ operation: 'read-state' })),
           ),
     ),
   )
-
-export const renderNotification = (
-  notification: Notification,
-  metric: Metric,
-  config: AlertConfig,
-): EmailMessage => {
-  const action = notification.kind === 'fired' ? 'FIRING' : 'RESOLVED'
-  const detail = `${metric.signal}: ${metric.value ?? 'unavailable'} ${metric.unit}; threshold ${metric.threshold ?? 'n/a'}; samples ${metric.samples}/${metric.minimumSamples}`
-  const text = `[${action}] GBFM SLO ${detail}\nRelease: ${config.release}\nIncident: ${notification.incidentKey}\nInvestigate: ${config.investigationUrl}`
-
-  return {
-    from: { email: config.fromEmail, name: config.fromName },
-    to: config.toEmail,
-    subject: `[${action}] GBFM ${metric.signal} (${config.environment})`,
-    text,
-    html: `<p><strong>${action}</strong> ${detail}</p><p>Release: ${config.release}</p><p>Incident: ${notification.incidentKey}</p><p><a href="${config.investigationUrl}">Investigate in Cloudflare</a></p>`,
-  }
-}
 
 export const persistAndNotify = Effect.fn('TelemetryEvaluator.persistAndNotify')(function* (
   kv: KvStore,
@@ -93,7 +68,7 @@ export const persistAndNotify = Effect.fn('TelemetryEvaluator.persistAndNotify')
 
     for (const notification of next.notifications) {
       yield* Effect.tryPromise({
-        try: () => email.send(renderNotification(notification, metric, config)),
+        try: () => email.send(renderNotification(notification, metric, config, metrics)),
         catch: () => new TelemetryRuntimeError({ operation: 'send-notification' }),
       })
     }

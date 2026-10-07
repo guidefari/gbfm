@@ -1,4 +1,5 @@
 import * as Cloudflare from 'alchemy/Cloudflare'
+import * as Output from 'alchemy/Output'
 import * as Effect from 'effect/Effect'
 import * as Redacted from 'effect/Redacted'
 
@@ -25,7 +26,7 @@ export const telemetryEvaluator = ({
     const state = yield* Cloudflare.KV.Namespace('TelemetryEvaluatorState')
     const accountId = process.env.CLOUDFLARE_ACCOUNT_ID ?? ''
 
-    return yield* Cloudflare.Worker('TelemetryEvaluator', {
+    const worker = yield* Cloudflare.Worker('TelemetryEvaluator', {
       main: './apps/telemetry-evaluator/src/worker.ts',
       workersDev: false,
       compatibility: { date: '2026-07-04', flags: ['nodejs_compat'] },
@@ -42,7 +43,6 @@ export const telemetryEvaluator = ({
         ALERT_FROM_EMAIL: senderEmail,
         ALERT_FROM_NAME: 'GBFM Observability',
         ALERT_TO_EMAIL: alertEmail,
-        CLOUDFLARE_INVESTIGATION_URL: `https://dash.cloudflare.com/${accountId}/workers-and-pages`,
         SLO_STATE: state,
         EMAIL: email,
         ...(!config.isProduction && process.env.SLO_DRILL === 'fire-resolve'
@@ -50,4 +50,20 @@ export const telemetryEvaluator = ({
           : undefined),
       },
     })
+
+    yield* worker.bind`CLOUDFLARE_INVESTIGATION_URL`({
+      bindings: [
+        {
+          type: 'plain_text',
+          name: 'CLOUDFLARE_INVESTIGATION_URL',
+          text: Output.map(
+            worker.workerName,
+            (name) =>
+              `https://dash.cloudflare.com/${encodeURIComponent(accountId)}/workers/services/view/${encodeURIComponent(name)}/production/observability/logs`,
+          ),
+        },
+      ],
+    })
+
+    return worker
   })

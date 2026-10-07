@@ -1,4 +1,4 @@
-import { Effect, ManagedRuntime, Result } from 'effect'
+import { Effect, ManagedRuntime } from 'effect'
 import { FetchHttpClient, type HttpClient } from 'effect/unstable/http'
 
 import { querySlos } from './analytics'
@@ -40,6 +40,7 @@ const scheduled = (
       fromName: env.ALERT_FROM_NAME,
       toEmail: env.ALERT_TO_EMAIL,
       investigationUrl: env.CLOUDFLARE_INVESTIGATION_URL,
+      windowMinutes: 15,
     }
 
     if (env.SLO_DRILL === 'fire-resolve') {
@@ -53,17 +54,19 @@ const scheduled = (
           browserDataset: env.BROWSER_ANALYTICS_DATASET,
           release: env.APP_RELEASE,
           stage: env.APP_ENVIRONMENT,
-          windowMinutes: 15,
-        }),
+          windowMinutes: alertConfig.windowMinutes,
+        }).pipe(
+          Effect.tapError((error) =>
+            Effect.logWarning('Telemetry query failed', {
+              reason: error.reason,
+              dataset: error.dataset,
+              httpStatus: error.httpStatus,
+            }),
+          ),
+        ),
       )
 
-      yield* persistAndNotify(
-        env.SLO_STATE,
-        env.EMAIL,
-        evaluate(Result.isFailure(result) ? 'query-failure' : result.success),
-        evaluationId,
-        alertConfig,
-      )
+      yield* persistAndNotify(env.SLO_STATE, env.EMAIL, evaluate(result), evaluationId, alertConfig)
     }
   })
 
