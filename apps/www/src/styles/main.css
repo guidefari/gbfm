@@ -288,6 +288,7 @@
 
   html {
     background-color: var(--background);
+    scrollbar-gutter: stable;
   }
 
   body {
@@ -1677,13 +1678,19 @@
 }
 .tweet-breadcrumb {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem;
   min-height: 1.75rem;
 }
+.tweet-breadcrumb > nav,
+.tweet-unread {
+  flex-shrink: 0;
+}
 .tweet-age {
+  min-width: 0;
   margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: var(--muted-foreground);
 }
 .tweet-unread,
