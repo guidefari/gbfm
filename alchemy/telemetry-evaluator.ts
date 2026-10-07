@@ -25,7 +25,12 @@ export const telemetryEvaluator = ({
     const state = yield* Cloudflare.KV.Namespace('TelemetryEvaluatorState')
     const accountId = process.env.CLOUDFLARE_ACCOUNT_ID ?? ''
 
+    const workerName = config.isProduction
+      ? 'gbfm-telemetryevaluator-prod-2g6bdpope25it33u'
+      : undefined
+
     return yield* Cloudflare.Worker('TelemetryEvaluator', {
+      ...(workerName ? { name: workerName } : undefined),
       main: './apps/telemetry-evaluator/src/worker.ts',
       workersDev: false,
       compatibility: { date: '2026-07-04', flags: ['nodejs_compat'] },
@@ -42,7 +47,9 @@ export const telemetryEvaluator = ({
         ALERT_FROM_EMAIL: senderEmail,
         ALERT_FROM_NAME: 'GBFM Observability',
         ALERT_TO_EMAIL: alertEmail,
-        CLOUDFLARE_INVESTIGATION_URL: `https://dash.cloudflare.com/${accountId}/workers-and-pages`,
+        CLOUDFLARE_INVESTIGATION_URL: workerName
+          ? `https://dash.cloudflare.com/${encodeURIComponent(accountId)}/workers/services/view/${encodeURIComponent(workerName)}/production/observability/logs`
+          : `https://dash.cloudflare.com/${encodeURIComponent(accountId)}/workers-and-pages`,
         SLO_STATE: state,
         EMAIL: email,
         ...(!config.isProduction && process.env.SLO_DRILL === 'fire-resolve'

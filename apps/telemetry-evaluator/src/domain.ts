@@ -14,17 +14,41 @@ export type Status =
   | 'burning'
   | 'insufficient-volume'
   | 'telemetry-silence'
-  | 'ingestion-failure'
+  | 'query-failure'
 
-export interface Metric {
-  readonly signal: Signal
+export interface QueryDiagnostic {
+  readonly reason:
+    | 'network'
+    | 'request'
+    | 'authorization'
+    | 'invalid-query'
+    | 'http'
+    | 'invalid-response'
+  readonly dataset: 'api' | 'browser'
+  readonly httpStatus?: number | undefined
+}
+
+export interface ObjectiveMetric {
+  readonly signal: Exclude<Signal, 'telemetry-pipeline'>
   readonly status: Status
   readonly value: number | null
   readonly threshold: number | null
   readonly samples: number
   readonly minimumSamples: number
-  readonly unit: 'percent' | 'milliseconds' | 'ratio' | 'events'
+  readonly unit: 'percent' | 'milliseconds' | 'ratio'
 }
+
+export interface PipelineMetric {
+  readonly signal: 'telemetry-pipeline'
+  readonly status: 'healthy' | 'telemetry-silence' | 'query-failure'
+  readonly diagnostic?: QueryDiagnostic | undefined
+  readonly traffic?: {
+    readonly apiRequests: number
+    readonly browserMeasurements: number
+  }
+}
+
+export type Metric = ObjectiveMetric | PipelineMetric
 
 export interface QueryData {
   readonly eligible: number
@@ -40,12 +64,12 @@ export interface QueryData {
 }
 
 const guarded = (
-  signal: Signal,
+  signal: ObjectiveMetric['signal'],
   value: number,
   threshold: number,
   samples: number,
   minimumSamples: number,
-  unit: Metric['unit'],
+  unit: ObjectiveMetric['unit'],
   passes: boolean,
 ): Metric => ({
   signal,
@@ -57,24 +81,32 @@ const guarded = (
   unit,
 })
 
-const unavailable = (status: 'telemetry-silence' | 'ingestion-failure'): ReadonlyArray<Metric> =>
-  signals.map((signal) => ({
-    signal,
-    status,
-    value: null,
-    threshold: signal === 'telemetry-pipeline' ? 1 : null,
-    samples: 0,
-    minimumSamples: signal === 'telemetry-pipeline' ? 1 : 0,
-    unit: 'events',
-  }))
+const unavailable = (
+  status: 'telemetry-silence' | 'query-failure',
+  diagnostic?: QueryDiagnostic,
+): ReadonlyArray<Metric> =>
+  signals.map(
+    (signal): Metric =>
+      signal === 'telemetry-pipeline'
+        ? { signal, status, diagnostic }
+        : {
+            signal,
+            status,
+            value: null,
+            threshold: null,
+            samples: 0,
+            minimumSamples: 0,
+            unit: 'ratio',
+          },
+  )
 
-export const evaluate = (data: QueryData | 'query-failure'): ReadonlyArray<Metric> => {
-  if (data === 'query-failure') return unavailable('ingestion-failure')
+export const evaluate = (data: QueryData | QueryDiagnostic): ReadonlyArray<Metric> => {
+  if ('reason' in data) return unavailable('query-failure', data)
 
-  const total =
-    data.eligible + data.apiSamples + data.lcpSamples + data.inpSamples + data.clsSamples
+  const browserMeasurements = data.lcpSamples + data.inpSamples + data.clsSamples
 
-  if (total === 0) return unavailable('telemetry-silence')
+  if (data.eligible === 0 && data.apiSamples === 0 && browserMeasurements === 0)
+    return unavailable('telemetry-silence')
   const availability = data.eligible === 0 ? 0 : (data.successful / data.eligible) * 100
 
   return [
@@ -110,11 +142,7 @@ export const evaluate = (data: QueryData | 'query-failure'): ReadonlyArray<Metri
     {
       signal: 'telemetry-pipeline',
       status: 'healthy',
-      value: total,
-      threshold: 1,
-      samples: total,
-      minimumSamples: 1,
-      unit: 'events',
+      traffic: { apiRequests: data.eligible, browserMeasurements },
     },
   ]
 }
@@ -135,7 +163,7 @@ export interface Notification {
 const failed = (metric: Metric) =>
   metric.status === 'burning' ||
   (metric.signal === 'telemetry-pipeline' &&
-    (metric.status === 'telemetry-silence' || metric.status === 'ingestion-failure'))
+    (metric.status === 'telemetry-silence' || metric.status === 'query-failure'))
 
 export const transition = (previous: AlertState, metric: Metric, evaluationId: string) => {
   const noNotifications: ReadonlyArray<Notification> = []
@@ -169,19 +197,8 @@ export const transition = (previous: AlertState, metric: Metric, evaluationId: s
     incidentKey,
   }
 
-  const resolved: ReadonlyArray<Notification> = previous.active
-    ? [
-        {
-          kind: 'resolved',
-          signal: metric.signal,
-          status: metric.status,
-          incidentKey: previous.incidentKey ?? evaluationId,
-        },
-      ]
-    : []
-
   return {
     state: { active: true, status: metric.status, incidentKey } satisfies AlertState,
-    notifications: [...resolved, fired],
+    notifications: [fired],
   }
 }

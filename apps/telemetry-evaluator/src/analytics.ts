@@ -1,7 +1,7 @@
-import { Data, Effect, Schema } from 'effect'
+import { Data, Effect, Predicate, Schema } from 'effect'
 import { HttpClient, HttpClientRequest, HttpClientResponse } from 'effect/unstable/http'
 
-import type { QueryData } from './domain'
+import type { QueryData, QueryDiagnostic } from './domain'
 
 const datasetName = (value: string): string => {
   if (!/^[A-Za-z0-9_]+$/.test(value))
@@ -84,9 +84,7 @@ export const parseApiResponse = Schema.decodeUnknownEffect(ApiResponse)
 
 export const parseBrowserResponse = Schema.decodeUnknownEffect(BrowserResponse)
 
-export class AnalyticsQueryError extends Data.TaggedError('AnalyticsQueryError')<{
-  readonly reason: 'request' | 'response'
-}> {}
+export class AnalyticsQueryError extends Data.TaggedError('AnalyticsQueryError')<QueryDiagnostic> {}
 
 export interface AnalyticsConfig {
   readonly accountId: string
@@ -98,7 +96,12 @@ export interface AnalyticsConfig {
   readonly windowMinutes: number
 }
 
-const execute = (client: HttpClient.HttpClient, config: AnalyticsConfig, sql: string) =>
+const execute = (
+  client: HttpClient.HttpClient,
+  config: AnalyticsConfig,
+  dataset: QueryDiagnostic['dataset'],
+  sql: string,
+) =>
   Effect.gen(function* () {
     const request = HttpClientRequest.bodyText(
       HttpClientRequest.post(
@@ -109,12 +112,27 @@ const execute = (client: HttpClient.HttpClient, config: AnalyticsConfig, sql: st
       'text/plain',
     )
 
-    const response = yield* client
-      .execute(request)
-      .pipe(Effect.mapError(() => new AnalyticsQueryError({ reason: 'request' })))
+    const response = yield* client.execute(request).pipe(
+      Effect.mapError(
+        (error) =>
+          new AnalyticsQueryError({
+            reason: Predicate.isTagged(error.reason, 'TransportError') ? 'network' : 'request',
+            dataset,
+          }),
+      ),
+    )
 
     if (response.status < 200 || response.status >= 300)
-      return yield* new AnalyticsQueryError({ reason: 'request' })
+      return yield* new AnalyticsQueryError({
+        reason:
+          response.status === 401 || response.status === 403
+            ? 'authorization'
+            : response.status === 400 || response.status === 422
+              ? 'invalid-query'
+              : 'http',
+        dataset,
+        httpStatus: response.status,
+      })
 
     return response
   })
@@ -129,11 +147,13 @@ export const querySlos = Effect.fn('TelemetryEvaluator.querySlos')(function* (
       execute(
         client,
         config,
+        'api',
         apiSql(config.apiDataset, config.release, config.stage, config.windowMinutes),
       ),
       execute(
         client,
         config,
+        'browser',
         browserSql(config.browserDataset, config.release, config.stage, config.windowMinutes),
       ),
     ],
@@ -141,11 +161,25 @@ export const querySlos = Effect.fn('TelemetryEvaluator.querySlos')(function* (
   )
 
   const api = yield* HttpClientResponse.schemaBodyJson(ApiResponse)(apiResponse).pipe(
-    Effect.mapError(() => new AnalyticsQueryError({ reason: 'response' })),
+    Effect.mapError(
+      () =>
+        new AnalyticsQueryError({
+          reason: 'invalid-response',
+          dataset: 'api',
+          httpStatus: apiResponse.status,
+        }),
+    ),
   )
 
   const browser = yield* HttpClientResponse.schemaBodyJson(BrowserResponse)(browserResponse).pipe(
-    Effect.mapError(() => new AnalyticsQueryError({ reason: 'response' })),
+    Effect.mapError(
+      () =>
+        new AnalyticsQueryError({
+          reason: 'invalid-response',
+          dataset: 'browser',
+          httpStatus: browserResponse.status,
+        }),
+    ),
   )
 
   const apiRow = api.data[0]
