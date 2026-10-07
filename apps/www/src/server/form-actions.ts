@@ -5,6 +5,7 @@ import * as Server from 'foldkit/experimental/server'
 import { readModeCookie } from '../page/tweet/navigation'
 import { apiRequest } from './api'
 import { randomTweet } from './tweet-random'
+import { resetReadingHistory } from './tweet-reset'
 
 export const redirect = (location: string, cookies: ReadonlyArray<string> = []) => {
   const headers = new Headers({ location, 'cache-control': 'private, no-store' })
@@ -95,6 +96,12 @@ export const handleFormAction = async (request: Request): Promise<Server.Respond
 
   if (action === '/actions/tweet-random') {
     const result = await randomTweet(request, field('slug'), apiRequest)
+
+    return redirect(result.location, result.cookies)
+  }
+
+  if (action === '/actions/tweet-reset') {
+    const result = await resetReadingHistory(request, field('slug'), apiRequest)
 
     return redirect(result.location, result.cookies)
   }
