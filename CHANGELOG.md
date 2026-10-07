@@ -1,3 +1,10 @@
+## [2.102.1](https://github.com/guidefari/gbfm/compare/v2.102.0...v2.102.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* **telemetry:** correct Analytics Engine quantiles ([#371](https://github.com/guidefari/gbfm/issues/371)) ([66fbb24](https://github.com/guidefari/gbfm/commit/66fbb24308f6dca8226f5f34150081f2ea9237b8))
+
 # [2.102.0](https://github.com/guidefari/gbfm/compare/v2.101.0...v2.102.0) (2026-10-07)
 
 
