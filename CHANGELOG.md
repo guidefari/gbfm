@@ -1,3 +1,43 @@
+# [2.102.0](https://github.com/guidefari/gbfm/compare/v2.101.0...v2.102.0) (2026-10-07)
+
+
+### Bug Fixes
+
+* **api:** preserve audio pages when optional metadata fails ([c35a34e](https://github.com/guidefari/gbfm/commit/c35a34e0015b4e9a2726f358923fafbeb971919d))
+* **tweets:** keep reader chrome stable while navigation metadata loads ([79260eb](https://github.com/guidefari/gbfm/commit/79260eb782dfeb856db784e9883ef79ddb420dad))
+* **tweets:** size the replies placeholder from the known reply count ([071b0d4](https://github.com/guidefari/gbfm/commit/071b0d4efe16681a802affdeb2455fa3413795dd))
+* **www:** highlight Tweets on tweet detail routes ([6930ef2](https://github.com/guidefari/gbfm/commit/6930ef2f6f95672d938fb6e5a118f3191fcd5394))
+* **www:** replace audio detail API fan-out with one page read ([a163947](https://github.com/guidefari/gbfm/commit/a1639479384aadd38bd659b57d4e682d3195407d))
+* **www:** retain empty audio description fallbacks ([6db335d](https://github.com/guidefari/gbfm/commit/6db335d9733a42d5331c2bed948c5354538b6cc2))
+* **www:** stop scrollbar and tweet breadcrumb from shifting layout ([b9f343f](https://github.com/guidefari/gbfm/commit/b9f343ff497c2d66cc2b80dfeb7ce54d991d0baa))
+
+
+### Features
+
+* **api:** include parent show on audio detail ([5413c92](https://github.com/guidefari/gbfm/commit/5413c92e0b6f42305d4137c6e869b93c21971d68))
+* **api:** load audio detail with one authenticated read ([1b54c6c](https://github.com/guidefari/gbfm/commit/1b54c6c908886a64ea71a1c79daae0138efee148))
+* **navigation:** let readers reset their tweet reading history ([437796f](https://github.com/guidefari/gbfm/commit/437796ff3a1db936ccd10f87ee3d388754813e1b))
+* **posts:** include reply count when reading a tweet by slug ([ce9855e](https://github.com/guidefari/gbfm/commit/ce9855e1eef56f166e87890d713b2326f39a9356))
+* **tweets:** expose nearest newer unread neighbour ([f5da586](https://github.com/guidefari/gbfm/commit/f5da586cf3852fd920cd9e026e3d0f04bb7d248d))
+* **tweets:** replace reader controls with a bottom reading dock ([4c4399a](https://github.com/guidefari/gbfm/commit/4c4399a100a9103efe622f86e30c2315683d5cf0))
+* **tweets:** resume tab reading and separate unread navigation ([1d41d03](https://github.com/guidefari/gbfm/commit/1d41d0302746abe0dffb47019c1d63377bac2814))
+* **www:** add a form action that resets tweet reading history ([2b1ef6d](https://github.com/guidefari/gbfm/commit/2b1ef6dc7000977adfdc977ac08d1b916396a362))
+* **www:** add About page and consolidate site links ([ff0e68a](https://github.com/guidefari/gbfm/commit/ff0e68a8dc3d1a9f391d91acb77d61733e32c15e))
+* **www:** add breadcrumbs to content detail pages ([0e51601](https://github.com/guidefari/gbfm/commit/0e51601afd0b45e80fe8ad3017c85cb8a520ff0b))
+* **www:** add icon-only variant for public actions ([f0b6146](https://github.com/guidefari/gbfm/commit/f0b614601b1b8bf09942200f0836ed05236909de))
+* **www:** redesign content detail page ([d96cb76](https://github.com/guidefari/gbfm/commit/d96cb7642fa200f82128109098c536d048829479))
+* **www:** refresh home and station branding ([7e2af2c](https://github.com/guidefari/gbfm/commit/7e2af2c584449a99309646d2085f6e9a36c9c13d))
+* **www:** show account avatar in station navigation ([09ee07c](https://github.com/guidefari/gbfm/commit/09ee07ca2f626763cd0eaffa09e5871502cd6eb8))
+* **www:** show parent show and slug in mix breadcrumb ([6b8deb5](https://github.com/guidefari/gbfm/commit/6b8deb5ef05059e9dfadfd15edf17a95bb583d8c))
+
+
+### Performance Improvements
+
+* **audio:** load detail tags in the authorized query ([43bf9ac](https://github.com/guidefari/gbfm/commit/43bf9ac9e79b4e438ac6be8cee4af1ab502edccc))
+* **auth:** resolve sessions and users in one D1 read ([0d2f0fb](https://github.com/guidefari/gbfm/commit/0d2f0fbef5ba80700f1387667ff120267f508dbd))
+* **shows:** compose page data in one authorized API request ([9fbc5bc](https://github.com/guidefari/gbfm/commit/9fbc5bc476cf4d28c299d57bd5d4f2923fa03c76))
+* **shows:** project labels within content queries ([b091bc6](https://github.com/guidefari/gbfm/commit/b091bc69708ecbdf7e0c4f73ede915517969f557))
+
 # Unreleased
 
 ## Session recap: faster mix and show pages (2026-10-06)
