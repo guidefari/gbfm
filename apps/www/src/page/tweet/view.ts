@@ -80,10 +80,12 @@ export const view = (model: Model, h: HtmlBuilder<Message>) => {
   const editedAt = post.updatedAt > post.createdAt ? post.updatedAt : null
   const replies = screen.replies
 
+  const timelineNeighbours = neighbours ?? (model.interactive ? model.tweetReader.lastKnown : null)
+
   return h.div(
     [h.Class('max-w-3xl px-4 py-8 mx-auto')],
     [
-      tweetWayfinder(neighbours, post.createdAt, model.flags.renderedAt),
+      tweetWayfinder(timelineNeighbours, post.createdAt, model.flags.renderedAt),
       h.div(
         [h.Class('mb-6 flex items-center gap-1 text-xs text-muted-foreground')],
         [

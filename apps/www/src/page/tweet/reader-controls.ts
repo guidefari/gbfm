@@ -17,6 +17,21 @@ export const readerControls = (
   const linkClass =
     'inline-flex h-8 items-center gap-1.5 rounded-sm px-2 text-xs text-muted-foreground no-underline hover:bg-muted/60 hover:text-foreground'
 
+  const nextUnreadLabel = (direction: 'older' | 'newer' | null) => [
+    'Next unread',
+    direction ? h.span([h.Class('text-muted-foreground/60')], [`(${direction})`]) : h.empty,
+  ]
+
+  const checking = model.interactive && model.tweetReader.metadataStatus === 'loading'
+
+  const stale = Reader.nextUnread(model.tweetReader.lastKnown)
+
+  const staleDirection = Reader.UnreadTarget.$is('Older')(stale)
+    ? 'older'
+    : Reader.UnreadTarget.$is('Newer')(stale)
+      ? 'newer'
+      : null
+
   return h.div(
     [h.Class('flex flex-wrap items-center gap-1')],
     [
@@ -25,23 +40,25 @@ export const readerControls = (
         Older: ({ slug }) =>
           h.a(
             [h.Href(`/tweet/${encodeURIComponent(slug)}`), h.Class(linkClass)],
-            ['Next unread', h.span([h.Class('text-muted-foreground/60')], ['(older)'])],
+            nextUnreadLabel('older'),
           ),
         Newer: ({ slug }) =>
           h.a(
             [h.Href(`/tweet/${encodeURIComponent(slug)}`), h.Class(linkClass)],
-            ['Next unread', h.span([h.Class('text-muted-foreground/60')], ['(newer)'])],
+            nextUnreadLabel('newer'),
           ),
         CaughtUp: () => h.span([h.Role('status'), h.Class('px-2')], ['Caught up']),
         Unavailable: () =>
-          h.span(
-            [h.Role('status'), h.Class('px-2')],
-            [
-              model.interactive && model.tweetReader.metadataStatus === 'loading'
-                ? 'Checking unread…'
-                : 'Unread navigation unavailable',
-            ],
-          ),
+          checking
+            ? h.span(
+                [
+                  h.Role('status'),
+                  h.AriaLabel('Checking unread'),
+                  h.Class(`${linkClass} pointer-events-none opacity-40`),
+                ],
+                nextUnreadLabel(staleDirection),
+              )
+            : h.span([h.Role('status'), h.Class('px-2')], ['Unread navigation unavailable']),
       }),
       model.tweetReader.metadataStatus === 'error'
         ? h.button(

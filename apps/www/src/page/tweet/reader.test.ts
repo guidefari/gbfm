@@ -32,6 +32,26 @@ describe('Tweet reader', () => {
     )
   })
 
+  it('keeps the last known timeline while the next tweet metadata loads', () => {
+    const first = visit(init('anonymous'), 'b', 1, neighbours, null)
+    const next = visit(first.model, 'a', 2, null, null)
+    expect(next.model.neighbours).toBeNull()
+    expect(next.model.metadataStatus).toBe('loading')
+    expect(next.model.lastKnown).toEqual(neighbours)
+
+    const failed = update(
+      next.model,
+      Message.FailedNavigation({
+        identity: 'anonymous',
+        navigationId: 2,
+        revision: next.model.revision,
+        requestId: next.model.requestId,
+      }),
+    )
+
+    expect(failed.model.lastKnown).toEqual(neighbours)
+  })
+
   it('rejects unsafe and alias storage targets', () => {
     for (const value of [
       '',

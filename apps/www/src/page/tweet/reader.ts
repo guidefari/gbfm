@@ -69,6 +69,7 @@ export const Model = Schema.Struct({
   recorded: Schema.Array(Schema.String),
   failed: Schema.Array(Schema.String),
   neighbours: Schema.NullOr(MicroPostNeighboursResponse),
+  lastKnown: Schema.NullOr(MicroPostNeighboursResponse),
   metadataStatus: Schema.Literals(['loading', 'ready', 'error']),
 })
 
@@ -191,6 +192,7 @@ export const init = (identity: string): Model => ({
   recorded: [],
   failed: [],
   neighbours: null,
+  lastKnown: null,
   metadataStatus: 'loading',
 })
 
@@ -253,6 +255,7 @@ export const visit = (
     current: slug,
     navigationId,
     neighbours,
+    lastKnown: neighbours ?? model.neighbours ?? model.lastKnown,
     metadataStatus: 'loading' as const,
   }
 
@@ -301,7 +304,7 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
       revision === model.revision &&
       requestId === model.requestId &&
       !model.pending.length
-        ? { model: { ...model, neighbours, metadataStatus: 'ready' } }
+        ? { model: { ...model, neighbours, lastKnown: neighbours, metadataStatus: 'ready' } }
         : { model },
     FailedNavigation: ({ navigationId, revision, requestId, identity }) =>
       identity === model.identity &&
