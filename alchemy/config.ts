@@ -32,8 +32,8 @@ export interface DeploymentConfig {
 export class IncompleteSecretsError extends Error {
   constructor(missing: ReadonlyArray<string>) {
     super(
-      `Refusing to deploy without ${missing.length} secret(s): ${missing.join(', ')}. ` +
-        `Alchemy patches any secret whose value differs from its state, so ` +
+      `Refusing to deploy without ${missing.length} required environment value(s): ${missing.join(', ')}. ` +
+        `Alchemy patches any value that differs from its state, so ` +
         `deploying these blank would overwrite the stored value with an empty ` +
         `string. Populate the environment before deploying.`,
     )
@@ -48,6 +48,8 @@ export const deploymentConfig = (isLocalDev: boolean) =>
       const missing = Object.entries(secretSources)
         .filter(([, source]) => read(source).trim().length === 0)
         .map(([name, source]) => `${name} (${source})`)
+
+      if (read('ADMIN_EMAIL').trim().length === 0) missing.push('ADMIN_EMAIL')
 
       if (missing.length > 0) return yield* Effect.die(new IncompleteSecretsError(missing))
     }
