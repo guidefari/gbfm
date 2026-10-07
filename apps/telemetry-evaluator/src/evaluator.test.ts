@@ -57,11 +57,14 @@ describe('Analytics Engine queries', () => {
     const api = apiSql('api_requests', 'immutable-release-1', 'prod', 15)
     const browser = browserSql('browser_events', 'immutable-release-1', 'prod', 15)
     expect(api).toContain('FROM api_requests')
-    expect(api).toContain('quantileWeighted(double1, _sample_interval, 0.95)')
+    expect(api).toContain('quantileWeighted(0.95, double1, _sample_interval)')
     expect(api).toContain("blob4 NOT LIKE '/health/%'")
     expect(api).toContain("blob2 = 'prod'")
     expect(browser).toContain('FROM browser_events')
     expect(browser).toContain('sum(_sample_interval / double2) AS samples')
+    expect(browser).toContain(
+      'quantileWeighted(0.75, double1, toUInt32(_sample_interval / double2))',
+    )
     expect(browser).toContain("blob4 IN ('lcp', 'inp', 'cls')")
     expect(`${api}${browser}`).not.toMatch(/url|query|user|email/i)
     expect(() => apiSql('bad; DROP TABLE', 'release', 'prod', 15)).toThrow()

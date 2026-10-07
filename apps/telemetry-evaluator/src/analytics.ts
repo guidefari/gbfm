@@ -40,7 +40,7 @@ export const apiSql = (
   sum(_sample_interval) AS eligible,
   sum(if(double2 < 500, _sample_interval, 0)) AS successful,
   sum(_sample_interval) AS samples,
-  quantileWeighted(double1, _sample_interval, 0.95) AS p95
+  quantileWeighted(0.95, double1, _sample_interval) AS p95
 FROM ${datasetName(dataset)}
 WHERE timestamp >= NOW() - INTERVAL '${windowMinutes(minutes)}' MINUTE
   AND index1 = 'request' AND blob1 = '${releaseName(release)}' AND blob2 = '${stageName(stage)}'
@@ -54,7 +54,7 @@ export const browserSql = (
   minutes: number,
 ): string => `SELECT blob4 AS vital,
   sum(_sample_interval / double2) AS samples,
-  quantileWeighted(double1, _sample_interval / double2, 0.75) AS p75
+  quantileWeighted(0.75, double1, toUInt32(_sample_interval / double2)) AS p75
 FROM ${datasetName(dataset)}
 WHERE timestamp >= NOW() - INTERVAL '${windowMinutes(minutes)}' MINUTE
   AND index1 = 'web-vital' AND blob1 = '${releaseName(release)}' AND blob2 = '${stageName(stage)}'
