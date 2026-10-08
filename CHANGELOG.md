@@ -1,3 +1,10 @@
+## [2.102.4](https://github.com/guidefari/gbfm/compare/v2.102.3...v2.102.4) (2026-10-08)
+
+
+### Bug Fixes
+
+* **shows:** preserve episode creators in playback responses ([#375](https://github.com/guidefari/gbfm/issues/375)) ([9a00faa](https://github.com/guidefari/gbfm/commit/9a00faa7b266994ddb824bba726cea0a6237b7ca))
+
 ## [2.102.3](https://github.com/guidefari/gbfm/compare/v2.102.2...v2.102.3) (2026-10-08)
 
 
