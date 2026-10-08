@@ -21,7 +21,7 @@ const latestTweetSlug = async (response: Response) => {
   )
 }
 
-export const renderResponse = async (request: Request): Promise<Server.Responded> => {
+export const renderResponse = async (request: Request): Promise<Server.EntryResult> => {
   const startedAt = performance.now()
   const url = new URL(request.url)
   const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host')
@@ -107,7 +107,7 @@ export const renderResponse = async (request: Request): Promise<Server.Responded
       const page = await loadPageData(ownedRequest, request, url, route, requestId)
 
       if (!page.redirect)
-        return createPageResponse(request, ownedRequest, dataRequest, startedAt, {
+        return createPageResponse(ownedRequest, dataRequest, startedAt, {
           ...page,
           flags: { ...page.flags, status: 503, failure: 'Latest tweet is unavailable right now.' },
         })
@@ -118,5 +118,5 @@ export const renderResponse = async (request: Request): Promise<Server.Responded
 
   if (page.redirect) return redirectPage(page.redirect)
 
-  return createPageResponse(request, ownedRequest, dataRequest, startedAt, page)
+  return createPageResponse(ownedRequest, dataRequest, startedAt, page)
 }

@@ -1,7 +1,7 @@
 import type { SiteMetadataRouteKind } from '@gbfm/api/site-metadata'
 import { and, eq } from 'drizzle-orm'
 import { Effect, Layer } from 'effect'
-import { HttpRouter, HttpServerResponse } from 'effect/unstable/http'
+import { HttpRouter, HttpServerResponse } from 'effect/http'
 
 import { audioTable } from '@/db/audio.schema'
 import { Database } from '@/db/layer'

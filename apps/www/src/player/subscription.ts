@@ -25,7 +25,7 @@ const snapshots = Stream.unwrap(
 /** Persistent playback events. Lift this record into the parent alongside the submodel. */
 export const subscriptions = Subscription.make<Model, typeof Message.Type, PlayerClient>()(
   (entry) => ({
-    playerSnapshots: Subscription.persistent(snapshots),
+    playerSnapshots: Subscription.persistentEntry(snapshots),
     playerDrag: entry(
       { isDragging: Schema.Boolean },
       {

@@ -1,6 +1,6 @@
 import type { AdminTelemetryResponse } from '@gbfm/api/admin'
 import { Context, Data, Effect, Layer, Result, Schema } from 'effect'
-import { HttpClient, HttpClientRequest, HttpClientResponse } from 'effect/unstable/http'
+import { HttpClient, HttpClientRequest, HttpClientResponse } from 'effect/http'
 
 const WINDOW_HOURS = 24
 

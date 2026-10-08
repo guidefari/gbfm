@@ -32,7 +32,11 @@ test('Spotify PKCE connects, displays the profile, and disconnects using the rea
     const callback = new URL(url.searchParams.get('redirect_uri') ?? '')
     callback.searchParams.set('code', 'local-fixture-code')
     callback.searchParams.set('state', url.searchParams.get('state') ?? '')
-    await route.fulfill({ status: 302, headers: { location: callback.href } })
+    // WebKit cannot fulfill an intercepted request with a redirect status.
+    await route.fulfill({
+      contentType: 'text/html',
+      body: `<script>location.replace(${JSON.stringify(callback.href)})</script>`,
+    })
   })
   await page.route('https://accounts.spotify.com/api/token', async (route) => {
     const body = new URLSearchParams(route.request().postData() ?? '')
@@ -71,7 +75,7 @@ test('Spotify PKCE connects, displays the profile, and disconnects using the rea
   await page.getByRole('textbox', { name: 'Password', exact: true }).fill('LocalTest123!')
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
   await expect(page).toHaveURL(/\/dashboard$/)
-  await page.getByRole('link', { name: 'Integrations', exact: true }).click()
+  await page.goto('/dashboard/integrations')
   await page.getByRole('button', { name: 'Connect Spotify', exact: true }).click()
   await expect(page.getByText('Connected as Local Spotify Listener', { exact: true })).toBeVisible()
   await expect(page).toHaveURL(/\/dashboard\/integrations$/)

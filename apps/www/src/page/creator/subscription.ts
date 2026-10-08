@@ -6,7 +6,7 @@ import type { Model } from './model'
 import { CreatorUpload } from './upload/runtime'
 
 export const subscriptions = Subscription.make<Model, Message, CreatorUpload>()(() => ({
-  uploadProgress: Subscription.persistent(
+  uploadProgress: Subscription.persistentEntry(
     Stream.unwrap(
       CreatorUpload.pipe(
         Effect.map((service) =>

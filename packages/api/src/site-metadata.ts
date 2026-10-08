@@ -1,7 +1,7 @@
 import { SiteMetadata } from '@gbfm/site-metadata'
 import { SocialCardKind, SocialCardPresentation } from '@gbfm/social-card'
 import { Schema } from 'effect'
-import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/unstable/httpapi'
+import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/http-api'
 
 /** Public route families resolved by the server metadata projection. */
 export const SiteMetadataRouteKind = Schema.Literals([

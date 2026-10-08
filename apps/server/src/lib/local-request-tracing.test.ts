@@ -2,7 +2,7 @@ import { OtelTracer, Resource } from '@effect/opentelemetry'
 import { InMemorySpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
 import { Layer } from 'effect'
-import { HttpRouter, HttpServerResponse } from 'effect/unstable/http'
+import { HttpRouter, HttpServerResponse } from 'effect/http'
 import { describe, expect, test } from 'vitest'
 
 import { LocalRouteTracingLive, localRequestMiddleware } from './local-request-tracing'

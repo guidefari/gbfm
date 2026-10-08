@@ -16,7 +16,7 @@ import { traceSampleRate } from '@gbfm/core/observability/trace-sampling'
 import * as Sentry from '@sentry/cloudflare'
 import type { ErrorEvent, TracesSamplerSamplingContext, TransactionEvent } from '@sentry/core'
 import { Effect, Layer, Predicate, Schema, Tracer } from 'effect'
-import { FetchHttpClient } from 'effect/unstable/http'
+import { FetchHttpClient } from 'effect/http'
 
 import { DatabaseLayer, makeDatabaseClient } from '@/db/layer'
 import { seedLocalUsers } from '@/db/seed-local-users'

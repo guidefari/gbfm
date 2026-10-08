@@ -13,7 +13,7 @@
   "dependencies": {
     "@spotify-effect/browser": "0.6.7",
     "@spotify-effect/core": "0.6.7",
-    "effect": "4.0.0-rc.116"
+    "effect": "4.0.0"
   },
   "devDependencies": {
     "@types/bun": "1.4.2",

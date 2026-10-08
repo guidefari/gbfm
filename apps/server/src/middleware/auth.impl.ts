@@ -1,7 +1,7 @@
 import { AuthMiddleware, AuthSession } from '@gbfm/api/middleware/auth'
 import { Effect, Layer } from 'effect'
-import { HttpServerRequest } from 'effect/unstable/http'
-import { HttpApiError } from 'effect/unstable/httpapi'
+import { HttpServerRequest } from 'effect/http'
+import { HttpApiError } from 'effect/http-api'
 
 import { Auth } from '@/lib/auth'
 

@@ -1,5 +1,5 @@
 import { Effect, Schema } from 'effect'
-import { HttpApiEndpoint, HttpApiGroup } from 'effect/unstable/httpapi'
+import { HttpApiEndpoint, HttpApiGroup } from 'effect/http-api'
 
 export const SearchResultItem = Schema.Struct({
   id: Schema.String,

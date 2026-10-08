@@ -6,13 +6,13 @@ import {
 } from '@gbfm/site-metadata'
 import { Effect, Option, Schema } from 'effect'
 import * as Server from 'foldkit/experimental/server'
-import template from 'virtual:gbfm-document'
 
 import { applicationConfig } from '../config'
 import type { Flags } from '../model'
 import { isEntry } from '../page/tweet/reader'
 import { Route } from '../route'
 import { apiRequest } from './api'
+import { withDocumentHead } from './document'
 import type { loadPageData } from './page-data'
 
 type PageData = Extract<Awaited<ReturnType<typeof loadPageData>>, { readonly redirect: null }>
@@ -25,12 +25,11 @@ const escapeHtml = (value: string) =>
     .replaceAll('>', '&gt;')
 
 export const createPageResponse = async (
-  request: Request,
   ownedRequest: Request,
   dataRequest: boolean,
   startedAt: number,
   page: PageData,
-): Promise<Server.Responded> => {
+): Promise<Server.EntryResult> => {
   const {
     flags,
     identity,
@@ -117,18 +116,20 @@ export const createPageResponse = async (
 
   if (dataRequest) return Server.Responded(Response.json(readyFlags, { status, headers }))
 
+  const renderOptions = { flags: readyFlags, url: url.href }
+
   const rendered = await Effect.runPromise(
-    Server.renderToString(applicationConfig, {
-      flags: readyFlags,
-      url: url.href,
-      buildId: import.meta.env.FOLDKIT_BUILD_ID,
-    }),
+    Server.renderToString(
+      applicationConfig,
+      import.meta.env.DEV
+        ? { ...renderOptions, buildId: import.meta.env.FOLDKIT_BUILD_ID }
+        : renderOptions,
+    ),
   )
 
   const head = renderDocumentHead(metadata)
 
   const extraHead =
-    `<link rel="canonical" href="${escapeHtml(metadata.canonicalUrl)}"><meta property="og:url" content="${escapeHtml(metadata.canonicalUrl)}">` +
     head.meta
       .flatMap((entry) =>
         'title' in entry || ('property' in entry && entry.property === 'og:url')
@@ -154,14 +155,11 @@ export const createPageResponse = async (
     Route.guards.Auth(route) ||
     url.pathname === '/spotify/callback'
 
-  const html = Server.injectIntoTemplate(template, rendered).replace(
-    '</head>',
-    `${extraHead}${privatePage || status !== 200 ? '<meta data-gbfm-metadata name="robots" content="noindex, nofollow">' : ''}</head>`,
-  )
-
-  headers.set('content-type', 'text/html; charset=utf-8')
-
-  return Server.Responded(
-    new Response(request.method === 'HEAD' ? null : html, { status, headers }),
+  return Server.Rendered(
+    withDocumentHead(
+      rendered,
+      `${extraHead}${privatePage || status !== 200 ? '<meta data-gbfm-metadata name="robots" content="noindex, nofollow">' : ''}`,
+    ),
+    { status, headers },
   )
 }

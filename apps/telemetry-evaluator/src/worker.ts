@@ -1,5 +1,5 @@
 import { Effect, ManagedRuntime } from 'effect'
-import { FetchHttpClient, type HttpClient } from 'effect/unstable/http'
+import { FetchHttpClient, type HttpClient } from 'effect/http'
 
 import { querySlos } from './analytics'
 import { evaluate } from './domain'

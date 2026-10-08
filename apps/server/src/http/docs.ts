@@ -1,5 +1,5 @@
 import { Api } from '@gbfm/api/api'
-import { HttpApiScalar } from 'effect/unstable/httpapi'
+import { HttpApiScalar } from 'effect/http-api'
 
 // Replaces apps/server/src/lib/configure-open-api.ts (Hono + @scalar/hono-api-reference,
 // deleted alongside the rest of the Hono app in this step). HttpApiScalar.layer

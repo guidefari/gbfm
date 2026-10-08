@@ -15,7 +15,7 @@
   "dependencies": {
     "@gbfm/theme": "workspace:*",
     "@react-email/components": "1.0.12",
-    "effect": "4.0.0-rc.116",
+    "effect": "4.0.0",
     "react": "19.2.7",
     "react-dom": "19.2.7"
   },

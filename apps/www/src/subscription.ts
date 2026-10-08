@@ -1,4 +1,4 @@
-import { Schema, Stream } from 'effect'
+import { Option, Schema, Stream } from 'effect'
 import { Subscription } from 'foldkit'
 
 import { Message } from './message'
@@ -28,15 +28,15 @@ const menuSubscriptions = Subscription.make<Model, Message>()((entry) => ({
 export const subscriptions = Subscription.aggregate(
   menuSubscriptions,
   Subscription.lift(Search.subscriptions)<Model, Message>({
-    toChildModel: (model) => model.search,
+    read: (model) => Option.some(model.search),
     toParentMessage: (message) => Message.GotSearchMessage({ message }),
   }),
   Subscription.lift(Player.subscriptions)<Model, Message>({
-    toChildModel: (model) => model.player,
+    read: (model) => Option.some(model.player),
     toParentMessage: (message) => Message.GotPlayerMessage({ message }),
   }),
   Subscription.lift(Creator.subscriptions)<Model, Message>({
-    toChildModel: (model) => model.creator,
+    read: (model) => Option.some(model.creator),
     toParentMessage: (message) => Message.GotCreatorMessage({ message }),
   }),
 )

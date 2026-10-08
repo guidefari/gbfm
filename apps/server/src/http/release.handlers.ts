@@ -2,7 +2,7 @@ import { Api } from '@gbfm/api/api'
 import { AuthSession } from '@gbfm/api/middleware/auth'
 import { ValidationHttpError } from '@gbfm/api/post'
 import { Effect } from 'effect'
-import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
+import { HttpApiBuilder, HttpApiError } from 'effect/http-api'
 
 import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
 import { omitUndefined } from '@/lib/omit-undefined'

@@ -1,7 +1,7 @@
 import { Api } from '@gbfm/api/api'
 import { AuthSession } from '@gbfm/api/middleware/auth'
 import { Effect } from 'effect'
-import { HttpApiBuilder } from 'effect/unstable/httpapi'
+import { HttpApiBuilder } from 'effect/http-api'
 
 export const InternalHandlersLive = HttpApiBuilder.group(Api, 'internal', (handlers) =>
   handlers.handle('whoami', () =>

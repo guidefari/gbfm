@@ -16,7 +16,7 @@
     "device:local": "expo run:ios --device"
   },
   "dependencies": {
-    "@effect/atom-react": "4.0.0-rc.116",
+    "@effect/atom-react": "4.0.0",
     "@expo/metro-config": "~57.0.12",
     "@gbfm/api": "workspace:*",
     "@gbfm/core": "workspace:*",
@@ -26,7 +26,7 @@
     "@spotify-effect/browser": "0.6.7",
     "@spotify-effect/core": "0.6.7",
     "babel-preset-expo": "~57.0.12",
-    "effect": "4.0.0-rc.116",
+    "effect": "4.0.0",
     "expo": "^57.0.24",
     "expo-audio": "~57.0.5",
     "expo-constants": "~57.0.19",

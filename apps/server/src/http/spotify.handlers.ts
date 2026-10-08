@@ -1,6 +1,6 @@
 import { Api } from '@gbfm/api/api'
 import { Effect, Match } from 'effect'
-import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
+import { HttpApiBuilder, HttpApiError } from 'effect/http-api'
 
 import { SpotifyService, type SpotifyServiceError } from '@/services/spotify.service'
 

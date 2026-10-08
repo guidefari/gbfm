@@ -1,11 +1,6 @@
 import { resolveRequestId } from '@gbfm/core/observability/request-id'
 import { Effect, Exit, Layer, Option } from 'effect'
-import {
-  HttpMiddleware,
-  HttpRouter,
-  HttpServerError,
-  HttpServerRequest,
-} from 'effect/unstable/http'
+import { HttpMiddleware, HttpRouter, HttpServerError, HttpServerRequest } from 'effect/http'
 
 import { browserOrigins } from '@/lib/browser-origins'
 import { checkPerformanceHealth, recordRequest } from '@/lib/performance-monitoring'

@@ -1,5 +1,5 @@
 import { Schema } from 'effect'
-import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/unstable/httpapi'
+import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/http-api'
 
 const SpotifyTrackResponse = Schema.Struct({
   albumType: Schema.optional(Schema.String),

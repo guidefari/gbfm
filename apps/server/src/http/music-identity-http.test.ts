@@ -1,6 +1,6 @@
 import { MusicServiceUnavailableHttpError, MusicServiceUnavailableResponse } from '@gbfm/api/music'
 import { Effect, Schema } from 'effect'
-import { HttpApiError } from 'effect/unstable/httpapi'
+import { HttpApiError } from 'effect/http-api'
 import { describe, expect, test } from 'vitest'
 
 import {

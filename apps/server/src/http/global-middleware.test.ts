@@ -1,7 +1,7 @@
 import { Cause, Context, Effect, Layer, Logger } from 'effect'
 import * as FileSystem from 'effect/FileSystem'
+import { HttpRouter, HttpServer, HttpServerError, HttpServerResponse } from 'effect/http'
 import * as Path from 'effect/Path'
-import { HttpRouter, HttpServer, HttpServerError, HttpServerResponse } from 'effect/unstable/http'
 import { describe, expect, test } from 'vitest'
 
 import { Database } from '@/db/layer'

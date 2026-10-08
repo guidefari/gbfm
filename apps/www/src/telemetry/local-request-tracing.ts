@@ -1,7 +1,7 @@
 import { resolveRequestId } from '@gbfm/core/observability/request-id'
 import { Data, Effect, Layer, ManagedRuntime } from 'effect'
-import { FetchHttpClient } from 'effect/unstable/http'
-import { OtlpSerialization, OtlpTracer } from 'effect/unstable/observability'
+import { FetchHttpClient } from 'effect/http'
+import { OtlpSerialization, OtlpTracer } from 'effect/observability'
 
 import { routeTemplate } from './privacy'
 
@@ -22,7 +22,10 @@ export const createLocalRequestTracing = (endpoint: string) => {
 
   return {
     dispose: () => runtime.dispose(),
-    trace: (request: Request, run: (request: Request) => Promise<Response>) => {
+    trace: <Result extends { readonly status?: number }>(
+      request: Request,
+      run: (request: Request) => Promise<Result>,
+    ) => {
       const route = routeTemplate(undefined, new URL(request.url).pathname)
       const requestId = resolveRequestId(request.headers.get('x-request-id'))
 
@@ -42,7 +45,7 @@ export const createLocalRequestTracing = (endpoint: string) => {
             catch: () => new RequestTracingFailure(),
           })
 
-          yield* Effect.annotateCurrentSpan('http.response.status_code', response.status)
+          yield* Effect.annotateCurrentSpan('http.response.status_code', response.status ?? 200)
 
           return response
         }).pipe(

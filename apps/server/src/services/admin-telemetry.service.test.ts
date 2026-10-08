@@ -1,5 +1,5 @@
 import { Effect, Layer } from 'effect'
-import { FetchHttpClient } from 'effect/unstable/http'
+import { FetchHttpClient } from 'effect/http'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 
 import { withTestLayer } from '@/test/effect'

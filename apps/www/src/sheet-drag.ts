@@ -1,5 +1,5 @@
 import { Option, Schema, Stream } from 'effect'
-import { Subscription } from 'foldkit'
+import { Dom } from 'foldkit'
 
 export const SheetDrag = Schema.NullOr(
   Schema.Struct({ pointerId: Schema.Number, startY: Schema.Number }),
@@ -50,12 +50,12 @@ export const dragEvents = <Message>(messages: {
 }) =>
   Stream.mergeAll<Message, never, never>(
     [
-      Subscription.fromEvent({
+      Dom.streamFromEvent({
         target: document,
         type: 'pointermove',
         mapEvent: (event) => messages.moved({ pointerId: event.pointerId, clientY: event.clientY }),
       }),
-      Subscription.fromEvent({
+      Dom.streamFromEvent({
         target: document,
         type: 'pointerup',
         mapEvent: (event) =>
@@ -65,12 +65,12 @@ export const dragEvents = <Message>(messages: {
             viewportHeight: window.innerHeight,
           }),
       }),
-      Subscription.fromEvent({
+      Dom.streamFromEvent({
         target: document,
         type: 'pointercancel',
         mapEvent: () => messages.cancelled(),
       }),
-      Subscription.fromEvent({
+      Dom.streamFromEvent({
         target: window,
         type: 'blur',
         mapEvent: () => messages.cancelled(),

@@ -1,0 +1,94 @@
+diff --git a/dist/index.d.mts b/dist/index.d.mts
+index b9189a02f2f851e099e7c22655b73fb0a078f86b..0797744882f398927b418ed30c01055a6e114fed 100644
+--- a/dist/index.d.mts
++++ b/dist/index.d.mts
+@@ -1,9 +1,9 @@
+ import * as Effect from 'effect/Effect';
+ import * as Stream from 'effect/Stream';
+-import * as effect_unstable_http_HttpClient from 'effect/unstable/http/HttpClient';
++import * as effect_unstable_http_HttpClient from 'effect/http/HttpClient';
+ import * as Layer from 'effect/Layer';
+ import * as Context$1 from 'effect/Context';
+-import { HttpClient } from 'effect/unstable/http';
++import { HttpClient } from 'effect/http';
+ import * as effect_Cause from 'effect/Cause';
+ import * as effect_Types from 'effect/Types';
+ import * as Schema from 'effect/Schema';
+diff --git a/dist/index.d.ts b/dist/index.d.ts
+index b9189a02f2f851e099e7c22655b73fb0a078f86b..0797744882f398927b418ed30c01055a6e114fed 100644
+--- a/dist/index.d.ts
++++ b/dist/index.d.ts
+@@ -1,9 +1,9 @@
+ import * as Effect from 'effect/Effect';
+ import * as Stream from 'effect/Stream';
+-import * as effect_unstable_http_HttpClient from 'effect/unstable/http/HttpClient';
++import * as effect_unstable_http_HttpClient from 'effect/http/HttpClient';
+ import * as Layer from 'effect/Layer';
+ import * as Context$1 from 'effect/Context';
+-import { HttpClient } from 'effect/unstable/http';
++import { HttpClient } from 'effect/http';
+ import * as effect_Cause from 'effect/Cause';
+ import * as effect_Types from 'effect/Types';
+ import * as Schema from 'effect/Schema';
+diff --git a/dist/index.js b/dist/index.js
+index 0a4828fc84fcc2d1d588c7aa2f65b50a8b7cf8cd..2c710c17162a7bbdb2e7321bb65864f266cc89f4 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -109,7 +109,7 @@ var cursorPaginateAll = (fetch, pageSize = 20) => Stream.runCollect(cursorPagina
+ 
+ // src/makeSpotifyLayer.ts
+ var Layer17 = __toESM(require("effect/Layer"));
+-var import_http3 = require("effect/unstable/http");
++var import_http3 = require("effect/http");
+ 
+ // src/api/Albums.ts
+ var Effect4 = __toESM(require("effect/Effect"));
+@@ -687,7 +687,7 @@ var Effect3 = __toESM(require("effect/Effect"));
+ var Layer4 = __toESM(require("effect/Layer"));
+ var Ref = __toESM(require("effect/Ref"));
+ var Schema6 = __toESM(require("effect/Schema"));
+-var import_http2 = require("effect/unstable/http");
++var import_http2 = require("effect/http");
+ 
+ // src/errors/SpotifyError.ts
+ var Data = __toESM(require("effect/Data"));
+@@ -793,7 +793,7 @@ var Context3 = __toESM(require("effect/Context"));
+ var Effect = __toESM(require("effect/Effect"));
+ var Layer2 = __toESM(require("effect/Layer"));
+ var Schema5 = __toESM(require("effect/Schema"));
+-var import_http = require("effect/unstable/http");
++var import_http = require("effect/http");
+ 
+ // src/constants.ts
+ var BASE_API_URL = "https://api.spotify.com/v1";
+diff --git a/dist/index.mjs b/dist/index.mjs
+index 4a8d6d4b833611d06ceda363c17864c1ad371442..31559cb8bcb779e27d4c7043643f7a64d474352e 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -29,7 +29,7 @@ var cursorPaginateAll = (fetch, pageSize = 20) => Stream.runCollect(cursorPagina
+ 
+ // src/makeSpotifyLayer.ts
+ import * as Layer17 from "effect/Layer";
+-import { FetchHttpClient } from "effect/unstable/http";
++import { FetchHttpClient } from "effect/http";
+ 
+ // src/api/Albums.ts
+ import * as Effect4 from "effect/Effect";
+@@ -607,7 +607,7 @@ import * as Effect3 from "effect/Effect";
+ import * as Layer4 from "effect/Layer";
+ import * as Ref from "effect/Ref";
+ import * as Schema6 from "effect/Schema";
+-import { HttpClient as HttpClient2, HttpClientRequest as HttpClientRequest2 } from "effect/unstable/http";
++import { HttpClient as HttpClient2, HttpClientRequest as HttpClientRequest2 } from "effect/http";
+ 
+ // src/errors/SpotifyError.ts
+ import * as Data from "effect/Data";
+@@ -713,7 +713,7 @@ import * as Context3 from "effect/Context";
+ import * as Effect from "effect/Effect";
+ import * as Layer2 from "effect/Layer";
+ import * as Schema5 from "effect/Schema";
+-import { HttpClient, HttpClientRequest } from "effect/unstable/http";
++import { HttpClient, HttpClientRequest } from "effect/http";
+ 
+ // src/constants.ts
+ var BASE_API_URL = "https://api.spotify.com/v1";

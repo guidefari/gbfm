@@ -1,7 +1,7 @@
 import { RichContentDocument } from '@gbfm/rich-content/schema'
 import { SiteMetadata } from '@gbfm/site-metadata'
 import { Schema } from 'effect'
-import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/unstable/httpapi'
+import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/http-api'
 
 import { AuthMiddleware } from './middleware/auth'
 import { ValidationHttpError } from './post'

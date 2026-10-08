@@ -1,6 +1,6 @@
 import { useAtomSet, useAtomValue } from '@effect/atom-react'
 import { Effect } from 'effect'
-import * as Atom from 'effect/unstable/reactivity/Atom'
+import * as Atom from 'effect/reactivity/Atom'
 import { useFonts } from 'expo-font'
 import * as SplashScreen from 'expo-splash-screen'
 import { type PropsWithChildren, useEffect, useRef } from 'react'

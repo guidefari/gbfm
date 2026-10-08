@@ -14,11 +14,8 @@
     "identity:maintain": "bun run scripts/music-identity-maintenance.ts"
   },
   "dependencies": {
-    "@effect/cli": "0.77.2",
-    "@effect/experimental": "0.61.1",
-    "@effect/opentelemetry": "4.0.0-rc.116",
-    "@effect/platform": "0.97.2",
-    "@effect/platform-bun": "4.0.0-rc.116",
+    "@effect/opentelemetry": "4.0.0",
+    "@effect/platform-bun": "4.0.0",
     "@gbfm/api": "workspace:*",
     "@gbfm/core": "workspace:*",
     "@gbfm/email": "workspace:*",
@@ -42,7 +39,7 @@
     "dotenv": "18.0.3",
     "dotenv-expand": "1000.0.0",
     "drizzle-orm": "0.45.3",
-    "effect": "4.0.0-rc.116",
+    "effect": "4.0.0",
     "gray-matter": "4.0.3",
     "openapi-fetch": "^0.17.0",
     "pino": "10.3.1",

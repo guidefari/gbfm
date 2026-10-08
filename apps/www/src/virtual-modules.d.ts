@@ -4,8 +4,3 @@ declare module 'virtual:repo-changelog' {
   const changelog: RichContentDocument
   export default changelog
 }
-
-declare module 'virtual:gbfm-document' {
-  const template: string
-  export default template
-}

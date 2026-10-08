@@ -1,5 +1,5 @@
 import { useAtomRefresh, useAtomValue } from '@effect/atom-react'
-import { AsyncResult } from 'effect/unstable/reactivity'
+import { AsyncResult } from 'effect/reactivity'
 import { useRouter } from 'expo-router'
 import { ScrollView, Text } from 'react-native'
 

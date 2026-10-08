@@ -1,10 +1,5 @@
 import { Context, Data, Effect, Layer } from 'effect'
-import {
-  type Cookies,
-  HttpEffect,
-  HttpServerRequest,
-  HttpServerResponse,
-} from 'effect/unstable/http'
+import { type Cookies, HttpEffect, HttpServerRequest, HttpServerResponse } from 'effect/http'
 
 import type { NavigationIdentity } from '@/domain/navigation'
 import { Auth } from '@/lib/auth'

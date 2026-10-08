@@ -1,5 +1,5 @@
 import { Data, Effect, Predicate } from 'effect'
-import * as Atom from 'effect/unstable/reactivity/Atom'
+import * as Atom from 'effect/reactivity/Atom'
 
 import type { PersistedQueueType, QueueTrackType } from './persistedQueue'
 import { initialQueueState, mergeHydratedQueue, reduceQueue, type QueueAction } from './queueState'

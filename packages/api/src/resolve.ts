@@ -1,6 +1,6 @@
 import { RichContentDocument } from '@gbfm/rich-content/schema'
 import { Schema } from 'effect'
-import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/unstable/httpapi'
+import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/http-api'
 
 import { PublicProfileResponse } from './profile'
 
