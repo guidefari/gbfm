@@ -1,3 +1,10 @@
+## [2.103.2](https://github.com/guidefari/gbfm/compare/v2.103.1...v2.103.2) (2026-10-08)
+
+
+### Bug Fixes
+
+* **www:** add home link to mobile navigation ([#380](https://github.com/guidefari/gbfm/issues/380)) ([a988adf](https://github.com/guidefari/gbfm/commit/a988adfc9d47bffd450026f6189860f16d547e1c))
+
 ## [2.103.1](https://github.com/guidefari/gbfm/compare/v2.103.0...v2.103.1) (2026-10-08)
 
 
