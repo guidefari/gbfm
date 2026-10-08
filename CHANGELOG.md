@@ -1,3 +1,11 @@
+## [2.102.5](https://github.com/guidefari/gbfm/compare/v2.102.4...v2.102.5) (2026-10-08)
+
+
+### Bug Fixes
+
+* **deploy:** require admin email for non-local deployments ([#373](https://github.com/guidefari/gbfm/issues/373)) ([a1d4a17](https://github.com/guidefari/gbfm/commit/a1d4a170929a6e461e825aca6172e0e79103d2de))
+* **deploy:** validate required configuration beyond secrets ([21bf224](https://github.com/guidefari/gbfm/commit/21bf22409f2b3af62a80f3df740372771c2cffeb))
+
 ## [2.102.4](https://github.com/guidefari/gbfm/compare/v2.102.3...v2.102.4) (2026-10-08)
 
 
