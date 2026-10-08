@@ -1,3 +1,10 @@
+# [2.103.0](https://github.com/guidefari/gbfm/compare/v2.102.5...v2.103.0) (2026-10-08)
+
+
+### Features
+
+* **www:** adopt Foldkit whole-document SSR on Effect 4 ([#377](https://github.com/guidefari/gbfm/issues/377)) ([ea8cee1](https://github.com/guidefari/gbfm/commit/ea8cee1145b816806288818bcfc180d3f49cce8a))
+
 ## [2.102.5](https://github.com/guidefari/gbfm/compare/v2.102.4...v2.102.5) (2026-10-08)
 
 
