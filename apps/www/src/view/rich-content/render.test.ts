@@ -232,7 +232,7 @@ describe('richContentView', () => {
     expect(attribute(iframe, 'src')).toBe('https://youtube.com/embed/video')
     expect(attribute(iframe, 'title')).toBe('Test video')
     expect(attribute(iframe, 'loading')).toBe('lazy')
-    expect(attribute(iframe, 'referrerpolicy')).toBe('no-referrer')
+    expect(attribute(iframe, 'referrerpolicy')).toBe('strict-origin-when-cross-origin')
     expect(attribute(iframe, 'sandbox')).toBe(
       'allow-scripts allow-same-origin allow-presentation allow-popups',
     )

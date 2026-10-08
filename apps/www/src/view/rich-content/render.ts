@@ -245,7 +245,7 @@ const mediaView = <Message>(
               h.Width('100%'),
               h.Height('100%'),
               h.Loading('lazy'),
-              h.Referrerpolicy('no-referrer'),
+              h.Referrerpolicy('strict-origin-when-cross-origin'),
               h.Allow('autoplay; encrypted-media; fullscreen; picture-in-picture'),
               h.Sandbox('allow-scripts allow-same-origin allow-presentation allow-popups'),
             ],
