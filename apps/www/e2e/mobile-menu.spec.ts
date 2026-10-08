@@ -1,5 +1,28 @@
 import { expect, test } from '@playwright/test'
 
+test('mobile visitors can return to the front page from the menu', async ({ page }) => {
+  await page.goto('/mixes')
+  const trigger = page.getByRole('button', { name: 'Menu', exact: true })
+  await expect(trigger).toBeEnabled()
+  await trigger.click()
+  const menu = page.getByRole('dialog', { name: 'Menu', exact: true })
+  const home = menu.getByRole('link', { name: 'Home', exact: true })
+  await expect(home).toBeInViewport()
+  await expect(home).toHaveAttribute('href', '/')
+  await expect(home).not.toHaveAttribute('aria-current', 'page')
+  await home.click()
+  await expect(page).toHaveURL(/\/$/)
+  await expect(menu).not.toBeVisible()
+  await expect
+    .poll(() => page.evaluate(() => getComputedStyle(document.documentElement).overflow))
+    .not.toBe('hidden')
+  await trigger.click()
+  await expect(menu.getByRole('link', { name: 'Home', exact: true })).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+})
+
 test('mobile menu contains scrolling and restores the page after dismissal and navigation', async ({
   page,
 }) => {

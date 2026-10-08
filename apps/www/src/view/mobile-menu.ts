@@ -66,6 +66,7 @@ export const mobileMenu = (
                       [h.Class('menu-sheet-links'), h.AriaLabel('Menu links')],
                       [
                         section('Browse', [
+                          link('/', 'Home', iconPaths.home),
                           ...links.flatMap(([href, label]) =>
                             href === '/about'
                               ? []
