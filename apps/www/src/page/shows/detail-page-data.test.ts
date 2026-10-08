@@ -101,6 +101,43 @@ const load = (slug = 'fixture-show') => {
 }
 
 describe('Show detail WWW page loading', () => {
+  test('episode creators survive response encoding and page loading for playback', async () => {
+    const episode = {
+      id: 'fixture-episode',
+      title: 'Guest mix',
+      description: null,
+      thumbnailUrl: null,
+      bannerImageUrl: null,
+      slug: 'guest-mix',
+      createdAt: show.createdAt,
+      updatedAt: show.updatedAt,
+      draft: false,
+      tags: null,
+      content: '',
+      type: 'mix' as const,
+      url: 'https://example.com/guest-mix.mp3',
+      showId: show.id,
+      episodeNumber: 1,
+      playCount: 0,
+      creators: [{ id: 'fixture-guest', name: 'Guest DJ', username: 'guest-dj' }],
+    }
+
+    payload = Schema.decodeUnknownSync(Schema.Json)(
+      Schema.encodeSync(ShowPageResponse)({
+        ...ready,
+        episodes: {
+          data: [episode],
+          pagination: { total: 1, limit: 100, offset: 0, hasMore: false },
+        },
+      }),
+    )
+    const page = await load()
+    expect(page.flags.shows?.episodes?.data[0]).toMatchObject({
+      id: 'fixture-episode',
+      creators: [{ id: 'fixture-guest', name: 'Guest DJ', username: 'guest-dj' }],
+    })
+  })
+
   test('one request supplies identity, show, dial, episodes, subscription, metadata and refresh cookies', async () => {
     const page = await load()
     expect(calls).toEqual([{ path: '/api/shows/fixture-show/page', requestId: 'fixture-request' }])

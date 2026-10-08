@@ -3,7 +3,7 @@ import { SiteMetadata } from '@gbfm/site-metadata'
 import { Schema } from 'effect'
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/unstable/httpapi'
 
-import { AudioPagePrincipal } from './audio'
+import { AudioPagePrincipal, AudioResponse } from './audio'
 import { AuthMiddleware } from './middleware/auth'
 import { ValidationHttpError } from './post'
 
@@ -64,12 +64,7 @@ export const GetAllShowsResponse = Schema.Struct({
   pagination: PaginationMeta,
 })
 
-// Mirrors audioTable's real columns (apps/server/src/db/audio.schema.ts),
-// not the old selectAudioSchema -- getEpisodesEffect does a bare
-// db.select().from(audioTable) with no column projection and no creators
-// join, so the real response has always included every raw column
-// (including bannerImageUrl, which selectAudioSchema never declared) and
-// never included `creators`.
+// Episodes include audio columns and the creators projected by getEpisodesEffect.
 const EpisodeResponse = Schema.Struct({
   id: Schema.String,
   title: Schema.String,
@@ -87,6 +82,7 @@ const EpisodeResponse = Schema.Struct({
   showId: Schema.NullOr(Schema.String),
   episodeNumber: Schema.NullOr(Schema.Number),
   playCount: Schema.Number,
+  creators: AudioResponse.fields.creators,
 })
 
 export const GetShowEpisodesResponse = Schema.Struct({
