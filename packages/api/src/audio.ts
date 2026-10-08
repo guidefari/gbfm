@@ -174,6 +174,12 @@ const AudioTypeSlugParams = { type: AudioType, slug: Schema.String }
 
 export const AudioGroup = HttpApiGroup.make('audio')
   .add(
+    HttpApiEndpoint.get('getHomepageMixes', '/api/content/homepage-mixes', {
+      success: GetAudioByTypeResponse,
+      error: HttpApiError.InternalServerError,
+    }),
+  )
+  .add(
     HttpApiEndpoint.post('createMix', '/api/content/mixes', {
       payload: CreateAudioInput,
       success: AudioResponse,

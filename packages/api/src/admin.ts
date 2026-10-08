@@ -201,7 +201,29 @@ export const NewsletterSubscribersResponse = Schema.Struct({
   ),
 })
 
+/** Null selects the newest published mix automatically. */
+export const FeaturedMixSelection = Schema.Struct({ mixId: Schema.NullOr(Schema.NonEmptyString) })
+
+/** Published mixes available to the administrator, without a recent-items limit. */
+export const FeaturedMixSettings = Schema.Struct({
+  ...FeaturedMixSelection.fields,
+  mixes: Schema.Array(Schema.Struct({ id: Schema.String, title: Schema.String })),
+})
+
 export const AdminGroup = HttpApiGroup.make('admin')
+  .add(
+    HttpApiEndpoint.get('getFeaturedMixSettings', '/api/admin/featured-mix', {
+      success: FeaturedMixSettings,
+      error: HttpApiError.Forbidden,
+    }).middleware(AuthMiddleware),
+  )
+  .add(
+    HttpApiEndpoint.put('setFeaturedMix', '/api/admin/featured-mix', {
+      payload: FeaturedMixSelection,
+      success: FeaturedMixSelection,
+      error: [HttpApiError.Forbidden, HttpApiError.BadRequest],
+    }).middleware(AuthMiddleware),
+  )
   .add(
     HttpApiEndpoint.get('getAdminOverview', '/api/admin/overview', {
       success: AdminOverviewResponse,

@@ -12,6 +12,7 @@ const adminSections = new Set([
   'email-logs',
   'frontend-errors',
   'all/mixes',
+  'featured-mix',
   'all/tweets',
   'all/editorial',
 ])
@@ -52,6 +53,7 @@ export const endpointFor = (section: string, query = new URLSearchParams()) => {
     Object.entries({
       overview: '/api/favorites?limit=25&offset=0',
       admin: '/api/admin/overview',
+      'featured-mix': '/api/admin/featured-mix',
       profile: '/api/user/profile',
       email: '/api/user/email-preferences',
       favorites: '/api/favorites?limit=25&offset=0',

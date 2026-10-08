@@ -35,6 +35,7 @@ export const Message = defineMessageUnion({
   FieldChanged: { name: Schema.String, value: Schema.String },
   ToggleChanged: { name: Schema.String, value: Schema.Boolean },
   SaveProfile: {},
+  SaveFeaturedMix: {},
   SaveEmailPreferences: {},
   SavePlayerPreferences: {},
   PlayerPreferencesLoaded: { preferences: PlayerPreferences },

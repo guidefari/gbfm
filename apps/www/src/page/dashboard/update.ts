@@ -56,6 +56,26 @@ const writeCatalog = (
 
 export const update = (model: Model, message: Message): Update.Return<Model, Message, Services> =>
   Message.match<Update.Return<Model, Message, Services>>(message, {
+    SaveFeaturedMix: () => {
+      if (
+        model.principal.role !== 'admin' ||
+        model.section !== 'featured-mix' ||
+        (model.phase !== 'ready' && model.phase !== 'error') ||
+        model.fields.savedMixId === undefined
+      )
+        return { model }
+
+      return {
+        model: { ...model, phase: 'saving', error: null },
+        commands: [
+          Write({
+            path: '/api/admin/featured-mix',
+            method: 'PUT',
+            body: JSON.stringify({ mixId: model.fields.mixId || null }),
+          }),
+        ],
+      }
+    },
     GotPlaylistMessage: ({ message }) => {
       if (model.principal.role !== 'admin' || model.section !== 'playlists') return { model }
       const child = Playlists.update(model.playlists, message)

@@ -24,6 +24,7 @@ import { showSubscriptionsTable, showsTable } from '@/db/show.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { dieOnDatabaseError } from '@/http/handler-utils'
 import { AdminTelemetryService } from '@/services/admin-telemetry.service'
+import { loadFeaturedMix, saveFeaturedMix } from '@/services/featured-mix'
 
 const dieOnAdminDatabaseError = dieOnDatabaseError('admin')
 
@@ -542,6 +543,23 @@ const requireAdmin = Effect.gen(function* () {
 
 export const AdminHandlersLive = HttpApiBuilder.group(Api, 'admin', (handlers) =>
   handlers
+    .handle('getFeaturedMixSettings', () =>
+      Effect.gen(function* () {
+        yield* requireAdmin
+
+        return yield* dieOnAdminDatabaseError(loadFeaturedMix())
+      }),
+    )
+    .handle('setFeaturedMix', ({ payload }) =>
+      Effect.gen(function* () {
+        yield* requireAdmin
+        yield* dieOnAdminDatabaseError(saveFeaturedMix(payload.mixId)).pipe(
+          Effect.catchTag('ValidationError', () => new HttpApiError.BadRequest()),
+        )
+
+        return payload
+      }),
+    )
     .handle('getAdminOverview', () =>
       Effect.gen(function* () {
         yield* requireAdmin

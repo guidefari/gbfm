@@ -1,6 +1,7 @@
 import {
   AdminOverviewResponse,
   AdminTelemetryResponse,
+  FeaturedMixSettings,
   NewsletterSubscribersResponse,
 } from '@gbfm/api/admin'
 import { GetAudioByTypeResponse } from '@gbfm/api/audio'
@@ -87,6 +88,13 @@ export const parseDashboardDocument = (
   if (catalog) return catalog
 
   switch (pathname) {
+    case '/api/admin/featured-mix':
+      return Schema.decodeUnknownEffect(FeaturedMixSettings)(input).pipe(
+        Effect.map(({ mixId, mixes }) => ({
+          ...rowsDocument(mixes.map((mix) => ({ ...mix, detail: '', href: null, actionId: null }))),
+          fields: { mixId: mixId ?? '', savedMixId: mixId ?? '' },
+        })),
+      )
     case '/auth/admin/list-users':
       return Schema.decodeUnknownEffect(AdminUsers)(input).pipe(
         Effect.map((users) => ({

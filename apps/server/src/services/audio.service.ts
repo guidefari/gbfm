@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, or, type SQL, sql } from 'drizzle-orm'
+import { and, asc, count, desc, eq, inArray, or, type SQL, sql } from 'drizzle-orm'
 import { Context, Crypto, Effect, Layer } from 'effect'
 import { Hex } from 'effect/encoding'
 
@@ -11,6 +11,7 @@ import {
 } from '@/db/audio.schema'
 import { audioIdsForCreator } from '@/db/creator-membership'
 import { decodeEntityTags, entityTagsProjection } from '@/db/entity-label-projection'
+import { featuredMixTable } from '@/db/featured-mix.schema'
 import {
   hasEntityLabel,
   projectEntityLabels,
@@ -172,6 +173,11 @@ export interface AudioService {
 
 export const AudioService = Context.Service<AudioService>('AudioService')
 
+/** The homepage features the editorial selection, then the latest published mixes. */
+export const getHomepageMixes = Effect.fn('Audio.homepage')(() =>
+  getByTypeEffect('mix', { limit: 12, offset: 0 }, undefined, true),
+)
+
 const getByTypeEffect = (
   type: AudioType,
   options: {
@@ -182,11 +188,24 @@ const getByTypeEffect = (
     order?: AudioSortOrder
   },
   actor?: { userId: string; userRole: string },
+  featuredFirst = false,
 ) =>
   Effect.gen(function* () {
     const db = yield* Database
     const { limit, offset, tag } = options
     const orderBy = audioOrderBy(options.sort ?? 'created', options.order ?? 'desc')
+
+    if (featuredFirst) {
+      orderBy.unshift(
+        desc(
+          inArray(
+            audioTable.id,
+            db.select({ id: featuredMixTable.audioId }).from(featuredMixTable),
+          ),
+        ),
+      )
+    }
+
     yield* Effect.annotateCurrentSpan('audio.type', type)
     yield* Effect.annotateCurrentSpan('audio.limit', limit)
     yield* Effect.annotateCurrentSpan('audio.offset', offset)

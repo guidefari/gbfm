@@ -1,0 +1,4 @@
+CREATE TABLE featured_mix (
+  slot INTEGER PRIMARY KEY DEFAULT 1 CHECK (slot = 1),
+  audio_id TEXT NOT NULL REFERENCES audio(id) ON DELETE CASCADE
+);

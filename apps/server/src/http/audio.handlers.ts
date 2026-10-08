@@ -12,7 +12,7 @@ import {
 } from '@/http/handler-utils'
 import { omitUndefined } from '@/lib/omit-undefined'
 import { loadAudioPage } from '@/services/audio-page'
-import { AudioService } from '@/services/audio.service'
+import { AudioService, getHomepageMixes } from '@/services/audio.service'
 import { QRCodeService } from '@/services/qrcode.service'
 
 import { resolvePageSession } from './page-session'
@@ -27,6 +27,13 @@ const toDateStrings = <T extends { createdAt: Date; updatedAt: Date }>(audio: T)
 
 export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =>
   handlers
+    .handle('getHomepageMixes', () =>
+      Effect.gen(function* () {
+        const result = yield* dieOnDatabaseError(getHomepageMixes())
+
+        return { data: result.data.map(toDateStrings), pagination: result.pagination }
+      }),
+    )
     .handle('createMix', ({ payload }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
