@@ -51,7 +51,8 @@ jobs:
         run: |
           missing=""
           for name in $REQUIRED; do
-            [ -n "${!name:-}" ] || missing="$missing $name"
+            value="${!name:-}"
+            [ -n "${value//[[:space:]]/}" ] || missing="$missing $name"
           done
           if [ -n "$missing" ]; then
             echo "Missing repository secrets for:$missing" >&2
