@@ -64,7 +64,7 @@ const Save = Command.define('PublicActions.Save', {
 export const init = (document: Document | null): Model => ({ document, busy: false, notice: null })
 
 export const update = (model: Model, message: Message): Update.Return<Model, Message> =>
-  Message.match(message, {
+  Message.match<Update.Return<Model, Message>>(message, {
     Toggle: () =>
       !model.document || model.busy || !['active', 'inactive'].includes(model.document.state)
         ? { model }

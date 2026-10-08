@@ -3,8 +3,8 @@ import { GetAudioByTypeResponse, GetAudioTagsResponse } from '@gbfm/api/audio'
 import { AuthSession } from '@gbfm/api/middleware/auth'
 import { ValidationHttpError } from '@gbfm/api/post'
 import { Effect, Schema } from 'effect'
-import { HttpServerResponse } from 'effect/unstable/http'
-import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
+import { HttpServerResponse } from 'effect/http'
+import { HttpApiBuilder, HttpApiError } from 'effect/http-api'
 
 import {
   dieOnDatabaseError as makeDieOnDatabaseError,

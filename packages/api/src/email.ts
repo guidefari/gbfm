@@ -1,5 +1,5 @@
 import { Effect, Schema } from 'effect'
-import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/unstable/httpapi'
+import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/http-api'
 
 import { AuthMiddleware } from './middleware/auth'
 

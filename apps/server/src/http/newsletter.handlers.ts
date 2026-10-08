@@ -8,7 +8,7 @@ import {
 } from '@gbfm/email/index'
 import { and, eq, isNull } from 'drizzle-orm'
 import { Clock, Effect, Result } from 'effect'
-import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
+import { HttpApiBuilder, HttpApiError } from 'effect/http-api'
 
 import { EMAIL_NOTIFICATION_TYPES } from '@/db/email.schema'
 import { Database } from '@/db/layer'

@@ -1,5 +1,5 @@
 import { useAtomRefresh, useAtomValue } from '@effect/atom-react'
-import { AsyncResult } from 'effect/unstable/reactivity'
+import { AsyncResult } from 'effect/reactivity'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
 import type { Show } from '@/api/shows'

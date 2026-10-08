@@ -1,5 +1,5 @@
 import { Context } from 'effect'
-import { HttpApiError, HttpApiMiddleware } from 'effect/unstable/httpapi'
+import { HttpApiError, HttpApiMiddleware } from 'effect/http-api'
 
 export class AuthSession extends Context.Service<
   AuthSession,

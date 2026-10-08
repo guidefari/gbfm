@@ -1,6 +1,6 @@
 import { Schema } from 'effect'
-import { Multipart } from 'effect/unstable/http'
-import { HttpApiEndpoint, HttpApiError, HttpApiGroup, HttpApiSchema } from 'effect/unstable/httpapi'
+import { Multipart } from 'effect/http'
+import { HttpApiEndpoint, HttpApiError, HttpApiGroup, HttpApiSchema } from 'effect/http-api'
 
 import { AuthMiddleware } from './middleware/auth'
 

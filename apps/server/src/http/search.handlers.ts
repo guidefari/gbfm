@@ -1,6 +1,6 @@
 import { Api } from '@gbfm/api/api'
 import { Effect } from 'effect'
-import { HttpApiBuilder } from 'effect/unstable/httpapi'
+import { HttpApiBuilder } from 'effect/http-api'
 
 import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
 import { SearchService } from '@/services/search.service'

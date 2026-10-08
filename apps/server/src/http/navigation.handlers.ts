@@ -1,6 +1,6 @@
 import { Api } from '@gbfm/api/api'
 import { Effect } from 'effect'
-import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
+import { HttpApiBuilder, HttpApiError } from 'effect/http-api'
 
 import { IdentityResolver } from '@/middleware/optional-auth.impl'
 import { NavigationService } from '@/services/navigation.service'

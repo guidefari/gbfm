@@ -1,7 +1,7 @@
 import { Api } from '@gbfm/api/api'
 import { AuthSession } from '@gbfm/api/middleware/auth'
 import { Effect, FileSystem } from 'effect'
-import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
+import { HttpApiBuilder, HttpApiError } from 'effect/http-api'
 
 import {
   dieOnDatabaseError as makeDieOnDatabaseError,

@@ -1,5 +1,5 @@
 import { Effect, Predicate, Result } from 'effect'
-import { HttpClient, HttpClientError, HttpClientResponse } from 'effect/unstable/http'
+import { HttpClient, HttpClientError, HttpClientResponse } from 'effect/http'
 import { describe, expect, it } from 'vitest'
 
 import { apiSql, browserSql, parseApiResponse, parseBrowserResponse, querySlos } from './analytics'

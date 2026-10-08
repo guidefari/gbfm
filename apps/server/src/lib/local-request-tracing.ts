@@ -1,7 +1,7 @@
 import { Effect, Layer, ManagedRuntime, Tracer } from 'effect'
-import { FetchHttpClient, HttpRouter, HttpServerRequest } from 'effect/unstable/http'
-import type { HttpServerResponse } from 'effect/unstable/http'
-import { OtlpExporter, OtlpSerialization, OtlpTracer } from 'effect/unstable/observability'
+import { FetchHttpClient, HttpRouter, HttpServerRequest } from 'effect/http'
+import type { HttpServerResponse } from 'effect/http'
+import { OtlpExporter, OtlpSerialization, OtlpTracer } from 'effect/observability'
 
 const LocalTracer = OtlpTracer.layer({
   url: 'http://127.0.0.1:4318/v1/traces',

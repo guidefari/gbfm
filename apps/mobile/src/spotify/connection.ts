@@ -13,7 +13,7 @@ import {
   type SpotifyRequestError,
 } from '@gbfm/spotify'
 import { Data, Effect } from 'effect'
-import * as Atom from 'effect/unstable/reactivity/Atom'
+import * as Atom from 'effect/reactivity/Atom'
 import * as WebBrowser from 'expo-web-browser'
 import { type PropsWithChildren, useCallback, useMemo } from 'react'
 

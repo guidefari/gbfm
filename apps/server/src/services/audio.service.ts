@@ -1,5 +1,6 @@
 import { and, asc, count, desc, eq, or, type SQL, sql } from 'drizzle-orm'
-import { Context, Crypto, Effect, Encoding, Layer } from 'effect'
+import { Context, Crypto, Effect, Layer } from 'effect'
+import { Hex } from 'effect/encoding'
 
 import {
   audioCreators,
@@ -102,7 +103,7 @@ export const createAudioFingerprint = (data: CreateAudioData, creatorIds: Readon
       JSON.stringify(canonicalize({ data, creatorIds: [...creatorIds].toSorted() })),
     )
 
-    return yield* crypto.digest('SHA-256', input).pipe(Effect.orDie, Effect.map(Encoding.encodeHex))
+    return yield* crypto.digest('SHA-256', input).pipe(Effect.orDie, Effect.map(Hex.encode))
   })
 
 type AudioWithCreators = SelectAudio & {

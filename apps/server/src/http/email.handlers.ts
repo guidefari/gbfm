@@ -5,7 +5,7 @@ import { EMAIL_DELIVERY_STATUSES, type EmailDeliveryStatus } from '@gbfm/core/st
 import { buildNewMixNotificationEmail } from '@gbfm/email/index'
 import { and, eq } from 'drizzle-orm'
 import { Data, Effect, Predicate } from 'effect'
-import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
+import { HttpApiBuilder, HttpApiError } from 'effect/http-api'
 
 import { audioTable } from '@/db/audio.schema'
 import { user as usersTable } from '@/db/auth.schema'

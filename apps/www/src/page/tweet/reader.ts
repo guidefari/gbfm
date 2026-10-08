@@ -268,7 +268,7 @@ export const visit = (
 }
 
 export const update = (model: Model, message: Message): Update.Return<Model, Message> =>
-  Message.match(message, {
+  Message.match<Update.Return<Model, Message>>(message, {
     EntryResolved: () => ({ model }),
     Stored: () => ({ model }),
     RetrySeen: () =>

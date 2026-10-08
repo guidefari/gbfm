@@ -1,6 +1,6 @@
 import type { AudioPagePrincipal } from '@gbfm/api/audio'
 import { Effect } from 'effect'
-import { Cookies, HttpEffect, HttpServerRequest, HttpServerResponse } from 'effect/unstable/http'
+import { Cookies, HttpEffect, HttpServerRequest, HttpServerResponse } from 'effect/http'
 
 import { Auth } from '@/lib/auth'
 

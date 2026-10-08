@@ -1,6 +1,6 @@
 import { submitLocalRequestLog } from '@gbfm/core/observability/local-loki'
 import { resolveRequestId } from '@gbfm/core/observability/request-id'
-import { Effect } from 'effect'
+import { Effect, Predicate } from 'effect'
 import * as Server from 'foldkit/experimental/server'
 
 import { apiRequest, endpointFor } from './server/api'
@@ -8,6 +8,8 @@ import { renderResponse } from './server/request-dispatch'
 import { routeTemplate } from './telemetry/privacy'
 
 export { apiRequest, endpointFor }
+
+export { renderDocument } from './server/document'
 
 /** One request-owned correlation ID covers SSR, actions, redirects, and API forwarding. Logs exclude raw URLs and payloads. */
 export const renderPage = async (request: Request): Promise<Server.EntryResult> => {
@@ -21,25 +23,35 @@ export const renderPage = async (request: Request): Promise<Server.EntryResult> 
     requestId,
     route: routeTemplate(undefined, new URL(request.url).pathname),
     method: request.method,
-    release: import.meta.env.PROD ? import.meta.env.FOLDKIT_BUILD_ID : 'local',
+    release: import.meta.env.PROD ? (import.meta.env.FOLDKIT_BUILD_ID ?? 'unversioned') : 'local',
   }
 
   try {
-    const result = import.meta.env.DEV
-      ? Server.Responded(
-          await (
-            await import('./telemetry/local-request-tracing')
-          ).traceLocalRequest(owned, async (traced) => (await renderResponse(traced)).response),
-        )
-      : await renderResponse(owned)
+    const run = async (request: Request) => {
+      const result = await renderResponse(request)
 
-    const response = new Response(result.response.body, result.response)
-    response.headers.set('x-request-id', requestId)
+      return {
+        result,
+        status: Predicate.isTagged(result, 'Responded')
+          ? result.response.status
+          : (result.status ?? 200),
+      }
+    }
+
+    const { result, status } = import.meta.env.DEV
+      ? await (await import('./telemetry/local-request-tracing')).traceLocalRequest(owned, run)
+      : await run(owned)
+
+    const headers = new Headers(
+      Predicate.isTagged(result, 'Responded') ? result.response.headers : result.headers,
+    )
+
+    headers.set('x-request-id', requestId)
     await Effect.runPromise(
       Effect.logInfo({
         ...attributes,
         operation: 'request.completed',
-        status: response.status,
+        status,
         durationMs: Math.round(performance.now() - startedAt),
       }),
     )
@@ -50,11 +62,19 @@ export const renderPage = async (request: Request): Promise<Server.EntryResult> 
         method: request.method,
         route: attributes.route,
         requestId,
-        status: response.status,
+        status,
         durationMs: Math.round(performance.now() - startedAt),
       })
 
-    return Server.Responded(response)
+    return Predicate.isTagged(result, 'Rendered')
+      ? Server.Rendered(result.application, { status, headers })
+      : Server.Responded(
+          new Response(result.response.body, {
+            status,
+            statusText: result.response.statusText,
+            headers,
+          }),
+        )
   } catch (cause) {
     if (request.signal.aborted) throw cause
     await Effect.runPromise(

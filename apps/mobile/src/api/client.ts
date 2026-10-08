@@ -1,7 +1,7 @@
 import { Api } from '@gbfm/api/api'
 import { Data, Effect, ManagedRuntime } from 'effect'
-import { FetchHttpClient, HttpClient } from 'effect/unstable/http'
-import { HttpApiClient } from 'effect/unstable/httpapi'
+import { FetchHttpClient, HttpClient } from 'effect/http'
+import { HttpApiClient } from 'effect/http-api'
 
 import { env } from '@/env'
 

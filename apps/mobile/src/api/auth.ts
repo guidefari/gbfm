@@ -1,6 +1,6 @@
 import type { FullUser, LoginRequest } from '@gbfm/core/api'
 import { Data, Effect, Schema } from 'effect'
-import { HttpClientRequest } from 'effect/unstable/http'
+import { HttpClientRequest } from 'effect/http'
 
 import { getHttpClient } from '@/api/client'
 import { env } from '@/env'

@@ -1,6 +1,8 @@
 import { Layer } from 'effect'
 import { Runtime } from 'foldkit'
 
+// oxlint-disable-next-line import/no-unassigned-import -- Vite emits the document stylesheet from this entry.
+import './styles/main.css'
 import { applicationConfig } from './config'
 import * as Creator from './page/creator'
 import * as Dashboard from './page/dashboard'
@@ -37,10 +39,13 @@ const stopArtwork = startArtworkFallback()
 
 const stopTweetShortcuts = startTweetShortcuts()
 
-Runtime.hydrate(application, { buildId: import.meta.env.FOLDKIT_BUILD_ID })
+Runtime.hydrate(
+  application,
+  import.meta.env.DEV ? { buildId: import.meta.env.FOLDKIT_BUILD_ID } : {},
+)
 
 const stopTelemetry = startBrowserTelemetry({
-  release: import.meta.env.PROD ? import.meta.env.FOLDKIT_BUILD_ID : 'local',
+  release: import.meta.env.PROD ? (import.meta.env.FOLDKIT_BUILD_ID ?? 'unversioned') : 'local',
   navigation: {
     current: () => ({ pathname: location.pathname }),
     subscribe: ({ before, after }) => {

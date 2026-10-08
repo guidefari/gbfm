@@ -1,5 +1,5 @@
 import { Effect } from 'effect'
-import { HttpRouter, HttpServerRequest, HttpServerResponse } from 'effect/unstable/http'
+import { HttpRouter, HttpServerRequest, HttpServerResponse } from 'effect/http'
 
 // Global (not endpoint) middleware because HttpApiBuilder.group handlers only
 // ever return the raw decoded success value -- there's no per-endpoint hook

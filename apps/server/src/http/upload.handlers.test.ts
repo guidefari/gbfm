@@ -1,5 +1,5 @@
 import { Effect } from 'effect'
-import { HttpApiError } from 'effect/unstable/httpapi'
+import { HttpApiError } from 'effect/http-api'
 import { describe, expect, test } from 'vitest'
 
 import {

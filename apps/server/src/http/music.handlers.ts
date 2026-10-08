@@ -23,7 +23,7 @@ import type {
 } from '@gbfm/api/music'
 import { ValidationHttpError } from '@gbfm/api/post'
 import { Effect, Schema } from 'effect'
-import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
+import { HttpApiBuilder, HttpApiError } from 'effect/http-api'
 
 import type {
   SelectMusicAlbum,

@@ -8,7 +8,7 @@ import {
 } from '@gbfm/core/status'
 import { and, desc, eq, gt, gte, inArray, lte, or, type SQL, sql } from 'drizzle-orm'
 import { Effect, Match } from 'effect'
-import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
+import { HttpApiBuilder, HttpApiError } from 'effect/http-api'
 
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { session, user } from '@/db/auth.schema'

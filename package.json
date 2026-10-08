@@ -36,12 +36,10 @@
   "dependencies": {
     "@aws-sdk/client-s3": "3.1138.0",
     "@aws-sdk/s3-request-presigner": "3.1138.0",
-    "@effect/cli": "0.77.2",
-    "@effect/platform": "0.97.2",
-    "@effect/platform-bun": "4.0.0-rc.116",
-    "@effect/platform-node": "4.0.0-rc.116",
-    "alchemy": "2.0.0-beta.79",
-    "effect": "4.0.0-rc.116",
+    "@effect/platform-bun": "4.0.0",
+    "@effect/platform-node": "4.0.0",
+    "alchemy": "2.0.0-beta.81",
+    "effect": "4.0.0",
     "gray-matter": "4.0.3",
     "vitest": "4.1.11"
   },
@@ -78,5 +76,9 @@
     "aws-sdk",
     "esbuild",
     "sharp"
-  ]
+  ],
+  "patchedDependencies": {
+    "@spotify-effect/core@0.6.7": "patches/@spotify-effect%2Fcore@0.6.7.patch",
+    "@spotify-effect/browser@0.6.7": "patches/@spotify-effect%2Fbrowser@0.6.7.patch"
+  }
 }

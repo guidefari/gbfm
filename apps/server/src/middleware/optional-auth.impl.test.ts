@@ -1,5 +1,5 @@
 import { Effect, Layer, Predicate } from 'effect'
-import { HttpEffect, HttpServerResponse } from 'effect/unstable/http'
+import { HttpEffect, HttpServerResponse } from 'effect/http'
 import { describe, expect, it } from 'vitest'
 
 import { AuthLive } from '@/lib/auth'

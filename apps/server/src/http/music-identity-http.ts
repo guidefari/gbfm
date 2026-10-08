@@ -1,6 +1,6 @@
 import { MusicServiceUnavailableResponse } from '@gbfm/api/music'
 import { Effect } from 'effect'
-import { HttpApiError } from 'effect/unstable/httpapi'
+import { HttpApiError } from 'effect/http-api'
 
 import type { MusicIdentityError } from '@/services/canonical-music-identity'
 import type { MusicIdentityBusy } from '@/services/canonical-music-identity/errors'

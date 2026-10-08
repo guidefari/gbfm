@@ -1,7 +1,7 @@
 import * as Dialog from '@foldkit/ui/dialog'
 import { SearchResults, type SearchResultItem } from '@gbfm/api/search'
 import { Effect, Option, Schema } from 'effect'
-import { Command, Navigation, Subscription, Update } from 'foldkit'
+import { Command, Dom, Navigation, Subscription, Update } from 'foldkit'
 import { defineMessageUnion } from 'foldkit/message'
 import { defineView } from 'foldkit/submodel'
 
@@ -240,8 +240,8 @@ export const view = defineView<Model, Message>((model, h) =>
 )
 
 export const subscriptions = Subscription.make<Model, Message>()(() => ({
-  shortcuts: Subscription.persistent(
-    Subscription.keyBindings({
+  shortcuts: Subscription.persistentEntry(
+    Dom.streamFromKeyBindings({
       bindings: [
         { keys: 'Control+K', whileTyping: 'Allow', mapEvent: () => Message.Opened() },
         { keys: 'Meta+K', whileTyping: 'Allow', mapEvent: () => Message.Opened() },

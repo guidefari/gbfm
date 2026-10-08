@@ -9,8 +9,8 @@ import {
 } from '@gbfm/api/post'
 import { canCreatePosts } from '@gbfm/core/roles'
 import { Effect, Schema } from 'effect'
-import { HttpServerResponse } from 'effect/unstable/http'
-import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
+import { HttpServerResponse } from 'effect/http'
+import { HttpApiBuilder, HttpApiError } from 'effect/http-api'
 
 import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
 import { omitUndefined } from '@/lib/omit-undefined'

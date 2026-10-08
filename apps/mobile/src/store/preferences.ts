@@ -1,5 +1,5 @@
 import { useAtomSet, useAtomValue } from '@effect/atom-react'
-import * as Atom from 'effect/unstable/reactivity/Atom'
+import * as Atom from 'effect/reactivity/Atom'
 
 export type ColorSchemePreference = 'system' | 'light' | 'dark'
 

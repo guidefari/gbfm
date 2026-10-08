@@ -2,7 +2,7 @@ import { Api } from '@gbfm/api/api'
 import { ReadinessCheckFailedError } from '@gbfm/api/errors'
 import { sql } from 'drizzle-orm'
 import { Effect, Layer } from 'effect'
-import { HttpApiBuilder } from 'effect/unstable/httpapi'
+import { HttpApiBuilder } from 'effect/http-api'
 
 import { Database } from '@/db/layer'
 
