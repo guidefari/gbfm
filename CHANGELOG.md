@@ -1,3 +1,10 @@
+## [2.102.3](https://github.com/guidefari/gbfm/compare/v2.102.2...v2.102.3) (2026-10-08)
+
+
+### Bug Fixes
+
+* **telemetry:** record HTTP failure statuses without leaking request data ([#374](https://github.com/guidefari/gbfm/issues/374)) ([0c3d66d](https://github.com/guidefari/gbfm/commit/0c3d66d10e28bc6f3b0a281c152171d25dacd59b))
+
 ## [2.102.2](https://github.com/guidefari/gbfm/compare/v2.102.1...v2.102.2) (2026-10-07)
 
 
