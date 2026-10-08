@@ -1,3 +1,10 @@
+## [2.103.1](https://github.com/guidefari/gbfm/compare/v2.103.0...v2.103.1) (2026-10-08)
+
+
+### Bug Fixes
+
+* **www:** allow origin referrers for video embeds ([#378](https://github.com/guidefari/gbfm/issues/378)) ([decf989](https://github.com/guidefari/gbfm/commit/decf9895938bdc0e4734cd74086160715de3fea5))
+
 # [2.103.0](https://github.com/guidefari/gbfm/compare/v2.102.5...v2.103.0) (2026-10-08)
 
 
