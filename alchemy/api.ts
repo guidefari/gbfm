@@ -27,6 +27,7 @@ export interface ApiWorkerInput {
   readonly cdn: CdnRouter
   readonly qrPdf: QrPdfWorker
   readonly adminEmail: string
+  readonly cloudflareAccountId: string
 }
 
 export const apiWorker = ({
@@ -38,6 +39,7 @@ export const apiWorker = ({
   cdn,
   qrPdf,
   adminEmail,
+  cloudflareAccountId,
 }: ApiWorkerInput) =>
   Effect.gen(function* () {
     const sentryDsn = secrets.SENTRY_BACKEND_DSN
@@ -81,7 +83,7 @@ export const apiWorker = ({
         ),
         APP_STAGE: config.stage,
         APP_RELEASE: config.release,
-        CLOUDFLARE_ACCOUNT_ID: process.env.CLOUDFLARE_ACCOUNT_ID ?? '',
+        CLOUDFLARE_ACCOUNT_ID: cloudflareAccountId,
         BROWSER_TELEMETRY_DATASET: `gbfm_www_${config.stage}`,
         ...(config.isLocalDev ? { LOCAL_DEV: 'true' } : undefined),
         CDN_ROUTER_URL: Output.map(cdn.url, (url) => url ?? ''),

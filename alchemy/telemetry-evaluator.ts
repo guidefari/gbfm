@@ -9,6 +9,7 @@ import type { StageConfig } from './stage'
 
 export interface TelemetryEvaluatorInput {
   readonly config: StageConfig
+  readonly accountId: string
   readonly email: Exclude<EmailResources, undefined>
   readonly analyticsApiToken: string
   readonly alertEmail: string
@@ -17,6 +18,7 @@ export interface TelemetryEvaluatorInput {
 
 export const telemetryEvaluator = ({
   config,
+  accountId,
   email,
   analyticsApiToken,
   alertEmail,
@@ -24,7 +26,6 @@ export const telemetryEvaluator = ({
 }: TelemetryEvaluatorInput) =>
   Effect.gen(function* () {
     const state = yield* Cloudflare.KV.Namespace('TelemetryEvaluatorState')
-    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID ?? ''
 
     const worker = yield* Cloudflare.Worker('TelemetryEvaluator', {
       main: './apps/telemetry-evaluator/src/worker.ts',

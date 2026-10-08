@@ -12,6 +12,12 @@ const secretSources = {
   StorageSecretAccessKey: 'StorageSecretAccessKey',
 } as const
 
+const requiredEnvironment = [
+  ...Object.values(secretSources),
+  'ADMIN_EMAIL',
+  'CLOUDFLARE_ACCOUNT_ID',
+] as const
+
 export type SecretName = keyof typeof secretSources
 
 export type SecretValues = Readonly<Record<SecretName, string>>
@@ -26,10 +32,11 @@ export interface DeploymentConfig {
   readonly secrets: SecretValues
   readonly website: WebsiteConfig
   readonly adminEmail: string
+  readonly cloudflareAccountId: string
   readonly emailTestRecipient: string | undefined
 }
 
-export class IncompleteSecretsError extends Error {
+export class IncompleteDeploymentConfigError extends Error {
   constructor(missing: ReadonlyArray<string>) {
     super(
       `Refusing to deploy without ${missing.length} required environment value(s): ${missing.join(', ')}. ` +
@@ -45,13 +52,9 @@ const read = (name: string) => process.env[name] ?? ''
 export const deploymentConfig = (isLocalDev: boolean) =>
   Effect.gen(function* () {
     if (!isLocalDev) {
-      const missing = Object.entries(secretSources)
-        .filter(([, source]) => read(source).trim().length === 0)
-        .map(([name, source]) => `${name} (${source})`)
+      const missing = requiredEnvironment.filter((name) => read(name).trim().length === 0)
 
-      if (read('ADMIN_EMAIL').trim().length === 0) missing.push('ADMIN_EMAIL')
-
-      if (missing.length > 0) return yield* Effect.die(new IncompleteSecretsError(missing))
+      if (missing.length > 0) return yield* Effect.die(new IncompleteDeploymentConfigError(missing))
     }
 
     const spotifyClientId = read(secretSources.SpotifyClientId)
@@ -75,6 +78,7 @@ export const deploymentConfig = (isLocalDev: boolean) =>
         sentryRelease: read('SENTRY_RELEASE'),
       },
       adminEmail: read('ADMIN_EMAIL'),
+      cloudflareAccountId: read('CLOUDFLARE_ACCOUNT_ID'),
       emailTestRecipient: process.env.EMAIL_TEST_RECIPIENT,
     } satisfies DeploymentConfig
   })

@@ -47,6 +47,7 @@ export default Alchemy.Stack(
       cdn,
       qrPdf,
       adminEmail: deployment.adminEmail,
+      cloudflareAccountId: deployment.cloudflareAccountId,
     })
 
     const evaluator =
@@ -54,6 +55,7 @@ export default Alchemy.Stack(
         ? undefined
         : yield* telemetryEvaluator({
             config,
+            accountId: deployment.cloudflareAccountId,
             email,
             analyticsApiToken: deployment.secrets.CloudflareAnalyticsApiToken,
             alertEmail: emailConfig.destinationAddress ?? deployment.adminEmail,
