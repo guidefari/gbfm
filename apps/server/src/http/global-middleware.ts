@@ -1,6 +1,11 @@
 import { resolveRequestId } from '@gbfm/core/observability/request-id'
-import { Cause, Effect, Exit, Layer, Option } from 'effect'
-import { HttpMiddleware, HttpRouter, HttpServerRequest } from 'effect/unstable/http'
+import { Effect, Exit, Layer, Option } from 'effect'
+import {
+  HttpMiddleware,
+  HttpRouter,
+  HttpServerError,
+  HttpServerRequest,
+} from 'effect/unstable/http'
 
 import { browserOrigins } from '@/lib/browser-origins'
 import { checkPerformanceHealth, recordRequest } from '@/lib/performance-monitoring'
@@ -101,32 +106,26 @@ export const RequestLoggerLive = HttpRouter.middleware(
         ])
 
       if (Exit.isFailure(result)) {
-        const clientAborted = Cause.hasInterruptsOnly(result.cause)
-        const status = clientAborted ? 499 : 500
-        yield* clientAborted
-          ? Effect.logInfo('[HTTP] client aborted request', {
-              method: request.method,
-              route,
-              requestId,
-              status,
-              duration,
-              outcome: 'client_abort',
-              release: telemetry.release,
-              service: 'api',
-            })
-          : Effect.logError('[HTTP] request failed', {
-              method: request.method,
-              route,
-              requestId,
-              status,
-              duration,
-              cause: result.cause,
-              outcome: 'failure',
-              release: telemetry.release,
-              service: 'api',
-            })
+        // Match the HTTP boundary's conversion without swallowing the original failure.
+        const [response] = yield* HttpServerError.causeResponse(result.cause)
+        const status = response.status
+        const clientAborted = status === 499
+        const outcome = clientAborted ? 'client_abort' : status >= 500 ? 'failure' : 'success'
+        const log = status >= 500 ? Effect.logError : Effect.logInfo
+        yield* log(clientAborted ? '[HTTP] client aborted request' : '[HTTP] request failed', {
+          method: request.method,
+          route,
+          requestId,
+          status,
+          duration,
+          // Raw causes can serialize request headers, bodies, URLs, and arbitrary error messages.
+          failureKinds: result.cause.reasons.map((reason) => reason._tag),
+          outcome,
+          release: telemetry.release,
+          service: 'api',
+        })
 
-        yield* annotate(status, clientAborted ? 'client_abort' : 'failure')
+        yield* annotate(status, outcome)
 
         if (clientAborted) yield* recordRequest(duration, false)
 
