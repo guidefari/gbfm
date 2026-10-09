@@ -1,12 +1,13 @@
 import { FeaturedMixSettings } from '@gbfm/api/admin'
-import { GetAudioByTypeResponse } from '@gbfm/api/audio'
+import { GetAudioByTypeResponse, HomepageMixesResponse } from '@gbfm/api/audio'
 import { eq } from 'drizzle-orm'
 import { Schema } from 'effect'
 import { afterAll, beforeAll, expect, test } from 'vitest'
 
-import { audioTable } from '@/db/audio.schema'
+import { audioCreators, audioTable } from '@/db/audio.schema'
 import { session, user } from '@/db/auth.schema'
 import { featuredMixTable } from '@/db/featured-mix.schema'
+import { showsTable } from '@/db/show.schema'
 import { db, d1 } from '@/test/database'
 import { createTestWebHandler } from '@/test/http-handler'
 
@@ -34,8 +35,11 @@ const settings = async () =>
 const homepage = async () => {
   const response = await request('/api/content/homepage-mixes')
   expect(response.status).toBe(200)
+  expect(response.headers.get('cache-control')).toBe(
+    'public, max-age=60, stale-while-revalidate=300',
+  )
 
-  return Schema.decodeUnknownSync(GetAudioByTypeResponse)(await response.json())
+  return Schema.decodeUnknownSync(HomepageMixesResponse)(await response.json())
 }
 
 const select = async (mixId: string | null, status = 200) => {
@@ -67,6 +71,15 @@ beforeAll(async () => {
     })
   }
 
+  await db.insert(showsTable).values({
+    id: 'featured-show',
+    slug: 'featured-show',
+    title: 'Show',
+    content: '',
+    thumbnailUrl: 'https://example.com/show.jpg',
+  })
+  await db.update(audioTable).set({ showId: 'featured-show' }).where(eq(audioTable.id, 'mix-0'))
+  await db.insert(audioCreators).values({ audioId: 'mix-0', creatorId: 'featured-creator' })
   await db.insert(audioTable).values([
     {
       id: 'draft',
@@ -108,10 +121,22 @@ test('persists an older selection beyond page one, replaces it, rejects invalid 
   await select('mix-0') // PUT retries are harmless.
   expect((await settings()).mixId).toBe('mix-0')
   const featured = await homepage()
-  expect(featured.data.map((mix) => mix.id)).toEqual([
-    'mix-0',
-    ...Array.from({ length: 11 }, (_, i) => `mix-${14 - i}`),
+  expect(featured.data).toEqual([
+    {
+      id: 'mix-0',
+      title: 'Mix 0',
+      slug: 'mix-0',
+      type: 'mix',
+      url: 'https://example.com/mix.mp3',
+      thumbnailUrl: 'https://example.com/show.jpg',
+      creators: [{ id: 'featured-creator', name: 'creator', username: null }],
+    },
   ])
+  await db
+    .update(audioTable)
+    .set({ thumbnailUrl: 'https://example.com/mix.jpg' })
+    .where(eq(audioTable.id, 'mix-0'))
+  expect((await homepage()).data[0]?.thumbnailUrl).toBe('https://example.com/mix.jpg')
 
   const regular = Schema.decodeUnknownSync(GetAudioByTypeResponse)(
     await (await request('/api/content/audio/mix')).json(),
@@ -130,6 +155,7 @@ test('persists an older selection beyond page one, replaces it, rejects invalid 
   expect((await homepage()).data[0]?.id).toBe('mix-14')
   expect((await settings()).mixId).toBeNull()
   await select('mix-0')
+  await db.delete(audioCreators).where(eq(audioCreators.audioId, 'mix-0'))
   await db.delete(audioTable).where(eq(audioTable.id, 'mix-0'))
   expect((await homepage()).data[0]?.id).toBe('mix-14')
   expect(await db.select().from(featuredMixTable)).toEqual([])

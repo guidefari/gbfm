@@ -12,19 +12,20 @@ export const loadFeaturedMix = Effect.fn('FeaturedMix.load')(function* () {
 
   return yield* Effect.tryPromise({
     try: async () => {
-      const mixes = await db
-        .select({ id: audioTable.id, title: audioTable.title })
+      const rows = await db
+        .select({
+          id: audioTable.id,
+          title: audioTable.title,
+          selectedId: featuredMixTable.audioId,
+        })
         .from(audioTable)
+        .leftJoin(featuredMixTable, eq(featuredMixTable.audioId, audioTable.id))
         .where(and(eq(audioTable.type, 'mix'), eq(audioTable.draft, false)))
         .orderBy(desc(audioTable.createdAt), desc(audioTable.id))
 
-      const [selection] = await db.select().from(featuredMixTable)
-
       return {
-        mixId: mixes.some((mix) => mix.id === selection?.audioId)
-          ? (selection?.audioId ?? null)
-          : null,
-        mixes,
+        mixId: rows.find((mix) => mix.selectedId !== null)?.id ?? null,
+        mixes: rows.map(({ id, title }) => ({ id, title })),
       }
     },
     catch: () =>
@@ -34,6 +35,60 @@ export const loadFeaturedMix = Effect.fn('FeaturedMix.load')(function* () {
         table: 'featured_mix',
       }),
   })
+})
+
+/** One content statement, with indexed scalar lookups rather than sorting the catalogue. */
+export const getHomepageMixes = Effect.fn('FeaturedMix.homepage')(function* () {
+  const db = yield* Database
+  const publishedMix = and(eq(audioTable.type, 'mix'), eq(audioTable.draft, false))
+
+  const selected = db
+    .select({ id: audioTable.id })
+    .from(featuredMixTable)
+    .innerJoin(audioTable, eq(audioTable.id, featuredMixTable.audioId))
+    .where(and(eq(featuredMixTable.slot, 1), publishedMix))
+
+  const newest = db
+    .select({ id: audioTable.id })
+    .from(audioTable)
+    .where(publishedMix)
+    .orderBy(desc(audioTable.createdAt))
+    .limit(1)
+
+  const mix = yield* Effect.tryPromise({
+    try: () =>
+      db.query.audioTable.findFirst({
+        where: eq(audioTable.id, sql`coalesce((${selected}), (${newest}))`),
+        columns: { id: true, title: true, slug: true, url: true, thumbnailUrl: true },
+        with: {
+          audioCreators: {
+            columns: {},
+            with: { creator: { columns: { id: true, name: true, username: true } } },
+          },
+          show: { columns: { thumbnailUrl: true } },
+        },
+      }),
+    catch: () =>
+      new DatabaseError({
+        message: 'Could not load homepage mix.',
+        operation: 'select',
+        table: 'audio',
+      }),
+  })
+
+  if (!mix) return { data: [] }
+  const { audioCreators, show, ...audio } = mix
+
+  return {
+    data: [
+      {
+        ...audio,
+        type: 'mix' as const,
+        thumbnailUrl: audio.thumbnailUrl ?? show?.thumbnailUrl ?? null,
+        creators: audioCreators.map(({ creator }) => creator),
+      },
+    ],
+  }
 })
 
 /** Atomically replaces the singleton, rejecting missing, draft, and non-mix audio. */

@@ -1,5 +1,9 @@
 import { Api } from '@gbfm/api/api'
-import { GetAudioByTypeResponse, GetAudioTagsResponse } from '@gbfm/api/audio'
+import {
+  GetAudioByTypeResponse,
+  GetAudioTagsResponse,
+  HomepageMixesResponse,
+} from '@gbfm/api/audio'
 import { AuthSession } from '@gbfm/api/middleware/auth'
 import { ValidationHttpError } from '@gbfm/api/post'
 import { Effect, Schema } from 'effect'
@@ -12,7 +16,8 @@ import {
 } from '@/http/handler-utils'
 import { omitUndefined } from '@/lib/omit-undefined'
 import { loadAudioPage } from '@/services/audio-page'
-import { AudioService, getHomepageMixes } from '@/services/audio.service'
+import { AudioService } from '@/services/audio.service'
+import { getHomepageMixes } from '@/services/featured-mix'
 import { QRCodeService } from '@/services/qrcode.service'
 
 import { resolvePageSession } from './page-session'
@@ -31,7 +36,14 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
       Effect.gen(function* () {
         const result = yield* dieOnDatabaseError(getHomepageMixes())
 
-        return { data: result.data.map(toDateStrings), pagination: result.pagination }
+        const encoded = yield* Schema.encodeEffect(HomepageMixesResponse)(result).pipe(Effect.orDie)
+
+        // Preserve the public list endpoint's existing cache policy.
+        return HttpServerResponse.setHeader(
+          yield* HttpServerResponse.json(encoded).pipe(Effect.orDie),
+          'Cache-Control',
+          'public, max-age=60, stale-while-revalidate=300',
+        )
       }),
     )
     .handle('createMix', ({ payload }) =>

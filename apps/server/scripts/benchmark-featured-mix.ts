@@ -3,19 +3,34 @@ import { Effect, Schema } from 'effect'
 
 import * as schema from '../src/db/exports'
 import { Database } from '../src/db/layer'
-import { getHomepageMixes } from '../src/services/audio.service'
-import { loadFeaturedMix } from '../src/services/featured-mix'
+import type { DatabaseError } from '../src/errors'
+import { getHomepageMixes, loadFeaturedMix } from '../src/services/featured-mix'
 import { createMigratedD1Database } from '../src/test/migrate-d1'
 
 const Parameters = Schema.Array(Schema.Union([Schema.String, Schema.Number, Schema.Null]))
 const warmups = 10
 const samples = 50
 const results = []
+type ReadResult =
+  | Effect.Success<ReturnType<typeof getHomepageMixes>>
+  | Effect.Success<ReturnType<typeof loadFeaturedMix>>
+const operations: ReadonlyArray<
+  readonly [string, Effect.Effect<ReadResult, DatabaseError, Database>]
+> = [
+  ['homepage', getHomepageMixes()],
+  ['admin', loadFeaturedMix()],
+]
 
 // Real local Miniflare D1: no injected latency, mocks, credentials, or remote writes.
+await using resource = await createMigratedD1Database()
+const d1 = resource.database
 for (const size of [100, 10_000]) {
-  await using resource = await createMigratedD1Database()
-  const d1 = resource.database
+  await d1.batch([
+    d1.prepare('DELETE FROM featured_mix'),
+    d1.prepare('DELETE FROM audio_creators'),
+    d1.prepare('DELETE FROM audio'),
+    d1.prepare('DELETE FROM user'),
+  ])
   await d1
     .prepare(`
     WITH RECURSIVE sequence(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM sequence WHERE n < ?)
@@ -44,10 +59,7 @@ for (const size of [100, 10_000]) {
   for (const mode of ['automatic', 'selected']) {
     if (mode === 'selected')
       await d1.prepare(`INSERT INTO featured_mix (slot, audio_id) VALUES (1, 'mix-1')`).run()
-    for (const [operation, effect] of [
-      ['homepage', getHomepageMixes()],
-      ['admin', loadFeaturedMix()],
-    ] as const) {
+    for (const [operation, effect] of operations) {
       const run = () => Effect.runPromise(effect.pipe(Effect.provideService(Database, db)))
       for (let index = 0; index < warmups; index++) await run()
       const timings: Array<number> = []
@@ -78,6 +90,7 @@ for (const size of [100, 10_000]) {
         p95Ms: timings[Math.ceil(samples * 0.95) - 1],
         plans,
       })
+      console.error(`Measured ${operation}: ${size} mixes, ${mode}`)
     }
   }
 }
