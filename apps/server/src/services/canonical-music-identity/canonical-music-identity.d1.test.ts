@@ -427,26 +427,40 @@ describe('CanonicalMusicIdentity', () => {
       setTimeout(resolveDelay, Math.max(1, initialLeaseExpiresAt - Date.now() + 30)),
     )
 
-    const renewedIdentity = await db
-      .select()
-      .from(musicSourceIdentitiesTable)
-      .where(eq(musicSourceIdentitiesTable.sourceKey, `spotify:track:${id}`))
-      .limit(1)
+    try {
+      // A timer firing does not mean the asynchronous D1 renewal has committed.
+      await expect
+        .poll(
+          async () => {
+            const [identity] = await db
+              .select()
+              .from(musicSourceIdentitiesTable)
+              .where(eq(musicSourceIdentitiesTable.sourceKey, `spotify:track:${id}`))
+              .limit(1)
 
-    const second = Effect.runPromise(resolve)
-    await new Promise((resolveDelay) => setTimeout(resolveDelay, leaseTiming.waitMs * 3))
-    gate.resolve()
-    const [firstResult, secondResult] = await Promise.all([first, second])
+            return identity?.leaseExpiresAt?.getTime()
+          },
+          { timeout: 2_000, interval: 20 },
+        )
+        .toBeGreaterThan(initialLeaseExpiresAt)
 
-    const entities = await db
-      .select()
-      .from(musicTracksTable)
-      .where(eq(musicTracksTable.title, title))
+      const second = Effect.runPromise(resolve)
+      await new Promise((resolveDelay) => setTimeout(resolveDelay, leaseTiming.waitMs * 3))
+      gate.resolve()
+      const [firstResult, secondResult] = await Promise.all([first, second])
 
-    expect(renewedIdentity[0]?.leaseExpiresAt?.getTime()).toBeGreaterThan(initialLeaseExpiresAt)
-    expect(recorder.calls).toHaveLength(1)
-    expect(entities).toHaveLength(1)
-    expect(secondResult.entity.id).toBe(firstResult.entity.id)
+      const entities = await db
+        .select()
+        .from(musicTracksTable)
+        .where(eq(musicTracksTable.title, title))
+
+      expect(recorder.calls).toHaveLength(1)
+      expect(entities).toHaveLength(1)
+      expect(secondResult.entity.id).toBe(firstResult.entity.id)
+    } finally {
+      gate.resolve()
+      await first
+    }
   })
 
   test('fails resolution when its heartbeat detects lost claim ownership', async () => {
