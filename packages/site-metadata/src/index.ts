@@ -410,7 +410,7 @@ export const makeStaticSiteMetadata = (title: string, description: string, path:
 export const STATIC_SITE_METADATA = {
   home: makeStaticSiteMetadata(
     'goosebumps.fm',
-    'Discover curated music mixes, tracks, and releases. Your destination for deep house, electronic, and soulful sounds.',
+    'Discover curated music mixes, tracks, and releases. Your destination for ambient, bass, drywall, jazz and a wide variety of sounds.',
     '/',
   ),
   labels: makeStaticSiteMetadata(
