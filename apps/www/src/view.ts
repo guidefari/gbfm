@@ -1,3 +1,4 @@
+import { siteMetadataTitle } from '@gbfm/site-metadata'
 import { HashMap, Match, Option } from 'effect'
 import { AsyncData } from 'foldkit'
 import type { Document, HtmlBuilder } from 'foldkit/html'
@@ -152,8 +153,9 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
   const content = pendingShow ?? (target ? pageSkeleton(target, model.route) : null) ?? page
 
   return {
-    title:
-      model.flags.title === 'goosebumps.fm'
+    title: model.flags.metadata
+      ? siteMetadataTitle(model.flags.metadata)
+      : model.flags.title === 'goosebumps.fm'
         ? model.flags.title
         : `${model.flags.title} | goosebumps.fm`,
     lang: 'en',

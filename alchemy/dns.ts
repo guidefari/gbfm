@@ -20,6 +20,18 @@ export const dnsRedirects = (config: StageConfig) =>
       rules: [
         {
           action: 'redirect',
+          description: 'Canonical HTTPS apex domain',
+          expression: `(http.host eq "www.goosebumps.fm") or ((http.host eq "goosebumps.fm") and not ssl)`,
+          actionParameters: {
+            fromValue: {
+              statusCode: 301,
+              targetUrl: { expression: 'concat("https://goosebumps.fm", http.request.uri.path)' },
+              preserveQueryString: true,
+            },
+          },
+        },
+        {
+          action: 'redirect',
           description: 'Redirect RSS feeds to the API',
           expression: `((http.request.uri.path eq "/rss.xml") or (http.request.uri.path eq "/rss")) and (http.host eq "goosebumps.fm")`,
           actionParameters: {

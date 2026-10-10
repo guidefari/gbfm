@@ -66,6 +66,7 @@ export const loadShowDetailData = async (
             : [{ ...ready.show, hosts: ready.show.hosts ?? [] }, ...ready.shows],
           selectedSlug: ready.show.slug,
           episodes: ready.episodes,
+          richContent: ready.show.richContent,
         }
       : null,
     changelog: null,
