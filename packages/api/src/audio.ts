@@ -41,6 +41,21 @@ export const AudioResponse = Schema.Struct({
   creators: Schema.optional(Schema.Array(Creator)),
 })
 
+/** Only the display and playback data needed by the homepage featured card. */
+export const HomepageMixesResponse = Schema.Struct({
+  data: Schema.Array(
+    Schema.Struct({
+      id: Schema.String,
+      title: Schema.String,
+      slug: Schema.String,
+      type: Schema.Literal('mix'),
+      url: Schema.String,
+      thumbnailUrl: Schema.NullOr(Schema.String),
+      creators: Schema.Array(Creator),
+    }),
+  ),
+})
+
 export const AudioShow = Schema.Struct({
   slug: Schema.String,
   title: Schema.String,
@@ -173,6 +188,12 @@ const AudioTypeParam = { type: AudioType }
 const AudioTypeSlugParams = { type: AudioType, slug: Schema.String }
 
 export const AudioGroup = HttpApiGroup.make('audio')
+  .add(
+    HttpApiEndpoint.get('getHomepageMixes', '/api/content/homepage-mixes', {
+      success: HomepageMixesResponse,
+      error: HttpApiError.InternalServerError,
+    }),
+  )
   .add(
     HttpApiEndpoint.post('createMix', '/api/content/mixes', {
       payload: CreateAudioInput,

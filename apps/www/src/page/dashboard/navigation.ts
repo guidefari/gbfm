@@ -46,6 +46,7 @@ const admin: NavigationGroup = {
     { section: 'email-logs', label: 'Email logs' },
     { section: 'frontend-errors', label: 'Telemetry' },
     { section: 'all/mixes', label: 'All content' },
+    { section: 'featured-mix', label: 'Featured mix' },
   ],
 }
 

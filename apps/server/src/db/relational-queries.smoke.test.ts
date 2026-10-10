@@ -1,12 +1,15 @@
 import { randomUUID } from 'node:crypto'
 
 import { and, asc, desc, eq, like, or, sql } from 'drizzle-orm'
+import { Effect } from 'effect'
 import { describe, expect, test } from 'vitest'
 
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { audioIdsForCreator, showIdsForCreator } from '@/db/creator-membership'
 import { entityTagsProjection } from '@/db/entity-label-projection'
+import { Database } from '@/db/layer'
 import { showCreators, showsTable } from '@/db/show.schema'
+import { getHomepageMixes } from '@/services/featured-mix'
 import { db } from '@/test/database'
 
 /**
@@ -21,6 +24,12 @@ import { db } from '@/test/database'
 const actorId = `smoke-${randomUUID()}`
 
 describe('relational query smoke matrix', () => {
+  test('homepage mix with indexed selection and fallback', async () => {
+    await expect(
+      Effect.runPromise(getHomepageMixes().pipe(Effect.provideService(Database, db))),
+    ).resolves.toEqual({ data: [] })
+  })
+
   test('audio.service getByType, both visibility branches', async () => {
     const query = (where: ReturnType<typeof and>) =>
       db.query.audioTable.findMany({

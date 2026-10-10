@@ -20,6 +20,7 @@ export const d1MigrationFiles = [
   '0006_canonical_music_identity.sql',
   '0007_music_identity_backfill_checkpoint.sql',
   '0008_canonical_audio_urls.sql',
+  '0009_featured_mix.sql',
 ] as const
 
 const splitStatements = (migration: string) =>

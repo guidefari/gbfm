@@ -53,7 +53,7 @@ const endpoints = new Map([
 
 export const endpointFor = (route: Route): string | null =>
   Route.match(route, {
-    Home: () => '/api/content/audio/mix?limit=12&offset=0',
+    Home: () => '/api/content/homepage-mixes',
     Listing: ({ kind }) =>
       kind === 'shows' ? '/api/shows?limit=100&offset=0' : (endpoints.get(kind) ?? null),
     Detail: ({ kind, slug }) => {

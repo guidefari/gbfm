@@ -187,6 +187,7 @@ const getByTypeEffect = (
     const db = yield* Database
     const { limit, offset, tag } = options
     const orderBy = audioOrderBy(options.sort ?? 'created', options.order ?? 'desc')
+
     yield* Effect.annotateCurrentSpan('audio.type', type)
     yield* Effect.annotateCurrentSpan('audio.limit', limit)
     yield* Effect.annotateCurrentSpan('audio.offset', offset)
