@@ -1,3 +1,10 @@
+# [2.104.0](https://github.com/guidefari/gbfm/compare/v2.103.2...v2.104.0) (2026-10-10)
+
+
+### Features
+
+* **cms:** choose the homepage featured mix ([#379](https://github.com/guidefari/gbfm/issues/379)) ([53589d3](https://github.com/guidefari/gbfm/commit/53589d33616b035f07443765156af49b4ddd58ea))
+
 ## [2.103.2](https://github.com/guidefari/gbfm/compare/v2.103.1...v2.103.2) (2026-10-08)
 
 
