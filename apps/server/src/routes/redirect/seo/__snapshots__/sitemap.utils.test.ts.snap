@@ -15,6 +15,16 @@ exports[`sitemap.utils > buildSitemapXml > snapshot: full sitemap structure 1`] 
   </url>
   <url>
     <lastmod>2026-02-01</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <lastmod>2026-02-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <lastmod>2026-02-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>

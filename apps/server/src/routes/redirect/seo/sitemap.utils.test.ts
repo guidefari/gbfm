@@ -87,12 +87,14 @@ describe('sitemap.utils', () => {
     test('includes static listing pages', () => {
       const xml = buildSitemapXml(mockData, 'https://goosebumps.fm')
 
-      expect(xml).toContain('<loc>https://goosebumps.fm/shows</loc>')
+      expect(xml).not.toContain('<loc>https://goosebumps.fm/shows</loc>')
+      expect(xml).toContain('<loc>https://goosebumps.fm/mixes</loc>')
+      expect(xml).toContain('<loc>https://goosebumps.fm/tweets</loc>')
+      expect(xml).toContain('<loc>https://goosebumps.fm/about</loc>')
       expect(xml).toContain('<loc>https://goosebumps.fm/labels</loc>')
       expect(xml).toContain('<loc>https://goosebumps.fm/editorial</loc>')
       expect(xml).toContain('<loc>https://goosebumps.fm/djs</loc>')
       expect(xml).toContain('<loc>https://goosebumps.fm/tags</loc>')
-      expect(xml).not.toContain('<loc>https://goosebumps.fm/mixes</loc>')
       expect(xml).not.toContain('<loc>https://goosebumps.fm/tracks</loc>')
       expect(xml).not.toContain('<loc>https://goosebumps.fm/releases</loc>')
       expect(xml).not.toContain('<loc>https://goosebumps.fm/tweet</loc>')
@@ -158,6 +160,7 @@ describe('sitemap.utils', () => {
           !m.includes('/editorial') &&
           !m.includes('/djs') &&
           !m.includes('/tags') &&
+          !m.includes('/about') &&
           !m.includes('/tweet'),
       )
 
@@ -281,7 +284,7 @@ describe('sitemap.utils', () => {
 
       // Should still have homepage and static pages
       expect(xml).toContain('<loc>https://goosebumps.fm</loc>')
-      expect(xml).toContain('<loc>https://goosebumps.fm/shows</loc>')
+      expect(xml).toContain('<loc>https://goosebumps.fm/mixes</loc>')
       expect(xml).toContain('</urlset>')
     })
   })

@@ -66,7 +66,9 @@ export const buildSitemapXml = (data: SitemapData, siteUrl: string): string => {
   urls.push(buildUrlEntry(siteUrl, now, 'daily', '1.0'))
 
   // Static pages
-  urls.push(buildUrlEntry(`${siteUrl}/shows`, now, 'daily', '0.9'))
+  urls.push(buildUrlEntry(`${siteUrl}/mixes`, now, 'daily', '0.9'))
+  urls.push(buildUrlEntry(`${siteUrl}/tweets`, now, 'daily', '0.7'))
+  urls.push(buildUrlEntry(`${siteUrl}/about`, now, 'monthly', '0.5'))
   urls.push(buildUrlEntry(`${siteUrl}/labels`, now, 'weekly', '0.7'))
   urls.push(buildUrlEntry(`${siteUrl}/editorial`, now, 'daily', '0.8'))
   urls.push(buildUrlEntry(`${siteUrl}/djs`, now, 'weekly', '0.6'))

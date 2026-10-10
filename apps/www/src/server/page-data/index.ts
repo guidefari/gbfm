@@ -51,6 +51,14 @@ export const loadPageData = async (
   const tweetData = tweetPromise ? await tweetPromise : null
   const showsData = showsPromise ? await showsPromise : null
 
+  const selectedListingShow = showsData?.shows?.shows.find(
+    (show) => show.slug === showsData.shows?.selectedSlug,
+  )
+
+  // The show browser and its dedicated URL must not publish competing copies.
+  if (selectedListingShow)
+    return { redirect: `/shows/${encodeURIComponent(selectedListingShow.slug)}` } as const
+
   const response = endpoint
     ? tweetData
       ? tweetData.screen

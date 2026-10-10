@@ -2,6 +2,7 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 
 import { artwork } from '../../view/artwork'
 import { iconPaths, lucide } from '../../view/icons'
+import { richContentView } from '../../view/rich-content/render'
 import { episodeRowsSkeleton } from '../../view/skeletons'
 import type { Episode, ShowsDocument, ShowsPlayback } from './document'
 import { episodeList } from './episodes'
@@ -165,7 +166,7 @@ const masthead = <M>(
                       ? h.a(
                           [
                             h.Key(host.id),
-                            h.Href(`/profile/${encodeURIComponent(host.username)}`),
+                            h.Href(`/${encodeURIComponent(host.username)}`),
                             h.Class(
                               'font-semibold text-foreground underline decoration-border underline-offset-4 transition-colors hover:text-highlight hover:decoration-highlight',
                             ),
@@ -243,6 +244,15 @@ export const view = <M>(
                 [h.AriaLabel('Episodes')],
                 [pending ? episodeRowsSkeleton() : episodeList(h, document, playback, interactive)],
               ),
+              !pending && document.richContent?.blocks.length
+                ? h.section(
+                    [h.AriaLabel('About the show'), h.Class('mt-12 max-w-prose')],
+                    [
+                      h.h2([h.Class('mb-6 text-2xl font-bold')], ['About the show']),
+                      richContentView(document.richContent, h),
+                    ],
+                  )
+                : h.empty,
             ],
           )
         : h.p([h.Class('py-12 text-muted-foreground')], ['Choose a show to see its episodes.']),

@@ -50,6 +50,28 @@ describe('site metadata', () => {
     expect(html).toContain('A \\u003cstrange> & useful post')
   })
 
+  test('show titles identify hosts without renaming the show in structured data', () => {
+    const show = {
+      ...metadata,
+      kind: 'show' as const,
+      title: 'FAR END RADIO',
+      creators: ['[kimetsu.]', 'Guest'],
+    }
+
+    const head = renderDocumentHead(show)
+    expect(head.meta).toContainEqual({
+      title: 'FAR END RADIO with [kimetsu.], Guest | goosebumps.fm',
+    })
+    expect(head.meta).toContainEqual({
+      property: 'og:title',
+      content: 'FAR END RADIO with [kimetsu.], Guest | goosebumps.fm',
+    })
+    expect(JSON.parse(head.scripts[0]?.children ?? '').name).toBe('FAR END RADIO')
+    expect(renderDocumentHead({ ...show, creators: [] }).meta).toContainEqual({
+      title: 'FAR END RADIO | goosebumps.fm',
+    })
+  })
+
   test('does not invent image dimensions or audio MIME types', () => {
     const head = renderDocumentHead({
       ...metadata,

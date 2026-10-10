@@ -13,6 +13,10 @@ test('show detail renders episodes and metadata without JavaScript', async ({
     await expect(page.getByRole('heading', { name: 'Local Radio', exact: true })).toBeVisible()
     await expect(page.getByRole('link', { name: 'Local Frequencies', exact: true })).toBeVisible()
     await expect(page.getByRole('link', { name: 'Sign in to subscribe' })).toBeVisible()
+    await expect(page.getByRole('region', { name: 'About the show' })).toContainText(
+      'A disposable show for browser tests.',
+    )
+    await expect(page).toHaveTitle('Local Radio with Local Creator | goosebumps.fm')
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
       'href',
       'https://goosebumps.fm/shows/e2e-local-radio',
@@ -48,7 +52,27 @@ test('show dial navigation preserves the document and updates metadata', async (
     'https://goosebumps.fm/shows/e2e-quiet-hours',
   )
   await expect(page.getByRole('link', { name: 'Local Frequencies', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('region', { name: 'About the show' })).toContainText(
+    'A show without episodes.',
+  )
+  await expect(page.getByRole('region', { name: 'About the show' })).not.toContainText(
+    'A disposable show for browser tests.',
+  )
+  await expect(page).toHaveTitle('Quiet Hours | goosebumps.fm')
   expect(errors).toEqual([])
+})
+
+test('show browser redirects to the selected canonical page for HTML and navigation', async ({
+  request,
+}) => {
+  for (const suffix of ['', '&__data=1']) {
+    const response = await request.get(`/shows?show=e2e-quiet-hours${suffix}`, { maxRedirects: 0 })
+    expect(response.status()).toBe(303)
+    expect(response.headers().location).toBe(`/shows/e2e-quiet-hours${suffix ? '?__data=1' : ''}`)
+  }
+  const response = await request.get('/shows')
+  expect(response.status()).toBe(200)
+  expect(new URL(response.url()).pathname).toMatch(/^\/shows\/e2e-/)
 })
 
 test('missing shows return 404 for HTML and navigation data', async ({ request }) => {

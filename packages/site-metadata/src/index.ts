@@ -60,8 +60,15 @@ export interface DocumentHead {
   }>
 }
 
-const titleWithSite = (title: string) =>
-  title === 'goosebumps.fm' ? title : `${title} | goosebumps.fm`
+/** The document and share title, including show hosts where available. */
+export const siteMetadataTitle = (metadata: SiteMetadata) => {
+  const title =
+    metadata.kind === 'show' && metadata.creators.length > 0
+      ? `${metadata.title} with ${metadata.creators.join(', ')}`
+      : metadata.title
+
+  return title === 'goosebumps.fm' ? title : `${title} | goosebumps.fm`
+}
 
 const openGraphType = (kind: SiteMetadata['kind']) => {
   if (kind === 'mix' || kind === 'track') return 'music.song'
@@ -134,7 +141,7 @@ const jsonLdFor = (metadata: SiteMetadata) => {
 
 /** Projects the canonical model into framework-neutral head entries. */
 export const renderDocumentHead = (metadata: SiteMetadata): DocumentHead => {
-  const title = titleWithSite(metadata.title)
+  const title = siteMetadataTitle(metadata)
 
   const meta: Array<HeadMeta> = [
     { title },
