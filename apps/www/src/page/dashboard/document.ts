@@ -90,9 +90,13 @@ export const parseDashboardDocument = (
   switch (pathname) {
     case '/api/admin/featured-mix':
       return Schema.decodeUnknownEffect(FeaturedMixSettings)(input).pipe(
-        Effect.map(({ mixId, mixes }) => ({
+        Effect.map(({ mixId, unavailableTitle, mixes }) => ({
           ...rowsDocument(mixes.map((mix) => ({ ...mix, detail: '', href: null, actionId: null }))),
-          fields: { mixId: mixId ?? '', savedMixId: mixId ?? '' },
+          fields: {
+            mixId: mixId ?? '',
+            savedMixId: mixId ?? '',
+            unavailableTitle: unavailableTitle ?? '',
+          },
         })),
       )
     case '/auth/admin/list-users':

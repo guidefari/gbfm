@@ -204,9 +204,9 @@ export const NewsletterSubscribersResponse = Schema.Struct({
 /** Null selects the newest published mix automatically. */
 export const FeaturedMixSelection = Schema.Struct({ mixId: Schema.NullOr(Schema.NonEmptyString) })
 
-/** Published mixes available to the administrator, without a recent-items limit. */
 export const FeaturedMixSettings = Schema.Struct({
   ...FeaturedMixSelection.fields,
+  unavailableTitle: Schema.NullOr(Schema.String),
   mixes: Schema.Array(Schema.Struct({ id: Schema.String, title: Schema.String })),
 })
 

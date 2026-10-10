@@ -59,6 +59,40 @@ describe('dashboard submodel', () => {
     })
   })
 
+  it('lets an admin replace an unpublished featured mix with automatic selection', async () => {
+    const document = await Effect.runPromise(
+      parseDashboardDocument('/api/admin/featured-mix', {
+        mixId: 'retired',
+        unavailableTitle: 'Retired mix',
+        mixes: [{ id: 'newest', title: 'Newest mix' }],
+      }),
+    )
+
+    expect(document.fields).toEqual({
+      mixId: 'retired',
+      savedMixId: 'retired',
+      unavailableTitle: 'Retired mix',
+    })
+    expect(document.rows.map(({ id }) => id)).toEqual(['newest'])
+
+    const loaded = update(
+      initialModel('featured-mix', { id: 'admin-1', role: 'admin' }),
+      Message.Loaded({ document }),
+    ).model
+
+    const automatic = update(loaded, Message.FieldChanged({ name: 'mixId', value: '' })).model
+
+    expect(automatic.fields.mixId).not.toBe(automatic.fields.savedMixId)
+    expect(update(automatic, Message.SaveFeaturedMix()).commands?.[0]).toMatchObject({
+      name: 'DashboardWrite',
+      args: {
+        path: '/api/admin/featured-mix',
+        method: 'PUT',
+        body: JSON.stringify({ mixId: null }),
+      },
+    })
+  })
+
   it('preserves empty and loaded collection states', () => {
     const model = initialModel('reminders', member)
     expect(update(model, Message.Loaded({ document: emptyDocument })).model).toMatchObject({

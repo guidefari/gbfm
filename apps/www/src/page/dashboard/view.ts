@@ -72,17 +72,17 @@ const profile = (model: Model, h: HtmlBuilder<Message>) =>
     ],
   )
 
+const featuredMixStatus = (model: Model) =>
+  model.fields.unavailableTitle
+    ? `Current selection: ${model.fields.unavailableTitle} (unpublished). The newest published mix is shown until you choose another.`
+    : `Current selection: ${model.rows.find((row) => row.id === model.fields.savedMixId)?.title ?? 'Automatic — newest published mix'}`
+
 const featuredMix = (model: Model, h: HtmlBuilder<Message>) =>
   h.section(
     [h.Class('dashboard-panel dashboard-form')],
     [
       h.p([], ['Choose the mix shown on the homepage. Only published mixes can be featured.']),
-      h.p(
-        [h.Role('status')],
-        [
-          `Current selection: ${model.rows.find((row) => row.id === model.fields.savedMixId)?.title ?? 'Automatic — newest published mix'}`,
-        ],
-      ),
+      h.p([h.Role('status')], [featuredMixStatus(model)]),
       h.label(
         [],
         [
@@ -95,6 +95,12 @@ const featuredMix = (model: Model, h: HtmlBuilder<Message>) =>
             ],
             [
               h.option([h.Value('')], ['Automatic (newest mix)']),
+              model.fields.unavailableTitle && model.fields.savedMixId
+                ? h.option(
+                    [h.Value(model.fields.savedMixId), h.Disabled(true)],
+                    [`${model.fields.unavailableTitle} (unpublished)`],
+                  )
+                : h.empty,
               ...model.rows.map((row) => h.option([h.Value(row.id)], [row.title])),
             ],
           ),

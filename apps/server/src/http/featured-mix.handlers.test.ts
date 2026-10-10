@@ -1,6 +1,6 @@
 import { FeaturedMixSettings } from '@gbfm/api/admin'
 import { GetAudioByTypeResponse, HomepageMixesResponse } from '@gbfm/api/audio'
-import { eq } from 'drizzle-orm'
+import { and, eq, ne } from 'drizzle-orm'
 import { Schema } from 'effect'
 import { afterAll, beforeAll, expect, test } from 'vitest'
 
@@ -153,7 +153,7 @@ test('persists an older selection beyond page one, replaces it, rejects invalid 
   expect(await db.select().from(featuredMixTable)).toEqual([{ slot: 1, audioId: 'mix-1' }])
   await db.update(audioTable).set({ draft: true }).where(eq(audioTable.id, 'mix-1'))
   expect((await homepage()).data[0]?.id).toBe('mix-14')
-  expect((await settings()).mixId).toBeNull()
+  expect((await settings()).mixId).toBe('mix-1')
   await select('mix-0')
   await db.delete(audioCreators).where(eq(audioCreators.audioId, 'mix-0'))
   await db.delete(audioTable).where(eq(audioTable.id, 'mix-0'))
@@ -165,4 +165,27 @@ test('persists an older selection beyond page one, replaces it, rejects invalid 
   expect((await homepage()).data[0]?.id).toBe('mix-14')
   await db.update(audioTable).set({ draft: true }).where(eq(audioTable.type, 'mix'))
   expect((await homepage()).data).toEqual([])
+})
+
+test('reports an unpublished selection so choosing automatic clears it before republishing', async () => {
+  await db
+    .update(audioTable)
+    .set({ draft: false })
+    .where(and(eq(audioTable.type, 'mix'), ne(audioTable.id, 'draft')))
+  await select('mix-3')
+  await db.update(audioTable).set({ draft: true }).where(eq(audioTable.id, 'mix-3'))
+
+  const unavailable = await settings()
+  expect(unavailable.mixId).toBe('mix-3')
+  expect(unavailable.unavailableTitle).toBe('Mix 3')
+  expect(unavailable.mixes.map(({ id }) => id)).not.toContain('mix-3')
+  expect((await homepage()).data[0]?.id).toBe('mix-14')
+
+  await select(null)
+  expect(await settings()).toMatchObject({ mixId: null, unavailableTitle: null })
+  expect(await db.select().from(featuredMixTable)).toEqual([])
+
+  await db.update(audioTable).set({ draft: false }).where(eq(audioTable.id, 'mix-3'))
+  expect((await homepage()).data[0]?.id).toBe('mix-14')
+  expect((await settings()).mixId).toBeNull()
 })

@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from 'drizzle-orm'
+import { and, desc, eq, isNotNull, or, sql } from 'drizzle-orm'
 import { Effect } from 'effect'
 
 import { audioTable } from '@/db/audio.schema'
@@ -6,7 +6,7 @@ import { featuredMixTable } from '@/db/featured-mix.schema'
 import { Database } from '@/db/layer'
 import { DatabaseError, ValidationError } from '@/errors'
 
-/** Lists all published choices and the effective editorial selection. */
+/** Lists all published choices and the stored selection, even when it is no longer published. */
 export const loadFeaturedMix = Effect.fn('FeaturedMix.load')(function* () {
   const db = yield* Database
 
@@ -16,16 +16,27 @@ export const loadFeaturedMix = Effect.fn('FeaturedMix.load')(function* () {
         .select({
           id: audioTable.id,
           title: audioTable.title,
+          type: audioTable.type,
+          draft: audioTable.draft,
           selectedId: featuredMixTable.audioId,
         })
         .from(audioTable)
         .leftJoin(featuredMixTable, eq(featuredMixTable.audioId, audioTable.id))
-        .where(and(eq(audioTable.type, 'mix'), eq(audioTable.draft, false)))
+        .where(
+          or(
+            and(eq(audioTable.type, 'mix'), eq(audioTable.draft, false)),
+            isNotNull(featuredMixTable.audioId),
+          ),
+        )
         .orderBy(desc(audioTable.createdAt), desc(audioTable.id))
 
+      const isPublished = (mix: (typeof rows)[number]) => mix.type === 'mix' && !mix.draft
+      const selected = rows.find((mix) => mix.selectedId !== null)
+
       return {
-        mixId: rows.find((mix) => mix.selectedId !== null)?.id ?? null,
-        mixes: rows.map(({ id, title }) => ({ id, title })),
+        mixId: selected?.id ?? null,
+        unavailableTitle: selected && !isPublished(selected) ? selected.title : null,
+        mixes: rows.filter(isPublished).map(({ id, title }) => ({ id, title })),
       }
     },
     catch: () =>
