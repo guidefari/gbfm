@@ -38,11 +38,11 @@
     "@gbfm/rich-content": "workspace:*",
     "@gbfm/social-card": "workspace:*",
     "@gbfm/site-metadata": "workspace:*",
-    "effect": "4.0.0"
+    "effect": "4.0.5"
   },
   "devDependencies": {
-    "@types/bun": "1.4.2",
+    "@types/bun": "1.4.3",
     "typescript": "7.0.2",
-    "vitest": "4.1.11"
+    "vitest": "5.0.4"
   }
 }

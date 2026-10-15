@@ -1,7 +1,10 @@
-import { cloudflareTest } from '@cloudflare/vitest-pool-workers'
+import { cloudflareTest } from '@cloudflare/vitest-plugin'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
+  test: {
+    fsModuleCache: false,
+  },
   plugins: [
     cloudflareTest({
       main: './src/index.ts',

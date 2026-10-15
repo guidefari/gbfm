@@ -87,19 +87,18 @@ const unavailable = (
   status: 'telemetry-silence' | 'query-failure',
   diagnostic?: QueryDiagnostic,
 ): ReadonlyArray<Metric> =>
-  signals.map(
-    (signal): Metric =>
-      signal === 'telemetry-pipeline'
-        ? { signal, status, diagnostic }
-        : {
-            signal,
-            status,
-            value: null,
-            threshold: null,
-            samples: 0,
-            minimumSamples: 0,
-            unit: 'ratio',
-          },
+  signals.map((signal): Metric =>
+    signal === 'telemetry-pipeline'
+      ? { signal, status, diagnostic }
+      : {
+          signal,
+          status,
+          value: null,
+          threshold: null,
+          samples: 0,
+          minimumSamples: 0,
+          unit: 'ratio',
+        },
   )
 
 export const evaluate = (

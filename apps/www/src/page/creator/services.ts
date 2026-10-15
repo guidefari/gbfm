@@ -221,33 +221,31 @@ export const CreatorServiceLive = Layer.succeed(CreatorService, {
         ? `/content/audio/mix/${encodeURIComponent(slug)}/edit`
         : `/content/posts/${encodeURIComponent(slug)}/edit`,
     ).pipe(
-      Effect.map(
-        (item): EditableContent => ({
-          kind: kind === 'mix' ? 'mix' : item.type === 'post' ? 'post' : 'micro',
-          editSlug: slug,
-          title: item.title ?? '',
-          slug: item.slug,
-          content: item.content ?? '',
-          description: item.description ?? '',
-          tags: item.tags ?? [],
-          thumbnailUrl: item.thumbnailUrl ?? '',
-          musicUrl: '',
-          musicEntityType:
-            item.musicEntityType === 'album' ||
-            item.musicEntityType === 'track' ||
-            item.musicEntityType === 'playlist'
-              ? item.musicEntityType
-              : null,
-          musicEntityId: item.musicEntityId ?? null,
-          quotedPostId: item.quotedPostId ?? null,
-          quoteUrl: '',
-          audioUrl: item.url ?? '',
-          showId: item.showId ?? null,
-          episodeNumber: item.episodeNumber ?? null,
-          creatorIds: (item.creators ?? []).map(({ id }) => id),
-          draft: item.draft ?? false,
-        }),
-      ),
+      Effect.map((item): EditableContent => ({
+        kind: kind === 'mix' ? 'mix' : item.type === 'post' ? 'post' : 'micro',
+        editSlug: slug,
+        title: item.title ?? '',
+        slug: item.slug,
+        content: item.content ?? '',
+        description: item.description ?? '',
+        tags: item.tags ?? [],
+        thumbnailUrl: item.thumbnailUrl ?? '',
+        musicUrl: '',
+        musicEntityType:
+          item.musicEntityType === 'album' ||
+          item.musicEntityType === 'track' ||
+          item.musicEntityType === 'playlist'
+            ? item.musicEntityType
+            : null,
+        musicEntityId: item.musicEntityId ?? null,
+        quotedPostId: item.quotedPostId ?? null,
+        quoteUrl: '',
+        audioUrl: item.url ?? '',
+        showId: item.showId ?? null,
+        episodeNumber: item.episodeNumber ?? null,
+        creatorIds: (item.creators ?? []).map(({ id }) => id),
+        draft: item.draft ?? false,
+      })),
     ),
   resolveMusic: (url, kind) =>
     requestJson(

@@ -44,12 +44,10 @@ const readState = (kv: KvStore, signal: Signal) =>
         ? Effect.succeed({ active: false } satisfies AlertState)
         : Effect.try(() => JSON.parse(value)).pipe(
             Effect.flatMap((unknownState) => Schema.decodeUnknownEffect(StoredState)(unknownState)),
-            Effect.map(
-              (state): AlertState => ({
-                ...state,
-                status: state.status === 'ingestion-failure' ? 'query-failure' : state.status,
-              }),
-            ),
+            Effect.map((state): AlertState => ({
+              ...state,
+              status: state.status === 'ingestion-failure' ? 'query-failure' : state.status,
+            })),
             Effect.mapError(() => new TelemetryRuntimeError({ operation: 'read-state' })),
           ),
     ),
