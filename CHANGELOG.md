@@ -1,3 +1,16 @@
+# [2.105.0](https://github.com/guidefari/gbfm/compare/v2.104.0...v2.105.0) (2026-10-15)
+
+
+### Bug Fixes
+
+* **seo:** expose show content and consolidate canonical URLs ([#381](https://github.com/guidefari/gbfm/issues/381)) ([e921efa](https://github.com/guidefari/gbfm/commit/e921efa56759711e0dd7583148201200a9d85067))
+
+
+### Features
+
+* **player:** repair queue creators without interrupting playback ([e4cbc12](https://github.com/guidefari/gbfm/commit/e4cbc128ccc4d29a63fe2623349a0fb41bc684eb))
+* **www:** recover missing player creators on demand ([cc93481](https://github.com/guidefari/gbfm/commit/cc93481f362bfc218813041d67be961cb39d08e0))
+
 # [2.104.0](https://github.com/guidefari/gbfm/compare/v2.103.2...v2.104.0) (2026-10-10)
 
 
