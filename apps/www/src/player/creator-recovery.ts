@@ -7,10 +7,12 @@ import { Data, Effect, Predicate, Schedule, Scope } from 'effect'
 
 type Creators = NonNullable<QueueTrackType['creators']>
 
-export type CreatorLookupOutcome = Data.TaggedEnum<{
-  CreatorsFound: { readonly creators: readonly [Creators[number], ...Array<Creators[number]>] }
-  NoCreators: Record<never, never>
-}>
+export type CreatorLookupOutcome =
+  | {
+      readonly _tag: 'CreatorsFound'
+      readonly creators: readonly [Creators[number], ...Array<Creators[number]>]
+    }
+  | { readonly _tag: 'NoCreators' }
 
 export const CreatorLookupOutcome = Data.taggedEnum<CreatorLookupOutcome>()
 
@@ -22,19 +24,18 @@ export type CreatorLookup = (
   track: QueueTrackType,
 ) => Effect.Effect<CreatorLookupOutcome, CreatorLookupFailed>
 
-export type CreatorRecoveryState = Data.TaggedEnum<{
-  Idle: Record<never, never>
-  Waiting: Record<never, never>
-  Deferred: Record<never, never>
-  LookingUp: { readonly attempt: number }
-  Retrying: { readonly attempts: number }
-  Recovered: { readonly attempts: number }
-  NoCreators: { readonly attempts: number }
-  PermanentFailure: { readonly attempts: number }
-  RetriesExhausted: { readonly attempts: number }
-  Stale: { readonly attempts: number }
-  Cancelled: { readonly attempts: number }
-}>
+export type CreatorRecoveryState =
+  | { readonly _tag: 'Idle' }
+  | { readonly _tag: 'Waiting' }
+  | { readonly _tag: 'Deferred' }
+  | { readonly _tag: 'LookingUp'; readonly attempt: number }
+  | { readonly _tag: 'Retrying'; readonly attempts: number }
+  | { readonly _tag: 'Recovered'; readonly attempts: number }
+  | { readonly _tag: 'NoCreators'; readonly attempts: number }
+  | { readonly _tag: 'PermanentFailure'; readonly attempts: number }
+  | { readonly _tag: 'RetriesExhausted'; readonly attempts: number }
+  | { readonly _tag: 'Stale'; readonly attempts: number }
+  | { readonly _tag: 'Cancelled'; readonly attempts: number }
 
 export const CreatorRecoveryState = Data.taggedEnum<CreatorRecoveryState>()
 

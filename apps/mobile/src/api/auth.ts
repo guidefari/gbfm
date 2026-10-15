@@ -13,7 +13,7 @@ export class SessionUnavailable extends Data.TaggedError('SessionUnavailable')<{
   readonly message: string
 }> {}
 
-export class SessionExpired extends Data.TaggedError('SessionExpired')<Record<never, never>> {}
+export class SessionExpired extends Data.TaggedError('SessionExpired') {}
 
 const BetterAuthUser = Schema.Struct({
   id: Schema.String,

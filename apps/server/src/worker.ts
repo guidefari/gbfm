@@ -257,10 +257,7 @@ const enqueueDueReminders = Effect.gen(function* () {
 
 const runReminderSweep = (env: ApiEnv) =>
   // oxlint-disable-next-line effecttsgo/strict-effect-provide -- Scheduled dispatch is an Effect application entry point.
-  Effect.provide(enqueueDueReminders, appServicesLive(env)).pipe(
-    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- Scheduled dispatch is an Effect application entry point.
-    Effect.provide(reminderQueueLive(env)),
-  )
+  Effect.provide(enqueueDueReminders, [appServicesLive(env), reminderQueueLive(env)])
 
 const runSitemapRegeneration = (env: ApiEnv) =>
   regenerateSitemap.pipe(

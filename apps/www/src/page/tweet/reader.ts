@@ -36,12 +36,11 @@ export const concreteSlug = (href: string) => {
   }
 }
 
-type UnreadTarget = Data.TaggedEnum<{
-  Older: { readonly slug: string }
-  Newer: { readonly slug: string }
-  CaughtUp: Record<never, never>
-  Unavailable: Record<never, never>
-}>
+type UnreadTarget =
+  | { readonly _tag: 'Older'; readonly slug: string }
+  | { readonly _tag: 'Newer'; readonly slug: string }
+  | { readonly _tag: 'CaughtUp' }
+  | { readonly _tag: 'Unavailable' }
 
 export const UnreadTarget = Data.taggedEnum<UnreadTarget>()
 

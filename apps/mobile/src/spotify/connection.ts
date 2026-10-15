@@ -22,16 +22,16 @@ import { env } from '@/env'
 import { SPOTIFY_REDIRECT_URI } from './constants'
 import { runSpotifyEffect } from './runtime'
 
-export type SpotifyConnectionState = Data.TaggedEnum<{
-  Bootstrapping: Record<never, never>
-  Disconnected: { readonly error?: string }
-  Connecting: Record<never, never>
-  Connected: {
-    readonly session: SpotifyAuthSession
-    readonly profile?: SpotifyProfile
-    readonly error?: string
-  }
-}>
+export type SpotifyConnectionState =
+  | { readonly _tag: 'Bootstrapping' }
+  | { readonly _tag: 'Disconnected'; readonly error?: string }
+  | { readonly _tag: 'Connecting' }
+  | {
+      readonly _tag: 'Connected'
+      readonly session: SpotifyAuthSession
+      readonly profile?: SpotifyProfile
+      readonly error?: string
+    }
 
 export const SpotifyConnectionState = Data.taggedEnum<SpotifyConnectionState>()
 

@@ -34,7 +34,7 @@ type SessionRow = {
   readonly lastIntentToken: string | null
 }
 
-type NavigationLockEnv = Record<never, never>
+type NavigationLockEnv = Record<string, never>
 
 type NavigationLockHeartbeat = {
   readonly canonicalName: string | null
