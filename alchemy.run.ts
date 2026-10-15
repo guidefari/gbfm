@@ -11,6 +11,7 @@ import { qrPdfWorker } from './alchemy/qr-pdf'
 import { secretsStore } from './alchemy/secrets'
 import { socialImageWorker } from './alchemy/social-image'
 import { stageConfig } from './alchemy/stage'
+import { stackState } from './alchemy/state'
 import { storage } from './alchemy/storage'
 import { telemetryEvaluator } from './alchemy/telemetry-evaluator'
 import { website } from './alchemy/www'
@@ -20,7 +21,7 @@ export default Alchemy.Stack(
   'gbfm',
   {
     providers: Cloudflare.providers(),
-    state: Cloudflare.state(),
+    state: stackState,
   },
   Effect.gen(function* () {
     const config = yield* stageConfig

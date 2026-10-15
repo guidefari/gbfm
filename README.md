@@ -5,6 +5,11 @@ Cmdz starts Alchemy and the web app; Mobile, UI Playground, Email Preview, and J
 available as opt-in commands. Alchemy attaches to the externally managed web server rather
 than starting a duplicate. Portless creates and trusts its local HTTPS certificate on first use.
 
+`bun run dev:alchemy` runs the installed Alchemy version with local emulators and state in
+`.alchemy/local-state/state/gbfm/dev`. Local dev accepts only the `dev` stage. It does not
+read or reset the shared Cloudflare state store. Deployment commands still use remote state;
+local startup does not repair unreadable deployment state.
+
 ## Current architecture
 
 Dev & infra via [SST](https://sst.dev)
