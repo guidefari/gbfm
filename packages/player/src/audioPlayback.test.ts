@@ -1,4 +1,4 @@
-import { Effect, Layer, ManagedRuntime, PubSub, Stream } from 'effect'
+import { Deferred, Effect, Fiber, Layer, ManagedRuntime, PubSub, Stream } from 'effect'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -13,6 +13,7 @@ import {
   type AudioEngineContract,
   type EngineStatus,
   type PlaybackCommandHandlers,
+  type NowPlayingMetadata,
 } from './engine'
 import type { AudioStorageError, QueueTrackType, PersistedQueueType } from './persistedQueue'
 import { PlayerStorage, type PositionRecord } from './playerStorage'
@@ -41,6 +42,7 @@ const makeRecordingEngine = (options: { readonly rejectPlay?: boolean } = {}) =>
   Effect.gen(function* () {
     const pubsub = yield* PubSub.unbounded<EngineStatus>()
     const calls: Array<string> = []
+    const metadata: Array<NowPlayingMetadata | null> = []
     const positionStates: Array<{ readonly duration: number; readonly position: number }> = []
 
     const volumeStates: Array<
@@ -87,9 +89,10 @@ const makeRecordingEngine = (options: { readonly rejectPlay?: boolean } = {}) =>
         }),
       currentStatus: Effect.sync(() => status),
       changes: Stream.fromPubSub(pubsub),
-      setNowPlaying: (metadata) =>
+      setNowPlaying: (metadataValue) =>
         Effect.sync(() => {
-          calls.push(`nowPlaying:${metadata ? metadata.title : 'null'}`)
+          metadata.push(metadataValue)
+          calls.push(`nowPlaying:${metadataValue ? metadataValue.title : 'null'}`)
         }),
       setPositionState: (duration, position) =>
         Effect.sync(() => {
@@ -117,6 +120,7 @@ const makeRecordingEngine = (options: { readonly rejectPlay?: boolean } = {}) =>
     return {
       engine,
       calls,
+      metadata,
       positionStates,
       volumeStates,
       emit,
@@ -132,6 +136,9 @@ const makeRecordingStorage = (
     readonly saveQueue?: (queue: PersistedQueueType) => Effect.Effect<void, AudioStorageError>
     readonly saveVolume?: (volume: VolumeRecordType) => Effect.Effect<void, AudioStorageError>
     readonly positions?: ReadonlyMap<string, PositionRecord>
+    readonly loadPosition?: (
+      trackId: string,
+    ) => Effect.Effect<PositionRecord | null, AudioStorageError>
   } = {},
 ) => {
   const savedQueues: Array<PersistedQueueType> = []
@@ -161,7 +168,8 @@ const makeRecordingStorage = (
           yield* options.saveVolume(volume)
         }
       }),
-    loadPosition: (trackId) => Effect.sync(() => positions.get(trackId) ?? null),
+    loadPosition:
+      options.loadPosition ?? ((trackId) => Effect.sync(() => positions.get(trackId) ?? null)),
     savePosition: (trackId, position) =>
       Effect.sync(() => {
         savedPositions.push({ id: trackId, position })
@@ -256,6 +264,122 @@ const makeReporter = () => {
 }
 
 describe('makeAudioPlayback', () => {
+  it('repairs a queued track without overwriting the newly selected media metadata', async () => {
+    const storage = makeRecordingStorage()
+    const recording = await Effect.runPromise(makeRecordingEngine())
+    const runtime = makeRuntime(recording.engine, storage, makeRecordingPlayReporter())
+
+    try {
+      await runtime.runPromise(
+        Effect.gen(function* () {
+          const playback = yield* makeAudioPlayback(runtime)
+          yield* Effect.yieldNow
+          const original = track('one')
+          yield* playback.playAll([original, track('two')])
+          yield* playback.playNext
+          const before = [...recording.calls]
+          yield* playback.repairCreators(original, [
+            { id: 'creator', name: 'Creator', username: null },
+          ])
+          expect(playback.getSnapshot().queue.tracks[0]?.creators?.[0]?.name).toBe('Creator')
+          expect(recording.calls).toEqual(before)
+          expect(recording.metadata.at(-1)?.title).toBe('two')
+        }).pipe(Effect.scoped),
+      )
+    } finally {
+      await runtime.dispose()
+    }
+  })
+  it('preserves source preparation when creators are repaired during checkpoint loading', async () => {
+    const started = Deferred.makeUnsafe<void>()
+    const checkpoint = Deferred.makeUnsafe<PositionRecord | null>()
+
+    const storage = makeRecordingStorage({
+      loadPosition: () =>
+        Deferred.succeed(started, undefined).pipe(Effect.andThen(Deferred.await(checkpoint))),
+    })
+
+    const recording = await Effect.runPromise(makeRecordingEngine())
+    const runtime = makeRuntime(recording.engine, storage, makeRecordingPlayReporter())
+
+    try {
+      await runtime.runPromise(
+        Effect.gen(function* () {
+          const playback = yield* makeAudioPlayback(runtime)
+          yield* Effect.yieldNow
+          yield* recording.setStatus({ isLoaded: true, duration: 300 })
+          const original = track('one')
+          const playing = yield* playback.playTrack(original).pipe(Effect.forkScoped)
+          yield* Deferred.await(started)
+          yield* playback.repairCreators(original, [
+            { id: 'creator', name: 'Creator', username: null },
+          ])
+          yield* Deferred.succeed(checkpoint, { position: 42, updatedAt: 0 })
+          yield* Fiber.join(playing)
+          expect(recording.calls.filter((call) => call === 'play')).toHaveLength(1)
+          expect(recording.calls).toContain('seek:42')
+          expect(recording.calls.filter((call) => call.startsWith('replace:'))).toHaveLength(1)
+        }).pipe(Effect.scoped),
+      )
+    } finally {
+      await runtime.dispose()
+    }
+  })
+  it('replays an early creator repair through delayed queue hydration', async () => {
+    let finishHydration: (queue: PersistedQueueType | null) => void = () => undefined
+
+    const hydration = new Promise<PersistedQueueType | null>((resolve) => {
+      finishHydration = resolve
+    })
+
+    const storage = makeRecordingStorage({ loadQueue: Effect.promise(() => hydration) })
+    const recording = await Effect.runPromise(makeRecordingEngine())
+    const runtime = makeRuntime(recording.engine, storage, makeRecordingPlayReporter())
+    const creators = [{ id: 'creator', name: 'Creator', username: null }]
+
+    try {
+      await runtime.runPromise(
+        Effect.gen(function* () {
+          const playback = yield* makeAudioPlayback(runtime)
+          const original = track('early')
+          yield* playback.playTrack(original)
+          yield* playback.repairCreators(original, creators)
+          finishHydration({ tracks: [track('stored')], currentIndex: 0 })
+          yield* Effect.promise(() => hydration)
+          yield* Effect.yieldNow
+          expect(playback.getSnapshot().queue.current?.creators).toEqual(creators)
+        }).pipe(Effect.scoped),
+      )
+      expect(storage.savedQueues.at(-1)?.tracks[0]?.creators).toEqual(creators)
+    } finally {
+      await runtime.dispose()
+    }
+  })
+  it('repairs creators, persists the queue and updates media metadata without reloading audio', async () => {
+    const storage = makeRecordingStorage()
+    const recording = await Effect.runPromise(makeRecordingEngine())
+    const runtime = makeRuntime(recording.engine, storage, makeRecordingPlayReporter())
+    const creators = [{ id: 'creator', name: 'Fixture Creator', username: 'fixture' }]
+
+    try {
+      await runtime.runPromise(
+        Effect.gen(function* () {
+          const playback = yield* makeAudioPlayback(runtime)
+          yield* Effect.yieldNow
+          const original = track('one')
+          yield* playback.playTrack(original)
+          const before = [...recording.calls]
+          yield* playback.repairCreators(original, creators)
+          expect(playback.getSnapshot().queue.current?.creators).toEqual(creators)
+          expect(recording.calls.slice(before.length)).toEqual(['nowPlaying:one'])
+          expect(recording.metadata.at(-1)?.artist).toBe('Fixture Creator')
+        }).pipe(Effect.scoped),
+      )
+      expect(storage.savedQueues.at(-1)?.tracks[0]?.creators).toEqual(creators)
+    } finally {
+      await runtime.dispose()
+    }
+  })
   it.each([true, false])(
     'honors live preferences for restore and automatic advance: %s',
     async (enabled) => {

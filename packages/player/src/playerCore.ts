@@ -147,7 +147,7 @@ export type PlayerCoreCallbacks = {
 type SourceSession = {
   readonly generation: number
   readonly id: string
-  readonly track: QueueTrackType
+  track: QueueTrackType
   intent: PlaybackIntent
   preparation: SourcePreparation
   completion: SourceCompletion
@@ -170,6 +170,10 @@ const buildMetadata = (track: QueueTrackType): NowPlayingMetadata => {
 }
 
 export interface PlayerCoreController {
+  readonly repairCreators: (
+    original: QueueTrackType,
+    repaired: QueueTrackType,
+  ) => Effect.Effect<void>
   readonly setSource: (track: QueueTrackType | null) => Effect.Effect<void>
   readonly play: (trackId: string) => Effect.Effect<void>
   readonly pause: Effect.Effect<void>
@@ -371,6 +375,12 @@ export const playerCore = (
     )
 
     return {
+      repairCreators: (original, repaired) =>
+        Effect.gen(function* () {
+          if (session?.track !== original) return
+          session.track = repaired
+          yield* engine.setNowPlaying(buildMetadata(repaired))
+        }),
       setSource: (track: QueueTrackType | null) =>
         Effect.gen(function* () {
           const generation = ++generationCounter

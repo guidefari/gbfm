@@ -4,7 +4,7 @@ import type { Scope } from 'effect/Scope'
 
 import type { VolumeRecordType } from './audioStorage'
 import { AudioEngine, type EngineStatus } from './engine'
-import type { QueueTrackType } from './persistedQueue'
+import { hasCompleteCreators, type QueueTrackType } from './persistedQueue'
 import { playerCore } from './playerCore'
 import { PlayerStorage } from './playerStorage'
 import type { PlayReporter } from './playReporter'
@@ -130,6 +130,10 @@ const trackFromQueueIndex = (state: typeof initialQueueState, index: number) =>
 const currentTrack = (state: typeof initialQueueState) => selectQueueView(state).current
 
 export interface AudioPlaybackController {
+  readonly repairCreators: (
+    original: QueueTrackType,
+    creators: NonNullable<QueueTrackType['creators']>,
+  ) => Effect.Effect<void>
   readonly getSnapshot: () => PlaybackSnapshot
   readonly subscribeSnapshot: (listener: SnapshotListener) => () => void
   readonly play: Effect.Effect<void>
@@ -715,6 +719,23 @@ export const makeAudioPlayback = (
     }
 
     return {
+      repairCreators: (original, creators) =>
+        Effect.gen(function* () {
+          if (hasCompleteCreators(original) || !hasCompleteCreators({ ...original, creators }))
+            return
+          const action = QueueAction.repairCreators({ track: original, creators })
+          const next = reduceQueue(queueState, action)
+
+          if (next === queueState) return
+          const repaired = next.tracks.find((track) => track.id === original.id)
+          updateQueue(next)
+
+          if (queueHydration) queueHydration.pending.push(action)
+          else persistQueue(next)
+
+          if (repaired && currentTrack(queueState) === repaired)
+            yield* core.repairCreators(original, repaired)
+        }),
       getSnapshot: () => currentSnapshot,
       subscribeSnapshot,
       play: playCurrent,

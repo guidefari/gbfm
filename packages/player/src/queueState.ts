@@ -15,6 +15,11 @@ export type QueueAction =
   | { readonly _tag: 'remove'; readonly index: number }
   | { readonly _tag: 'reorder'; readonly from: number; readonly to: number }
   | { readonly _tag: 'clear' }
+  | {
+      readonly _tag: 'repairCreators'
+      readonly track: QueueTrackType
+      readonly creators: NonNullable<QueueTrackType['creators']>
+    }
 
 export const QueueAction = Data.taggedEnum<QueueAction>()
 
@@ -126,6 +131,14 @@ export const reduceQueue = (
     },
 
     clear: () => initialQueueState,
+    repairCreators: ({ track, creators }) => {
+      if (!state.tracks.includes(track)) return state
+
+      return {
+        ...state,
+        tracks: state.tracks.map((entry) => (entry === track ? { ...entry, creators } : entry)),
+      }
+    },
   })
 }
 

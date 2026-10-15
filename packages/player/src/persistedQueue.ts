@@ -25,6 +25,11 @@ export const PersistedQueue = Schema.Struct({
 
 export type QueueTrackType = (typeof QueueTrack)['Type']
 
+export const hasCompleteCreators = (track: QueueTrackType) =>
+  track.creators !== undefined &&
+  track.creators.length > 0 &&
+  track.creators.every((creator) => creator.id.trim() !== '' && creator.name.trim() !== '')
+
 export type PersistedQueueType = (typeof PersistedQueue)['Type']
 
 export class AudioStorageError extends Error {

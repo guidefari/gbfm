@@ -1,5 +1,6 @@
 export {
   AudioStorageError,
+  hasCompleteCreators,
   PersistedQueue,
   parsePersistedQueue,
   QueueTrack,
