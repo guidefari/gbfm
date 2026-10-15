@@ -14,6 +14,8 @@ import {
 import { Context, Data, Effect, Layer, ManagedRuntime, Queue, Stream } from 'effect'
 
 import { reportPlayerTelemetry } from '../telemetry/browser'
+import { createCreatorLookup } from './creator-lookup'
+import { recoverPlayerCreators, type CreatorLookup } from './creator-recovery'
 import { readPlayerPreferences } from './preferences'
 
 export type AudioPort = {
@@ -210,6 +212,7 @@ export type BrowserDependencies = {
   readonly storage: () => Storage | undefined
   readonly deliverPlay: (trackId: string) => Effect.Effect<void, PlayDeliveryFailed>
   readonly reporter: AudioPlaybackReporter
+  readonly lookupCreators?: CreatorLookup
 }
 
 export const makePlayerClientLayer = (dependencies: BrowserDependencies) =>
@@ -238,7 +241,14 @@ export const makePlayerClientLayer = (dependencies: BrowserDependencies) =>
             makeAudioPlayback(runtime, dependencies.reporter, () =>
               readPlayerPreferences(dependencies.storage),
             ).pipe(
-              Effect.tap((controller) => Effect.sync(() => resolveController(controller))),
+              Effect.tap((controller) =>
+                Effect.gen(function* () {
+                  resolveController(controller)
+
+                  if (dependencies.lookupCreators)
+                    yield* recoverPlayerCreators(controller, dependencies.lookupCreators)
+                }),
+              ),
               Effect.andThen(Effect.never),
             ),
           ),
@@ -277,4 +287,5 @@ export const playerClientLayer = makePlayerClientLayer({
     onTrackPaused: () => Effect.sync(() => reportPlayerTelemetry('pause')),
     onError: () => Effect.sync(() => reportPlayerTelemetry('error')),
   },
+  lookupCreators: createCreatorLookup((...args) => fetch(...args)),
 })
