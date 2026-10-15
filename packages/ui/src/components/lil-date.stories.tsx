@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 import { LilDate } from './lil-date'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
@@ -6,6 +8,8 @@ export default {
 }
 
 export function Dates() {
+  const [today] = useState(() => new Date())
+
   return (
     <div className={storyPanelClassName}>
       <StoryPanelHeader
@@ -24,7 +28,7 @@ export function Dates() {
         </div>
         <div>
           <p className='text-xs text-muted-foreground mb-1'>Today</p>
-          <LilDate date={new Date()} />
+          <LilDate date={today} />
         </div>
       </div>
     </div>

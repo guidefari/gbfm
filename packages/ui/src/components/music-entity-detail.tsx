@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 import type { MusicEntityArtistsPanelProps } from './music-entity-artists-panel'
 import type { MusicEntityAuditProps } from './music-entity-audit'
 import { MusicEntityAudit } from './music-entity-audit'
@@ -65,7 +67,8 @@ export function MusicEntityDetail({
   relationshipsSlot,
   actionsSlot,
 }: MusicEntityDetailProps) {
-  const isPublished = publishedAt != null && new Date(publishedAt) <= new Date()
+  const [now] = useState(() => new Date())
+  const isPublished = publishedAt != null && new Date(publishedAt) <= now
 
   return (
     <div className='space-y-8'>

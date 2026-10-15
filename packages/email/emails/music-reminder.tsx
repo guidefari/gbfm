@@ -11,6 +11,7 @@ import {
   Text,
 } from '@react-email/components'
 import type * as React from 'react'
+import { useState } from 'react'
 
 import { EmailHead } from './email-head'
 import { emailTheme } from './theme'
@@ -30,14 +31,18 @@ export const MusicReminderEmail: React.FC<Readonly<MusicReminderEmailProps>> = (
   musicTitle = 'Beautiful Song',
   artistName = 'Amazing Artist',
   musicUrl = 'https://spotify.com/track/example',
-  reminderDate = new Date().toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }),
+  reminderDate,
   notes,
   albumCoverUrl,
 }) => {
+  const [defaultReminderDate] = useState(() =>
+    new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }),
+  )
+
   return (
     <Html>
       <EmailHead />
@@ -84,7 +89,7 @@ export const MusicReminderEmail: React.FC<Readonly<MusicReminderEmailProps>> = (
               Listen Now
             </Button>
 
-            <Text style={dateInfo}>Reminded on {reminderDate}</Text>
+            <Text style={dateInfo}>Reminded on {reminderDate ?? defaultReminderDate}</Text>
           </Section>
 
           {/* Footer */}

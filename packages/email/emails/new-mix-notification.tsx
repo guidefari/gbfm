@@ -11,6 +11,7 @@ import {
   Text,
 } from '@react-email/components'
 import type * as React from 'react'
+import { useState } from 'react'
 
 import { EmailHead } from './email-head'
 import { EmailHeader } from './email-header'
@@ -30,12 +31,16 @@ export const NewMixNotification: React.FC<Readonly<NewMixNotificationProps>> = (
   mixTitle = 'gb#63',
   artistName = 'Guide Fari',
   mixUrl = 'https://goosebumps.fm/mixes/gb63',
-  releaseDate = new Date().toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }),
+  releaseDate,
 }) => {
+  const [defaultReleaseDate] = useState(() =>
+    new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }),
+  )
+
   return (
     <Html>
       <EmailHead />
@@ -78,7 +83,7 @@ export const NewMixNotification: React.FC<Readonly<NewMixNotificationProps>> = (
               Listen Now
             </Button>
 
-            <Text style={dateInfo}>Released {releaseDate}</Text>
+            <Text style={dateInfo}>Released {releaseDate ?? defaultReleaseDate}</Text>
           </Section>
 
           <Section style={footer}>

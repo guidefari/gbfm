@@ -8,6 +8,7 @@ import {
   Section,
   Text,
 } from '@react-email/components'
+import { useState } from 'react'
 
 import { EmailHead } from './email-head'
 import { EmailHeader } from './email-header'
@@ -22,8 +23,10 @@ interface TestEmailProps {
 export function TestEmail({
   name = 'Developer',
   message = 'This is a test email from your React Email development environment!',
-  sentAt = new Date().toISOString(),
+  sentAt,
 }: TestEmailProps) {
+  const [defaultSentAt] = useState(() => new Date().toISOString())
+
   return (
     <Html>
       <EmailHead />
@@ -39,7 +42,7 @@ export function TestEmail({
             <Button style={ctaButton} href='https://goosebumps.fm'>
               Visit goosebumps.fm
             </Button>
-            <Text style={meta}>Sent at: {sentAt}</Text>
+            <Text style={meta}>Sent at: {sentAt ?? defaultSentAt}</Text>
           </Section>
 
           <Section style={footer}>

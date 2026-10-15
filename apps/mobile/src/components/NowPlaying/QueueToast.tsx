@@ -1,5 +1,5 @@
 import { SymbolView } from 'expo-symbols'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AccessibilityInfo, Animated, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -15,12 +15,12 @@ export function QueueToast() {
   const { queueNotice } = useNowPlaying()
   const colors = useThemeColors()
   const insets = useSafeAreaInsets()
-  const progress = useRef(new Animated.Value(0)).current
-  const [message, setMessage] = useState<string | null>(null)
+  const [progress] = useState(() => new Animated.Value(0))
+  const [dismissedNotice, setDismissedNotice] = useState<typeof queueNotice>(null)
+  const message = queueNotice !== dismissedNotice ? queueNotice?.message : null
 
   useEffect(() => {
     if (!queueNotice) return undefined
-    setMessage(queueNotice.message)
     AccessibilityInfo.announceForAccessibility(queueNotice.message)
     progress.stopAnimation()
     progress.setValue(0)
@@ -29,7 +29,7 @@ export function QueueToast() {
     const hide = setTimeout(() => {
       Animated.timing(progress, { toValue: 0, duration: 220, useNativeDriver: true }).start(
         ({ finished }) => {
-          if (finished) setMessage(null)
+          if (finished) setDismissedNotice(queueNotice)
         },
       )
     }, VISIBLE_MS)

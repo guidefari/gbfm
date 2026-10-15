@@ -1,5 +1,5 @@
 import type React from 'react'
-import { useEffect, useState } from 'react'
+import { useCallback, useState, useSyncExternalStore } from 'react'
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './dialog'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from './sheet'
@@ -11,19 +11,19 @@ interface ReadMoreModalProps {
 }
 
 function useMediaQuery(query: string) {
-  const [matches, setMatches] = useState(false)
+  const subscribe = useCallback(
+    (listener: () => void) => {
+      const media = window.matchMedia(query)
+      media.addEventListener('change', listener)
 
-  useEffect(() => {
-    const media = window.matchMedia(query)
-    setMatches(media.matches)
+      return () => media.removeEventListener('change', listener)
+    },
+    [query],
+  )
 
-    const listener = (e: MediaQueryListEvent) => setMatches(e.matches)
-    media.addEventListener('change', listener)
+  const getSnapshot = useCallback(() => window.matchMedia(query).matches, [query])
 
-    return () => media.removeEventListener('change', listener)
-  }, [query])
-
-  return matches
+  return useSyncExternalStore(subscribe, getSnapshot, () => false)
 }
 
 export function ReadMoreModal({ title, children, trigger }: ReadMoreModalProps) {

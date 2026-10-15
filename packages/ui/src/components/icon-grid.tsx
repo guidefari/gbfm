@@ -107,10 +107,6 @@ export function IconGrid({ tiles, onTileSelect, isAuthenticated, className }: Ic
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [handleKeyDown])
 
-  useEffect(() => {
-    setSelectedIndex(0)
-  }, [])
-
   return (
     <div ref={gridRef} className={cn('grid grid-cols-4 gap-4 p-4', className)}>
       {availableTiles.map((tile, index) => {

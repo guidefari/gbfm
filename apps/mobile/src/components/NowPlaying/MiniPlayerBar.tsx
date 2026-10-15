@@ -4,7 +4,7 @@ import { NativeTabs } from 'expo-router/unstable-native-tabs'
 import { SymbolView } from 'expo-symbols'
 import {
   ActivityIndicator,
-  DynamicColorIOS,
+  DynamicColorIOS as dynamicColorIOS,
   Image,
   Platform,
   Pressable,
@@ -18,7 +18,7 @@ import { fonts } from '@/theme/fonts'
 
 const textColor =
   Platform.OS === 'ios'
-    ? DynamicColorIOS({ dark: brandDark.overlayText, light: brandDark.bg })
+    ? dynamicColorIOS({ dark: brandDark.overlayText, light: brandDark.bg })
     : brandDark.overlayText
 
 const symbols = {
@@ -242,7 +242,7 @@ export function MiniPlayerBar() {
             overflow: 'hidden',
             backgroundColor:
               Platform.OS === 'ios'
-                ? DynamicColorIOS({
+                ? dynamicColorIOS({
                     dark: brandDark.faintOverlayText,
                     light: colors.faintOverlayText,
                   })

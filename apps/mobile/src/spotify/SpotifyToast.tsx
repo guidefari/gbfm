@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AccessibilityInfo, Animated, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -22,12 +22,12 @@ export const useSpotifyToast = () => {
 export function SpotifyToast({ notice }: { notice: SpotifyToastNotice | null }) {
   const colors = useThemeColors()
   const insets = useSafeAreaInsets()
-  const progress = useRef(new Animated.Value(0)).current
-  const [message, setMessage] = useState<string | null>(null)
+  const [progress] = useState(() => new Animated.Value(0))
+  const [dismissedNotice, setDismissedNotice] = useState<SpotifyToastNotice | null>(null)
+  const message = notice !== dismissedNotice ? notice?.message : null
 
   useEffect(() => {
     if (!notice) return undefined
-    setMessage(notice.message)
     AccessibilityInfo.announceForAccessibility(notice.message)
     progress.stopAnimation()
     progress.setValue(0)
@@ -36,7 +36,7 @@ export function SpotifyToast({ notice }: { notice: SpotifyToastNotice | null }) 
     const hide = setTimeout(() => {
       Animated.timing(progress, { toValue: 0, duration: 220, useNativeDriver: true }).start(
         ({ finished }) => {
-          if (finished) setMessage(null)
+          if (finished) setDismissedNotice(notice)
         },
       )
     }, VISIBLE_MS)
