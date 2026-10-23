@@ -2,6 +2,7 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 
 import type { Message } from '../../message'
 import { authErrorMessages } from './errors'
+import { authHref } from './links'
 import { link, noticePanel } from './shell'
 
 type Builder = HtmlBuilder<Message>
@@ -20,4 +21,15 @@ export const invalidResetLink = (h: Builder): Html =>
     subtitle: 'This link can no longer be used.',
     body: h.p([h.Role('alert'), h.Class('auth-status auth-error')], [authErrorMessages.token]),
     footer: [link(h, '/auth/forgot-password', 'Request a new link')],
+  })
+
+export const resetLinkSent = (h: Builder, returnTo: string): Html =>
+  noticePanel(h, {
+    title: 'Check your email',
+    subtitle: 'If an account exists for that email, a reset link is on its way.',
+    body: h.empty,
+    footer: [
+      'Nothing arrived? ',
+      link(h, authHref('/auth/forgot-password', { returnTo }), 'Send another link'),
+    ],
   })

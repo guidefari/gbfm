@@ -17,7 +17,7 @@ import {
   statusMessage,
 } from './fields'
 import { authHref } from './links'
-import { invalidResetLink, verifyEmail } from './notices'
+import { invalidResetLink, resetLinkSent, verifyEmail } from './notices'
 import { authShell, link } from './shell'
 
 type Builder = HtmlBuilder<Message>
@@ -76,9 +76,6 @@ const authForm = (h: Builder, action: string, url: URL, state: AuthViewState): H
                 ? h.empty
                 : link(h, authHref(errorAction.path, { email, returnTo }), errorAction.label),
             ),
-        url.searchParams.has('sent')
-          ? statusMessage(h, 'Check your inbox for a password reset link.')
-          : h.empty,
         url.searchParams.has('reset')
           ? statusMessage(h, 'Your password has been reset. Sign in with your new password.')
           : h.empty,
@@ -127,6 +124,10 @@ export const view = (h: Builder, action: string, url: URL, state: AuthViewState)
     Match.when(
       () => isInvalidResetLink(action, url),
       () => invalidResetLink(h),
+    ),
+    Match.when(
+      () => action === 'forgot-password' && url.searchParams.has('sent'),
+      () => resetLinkSent(h, url.searchParams.get('returnTo') ?? ''),
     ),
     Match.orElse(() => authForm(h, action, url, state)),
   )
