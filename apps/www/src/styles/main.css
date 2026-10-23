@@ -1133,23 +1133,24 @@
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  min-height: 70vh;
+  min-height: calc(100dvh - 3.5rem);
   display: grid;
-  place-items: center;
-  padding: 3rem 1rem;
+  place-items: start center;
+  padding: clamp(1.5rem, 8vh, 5rem) 1rem;
 }
 .auth-backdrop {
   position: absolute;
   inset: 0;
   z-index: -1;
   display: grid;
-  place-items: center;
+  place-items: end center;
+  padding-bottom: 2rem;
   color: var(--foreground);
   opacity: 0.06;
   pointer-events: none;
 }
 .auth-backdrop svg {
-  width: max(140%, 48rem);
+  width: min(92%, 64rem, 90vh);
   height: auto;
 }
 .auth-panel {
@@ -1245,18 +1246,6 @@
   font-weight: 600;
 }
 @media (max-width: 30rem) {
-  .auth-page {
-    place-items: start center;
-    min-height: calc(100dvh - 3.5rem);
-    padding: 1.5rem 1rem;
-  }
-  .auth-backdrop {
-    place-items: end start;
-    padding-bottom: 1.5rem;
-  }
-  .auth-backdrop svg {
-    width: 220%;
-  }
   .auth-panel {
     padding: 1.75rem 1.25rem 1.5rem;
   }
