@@ -1012,8 +1012,25 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   max-width: none;
 }
-.admin-form-grid > :is(p, button) {
+.admin-form-grid > :is(p, button, h2, .admin-form-wide, .admin-form-actions) {
   grid-column: 1 / -1;
+}
+.dashboard-panel .admin-form-title {
+  margin: 0;
+}
+.admin-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.admin-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.admin-confirm p {
+  margin: 0 auto 0 0;
 }
 @media (min-width: 1024px) {
   .admin-table-wrap {
