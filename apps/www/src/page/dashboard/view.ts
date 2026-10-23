@@ -6,7 +6,7 @@ import { Message } from './message'
 import type { Model } from './model'
 import { navigation, sectionLabel } from './navigation'
 import { catalogView, entityRoute } from './page/catalog'
-import { commsNavigation, historyView, isCommsSection, subscribersView } from './page/comms'
+import { historyView, subscribersView } from './page/comms'
 import * as Emails from './page/emails'
 import * as Playlists from './page/playlists'
 import * as Sessions from './page/sessions'
@@ -392,7 +392,6 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
               ),
             ],
           ),
-          isCommsSection(model.section) ? commsNavigation(model.section, h) : h.empty,
           content,
         ],
       ),

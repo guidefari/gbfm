@@ -217,23 +217,6 @@
   padding: 0;
   border: 0;
 }
-.comms-tabs {
-  display: flex;
-  gap: 1.25rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid var(--dash-line);
-}
-.comms-tabs a {
-  padding: 0.75rem 0;
-  border-bottom: 2px solid transparent;
-  color: var(--dash-muted);
-  text-decoration: none;
-  font-size: 0.875rem;
-}
-.comms-tabs a[aria-current='page'] {
-  color: var(--dash-fg);
-  border-color: var(--dash-accent);
-}
 .comms-intro,
 .comms-muted,
 .comms-summary p,
@@ -341,9 +324,6 @@
   .comms-filters,
   .comms-history-filters {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .comms-tabs {
-    gap: 1rem;
   }
 }
 .telemetry-dashboard p {

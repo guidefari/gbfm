@@ -19,7 +19,7 @@ test('admin filters subscribers, reviews a deduplicated eligible audience, sends
   await page.getByRole('combobox', { name: 'Subscription status' }).selectOption('subscribed')
   await expect(page.getByText('No subscribers match these filters.')).toBeVisible()
   await page
-    .getByRole('navigation', { name: 'Comms', exact: true })
+    .getByRole('navigation', { name: 'Dashboard sections' })
     .getByRole('link', { name: 'Write email' })
     .click()
   await page.getByRole('combobox', { name: 'Published mix' }).selectOption('e2e-local-frequencies')

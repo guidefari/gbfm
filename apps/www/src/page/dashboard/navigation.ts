@@ -17,7 +17,7 @@ interface NavigationGroup {
 const library: NavigationGroup = {
   label: 'Library',
   links: [
-    { section: 'overview', label: 'Home' },
+    { section: 'overview', label: 'Overview' },
     { section: 'favorites', label: 'Favorites' },
     { section: 'reminders', label: 'Reminders' },
   ],
@@ -35,7 +35,7 @@ const creator: NavigationGroup = {
 const admin: NavigationGroup = {
   label: 'Admin',
   links: [
-    { section: 'admin', label: 'Overview' },
+    { section: 'admin', label: 'Site stats' },
     { section: 'users', label: 'Users' },
     { section: 'sessions', label: 'Sessions' },
     { section: 'shows', label: 'Shows' },
@@ -53,7 +53,7 @@ const account: NavigationGroup = {
   links: [
     { section: 'profile', label: 'Profile' },
     { section: 'appearance', label: 'Appearance' },
-    { section: 'email', label: 'Email' },
+    { section: 'email', label: 'Email preferences' },
     { section: 'player', label: 'Player' },
     { section: 'integrations', label: 'Integrations' },
   ],
@@ -62,7 +62,7 @@ const account: NavigationGroup = {
 const comms: NavigationGroup = {
   label: 'Comms',
   links: [
-    { section: 'emails', label: 'Emails' },
+    { section: 'emails', label: 'Write email' },
     { section: 'newsletter', label: 'Subscribers' },
     { section: 'email-logs', label: 'Delivery history' },
   ],

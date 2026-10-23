@@ -3,25 +3,6 @@ import type { HtmlBuilder } from 'foldkit/html'
 import { Message } from '../message'
 import type { Model } from '../model'
 
-const sections = [
-  ['emails', 'Write email'],
-  ['newsletter', 'Subscribers'],
-  ['email-logs', 'Delivery history'],
-] as const
-
-export const isCommsSection = (section: string) => sections.some(([key]) => key === section)
-
-export const commsNavigation = (section: string, h: HtmlBuilder<Message>) =>
-  h.nav(
-    [h.Class('comms-tabs'), h.AriaLabel('Comms')],
-    sections.map(([key, label]) =>
-      h.a(
-        [h.Href(`/dashboard/${key}`), h.AriaCurrent(section === key ? 'page' : 'false')],
-        [label],
-      ),
-    ),
-  )
-
 const date = (value: string) =>
   new Intl.DateTimeFormat('en-ZA', {
     day: 'numeric',
