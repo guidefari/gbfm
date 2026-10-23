@@ -20,12 +20,21 @@ import type { HtmlBuilder } from 'foldkit/html'
 import { type DashboardDocument, emptyDocument } from '../document'
 import type { Message as DashboardMessage } from '../message'
 import type { Model } from '../model'
+import { subTabs } from '../navigation'
 
 export const Kind = Schema.Literals(['artist', 'album', 'track', 'label'])
 
 export type Kind = typeof Kind.Type
 
 export const tabs = ['artists', 'albums', 'tracks', 'playlists', 'labels'] as const
+
+const tabLabels: Record<(typeof tabs)[number], string> = {
+  artists: 'Artists',
+  albums: 'Albums',
+  tracks: 'Tracks',
+  playlists: 'Playlists',
+  labels: 'Labels',
+}
 
 export const entityRoute = (section: string) => {
   const match = /^music-entity\/(artist|album|track|label)\/([^/]+)$/.exec(section)
@@ -331,17 +340,14 @@ export const catalogView = (
     return h.section(
       [h.Class('dashboard-form')],
       [
-        h.nav(
-          [h.AriaLabel('Catalog types'), h.Class('user-pagination')],
-          tabs.map((tab) =>
-            h.a(
-              [
-                h.Href(`/dashboard/music?tab=${tab}`),
-                h.AriaCurrent(model.fields.tab === tab ? 'page' : 'false'),
-              ],
-              [tab],
-            ),
-          ),
+        subTabs(
+          h,
+          'Catalog types',
+          tabs.map((tab) => ({
+            href: `/dashboard/music?tab=${tab}`,
+            label: tabLabels[tab],
+            current: model.fields.tab === tab,
+          })),
         ),
         model.fields.tab === 'labels'
           ? h.form(

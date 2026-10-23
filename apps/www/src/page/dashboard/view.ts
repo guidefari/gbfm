@@ -4,7 +4,7 @@ import { defineView } from 'foldkit/submodel'
 import { collection } from './collection'
 import { Message } from './message'
 import type { Model } from './model'
-import { dashboardHeader, sectionLabel } from './navigation'
+import { dashboardHeader, sectionHref, sectionLabel, subTabs } from './navigation'
 import { catalogView, entityRoute } from './page/catalog'
 import { historyView, subscribersView } from './page/comms'
 import * as Emails from './page/emails'
@@ -72,6 +72,23 @@ const profile = (model: Model, h: HtmlBuilder<Message>) =>
         [model.phase === 'saving' ? 'Saving…' : 'Save profile'],
       ),
     ],
+  )
+
+const contentTypes = [
+  { section: 'all/mixes', label: 'Mixes' },
+  { section: 'all/tweets', label: 'Tweets' },
+  { section: 'all/editorial', label: 'Editorial' },
+]
+
+const contentTypeTabs = (h: HtmlBuilder<Message>, section: string) =>
+  subTabs(
+    h,
+    'Content types',
+    contentTypes.map((type) => ({
+      href: sectionHref(type.section),
+      label: type.label,
+      current: type.section === section,
+    })),
   )
 
 const featuredMixStatus = (model: Model) =>
@@ -369,6 +386,8 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
       : entity
         ? `Edit ${entity.kind}`
         : sectionLabel(model.section, role),
-    content,
+    model.section.startsWith('all/')
+      ? h.div([h.Class('dashboard-stack')], [contentTypeTabs(h, model.section), content])
+      : content,
   )
 })

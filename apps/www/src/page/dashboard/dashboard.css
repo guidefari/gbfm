@@ -106,8 +106,7 @@
 .dashboard-header > .dashboard-subtabs {
   border-top: 1px solid var(--dash-line);
 }
-.dashboard-content > .dashboard-subtabs,
-.dashboard-form > .dashboard-subtabs {
+.dashboard-content .dashboard-subtabs {
   border-bottom: 1px solid var(--dash-line);
 }
 @media (pointer: fine) {
@@ -260,6 +259,7 @@
 .dashboard-empty {
   color: var(--dash-muted);
 }
+.dashboard-stack,
 .comms-stack,
 .comms-fields {
   display: grid;
