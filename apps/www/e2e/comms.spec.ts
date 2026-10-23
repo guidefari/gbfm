@@ -13,10 +13,14 @@ test('admin filters subscribers, reviews a deduplicated eligible audience, sends
 }) => {
   await page.goto('/dashboard/newsletter')
   await expect(page.getByRole('heading', { name: 'Subscribers', exact: true })).toBeVisible()
+  const subscribers = page.getByRole('table', { name: 'Newsletter subscribers' })
   await page.getByRole('searchbox', { name: 'Search subscribers' }).fill('former')
-  await expect(page.locator('.comms-list li')).toHaveCount(1)
-  await expect(page.locator('.comms-list')).toContainText('Unsubscribed')
-  await page.getByRole('combobox', { name: 'Subscription status' }).selectOption('subscribed')
+  await expect(subscribers.locator('tbody > tr.admin-row')).toHaveCount(1)
+  await expect(subscribers).toContainText('Unsubscribed')
+  await page
+    .getByRole('group', { name: 'Subscription status' })
+    .getByRole('button', { name: 'Subscribed', exact: true })
+    .click()
   await expect(page.getByText('No subscribers match these filters.')).toBeVisible()
   await page
     .getByRole('navigation', { name: 'Comms', exact: true })

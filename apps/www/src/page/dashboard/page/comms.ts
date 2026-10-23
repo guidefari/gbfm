@@ -15,24 +15,25 @@ import {
   pageHeader,
   pageRange,
   pager,
+  plural,
   relativeTime,
   segmented,
+  toolbar,
   type Tone,
 } from '../ui'
 
-const date = (value: string) =>
-  new Intl.DateTimeFormat('en-ZA', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'Africa/Johannesburg',
-  }).format(new Date(value))
+const subscriberStatuses = [
+  { value: 'all', label: 'All' },
+  { value: 'subscribed', label: 'Subscribed' },
+  { value: 'unsubscribed', label: 'Unsubscribed' },
+]
 
 export const subscribersView = (model: Model, h: HtmlBuilder<Message>) => {
   const subscribers = model.subscribers ?? []
   const search = (model.fields.subscriberSearch ?? '').trim().toLowerCase()
   const status = model.fields.subscriberStatus ?? 'all'
   const active = subscribers.filter((item) => !item.unsubscribedAt).length
+  const now = Date.now()
 
   const filtered = subscribers.filter(
     (item) =>
@@ -42,13 +43,11 @@ export const subscribersView = (model: Model, h: HtmlBuilder<Message>) => {
   )
 
   return h.div(
-    [h.Class('comms-stack')],
+    [h.Class('admin-page')],
     [
-      h.p(
-        [h.Class('comms-intro')],
-        [
-          'The people who signed up to hear from goosebumps.fm. Subscription status is separate from individual email preferences.',
-        ],
+      pageHeader(
+        h,
+        'The people who signed up to hear from goosebumps.fm. Subscription status is separate from individual email preferences.',
       ),
       h.div(
         [h.Class('comms-stats')],
@@ -64,81 +63,62 @@ export const subscribersView = (model: Model, h: HtmlBuilder<Message>) => {
           ),
         ],
       ),
-      h.section(
-        [h.Class('dashboard-panel comms-stack')],
-        [
-          h.div(
-            [h.Class('comms-filters dashboard-form')],
-            [
-              h.label(
-                [],
-                [
-                  'Search subscribers',
-                  h.input([
-                    h.Type('search'),
-                    h.Value(model.fields.subscriberSearch ?? ''),
-                    h.OnInput((value) => Message.FieldChanged({ name: 'subscriberSearch', value })),
-                  ]),
-                ],
-              ),
-              h.label(
-                [],
-                [
-                  'Subscription status',
-                  h.select(
-                    [
-                      h.Value(status),
-                      h.OnChange((value) =>
-                        Message.FieldChanged({ name: 'subscriberStatus', value }),
-                      ),
-                    ],
-                    [
-                      h.option([h.Value('all')], ['All statuses']),
-                      h.option([h.Value('subscribed')], ['Subscribed']),
-                      h.option([h.Value('unsubscribed')], ['Unsubscribed']),
-                    ],
-                  ),
-                ],
-              ),
-            ],
+      frame(h, [
+        toolbar(h, [
+          h.input([
+            h.Type('search'),
+            h.AriaLabel('Search subscribers'),
+            h.Placeholder('Search email or name'),
+            h.Value(model.fields.subscriberSearch ?? ''),
+            h.OnInput((value) => Message.FieldChanged({ name: 'subscriberSearch', value })),
+          ]),
+          segmented(
+            h,
+            'Subscription status',
+            subscriberStatuses.map((option) => ({
+              label: option.label,
+              active: option.value === status,
+              onClick: Message.FieldChanged({ name: 'subscriberStatus', value: option.value }),
+            })),
           ),
-          h.p([h.Role('status')], [`${filtered.length} of ${subscribers.length} subscribers`]),
-          filtered.length === 0
-            ? h.p(
-                [h.Class('dashboard-empty')],
-                [
-                  subscribers.length
-                    ? 'No subscribers match these filters.'
-                    : 'No newsletter subscribers yet. New signups will appear here.',
-                ],
-              )
-            : h.ul(
-                [h.Class('dashboard-list comms-list')],
-                filtered.map((item) =>
-                  h.li(
-                    [h.Key(item.id)],
-                    [
-                      h.div(
-                        [],
-                        [
-                          h.strong([], [item.email]),
-                          h.small([], [item.name || 'No name provided']),
-                          h.small(
-                            [],
-                            [`${item.source || 'Unknown source'} · Joined ${date(item.createdAt)}`],
-                          ),
-                        ],
-                      ),
-                      h.span(
-                        [h.Class(`comms-badge ${item.unsubscribedAt ? '' : 'comms-badge-active'}`)],
-                        [item.unsubscribedAt ? 'Unsubscribed' : 'Subscribed'],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-        ],
-      ),
+        ]),
+        dataTable(h, {
+          label: 'Newsletter subscribers',
+          minWidth: '44rem',
+          columns: [
+            { label: 'Email' },
+            { label: 'Name', width: '22%' },
+            { label: 'Source', className: 'admin-col-muted', width: '9rem' },
+            { label: 'Joined', className: 'admin-col-muted', width: '7.5rem' },
+            { label: 'Status', width: '8.5rem' },
+          ],
+          rows: filtered.map((item) => ({
+            key: item.id,
+            cells: [
+              item.email,
+              item.name ? item.name : h.span([h.Class('admin-muted')], ['No name']),
+              item.source || 'Unknown',
+              relativeTime(h, item.createdAt, now),
+              item.unsubscribedAt
+                ? badge(h, 'Unsubscribed', 'neutral')
+                : badge(h, 'Subscribed', 'ok'),
+            ],
+          })),
+          empty: subscribers.length
+            ? emptyState(h, 'No subscribers match these filters.', {
+                href: '/dashboard/newsletter',
+              })
+            : emptyState(h, 'No newsletter subscribers yet. New signups will appear here.'),
+        }),
+        subscribers.length
+          ? pager(h, {
+              label: 'Subscriber count',
+              summary: `${filtered.length} of ${plural(subscribers.length, 'subscriber')}`,
+              previous: null,
+              next: null,
+            })
+          : h.empty,
+      ]),
     ],
   )
 }

@@ -268,19 +268,22 @@ export const pager = <M>(
     readonly previous: PagerTarget<M> | null
     readonly next: PagerTarget<M> | null
   },
-) =>
-  h.nav(
+) => {
+  const summary = h.span([h.Class('admin-pager-summary')], [options.summary])
+
+  if (!options.previous && !options.next) return h.div([h.Class('admin-pager')], [summary])
+
+  return h.nav(
     [h.Class('admin-pager'), h.AriaLabel(options.label)],
     [
-      h.span([h.Class('admin-pager-summary')], [options.summary]),
-      options.previous || options.next
-        ? h.div(
-            [h.Class('admin-pager-controls')],
-            [pagerControl(h, 'Previous', options.previous), pagerControl(h, 'Next', options.next)],
-          )
-        : h.empty,
+      summary,
+      h.div(
+        [h.Class('admin-pager-controls')],
+        [pagerControl(h, 'Previous', options.previous), pagerControl(h, 'Next', options.next)],
+      ),
     ],
   )
+}
 
 export const emptyState = <M>(
   h: HtmlBuilder<M>,
