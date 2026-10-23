@@ -9,9 +9,7 @@ Preserve original assets and optimize delivery through the existing R2 and CDN p
 
 ## Start with the image owner
 
-- Use `apps/www/src/components/common/Artwork.tsx` for product artwork in the web app.
-- Keep `packages/ui/src/components/artwork.tsx` presentation-only and provider-agnostic.
-- Use `apps/www/src/lib/image.ts` to build GBFM CDN transformation URLs and source sets.
+- Use `apps/www/src/view/artwork.ts` for product artwork, GBFM CDN transformation URLs, and source sets in the web app.
 - Use `apps/cdn-router/src/image-options.ts` to validate the public transformation contract.
 - Use `apps/cdn-router/src/index.ts` to read originals and perform transformations.
 - Configure the Images binding only through `alchemy/cdn.ts`.

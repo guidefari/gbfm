@@ -13,11 +13,6 @@
       "persistent": true,
       "interactive": true
     },
-    "//#dev:ui": {
-      "cache": false,
-      "persistent": true,
-      "interactive": false
-    },
     "//#dev:email": {
       "cache": false,
       "persistent": true,

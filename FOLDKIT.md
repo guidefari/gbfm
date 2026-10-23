@@ -6,6 +6,8 @@ The Model owns state, Messages describe events, `update` returns a Model and Com
 
 ## UI primitives
 
+`@gbfm/theme` owns shared tokens and CSS. WWW owns shared presentation in `apps/www/src/view/`; feature and page submodels own state, messages, and behavior. There is no shared React web UI package or component playground. See [Design System](docs/design-system.md) for visual guidance. React remains in mobile, email templates, and social-image rendering.
+
 Use the pinned `@foldkit/ui` 0.168.0 primitives for dialogs and popovers. Mobile navigation, search, playback, publish review, and account actions fold their primitive Models and Messages into the owning submodel. Keep the dialog mounted while closed so its Commands can manage native modal focus and scroll locking. Preserve native selects, sliders, and disclosures when they already provide the required behavior.
 
 ## Server document
