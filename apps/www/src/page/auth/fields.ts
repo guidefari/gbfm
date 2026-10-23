@@ -26,17 +26,19 @@ export const hiddenField = (h: Builder, name: string, value: string): Html =>
   h.input([h.Type('hidden'), h.Name(name), h.Value(value)])
 
 export const nameField = (h: Builder, value: string, state: FieldState): Html =>
-  h.label(
+  h.div(
     [h.Class('auth-field')],
     [
-      h.span([h.Class('auth-label')], ['Name']),
+      h.label([h.Class('auth-label'), h.For('auth-name')], ['Display name']),
       h.input([
+        h.Id('auth-name'),
         h.Name('name'),
         h.Required(true),
         h.Autocomplete('name'),
         h.Attribute('value', value),
-        ...fieldStateAttributes(h, state, []),
+        ...fieldStateAttributes(h, state, ['auth-name-hint']),
       ]),
+      h.p([h.Id('auth-name-hint'), h.Class('auth-hint')], ['Shown on your profile.']),
     ],
   )
 
