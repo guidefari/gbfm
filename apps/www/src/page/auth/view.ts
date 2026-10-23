@@ -11,11 +11,24 @@ const link = (h: Builder, href: string, label: string) => h.a([h.Href(href)], [l
 
 const verifyEmail = (h: Builder): Html =>
   h.section(
-    [h.Class('page narrow')],
+    [h.Class('auth-page')],
     [
-      h.h1([], ['Check your email']),
-      h.p([], ['Use the verification link in your inbox to verify your account.']),
-      link(h, '/auth/sign-in', 'Sign in'),
+      h.div(
+        [h.Class('auth-panel')],
+        [
+          h.header(
+            [h.Class('auth-header')],
+            [
+              h.h1([], ['Check your email']),
+              h.p(
+                [h.Class('auth-subtitle')],
+                ['Use the verification link in your inbox to verify your account.'],
+              ),
+            ],
+          ),
+          h.p([h.Class('auth-footer')], ['Verified? ', link(h, '/auth/sign-in', 'Sign in')]),
+        ],
+      ),
     ],
   )
 
