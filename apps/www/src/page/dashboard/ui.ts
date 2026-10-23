@@ -309,9 +309,9 @@ export const drawer = <M>(
   h: HtmlBuilder<M>,
   summary: string,
   children: ReadonlyArray<Child>,
-  attributes: ReadonlyArray<Attribute<M>> = [],
+  primary = true,
 ) =>
   h.details(
-    [h.Class('admin-drawer'), ...attributes],
+    [h.Class(primary ? 'admin-drawer' : 'admin-drawer admin-drawer-secondary')],
     [h.summary([], [summary]), h.div([h.Class('admin-drawer-body')], children)],
   )
