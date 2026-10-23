@@ -19,6 +19,8 @@ export const Message = defineMessageUnion({
   GotTweetReaderMessage: { message: TweetReader.Message },
   MenuToggled: {},
   PasswordVisibilityToggled: {},
+  AuthFormSubmitted: {},
+  AuthFormRestored: {},
   GotMobileMenuMessage: { message: Dialog.Message },
   MenuDragStarted: { pointerId: Schema.Number, clientY: Schema.Number },
   MenuDragMoved: { pointerId: Schema.Number, clientY: Schema.Number },

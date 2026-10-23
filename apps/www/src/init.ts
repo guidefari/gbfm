@@ -80,6 +80,7 @@ export const init: Runtime.ApplicationInit<Model, Message, Flags, Services> = (f
       pageCache: seedCache(flags),
       interactive: false,
       passwordVisible: false,
+      authSubmitting: false,
       navigationId: 0,
       tweetReader: TweetReader.init(flags.principal?.id ?? 'anonymous'),
       error: null,

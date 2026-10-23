@@ -1,7 +1,9 @@
 import { Match } from 'effect'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
+import { authFormAttribute } from '../../auth-submit'
 import type { Message } from '../../message'
+import type { Model } from '../../model'
 import { authCopy } from './copy'
 import { authErrorMessage, parseAuthErrorKey } from './errors'
 import {
@@ -18,6 +20,8 @@ import { authShell, link } from './shell'
 
 type Builder = HtmlBuilder<Message>
 
+export type AuthViewState = PasswordReveal & Pick<Model, 'authSubmitting'>
+
 const footer = (h: Builder, action: string): Html =>
   h.p(
     [h.Class('auth-footer')],
@@ -31,14 +35,19 @@ const footer = (h: Builder, action: string): Html =>
     ),
   )
 
-const authForm = (h: Builder, action: string, url: URL, reveal: PasswordReveal): Html => {
+const authForm = (h: Builder, action: string, url: URL, state: AuthViewState): Html => {
   const copy = authCopy(action)
   const error = authErrorMessage(url.searchParams.get('error'))
 
   return authShell(
     h,
     h.form(
-      [h.Class('auth-panel'), h.Method('post'), h.Action(`/auth/${action}`)],
+      [
+        h.Class('auth-panel'),
+        h.Method('post'),
+        h.Action(`/auth/${action}`),
+        h.DataAttribute(authFormAttribute, ''),
+      ],
       [
         h.header(
           [h.Class('auth-header')],
@@ -62,10 +71,18 @@ const authForm = (h: Builder, action: string, url: URL, reveal: PasswordReveal):
               : emailField(h, url.searchParams.get('email') ?? ''),
             action === 'forgot-password'
               ? h.empty
-              : passwordField(h, action === 'sign-in' ? 'current' : 'new', reveal),
+              : passwordField(h, action === 'sign-in' ? 'current' : 'new', state),
           ],
         ),
-        h.button([h.Type('submit'), h.Class('auth-submit')], [copy.submit]),
+        h.button(
+          [
+            h.Type('submit'),
+            h.Class('auth-submit'),
+            h.Disabled(state.authSubmitting),
+            h.AriaBusy(state.authSubmitting),
+          ],
+          [copy.submit],
+        ),
         footer(h, action),
       ],
     ),
@@ -76,12 +93,12 @@ const isInvalidResetLink = (action: string, url: URL) =>
   action === 'reset-password' &&
   (!url.searchParams.get('token') || parseAuthErrorKey(url.searchParams.get('error')) === 'token')
 
-export const view = (h: Builder, action: string, url: URL, reveal: PasswordReveal): Html =>
+export const view = (h: Builder, action: string, url: URL, state: AuthViewState): Html =>
   Match.value(action).pipe(
     Match.when('verify-email', () => verifyEmail(h)),
     Match.when(
       () => isInvalidResetLink(action, url),
       () => invalidResetLink(h),
     ),
-    Match.orElse(() => authForm(h, action, url, reveal)),
+    Match.orElse(() => authForm(h, action, url, state)),
   )
