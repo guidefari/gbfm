@@ -120,7 +120,7 @@ const isInvalidResetLink = (action: string, url: URL) =>
 
 export const view = (h: Builder, action: string, url: URL, state: AuthViewState): Html =>
   Match.value(action).pipe(
-    Match.when('verify-email', () => verifyEmail(h)),
+    Match.when('verify-email', () => verifyEmail(h, url)),
     Match.when(
       () => isInvalidResetLink(action, url),
       () => invalidResetLink(h),
