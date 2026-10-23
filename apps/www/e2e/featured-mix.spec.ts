@@ -41,7 +41,7 @@ test('admin selects a mix, retries a failed save, and restores automatic selecti
   await select.selectOption('')
   await save.click()
   await expect(page.getByRole('status')).toHaveText(
-    'Current selection: Automatic — newest published mix',
+    'Current selection: Automatic, newest published mix',
   )
   await page.reload()
   await expect(select).toHaveValue('')

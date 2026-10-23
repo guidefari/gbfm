@@ -9,6 +9,7 @@ import { defineMessageUnion } from 'foldkit/message'
 import { defineView } from 'foldkit/submodel'
 
 import { DashboardService } from '../service'
+import { plural } from '../ui'
 
 export const Model = Schema.Struct({
   options: MixAnnouncementOptions,
@@ -222,7 +223,7 @@ export const view = defineView<Model, Message>((model, h) => {
                     : 'We could not confirm the result. Some emails may have been accepted. This screen will not retry the send.',
                 ],
               ),
-              h.a([h.Href('/dashboard/email-logs')], ['View delivery history →']),
+              h.a([h.Href('/dashboard/email-logs')], ['View delivery history']),
             ],
           )
         : h.div(
@@ -319,7 +320,7 @@ export const view = defineView<Model, Message>((model, h) => {
                                 h.Disabled(model.stage === 'sending'),
                                 h.OnChange(() => Message.Confirmed({ value: !model.confirmed })),
                               ]),
-                              `I’m ready to send this announcement to ${model.recipients.length} listener(s).`,
+                              `I am ready to send this announcement to ${plural(model.recipients.length, 'listener')}.`,
                             ],
                           ),
                           h.div(
@@ -382,7 +383,9 @@ export const view = defineView<Model, Message>((model, h) => {
                   h.strong(
                     [],
                     [
-                      `${reviewing ? model.recipients.length : model.options.recipients.length} ${reviewing ? 'recipients at review' : 'eligible listeners'}`,
+                      reviewing
+                        ? `${plural(model.recipients.length, 'recipient')} at review`
+                        : plural(model.options.recipients.length, 'eligible listener'),
                     ],
                   ),
                   h.p(
@@ -407,7 +410,10 @@ export const view = defineView<Model, Message>((model, h) => {
                     ? h.details(
                         [],
                         [
-                          h.summary([], [`${model.excluded.length} address(es) excluded`]),
+                          h.summary(
+                            [],
+                            [`${plural(model.excluded.length, 'address', 'addresses')} excluded`],
+                          ),
                           h.p(
                             [],
                             ['Not in the eligible audience; these addresses will not be sent to.'],
@@ -421,7 +427,7 @@ export const view = defineView<Model, Message>((model, h) => {
                     : h.empty,
                   h.p(
                     [h.Class('comms-muted')],
-                    ['“Sent” means accepted by the email provider, not confirmed inbox delivery.'],
+                    ['Accepted means the provider took the email, not that it reached an inbox.'],
                   ),
                 ],
               ),

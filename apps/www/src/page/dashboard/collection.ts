@@ -14,11 +14,12 @@ export const collection = (model: Model, h: HtmlBuilder<Message>) => {
       model.rows.length === 0
         ? h.p(
             [h.Class('dashboard-empty')],
-            [
-              model.section === 'favorites' || model.section === 'overview'
-                ? 'Your saved mixes and shows will appear here. Explore a show and save something you love.'
-                : 'No items found.',
-            ],
+            model.section === 'favorites' || model.section === 'overview'
+              ? [
+                  'Your saved mixes and shows will appear here. ',
+                  h.a([h.Href('/shows')], ['Browse shows']),
+                ]
+              : ['No items found.'],
           )
         : h.ul(
             [h.Class('dashboard-list dashboard-library-list')],

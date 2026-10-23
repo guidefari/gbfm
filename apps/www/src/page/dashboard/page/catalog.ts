@@ -438,7 +438,6 @@ export const catalogView = (
                   h.OnSubmit(Message.SaveCatalogEntity()),
                 ],
                 [
-                  h.h2([], [`Edit ${entity.kind}`]),
                   ...fieldsFor(entity.kind).map((name) => field(name, name)),
                   h.p(
                     [],

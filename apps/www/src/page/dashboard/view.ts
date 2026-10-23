@@ -1,6 +1,8 @@
+import { Match } from 'effect'
 import type { HtmlBuilder } from 'foldkit/html'
 import { defineView } from 'foldkit/submodel'
 
+import type { Theme } from '../../theme'
 import { collection } from './collection'
 import { Message } from './message'
 import type { Model } from './model'
@@ -17,6 +19,7 @@ import * as Shows from './page/shows'
 import { telemetryView } from './page/telemetry'
 import { usersView } from './page/users'
 import { isAdminSection } from './section'
+import { pageHeader } from './ui'
 
 export interface ViewInputs {
   readonly role: Model['principal']['role']
@@ -97,51 +100,58 @@ const contentTypeTabs = (h: HtmlBuilder<Message>, section: string) =>
 const featuredMixStatus = (model: Model) =>
   model.fields.unavailableTitle
     ? `Current selection: ${model.fields.unavailableTitle} (unpublished). The newest published mix is shown until you choose another.`
-    : `Current selection: ${model.rows.find((row) => row.id === model.fields.savedMixId)?.title ?? 'Automatic — newest published mix'}`
+    : `Current selection: ${model.rows.find((row) => row.id === model.fields.savedMixId)?.title ?? 'Automatic, newest published mix'}`
 
 const featuredMix = (model: Model, h: HtmlBuilder<Message>) =>
   h.section(
-    [h.Class('dashboard-panel dashboard-form')],
+    [h.Class('admin-page')],
     [
-      h.p([], ['Choose the mix shown on the homepage. Only published mixes can be featured.']),
-      h.p([h.Role('status')], [featuredMixStatus(model)]),
-      h.label(
-        [],
+      pageHeader(h, 'Choose the mix shown on the homepage. Only published mixes can be featured.'),
+      h.div(
+        [h.Class('dashboard-panel dashboard-form')],
         [
-          'Featured mix',
-          h.select(
+          h.p([h.Role('status')], [featuredMixStatus(model)]),
+          h.label(
+            [],
             [
-              h.Value(model.fields.mixId ?? ''),
-              h.Disabled(model.phase === 'saving'),
-              h.OnChange((value) => Message.FieldChanged({ name: 'mixId', value })),
-            ],
-            [
-              h.option([h.Value('')], ['Automatic (newest mix)']),
-              model.fields.unavailableTitle && model.fields.savedMixId
-                ? h.option(
-                    [h.Value(model.fields.savedMixId), h.Disabled(true)],
-                    [`${model.fields.unavailableTitle} (unpublished)`],
-                  )
-                : h.empty,
-              ...model.rows.map((row) => h.option([h.Value(row.id)], [row.title])),
+              'Featured mix',
+              h.select(
+                [
+                  h.Value(model.fields.mixId ?? ''),
+                  h.Disabled(model.phase === 'saving'),
+                  h.OnChange((value) => Message.FieldChanged({ name: 'mixId', value })),
+                ],
+                [
+                  h.option([h.Value('')], ['Automatic (newest mix)']),
+                  model.fields.unavailableTitle && model.fields.savedMixId
+                    ? h.option(
+                        [h.Value(model.fields.savedMixId), h.Disabled(true)],
+                        [`${model.fields.unavailableTitle} (unpublished)`],
+                      )
+                    : h.empty,
+                  ...model.rows.map((row) => h.option([h.Value(row.id)], [row.title])),
+                ],
+              ),
             ],
           ),
+          h.p(
+            [],
+            [
+              'If the selected mix is unpublished or deleted, the newest published mix appears instead.',
+            ],
+          ),
+          model.error ? h.p([h.Role('alert')], [model.error]) : h.empty,
+          h.button(
+            [
+              h.Class('dashboard-button-primary'),
+              h.Disabled(
+                model.phase === 'saving' || model.fields.mixId === model.fields.savedMixId,
+              ),
+              h.OnClick(Message.SaveFeaturedMix()),
+            ],
+            [model.phase === 'saving' ? 'Saving…' : 'Save featured mix'],
+          ),
         ],
-      ),
-      h.p(
-        [],
-        [
-          'If the selected mix is unpublished or deleted, the newest published mix appears instead.',
-        ],
-      ),
-      model.error ? h.p([h.Role('alert')], [model.error]) : h.empty,
-      h.button(
-        [
-          h.Class('dashboard-button-primary'),
-          h.Disabled(model.phase === 'saving' || model.fields.mixId === model.fields.savedMixId),
-          h.OnClick(Message.SaveFeaturedMix()),
-        ],
-        [model.phase === 'saving' ? 'Saving…' : 'Save featured mix'],
       ),
     ],
   )
@@ -150,7 +160,6 @@ const preferences = (model: Model, h: HtmlBuilder<Message>) =>
   h.section(
     [h.Class('dashboard-panel')],
     [
-      h.h2([], ['Email preferences']),
       toggle(h, model, 'mixReleaseEnabled', 'New mix and show updates'),
       toggle(h, model, 'promotionalEnabled', 'Promotional emails'),
       toggle(h, model, 'systemEnabled', 'System notifications'),
@@ -166,13 +175,66 @@ const preferences = (model: Model, h: HtmlBuilder<Message>) =>
     ],
   )
 
+const player = (model: Model, h: HtmlBuilder<Message>) =>
+  h.section(
+    [h.Class('admin-page')],
+    [
+      pageHeader(h, 'Player settings are stored on this device.'),
+      h.div(
+        [h.Class('dashboard-panel')],
+        [
+          toggle(h, model, 'continueQueue', 'Continue through queue'),
+          toggle(h, model, 'restorePosition', 'Restore listening position'),
+          h.button(
+            [
+              h.Class('dashboard-button-primary'),
+              h.OnClick(Message.SavePlayerPreferences()),
+              h.Disabled(model.phase === 'saving'),
+            ],
+            [model.phase === 'saving' ? 'Saving…' : 'Save player preferences'],
+          ),
+        ],
+      ),
+    ],
+  )
+
+const themes: ReadonlyArray<{
+  readonly theme: Theme
+  readonly label: string
+  readonly hint: string
+}> = [
+  { theme: 'light', label: 'Light', hint: 'Always use the light interface' },
+  { theme: 'dark', label: 'Dark', hint: 'Always use the dark interface' },
+  { theme: 'system', label: 'System', hint: 'Follow your device preference' },
+]
+
+const appearance = (model: Model, h: HtmlBuilder<Message>) =>
+  h.section(
+    [h.Class('admin-page')],
+    [
+      pageHeader(h, 'Choose how gbfm looks on this device.'),
+      h.div(
+        [h.Class('appearance-options')],
+        themes.map(({ theme, label, hint }) =>
+          h.button(
+            [
+              h.AriaPressed(String((model.fields.theme ?? 'system') === theme)),
+              h.OnClick(Message.ThemeSelected({ theme })),
+            ],
+            [h.strong([], [label]), h.span([], [hint])],
+          ),
+        ),
+      ),
+    ],
+  )
+
 export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, inputs, h) => {
   const role = inputs.role
 
   const spotify = h.section(
     [h.Class(model.section === 'spotify-callback' ? 'page prose' : 'dashboard-panel')],
     [
-      h.h2([], ['Spotify connection']),
+      model.section === 'spotify-callback' ? h.h2([], ['Spotify connection']) : h.empty,
       h.p([], ['Connect Spotify to play and queue tracks from music cards.']),
       model.phase === 'loading' ? h.p([h.Role('status')], ['Connecting Spotify…']) : h.empty,
       model.error ? h.p([h.Role('alert')], [model.error]) : h.empty,
@@ -294,86 +356,14 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
                                       toParentMessage: (message) =>
                                         Message.GotShowMessage({ message }),
                                     })
-                                  : model.section === 'profile'
-                                    ? profile(model, h)
-                                    : model.section === 'email'
-                                      ? preferences(model, h)
-                                      : model.section === 'player'
-                                        ? h.section(
-                                            [h.Class('dashboard-panel')],
-                                            [
-                                              h.h2([], ['Player preferences']),
-                                              h.p(
-                                                [],
-                                                ['Player settings are stored on this device.'],
-                                              ),
-                                              toggle(
-                                                h,
-                                                model,
-                                                'continueQueue',
-                                                'Continue through queue',
-                                              ),
-                                              toggle(
-                                                h,
-                                                model,
-                                                'restorePosition',
-                                                'Restore listening position',
-                                              ),
-                                              h.button(
-                                                [
-                                                  h.Class('dashboard-button-primary'),
-                                                  h.OnClick(Message.SavePlayerPreferences()),
-                                                  h.Disabled(model.phase === 'saving'),
-                                                ],
-                                                [
-                                                  model.phase === 'saving'
-                                                    ? 'Saving…'
-                                                    : 'Save player preferences',
-                                                ],
-                                              ),
-                                            ],
-                                          )
-                                        : model.section === 'appearance'
-                                          ? h.section(
-                                              [h.Class('appearance-options')],
-                                              [
-                                                h.p([], ['Choose how gbfm looks on this device']),
-                                                ...(['light', 'dark', 'system'] as const).map(
-                                                  (theme) =>
-                                                    h.button(
-                                                      [
-                                                        h.AriaPressed(
-                                                          String(
-                                                            (model.fields.theme ?? 'system') ===
-                                                              theme,
-                                                          ),
-                                                        ),
-                                                        h.OnClick(Message.ThemeSelected({ theme })),
-                                                      ],
-                                                      [
-                                                        h.strong(
-                                                          [],
-                                                          [
-                                                            theme.charAt(0).toUpperCase() +
-                                                              theme.slice(1),
-                                                          ],
-                                                        ),
-                                                        h.span(
-                                                          [],
-                                                          [
-                                                            theme === 'system'
-                                                              ? 'Follow your device preference'
-                                                              : `Always use the ${theme} interface`,
-                                                          ],
-                                                        ),
-                                                      ],
-                                                    ),
-                                                ),
-                                              ],
-                                            )
-                                          : model.section === 'admin'
-                                            ? adminHub(h, model.rows)
-                                            : collection(model, h)
+                                  : Match.value(model.section).pipe(
+                                      Match.when('profile', () => profile(model, h)),
+                                      Match.when('email', () => preferences(model, h)),
+                                      Match.when('player', () => player(model, h)),
+                                      Match.when('appearance', () => appearance(model, h)),
+                                      Match.when('admin', () => adminHub(h, model.rows)),
+                                      Match.orElse(() => collection(model, h)),
+                                    )
 
   return shell(
     model.section === 'overview'
