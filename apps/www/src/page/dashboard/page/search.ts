@@ -35,7 +35,7 @@ export const searchView = (model: Model, url: string, h: HtmlBuilder<Message>) =
         : dataTable(h, {
             label: 'Search results',
             loading: model.phase === 'loading',
-            columns: [{ label: 'Title', className: 'admin-col-wide' }, { label: 'Type' }],
+            columns: [{ label: 'Title' }, { label: 'Type', width: '8rem' }],
             rows: model.rows.map((row) => ({
               key: row.id,
               cells: [

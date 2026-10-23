@@ -65,6 +65,49 @@ export const pageRange = (offset: number, count: number, total: number) =>
 export const daysAgoDate = (days: number, now: number) =>
   new Date(now - days * DAY).toISOString().slice(0, 10)
 
+export const filterHref = (
+  path: string,
+  query: URLSearchParams,
+  changes: Readonly<Record<string, string | null>>,
+) => {
+  const params = new URLSearchParams(query)
+
+  params.delete('offset')
+
+  for (const [key, value] of Object.entries(changes)) {
+    if (value) params.set(key, value)
+    else params.delete(key)
+  }
+
+  const search = params.toString()
+
+  return search ? `${path}?${search}` : path
+}
+
+export const datePresets: ReadonlyArray<{ readonly label: string; readonly days: number | null }> =
+  [
+    { label: '24 hours', days: 1 },
+    { label: '7 days', days: 7 },
+    { label: '30 days', days: 30 },
+    { label: 'All time', days: null },
+  ]
+
+export const activeDatePreset = (
+  dateFrom: string,
+  dateTo: string,
+  now: number,
+): number | null | 'custom' => {
+  if (!dateFrom && !dateTo) return null
+
+  const match = dateTo
+    ? undefined
+    : datePresets.find(
+        (preset) => preset.days !== null && daysAgoDate(preset.days, now) === dateFrom,
+      )
+
+  return match?.days ?? 'custom'
+}
+
 export type Tone = 'ok' | 'warn' | 'error' | 'neutral'
 
 export const badge = <M>(h: HtmlBuilder<M>, label: string, tone: Tone, title?: string) =>
@@ -119,6 +162,7 @@ export const segmented = <M>(
 export interface Column {
   readonly label: string
   readonly className?: string
+  readonly width?: string
 }
 
 export interface TableRow<M> {
@@ -138,6 +182,7 @@ export const dataTable = <M>(
     readonly columns: ReadonlyArray<Column>
     readonly rows: ReadonlyArray<TableRow<M>>
     readonly loading?: boolean
+    readonly minWidth?: string
     readonly empty: Child
   },
 ) => {
@@ -157,7 +202,7 @@ export const dataTable = <M>(
           [h.Key(row.key), h.Class('admin-row'), ...(row.attributes ?? [])],
           row.cells.map((cell, index) => h.td(cellClass(h, columns[index]), [cell])),
         ),
-        ...(row.detail === undefined
+        ...(row.detail === undefined || row.detail === null
           ? []
           : [
               h.tr(
@@ -174,6 +219,7 @@ export const dataTable = <M>(
         [
           h.Class('admin-table'),
           h.AriaLabel(options.label),
+          ...(options.minWidth ? [h.Style({ 'min-width': options.minWidth })] : []),
           ...(options.loading ? [h.AriaBusy(true)] : []),
         ],
         [
@@ -183,7 +229,14 @@ export const dataTable = <M>(
               h.tr(
                 [],
                 columns.map((column) =>
-                  h.th([h.Scope('col'), ...cellClass(h, column)], [column.label]),
+                  h.th(
+                    [
+                      h.Scope('col'),
+                      ...cellClass(h, column),
+                      ...(column.width ? [h.Style({ width: column.width })] : []),
+                    ],
+                    [column.label],
+                  ),
                 ),
               ),
             ],

@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import { absoluteTime, daysAgoDate, pageRange, plural, relativeTimeLabel } from './ui'
+import {
+  absoluteTime,
+  activeDatePreset,
+  daysAgoDate,
+  filterHref,
+  pageRange,
+  plural,
+  relativeTimeLabel,
+} from './ui'
 
 const now = Date.parse('2026-10-23T12:00:00.000Z')
 
@@ -63,5 +71,39 @@ describe('daysAgoDate', () => {
   it('returns the UTC calendar date N days back', () => {
     expect(daysAgoDate(1, now)).toBe('2026-10-22')
     expect(daysAgoDate(30, now)).toBe('2026-09-23')
+  })
+})
+
+describe('filterHref', () => {
+  it('changes one filter, keeps the rest and returns to the first page', () => {
+    const query = new URLSearchParams({ recipientEmail: 'a@b.test', status: 'SENT', offset: '25' })
+
+    expect(filterHref('/dashboard/email-logs', query, { status: 'FAILED' })).toBe(
+      '/dashboard/email-logs?recipientEmail=a%40b.test&status=FAILED',
+    )
+  })
+
+  it('drops cleared filters and the query string when nothing is left', () => {
+    const query = new URLSearchParams({ status: 'SENT' })
+
+    expect(filterHref('/dashboard/email-logs', query, { status: null })).toBe(
+      '/dashboard/email-logs',
+    )
+  })
+})
+
+describe('activeDatePreset', () => {
+  it('reports all time when no dates are set', () => {
+    expect(activeDatePreset('', '', now)).toBe(null)
+  })
+
+  it('recognises a preset start date', () => {
+    expect(activeDatePreset('2026-10-16', '', now)).toBe(7)
+  })
+
+  it('treats any other range as custom', () => {
+    expect(activeDatePreset('2026-09-26', '', now)).toBe('custom')
+    expect(activeDatePreset('2026-10-16', '2026-10-20', now)).toBe('custom')
+    expect(activeDatePreset('', '2026-10-20', now)).toBe('custom')
   })
 })

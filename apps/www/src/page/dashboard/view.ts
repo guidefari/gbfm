@@ -252,7 +252,7 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
         })
       : model.section === 'newsletter' && model.phase === 'ready'
         ? subscribersView(model, h)
-        : model.section === 'email-logs' && model.phase === 'ready'
+        : model.section === 'email-logs' && model.phase !== 'error'
           ? historyView(model, inputs.url, h)
           : model.section === 'users'
             ? usersView(

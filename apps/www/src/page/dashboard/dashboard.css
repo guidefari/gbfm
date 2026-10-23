@@ -670,11 +670,21 @@
   padding: 0.25rem 0.5rem;
 }
 .gbfm-dashboard .admin-toolbar input[type='search'] {
-  flex: 0 1 16rem;
+  flex: 1 1 10rem;
   min-width: 0;
+  max-width: 16rem;
 }
 .admin-toolbar-end {
   margin-left: auto;
+}
+.admin-toolbar-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.admin-toolbar a {
+  color: var(--dash-fg);
+  font-size: 0.8125rem;
 }
 .admin-segmented {
   display: inline-flex;
@@ -723,6 +733,8 @@
 }
 .admin-table {
   width: 100%;
+  min-width: 36rem;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 0.875rem;
 }
@@ -739,7 +751,6 @@
   white-space: nowrap;
 }
 .admin-table td {
-  max-width: 20rem;
   height: 2.375rem;
   box-sizing: border-box;
   padding: 0.375rem 0.75rem;
@@ -756,9 +767,6 @@
 }
 .admin-table a {
   color: var(--dash-fg);
-}
-.admin-table .admin-col-wide {
-  max-width: 28rem;
 }
 .admin-table .admin-col-muted {
   color: var(--dash-muted);
@@ -789,7 +797,7 @@
 .admin-cell-stack small {
   color: var(--dash-muted);
 }
-.gbfm-dashboard .admin-disclosure {
+.gbfm-dashboard .admin-table .admin-disclosure {
   min-height: 0;
   max-width: 100%;
   padding: 0;
@@ -802,14 +810,13 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.gbfm-dashboard .admin-disclosure:hover {
+.gbfm-dashboard .admin-table .admin-disclosure:hover {
   background: transparent;
   color: var(--dash-fg);
   text-decoration: underline;
   text-underline-offset: 0.2em;
 }
 .admin-row-detail td {
-  max-width: none;
   height: auto;
   padding: 0.75rem;
   background: color-mix(in srgb, var(--dash-fg) 3%, transparent);
@@ -957,6 +964,7 @@
     margin-left: 0;
   }
   .gbfm-dashboard .admin-toolbar input[type='search'] {
-    flex: 1 1 100%;
+    flex: 1 1 auto;
+    max-width: none;
   }
 }
