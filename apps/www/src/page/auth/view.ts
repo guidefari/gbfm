@@ -11,6 +11,7 @@ import {
   hiddenField,
   nameField,
   passwordField,
+  type PasswordReveal,
   statusMessage,
 } from './fields'
 
@@ -58,7 +59,7 @@ const footer = (h: Builder, action: string): Html =>
     ),
   )
 
-const authForm = (h: Builder, action: string, url: URL): Html => {
+const authForm = (h: Builder, action: string, url: URL, reveal: PasswordReveal): Html => {
   const copy = authCopy(action)
   const error = authErrorMessage(url.searchParams.get('error'))
 
@@ -87,7 +88,7 @@ const authForm = (h: Builder, action: string, url: URL): Html => {
             action === 'reset-password' ? h.empty : emailField(h),
             action === 'forgot-password'
               ? h.empty
-              : passwordField(h, action === 'sign-in' ? 'current' : 'new'),
+              : passwordField(h, action === 'sign-in' ? 'current' : 'new', reveal),
           ],
         ),
         h.button([h.Type('submit'), h.Class('auth-submit')], [copy.submit]),
@@ -97,5 +98,5 @@ const authForm = (h: Builder, action: string, url: URL): Html => {
   )
 }
 
-export const view = (h: Builder, action: string, url: URL): Html =>
-  action === 'verify-email' ? verifyEmail(h) : authForm(h, action, url)
+export const view = (h: Builder, action: string, url: URL, reveal: PasswordReveal): Html =>
+  action === 'verify-email' ? verifyEmail(h) : authForm(h, action, url, reveal)

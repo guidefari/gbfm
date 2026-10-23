@@ -1202,6 +1202,26 @@
 .auth-field input:focus-visible {
   border-color: var(--highlight);
 }
+.auth-password-wrap {
+  position: relative;
+}
+.auth-password-wrap input {
+  padding-right: 4.5rem;
+}
+.auth-reveal {
+  position: absolute;
+  inset-block: 1px;
+  right: 1px;
+  padding: 0 0.875rem;
+  border: 0;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.auth-reveal:hover {
+  color: var(--card-foreground);
+}
 .auth-hint {
   font-size: 0.75rem;
   color: var(--muted-foreground);

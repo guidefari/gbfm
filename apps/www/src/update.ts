@@ -254,6 +254,9 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
     },
     AccountMenuClosed: () => closeAccountMenu(model),
     GotAccountMenuMessage: ({ message }) => updateAccountMenu(model, message),
+    PasswordVisibilityToggled: () => ({
+      model: { ...model, passwordVisible: !model.passwordVisible },
+    }),
     MenuToggled: () => (model.mobileMenu.isOpen ? closeMobileMenu(model) : openMobileMenu(model)),
     GotMobileMenuMessage: ({ message }) => updateMobileMenu(model, message),
     MenuDragStarted: ({ pointerId, clientY }) =>
