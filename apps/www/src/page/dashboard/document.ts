@@ -24,6 +24,7 @@ import { GetAllShowsResponse } from '@gbfm/api/shows'
 import { UserProfileResponse } from '@gbfm/api/user'
 import { Data, Effect, Schema } from 'effect'
 
+import { highlightRows } from './page/admin'
 import { parseCatalogDocument } from './page/catalog'
 import { AdminUsers } from './page/users'
 
@@ -263,17 +264,7 @@ export const parseDashboardDocument = (
       )
     case '/api/admin/overview':
       return Schema.decodeUnknownEffect(AdminOverviewResponse)(input).pipe(
-        Effect.map(({ highlights }) =>
-          rowsDocument(
-            Object.entries(highlights).map(([name, value]) => ({
-              id: name,
-              title: name,
-              detail: String(value),
-              href: null,
-              actionId: null,
-            })),
-          ),
-        ),
+        Effect.map(({ highlights }) => rowsDocument(highlightRows(highlights))),
       )
     case '/api/admin/telemetry':
       return Schema.decodeUnknownEffect(AdminTelemetryResponse)(input).pipe(

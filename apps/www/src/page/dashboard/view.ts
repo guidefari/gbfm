@@ -5,6 +5,7 @@ import { collection } from './collection'
 import { Message } from './message'
 import type { Model } from './model'
 import { dashboardHeader, sectionHref, sectionLabel, subTabs } from './navigation'
+import { adminHub } from './page/admin'
 import { catalogView, entityRoute } from './page/catalog'
 import { historyView, subscribersView } from './page/comms'
 import * as Emails from './page/emails'
@@ -378,7 +379,9 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
                                               ),
                                             ],
                                           )
-                                        : collection(model, h)
+                                        : model.section === 'admin'
+                                          ? adminHub(h, model.rows)
+                                          : collection(model, h)
 
   return shell(
     model.section === 'overview'

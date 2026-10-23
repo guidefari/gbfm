@@ -381,6 +381,93 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+.admin-hub {
+  display: grid;
+  gap: 1.25rem;
+}
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  border: 1px solid var(--dash-line);
+  background: var(--dash-line);
+}
+.admin-stats > div {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+  gap: 0.125rem;
+  padding: 0.75rem 1rem;
+  background: var(--dash-bg);
+}
+.admin-stats dt {
+  color: var(--dash-muted);
+  font-size: 0.75rem;
+}
+.admin-stats dd {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.admin-tasks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.admin-tasks > li {
+  display: grid;
+  margin: 0;
+  align-content: start;
+  gap: 0.375rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--dash-line);
+  background: var(--dash-panel);
+}
+.admin-tasks h2 {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+.admin-tasks h2 a {
+  color: var(--dash-fg);
+  text-decoration: none;
+}
+.admin-tasks h2 a:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.admin-tasks p {
+  margin: 0;
+  color: var(--dash-muted);
+}
+.admin-tasks nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin-top: 0.25rem;
+}
+.admin-tasks nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--dash-fg);
+  text-underline-offset: 0.2em;
+}
+@media (pointer: fine) {
+  .admin-tasks nav a {
+    min-height: 1.75rem;
+  }
+}
+@media (max-width: 640px) {
+  .admin-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 .telemetry-dashboard p {
   margin: 0.75rem 0;
   overflow-wrap: anywhere;
