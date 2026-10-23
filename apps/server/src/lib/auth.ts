@@ -67,7 +67,7 @@ const makeAuth = (
       sendOnSignUp: true,
       autoSignInAfterVerification: true,
       sendVerificationEmail: async ({ user, token }) => {
-        const callbackURL = `${config.urls.frontend}/`
+        const callbackURL = `${config.urls.frontend}/auth/verify-email?verified=1`
         const verificationUrl = `${config.urls.frontend}/auth/verify-email?token=${encodeURIComponent(token)}&callbackURL=${encodeURIComponent(callbackURL)}`
 
         await Effect.runPromise(
