@@ -1203,6 +1203,10 @@
 .auth-field input:focus-visible {
   border-color: var(--highlight);
 }
+.auth-hint {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
 .auth-subtle-link {
   font-size: 0.75rem;
   color: var(--muted-foreground);

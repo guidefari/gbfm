@@ -87,11 +87,7 @@ const authForm = (h: Builder, action: string, url: URL): Html => {
             action === 'reset-password' ? h.empty : emailField(h),
             action === 'forgot-password'
               ? h.empty
-              : passwordField(
-                  h,
-                  action === 'sign-in' ? 'current-password' : 'new-password',
-                  action === 'sign-in',
-                ),
+              : passwordField(h, action === 'sign-in' ? 'current' : 'new'),
           ],
         ),
         h.button([h.Type('submit'), h.Class('auth-submit')], [copy.submit]),
