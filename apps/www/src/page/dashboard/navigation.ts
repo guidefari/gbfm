@@ -165,42 +165,93 @@ export const resolveSection = (section: string, role: Role): ResolvedSection | n
 export const sectionLabel = (section: string, role: Role) =>
   resolveSection(section, role)?.page.label ?? section.replaceAll('-', ' ')
 
-export const navigation = (h: HtmlBuilder<Message>, section: string, role: Role) =>
-  h.div(
-    [h.Class('dashboard-navigation')],
+export const sectionHref = (section: string) =>
+  section === 'overview' ? '/dashboard' : `/dashboard/${section}`
+
+export interface Tab {
+  readonly href: string
+  readonly label: string
+  readonly current: boolean
+}
+
+export const tabs = (
+  h: HtmlBuilder<Message>,
+  label: string,
+  className: string,
+  items: ReadonlyArray<Tab>,
+) =>
+  h.nav(
+    [h.AriaLabel(label), h.Class(`dashboard-tabs ${className}`)],
+    items.map((item) =>
+      h.a([h.Href(item.href), ...(item.current ? [h.AriaCurrent('page')] : [])], [item.label]),
+    ),
+  )
+
+export const subTabs = (h: HtmlBuilder<Message>, label: string, items: ReadonlyArray<Tab>) =>
+  tabs(h, label, 'dashboard-subtabs', items)
+
+export const dashboardHeader = (h: HtmlBuilder<Message>, section: string, role: Role) => {
+  const resolved = resolveSection(section, role)
+  const available = visibleWorkspaces(role)
+
+  const workspace =
+    available.find((candidate) => candidate.label === resolved?.workspace.label) ?? available[0]
+
+  const group = resolved?.group
+
+  return h.header(
+    [h.Class('dashboard-header')],
     [
-      h.nav(
-        [h.AriaLabel('Dashboard sections')],
-        visibleWorkspaces(role)
-          .flatMap((workspace) => workspace.groups)
-          .map((group) =>
-            h.div(
-              [h.Class('dashboard-nav-group')],
-              [
-                h.p([h.Class('dashboard-nav-label')], [group.label]),
-                ...group.pages.map((link) =>
-                  h.a(
-                    [
-                      h.Href(`/dashboard/${link.section}`),
-                      h.Class(
-                        resolveSection(section, role)?.page.section === link.section
-                          ? 'active'
-                          : '',
+      h.div(
+        [h.Class('dashboard-header-top')],
+        [
+          h.a([h.Href('/dashboard'), h.Class('dashboard-brand')], ['Dashboard']),
+          h.div(
+            [h.Class('dashboard-header-actions')],
+            [
+              available.length > 1
+                ? h.nav(
+                    [h.AriaLabel('Dashboard workspaces'), h.Class('dashboard-workspaces')],
+                    available.map((candidate) =>
+                      h.a(
+                        [
+                          h.Href(sectionHref(candidate.groups[0]?.pages[0].section ?? 'overview')),
+                          ...(candidate.label === workspace?.label ? [h.AriaCurrent('page')] : []),
+                        ],
+                        [candidate.label],
                       ),
-                      ...(resolveSection(section, role)?.page.section === link.section
-                        ? [h.AriaCurrent('page')]
-                        : []),
-                    ],
-                    [link.label],
-                  ),
-                ),
-              ],
-            ),
+                    ),
+                  )
+                : h.empty,
+              h.form(
+                [h.Method('post'), h.Action('/actions/sign-out'), h.Class('dashboard-sign-out')],
+                [h.button([h.Type('submit'), h.Class('dashboard-button-quiet')], ['Sign out'])],
+              ),
+            ],
           ),
+        ],
       ),
-      h.form(
-        [h.Method('post'), h.Action('/actions/sign-out'), h.Class('dashboard-sign-out')],
-        [h.button([h.Type('submit'), h.Class('dashboard-button-quiet')], ['Sign out'])],
+      tabs(
+        h,
+        'Dashboard sections',
+        'dashboard-group-tabs',
+        (workspace?.groups ?? []).map((candidate) => ({
+          href: sectionHref(candidate.pages[0].section),
+          label: candidate.label,
+          current: candidate.label === group?.label,
+        })),
       ),
+      group && group.pages.length > 1
+        ? subTabs(
+            h,
+            group.label,
+            group.pages.map((page) => ({
+              href: sectionHref(page.section),
+              label: page.label,
+              current: page.section === resolved?.page.section,
+            })),
+          )
+        : h.empty,
     ],
   )
+}

@@ -4,7 +4,7 @@ import { defineView } from 'foldkit/submodel'
 import { collection } from './collection'
 import { Message } from './message'
 import type { Model } from './model'
-import { navigation, sectionLabel } from './navigation'
+import { dashboardHeader, sectionLabel } from './navigation'
 import { catalogView, entityRoute } from './page/catalog'
 import { historyView, subscribersView } from './page/comms'
 import * as Emails from './page/emails'
@@ -187,16 +187,25 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
 
   if (model.section === 'spotify-callback') return spotify
 
-  if (isAdminSection(model.section) && role !== 'admin')
-    return h.section(
-      [h.Class('dashboard-forbidden')],
+  const entity = entityRoute(model.section)
+
+  const shell = (heading: string, body: ReturnType<typeof h.div>) =>
+    h.div(
+      [h.Class('gbfm-dashboard')],
       [
-        h.h1([], ['Administrator access required']),
-        h.p([], ['This area is not available to your account.']),
+        dashboardHeader(h, model.section, role),
+        h.section(
+          [h.Class('dashboard-content')],
+          [h.header([h.Class('dashboard-heading')], [h.h1([], [heading])]), body],
+        ),
       ],
     )
 
-  const entity = entityRoute(model.section)
+  if (isAdminSection(model.section) && role !== 'admin')
+    return shell(
+      'Administrator access required',
+      h.p([h.Class('dashboard-forbidden')], ['This area is not available to your account.']),
+    )
 
   const content =
     model.section === 'emails' && model.phase === 'ready'
@@ -354,47 +363,12 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
                                           )
                                         : collection(model, h)
 
-  return h.div(
-    [h.Class('gbfm-dashboard')],
-    [
-      h.aside(
-        [h.Class('dashboard-sidebar')],
-        [
-          h.a([h.Href('/dashboard'), h.Class('dashboard-brand')], ['Dashboard']),
-          navigation(h, model.section, role),
-        ],
-      ),
-      h.div(
-        [h.Class('dashboard-mobile-header')],
-        [
-          h.a([h.Href('/dashboard'), h.Class('dashboard-brand')], ['Dashboard']),
-          h.details(
-            [h.Key(model.section), h.Class('dashboard-section-picker')],
-            [h.summary([], ['Sections']), navigation(h, model.section, role)],
-          ),
-        ],
-      ),
-      h.section(
-        [h.Class('dashboard-content')],
-        [
-          h.header(
-            [h.Class('dashboard-heading')],
-            [
-              h.h1(
-                [],
-                [
-                  model.section === 'overview'
-                    ? 'Your dashboard'
-                    : entity
-                      ? `Edit ${entity.kind}`
-                      : sectionLabel(model.section, role),
-                ],
-              ),
-            ],
-          ),
-          content,
-        ],
-      ),
-    ],
+  return shell(
+    model.section === 'overview'
+      ? 'Your dashboard'
+      : entity
+        ? `Edit ${entity.kind}`
+        : sectionLabel(model.section, role),
+    content,
   )
 })
