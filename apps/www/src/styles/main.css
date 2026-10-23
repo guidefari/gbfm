@@ -1141,7 +1141,6 @@
   gap: 1.5rem;
   padding: 2.25rem 2rem 1.75rem;
   border: 1px solid var(--border);
-  border-top: 3px solid var(--highlight);
   background: var(--card);
   color: var(--card-foreground);
   line-height: 1.4;
