@@ -16,7 +16,7 @@
     "device:local": "expo run:ios --device"
   },
   "dependencies": {
-    "@effect/atom-react": "4.0.5",
+    "@effect/atom-react": "4.0.6",
     "@expo/metro-config": "~57.0.13",
     "@gbfm/api": "workspace:*",
     "@gbfm/core": "workspace:*",
@@ -25,18 +25,18 @@
     "@gbfm/theme": "workspace:*",
     "@spotify-effect/browser": "0.6.7",
     "@spotify-effect/core": "0.6.7",
-    "babel-preset-expo": "~57.0.15",
-    "effect": "4.0.5",
-    "expo": "^57.0.29",
+    "babel-preset-expo": "~57.0.16",
+    "effect": "4.0.6",
+    "expo": "^57.0.31",
     "expo-audio": "~57.0.5",
-    "expo-constants": "~57.0.19",
+    "expo-constants": "~57.0.22",
     "expo-crypto": "^57.0.4",
     "expo-dev-client": "^57.0.20",
     "expo-file-system": "~57.0.7",
     "expo-font": "^57.0.4",
     "expo-linear-gradient": "^57.0.2",
     "expo-linking": "~57.0.13",
-    "expo-router": "~57.0.27",
+    "expo-router": "~57.0.29",
     "expo-secure-store": "~57.0.4",
     "expo-splash-screen": "~57.0.10",
     "expo-status-bar": "~57.0.1",
@@ -56,12 +56,12 @@
     "tailwindcss": "4.3.3"
   },
   "devDependencies": {
-    "@babel/core": "8.0.7",
+    "@babel/core": "8.0.9",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "26.6.5",
     "@types/react": "19.3.0",
-    "postcss": "8.5.30",
+    "postcss": "8.5.31",
     "typescript": "~7.0.2",
-    "vitest": "5.0.4"
+    "vitest": "5.0.5"
   }
 }
