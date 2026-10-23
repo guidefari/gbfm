@@ -29,13 +29,11 @@ type QueryableClient = {
   readonly [INSTRUMENTED_DATABASE_CLIENT]?: true
 }
 
-const databaseTracer = trace.getTracer('gbfm.database')
-
 function runOpenTelemetrySpan(
   options: DatabaseSpanOptions,
   evaluate: () => QueryResult,
 ): QueryResult {
-  return databaseTracer.startActiveSpan(
+  return trace.getTracer('gbfm.database').startActiveSpan(
     options.name,
     {
       attributes: {
