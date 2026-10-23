@@ -53,7 +53,12 @@ const revealToggle = (h: Builder, { passwordVisible, interactive }: PasswordReve
       )
     : h.empty
 
-export const passwordField = (h: Builder, kind: 'current' | 'new', reveal: PasswordReveal): Html =>
+export const passwordField = (
+  h: Builder,
+  kind: 'current' | 'new',
+  reveal: PasswordReveal,
+  forgotHref: string,
+): Html =>
   h.div(
     [h.Class('auth-field')],
     [
@@ -62,10 +67,7 @@ export const passwordField = (h: Builder, kind: 'current' | 'new', reveal: Passw
         [
           h.label([h.Class('auth-label'), h.For('auth-password')], ['Password']),
           kind === 'current'
-            ? h.a(
-                [h.Href('/auth/forgot-password'), h.Class('auth-subtle-link')],
-                ['Forgot password?'],
-              )
+            ? h.a([h.Href(forgotHref), h.Class('auth-subtle-link')], ['Forgot password?'])
             : h.empty,
         ],
       ),

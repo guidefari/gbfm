@@ -15,6 +15,7 @@ import {
   type PasswordReveal,
   statusMessage,
 } from './fields'
+import { authHref } from './links'
 import { invalidResetLink, verifyEmail } from './notices'
 import { authShell, link } from './shell'
 
@@ -22,22 +23,29 @@ type Builder = HtmlBuilder<Message>
 
 export type AuthViewState = PasswordReveal & Pick<Model, 'authSubmitting'>
 
-const footer = (h: Builder, action: string): Html =>
+const footer = (h: Builder, action: string, returnTo: string): Html =>
   h.p(
     [h.Class('auth-footer')],
     Match.value(action).pipe(
-      Match.when('sign-in', () => ['New here? ', link(h, '/auth/sign-up', 'Create an account')]),
+      Match.when('sign-in', () => [
+        'New here? ',
+        link(h, authHref('/auth/sign-up', { returnTo }), 'Create an account'),
+      ]),
       Match.when('sign-up', () => [
         'Already have an account? ',
-        link(h, '/auth/sign-in', 'Sign in'),
+        link(h, authHref('/auth/sign-in', { returnTo }), 'Sign in'),
       ]),
-      Match.orElse(() => ['Remembered it? ', link(h, '/auth/sign-in', 'Sign in')]),
+      Match.orElse(() => [
+        'Remembered it? ',
+        link(h, authHref('/auth/sign-in', { returnTo }), 'Sign in'),
+      ]),
     ),
   )
 
 const authForm = (h: Builder, action: string, url: URL, state: AuthViewState): Html => {
   const copy = authCopy(action)
   const error = authErrorMessage(url.searchParams.get('error'))
+  const returnTo = url.searchParams.get('returnTo') ?? ''
 
   return authShell(
     h,
@@ -61,7 +69,7 @@ const authForm = (h: Builder, action: string, url: URL, state: AuthViewState): H
           ? statusMessage(h, 'Your password has been reset. Sign in with your new password.')
           : h.empty,
         hiddenField(h, 'token', url.searchParams.get('token') ?? ''),
-        hiddenField(h, 'returnTo', url.searchParams.get('returnTo') ?? '/dashboard'),
+        hiddenField(h, 'returnTo', returnTo),
         h.div(
           [h.Class('auth-fields')],
           [
@@ -71,7 +79,12 @@ const authForm = (h: Builder, action: string, url: URL, state: AuthViewState): H
               : emailField(h, url.searchParams.get('email') ?? ''),
             action === 'forgot-password'
               ? h.empty
-              : passwordField(h, action === 'sign-in' ? 'current' : 'new', state),
+              : passwordField(
+                  h,
+                  action === 'sign-in' ? 'current' : 'new',
+                  state,
+                  authHref('/auth/forgot-password', { returnTo }),
+                ),
           ],
         ),
         h.button(
@@ -83,7 +96,7 @@ const authForm = (h: Builder, action: string, url: URL, state: AuthViewState): H
           ],
           [copy.submit],
         ),
-        footer(h, action),
+        footer(h, action, returnTo),
       ],
     ),
   )

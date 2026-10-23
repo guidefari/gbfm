@@ -3,6 +3,7 @@ import { Match, Option, Schema } from 'effect'
 import * as Server from 'foldkit/experimental/server'
 
 import { authErrorKey, authErrorLocation, readAuthErrorCode } from '../page/auth/errors'
+import { authHref } from '../page/auth/links'
 import { readModeCookie } from '../page/tweet/navigation'
 import { apiRequest } from './api'
 import { randomTweet } from './tweet-random'
@@ -211,7 +212,9 @@ export const handleFormAction = async (request: Request): Promise<Server.Respond
 
   return redirect(
     Match.value(action).pipe(
-      Match.when('/auth/forgot-password', () => '/auth/forgot-password?sent=1'),
+      Match.when('/auth/forgot-password', () =>
+        authHref('/auth/forgot-password', { sent: '1', returnTo: field('returnTo') }),
+      ),
       Match.when('/auth/reset-password', () => '/auth/sign-in?reset=1'),
       Match.orElse(() =>
         authPath ? returnPath : `/tweet/${encodeURIComponent(url.searchParams.get('slug') ?? '')}`,
