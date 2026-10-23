@@ -2,6 +2,7 @@ import { isRole } from '@gbfm/core/roles'
 import { Match, Option, Schema } from 'effect'
 import * as Server from 'foldkit/experimental/server'
 
+import { authErrorKey, authErrorLocation, readAuthErrorCode } from '../page/auth/errors'
 import { readModeCookie } from '../page/tweet/navigation'
 import { apiRequest } from './api'
 import { randomTweet } from './tweet-random'
@@ -184,6 +185,14 @@ export const handleFormAction = async (request: Request): Promise<Server.Respond
         : { content: field('content') },
     ),
   })
+
+  if (!response.ok && authPath)
+    return redirect(
+      authErrorLocation(action, authErrorKey(response.status, await readAuthErrorCode(response)), {
+        returnTo: field('returnTo'),
+        token: field('token'),
+      }),
+    )
 
   if (!response.ok)
     return Server.Responded(

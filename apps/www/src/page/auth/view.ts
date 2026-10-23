@@ -4,7 +4,15 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 import type { Message } from '../../message'
 import { wordmark } from '../../view/wordmark'
 import { authCopy } from './copy'
-import { emailField, hiddenField, nameField, passwordField, statusMessage } from './fields'
+import { authErrorMessage } from './errors'
+import {
+  emailField,
+  errorMessage,
+  hiddenField,
+  nameField,
+  passwordField,
+  statusMessage,
+} from './fields'
 
 type Builder = HtmlBuilder<Message>
 
@@ -52,6 +60,7 @@ const footer = (h: Builder, action: string): Html =>
 
 const authForm = (h: Builder, action: string, url: URL): Html => {
   const copy = authCopy(action)
+  const error = authErrorMessage(url.searchParams.get('error'))
 
   return authShell(
     h,
@@ -62,6 +71,7 @@ const authForm = (h: Builder, action: string, url: URL): Html => {
           [h.Class('auth-header')],
           [h.h1([], [copy.title]), h.p([h.Class('auth-subtitle')], [copy.subtitle])],
         ),
+        error === null ? h.empty : errorMessage(h, error),
         url.searchParams.has('sent')
           ? statusMessage(h, 'Check your inbox for a password reset link.')
           : h.empty,

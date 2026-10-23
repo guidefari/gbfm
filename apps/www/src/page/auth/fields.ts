@@ -53,3 +53,6 @@ export const passwordField = (h: Builder, autocomplete: string, showForgotLink: 
 
 export const statusMessage = (h: Builder, text: string): Html =>
   h.p([h.Role('status'), h.Class('auth-status')], [text])
+
+export const errorMessage = (h: Builder, text: string): Html =>
+  h.p([h.Role('alert'), h.Class('auth-status auth-error')], [text])

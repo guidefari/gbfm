@@ -1227,6 +1227,13 @@
   font-size: 0.8rem;
   line-height: 1.5;
 }
+.auth-error {
+  border-left-color: var(--destructive);
+  background: color-mix(in srgb, var(--destructive) 18%, transparent);
+}
+:is(.dark, [data-theme='dark']) .auth-error {
+  border-left-color: var(--error);
+}
 .auth-footer {
   padding-top: 1.25rem;
   border-top: 1px solid var(--border);
