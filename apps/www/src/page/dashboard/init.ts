@@ -10,6 +10,7 @@ import {
 } from './command'
 import type { Message } from './message'
 import type { Model, Principal } from './model'
+import * as Emails from './page/emails'
 import * as Playlists from './page/playlists'
 import * as Sessions from './page/sessions'
 import * as Shows from './page/shows'
@@ -24,6 +25,7 @@ export const initialModel = (section: string, principal: Principal): Model => ({
   toggles: {},
   error: null,
   spotify: disconnected,
+  emails: Emails.initialModel,
   sessions: Sessions.initialModel,
   shows: Shows.initialModel,
   playlists: Playlists.initialModel,
@@ -35,10 +37,15 @@ export const init =
   (
     section: string,
     principal: Principal,
+    query = new URLSearchParams(),
   ): Runtime.ApplicationInit<Model, Message, void, Services> =>
   () => {
-    const model = initialModel(section, principal)
-    const endpoint = endpointFor(section)
+    const model = {
+      ...initialModel(section, principal),
+      fields: section === 'email-logs' ? Object.fromEntries(query) : {},
+    }
+
+    const endpoint = endpointFor(section, query)
 
     if (isAdminSection(section) && principal.role !== 'admin')
       return { model: { ...model, phase: 'error', error: 'Administrator access required.' } }

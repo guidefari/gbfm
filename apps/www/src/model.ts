@@ -92,6 +92,8 @@ export const Model = Schema.Struct({
   pendingPath: Schema.NullOr(Schema.String),
   pageCache: Schema.HashMap(Schema.String, PageData.schema),
   interactive: Schema.Boolean,
+  passwordVisible: Schema.Boolean,
+  authSubmitting: Schema.Boolean,
   navigationId: Schema.Number,
   tweetReader: TweetReader.Model,
   error: Schema.NullOr(Schema.String),

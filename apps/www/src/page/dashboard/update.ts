@@ -14,6 +14,7 @@ import {
 import { type CatalogOperation, Message } from './message'
 import type { Model } from './model'
 import { entityRoute } from './page/catalog'
+import * as Emails from './page/emails'
 import * as Playlists from './page/playlists'
 import * as Sessions from './page/sessions'
 import * as Shows from './page/shows'
@@ -56,6 +57,17 @@ const writeCatalog = (
 
 export const update = (model: Model, message: Message): Update.Return<Model, Message, Services> =>
   Message.match<Update.Return<Model, Message, Services>>(message, {
+    GotEmailMessage: ({ message }) => {
+      if (model.principal.role !== 'admin' || model.section !== 'emails') return { model }
+      const child = Emails.update(model.emails, message)
+
+      return {
+        model: { ...model, emails: child.model },
+        commands: Command.mapMessages(child.commands ?? [], (message) =>
+          Message.GotEmailMessage({ message }),
+        ),
+      }
+    },
     SaveFeaturedMix: () => {
       if (
         model.principal.role !== 'admin' ||
@@ -178,7 +190,7 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
           model: { ...model, phase: 'loading', error: null },
           commands: [SpotifyRequest({ action: 'status' })],
         }
-      const path = endpointFor(model.section)
+      const path = endpointFor(model.section, new URLSearchParams(model.fields))
 
       return path
         ? { model: { ...model, phase: 'loading', error: null }, commands: [Load({ path })] }
@@ -196,6 +208,12 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
           toggles: document.toggles,
           telemetry: document.telemetry,
           users: document.users,
+          subscribers: document.subscribers,
+          emailLogs: document.emailLogs,
+          emails: {
+            ...Emails.initialModel,
+            options: document.announcementOptions ?? Emails.initialModel.options,
+          },
           shows: { ...Shows.initialModel, listing: document.shows },
           playlists: { ...Playlists.initialModel, listing: document.playlists ?? [] },
           error: null,

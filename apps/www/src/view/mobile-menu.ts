@@ -4,6 +4,7 @@ import type { HtmlBuilder } from 'foldkit/html'
 
 import { Message } from '../message'
 import type { Model } from '../model'
+import { signInHref } from '../page/auth/links'
 import { onDragStart } from '../sheet-drag'
 import { iconPaths, lucide } from './icons'
 import { isActiveNavLink } from './nav-active'
@@ -94,7 +95,7 @@ export const mobileMenu = (
                         section('Account', [
                           principal
                             ? link('/dashboard', 'Dashboard', iconPaths.dashboard)
-                            : link('/auth/sign-in', 'Log in', iconPaths.logIn),
+                            : link(signInHref(pathname), 'Log in', iconPaths.logIn),
                           principal
                             ? h.form(
                                 [h.Method('post'), h.Action('/actions/sign-out')],

@@ -1,6 +1,7 @@
 import { Option, Schema, Stream } from 'effect'
 import { Subscription } from 'foldkit'
 
+import { authSubmitEvents } from './auth-submit'
 import { Message } from './message'
 import type { Model } from './model'
 import * as Creator from './page/creator'
@@ -25,8 +26,25 @@ const menuSubscriptions = Subscription.make<Model, Message>()((entry) => ({
   ),
 }))
 
+const authSubscriptions = Subscription.make<Model, Message>()((entry) => ({
+  authSubmit: entry(
+    { interactive: Schema.Boolean },
+    {
+      modelToDependencies: (model) => ({ interactive: model.interactive }),
+      dependenciesToStream: ({ interactive }) =>
+        interactive
+          ? authSubmitEvents<Message>({
+              submitted: Message.AuthFormSubmitted,
+              restored: Message.AuthFormRestored,
+            })
+          : Stream.empty,
+    },
+  ),
+}))
+
 export const subscriptions = Subscription.aggregate(
   menuSubscriptions,
+  authSubscriptions,
   Subscription.lift(Search.subscriptions)<Model, Message>({
     read: (model) => Option.some(model.search),
     toParentMessage: (message) => Message.GotSearchMessage({ message }),

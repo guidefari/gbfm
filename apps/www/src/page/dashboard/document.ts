@@ -5,7 +5,11 @@ import {
   NewsletterSubscribersResponse,
 } from '@gbfm/api/admin'
 import { GetAudioByTypeResponse } from '@gbfm/api/audio'
-import { EmailLogsResponse } from '@gbfm/api/email'
+import {
+  EmailLogsResponse,
+  MixAnnouncementOptions,
+  SendMixNotificationResponse,
+} from '@gbfm/api/email'
 import { GetFavoritesResponse } from '@gbfm/api/favorites'
 import {
   ImportSpotifyPlaylistResponse,
@@ -43,6 +47,10 @@ export const DashboardDocument = Schema.Struct({
   playlistTracks: Schema.optional(Schema.Array(PlaylistTrackEntry)),
   playlistImport: Schema.optional(ImportSpotifyPlaylistResponse),
   playlistSync: Schema.optional(SyncPlaylistLinksResponse),
+  subscribers: Schema.optional(NewsletterSubscribersResponse.fields.subscribers),
+  emailLogs: Schema.optional(EmailLogsResponse),
+  announcementOptions: Schema.optional(MixAnnouncementOptions),
+  emailSend: Schema.optional(SendMixNotificationResponse),
 })
 
 export type DashboardDocument = typeof DashboardDocument.Type
@@ -88,6 +96,14 @@ export const parseDashboardDocument = (
   if (catalog) return catalog
 
   switch (pathname) {
+    case '/api/email/mix-announcement-options':
+      return Schema.decodeUnknownEffect(MixAnnouncementOptions)(input).pipe(
+        Effect.map((announcementOptions) => ({ ...emptyDocument, announcementOptions })),
+      )
+    case '/api/email/send-mix-notification':
+      return Schema.decodeUnknownEffect(SendMixNotificationResponse)(input).pipe(
+        Effect.map((emailSend) => ({ ...emptyDocument, emailSend })),
+      )
     case '/api/admin/featured-mix':
       return Schema.decodeUnknownEffect(FeaturedMixSettings)(input).pipe(
         Effect.map(({ mixId, unavailableTitle, mixes }) => ({
@@ -235,31 +251,15 @@ export const parseDashboardDocument = (
       )
     case '/api/email/logs':
       return Schema.decodeUnknownEffect(EmailLogsResponse)(input).pipe(
-        Effect.map(({ data }) =>
-          rowsDocument(
-            data.map((item) => ({
-              id: item.id,
-              title: item.subject,
-              detail: `${item.status} · ${item.recipientEmail}`,
-              href: null,
-              actionId: null,
-            })),
-          ),
-        ),
+        Effect.map((emailLogs) => ({
+          ...emptyDocument,
+          emailLogs,
+          fields: Object.fromEntries(new URL(path, 'http://localhost').searchParams),
+        })),
       )
     case '/api/admin/newsletter-subscribers':
       return Schema.decodeUnknownEffect(NewsletterSubscribersResponse)(input).pipe(
-        Effect.map(({ subscribers }) =>
-          rowsDocument(
-            subscribers.map((item) => ({
-              id: item.id,
-              title: item.email,
-              detail: item.unsubscribedAt ? 'Unsubscribed' : 'Subscribed',
-              href: null,
-              actionId: null,
-            })),
-          ),
-        ),
+        Effect.map(({ subscribers }) => ({ ...emptyDocument, subscribers })),
       )
     case '/api/admin/overview':
       return Schema.decodeUnknownEffect(AdminOverviewResponse)(input).pipe(

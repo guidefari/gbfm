@@ -1,4 +1,8 @@
-import { EmailLogsResponse, SendMixNotificationResponse } from '@gbfm/api/email'
+import {
+  EmailLogsResponse,
+  MixAnnouncementOptions,
+  SendMixNotificationResponse,
+} from '@gbfm/api/email'
 import { Effect, Layer, Schema } from 'effect'
 import { describe, expect, test } from 'vitest'
 
@@ -81,10 +85,19 @@ describe('sendMixNotification', () => {
       email: `unsubscribed-${suffix}@example.com`,
       unsubscribedAt: new Date(),
     })
+    await database
+      .insert(newsletterSubscribersTable)
+      .values({ email: `active-${suffix}@example.com` })
     await database.insert(session).values({
       id: crypto.randomUUID(),
       token: adminToken,
       userId: adminId,
+      expiresAt: new Date(Date.now() + 60_000),
+    })
+    await database.insert(session).values({
+      id: crypto.randomUUID(),
+      token: `member-${suffix}`,
+      userId: disabledUserId,
       expiresAt: new Date(Date.now() + 60_000),
     })
     await database.insert(audioTable).values({
@@ -94,8 +107,42 @@ describe('sendMixNotification', () => {
       type: 'mix',
       url: 'https://goosebumps.fm/mixes/preference-aware',
     })
+    await database.insert(audioTable).values({
+      title: 'Unpublished mix',
+      slug: `draft-${suffix}`,
+      content: '',
+      type: 'mix',
+      url: 'https://example.test/draft.mp3',
+      draft: true,
+    })
 
     try {
+      const optionsPath = 'http://localhost/api/email/mix-announcement-options'
+      const unauthorized = await webHandler.handler(new Request(optionsPath))
+      expect(unauthorized.status).toBe(401)
+
+      const forbidden = await webHandler.handler(
+        new Request(optionsPath, {
+          headers: { authorization: `Bearer member-${suffix}` },
+        }),
+      )
+
+      expect(forbidden.status).toBe(403)
+
+      const optionsResponse = await webHandler.handler(
+        new Request(optionsPath, {
+          headers: { authorization: `Bearer ${adminToken}` },
+        }),
+      )
+
+      expect(optionsResponse.status).toBe(200)
+      expect(
+        Schema.decodeUnknownSync(MixAnnouncementOptions)(await optionsResponse.json()),
+      ).toEqual({
+        mixes: [{ slug: mixSlug, title: 'Preference-aware mix' }],
+        recipients: [`active-${suffix}@example.com`],
+      })
+
       const response = await webHandler.handler(
         new Request('http://localhost/api/email/send-mix-notification', {
           method: 'POST',
@@ -199,6 +246,18 @@ describe('sendMixNotification', () => {
         data: [expect.objectContaining({ metadata: expect.anything() })],
       })
       expect(logsBody.data[0]).not.toHaveProperty('metadata')
+
+      const filtered = await webHandler.handler(
+        new Request(
+          `http://localhost/api/email/logs?recipientEmail=${encodeURIComponent(`LISTENER-0-${suffix.toUpperCase()}@EXAMPLE.COM`)}&status=SENT&limit=1`,
+          { headers: { authorization: `Bearer ${adminToken}` } },
+        ),
+      )
+
+      expect(filtered.status).toBe(200)
+      const filteredBody = Schema.decodeUnknownSync(EmailLogsResponse)(await filtered.json())
+      expect(filteredBody.data.map((log) => log.recipientEmail)).toEqual([recipients[0]])
+      expect(filteredBody.pagination.total).toBe(1)
     } finally {
       await webHandler.dispose()
     }

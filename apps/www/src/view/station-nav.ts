@@ -1,6 +1,7 @@
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 import type { Principal } from '../model'
+import { signInHref } from '../page/auth/links'
 import { artworkUrl } from './artwork'
 import { iconPaths, lucide } from './icons'
 import { isActiveNavLink } from './nav-active'
@@ -144,7 +145,7 @@ export const stationNav = <M>(h: HtmlBuilder<M>, props: StationNavProps<M>) => {
             ? props.accountMenu
             : h.a(
                 [
-                  h.Href(`/auth/sign-in?returnTo=${encodeURIComponent(props.pathname)}`),
+                  h.Href(signInHref(props.pathname)),
                   h.Class(
                     'shrink-0 text-xs font-semibold text-highlight no-underline hover:opacity-90',
                   ),

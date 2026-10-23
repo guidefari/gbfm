@@ -9,6 +9,7 @@ const adminSections = new Set([
   'playlists',
   'search',
   'newsletter',
+  'emails',
   'email-logs',
   'frontend-errors',
   'all/mixes',
@@ -24,6 +25,23 @@ export const endpointFor = (section: string, query = new URLSearchParams()) => {
   const entity = entityRoute(section)
 
   if (entity) return entity.path
+
+  if (section === 'email-logs') {
+    const offset = Number(query.get('offset') ?? '0')
+
+    const params = new URLSearchParams({
+      limit: '25',
+      offset: String(Number.isSafeInteger(offset) && offset >= 0 ? offset : 0),
+    })
+
+    for (const key of ['status', 'recipientEmail', 'dateFrom', 'dateTo']) {
+      const value = query.get(key)?.trim()
+
+      if (value) params.set(key, value)
+    }
+
+    return `/api/email/logs?${params}`
+  }
 
   if (section === 'music') {
     const tab = tabs.find((tab) => tab === query.get('tab')) ?? 'artists'
@@ -68,7 +86,7 @@ export const endpointFor = (section: string, query = new URLSearchParams()) => {
       music: '/api/music/artists',
       playlists: '/api/music/playlists',
       newsletter: '/api/admin/newsletter-subscribers',
-      'email-logs': '/api/email/logs?limit=50&offset=0',
+      emails: '/api/email/mix-announcement-options',
       'frontend-errors': '/api/admin/telemetry',
       search: '/api/search?q=',
     }),
