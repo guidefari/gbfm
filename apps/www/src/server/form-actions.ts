@@ -191,6 +191,8 @@ export const handleFormAction = async (request: Request): Promise<Server.Respond
       authErrorLocation(action, authErrorKey(response.status, await readAuthErrorCode(response)), {
         returnTo: field('returnTo'),
         token: field('token'),
+        email: field('email'),
+        name: field('name'),
       }),
     )
 

@@ -56,8 +56,10 @@ const authForm = (h: Builder, action: string, url: URL, reveal: PasswordReveal):
         h.div(
           [h.Class('auth-fields')],
           [
-            action === 'sign-up' ? nameField(h) : h.empty,
-            action === 'reset-password' ? h.empty : emailField(h),
+            action === 'sign-up' ? nameField(h, url.searchParams.get('name') ?? '') : h.empty,
+            action === 'reset-password'
+              ? h.empty
+              : emailField(h, url.searchParams.get('email') ?? ''),
             action === 'forgot-password'
               ? h.empty
               : passwordField(h, action === 'sign-in' ? 'current' : 'new', reveal),

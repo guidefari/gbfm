@@ -10,21 +10,32 @@ export type PasswordReveal = Pick<Model, 'passwordVisible' | 'interactive'>
 export const hiddenField = (h: Builder, name: string, value: string): Html =>
   h.input([h.Type('hidden'), h.Name(name), h.Value(value)])
 
-export const nameField = (h: Builder): Html =>
+export const nameField = (h: Builder, value: string): Html =>
   h.label(
     [h.Class('auth-field')],
     [
       h.span([h.Class('auth-label')], ['Name']),
-      h.input([h.Name('name'), h.Required(true), h.Autocomplete('name')]),
+      h.input([
+        h.Name('name'),
+        h.Required(true),
+        h.Autocomplete('name'),
+        h.Attribute('value', value),
+      ]),
     ],
   )
 
-export const emailField = (h: Builder): Html =>
+export const emailField = (h: Builder, value: string): Html =>
   h.label(
     [h.Class('auth-field')],
     [
       h.span([h.Class('auth-label')], ['Email']),
-      h.input([h.Type('email'), h.Name('email'), h.Required(true), h.Autocomplete('email')]),
+      h.input([
+        h.Type('email'),
+        h.Name('email'),
+        h.Required(true),
+        h.Autocomplete('email'),
+        h.Attribute('value', value),
+      ]),
     ],
   )
 

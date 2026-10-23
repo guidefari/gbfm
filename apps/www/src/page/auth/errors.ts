@@ -50,16 +50,23 @@ export const authErrorMessage = (raw: string | null): string | null => {
   return key === null ? null : authErrorMessages[key]
 }
 
+type PreservedFields = {
+  readonly returnTo: string
+  readonly token: string
+  readonly email: string
+  readonly name: string
+}
+
+const preservedFields: ReadonlyArray<keyof PreservedFields> = ['returnTo', 'token', 'email', 'name']
+
 export const authErrorLocation = (
   action: string,
   key: AuthErrorKey,
-  form: { readonly returnTo: string; readonly token: string },
+  form: PreservedFields,
 ): string => {
   const params = new URLSearchParams({ error: key })
 
-  if (form.returnTo) params.set('returnTo', form.returnTo)
-
-  if (form.token) params.set('token', form.token)
+  for (const field of preservedFields) if (form[field]) params.set(field, form[field])
 
   return `${action}?${params}`
 }

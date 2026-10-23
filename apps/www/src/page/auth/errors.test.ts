@@ -39,9 +39,30 @@ it('treats the better-auth reset redirect error as an expired link', () => {
 
 it('sends the user back to the same form with context preserved', () => {
   expect(
-    authErrorLocation('/auth/sign-in', 'credentials', { returnTo: '/privacy', token: '' }),
+    authErrorLocation('/auth/sign-in', 'credentials', {
+      returnTo: '/privacy',
+      token: '',
+      email: '',
+      name: '',
+    }),
   ).toBe('/auth/sign-in?error=credentials&returnTo=%2Fprivacy')
-  expect(authErrorLocation('/auth/reset-password', 'token', { returnTo: '', token: 'abc' })).toBe(
-    '/auth/reset-password?error=token&token=abc',
-  )
+  expect(
+    authErrorLocation('/auth/reset-password', 'token', {
+      returnTo: '',
+      token: 'abc',
+      email: '',
+      name: '',
+    }),
+  ).toBe('/auth/reset-password?error=token&token=abc')
+})
+
+it('keeps the typed email and name so people do not retype them', () => {
+  expect(
+    authErrorLocation('/auth/sign-up', 'exists', {
+      returnTo: '',
+      token: '',
+      email: 'dj@example.com',
+      name: 'DJ Goose',
+    }),
+  ).toBe('/auth/sign-up?error=exists&email=dj%40example.com&name=DJ+Goose')
 })
