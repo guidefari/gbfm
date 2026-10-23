@@ -2,6 +2,7 @@ import { resolveRequestId } from '@gbfm/core/observability/request-id'
 import { Option, Schema } from 'effect'
 import * as Server from 'foldkit/experimental/server'
 
+import { safeReturnPath } from '../page/auth/links'
 import { parseCheckpoint } from '../page/tweet/reader'
 import { parseRoute, Route } from '../route'
 import { handleBrowserTelemetry } from '../telemetry/server'
@@ -9,6 +10,8 @@ import { apiRequest } from './api'
 import { handleFormAction, redirect } from './form-actions'
 import { loadPageData } from './page-data'
 import { createPageResponse } from './page-response'
+
+const isSignInOrUp = (action: string) => action === 'sign-in' || action === 'sign-up'
 
 const JsonObject = Schema.Record(Schema.String, Schema.Json)
 
@@ -117,6 +120,9 @@ export const renderResponse = async (request: Request): Promise<Server.EntryResu
   const page = await loadPageData(ownedRequest, request, url, route, requestId)
 
   if (page.redirect) return redirectPage(page.redirect)
+
+  if (page.flags.principal && Route.guards.Auth(route) && isSignInOrUp(route.action))
+    return redirectPage(safeReturnPath(url.searchParams.get('returnTo') ?? '', url.origin))
 
   return createPageResponse(ownedRequest, dataRequest, startedAt, page)
 }
