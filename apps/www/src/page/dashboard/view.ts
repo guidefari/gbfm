@@ -8,6 +8,7 @@ import { dashboardHeader, sectionHref, sectionLabel, subTabs } from './navigatio
 import { adminHub } from './page/admin'
 import { catalogView, entityRoute } from './page/catalog'
 import { historyView, subscribersView } from './page/comms'
+import { contentListView, isContentList } from './page/content'
 import * as Emails from './page/emails'
 import * as Playlists from './page/playlists'
 import { searchView } from './page/search'
@@ -16,7 +17,6 @@ import * as Shows from './page/shows'
 import { telemetryView } from './page/telemetry'
 import { usersView } from './page/users'
 import { isAdminSection } from './section'
-import { pageRange, pager } from './ui'
 
 export interface ViewInputs {
   readonly role: Model['principal']['role']
@@ -93,21 +93,6 @@ const contentTypeTabs = (h: HtmlBuilder<Message>, section: string) =>
       current: type.section === section,
     })),
   )
-
-const contentPager = (model: Model, h: HtmlBuilder<Message>) => {
-  const page = model.pagination
-
-  if (!page || model.rows.length === 0) return h.empty
-
-  const href = (offset: number) => `${sectionHref(model.section)}?offset=${offset}`
-
-  return pager(h, {
-    label: 'Content pages',
-    summary: pageRange(page.offset, model.rows.length, page.total),
-    previous: page.offset > 0 ? { href: href(Math.max(0, page.offset - page.limit)) } : null,
-    next: page.hasMore ? { href: href(page.offset + page.limit) } : null,
-  })
-}
 
 const featuredMixStatus = (model: Model) =>
   model.fields.unavailableTitle
@@ -277,115 +262,118 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
                       model: model.playlists,
                       toParentMessage: (message) => Message.GotPlaylistMessage({ message }),
                     })
-                  : (model.section === 'music' || entity) && model.phase !== 'loading'
-                    ? catalogView(model, h, Message)
-                    : model.section === 'search'
-                      ? searchView(model, inputs.url, h)
-                      : model.phase === 'loading'
-                        ? h.p([h.Class('dashboard-state')], ['Loading…'])
-                        : model.section === 'featured-mix' && model.fields.savedMixId !== undefined
-                          ? featuredMix(model, h)
-                          : model.phase === 'error'
-                            ? h.div(
-                                [h.Class('dashboard-state dashboard-error'), h.Role('alert')],
-                                [
-                                  h.p(
-                                    [],
-                                    [model.error ?? 'Could not load this dashboard section.'],
-                                  ),
-                                  h.button([h.OnClick(Message.LoadRequested())], ['Try again']),
-                                ],
-                              )
-                            : model.section === 'frontend-errors'
-                              ? telemetryView(h, model.telemetry)
-                              : model.section === 'shows'
-                                ? h.submodel({
-                                    slotId: 'shows',
-                                    view: Shows.view,
-                                    model: model.shows,
-                                    toParentMessage: (message) =>
-                                      Message.GotShowMessage({ message }),
-                                  })
-                                : model.section === 'profile'
-                                  ? profile(model, h)
-                                  : model.section === 'email'
-                                    ? preferences(model, h)
-                                    : model.section === 'player'
-                                      ? h.section(
-                                          [h.Class('dashboard-panel')],
-                                          [
-                                            h.h2([], ['Player preferences']),
-                                            h.p([], ['Player settings are stored on this device.']),
-                                            toggle(
-                                              h,
-                                              model,
-                                              'continueQueue',
-                                              'Continue through queue',
-                                            ),
-                                            toggle(
-                                              h,
-                                              model,
-                                              'restorePosition',
-                                              'Restore listening position',
-                                            ),
-                                            h.button(
-                                              [
-                                                h.Class('dashboard-button-primary'),
-                                                h.OnClick(Message.SavePlayerPreferences()),
-                                                h.Disabled(model.phase === 'saving'),
-                                              ],
-                                              [
-                                                model.phase === 'saving'
-                                                  ? 'Saving…'
-                                                  : 'Save player preferences',
-                                              ],
-                                            ),
-                                          ],
-                                        )
-                                      : model.section === 'appearance'
+                  : isContentList(model.section)
+                    ? contentListView(model, h)
+                    : (model.section === 'music' || entity) && model.phase !== 'loading'
+                      ? catalogView(model, h, Message)
+                      : model.section === 'search'
+                        ? searchView(model, inputs.url, h)
+                        : model.phase === 'loading'
+                          ? h.p([h.Class('dashboard-state')], ['Loading…'])
+                          : model.section === 'featured-mix' &&
+                              model.fields.savedMixId !== undefined
+                            ? featuredMix(model, h)
+                            : model.phase === 'error'
+                              ? h.div(
+                                  [h.Class('dashboard-state dashboard-error'), h.Role('alert')],
+                                  [
+                                    h.p(
+                                      [],
+                                      [model.error ?? 'Could not load this dashboard section.'],
+                                    ),
+                                    h.button([h.OnClick(Message.LoadRequested())], ['Try again']),
+                                  ],
+                                )
+                              : model.section === 'frontend-errors'
+                                ? telemetryView(h, model.telemetry)
+                                : model.section === 'shows'
+                                  ? h.submodel({
+                                      slotId: 'shows',
+                                      view: Shows.view,
+                                      model: model.shows,
+                                      toParentMessage: (message) =>
+                                        Message.GotShowMessage({ message }),
+                                    })
+                                  : model.section === 'profile'
+                                    ? profile(model, h)
+                                    : model.section === 'email'
+                                      ? preferences(model, h)
+                                      : model.section === 'player'
                                         ? h.section(
-                                            [h.Class('appearance-options')],
+                                            [h.Class('dashboard-panel')],
                                             [
-                                              h.p([], ['Choose how gbfm looks on this device']),
-                                              ...(['light', 'dark', 'system'] as const).map(
-                                                (theme) =>
-                                                  h.button(
-                                                    [
-                                                      h.AriaPressed(
-                                                        String(
-                                                          (model.fields.theme ?? 'system') ===
-                                                            theme,
-                                                        ),
-                                                      ),
-                                                      h.OnClick(Message.ThemeSelected({ theme })),
-                                                    ],
-                                                    [
-                                                      h.strong(
-                                                        [],
-                                                        [
-                                                          theme.charAt(0).toUpperCase() +
-                                                            theme.slice(1),
-                                                        ],
-                                                      ),
-                                                      h.span(
-                                                        [],
-                                                        [
-                                                          theme === 'system'
-                                                            ? 'Follow your device preference'
-                                                            : `Always use the ${theme} interface`,
-                                                        ],
-                                                      ),
-                                                    ],
-                                                  ),
+                                              h.h2([], ['Player preferences']),
+                                              h.p(
+                                                [],
+                                                ['Player settings are stored on this device.'],
+                                              ),
+                                              toggle(
+                                                h,
+                                                model,
+                                                'continueQueue',
+                                                'Continue through queue',
+                                              ),
+                                              toggle(
+                                                h,
+                                                model,
+                                                'restorePosition',
+                                                'Restore listening position',
+                                              ),
+                                              h.button(
+                                                [
+                                                  h.Class('dashboard-button-primary'),
+                                                  h.OnClick(Message.SavePlayerPreferences()),
+                                                  h.Disabled(model.phase === 'saving'),
+                                                ],
+                                                [
+                                                  model.phase === 'saving'
+                                                    ? 'Saving…'
+                                                    : 'Save player preferences',
+                                                ],
                                               ),
                                             ],
                                           )
-                                        : model.section === 'admin'
-                                          ? adminHub(h, model.rows)
-                                          : h.div(
-                                              [h.Class('dashboard-stack')],
-                                              [collection(model, h), contentPager(model, h)],
+                                        : model.section === 'appearance'
+                                          ? h.section(
+                                              [h.Class('appearance-options')],
+                                              [
+                                                h.p([], ['Choose how gbfm looks on this device']),
+                                                ...(['light', 'dark', 'system'] as const).map(
+                                                  (theme) =>
+                                                    h.button(
+                                                      [
+                                                        h.AriaPressed(
+                                                          String(
+                                                            (model.fields.theme ?? 'system') ===
+                                                              theme,
+                                                          ),
+                                                        ),
+                                                        h.OnClick(Message.ThemeSelected({ theme })),
+                                                      ],
+                                                      [
+                                                        h.strong(
+                                                          [],
+                                                          [
+                                                            theme.charAt(0).toUpperCase() +
+                                                              theme.slice(1),
+                                                          ],
+                                                        ),
+                                                        h.span(
+                                                          [],
+                                                          [
+                                                            theme === 'system'
+                                                              ? 'Follow your device preference'
+                                                              : `Always use the ${theme} interface`,
+                                                          ],
+                                                        ),
+                                                      ],
+                                                    ),
+                                                ),
+                                              ],
                                             )
+                                          : model.section === 'admin'
+                                            ? adminHub(h, model.rows)
+                                            : collection(model, h)
 
   return shell(
     model.section === 'overview'

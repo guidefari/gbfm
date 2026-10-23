@@ -35,6 +35,7 @@ export const Row = Schema.Struct({
   href: Schema.NullOr(Schema.String),
   actionId: Schema.NullOr(Schema.String),
   thumbnailUrl: Schema.optional(Schema.NullOr(Schema.String)),
+  status: Schema.optional(Schema.String),
 })
 
 export const Pagination = Schema.Struct({
@@ -145,6 +146,7 @@ export const parseDashboardDocument = (
               id: post.id,
               title: post.title ?? post.content?.slice(0, 80) ?? post.slug,
               detail: post.draft ? 'Draft' : 'Published',
+              status: post.draft ? 'Draft' : 'Published',
               href: `/new/${post.type === 'micro' ? 'tweet' : 'editorial'}?edit=${encodeURIComponent(post.slug)}`,
               actionId: post.id,
             })),
@@ -253,6 +255,7 @@ export const parseDashboardDocument = (
               id: item.id,
               title: item.title,
               detail: item.draft ? 'Draft' : 'Published',
+              status: item.draft ? 'Draft' : 'Published',
               href: `/new/mix?edit=${encodeURIComponent(item.slug)}`,
               actionId: null,
             })),

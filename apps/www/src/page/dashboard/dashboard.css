@@ -1063,6 +1063,17 @@
   width: 22rem;
   max-width: 100%;
 }
+.gbfm-dashboard .admin-link-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: 0 0.875rem;
+  border: 1px solid var(--dash-fg);
+  background: var(--dash-fg);
+  color: var(--dash-bg);
+  font-weight: 700;
+  text-decoration: none;
+}
 .admin-notice {
   margin: 0;
   padding: 0.5rem 0.75rem;
