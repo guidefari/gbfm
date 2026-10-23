@@ -4,116 +4,199 @@ import type { HtmlBuilder } from 'foldkit/html'
 import type { Message } from './message'
 import type { Model } from './model'
 
-interface NavigationLink {
+type Role = Model['principal']['role']
+
+export interface DashboardPage {
   readonly section: string
   readonly label: string
+  readonly aliases?: ReadonlyArray<string>
+  readonly prefix?: string
 }
 
-interface NavigationGroup {
+export interface DashboardGroup {
   readonly label: string
-  readonly links: ReadonlyArray<NavigationLink>
+  readonly description: string
+  readonly pages: readonly [DashboardPage, ...ReadonlyArray<DashboardPage>]
+  readonly visible: (role: Role) => boolean
 }
 
-const library: NavigationGroup = {
-  label: 'Library',
-  links: [
-    { section: 'overview', label: 'Overview' },
-    { section: 'favorites', label: 'Favorites' },
-    { section: 'reminders', label: 'Reminders' },
-  ],
+export interface DashboardWorkspace {
+  readonly label: string
+  readonly groups: ReadonlyArray<DashboardGroup>
+  readonly visible: (role: Role) => boolean
 }
 
-const creator: NavigationGroup = {
-  label: 'Creator',
-  links: [
-    { section: 'content/mixes', label: 'My mixes' },
-    { section: 'content/tweets', label: 'My tweets' },
-    { section: 'content/editorial', label: 'My editorial' },
-  ],
+const everyone = () => true
+
+const isAdmin = (role: Role) => role === 'admin'
+
+export const workspaces = {
+  you: {
+    label: 'You',
+    visible: everyone,
+    groups: [
+      {
+        label: 'Home',
+        description: 'Your latest saves',
+        visible: everyone,
+        pages: [{ section: 'overview', label: 'Home' }],
+      },
+      {
+        label: 'Library',
+        description: 'Mixes you saved and releases you are waiting for',
+        visible: everyone,
+        pages: [
+          { section: 'favorites', label: 'Favorites' },
+          { section: 'reminders', label: 'Reminders' },
+        ],
+      },
+      {
+        label: 'My content',
+        description: 'Mixes, tweets and editorial you published',
+        visible: canCreatePosts,
+        pages: [
+          { section: 'content/mixes', label: 'Mixes' },
+          { section: 'content/tweets', label: 'Tweets' },
+          { section: 'content/editorial', label: 'Editorial' },
+        ],
+      },
+      {
+        label: 'Settings',
+        description: 'Your profile, email and playback preferences',
+        visible: everyone,
+        pages: [
+          { section: 'profile', label: 'Profile' },
+          { section: 'appearance', label: 'Appearance' },
+          { section: 'email', label: 'Email' },
+          { section: 'player', label: 'Player' },
+          { section: 'integrations', label: 'Integrations', aliases: ['spotify-callback'] },
+        ],
+      },
+    ],
+  },
+  admin: {
+    label: 'Admin',
+    visible: isAdmin,
+    groups: [
+      {
+        label: 'Overview',
+        description: 'Site numbers at a glance',
+        visible: isAdmin,
+        pages: [{ section: 'admin', label: 'Overview' }],
+      },
+      {
+        label: 'Content',
+        description: 'Manage every post, curate shows and pick the homepage mix',
+        visible: isAdmin,
+        pages: [
+          { section: 'all/mixes', label: 'All content', prefix: 'all/' },
+          { section: 'shows', label: 'Shows' },
+          { section: 'featured-mix', label: 'Featured mix' },
+        ],
+      },
+      {
+        label: 'Music',
+        description: 'Edit artists, albums, tracks and labels, and sync playlists',
+        visible: isAdmin,
+        pages: [
+          { section: 'music', label: 'Catalog', prefix: 'music-entity/' },
+          { section: 'playlists', label: 'Playlists' },
+        ],
+      },
+      {
+        label: 'People',
+        description: 'Look up accounts and active sessions',
+        visible: isAdmin,
+        pages: [
+          { section: 'users', label: 'Users' },
+          { section: 'sessions', label: 'Sessions' },
+        ],
+      },
+      {
+        label: 'Comms',
+        description: 'Announce a mix and check what was delivered',
+        visible: isAdmin,
+        pages: [
+          { section: 'emails', label: 'Write email' },
+          { section: 'newsletter', label: 'Subscribers' },
+          { section: 'email-logs', label: 'Delivery history' },
+        ],
+      },
+      {
+        label: 'System',
+        description: 'Watch client errors and check search results',
+        visible: isAdmin,
+        pages: [
+          { section: 'frontend-errors', label: 'Telemetry' },
+          { section: 'search', label: 'Search' },
+        ],
+      },
+    ],
+  },
+} satisfies Record<string, DashboardWorkspace>
+
+export const visibleWorkspaces = (role: Role): ReadonlyArray<DashboardWorkspace> =>
+  Object.values(workspaces)
+    .filter((workspace) => workspace.visible(role))
+    .map((workspace) => ({
+      ...workspace,
+      groups: workspace.groups.filter((group) => group.visible(role)),
+    }))
+
+const matches = (page: DashboardPage, section: string) =>
+  page.section === section ||
+  (page.aliases ?? []).includes(section) ||
+  (page.prefix !== undefined && section.startsWith(page.prefix))
+
+export interface ResolvedSection {
+  readonly workspace: DashboardWorkspace
+  readonly group: DashboardGroup
+  readonly page: DashboardPage
 }
 
-const admin: NavigationGroup = {
-  label: 'Admin',
-  links: [
-    { section: 'admin', label: 'Site stats' },
-    { section: 'users', label: 'Users' },
-    { section: 'sessions', label: 'Sessions' },
-    { section: 'shows', label: 'Shows' },
-    { section: 'music', label: 'Music' },
-    { section: 'playlists', label: 'Playlists' },
-    { section: 'search', label: 'Search' },
-    { section: 'frontend-errors', label: 'Telemetry' },
-    { section: 'all/mixes', label: 'All content' },
-    { section: 'featured-mix', label: 'Featured mix' },
-  ],
+export const resolveSection = (section: string, role: Role): ResolvedSection | null => {
+  for (const workspace of visibleWorkspaces(role))
+    for (const group of workspace.groups)
+      for (const page of group.pages) if (matches(page, section)) return { workspace, group, page }
+
+  return null
 }
 
-const account: NavigationGroup = {
-  label: 'Account',
-  links: [
-    { section: 'profile', label: 'Profile' },
-    { section: 'appearance', label: 'Appearance' },
-    { section: 'email', label: 'Email preferences' },
-    { section: 'player', label: 'Player' },
-    { section: 'integrations', label: 'Integrations' },
-  ],
-}
+export const sectionLabel = (section: string, role: Role) =>
+  resolveSection(section, role)?.page.label ?? section.replaceAll('-', ' ')
 
-const comms: NavigationGroup = {
-  label: 'Comms',
-  links: [
-    { section: 'emails', label: 'Write email' },
-    { section: 'newsletter', label: 'Subscribers' },
-    { section: 'email-logs', label: 'Delivery history' },
-  ],
-}
-
-const isCurrent = (section: string, current: string) =>
-  section === current ||
-  (section === 'all/mixes' && current.startsWith('all/')) ||
-  (section === 'music' && current.startsWith('music-entity/'))
-
-const groupsFor = (role: Model['principal']['role']) => [
-  library,
-  ...(canCreatePosts(role) ? [creator] : []),
-  ...(role === 'admin' ? [comms] : []),
-  ...(role === 'admin' ? [admin] : []),
-  account,
-]
-
-export const sectionLabel = (section: string, role: Model['principal']['role']) =>
-  groupsFor(role)
-    .flatMap((group) => group.links)
-    .find((link) => link.section === section)?.label ?? section.replaceAll('-', ' ')
-
-export const navigation = (
-  h: HtmlBuilder<Message>,
-  section: string,
-  role: Model['principal']['role'],
-) =>
+export const navigation = (h: HtmlBuilder<Message>, section: string, role: Role) =>
   h.div(
     [h.Class('dashboard-navigation')],
     [
       h.nav(
         [h.AriaLabel('Dashboard sections')],
-        groupsFor(role).map((group) =>
-          h.div(
-            [h.Class('dashboard-nav-group')],
-            [
-              h.p([h.Class('dashboard-nav-label')], [group.label]),
-              ...group.links.map((link) =>
-                h.a(
-                  [
-                    h.Href(`/dashboard/${link.section}`),
-                    h.Class(isCurrent(link.section, section) ? 'active' : ''),
-                    ...(isCurrent(link.section, section) ? [h.AriaCurrent('page')] : []),
-                  ],
-                  [link.label],
+        visibleWorkspaces(role)
+          .flatMap((workspace) => workspace.groups)
+          .map((group) =>
+            h.div(
+              [h.Class('dashboard-nav-group')],
+              [
+                h.p([h.Class('dashboard-nav-label')], [group.label]),
+                ...group.pages.map((link) =>
+                  h.a(
+                    [
+                      h.Href(`/dashboard/${link.section}`),
+                      h.Class(
+                        resolveSection(section, role)?.page.section === link.section
+                          ? 'active'
+                          : '',
+                      ),
+                      ...(resolveSection(section, role)?.page.section === link.section
+                        ? [h.AriaCurrent('page')]
+                        : []),
+                    ],
+                    [link.label],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
       ),
       h.form(
         [h.Method('post'), h.Action('/actions/sign-out'), h.Class('dashboard-sign-out')],
