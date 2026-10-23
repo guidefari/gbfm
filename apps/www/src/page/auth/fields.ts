@@ -2,15 +2,30 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 
 import { Message } from '../../message'
 import type { Model } from '../../model'
+import { errorId, type FieldState } from './field-state'
 
 type Builder = HtmlBuilder<Message>
 
 export type PasswordReveal = Pick<Model, 'passwordVisible' | 'interactive'>
 
+const fieldStateAttributes = (
+  h: Builder,
+  state: FieldState,
+  describedBy: ReadonlyArray<string>,
+) => {
+  const ids = state.invalid ? [...describedBy, errorId] : describedBy
+
+  return [
+    ...(state.invalid ? [h.AriaInvalid(true)] : []),
+    ...(ids.length > 0 ? [h.AriaDescribedBy(ids.join(' '))] : []),
+    ...(state.focus ? [h.Autofocus(true)] : []),
+  ]
+}
+
 export const hiddenField = (h: Builder, name: string, value: string): Html =>
   h.input([h.Type('hidden'), h.Name(name), h.Value(value)])
 
-export const nameField = (h: Builder, value: string): Html =>
+export const nameField = (h: Builder, value: string, state: FieldState): Html =>
   h.label(
     [h.Class('auth-field')],
     [
@@ -20,11 +35,12 @@ export const nameField = (h: Builder, value: string): Html =>
         h.Required(true),
         h.Autocomplete('name'),
         h.Attribute('value', value),
+        ...fieldStateAttributes(h, state, []),
       ]),
     ],
   )
 
-export const emailField = (h: Builder, value: string): Html =>
+export const emailField = (h: Builder, value: string, state: FieldState): Html =>
   h.label(
     [h.Class('auth-field')],
     [
@@ -35,6 +51,7 @@ export const emailField = (h: Builder, value: string): Html =>
         h.Required(true),
         h.Autocomplete('email'),
         h.Attribute('value', value),
+        ...fieldStateAttributes(h, state, []),
       ]),
     ],
   )
@@ -58,6 +75,7 @@ export const passwordField = (
   kind: 'current' | 'new',
   reveal: PasswordReveal,
   forgotHref: string,
+  state: FieldState,
 ): Html =>
   h.div(
     [h.Class('auth-field')],
@@ -84,6 +102,7 @@ export const passwordField = (
                   h.Name('password'),
                   h.Required(true),
                   h.Autocomplete('current-password'),
+                  ...fieldStateAttributes(h, state, []),
                 ]
               : [
                   h.Id('auth-password'),
@@ -95,7 +114,7 @@ export const passwordField = (
                   h.Autocomplete('new-password'),
                   h.Minlength(8),
                   h.Maxlength(128),
-                  h.AriaDescribedBy('auth-password-hint'),
+                  ...fieldStateAttributes(h, state, ['auth-password-hint']),
                 ],
           ),
           revealToggle(h, reveal),
@@ -111,4 +130,4 @@ export const statusMessage = (h: Builder, text: string): Html =>
   h.p([h.Role('status'), h.Class('auth-status')], [text])
 
 export const errorMessage = (h: Builder, text: string): Html =>
-  h.p([h.Role('alert'), h.Class('auth-status auth-error')], [text])
+  h.p([h.Id(errorId), h.Role('alert'), h.Class('auth-status auth-error')], [text])

@@ -6,6 +6,7 @@ import type { Message } from '../../message'
 import type { Model } from '../../model'
 import { authCopy } from './copy'
 import { authErrorMessage, parseAuthErrorKey } from './errors'
+import { fieldStates, formFields } from './field-state'
 import {
   emailField,
   errorMessage,
@@ -44,7 +45,10 @@ const footer = (h: Builder, action: string, returnTo: string): Html =>
 
 const authForm = (h: Builder, action: string, url: URL, state: AuthViewState): Html => {
   const copy = authCopy(action)
-  const error = authErrorMessage(url.searchParams.get('error'))
+  const errorKey = parseAuthErrorKey(url.searchParams.get('error'))
+  const error = authErrorMessage(errorKey)
+  const fields = formFields(action)
+  const states = fieldStates(action, errorKey)
   const returnTo = url.searchParams.get('returnTo') ?? ''
 
   return authShell(
@@ -73,18 +77,21 @@ const authForm = (h: Builder, action: string, url: URL, state: AuthViewState): H
         h.div(
           [h.Class('auth-fields')],
           [
-            action === 'sign-up' ? nameField(h, url.searchParams.get('name') ?? '') : h.empty,
-            action === 'reset-password'
-              ? h.empty
-              : emailField(h, url.searchParams.get('email') ?? ''),
-            action === 'forgot-password'
-              ? h.empty
-              : passwordField(
+            fields.includes('name')
+              ? nameField(h, url.searchParams.get('name') ?? '', states.name)
+              : h.empty,
+            fields.includes('email')
+              ? emailField(h, url.searchParams.get('email') ?? '', states.email)
+              : h.empty,
+            fields.includes('password')
+              ? passwordField(
                   h,
                   action === 'sign-in' ? 'current' : 'new',
                   state,
                   authHref('/auth/forgot-password', { returnTo }),
-                ),
+                  states.password,
+                )
+              : h.empty,
           ],
         ),
         h.button(
