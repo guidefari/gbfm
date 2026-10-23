@@ -468,34 +468,17 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-.telemetry-dashboard p {
-  margin: 0.75rem 0;
-  overflow-wrap: anywhere;
-}
 .telemetry-sections {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
   gap: 1rem;
-}
-.telemetry-sections article {
   min-width: 0;
-  border: 1px solid var(--dash-line);
-  padding: 1rem;
 }
-.telemetry-sections dl {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 0.25rem 0.75rem;
-  border-top: 1px solid var(--dash-line);
-  padding-top: 0.75rem;
-  font-size: 0.75rem;
-}
-.telemetry-sections dt {
-  color: var(--dash-muted);
-}
-.telemetry-sections dd {
+.gbfm-dashboard .telemetry-sections h3 {
   margin: 0;
-  overflow-wrap: anywhere;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--dash-line);
+  font-size: 0.875rem;
+  line-height: 1.4;
 }
 
 .gbfm-dashboard .dashboard-button-primary {

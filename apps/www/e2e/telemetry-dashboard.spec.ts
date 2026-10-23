@@ -12,6 +12,7 @@ test('telemetry distinguishes unavailable queries, empty data, percentile units,
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
   await expect(page).toHaveURL(/\/dashboard$/)
   await page.goto('/dashboard/frontend-errors')
+
   const payload: AdminTelemetryResponse = {
     generatedAt: '2026-09-27T10:00:00.000Z',
     windowHours: 24,
@@ -44,19 +45,22 @@ test('telemetry distinguishes unavailable queries, empty data, percentile units,
       player: { available: true, rows: [] },
     },
   }
+
   await page.route('**/api/admin/telemetry', (route) => route.fulfill({ json: payload }))
   await page.getByRole('button', { name: 'Refresh telemetry' }).click()
   await expect(page.getByRole('status')).toContainText('Some telemetry queries are unavailable')
-  await expect(page.getByRole('article', { name: 'errors', exact: true })).toContainText(
+  await expect(page.getByRole('article', { name: 'Errors', exact: true })).toContainText(
     'Unavailable',
   )
-  await expect(page.getByRole('article', { name: 'navigation', exact: true })).toContainText(
+  await expect(page.getByRole('article', { name: 'Navigation', exact: true })).toContainText(
     'No events in this window.',
   )
   const vitals = page.getByRole('article', { name: 'Web vitals', exact: true })
   await expect(vitals.getByText('0.123', { exact: true })).toBeVisible()
   await expect(vitals.getByText('2,346 ms', { exact: true })).toBeVisible()
-  await expect(vitals).toContainText('release-test / chrome')
+  const lcp = vitals.getByRole('row').filter({ hasText: 'LCP' })
+  await expect(lcp.getByRole('cell', { name: 'release-test', exact: true })).toBeVisible()
+  await expect(lcp.getByRole('cell', { name: 'chrome', exact: true })).toBeVisible()
   await test.info().attach('telemetry-partial-narrow', {
     body: await page.getByRole('region', { name: 'Browser and player health' }).screenshot(),
     contentType: 'image/png',

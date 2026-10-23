@@ -204,6 +204,7 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
           ...model,
           phase: 'ready',
           rows: document.rows,
+          pagination: document.pagination,
           fields: document.fields,
           toggles: document.toggles,
           telemetry: document.telemetry,
@@ -263,10 +264,6 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
           },
         }),
       ],
-    }),
-    SearchRequested: () => ({
-      model: { ...model, phase: 'loading' },
-      commands: [Load({ path: `/api/search?q=${encodeURIComponent(model.fields.query ?? '')}` })],
     }),
     DeleteRequested: ({ id }) => {
       const row = model.rows.find((item) => item.id === id)

@@ -21,6 +21,7 @@ export const Model = Schema.Struct({
   principal: Principal,
   phase: Schema.Literals(['loading', 'ready', 'saving', 'error']),
   rows: Schema.Array(Row),
+  pagination: DashboardDocument.fields.pagination,
   fields: Schema.Record(Schema.String, Schema.String),
   toggles: Schema.Record(Schema.String, Schema.Boolean),
   error: Schema.NullOr(Schema.String),

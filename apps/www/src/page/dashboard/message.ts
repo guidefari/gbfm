@@ -43,7 +43,6 @@ export const Message = defineMessageUnion({
   PlayerPreferencesLoaded: { preferences: PlayerPreferences },
   ThemeSelected: { theme: Theme },
   ThemeRestored: { theme: Theme },
-  SearchRequested: {},
   DeleteRequested: { id: Schema.String },
   Saved: {},
   SpotifyRequested: {

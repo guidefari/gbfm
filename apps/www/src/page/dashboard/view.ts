@@ -10,11 +10,13 @@ import { catalogView, entityRoute } from './page/catalog'
 import { historyView, subscribersView } from './page/comms'
 import * as Emails from './page/emails'
 import * as Playlists from './page/playlists'
+import { searchView } from './page/search'
 import * as Sessions from './page/sessions'
 import * as Shows from './page/shows'
 import { telemetryView } from './page/telemetry'
 import { usersView } from './page/users'
 import { isAdminSection } from './section'
+import { pageRange, pager } from './ui'
 
 export interface ViewInputs {
   readonly role: Model['principal']['role']
@@ -91,6 +93,21 @@ const contentTypeTabs = (h: HtmlBuilder<Message>, section: string) =>
       current: type.section === section,
     })),
   )
+
+const contentPager = (model: Model, h: HtmlBuilder<Message>) => {
+  const page = model.pagination
+
+  if (!page || model.rows.length === 0) return h.empty
+
+  const href = (offset: number) => `${sectionHref(model.section)}?offset=${offset}`
+
+  return pager(h, {
+    label: 'Content pages',
+    summary: pageRange(page.offset, model.rows.length, page.total),
+    previous: page.offset > 0 ? { href: href(Math.max(0, page.offset - page.limit)) } : null,
+    next: page.hasMore ? { href: href(page.offset + page.limit) } : null,
+  })
+}
 
 const featuredMixStatus = (model: Model) =>
   model.fields.unavailableTitle
@@ -262,53 +279,37 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
                     })
                   : (model.section === 'music' || entity) && model.phase !== 'loading'
                     ? catalogView(model, h, Message)
-                    : model.phase === 'loading'
-                      ? h.p([h.Class('dashboard-state')], ['Loading…'])
-                      : model.section === 'featured-mix' && model.fields.savedMixId !== undefined
-                        ? featuredMix(model, h)
-                        : model.phase === 'error'
-                          ? h.div(
-                              [h.Class('dashboard-state dashboard-error'), h.Role('alert')],
-                              [
-                                h.p([], [model.error ?? 'Could not load this dashboard section.']),
-                                h.button([h.OnClick(Message.LoadRequested())], ['Try again']),
-                              ],
-                            )
-                          : model.section === 'frontend-errors'
+                    : model.section === 'search'
+                      ? searchView(model, inputs.url, h)
+                      : model.phase === 'loading'
+                        ? h.p([h.Class('dashboard-state')], ['Loading…'])
+                        : model.section === 'featured-mix' && model.fields.savedMixId !== undefined
+                          ? featuredMix(model, h)
+                          : model.phase === 'error'
                             ? h.div(
-                                [],
+                                [h.Class('dashboard-state dashboard-error'), h.Role('alert')],
                                 [
-                                  h.button(
-                                    [h.OnClick(Message.LoadRequested())],
-                                    ['Refresh telemetry'],
+                                  h.p(
+                                    [],
+                                    [model.error ?? 'Could not load this dashboard section.'],
                                   ),
-                                  telemetryView(model.telemetry),
+                                  h.button([h.OnClick(Message.LoadRequested())], ['Try again']),
                                 ],
                               )
-                            : model.section === 'shows'
-                              ? h.submodel({
-                                  slotId: 'shows',
-                                  view: Shows.view,
-                                  model: model.shows,
-                                  toParentMessage: (message) => Message.GotShowMessage({ message }),
-                                })
-                              : model.section === 'profile'
-                                ? profile(model, h)
-                                : model.section === 'email'
-                                  ? preferences(model, h)
-                                  : model.section === 'search'
-                                    ? h.section(
-                                        [h.Class('dashboard-panel')],
-                                        [
-                                          h.h2([], ['Search']),
-                                          input(h, model, 'query', 'Query', 'search'),
-                                          h.button(
-                                            [h.OnClick(Message.SearchRequested())],
-                                            ['Search'],
-                                          ),
-                                          collection(model, h),
-                                        ],
-                                      )
+                            : model.section === 'frontend-errors'
+                              ? telemetryView(h, model.telemetry)
+                              : model.section === 'shows'
+                                ? h.submodel({
+                                    slotId: 'shows',
+                                    view: Shows.view,
+                                    model: model.shows,
+                                    toParentMessage: (message) =>
+                                      Message.GotShowMessage({ message }),
+                                  })
+                                : model.section === 'profile'
+                                  ? profile(model, h)
+                                  : model.section === 'email'
+                                    ? preferences(model, h)
                                     : model.section === 'player'
                                       ? h.section(
                                           [h.Class('dashboard-panel')],
@@ -381,7 +382,10 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
                                           )
                                         : model.section === 'admin'
                                           ? adminHub(h, model.rows)
-                                          : collection(model, h)
+                                          : h.div(
+                                              [h.Class('dashboard-stack')],
+                                              [collection(model, h), contentPager(model, h)],
+                                            )
 
   return shell(
     model.section === 'overview'

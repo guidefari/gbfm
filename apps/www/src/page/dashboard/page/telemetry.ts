@@ -1,10 +1,13 @@
 import type { AdminTelemetryResponse } from '@gbfm/api/admin'
 import { Match } from 'effect'
-import { inertHtml as h } from 'foldkit/html'
+import type { HtmlBuilder } from 'foldkit/html'
+
+import { Message } from '../message'
+import { dataTable, emptyState, pageHeader, relativeTime } from '../ui'
 
 /** CLS is a unitless score; other available percentiles are durations. */
 export const telemetryP75 = (section: string, name: string, value: number | null) => {
-  if (value === null) return '—'
+  if (value === null) return 'n/a'
 
   if (section === 'webVitals' && name.toLowerCase() === 'cls')
     return value.toLocaleString('en-US', { maximumFractionDigits: 3 })
@@ -12,71 +15,98 @@ export const telemetryP75 = (section: string, name: string, value: number | null
   return `${Math.round(value).toLocaleString('en-US')} ms`
 }
 
+const sections: ReadonlyArray<{
+  readonly key: keyof AdminTelemetryResponse['sections']
+  readonly label: string
+}> = [
+  { key: 'webVitals', label: 'Web vitals' },
+  { key: 'navigation', label: 'Navigation' },
+  { key: 'errors', label: 'Errors' },
+  { key: 'player', label: 'Player' },
+]
+
+const columns = [
+  { label: 'Event' },
+  { label: 'Route', className: 'admin-col-mono' },
+  { label: 'Release', className: 'admin-col-muted' },
+  { label: 'Browser', className: 'admin-col-muted' },
+  { label: 'Samples' },
+  { label: 'p75' },
+]
+
+const stateNotice = (h: HtmlBuilder<Message>, data: AdminTelemetryResponse) =>
+  Match.value(data.state).pipe(
+    Match.when('partial', () =>
+      h.p(
+        [h.Role('status'), h.Class('admin-notice')],
+        ['Some telemetry queries are unavailable. Available sections remain current.'],
+      ),
+    ),
+    Match.when('empty', () =>
+      h.p(
+        [h.Class('admin-notice')],
+        [`No sampled browser telemetry was recorded in the last ${data.windowHours} hours.`],
+      ),
+    ),
+    Match.when('complete', () => h.empty),
+    Match.exhaustive,
+  )
+
 /** Preserve query availability independently of row count, including partially available dashboards. */
-export const telemetryView = (data: AdminTelemetryResponse | undefined) =>
+export const telemetryView = (h: HtmlBuilder<Message>, data: AdminTelemetryResponse | undefined) =>
   h.section(
-    [h.Class('dashboard-panel telemetry-dashboard'), h.AriaLabel('Browser and player health')],
+    [h.Class('admin-page telemetry-dashboard'), h.AriaLabel('Browser and player health')],
     [
-      h.h2([], ['Browser and player health']),
+      pageHeader(h, 'Sampled browser and player health from real visits.', [
+        h.button(
+          [h.Class('admin-button-small'), h.OnClick(Message.LoadRequested())],
+          ['Refresh telemetry'],
+        ),
+      ]),
       !data
         ? h.p([h.Role('alert')], ['Telemetry could not be loaded.'])
         : h.div(
-            [],
+            [h.Class('admin-page')],
             [
-              h.p([], [`Last ${data.windowHours} hours · Generated ${data.generatedAt}`]),
-              h.p([], [data.retentionNotice]),
-              Match.value(data.state).pipe(
-                Match.when('partial', () =>
-                  h.p(
-                    [h.Role('status')],
-                    ['Some telemetry queries are unavailable. Available sections remain current.'],
-                  ),
-                ),
-                Match.when('empty', () =>
-                  h.p(
-                    [],
-                    [
-                      `No sampled browser telemetry was recorded in the last ${data.windowHours} hours.`,
-                    ],
-                  ),
-                ),
-                Match.when('complete', () => h.empty),
-                Match.exhaustive,
+              h.p(
+                [h.Class('admin-description')],
+                [
+                  `Last ${data.windowHours} hours, generated `,
+                  relativeTime(h, data.generatedAt),
+                  `. ${data.retentionNotice}`,
+                ],
               ),
+              stateNotice(h, data),
               h.div(
                 [h.Class('telemetry-sections')],
-                Object.entries(data.sections).map(([key, section]) =>
-                  h.article(
-                    [h.AriaLabel(key === 'webVitals' ? 'Web vitals' : key)],
+                sections.map(({ key, label }) => {
+                  const section = data.sections[key]
+
+                  return h.article(
+                    [h.Key(key), h.AriaLabel(label), h.Class('admin-frame')],
                     [
-                      h.h3([], [key === 'webVitals' ? 'Web vitals' : key]),
+                      h.h3([], [label]),
                       !section.available
-                        ? h.p([], ['Unavailable'])
-                        : section.rows.length === 0
-                          ? h.p([], ['No events in this window.'])
-                          : h.div(
-                              [],
-                              section.rows.map((row) =>
-                                h.dl(
-                                  [],
-                                  [
-                                    h.dt([], ['Event']),
-                                    h.dd([], [row.name]),
-                                    h.dt([], ['Route']),
-                                    h.dd([], [row.route]),
-                                    h.dt([], ['Release / browser']),
-                                    h.dd([], [`${row.release} / ${row.browser}`]),
-                                    h.dt([], ['Samples']),
-                                    h.dd([], [row.samples.toLocaleString('en-US')]),
-                                    h.dt([], ['p75']),
-                                    h.dd([], [telemetryP75(key, row.name, row.p75)]),
-                                  ],
-                                ),
-                              ),
-                            ),
+                        ? emptyState(h, 'Unavailable')
+                        : dataTable(h, {
+                            label,
+                            columns,
+                            rows: section.rows.map((row, index) => ({
+                              key: `${row.name}-${row.route}-${row.release}-${row.browser}-${index}`,
+                              cells: [
+                                row.name,
+                                row.route,
+                                row.release,
+                                row.browser,
+                                row.samples.toLocaleString('en-US'),
+                                telemetryP75(key, row.name, row.p75),
+                              ],
+                            })),
+                            empty: emptyState(h, 'No events in this window.'),
+                          }),
                     ],
-                  ),
-                ),
+                  )
+                }),
               ),
             ],
           ),

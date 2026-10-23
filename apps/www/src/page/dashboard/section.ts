@@ -21,17 +21,48 @@ const adminSections = new Set([
 export const isAdminSection = (section: string) =>
   adminSections.has(section) || section.startsWith('music-entity/')
 
+export const pageOffset = (query: URLSearchParams) => {
+  const offset = Number(query.get('offset') ?? '0')
+
+  return Number.isSafeInteger(offset) && offset >= 0 ? offset : 0
+}
+
+const pagedEndpoints = new Map(
+  Object.entries({
+    'content/mixes': ['/api/content/audio/mix/manage', {}],
+    'content/tweets': ['/api/content/posts/manage', { type: 'micro' }],
+    'content/editorial': ['/api/content/posts/manage', { type: 'post' }],
+    'all/mixes': ['/api/content/audio/mix/manage', {}],
+    'all/tweets': ['/api/content/posts/manage', { type: 'micro' }],
+    'all/editorial': ['/api/content/posts/manage', { type: 'post' }],
+  } satisfies Record<string, readonly [string, Record<string, string>]>),
+)
+
+export const pageSize = 25
+
 export const endpointFor = (section: string, query = new URLSearchParams()) => {
   const entity = entityRoute(section)
 
   if (entity) return entity.path
 
-  if (section === 'email-logs') {
-    const offset = Number(query.get('offset') ?? '0')
+  const paged = pagedEndpoints.get(section)
 
+  if (paged) {
+    const [path, filters] = paged
+
+    return `${path}?${new URLSearchParams({ ...filters, limit: String(pageSize), offset: String(pageOffset(query)) })}`
+  }
+
+  if (section === 'search') {
+    const q = query.get('q')?.trim()
+
+    return q ? `/api/search?${new URLSearchParams({ q })}` : null
+  }
+
+  if (section === 'email-logs') {
     const params = new URLSearchParams({
-      limit: '25',
-      offset: String(Number.isSafeInteger(offset) && offset >= 0 ? offset : 0),
+      limit: String(pageSize),
+      offset: String(pageOffset(query)),
     })
 
     for (const key of ['status', 'recipientEmail', 'dateFrom', 'dateTo']) {
@@ -50,11 +81,9 @@ export const endpointFor = (section: string, query = new URLSearchParams()) => {
   }
 
   if (section === 'users') {
-    const offset = Number(query.get('offset') ?? '0')
-
     const params = new URLSearchParams({
-      limit: '25',
-      offset: String(Number.isSafeInteger(offset) && offset >= 0 ? offset : 0),
+      limit: String(pageSize),
+      offset: String(pageOffset(query)),
     })
 
     const search = query.get('search')?.trim()
@@ -76,19 +105,12 @@ export const endpointFor = (section: string, query = new URLSearchParams()) => {
       email: '/api/user/email-preferences',
       favorites: '/api/favorites?limit=25&offset=0',
       reminders: '/api/music-reminders',
-      'content/mixes': '/api/content/audio/mix/manage?limit=25&offset=0',
-      'content/tweets': '/api/content/posts/manage?type=micro&limit=25&offset=0',
-      'content/editorial': '/api/content/posts/manage?type=post&limit=25&offset=0',
-      'all/mixes': '/api/content/audio/mix/manage?limit=25&offset=0',
-      'all/tweets': '/api/content/posts/manage?type=micro&limit=25&offset=0',
-      'all/editorial': '/api/content/posts/manage?type=post&limit=25&offset=0',
       shows: '/api/shows/manage?limit=25&offset=0',
       music: '/api/music/artists',
       playlists: '/api/music/playlists',
       newsletter: '/api/admin/newsletter-subscribers',
       emails: '/api/email/mix-announcement-options',
       'frontend-errors': '/api/admin/telemetry',
-      search: '/api/search?q=',
     }),
   )
 

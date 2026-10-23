@@ -37,8 +37,16 @@ export const Row = Schema.Struct({
   thumbnailUrl: Schema.optional(Schema.NullOr(Schema.String)),
 })
 
+export const Pagination = Schema.Struct({
+  total: Schema.Number,
+  limit: Schema.Number,
+  offset: Schema.Number,
+  hasMore: Schema.Boolean,
+})
+
 export const DashboardDocument = Schema.Struct({
   rows: Schema.Array(Row),
+  pagination: Schema.optional(Pagination),
   fields: Schema.Record(Schema.String, Schema.String),
   toggles: Schema.Record(Schema.String, Schema.Boolean),
   telemetry: Schema.optional(AdminTelemetryResponse),
@@ -131,8 +139,8 @@ export const parseDashboardDocument = (
       )
     case '/api/content/posts/manage':
       return Schema.decodeUnknownEffect(GetPostsResponse)(input).pipe(
-        Effect.map(({ data }) =>
-          rowsDocument(
+        Effect.map(({ data, pagination }) => ({
+          ...rowsDocument(
             data.map((post) => ({
               id: post.id,
               title: post.title ?? post.content?.slice(0, 80) ?? post.slug,
@@ -141,7 +149,8 @@ export const parseDashboardDocument = (
               actionId: post.id,
             })),
           ),
-        ),
+          pagination,
+        })),
       )
     case '/api/search':
       return Schema.decodeUnknownEffect(SearchResults)(input).pipe(
@@ -238,8 +247,8 @@ export const parseDashboardDocument = (
       )
     case '/api/content/audio/mix/manage':
       return Schema.decodeUnknownEffect(GetAudioByTypeResponse)(input).pipe(
-        Effect.map(({ data }) =>
-          rowsDocument(
+        Effect.map(({ data, pagination }) => ({
+          ...rowsDocument(
             data.map((item) => ({
               id: item.id,
               title: item.title,
@@ -248,7 +257,8 @@ export const parseDashboardDocument = (
               actionId: null,
             })),
           ),
-        ),
+          pagination,
+        })),
       )
     case '/api/email/logs':
       return Schema.decodeUnknownEffect(EmailLogsResponse)(input).pipe(
