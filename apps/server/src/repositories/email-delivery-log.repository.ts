@@ -1,5 +1,5 @@
 import { EMAIL_DELIVERY_STATUSES, type EmailDeliveryStatus } from '@gbfm/core/status'
-import { and, desc, eq, gte, ilike, lt, type SQL, sql } from 'drizzle-orm'
+import { and, desc, eq, gte, lt, type SQL, sql } from 'drizzle-orm'
 
 import {
   emailDeliveryLogsTable,
@@ -154,7 +154,9 @@ export async function getAdminEmailLogs(
   if (status) filters.push(eq(emailDeliveryLogsTable.status, status))
 
   if (recipientEmail) {
-    filters.push(ilike(emailDeliveryLogsTable.recipientEmail, `%${recipientEmail}%`))
+    filters.push(
+      sql`instr(lower(${emailDeliveryLogsTable.recipientEmail}), ${recipientEmail.toLowerCase()}) > 0`,
+    )
   }
 
   if (dateFrom) {

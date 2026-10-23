@@ -6,6 +6,8 @@ import { Message } from './message'
 import type { Model } from './model'
 import { navigation, sectionLabel } from './navigation'
 import { catalogView, entityRoute } from './page/catalog'
+import { commsNavigation, historyView, isCommsSection, subscribersView } from './page/comms'
+import * as Emails from './page/emails'
 import * as Playlists from './page/playlists'
 import * as Sessions from './page/sessions'
 import * as Shows from './page/shows'
@@ -197,131 +199,160 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
   const entity = entityRoute(model.section)
 
   const content =
-    model.section === 'users'
-      ? usersView(
-          model.users,
-          model.fields.search ?? '',
-          Number(model.fields.offset ?? '0'),
-          new URL(inputs.url).searchParams.get('notice') ?? '',
-        )
-      : model.section === 'sessions'
-        ? h.submodel({
-            slotId: 'sessions',
-            view: Sessions.view,
-            model: model.sessions,
-            toParentMessage: (message) => Message.GotSessionMessage({ message }),
-          })
-        : model.section === 'integrations'
-          ? spotify
-          : model.section === 'playlists' && model.phase === 'ready'
-            ? h.submodel({
-                slotId: 'playlists',
-                view: Playlists.view,
-                model: model.playlists,
-                toParentMessage: (message) => Message.GotPlaylistMessage({ message }),
-              })
-            : (model.section === 'music' || entity) && model.phase !== 'loading'
-              ? catalogView(model, h, Message)
-              : model.phase === 'loading'
-                ? h.p([h.Class('dashboard-state')], ['Loading…'])
-                : model.section === 'featured-mix' && model.fields.savedMixId !== undefined
-                  ? featuredMix(model, h)
-                  : model.phase === 'error'
-                    ? h.div(
-                        [h.Class('dashboard-state dashboard-error'), h.Role('alert')],
-                        [
-                          h.p([], [model.error ?? 'Could not load this dashboard section.']),
-                          h.button([h.OnClick(Message.LoadRequested())], ['Try again']),
-                        ],
-                      )
-                    : model.section === 'frontend-errors'
-                      ? h.div(
-                          [],
-                          [
-                            h.button([h.OnClick(Message.LoadRequested())], ['Refresh telemetry']),
-                            telemetryView(model.telemetry),
-                          ],
-                        )
-                      : model.section === 'shows'
-                        ? h.submodel({
-                            slotId: 'shows',
-                            view: Shows.view,
-                            model: model.shows,
-                            toParentMessage: (message) => Message.GotShowMessage({ message }),
-                          })
-                        : model.section === 'profile'
-                          ? profile(model, h)
-                          : model.section === 'email'
-                            ? preferences(model, h)
-                            : model.section === 'search'
-                              ? h.section(
-                                  [h.Class('dashboard-panel')],
-                                  [
-                                    h.h2([], ['Search']),
-                                    input(h, model, 'query', 'Query', 'search'),
-                                    h.button([h.OnClick(Message.SearchRequested())], ['Search']),
-                                    collection(model, h),
-                                  ],
-                                )
-                              : model.section === 'player'
-                                ? h.section(
-                                    [h.Class('dashboard-panel')],
-                                    [
-                                      h.h2([], ['Player preferences']),
-                                      h.p([], ['Player settings are stored on this device.']),
-                                      toggle(h, model, 'continueQueue', 'Continue through queue'),
-                                      toggle(
-                                        h,
-                                        model,
-                                        'restorePosition',
-                                        'Restore listening position',
-                                      ),
-                                      h.button(
+    model.section === 'emails' && model.phase === 'ready'
+      ? h.submodel({
+          slotId: 'emails',
+          view: Emails.view,
+          model: model.emails,
+          toParentMessage: (message) => Message.GotEmailMessage({ message }),
+        })
+      : model.section === 'newsletter' && model.phase === 'ready'
+        ? subscribersView(model, h)
+        : model.section === 'email-logs' && model.phase === 'ready'
+          ? historyView(model, inputs.url, h)
+          : model.section === 'users'
+            ? usersView(
+                model.users,
+                model.fields.search ?? '',
+                Number(model.fields.offset ?? '0'),
+                new URL(inputs.url).searchParams.get('notice') ?? '',
+              )
+            : model.section === 'sessions'
+              ? h.submodel({
+                  slotId: 'sessions',
+                  view: Sessions.view,
+                  model: model.sessions,
+                  toParentMessage: (message) => Message.GotSessionMessage({ message }),
+                })
+              : model.section === 'integrations'
+                ? spotify
+                : model.section === 'playlists' && model.phase === 'ready'
+                  ? h.submodel({
+                      slotId: 'playlists',
+                      view: Playlists.view,
+                      model: model.playlists,
+                      toParentMessage: (message) => Message.GotPlaylistMessage({ message }),
+                    })
+                  : (model.section === 'music' || entity) && model.phase !== 'loading'
+                    ? catalogView(model, h, Message)
+                    : model.phase === 'loading'
+                      ? h.p([h.Class('dashboard-state')], ['Loading…'])
+                      : model.section === 'featured-mix' && model.fields.savedMixId !== undefined
+                        ? featuredMix(model, h)
+                        : model.phase === 'error'
+                          ? h.div(
+                              [h.Class('dashboard-state dashboard-error'), h.Role('alert')],
+                              [
+                                h.p([], [model.error ?? 'Could not load this dashboard section.']),
+                                h.button([h.OnClick(Message.LoadRequested())], ['Try again']),
+                              ],
+                            )
+                          : model.section === 'frontend-errors'
+                            ? h.div(
+                                [],
+                                [
+                                  h.button(
+                                    [h.OnClick(Message.LoadRequested())],
+                                    ['Refresh telemetry'],
+                                  ),
+                                  telemetryView(model.telemetry),
+                                ],
+                              )
+                            : model.section === 'shows'
+                              ? h.submodel({
+                                  slotId: 'shows',
+                                  view: Shows.view,
+                                  model: model.shows,
+                                  toParentMessage: (message) => Message.GotShowMessage({ message }),
+                                })
+                              : model.section === 'profile'
+                                ? profile(model, h)
+                                : model.section === 'email'
+                                  ? preferences(model, h)
+                                  : model.section === 'search'
+                                    ? h.section(
+                                        [h.Class('dashboard-panel')],
                                         [
-                                          h.Class('dashboard-button-primary'),
-                                          h.OnClick(Message.SavePlayerPreferences()),
-                                          h.Disabled(model.phase === 'saving'),
-                                        ],
-                                        [
-                                          model.phase === 'saving'
-                                            ? 'Saving…'
-                                            : 'Save player preferences',
-                                        ],
-                                      ),
-                                    ],
-                                  )
-                                : model.section === 'appearance'
-                                  ? h.section(
-                                      [h.Class('appearance-options')],
-                                      [
-                                        h.p([], ['Choose how gbfm looks on this device']),
-                                        ...(['light', 'dark', 'system'] as const).map((theme) =>
+                                          h.h2([], ['Search']),
+                                          input(h, model, 'query', 'Query', 'search'),
                                           h.button(
-                                            [
-                                              h.AriaPressed(
-                                                String((model.fields.theme ?? 'system') === theme),
-                                              ),
-                                              h.OnClick(Message.ThemeSelected({ theme })),
-                                            ],
-                                            [
-                                              h.strong(
-                                                [],
-                                                [theme.charAt(0).toUpperCase() + theme.slice(1)],
-                                              ),
-                                              h.span(
-                                                [],
-                                                [
-                                                  theme === 'system'
-                                                    ? 'Follow your device preference'
-                                                    : `Always use the ${theme} interface`,
-                                                ],
-                                              ),
-                                            ],
+                                            [h.OnClick(Message.SearchRequested())],
+                                            ['Search'],
                                           ),
-                                        ),
-                                      ],
-                                    )
-                                  : collection(model, h)
+                                          collection(model, h),
+                                        ],
+                                      )
+                                    : model.section === 'player'
+                                      ? h.section(
+                                          [h.Class('dashboard-panel')],
+                                          [
+                                            h.h2([], ['Player preferences']),
+                                            h.p([], ['Player settings are stored on this device.']),
+                                            toggle(
+                                              h,
+                                              model,
+                                              'continueQueue',
+                                              'Continue through queue',
+                                            ),
+                                            toggle(
+                                              h,
+                                              model,
+                                              'restorePosition',
+                                              'Restore listening position',
+                                            ),
+                                            h.button(
+                                              [
+                                                h.Class('dashboard-button-primary'),
+                                                h.OnClick(Message.SavePlayerPreferences()),
+                                                h.Disabled(model.phase === 'saving'),
+                                              ],
+                                              [
+                                                model.phase === 'saving'
+                                                  ? 'Saving…'
+                                                  : 'Save player preferences',
+                                              ],
+                                            ),
+                                          ],
+                                        )
+                                      : model.section === 'appearance'
+                                        ? h.section(
+                                            [h.Class('appearance-options')],
+                                            [
+                                              h.p([], ['Choose how gbfm looks on this device']),
+                                              ...(['light', 'dark', 'system'] as const).map(
+                                                (theme) =>
+                                                  h.button(
+                                                    [
+                                                      h.AriaPressed(
+                                                        String(
+                                                          (model.fields.theme ?? 'system') ===
+                                                            theme,
+                                                        ),
+                                                      ),
+                                                      h.OnClick(Message.ThemeSelected({ theme })),
+                                                    ],
+                                                    [
+                                                      h.strong(
+                                                        [],
+                                                        [
+                                                          theme.charAt(0).toUpperCase() +
+                                                            theme.slice(1),
+                                                        ],
+                                                      ),
+                                                      h.span(
+                                                        [],
+                                                        [
+                                                          theme === 'system'
+                                                            ? 'Follow your device preference'
+                                                            : `Always use the ${theme} interface`,
+                                                        ],
+                                                      ),
+                                                    ],
+                                                  ),
+                                              ),
+                                            ],
+                                          )
+                                        : collection(model, h)
 
   return h.div(
     [h.Class('gbfm-dashboard')],
@@ -361,6 +392,7 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
               ),
             ],
           ),
+          isCommsSection(model.section) ? commsNavigation(model.section, h) : h.empty,
           content,
         ],
       ),

@@ -42,8 +42,6 @@ const admin: NavigationGroup = {
     { section: 'music', label: 'Music' },
     { section: 'playlists', label: 'Playlists' },
     { section: 'search', label: 'Search' },
-    { section: 'newsletter', label: 'Newsletter' },
-    { section: 'email-logs', label: 'Email logs' },
     { section: 'frontend-errors', label: 'Telemetry' },
     { section: 'all/mixes', label: 'All content' },
     { section: 'featured-mix', label: 'Featured mix' },
@@ -61,6 +59,15 @@ const account: NavigationGroup = {
   ],
 }
 
+const comms: NavigationGroup = {
+  label: 'Comms',
+  links: [
+    { section: 'emails', label: 'Emails' },
+    { section: 'newsletter', label: 'Subscribers' },
+    { section: 'email-logs', label: 'Delivery history' },
+  ],
+}
+
 const isCurrent = (section: string, current: string) =>
   section === current ||
   (section === 'all/mixes' && current.startsWith('all/')) ||
@@ -69,6 +76,7 @@ const isCurrent = (section: string, current: string) =>
 const groupsFor = (role: Model['principal']['role']) => [
   library,
   ...(canCreatePosts(role) ? [creator] : []),
+  ...(role === 'admin' ? [comms] : []),
   ...(role === 'admin' ? [admin] : []),
   account,
 ]

@@ -52,10 +52,14 @@ export const init: Runtime.ApplicationInit<Model, Message, Flags, Services> = (f
     Match.orElse(() => ''),
   )
 
-  const dashboard = Dashboard.init(section || 'favorites', {
-    id: flags.principal?.id ?? '',
-    role: role && isRole(role) ? role : null,
-  })()
+  const dashboard = Dashboard.init(
+    section || 'favorites',
+    {
+      id: flags.principal?.id ?? '',
+      role: role && isRole(role) ? role : null,
+    },
+    url.searchParams,
+  )()
 
   const preparedDashboard = flags.dashboard
     ? Dashboard.update(dashboard.model, Dashboard.Message.Loaded({ document: flags.dashboard }))
