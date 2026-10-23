@@ -1130,10 +1130,27 @@
   color: var(--muted-foreground);
 }
 .auth-page {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   min-height: 70vh;
   display: grid;
   place-items: center;
   padding: 3rem 1rem;
+}
+.auth-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  display: grid;
+  place-items: center;
+  color: var(--foreground);
+  opacity: 0.06;
+  pointer-events: none;
+}
+.auth-backdrop svg {
+  width: max(140%, 48rem);
+  height: auto;
 }
 .auth-panel {
   width: min(100%, 26rem);
@@ -1223,7 +1240,15 @@
 @media (max-width: 30rem) {
   .auth-page {
     place-items: start center;
+    min-height: calc(100dvh - 3.5rem);
     padding: 1.5rem 1rem;
+  }
+  .auth-backdrop {
+    place-items: end start;
+    padding-bottom: 1.5rem;
+  }
+  .auth-backdrop svg {
+    width: 220%;
   }
   .auth-panel {
     padding: 1.75rem 1.25rem 1.5rem;
