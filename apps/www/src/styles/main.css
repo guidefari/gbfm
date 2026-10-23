@@ -1182,11 +1182,21 @@
   display: grid;
   gap: 0.5rem;
 }
-.auth-label-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
+.auth-field-with-link {
+  grid-template-columns: 1fr auto;
+  column-gap: 1rem;
+}
+.auth-field-with-link > .auth-label,
+.auth-field-with-link > .auth-subtle-link {
+  grid-row: 1;
+  align-self: baseline;
+}
+.auth-field-with-link > .auth-subtle-link {
+  grid-column: 2;
+}
+.auth-field-with-link > .auth-password-wrap {
+  grid-row: 2;
+  grid-column: 1 / -1;
 }
 .auth-label {
   font-size: 0.8rem;

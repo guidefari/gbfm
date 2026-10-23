@@ -78,17 +78,9 @@ export const passwordField = (
   state: FieldState,
 ): Html =>
   h.div(
-    [h.Class('auth-field')],
+    [h.Class(kind === 'current' ? 'auth-field auth-field-with-link' : 'auth-field')],
     [
-      h.div(
-        [h.Class('auth-label-row')],
-        [
-          h.label([h.Class('auth-label'), h.For('auth-password')], ['Password']),
-          kind === 'current'
-            ? h.a([h.Href(forgotHref), h.Class('auth-subtle-link')], ['Forgot password?'])
-            : h.empty,
-        ],
-      ),
+      h.label([h.Class('auth-label'), h.For('auth-password')], ['Password']),
       h.div(
         [h.Class('auth-password-wrap')],
         [
@@ -122,7 +114,7 @@ export const passwordField = (
       ),
       kind === 'new'
         ? h.p([h.Id('auth-password-hint'), h.Class('auth-hint')], ['At least 8 characters.'])
-        : h.empty,
+        : h.a([h.Href(forgotHref), h.Class('auth-subtle-link')], ['Forgot password?']),
     ],
   )
 
