@@ -1,3 +1,4 @@
+import { Match } from 'effect'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 import type { Message } from '../../message'
@@ -18,6 +19,19 @@ const verifyEmail = (h: Builder): Html =>
     ],
   )
 
+const footer = (h: Builder, action: string): Html =>
+  h.p(
+    [h.Class('auth-footer')],
+    Match.value(action).pipe(
+      Match.when('sign-in', () => ['New here? ', link(h, '/auth/sign-up', 'Create an account')]),
+      Match.when('sign-up', () => [
+        'Already have an account? ',
+        link(h, '/auth/sign-in', 'Sign in'),
+      ]),
+      Match.orElse(() => ['Remembered it? ', link(h, '/auth/sign-in', 'Sign in')]),
+    ),
+  )
+
 const authForm = (h: Builder, action: string, url: URL): Html => {
   const copy = authCopy(action)
 
@@ -25,8 +39,12 @@ const authForm = (h: Builder, action: string, url: URL): Html => {
     [h.Class('auth-page')],
     [
       h.form(
-        [h.Class('panel'), h.Method('post'), h.Action(`/auth/${action}`)],
+        [h.Class('auth-panel'), h.Method('post'), h.Action(`/auth/${action}`)],
         [
+          h.header(
+            [h.Class('auth-header')],
+            [h.h1([], [copy.title]), h.p([h.Class('auth-subtitle')], [copy.subtitle])],
+          ),
           url.searchParams.has('sent')
             ? statusMessage(h, 'Check your inbox for a password reset link.')
             : h.empty,
@@ -35,19 +53,22 @@ const authForm = (h: Builder, action: string, url: URL): Html => {
             : h.empty,
           hiddenField(h, 'token', url.searchParams.get('token') ?? ''),
           hiddenField(h, 'returnTo', url.searchParams.get('returnTo') ?? '/dashboard'),
-          h.h1([], [copy.title]),
-          action === 'sign-up' ? nameField(h) : h.empty,
-          action === 'reset-password' ? h.empty : emailField(h),
-          action === 'forgot-password'
-            ? h.empty
-            : passwordField(h, action === 'sign-in' ? 'current-password' : 'new-password'),
-          h.button([h.Type('submit')], [copy.submit]),
-          link(
-            h,
-            action === 'sign-in' ? '/auth/sign-up' : '/auth/sign-in',
-            action === 'sign-in' ? 'Create an account' : 'Sign in',
+          h.div(
+            [h.Class('auth-fields')],
+            [
+              action === 'sign-up' ? nameField(h) : h.empty,
+              action === 'reset-password' ? h.empty : emailField(h),
+              action === 'forgot-password'
+                ? h.empty
+                : passwordField(
+                    h,
+                    action === 'sign-in' ? 'current-password' : 'new-password',
+                    action === 'sign-in',
+                  ),
+            ],
           ),
-          action === 'sign-in' ? link(h, '/auth/forgot-password', 'Forgot password?') : h.empty,
+          h.button([h.Type('submit'), h.Class('auth-submit')], [copy.submit]),
+          footer(h, action),
         ],
       ),
     ],

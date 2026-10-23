@@ -1133,20 +1133,102 @@
   min-height: 70vh;
   display: grid;
   place-items: center;
-  padding: 2rem 1rem;
+  padding: 3rem 1rem;
 }
-.panel {
-  width: min(100%, 520px);
-  padding: 2rem;
-  border: 1px solid var(--border);
-  background: var(--card);
+.auth-panel {
+  width: min(100%, 26rem);
   display: grid;
-  gap: 1.25rem;
+  gap: 1.5rem;
+  padding: 2.25rem 2rem 1.75rem;
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--highlight);
+  background: var(--card);
+  color: var(--card-foreground);
+  line-height: 1.4;
 }
-.panel label {
+.auth-header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+.auth-subtitle {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+.auth-fields {
+  display: grid;
+  gap: 1.125rem;
+}
+.auth-field {
   display: grid;
   gap: 0.5rem;
-  font-size: 0.85rem;
+}
+.auth-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.auth-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.auth-field input {
+  background: var(--background);
+  border-color: var(--input);
+}
+.auth-field input:hover {
+  border-color: var(--muted-foreground);
+}
+.auth-field input:focus-visible {
+  border-color: var(--highlight);
+}
+.auth-subtle-link {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.auth-submit {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border-color: var(--highlight);
+  background: var(--highlight);
+  color: var(--highlight-foreground);
+  font-weight: 700;
+}
+.auth-submit:hover {
+  filter: brightness(1.08);
+}
+.auth-submit:active {
+  filter: brightness(0.95);
+}
+.auth-status {
+  padding: 0.75rem 0.875rem;
+  border-left: 3px solid var(--success);
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+.auth-footer {
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+}
+.auth-footer a {
+  color: var(--card-foreground);
+  font-weight: 600;
+}
+@media (max-width: 30rem) {
+  .auth-page {
+    place-items: start center;
+    padding: 1.5rem 1rem;
+  }
+  .auth-panel {
+    padding: 1.75rem 1.25rem 1.5rem;
+  }
 }
 .creator-page {
   max-width: 1280px;
