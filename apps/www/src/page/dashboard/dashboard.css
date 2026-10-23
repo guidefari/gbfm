@@ -947,6 +947,84 @@
 .admin-header .admin-drawer[open] {
   width: 100%;
 }
+.admin-inline-form {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.gbfm-dashboard .admin-inline-form select {
+  width: auto;
+  min-width: 0;
+  flex: 1 1 auto;
+  min-height: 2rem;
+  padding: 0.125rem 0.375rem;
+}
+.admin-table td.admin-col-actions {
+  overflow: visible;
+}
+.admin-menu {
+  position: relative;
+  display: inline-block;
+}
+.gbfm-dashboard .admin-menu > summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0 0.625rem;
+  border: 1px solid var(--dash-line);
+  font-size: 0.8125rem;
+  list-style: none;
+  cursor: pointer;
+}
+.admin-menu > summary::-webkit-details-marker {
+  display: none;
+}
+.admin-menu[open] > summary {
+  background: color-mix(in srgb, var(--dash-fg) 8%, transparent);
+}
+.admin-menu-body {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  z-index: 5;
+  display: grid;
+  gap: 0.5rem;
+  width: 17rem;
+  padding: 0.75rem;
+  border: 1px solid var(--dash-line);
+  background: var(--dash-bg);
+  text-align: left;
+  white-space: normal;
+}
+.gbfm-dashboard .admin-menu-body button {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+}
+.admin-menu-body details > summary {
+  padding: 0.25rem 0;
+  cursor: pointer;
+}
+.admin-menu-body p {
+  margin: 0;
+}
+.admin-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: none;
+}
+.admin-form-grid > :is(p, button) {
+  grid-column: 1 / -1;
+}
+@media (min-width: 1024px) {
+  .admin-table-wrap {
+    overflow: visible;
+  }
+}
+@media (max-width: 640px) {
+  .admin-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 .admin-notice {
   margin: 0;
   padding: 0.5rem 0.75rem;
