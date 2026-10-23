@@ -1,10 +1,10 @@
 import { Match, Option, Schema } from 'effect'
 
 export const authErrorMessages = {
-  credentials: "That email and password don't match. Try again or reset your password.",
-  exists: 'An account with this email already exists. Sign in instead.',
+  credentials: "That email and password don't match.",
+  exists: 'An account with this email already exists.',
   password: 'Use a password between 8 and 128 characters.',
-  token: 'This reset link has expired or was already used. Request a new one.',
+  token: 'This reset link has expired or was already used.',
   rate: 'Too many attempts. Wait a minute and try again.',
   unknown: "That didn't go through. Check your details and try again.",
 } as const
@@ -70,3 +70,18 @@ export const authErrorLocation = (
 
   return `${action}?${params}`
 }
+
+export type AuthErrorAction = { readonly label: string; readonly path: string }
+
+export const authErrorAction = (key: AuthErrorKey | null): AuthErrorAction | null =>
+  Match.value(key).pipe(
+    Match.when('credentials', (): AuthErrorAction => ({
+      label: 'Reset your password',
+      path: '/auth/forgot-password',
+    })),
+    Match.when('exists', (): AuthErrorAction => ({
+      label: 'Sign in instead',
+      path: '/auth/sign-in',
+    })),
+    Match.orElse(() => null),
+  )

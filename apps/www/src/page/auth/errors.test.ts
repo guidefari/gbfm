@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest'
 
 import {
+  authErrorAction,
   authErrorKey,
   authErrorLocation,
   authErrorMessage,
@@ -65,4 +66,14 @@ it('keeps the typed email and name so people do not retype them', () => {
       name: 'DJ Goose',
     }),
   ).toBe('/auth/sign-up?error=exists&email=dj%40example.com&name=DJ+Goose')
+})
+
+it('offers a way forward for errors people can act on', () => {
+  expect(authErrorAction('exists')).toEqual({ label: 'Sign in instead', path: '/auth/sign-in' })
+  expect(authErrorAction('credentials')).toEqual({
+    label: 'Reset your password',
+    path: '/auth/forgot-password',
+  })
+  expect(authErrorAction('rate')).toBe(null)
+  expect(authErrorAction(null)).toBe(null)
 })

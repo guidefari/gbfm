@@ -121,5 +121,5 @@ export const passwordField = (
 export const statusMessage = (h: Builder, text: string): Html =>
   h.p([h.Role('status'), h.Class('auth-status')], [text])
 
-export const errorMessage = (h: Builder, text: string): Html =>
-  h.p([h.Id(errorId), h.Role('alert'), h.Class('auth-status auth-error')], [text])
+export const errorMessage = (h: Builder, text: string, action: Html): Html =>
+  h.p([h.Id(errorId), h.Role('alert'), h.Class('auth-status auth-error')], [text, ' ', action])

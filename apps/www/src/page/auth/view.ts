@@ -5,7 +5,7 @@ import { authFormAttribute } from '../../auth-submit'
 import type { Message } from '../../message'
 import type { Model } from '../../model'
 import { authCopy } from './copy'
-import { authErrorMessage, parseAuthErrorKey } from './errors'
+import { authErrorAction, authErrorMessage, parseAuthErrorKey } from './errors'
 import { fieldStates, formFields } from './field-state'
 import {
   emailField,
@@ -48,6 +48,8 @@ const authForm = (h: Builder, action: string, url: URL, state: AuthViewState): H
   const errorKey = parseAuthErrorKey(url.searchParams.get('error'))
   const error = authErrorMessage(errorKey)
   const fields = formFields(action)
+  const errorAction = authErrorAction(errorKey)
+  const email = url.searchParams.get('email') ?? ''
   const states = fieldStates(action, errorKey)
   const returnTo = url.searchParams.get('returnTo') ?? ''
 
@@ -65,7 +67,15 @@ const authForm = (h: Builder, action: string, url: URL, state: AuthViewState): H
           [h.Class('auth-header')],
           [h.h1([], [copy.title]), h.p([h.Class('auth-subtitle')], [copy.subtitle])],
         ),
-        error === null ? h.empty : errorMessage(h, error),
+        error === null
+          ? h.empty
+          : errorMessage(
+              h,
+              error,
+              errorAction === null
+                ? h.empty
+                : link(h, authHref(errorAction.path, { email, returnTo }), errorAction.label),
+            ),
         url.searchParams.has('sent')
           ? statusMessage(h, 'Check your inbox for a password reset link.')
           : h.empty,
@@ -80,9 +90,7 @@ const authForm = (h: Builder, action: string, url: URL, state: AuthViewState): H
             fields.includes('name')
               ? nameField(h, url.searchParams.get('name') ?? '', states.name)
               : h.empty,
-            fields.includes('email')
-              ? emailField(h, url.searchParams.get('email') ?? '', states.email)
-              : h.empty,
+            fields.includes('email') ? emailField(h, email, states.email) : h.empty,
             fields.includes('password')
               ? passwordField(
                   h,
