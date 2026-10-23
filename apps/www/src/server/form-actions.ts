@@ -3,7 +3,7 @@ import { Match, Option, Schema } from 'effect'
 import * as Server from 'foldkit/experimental/server'
 
 import { authErrorKey, authErrorLocation, readAuthErrorCode } from '../page/auth/errors'
-import { authHref } from '../page/auth/links'
+import { authHref, safeReturnPath } from '../page/auth/links'
 import { readModeCookie } from '../page/tweet/navigation'
 import { apiRequest } from './api'
 import { randomTweet } from './tweet-random'
@@ -205,10 +205,7 @@ export const handleFormAction = async (request: Request): Promise<Server.Respond
       }),
     )
 
-  const returnUrl = URL.parse(field('returnTo') || '/dashboard', url.origin)
-
-  const returnPath =
-    returnUrl?.origin === url.origin ? `${returnUrl.pathname}${returnUrl.search}` : '/dashboard'
+  const returnPath = safeReturnPath(field('returnTo'), url.origin)
 
   return redirect(
     Match.value(action).pipe(
