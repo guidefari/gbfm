@@ -34,11 +34,21 @@ export const authErrorKey = (status: number, code: string): AuthErrorKey =>
         Match.orElse((): AuthErrorKey => 'unknown'),
       )
 
-export const authErrorMessage = (key: string | null): string | null =>
-  key === null
-    ? null
-    : (Object.entries(authErrorMessages).find(([name]) => name === key)?.[1] ??
-      authErrorMessages.unknown)
+const isAuthErrorKey = (key: string): key is AuthErrorKey => Object.hasOwn(authErrorMessages, key)
+
+export const parseAuthErrorKey = (raw: string | null): AuthErrorKey | null =>
+  Match.value(raw).pipe(
+    Match.when(Match.null, () => null),
+    Match.when('INVALID_TOKEN', (): AuthErrorKey => 'token'),
+    Match.when(isAuthErrorKey, (key) => key),
+    Match.orElse((): AuthErrorKey => 'unknown'),
+  )
+
+export const authErrorMessage = (raw: string | null): string | null => {
+  const key = parseAuthErrorKey(raw)
+
+  return key === null ? null : authErrorMessages[key]
+}
 
 export const authErrorLocation = (
   action: string,

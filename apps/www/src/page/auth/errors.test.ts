@@ -5,6 +5,7 @@ import {
   authErrorLocation,
   authErrorMessage,
   authErrorMessages,
+  parseAuthErrorKey,
   readAuthErrorCode,
 } from './errors'
 
@@ -29,6 +30,11 @@ it('resolves messages from the query value, falling back for unknown keys', () =
   expect(authErrorMessage(null)).toBe(null)
   expect(authErrorMessage('exists')).toBe(authErrorMessages.exists)
   expect(authErrorMessage('constructor')).toBe(authErrorMessages.unknown)
+})
+
+it('treats the better-auth reset redirect error as an expired link', () => {
+  expect(parseAuthErrorKey('INVALID_TOKEN')).toBe('token')
+  expect(authErrorMessage('INVALID_TOKEN')).toBe(authErrorMessages.token)
 })
 
 it('sends the user back to the same form with context preserved', () => {

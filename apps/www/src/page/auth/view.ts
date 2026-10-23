@@ -2,9 +2,8 @@ import { Match } from 'effect'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 import type { Message } from '../../message'
-import { wordmark } from '../../view/wordmark'
 import { authCopy } from './copy'
-import { authErrorMessage } from './errors'
+import { authErrorMessage, parseAuthErrorKey } from './errors'
 import {
   emailField,
   errorMessage,
@@ -14,37 +13,10 @@ import {
   type PasswordReveal,
   statusMessage,
 } from './fields'
+import { invalidResetLink, verifyEmail } from './notices'
+import { authShell, link } from './shell'
 
 type Builder = HtmlBuilder<Message>
-
-const link = (h: Builder, href: string, label: string) => h.a([h.Href(href)], [label])
-
-const authShell = (h: Builder, panel: Html): Html =>
-  h.section(
-    [h.Class('auth-page')],
-    [h.div([h.Class('auth-backdrop'), h.AriaHidden(true)], [wordmark('full')]), panel],
-  )
-
-const verifyEmail = (h: Builder): Html =>
-  authShell(
-    h,
-    h.div(
-      [h.Class('auth-panel')],
-      [
-        h.header(
-          [h.Class('auth-header')],
-          [
-            h.h1([], ['Check your email']),
-            h.p(
-              [h.Class('auth-subtitle')],
-              ['Use the verification link in your inbox to verify your account.'],
-            ),
-          ],
-        ),
-        h.p([h.Class('auth-footer')], ['Verified? ', link(h, '/auth/sign-in', 'Sign in')]),
-      ],
-    ),
-  )
 
 const footer = (h: Builder, action: string): Html =>
   h.p(
@@ -98,5 +70,16 @@ const authForm = (h: Builder, action: string, url: URL, reveal: PasswordReveal):
   )
 }
 
+const isInvalidResetLink = (action: string, url: URL) =>
+  action === 'reset-password' &&
+  (!url.searchParams.get('token') || parseAuthErrorKey(url.searchParams.get('error')) === 'token')
+
 export const view = (h: Builder, action: string, url: URL, reveal: PasswordReveal): Html =>
-  action === 'verify-email' ? verifyEmail(h) : authForm(h, action, url, reveal)
+  Match.value(action).pipe(
+    Match.when('verify-email', () => verifyEmail(h)),
+    Match.when(
+      () => isInvalidResetLink(action, url),
+      () => invalidResetLink(h),
+    ),
+    Match.orElse(() => authForm(h, action, url, reveal)),
+  )
