@@ -1150,8 +1150,7 @@
   pointer-events: none;
 }
 .auth-backdrop svg {
-  width: min(92%, 64rem, 90vh);
-  height: auto;
+  width: min(60%, 18rem, 28vh);
 }
 .auth-panel {
   width: min(100%, 26rem);
@@ -1252,6 +1251,27 @@
 @media (max-width: 30rem) {
   .auth-panel {
     padding: 1.75rem 1.25rem 1.5rem;
+  }
+}
+@media (min-width: 64rem) {
+  .auth-page {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    place-items: center;
+    column-gap: 4rem;
+    max-width: 72rem;
+    margin-inline: auto;
+    padding-inline: 2rem;
+  }
+  .auth-backdrop {
+    position: static;
+    z-index: auto;
+    place-items: center;
+    padding: 0;
+    width: 100%;
+    opacity: 0.1;
+  }
+  .auth-backdrop svg {
+    width: min(100%, 28rem);
   }
 }
 .creator-page {

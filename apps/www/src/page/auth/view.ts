@@ -21,7 +21,7 @@ const link = (h: Builder, href: string, label: string) => h.a([h.Href(href)], [l
 const authShell = (h: Builder, panel: Html): Html =>
   h.section(
     [h.Class('auth-page')],
-    [h.div([h.Class('auth-backdrop'), h.AriaHidden(true)], [wordmark()]), panel],
+    [h.div([h.Class('auth-backdrop'), h.AriaHidden(true)], [wordmark('full')]), panel],
   )
 
 const verifyEmail = (h: Builder): Html =>
