@@ -36,12 +36,6 @@ export const workspaces = {
     visible: everyone,
     groups: [
       {
-        label: 'Home',
-        description: 'Your latest saves',
-        visible: everyone,
-        pages: [{ section: 'overview', label: 'Home' }],
-      },
-      {
         label: 'Library',
         description: 'Mixes you saved and releases you are waiting for',
         visible: everyone,
@@ -166,7 +160,7 @@ export const sectionLabel = (section: string, role: Role) =>
   resolveSection(section, role)?.page.label ?? section.replaceAll('-', ' ')
 
 export const sectionHref = (section: string) =>
-  section === 'overview' ? '/dashboard' : `/dashboard/${section}`
+  section === 'favorites' ? '/dashboard' : `/dashboard/${section}`
 
 export interface Tab {
   readonly href: string
@@ -215,7 +209,7 @@ export const dashboardHeader = (h: HtmlBuilder<Message>, section: string, role: 
                     available.map((candidate) =>
                       h.a(
                         [
-                          h.Href(sectionHref(candidate.groups[0]?.pages[0].section ?? 'overview')),
+                          h.Href(sectionHref(candidate.groups[0]?.pages[0].section ?? 'favorites')),
                           ...(candidate.label === workspace?.label ? [h.AriaCurrent('page')] : []),
                         ],
                         [candidate.label],
