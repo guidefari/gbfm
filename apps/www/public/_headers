@@ -4,6 +4,9 @@
 /fonts/*
   Cache-Control: public, max-age=31536000, immutable
 
+/gb-default-v1.webp
+  Cache-Control: public, max-age=31536000, immutable
+
 /*.html
   Cache-Control: public, max-age=60, must-revalidate
 

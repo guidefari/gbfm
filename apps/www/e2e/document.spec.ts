@@ -12,6 +12,9 @@ test.describe('without JavaScript', () => {
     await expect(
       page.getByRole('heading', { name: 'Local Frequencies', exact: true }),
     ).toBeVisible()
+    const cover = page.getByRole('img', { name: 'Local Frequencies', exact: true }).first()
+    await expect(cover).toHaveAttribute('src', '/gb-default-v1.webp')
+    await expect(cover).toHaveJSProperty('naturalWidth', 1080)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   })
 })
@@ -66,7 +69,7 @@ for (const theme of ['light', 'dark']) {
               title: 'Restored fixture',
               slug: 'e2e-local-frequencies',
               url: '/api/e2e-audio.wav',
-              thumbnailUrl: 'https://cdn.goosebumps.fm/art.png',
+              thumbnailUrl: theme === 'light' ? null : 'https://cdn.goosebumps.fm/art.png',
               type: 'mix',
             },
           ],
@@ -89,7 +92,7 @@ for (const theme of ['light', 'dark']) {
       await expect(page.locator('html')).toHaveAttribute('data-queued', '')
       expect(
         await page.locator('html').evaluate((html) => html.style.getPropertyValue('--queued-art')),
-      ).toContain('art.png?w=96&q=80&f=webp')
+      ).toContain(theme === 'light' ? '/gb-default-v1.webp' : 'art.png?w=96&q=80&f=webp')
       gate.resolve()
       await expect(root).not.toHaveAttribute('data-foldkit-build')
       expect(await original.evaluate((node) => node.isConnected)).toBe(true)
@@ -114,4 +117,34 @@ test('keyboard search stream opens after hydration', async ({ page }) => {
   await expect(page.locator('.site')).toHaveAttribute('data-interactive', 'true')
   await page.keyboard.press('Control+k')
   await expect(page.getByRole('dialog', { name: 'Search', exact: true })).toBeVisible()
+})
+
+test('failed responsive artwork recovers to the local cover and does not retry a failed fallback', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await expect(page.locator('.site')).toHaveAttribute('data-interactive', 'true')
+  const cover = page.locator('.featured-art img.artwork')
+  await cover.evaluate((image: HTMLImageElement) => {
+    image.srcset = '/missing-cover.png 640w'
+    image.src = '/missing-cover.png'
+  })
+  await expect(cover).toHaveAttribute('src', '/gb-default-v1.webp')
+  await expect(cover).not.toHaveAttribute('srcset')
+  await cover.evaluate((image: HTMLImageElement) => image.decode())
+  expect(await cover.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0)
+
+  // An error on the fallback itself must not write src again and cause a request loop.
+  const mutations = await cover.evaluate(async (image) => {
+    let changes = 0
+    const observer = new MutationObserver((records) => {
+      changes += records.length
+    })
+    observer.observe(image, { attributes: true, attributeFilter: ['src'] })
+    image.dispatchEvent(new Event('error'))
+    await Promise.resolve()
+    observer.disconnect()
+    return changes
+  })
+  expect(mutations).toBe(0)
 })

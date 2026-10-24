@@ -1,4 +1,4 @@
-export const fallbackArtwork = 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'
+export { fallbackArtwork } from '../view/artwork'
 
 export const ghostButton =
   'inline-flex items-center justify-center rounded-sm border-0 bg-transparent p-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50'

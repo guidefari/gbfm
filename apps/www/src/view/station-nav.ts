@@ -2,7 +2,7 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 
 import type { Principal } from '../model'
 import { signInHref } from '../page/auth/links'
-import { artworkUrl } from './artwork'
+import { artworkUrl, fallbackArtwork } from './artwork'
 import { iconPaths, lucide } from './icons'
 import { isActiveNavLink } from './nav-active'
 import { wordmark } from './wordmark'
@@ -28,8 +28,6 @@ export type StationNavProps<M> = {
   readonly openSearch: M
   readonly toggleMenu: M
 }
-
-const fallbackArtwork = 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'
 
 const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
