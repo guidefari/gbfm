@@ -12,22 +12,28 @@ test('playlist metadata, ordering, removal and confirmed deletion persist in D1'
   await expect(page).toHaveURL(/\/dashboard$/)
   await page.goto('/dashboard/playlists')
   const slug = `playlist-check-${Date.now()}`
+  await page.getByRole('button', { name: 'New playlist', exact: true }).click()
   await page.getByRole('textbox', { name: 'Playlist title', exact: true }).fill('A local playlist')
   await page.getByRole('textbox', { name: 'Playlist slug', exact: true }).fill(slug)
   await page.getByRole('button', { name: 'Create playlist', exact: true }).click()
-  const listing = page.getByRole('list', { name: 'Playlists', exact: true })
+  const listing = page.getByRole('table', { name: 'Playlists', exact: true })
   await expect(listing).toContainText(slug)
+
   const playlists = Schema.decodeUnknownSync(PlaylistListResponse)(
     await (await page.request.get('/api/music/playlists')).json(),
   )
+
   const playlist = playlists.find((item) => item.slug === slug)
+
   if (!playlist) throw new Error('Expected the created playlist')
-  const trackIds: string[] = []
+  const trackIds: Array<string> = []
+
   try {
     for (const [index, title] of ['Alpha signal', 'Bravo signal', 'Charlie signal'].entries()) {
       const response = await page.request.post('/api/music/tracks', {
         data: { title, slug: `${slug}-${index}` },
       })
+
       expect(response.ok()).toBe(true)
       const track = Schema.decodeUnknownSync(TrackResponse)(await response.json())
       trackIds.push(track.id)
@@ -39,13 +45,15 @@ test('playlist metadata, ordering, removal and confirmed deletion persist in D1'
         ).ok(),
       ).toBe(true)
     }
+
     await listing
-      .getByRole('listitem')
+      .getByRole('row')
       .filter({ hasText: slug })
       .getByRole('button', { name: 'Edit', exact: true })
       .click()
-    const tracks = page.getByRole('list', { name: 'Playlist tracks', exact: true })
-    await expect(tracks.getByRole('listitem')).toHaveCount(3)
+    const tracks = page.getByRole('table', { name: 'Playlist tracks', exact: true })
+    const trackRows = tracks.locator('tbody > tr.admin-row')
+    await expect(trackRows).toHaveCount(3)
     await expect(page.getByRole('button', { name: 'Move Alpha signal up' })).toBeDisabled()
     await page
       .getByRole('textbox', { name: 'Description', exact: true })
@@ -54,30 +62,32 @@ test('playlist metadata, ordering, removal and confirmed deletion persist in D1'
     await page.route(`**${orderPath}`, (route) => route.fulfill({ status: 503 }))
     await page.getByRole('button', { name: 'Move Charlie signal up' }).click()
     await expect(page.getByRole('alert')).toContainText('Playlist action failed')
-    await expect(tracks.getByRole('listitem').first()).toContainText('Alpha signal')
-    await expect(tracks.getByRole('listitem').nth(1)).toContainText('Bravo signal')
+    await expect(trackRows.first()).toContainText('Alpha signal')
+    await expect(trackRows.nth(1)).toContainText('Bravo signal')
     await page.unroute(`**${orderPath}`)
     await page.getByRole('button', { name: 'Move Charlie signal up' }).click()
-    await expect(tracks.getByRole('listitem').nth(1)).toContainText('Charlie signal')
+    await expect(trackRows.nth(1)).toContainText('Charlie signal')
     await expect(page.getByRole('textbox', { name: 'Description', exact: true })).toHaveValue(
       'Unsaved description survives track edits',
     )
+
     const savedTracks = Schema.decodeUnknownSync(Schema.Array(PlaylistTrackEntry))(
       await (await page.request.get(`/api/music/playlists/${playlist.id}/tracks`)).json(),
     )
+
     expect(savedTracks.map((row) => row.track.id)).toEqual([trackIds[0], trackIds[2], trackIds[1]])
     await page.getByRole('button', { name: 'Save playlist', exact: true }).click()
     await expect(page.getByRole('button', { name: 'Save playlist', exact: true })).toBeEnabled()
     await page.reload()
     await listing
-      .getByRole('listitem')
+      .getByRole('row')
       .filter({ hasText: slug })
       .getByRole('button', { name: 'Edit', exact: true })
       .click()
     await expect(page.getByRole('textbox', { name: 'Description', exact: true })).toHaveValue(
       'Unsaved description survives track edits',
     )
-    await expect(tracks.getByRole('listitem').nth(1)).toContainText('Charlie signal')
+    await expect(trackRows.nth(1)).toContainText('Charlie signal')
     await page.emulateMedia({ colorScheme: 'light' })
     await tracks.scrollIntoViewIfNeeded()
     await testInfo.attach('playlist-order-light', {
@@ -90,7 +100,7 @@ test('playlist metadata, ordering, removal and confirmed deletion persist in D1'
       ),
     ).toBe(true)
     await page.getByRole('button', { name: 'Remove Bravo signal', exact: true }).click()
-    await expect(tracks.getByRole('listitem')).toHaveCount(2)
+    await expect(trackRows).toHaveCount(2)
     await page.getByRole('button', { name: 'Delete playlist', exact: true }).click()
     expect((await page.request.get(`/api/music/playlists/${playlist.id}`)).status()).toBe(200)
     await page.getByRole('button', { name: 'Keep playlist', exact: true }).click()
@@ -104,6 +114,7 @@ test('playlist metadata, ordering, removal and confirmed deletion persist in D1'
     expect((await page.request.get(`/api/music/tracks/${trackIds[0]}`)).status()).toBe(200)
   } finally {
     await page.request.delete(`/api/music/playlists/${playlist.id}`)
+
     for (const id of trackIds) await page.request.delete(`/api/music/tracks/${id}`)
   }
 })
@@ -117,17 +128,27 @@ test('Spotify playlist import and sync distinguish accepted work from failed enr
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
   await expect(page).toHaveURL(/\/dashboard$/)
   const slug = `import-check-${Date.now()}`
+
   const created = await page.request.post('/api/music/playlists', {
     data: { title: 'Imported fixture', slug },
   })
+
   expect(created.ok()).toBe(true)
+
   const playlists = Schema.decodeUnknownSync(PlaylistListResponse)(
     await (await page.request.get('/api/music/playlists')).json(),
   )
+
   const playlist = playlists.find((item) => item.slug === slug)
+
   if (!playlist) throw new Error('Expected fixture playlist')
+
   try {
     await page.goto('/dashboard/playlists')
+    await page
+      .locator('summary')
+      .filter({ hasText: /^Import from Spotify$/ })
+      .click()
     await page
       .getByRole('textbox', { name: 'Spotify playlist URL', exact: true })
       .fill('https://example.com/playlist/no')

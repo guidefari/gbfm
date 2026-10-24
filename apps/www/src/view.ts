@@ -94,7 +94,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
                   : model.flags.profile
                     ? Page.Profile.view(model.flags.profile)
                     : Page.Content.detailView(model, h, kind),
-            Auth: ({ action }) => Page.Auth.view(h, action, new URL(model.flags.url)),
+            Auth: ({ action }) => Page.Auth.view(h, action, new URL(model.flags.url), model),
             Composer: () =>
               h.submodel({
                 slotId: 'creator',
@@ -112,7 +112,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
                     viewInputs: { role: model.dashboard.principal.role, url: model.flags.url },
                     toParentMessage: (message) => Message.GotDashboardMessage({ message }),
                   })
-                : Page.Auth.view(h, 'sign-in', new URL(model.flags.url)),
+                : Page.Auth.view(h, 'sign-in', new URL(model.flags.url), model),
             Static: ({ page }) =>
               page === 'invite/charlie3000'
                 ? Page.Invitation.view()

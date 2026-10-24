@@ -1,12 +1,12 @@
 import { inertHtml as h } from 'foldkit/html'
 
-export const wordmark = () =>
+export const wordmark = (variant: 'nav' | 'full' = 'nav') =>
   h.svg(
     [
-      h.ViewBox('200 262 442 71'),
+      h.ViewBox(variant === 'nav' ? '200 262 442 71' : '200 117 442 361'),
       h.Fill('none'),
       h.AriaHidden(true),
-      h.Class('h-5 w-auto shrink-0'),
+      h.Class(variant === 'nav' ? 'h-5 w-auto shrink-0' : 'w-full h-auto'),
     ],
     [
       h.g(

@@ -37,3 +37,14 @@ test('saving locks the submitted form and a failure preserves the original edit 
   })
   expect(update(failed, Message.Save()).commands).toHaveLength(1)
 })
+
+test('the show form opens on demand and closes after a save', () => {
+  const opened = update(
+    { ...initialModel, form: { ...initialModel.form, title: 'Stale' } },
+    Message.New(),
+  ).model
+
+  expect(opened).toMatchObject({ creating: true, editing: null, form: initialModel.form })
+  expect(update(opened, Message.Clear()).model.creating).toBe(false)
+  expect(update(opened, Message.Saved()).model.creating).toBe(false)
+})

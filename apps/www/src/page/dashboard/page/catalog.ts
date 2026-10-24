@@ -20,12 +20,22 @@ import type { HtmlBuilder } from 'foldkit/html'
 import { type DashboardDocument, emptyDocument } from '../document'
 import type { Message as DashboardMessage } from '../message'
 import type { Model } from '../model'
+import { subTabs } from '../navigation'
+import { badge, dataTable, drawer, emptyState, frame, pageHeader, pager, plural } from '../ui'
 
 export const Kind = Schema.Literals(['artist', 'album', 'track', 'label'])
 
 export type Kind = typeof Kind.Type
 
 export const tabs = ['artists', 'albums', 'tracks', 'playlists', 'labels'] as const
+
+const tabLabels: Record<(typeof tabs)[number], string> = {
+  artists: 'Artists',
+  albums: 'Albums',
+  tracks: 'Tracks',
+  playlists: 'Playlists',
+  labels: 'Labels',
+}
 
 export const entityRoute = (section: string) => {
   const match = /^music-entity\/(artist|album|track|label)\/([^/]+)$/.exec(section)
@@ -133,7 +143,8 @@ export const parseCatalogDocument = (
         rows: links.map((link) => ({
           id: link.id,
           title: link.platform,
-          detail: `${link.status} · ${link.url}`,
+          detail: link.url,
+          status: link.status,
           href: /^https?:\/\//.test(link.url) ? link.url : null,
           actionId: link.id,
         })),
@@ -236,7 +247,8 @@ export const parseCatalogDocument = (
   ) => ({
     id: item.id,
     title,
-    detail: `${item.slug} · ${item.publishedAt ? 'Published' : 'Draft'}`,
+    detail: item.slug,
+    status: item.publishedAt ? 'Published' : 'Draft',
     href:
       kind === 'playlist'
         ? '/dashboard/playlists'
@@ -329,55 +341,88 @@ export const catalogView = (
 
   if (!entity)
     return h.section(
-      [h.Class('dashboard-form')],
+      [h.Class('admin-page')],
       [
-        h.nav(
-          [h.AriaLabel('Catalog types'), h.Class('user-pagination')],
-          tabs.map((tab) =>
-            h.a(
-              [
-                h.Href(`/dashboard/music?tab=${tab}`),
-                h.AriaCurrent(model.fields.tab === tab ? 'page' : 'false'),
-              ],
-              [tab],
-            ),
-          ),
+        subTabs(
+          h,
+          'Catalog types',
+          tabs.map((tab) => ({
+            href: `/dashboard/music?tab=${tab}`,
+            label: tabLabels[tab],
+            current: model.fields.tab === tab,
+          })),
         ),
-        model.fields.tab === 'labels'
-          ? h.form(
-              [h.Class('dashboard-panel dashboard-form'), h.OnSubmit(Message.CreateLabel())],
-              [
-                h.h2([], ['New label']),
-                field('name', 'Label name'),
-                field('slug', 'Label slug'),
-                h.button(
-                  [h.Type('submit'), h.Disabled(model.phase === 'saving')],
-                  ['Create label'],
+        pageHeader(
+          h,
+          'Artists, albums, tracks, playlists and labels in the music catalog.',
+          model.fields.tab === 'labels'
+            ? [
+                drawer(h, 'New label', [
+                  h.form(
+                    [h.Class('dashboard-form'), h.OnSubmit(Message.CreateLabel())],
+                    [
+                      field('name', 'Label name'),
+                      field('slug', 'Label slug'),
+                      h.button(
+                        [
+                          h.Type('submit'),
+                          h.Class('dashboard-button-primary'),
+                          h.Disabled(model.phase === 'saving'),
+                        ],
+                        ['Create label'],
+                      ),
+                    ],
+                  ),
+                ]),
+              ]
+            : [],
+        ),
+        model.error ? h.p([h.Role('alert'), h.Class('admin-notice')], [model.error]) : h.empty,
+        frame(h, [
+          dataTable(h, {
+            label: tabLabels[tabs.find((tab) => tab === model.fields.tab) ?? 'artists'],
+            minWidth: '32rem',
+            columns: [
+              { label: 'Name' },
+              { label: 'Slug', className: 'admin-col-mono', width: '35%' },
+              { label: 'Status', width: '7.5rem' },
+              { label: '', className: 'admin-col-actions', width: '4.5rem' },
+            ],
+            rows: model.rows.map((row) => ({
+              key: row.id,
+              cells: [
+                h.strong([], [row.title]),
+                row.detail,
+                row.status === 'Published'
+                  ? badge(h, 'Published', 'ok')
+                  : badge(h, row.status ?? 'Draft', 'neutral'),
+                h.a(
+                  [h.Class('admin-pager-control'), h.Href(row.href ?? '/dashboard/music')],
+                  ['Edit'],
                 ),
               ],
-            )
-          : h.empty,
-        model.error ? h.p([h.Role('alert')], [model.error]) : h.empty,
-        h.ul(
-          [h.Class('dashboard-list session-list')],
-          model.rows.map((row) =>
-            h.li(
-              [h.Key(row.id)],
-              [
-                h.div([], [h.strong([], [row.title]), h.small([], [row.detail])]),
-                h.a([h.Href(row.href ?? '/dashboard/music')], ['Edit']),
-              ],
-            ),
-          ),
-        ),
-        model.rows.length === 0 ? h.p([], ['No catalog entries found.']) : h.empty,
+            })),
+            empty: emptyState(h, 'No catalog entries found.'),
+          }),
+          model.rows.length
+            ? pager(h, {
+                label: 'Catalog count',
+                summary: plural(model.rows.length, 'entry', 'entries'),
+                previous: null,
+                next: null,
+              })
+            : h.empty,
+        ]),
       ],
     )
 
   return h.section(
     [h.Class('dashboard-form')],
     [
-      h.a([h.Href('/dashboard/music')], ['← Music catalog']),
+      h.a(
+        [h.Href('/dashboard/music'), h.Class('admin-pager-control admin-back')],
+        ['Back to catalog'],
+      ),
       model.error ? h.p([h.Role('alert')], [model.error]) : h.empty,
       model.catalogNotice && !model.fields.deleted
         ? h.p([h.Role('status')], [model.catalogNotice])
@@ -393,17 +438,16 @@ export const catalogView = (
                   h.OnSubmit(Message.SaveCatalogEntity()),
                 ],
                 [
-                  h.h2([], [`Edit ${entity.kind}`]),
                   ...fieldsFor(entity.kind).map((name) => field(name, name)),
                   h.p(
                     [],
                     [
-                      `Created ${model.fields.createdAt?.slice(0, 10) ?? ''} · Updated ${model.fields.updatedAt?.slice(0, 10) ?? ''}`,
+                      `Created ${model.fields.createdAt?.slice(0, 10) ?? ''}, updated ${model.fields.updatedAt?.slice(0, 10) ?? ''}`,
                     ],
                   ),
                   h.button(
                     [h.Type('submit')],
-                    [model.phase === 'saving' ? 'Saving…' : 'Save entity'],
+                    [model.phase === 'saving' ? 'Saving' : 'Save entity'],
                   ),
                 ],
               ),
@@ -417,21 +461,37 @@ export const catalogView = (
                   h.button([h.Type('submit')], ['Add link']),
                 ],
               ),
-              h.ul(
-                [h.Class('dashboard-list session-list')],
-                model.rows.map((row) =>
-                  h.li(
-                    [h.Key(row.id)],
-                    [
-                      h.div([], [h.strong([], [row.title]), h.small([], [row.detail])]),
+              frame(h, [
+                dataTable(h, {
+                  label: 'Source links',
+                  minWidth: '30rem',
+                  columns: [
+                    { label: 'Platform', width: '8rem' },
+                    { label: 'Status', width: '7rem' },
+                    { label: 'URL', className: 'admin-col-mono' },
+                    { label: '', className: 'admin-col-actions', width: '7.5rem' },
+                  ],
+                  rows: model.rows.map((row) => ({
+                    key: row.id,
+                    cells: [
+                      row.title,
+                      badge(
+                        h,
+                        row.status ?? 'unknown',
+                        row.status === 'verified' ? 'ok' : 'neutral',
+                      ),
+                      row.href
+                        ? h.a([h.Href(row.href), h.Title(row.detail)], [row.detail])
+                        : row.detail,
                       h.button(
                         [h.OnClick(Message.DeleteCatalogLink({ id: row.id }))],
                         ['Remove link'],
                       ),
                     ],
-                  ),
-                ),
-              ),
+                  })),
+                  empty: emptyState(h, 'No source links yet.'),
+                }),
+              ]),
               h.details(
                 [],
                 [

@@ -39,6 +39,23 @@ describe('dashboard submodel', () => {
     }
   })
 
+  it('waits for a query before searching', () => {
+    expect(endpointFor('search')).toBe(null)
+    expect(endpointFor('search', new URLSearchParams({ q: '   ' }))).toBe(null)
+    expect(endpointFor('search', new URLSearchParams({ q: ' deep house ' }))).toBe(
+      '/api/search?q=deep+house',
+    )
+  })
+
+  it('pages content lists from the requested offset', () => {
+    expect(endpointFor('all/mixes', new URLSearchParams({ offset: '25' }))).toBe(
+      '/api/content/audio/mix/manage?limit=25&offset=25',
+    )
+    expect(endpointFor('content/tweets', new URLSearchParams({ offset: '-5' }))).toBe(
+      '/api/content/posts/manage?type=micro&limit=25&offset=0',
+    )
+  })
+
   it('does not issue an admin request for a non-admin principal', () => {
     const result = init('users', member)()
     expect(result.model).toMatchObject({ phase: 'error', error: 'Administrator access required.' })

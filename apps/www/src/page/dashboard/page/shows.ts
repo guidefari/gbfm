@@ -1,10 +1,12 @@
 import { CreateShowInput, GetAllShowsResponse } from '@gbfm/api/shows'
 import { Effect, Schema } from 'effect'
 import { Command, type Update } from 'foldkit'
+import type { HtmlBuilder } from 'foldkit/html'
 import { defineMessageUnion } from 'foldkit/message'
 import { defineView } from 'foldkit/submodel'
 
 import { DashboardService } from '../service'
+import { badge, dataTable, emptyState, frame, pageHeader, pageRange, pager } from '../ui'
 
 const fields = [
   'title',
@@ -42,6 +44,7 @@ export const Model = Schema.Struct({
   listing: Schema.optional(GetAllShowsResponse),
   form: Form,
   draft: Schema.Boolean,
+  creating: Schema.Boolean,
   editing: Schema.NullOr(Schema.String),
   deleting: Schema.NullOr(Schema.String),
   busy: Schema.Boolean,
@@ -54,6 +57,7 @@ export type Model = typeof Model.Type
 export const initialModel: Model = {
   form: emptyForm,
   draft: true,
+  creating: false,
   editing: null,
   deleting: null,
   busy: false,
@@ -64,6 +68,7 @@ export const initialModel: Model = {
 export const Message = defineMessageUnion({
   FieldChanged: { field: Field, value: Schema.String },
   DraftChanged: {},
+  New: {},
   Edit: { slug: Schema.String },
   Clear: {},
   Save: {},
@@ -152,6 +157,10 @@ export const update = (
     FieldChanged: ({ field, value }) =>
       model.busy ? { model } : { model: { ...model, form: { ...model.form, [field]: value } } },
     DraftChanged: () => (model.busy ? { model } : { model: { ...model, draft: !model.draft } }),
+    New: () =>
+      model.busy
+        ? { model }
+        : { model: { ...initialModel, listing: model.listing, creating: true } },
     Edit: ({ slug }) => {
       const show = model.listing?.data.find((show) => show.slug === slug)
 
@@ -160,6 +169,7 @@ export const update = (
       return {
         model: {
           ...model,
+          creating: false,
           editing: slug,
           deleting: null,
           error: null,
@@ -219,82 +229,115 @@ const labels = {
   tags: 'Tags (comma separated)',
 }
 
-export const view = defineView<Model, Message>((model, h) =>
-  h.section(
-    [h.Class('dashboard-form')],
+const showForm = (model: Model, h: HtmlBuilder<Message>) => {
+  const editing = model.editing
+    ? model.listing?.data.find((show) => show.slug === model.editing)
+    : undefined
+
+  return h.form(
+    [h.Class('dashboard-panel dashboard-form admin-form-grid'), h.OnSubmit(Message.Save())],
     [
-      model.error ? h.p([h.Role('alert')], [model.error]) : h.empty,
-      model.notice ? h.p([h.Role('status')], [model.notice]) : h.empty,
-      h.form(
-        [h.Class('dashboard-panel dashboard-form'), h.OnSubmit(Message.Save())],
+      h.h2([h.Class('admin-form-title')], [editing ? `Edit ${editing.title}` : 'New show']),
+      ...fields.map((field) =>
+        h.label(
+          field === 'content' || field === 'description' ? [h.Class('admin-form-wide')] : [],
+          [
+            labels[field],
+            field === 'content' || field === 'description'
+              ? h.textarea([
+                  h.Value(model.form[field]),
+                  h.Disabled(model.busy),
+                  h.Rows(field === 'content' ? 6 : 3),
+                  h.OnInput((value) => Message.FieldChanged({ field, value })),
+                ])
+              : h.input([
+                  h.Value(model.form[field]),
+                  h.Disabled(model.busy),
+                  h.Required(field === 'title' || field === 'slug'),
+                  h.OnInput((value) => Message.FieldChanged({ field, value })),
+                ]),
+          ],
+        ),
+      ),
+      h.label(
+        [h.Class('dashboard-toggle admin-form-wide')],
         [
-          h.h2([], [model.editing ? 'Edit show' : 'Create show']),
-          ...fields.map((field) =>
-            h.label(
-              [],
-              [
-                labels[field],
-                field === 'content' || field === 'description'
-                  ? h.textarea([
-                      h.Value(model.form[field]),
-                      h.Disabled(model.busy),
-                      h.Rows(field === 'content' ? 6 : 3),
-                      h.OnInput((value) => Message.FieldChanged({ field, value })),
-                    ])
-                  : h.input([
-                      h.Value(model.form[field]),
-                      h.Disabled(model.busy),
-                      h.Required(field === 'title' || field === 'slug'),
-                      h.OnInput((value) => Message.FieldChanged({ field, value })),
-                    ]),
-              ],
-            ),
+          'Draft',
+          h.input([
+            h.Type('checkbox'),
+            h.Checked(model.draft),
+            h.Disabled(model.busy),
+            h.OnClick(Message.DraftChanged()),
+          ]),
+        ],
+      ),
+      h.div(
+        [h.Class('admin-form-actions')],
+        [
+          h.button(
+            [h.Type('submit'), h.Class('dashboard-button-primary'), h.Disabled(model.busy)],
+            [model.busy ? 'Saving' : model.editing ? 'Save changes' : 'Create show'],
           ),
-          h.label(
-            [h.Class('dashboard-toggle')],
-            [
-              'Draft',
-              h.input([
-                h.Type('checkbox'),
-                h.Checked(model.draft),
-                h.Disabled(model.busy),
-                h.OnClick(Message.DraftChanged()),
-              ]),
-            ],
-          ),
-          h.div(
-            [h.Class('creator-actions')],
-            [
-              h.button(
-                [h.Type('submit'), h.Disabled(model.busy)],
-                [model.busy ? 'Saving…' : model.editing ? 'Save changes' : 'Create show'],
-              ),
-              model.editing
-                ? h.button(
-                    [h.Type('button'), h.Disabled(model.busy), h.OnClick(Message.Clear())],
-                    ['Cancel editing'],
-                  )
-                : h.empty,
-            ],
+          h.button(
+            [h.Type('button'), h.Disabled(model.busy), h.OnClick(Message.Clear())],
+            ['Cancel'],
           ),
         ],
       ),
-      h.ul(
-        [h.Class('dashboard-list session-list')],
-        (model.listing?.data ?? []).map((show) =>
-          h.li(
-            [h.Key(show.id)],
-            [
+    ],
+  )
+}
+
+export const view = defineView<Model, Message>((model, h) => {
+  const page = model.listing?.pagination
+  const formOpen = model.creating || model.editing !== null
+
+  return h.section(
+    [h.Class('admin-page')],
+    [
+      pageHeader(h, 'Curated shows that group mixes on the public site.', [
+        h.button(
+          [
+            h.Type('button'),
+            h.Class('dashboard-button-primary'),
+            h.Disabled(model.busy || formOpen),
+            h.OnClick(Message.New()),
+          ],
+          ['New show'],
+        ),
+      ]),
+      model.error ? h.p([h.Role('alert'), h.Class('admin-notice')], [model.error]) : h.empty,
+      model.notice ? h.p([h.Role('status'), h.Class('admin-notice')], [model.notice]) : h.empty,
+      formOpen ? showForm(model, h) : h.empty,
+      frame(h, [
+        dataTable(h, {
+          label: 'Shows',
+          loading: !model.listing && model.busy,
+          minWidth: '40rem',
+          columns: [
+            { label: 'Title' },
+            { label: 'Slug', className: 'admin-col-mono', width: '30%' },
+            { label: 'Status', width: '7.5rem' },
+            { label: '', className: 'admin-col-actions', width: '12.5rem' },
+          ],
+          rows: (model.listing?.data ?? []).map((show) => ({
+            key: show.id,
+            cells: [
+              h.strong([], [show.title]),
+              show.slug,
+              show.draft ? badge(h, 'Draft', 'neutral') : badge(h, 'Published', 'ok'),
               h.div(
-                [],
+                [h.Class('admin-actions')],
                 [
-                  h.strong([], [show.title]),
-                  h.small([], [`${show.slug} · ${show.draft ? 'Draft' : 'Published'}`]),
-                ],
-              ),
-              h.div(
-                [h.Class('creator-actions')],
-                [
+                  !show.draft
+                    ? h.a(
+                        [
+                          h.Class('admin-pager-control'),
+                          h.Href(`/shows/${encodeURIComponent(show.slug)}`),
+                        ],
+                        ['View'],
+                      )
+                    : h.empty,
                   h.button(
                     [h.Disabled(model.busy), h.OnClick(Message.Edit({ slug: show.slug }))],
                     ['Edit'],
@@ -303,52 +346,44 @@ export const view = defineView<Model, Message>((model, h) =>
                     [h.Disabled(model.busy), h.OnClick(Message.AskDelete({ slug: show.slug }))],
                     ['Delete'],
                   ),
-                  !show.draft
-                    ? h.a([h.Href(`/shows/${encodeURIComponent(show.slug)}`)], ['View show'])
-                    : h.empty,
                 ],
               ),
             ],
-          ),
-        ),
-      ),
-      model.deleting
-        ? h.section(
-            [h.Class('dashboard-panel'), h.Role('alert')],
-            [
-              h.p([], [`Permanently delete ${model.deleting}? This cannot be undone.`]),
-              h.button(
-                [h.Disabled(model.busy), h.OnClick(Message.ConfirmDelete())],
-                ['Confirm delete'],
-              ),
-              h.button([h.Disabled(model.busy), h.OnClick(Message.CancelDelete())], ['Keep show']),
-            ],
-          )
-        : h.empty,
-      model.listing
-        ? h.nav(
-            [h.AriaLabel('Show pages'), h.Class('user-pagination')],
-            [
-              h.button(
-                [
-                  h.Disabled(model.busy || model.listing.pagination.offset === 0),
-                  h.OnClick(
-                    Message.Load({ offset: Math.max(0, model.listing.pagination.offset - 25) }),
-                  ),
-                ],
-                ['Previous shows'],
-              ),
-              h.span([], [`${model.listing.pagination.total} shows`]),
-              h.button(
-                [
-                  h.Disabled(model.busy || !model.listing.pagination.hasMore),
-                  h.OnClick(Message.Load({ offset: model.listing.pagination.offset + 25 })),
-                ],
-                ['Next shows'],
-              ),
-            ],
-          )
-        : h.empty,
+            detail:
+              model.deleting === show.slug
+                ? h.div(
+                    [h.Class('admin-confirm'), h.Role('alert')],
+                    [
+                      h.p([], [`Permanently delete ${show.title}? This cannot be undone.`]),
+                      h.button(
+                        [h.Disabled(model.busy), h.OnClick(Message.ConfirmDelete())],
+                        ['Confirm delete'],
+                      ),
+                      h.button(
+                        [h.Disabled(model.busy), h.OnClick(Message.CancelDelete())],
+                        ['Keep show'],
+                      ),
+                    ],
+                  )
+                : null,
+          })),
+          empty: emptyState(h, 'No shows yet. Create one to group mixes.'),
+        }),
+        page && page.total > 0
+          ? pager(h, {
+              label: 'Show pages',
+              summary: pageRange(page.offset, model.listing?.data.length ?? 0, page.total),
+              previous:
+                page.offset > 0 && !model.busy
+                  ? { onClick: Message.Load({ offset: Math.max(0, page.offset - 25) }) }
+                  : null,
+              next:
+                page.hasMore && !model.busy
+                  ? { onClick: Message.Load({ offset: page.offset + 25 }) }
+                  : null,
+            })
+          : h.empty,
+      ]),
     ],
-  ),
-)
+  )
+})

@@ -12,16 +12,29 @@ test('catalog tabs, label creation and album metadata/link management persist in
   await expect(page).toHaveURL(/\/dashboard$/)
   const slug = `catalog-check-${Date.now()}`
   await page.goto('/dashboard/music?tab=labels')
+  await page
+    .locator('summary')
+    .filter({ hasText: /^New label$/ })
+    .click()
   await page.getByRole('textbox', { name: 'Label name', exact: true }).fill('A fixture label')
   await page.getByRole('textbox', { name: 'Label slug', exact: true }).fill(slug)
   await page.getByRole('button', { name: 'Create label', exact: true }).click()
-  const label = page.locator('.dashboard-list li').filter({ hasText: slug })
+
+  const label = page
+    .getByRole('table', { name: 'Labels' })
+    .locator('tbody > tr.admin-row')
+    .filter({ hasText: slug })
+
   await expect(label).toContainText('Draft')
+
   const labels = Schema.decodeUnknownSync(LabelListResponse)(
     await (await page.request.get('/api/music/labels/manage')).json(),
   )
+
   const createdLabel = labels.find((item) => item.slug === slug)
+
   if (!createdLabel) throw new Error('Expected a created label')
+
   const createdAlbum = await page.request.post('/api/music/albums', {
     data: {
       title: 'A fixture album',
@@ -32,8 +45,10 @@ test('catalog tabs, label creation and album metadata/link management persist in
       albumType: 'album',
     },
   })
+
   expect(createdAlbum.ok()).toBe(true)
   const album = Schema.decodeUnknownSync(AlbumResponse)(await createdAlbum.json())
+
   try {
     await label.getByRole('link', { name: 'Edit', exact: true }).click()
     await expect(page).toHaveURL(new RegExp(`/dashboard/music-entity/label/${createdLabel.id}$`))
@@ -45,11 +60,12 @@ test('catalog tabs, label creation and album metadata/link management persist in
     await expect(page.getByRole('textbox', { name: 'genres', exact: true })).toHaveValue(
       'ambient, techno',
     )
-    await page.getByRole('link', { name: '← Music catalog', exact: true }).click()
-    await page.getByRole('link', { name: 'albums', exact: true }).click()
+    await page.getByRole('link', { name: 'Back to catalog', exact: true }).click()
+    await page.getByRole('link', { name: 'Albums', exact: true }).click()
     await expect(page).toHaveURL(/tab=albums/)
     await page
-      .locator('.dashboard-list li')
+      .getByRole('table', { name: 'Albums' })
+      .locator('tbody > tr.admin-row')
       .filter({ hasText: slug })
       .getByRole('link', { name: 'Edit', exact: true })
       .click()
@@ -65,9 +81,11 @@ test('catalog tabs, label creation and album metadata/link management persist in
       'Updated fixture album',
     )
     await expect(page.getByRole('status')).toHaveText('Entity saved.')
+
     const saved = Schema.decodeUnknownSync(AlbumResponse)(
       await (await page.request.get(`/api/music/albums/${album.id}`)).json(),
     )
+
     expect(saved).toMatchObject({
       title: 'Updated fixture album',
       artistNames: ['Second Artist', 'First Artist'],
@@ -79,18 +97,20 @@ test('catalog tabs, label creation and album metadata/link management persist in
       .getByRole('textbox', { name: 'Link URL', exact: true })
       .fill('https://fixture.bandcamp.com/album/check')
     await page.getByRole('button', { name: 'Add link', exact: true }).click()
-    await expect(page.locator('.dashboard-list')).toContainText(
+    await expect(page.getByRole('table', { name: 'Source links' })).toContainText(
       'https://fixture.bandcamp.com/album/check',
     )
+
     const links = Schema.decodeUnknownSync(EntityLinkListResponse)(
       await (await page.request.get(`/api/music/album/${album.id}/links`)).json(),
     )
+
     expect(links).toHaveLength(1)
     expect(links[0]).toMatchObject({ platform: 'bandcamp', status: 'verified' })
     await page.emulateMedia({ colorScheme: 'light' })
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
     await page
-      .locator('.dashboard-list')
+      .getByRole('table', { name: 'Source links' })
       .evaluate((element) => element.scrollIntoView({ block: 'center' }))
     await testInfo.attach('catalog-links-light', {
       body: await page.screenshot({ fullPage: true }),

@@ -79,7 +79,8 @@ export const makeDashboardServiceLayer = (fetchImplementation: typeof fetch = gl
         Effect.flatMap((input) =>
           method === 'GET' ||
           (method === 'POST' &&
-            (path === '/api/music/playlists/import/spotify' ||
+            (path === '/api/email/send-mix-notification' ||
+              path === '/api/music/playlists/import/spotify' ||
               /^\/api\/music\/playlists\/[^/]+\/sync-links$/.test(path)))
             ? parseDashboardDocument(path, input)
             : Effect.succeed(emptyDocument),

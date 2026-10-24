@@ -52,4 +52,17 @@ describe('playlist editing', () => {
         .commands,
     ).toBeUndefined()
   })
+
+  it('opens a new playlist form on demand and returns to the list', () => {
+    const creating = update({ ...initialModel, listing: [playlist] }, Message.New()).model
+    expect(creating).toMatchObject({ creating: true, selected: null, listing: [playlist] })
+    expect(update(creating, Message.Back()).model).toMatchObject({ creating: false })
+
+    const saved = update(
+      creating,
+      Message.Saved({ selected: null, notice: 'Playlist changes saved.', resetForm: true }),
+    ).model
+
+    expect(saved.creating).toBe(false)
+  })
 })
