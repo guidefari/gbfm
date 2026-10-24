@@ -1,3 +1,16 @@
+## [2.107.1](https://github.com/guidefari/gbfm/compare/v2.107.0...v2.107.1) (2026-10-24)
+
+
+### Bug Fixes
+
+* **www:** address Lighthouse accessibility and initial JS findings ([#387](https://github.com/guidefari/gbfm/issues/387)) ([71cd4af](https://github.com/guidefari/gbfm/commit/71cd4af2bc0c70a04d72f346ec1e5dba1d800e8c))
+
+
+### Performance Improvements
+
+* **www:** reduce initial JavaScript and font loading ([#388](https://github.com/guidefari/gbfm/issues/388)) ([cb28d6d](https://github.com/guidefari/gbfm/commit/cb28d6d6bcfbecd1fb577280d7150ecf91539ad5))
+* **www:** serve the default cover locally without pixel loss ([#390](https://github.com/guidefari/gbfm/issues/390)) ([b9a846d](https://github.com/guidefari/gbfm/commit/b9a846dc5a5807538d93c37f0195da7d68bdcdf0))
+
 # [2.107.0](https://github.com/guidefari/gbfm/compare/v2.106.0...v2.107.0) (2026-10-24)
 
 
