@@ -1,3 +1,18 @@
+# [2.107.0](https://github.com/guidefari/gbfm/compare/v2.106.0...v2.107.0) (2026-10-24)
+
+
+### Bug Fixes
+
+* **deps:** restore effect-tsgo platform packages in the lockfile ([7ffa150](https://github.com/guidefari/gbfm/commit/7ffa15091d0dee26eaef18194130d5425304bfc5))
+* **www:** drop the unreachable Home dashboard tab ([d829197](https://github.com/guidefari/gbfm/commit/d8291976871b7247ab218a3c758d9cc488158d51))
+* **www:** keep monospace column styling out of table headers ([634d83b](https://github.com/guidefari/gbfm/commit/634d83b10eea5d305db927c7fa5163ed7d22bcd3))
+* **www:** keep the Spotify import form within phone width ([ff5b75b](https://github.com/guidefari/gbfm/commit/ff5b75bfc2f0a524a96e33272cc5d180dd567483))
+
+
+### Features
+
+* **www:** link forbidden dashboard pages back to the dashboard ([a3cc163](https://github.com/guidefari/gbfm/commit/a3cc163252aeb8a2a79fc6f1f4d965fb68837ba4))
+
 # [2.106.0](https://github.com/guidefari/gbfm/compare/v2.105.0...v2.106.0) (2026-10-23)
 
 
