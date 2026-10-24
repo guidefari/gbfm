@@ -33,10 +33,10 @@ const fallbackArtwork = 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'
 
 const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
-const desktopLinkClass = `shrink-0 rounded-sm px-2 py-1 text-xs font-semibold tracking-wide no-underline transition-colors text-muted-foreground hover:text-foreground aria-[current=page]:text-highlight ${focusRing}`
+const desktopLinkClass = `shrink-0 rounded-sm px-2 py-1 text-xs font-semibold tracking-wide no-underline transition-colors text-muted-foreground hover:text-foreground aria-[current=page]:text-foreground ${focusRing}`
 
 const tabClass =
-  "relative flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-1 border-0 bg-transparent p-0 no-underline text-muted-foreground transition-colors before:absolute before:inset-x-1/4 before:top-0 before:h-0.5 before:rounded-b-sm before:bg-highlight before:opacity-0 before:transition-opacity before:content-[''] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring aria-[current=page]:text-highlight aria-[current=page]:before:opacity-100"
+  "relative flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-1 border-0 bg-transparent p-0 no-underline text-muted-foreground transition-colors before:absolute before:inset-x-1/4 before:top-0 before:h-0.5 before:rounded-b-sm before:bg-highlight before:opacity-0 before:transition-opacity before:content-[''] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring aria-[current=page]:text-foreground aria-[current=page]:before:opacity-100"
 
 const tabIconClass = 'size-[22px] shrink-0 [stroke-width:1.75]'
 
@@ -276,7 +276,7 @@ export const stationNav = <M>(h: HtmlBuilder<M>, props: StationNavProps<M>) => {
               h.AriaHasPopup('dialog'),
               h.AriaControls('mobile-menu'),
               h.OnClick(props.toggleMenu),
-              h.Class(`${tabClass} ${props.menuOpen ? 'text-highlight' : ''}`),
+              h.Class(`${tabClass} ${props.menuOpen ? 'text-foreground' : ''}`),
             ],
             [lucide(iconPaths.menu, tabIconClass), tabLabel('Menu')],
           ),

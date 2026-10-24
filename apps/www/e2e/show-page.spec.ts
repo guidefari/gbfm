@@ -11,6 +11,7 @@ test('show detail renders episodes and metadata without JavaScript', async ({
     const response = await page.goto('/shows/e2e-local-radio')
     expect(response?.status()).toBe(200)
     await expect(page.getByRole('heading', { name: 'Local Radio', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Episodes', level: 2 })).toHaveCount(1)
     await expect(page.getByRole('link', { name: 'Local Frequencies', exact: true })).toBeVisible()
     await expect(page.getByRole('link', { name: 'Sign in to subscribe' })).toBeVisible()
     await expect(page.getByRole('region', { name: 'About the show' })).toContainText(
