@@ -210,49 +210,50 @@ export const FeaturedMixSettings = Schema.Struct({
   mixes: Schema.Array(Schema.Struct({ id: Schema.String, title: Schema.String })),
 })
 
-export const AdminGroup = HttpApiGroup.make('admin')
-  .add(
-    HttpApiEndpoint.get('getFeaturedMixSettings', '/api/admin/featured-mix', {
-      success: FeaturedMixSettings,
-      error: HttpApiError.Forbidden,
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.put('setFeaturedMix', '/api/admin/featured-mix', {
-      payload: FeaturedMixSelection,
-      success: FeaturedMixSelection,
-      error: [HttpApiError.Forbidden, HttpApiError.BadRequest],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('getAdminOverview', '/api/admin/overview', {
-      success: AdminOverviewResponse,
-      error: HttpApiError.Forbidden,
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('getAdminTelemetry', '/api/admin/telemetry', {
-      success: AdminTelemetryResponse,
-      error: HttpApiError.Forbidden,
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('simulateFrontendError', '/api/admin/frontend-errors/:scenario', {
-      params: { scenario: FrontendErrorScenario },
-      success: FrontendErrorOkResponse,
-      error: [
-        HttpApiError.Forbidden,
-        HttpApiError.BadRequest,
-        HttpApiError.NotFound,
-        SimulatedRateLimitError,
-        HttpApiError.InternalServerError,
-        HttpApiError.ServiceUnavailable,
-      ],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('getNewsletterSubscribers', '/api/admin/newsletter-subscribers', {
-      success: NewsletterSubscribersResponse,
-      error: HttpApiError.Forbidden,
-    }).middleware(AuthMiddleware),
-  )
+export const AdminGroup = /* @__PURE__ */ (() =>
+  HttpApiGroup.make('admin')
+    .add(
+      HttpApiEndpoint.get('getFeaturedMixSettings', '/api/admin/featured-mix', {
+        success: FeaturedMixSettings,
+        error: HttpApiError.Forbidden,
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.put('setFeaturedMix', '/api/admin/featured-mix', {
+        payload: FeaturedMixSelection,
+        success: FeaturedMixSelection,
+        error: [HttpApiError.Forbidden, HttpApiError.BadRequest],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('getAdminOverview', '/api/admin/overview', {
+        success: AdminOverviewResponse,
+        error: HttpApiError.Forbidden,
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('getAdminTelemetry', '/api/admin/telemetry', {
+        success: AdminTelemetryResponse,
+        error: HttpApiError.Forbidden,
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('simulateFrontendError', '/api/admin/frontend-errors/:scenario', {
+        params: { scenario: FrontendErrorScenario },
+        success: FrontendErrorOkResponse,
+        error: [
+          HttpApiError.Forbidden,
+          HttpApiError.BadRequest,
+          HttpApiError.NotFound,
+          SimulatedRateLimitError,
+          HttpApiError.InternalServerError,
+          HttpApiError.ServiceUnavailable,
+        ],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('getNewsletterSubscribers', '/api/admin/newsletter-subscribers', {
+        success: NewsletterSubscribersResponse,
+        error: HttpApiError.Forbidden,
+      }).middleware(AuthMiddleware),
+    ))()

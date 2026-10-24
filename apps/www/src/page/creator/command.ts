@@ -10,6 +10,21 @@ import { CreatorUpload } from './upload/runtime'
 const failure = (operation: string) => (error: CreatorError) =>
   Message.Failed({ operation, message: error.message })
 
+export const Diagnose = Command.define('Creator.Diagnose', {
+  args: { content: Schema.String },
+  messages: [Message.DiagnosticsLoaded, Message.DiagnosticsFailed],
+  execute: ({ content }) =>
+    Effect.tryPromise(() => import('@gbfm/rich-content/source')).pipe(
+      Effect.map(({ parseRichContent }) =>
+        Message.DiagnosticsLoaded({
+          content,
+          diagnostics: [...parseRichContent(content).diagnostics],
+        }),
+      ),
+      Effect.catch(() => Effect.succeed(Message.DiagnosticsFailed({ content }))),
+    ),
+})
+
 export const PersistDraft = Command.define('Creator.PersistDraft', {
   args: { key: Schema.String, draft: Draft },
   messages: [Message.LocallySaved, Message.Failed],

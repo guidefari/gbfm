@@ -1,5 +1,4 @@
 import { canCreatePosts } from '@gbfm/core/roles'
-import { parseRichContent } from '@gbfm/rich-content/source'
 import { Match } from 'effect'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { defineView } from 'foldkit/submodel'
@@ -62,8 +61,6 @@ const publishType = (model: Model, h: Builder, busy: boolean) =>
   )
 
 const editor = (model: Model, h: Builder): Html => {
-  const diagnostics = parseRichContent(model.draft.content).diagnostics
-
   const controls = [
     ['Heading', '## ', '', 'Heading'],
     ['Bold', '**', '**', 'bold text'],
@@ -150,10 +147,10 @@ const editor = (model: Model, h: Builder): Html => {
                 : h.p([h.Class('creator-empty')], ['Your rendered post will appear here.']),
             ],
           ),
-      diagnostics.length
+      model.diagnostics.length
         ? h.ul(
             [h.Class('creator-diagnostics'), h.AriaLabel('Source diagnostics')],
-            diagnostics.map((item) =>
+            model.diagnostics.map((item) =>
               h.li([], [`${item.line ? `Line ${item.line}: ` : ''}${item.message}`]),
             ),
           )

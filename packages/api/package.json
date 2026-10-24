@@ -2,6 +2,7 @@
   "name": "@gbfm/api",
   "version": "0.0.1",
   "type": "module",
+  "sideEffects": false,
   "exports": {
     "./api": "./src/api.ts",
     "./admin": "./src/admin.ts",

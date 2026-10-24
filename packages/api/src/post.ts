@@ -275,180 +275,181 @@ export type MicroPostScreenMusic = typeof MicroPostScreenMusic.Type
 
 export type PostCreator = typeof Creator.Type
 
-export const PostGroup = HttpApiGroup.make('post')
-  .add(
-    HttpApiEndpoint.get('getPosts', '/api/content/posts', {
-      query: GetPostsQuery,
-      success: GetPostsResponse,
-      error: HttpApiError.InternalServerError,
-    }),
-  )
-  .add(
-    HttpApiEndpoint.get('getPostsForEdit', '/api/content/posts/manage', {
-      query: ManagePostsQuery,
-      success: GetPostsResponse,
-      error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('getPostTags', '/api/content/posts/tags', {
-      success: GetPostTagsResponse,
-      error: HttpApiError.InternalServerError,
-    }),
-  )
-  .add(
-    HttpApiEndpoint.get('getEditorialTags', '/api/content/posts/editorials/tags', {
-      success: GetEditorialTagsResponse,
-      error: HttpApiError.InternalServerError,
-    }),
-  )
-  .add(
-    HttpApiEndpoint.get('getEditorialPosts', '/api/content/posts/editorials', {
-      query: GetEditorialPostsQuery,
-      success: GetEditorialPostsResponse,
-      error: HttpApiError.InternalServerError,
-    }),
-  )
-  .add(
-    HttpApiEndpoint.get('getEditorialPostBySlug', '/api/content/posts/editorials/:slug', {
-      params: SlugParam,
-      success: CompiledEditorialPostResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
-    }),
-  )
-  .add(
-    HttpApiEndpoint.get('getMicroPosts', '/api/content/posts/micro', {
-      query: GetMicroPostsQuery,
-      success: GetMicroPostsResponse,
-      error: HttpApiError.InternalServerError,
-    }),
-  )
-  .add(
-    HttpApiEndpoint.get('getLatestMicroPost', '/api/content/posts/micro/latest', {
-      success: LatestMicroPostResponse,
-      error: HttpApiError.InternalServerError,
-    }),
-  )
-  .add(
-    HttpApiEndpoint.get('getMicroTags', '/api/content/posts/micro/tags', {
-      success: GetMicroTagsResponse,
-      error: HttpApiError.InternalServerError,
-    }),
-  )
-  .add(
-    HttpApiEndpoint.get('searchMicroPosts', '/api/content/posts/micro/search', {
-      query: SearchMicroPostsQuery,
-      success: GetMicroPostsResponse,
-      error: HttpApiError.InternalServerError,
-    }),
-  )
-  .add(
-    HttpApiEndpoint.get('getMicroPostById', '/api/content/posts/micro/by-id/:id', {
-      params: IdParam,
-      success: CompiledMicroPostResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
-    }),
-  )
-  .add(
-    HttpApiEndpoint.get('getMicroPostBySlug', '/api/content/posts/micro/:slug', {
-      params: SlugParam,
-      success: CompiledMicroPostResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
-    }),
-  )
-  .add(
-    HttpApiEndpoint.get('getMicroPostScreen', '/api/content/posts/micro/:slug/screen', {
-      params: SlugParam,
-      query: { part: Schema.optional(Schema.Literal('main')) },
-      success: MicroPostScreenResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
-    }),
-  )
-  .add(
-    HttpApiEndpoint.get(
-      'getMicroPostScreenReplies',
-      '/api/content/posts/micro/:slug/screen/replies',
-      {
+export const PostGroup = /* @__PURE__ */ (() =>
+  HttpApiGroup.make('post')
+    .add(
+      HttpApiEndpoint.get('getPosts', '/api/content/posts', {
+        query: GetPostsQuery,
+        success: GetPostsResponse,
+        error: HttpApiError.InternalServerError,
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get('getPostsForEdit', '/api/content/posts/manage', {
+        query: ManagePostsQuery,
+        success: GetPostsResponse,
+        error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('getPostTags', '/api/content/posts/tags', {
+        success: GetPostTagsResponse,
+        error: HttpApiError.InternalServerError,
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get('getEditorialTags', '/api/content/posts/editorials/tags', {
+        success: GetEditorialTagsResponse,
+        error: HttpApiError.InternalServerError,
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get('getEditorialPosts', '/api/content/posts/editorials', {
+        query: GetEditorialPostsQuery,
+        success: GetEditorialPostsResponse,
+        error: HttpApiError.InternalServerError,
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get('getEditorialPostBySlug', '/api/content/posts/editorials/:slug', {
         params: SlugParam,
-        success: MicroPostScreenRepliesResponse,
+        success: CompiledEditorialPostResponse,
         error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
-      },
-    ),
-  )
-  .add(
-    HttpApiEndpoint.post('createMicroPostReply', '/api/content/posts/micro/:parentSlug/replies', {
-      params: ParentSlugParam,
-      payload: CreateMicroPostReplyInput,
-      success: CompiledMicroPostResponse,
-      error: [
-        ValidationHttpError,
-        HttpApiError.NotFound,
-        HttpApiError.Conflict,
-        HttpApiError.InternalServerError,
-      ],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('getMicroPostReplies', '/api/content/posts/micro/:parentSlug/replies', {
-      params: ParentSlugParam,
-      query: PaginationQuery,
-      success: GetMicroPostsResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
-    }),
-  )
-  .add(
-    HttpApiEndpoint.get('getMicroPostThread', '/api/content/posts/micro/:slug/thread', {
-      params: SlugParam,
-      query: PaginationQuery,
-      success: MicroPostThreadResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
-    }),
-  )
-  .add(
-    HttpApiEndpoint.get('getPostBySlug', '/api/content/posts/:slug', {
-      params: SlugParam,
-      success: CompiledPostResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
-    }),
-  )
-  .add(
-    HttpApiEndpoint.get('getPostBySlugForEdit', '/api/content/posts/:slug/edit', {
-      params: SlugParam,
-      success: CompiledPostResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.post('createPost', '/api/content/post', {
-      payload: CreatePostInput,
-      success: PostResponse,
-      error: [
-        ValidationHttpError,
-        HttpApiError.Forbidden,
-        HttpApiError.Conflict,
-        HttpApiError.NotFound,
-        HttpApiError.InternalServerError,
-      ],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.patch('updatePostBySlug', '/api/content/posts/:slug', {
-      params: SlugParam,
-      payload: UpdatePostInput,
-      success: CompiledPostResponse,
-      error: [
-        ValidationHttpError,
-        HttpApiError.NotFound,
-        HttpApiError.Unauthorized,
-        HttpApiError.InternalServerError,
-      ],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('getPostsByTag', '/api/content/tag/:tag', {
-      params: TagParam,
-      query: PaginationQuery,
-      success: GetPostsByTagResponse,
-      error: HttpApiError.InternalServerError,
-    }),
-  )
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get('getMicroPosts', '/api/content/posts/micro', {
+        query: GetMicroPostsQuery,
+        success: GetMicroPostsResponse,
+        error: HttpApiError.InternalServerError,
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get('getLatestMicroPost', '/api/content/posts/micro/latest', {
+        success: LatestMicroPostResponse,
+        error: HttpApiError.InternalServerError,
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get('getMicroTags', '/api/content/posts/micro/tags', {
+        success: GetMicroTagsResponse,
+        error: HttpApiError.InternalServerError,
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get('searchMicroPosts', '/api/content/posts/micro/search', {
+        query: SearchMicroPostsQuery,
+        success: GetMicroPostsResponse,
+        error: HttpApiError.InternalServerError,
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get('getMicroPostById', '/api/content/posts/micro/by-id/:id', {
+        params: IdParam,
+        success: CompiledMicroPostResponse,
+        error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get('getMicroPostBySlug', '/api/content/posts/micro/:slug', {
+        params: SlugParam,
+        success: CompiledMicroPostResponse,
+        error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get('getMicroPostScreen', '/api/content/posts/micro/:slug/screen', {
+        params: SlugParam,
+        query: { part: Schema.optional(Schema.Literal('main')) },
+        success: MicroPostScreenResponse,
+        error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get(
+        'getMicroPostScreenReplies',
+        '/api/content/posts/micro/:slug/screen/replies',
+        {
+          params: SlugParam,
+          success: MicroPostScreenRepliesResponse,
+          error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+        },
+      ),
+    )
+    .add(
+      HttpApiEndpoint.post('createMicroPostReply', '/api/content/posts/micro/:parentSlug/replies', {
+        params: ParentSlugParam,
+        payload: CreateMicroPostReplyInput,
+        success: CompiledMicroPostResponse,
+        error: [
+          ValidationHttpError,
+          HttpApiError.NotFound,
+          HttpApiError.Conflict,
+          HttpApiError.InternalServerError,
+        ],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('getMicroPostReplies', '/api/content/posts/micro/:parentSlug/replies', {
+        params: ParentSlugParam,
+        query: PaginationQuery,
+        success: GetMicroPostsResponse,
+        error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get('getMicroPostThread', '/api/content/posts/micro/:slug/thread', {
+        params: SlugParam,
+        query: PaginationQuery,
+        success: MicroPostThreadResponse,
+        error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get('getPostBySlug', '/api/content/posts/:slug', {
+        params: SlugParam,
+        success: CompiledPostResponse,
+        error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get('getPostBySlugForEdit', '/api/content/posts/:slug/edit', {
+        params: SlugParam,
+        success: CompiledPostResponse,
+        error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.post('createPost', '/api/content/post', {
+        payload: CreatePostInput,
+        success: PostResponse,
+        error: [
+          ValidationHttpError,
+          HttpApiError.Forbidden,
+          HttpApiError.Conflict,
+          HttpApiError.NotFound,
+          HttpApiError.InternalServerError,
+        ],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.patch('updatePostBySlug', '/api/content/posts/:slug', {
+        params: SlugParam,
+        payload: UpdatePostInput,
+        success: CompiledPostResponse,
+        error: [
+          ValidationHttpError,
+          HttpApiError.NotFound,
+          HttpApiError.Unauthorized,
+          HttpApiError.InternalServerError,
+        ],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('getPostsByTag', '/api/content/tag/:tag', {
+        params: TagParam,
+        query: PaginationQuery,
+        success: GetPostsByTagResponse,
+        error: HttpApiError.InternalServerError,
+      }),
+    ))()

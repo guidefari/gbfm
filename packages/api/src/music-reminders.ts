@@ -83,31 +83,32 @@ export const DeleteMusicReminderResponse = Schema.Struct({
   message: Schema.String,
 })
 
-export const MusicRemindersGroup = HttpApiGroup.make('music-reminders')
-  .add(
-    HttpApiEndpoint.post('createMusicReminder', '/api/music-reminders', {
-      payload: CreateMusicReminderInput,
-      success: CreateMusicReminderResponse,
-      error: HttpApiError.BadRequest,
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('getMusicReminders', '/api/music-reminders', {
-      success: GetMusicRemindersResponse,
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.put('updateMusicReminder', '/api/music-reminders/:id', {
-      params: { id: Uuid },
-      payload: UpdateMusicReminderInput,
-      success: UpdateMusicReminderResponse,
-      error: [HttpApiError.BadRequest, HttpApiError.NotFound, HttpApiError.Forbidden],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.delete('deleteMusicReminder', '/api/music-reminders/:id', {
-      params: { id: Uuid },
-      success: DeleteMusicReminderResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden],
-    }).middleware(AuthMiddleware),
-  )
+export const MusicRemindersGroup = /* @__PURE__ */ (() =>
+  HttpApiGroup.make('music-reminders')
+    .add(
+      HttpApiEndpoint.post('createMusicReminder', '/api/music-reminders', {
+        payload: CreateMusicReminderInput,
+        success: CreateMusicReminderResponse,
+        error: HttpApiError.BadRequest,
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('getMusicReminders', '/api/music-reminders', {
+        success: GetMusicRemindersResponse,
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.put('updateMusicReminder', '/api/music-reminders/:id', {
+        params: { id: Uuid },
+        payload: UpdateMusicReminderInput,
+        success: UpdateMusicReminderResponse,
+        error: [HttpApiError.BadRequest, HttpApiError.NotFound, HttpApiError.Forbidden],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.delete('deleteMusicReminder', '/api/music-reminders/:id', {
+        params: { id: Uuid },
+        success: DeleteMusicReminderResponse,
+        error: [HttpApiError.NotFound, HttpApiError.Forbidden],
+      }).middleware(AuthMiddleware),
+    ))()

@@ -68,10 +68,11 @@ export type PublicProfileResponse = typeof PublicProfileResponse.Type
 
 export const PUBLIC_PROFILE_PATH = '/api/profile/:username'
 
-export const ProfileGroup = HttpApiGroup.make('profile').add(
-  HttpApiEndpoint.get('getPublicProfile', PUBLIC_PROFILE_PATH, {
-    params: { username: Schema.String },
-    success: PublicProfileResponse,
-    error: HttpApiError.NotFound,
-  }),
-)
+export const ProfileGroup = /* @__PURE__ */ (() =>
+  HttpApiGroup.make('profile').add(
+    HttpApiEndpoint.get('getPublicProfile', PUBLIC_PROFILE_PATH, {
+      params: { username: Schema.String },
+      success: PublicProfileResponse,
+      error: HttpApiError.NotFound,
+    }),
+  ))()

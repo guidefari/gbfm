@@ -152,104 +152,105 @@ export const QRPdfResponse = Schema.Struct({
   cached: Schema.Boolean,
 })
 
-export const ShowsGroup = HttpApiGroup.make('shows')
-  .add(
-    HttpApiEndpoint.get('getShowPage', '/api/shows/:slug/page', {
-      params: { slug: Schema.String },
-      success: ShowPageResponse,
-    }),
-  )
-  .add(
-    HttpApiEndpoint.get('getAllShows', '/api/shows', {
-      query: PaginationQuery,
-      success: GetAllShowsResponse,
-      error: HttpApiError.InternalServerError,
-    }),
-  )
-  .add(
-    HttpApiEndpoint.get('getShowsForEdit', '/api/shows/manage', {
-      query: PaginationQuery,
-      success: GetAllShowsResponse,
-      error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('getShowBySlug', '/api/shows/:slug', {
-      params: { slug: Schema.String },
-      success: CompiledShowResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
-    }),
-  )
-  .add(
-    HttpApiEndpoint.get('getShowBySlugForEdit', '/api/shows/:slug/edit', {
-      params: { slug: Schema.String },
-      success: CompiledShowResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.post('createShow', '/api/shows', {
-      payload: CreateShowInput,
-      success: ShowResponse,
-      error: [
-        HttpApiError.Forbidden,
-        HttpApiError.Conflict,
-        ValidationHttpError,
-        HttpApiError.InternalServerError,
-      ],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.patch('updateShowBySlug', '/api/shows/:slug', {
-      params: { slug: Schema.String },
-      payload: UpdateShowInput,
-      success: CompiledShowResponse,
-      error: [
-        HttpApiError.NotFound,
-        HttpApiError.Unauthorized,
-        ValidationHttpError,
-        HttpApiError.InternalServerError,
-      ],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.delete('deleteShowBySlug', '/api/shows/:slug', {
-      params: { slug: Schema.String },
-      error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('getShowEpisodes', '/api/shows/:slug/episodes', {
-      params: { slug: Schema.String },
-      query: PaginationQuery,
-      success: GetShowEpisodesResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
-    }),
-  )
-  .add(
-    HttpApiEndpoint.post('subscribeToShow', '/api/shows/:id/subscribe', {
-      params: { id: Uuid },
-      success: SubscriptionResponse,
-      error: [HttpApiError.Forbidden, HttpApiError.Conflict, HttpApiError.InternalServerError],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.delete('unsubscribeFromShow', '/api/shows/:id/unsubscribe', {
-      params: { id: Uuid },
-      error: [HttpApiError.Forbidden, HttpApiError.NotFound, HttpApiError.InternalServerError],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('getShowSubscriptionStatus', '/api/shows/:id/subscription', {
-      params: { id: Uuid },
-      success: ShowSubscriptionStatusResponse,
-      error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('getShowQRPdf', '/api/shows/:slug/qr-pdf', {
-      params: { slug: Schema.String },
-      success: QRPdfResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
-    }),
-  )
+export const ShowsGroup = /* @__PURE__ */ (() =>
+  HttpApiGroup.make('shows')
+    .add(
+      HttpApiEndpoint.get('getShowPage', '/api/shows/:slug/page', {
+        params: { slug: Schema.String },
+        success: ShowPageResponse,
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get('getAllShows', '/api/shows', {
+        query: PaginationQuery,
+        success: GetAllShowsResponse,
+        error: HttpApiError.InternalServerError,
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get('getShowsForEdit', '/api/shows/manage', {
+        query: PaginationQuery,
+        success: GetAllShowsResponse,
+        error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('getShowBySlug', '/api/shows/:slug', {
+        params: { slug: Schema.String },
+        success: CompiledShowResponse,
+        error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get('getShowBySlugForEdit', '/api/shows/:slug/edit', {
+        params: { slug: Schema.String },
+        success: CompiledShowResponse,
+        error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.post('createShow', '/api/shows', {
+        payload: CreateShowInput,
+        success: ShowResponse,
+        error: [
+          HttpApiError.Forbidden,
+          HttpApiError.Conflict,
+          ValidationHttpError,
+          HttpApiError.InternalServerError,
+        ],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.patch('updateShowBySlug', '/api/shows/:slug', {
+        params: { slug: Schema.String },
+        payload: UpdateShowInput,
+        success: CompiledShowResponse,
+        error: [
+          HttpApiError.NotFound,
+          HttpApiError.Unauthorized,
+          ValidationHttpError,
+          HttpApiError.InternalServerError,
+        ],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.delete('deleteShowBySlug', '/api/shows/:slug', {
+        params: { slug: Schema.String },
+        error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('getShowEpisodes', '/api/shows/:slug/episodes', {
+        params: { slug: Schema.String },
+        query: PaginationQuery,
+        success: GetShowEpisodesResponse,
+        error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+      }),
+    )
+    .add(
+      HttpApiEndpoint.post('subscribeToShow', '/api/shows/:id/subscribe', {
+        params: { id: Uuid },
+        success: SubscriptionResponse,
+        error: [HttpApiError.Forbidden, HttpApiError.Conflict, HttpApiError.InternalServerError],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.delete('unsubscribeFromShow', '/api/shows/:id/unsubscribe', {
+        params: { id: Uuid },
+        error: [HttpApiError.Forbidden, HttpApiError.NotFound, HttpApiError.InternalServerError],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('getShowSubscriptionStatus', '/api/shows/:id/subscription', {
+        params: { id: Uuid },
+        success: ShowSubscriptionStatusResponse,
+        error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('getShowQRPdf', '/api/shows/:slug/qr-pdf', {
+        params: { slug: Schema.String },
+        success: QRPdfResponse,
+        error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+      }),
+    ))()

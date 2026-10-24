@@ -33,9 +33,10 @@ export const SearchQuery = Schema.Struct({
   ),
 })
 
-export const SearchGroup = HttpApiGroup.make('search').add(
-  HttpApiEndpoint.get('searchContent', '/api/search', {
-    query: SearchQuery,
-    success: SearchResults,
-  }),
-)
+export const SearchGroup = /* @__PURE__ */ (() =>
+  HttpApiGroup.make('search').add(
+    HttpApiEndpoint.get('searchContent', '/api/search', {
+      query: SearchQuery,
+      success: SearchResults,
+    }),
+  ))()

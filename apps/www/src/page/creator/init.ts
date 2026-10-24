@@ -44,6 +44,7 @@ export const initialModel = ({ kind, editSlug, creatorId, authorized }: InitInpu
   creatorsInput: creatorId,
   episodeInput: '',
   editorMode: 'source',
+  diagnostics: [],
   externalMediaUrl: '',
   musicPreviewTitle: null,
   musicPreviewMeta: null,

@@ -23,6 +23,21 @@ const signIn = async (page: Page) => {
   return { creatorIds, audioUrl: mix.url, showId: mix.showId }
 }
 
+test('source diagnostics update after editing and restoring a local draft', async ({ page }) => {
+  await signIn(page)
+  await page.goto('/new/editorial')
+  const canvas = page.getByRole('textbox', { name: 'Writing canvas' })
+  const diagnostics = page.getByRole('list', { name: 'Source diagnostics' })
+  await canvas.fill('<div>Unsupported markup</div>')
+  await expect(diagnostics).toContainText('Raw HTML is unsupported')
+  await expect(page.getByRole('status')).toContainText('Draft saved locally')
+  await page.reload()
+  await expect(canvas).toHaveValue('<div>Unsupported markup</div>')
+  await expect(diagnostics).toContainText('Raw HTML is unsupported')
+  await canvas.fill('Ordinary **Markdown**')
+  await expect(diagnostics).toHaveCount(0)
+})
+
 test('mix creation satisfies the API contract and editing preserves audio and co-creators', async ({
   page,
 }) => {

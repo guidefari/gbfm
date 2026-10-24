@@ -22,6 +22,36 @@ describe('creator model', () => {
     expect(result.commands?.[0]?.name).toBe('Creator.PersistDraft')
   })
 
+  it('keeps source diagnostics tied to the current content, including out-of-order failures', () => {
+    const model = initialModel(input)
+    const oldContent = '<script>old</script>'
+    const content = '<div>current</div>'
+
+    const diagnostics = [
+      {
+        severity: 'warning' as const,
+        code: 'unsupported-html' as const,
+        message: 'Raw HTML is not supported.',
+        line: 1,
+        column: 1,
+      },
+    ]
+
+    const edited = update(model, Message.Changed({ field: 'content', value: content })).model
+    const checked = update(edited, Message.DiagnosticsLoaded({ content, diagnostics })).model
+    expect(checked.diagnostics).toEqual(diagnostics)
+    expect(
+      update(checked, Message.DiagnosticsLoaded({ content: oldContent, diagnostics: [] })).model,
+    ).toEqual(checked)
+    expect(update(checked, Message.DiagnosticsFailed({ content: oldContent })).model).toEqual(
+      checked,
+    )
+    const renamed = update(checked, Message.Changed({ field: 'title', value: 'A title' })).model
+    expect(renamed.diagnostics).toEqual(diagnostics)
+    const cleared = update(renamed, Message.Changed({ field: 'content', value: '' })).model
+    expect(cleared.diagnostics).toEqual([])
+  })
+
   it('guards save and publish transitions independently of the view', () => {
     const model = initialModel({ ...input, authorized: false })
     expect(update(model, Message.PublishRequested()).model.phase).toBe('forbidden')

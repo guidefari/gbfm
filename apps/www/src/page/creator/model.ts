@@ -1,4 +1,5 @@
 import * as Dialog from '@foldkit/ui/dialog'
+import { RichContentDiagnostic } from '@gbfm/rich-content/schema'
 import { Schema } from 'effect'
 
 import type { CreatorDraft } from './services'
@@ -27,6 +28,7 @@ export const Model = Schema.Struct({
   creatorsInput: Schema.String,
   episodeInput: Schema.String,
   editorMode: Schema.Literals(['source', 'preview']),
+  diagnostics: Schema.Array(RichContentDiagnostic),
   externalMediaUrl: Schema.String,
   musicPreviewTitle: Schema.NullOr(Schema.String),
   musicPreviewMeta: Schema.NullOr(Schema.String),
