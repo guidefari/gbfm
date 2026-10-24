@@ -286,7 +286,13 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
   if (isAdminSection(model.section) && role !== 'admin')
     return shell(
       'Administrator access required',
-      h.p([h.Class('dashboard-forbidden')], ['This area is not available to your account.']),
+      h.p(
+        [h.Class('dashboard-forbidden')],
+        [
+          'This area is not available to your account. ',
+          h.a([h.Href('/dashboard')], ['Go to your dashboard']),
+        ],
+      ),
     )
 
   const content =
