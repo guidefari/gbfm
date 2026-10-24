@@ -1,7 +1,10 @@
 import { Context, Data, Effect, Layer, Schema } from 'effect'
 import { Command, type Update } from 'foldkit'
+import type { HtmlBuilder } from 'foldkit/html'
 import { defineMessageUnion } from 'foldkit/message'
 import { defineView } from 'foldkit/submodel'
+
+import { dataTable, emptyState, frame, pageHeader, relativeTime } from '../ui'
 
 const User = Schema.Struct({ id: Schema.String, name: Schema.String, email: Schema.String })
 
@@ -277,131 +280,141 @@ export const update = (
     }),
   })
 
-export const view = defineView<Model, Message>((model, h) =>
-  h.section(
-    [h.Class('dashboard-panel dashboard-form')],
-    [
-      h.h2([], ['Session access']),
-      h.form(
-        [h.OnSubmit(Message.SearchRequested())],
-        [
-          h.label(
-            [],
-            [
-              'Search user by email',
-              h.input([
-                h.Type('search'),
-                h.Value(model.query),
-                h.OnInput((query) => Message.QueryChanged({ query })),
-              ]),
-            ],
-          ),
+const selectedView = (model: Model, h: HtmlBuilder<Message>, user: typeof User.Type) => {
+  const now = Date.now()
+  const idle = model.phase !== 'ready'
+
+  return frame(h, [
+    h.div(
+      [h.Class('admin-toolbar')],
+      [
+        h.div(
+          [h.Class('admin-cell-stack')],
+          [h.strong([], [`Sessions for ${user.name}`]), h.small([], [user.email])],
+        ),
+        h.div(
+          [h.Class('admin-actions admin-toolbar-end')],
+          [
+            h.button([h.OnClick(Message.Clear()), h.Disabled(idle)], ['Clear selection']),
+            h.button([h.OnClick(Message.Refresh()), h.Disabled(idle)], ['Refresh sessions']),
+            h.button(
+              [h.OnClick(Message.ConfirmAll()), h.Disabled(idle || model.sessions.length === 0)],
+              ['Revoke all'],
+            ),
+          ],
+        ),
+      ],
+    ),
+    model.confirming
+      ? h.div(
+          [h.Role('alert'), h.Class('admin-confirm admin-pager')],
+          [
+            h.p([], [`Revoke all sessions for ${user.name}? They will need to sign in again.`]),
+            h.button(
+              [h.OnClick(Message.Revoke({ sessionId: null })), h.Disabled(idle)],
+              ['Confirm revoke all'],
+            ),
+            h.button(
+              [h.OnClick(Message.CancelConfirmation()), h.Disabled(idle)],
+              ['Keep sessions'],
+            ),
+          ],
+        )
+      : h.empty,
+    dataTable(h, {
+      label: 'Active sessions',
+      loading: model.phase === 'loading' && model.sessions.length === 0,
+      minWidth: '46rem',
+      columns: [
+        { label: 'Session', className: 'admin-col-mono', width: '6.5rem' },
+        { label: 'Device' },
+        { label: 'IP', className: 'admin-col-mono', width: '9rem' },
+        { label: 'Created', className: 'admin-col-muted', width: '7.5rem' },
+        { label: 'Expires', className: 'admin-col-muted', width: '7.5rem' },
+        { label: '', className: 'admin-col-actions', width: '6rem' },
+      ],
+      rows: model.sessions.map((session) => ({
+        key: session.id,
+        cells: [
+          session.id.slice(0, 8),
+          h.span([h.Title(session.userAgent || 'Unknown')], [session.userAgent || 'Unknown']),
+          session.ipAddress || 'Unknown',
+          relativeTime(h, session.createdAt, now),
+          relativeTime(h, session.expiresAt, now),
           h.button(
             [
-              h.Type('submit'),
-              h.Disabled(model.query.trim().length < 3 || model.phase !== 'ready'),
+              h.AriaLabel('Revoke session'),
+              h.OnClick(Message.Revoke({ sessionId: session.id })),
+              h.Disabled(idle),
             ],
-            ['Search users'],
+            ['Revoke'],
           ),
         ],
-      ),
-      model.error ? h.p([h.Role('alert')], [model.error]) : h.empty,
-      model.notice ? h.p([h.Role('status')], [model.notice]) : h.empty,
-      model.phase !== 'ready'
-        ? h.p([h.Role('status')], [model.phase === 'revoking' ? 'Revoking access…' : 'Loading…'])
+      })),
+      empty: emptyState(h, 'No active sessions found.'),
+    }),
+  ])
+}
+
+export const view = defineView<Model, Message>((model, h) =>
+  h.section(
+    [h.Class('admin-page')],
+    [
+      pageHeader(h, 'Look up a user to see and revoke their active sessions.'),
+      model.error ? h.p([h.Role('alert'), h.Class('admin-notice')], [model.error]) : h.empty,
+      model.notice ? h.p([h.Role('status'), h.Class('admin-notice')], [model.notice]) : h.empty,
+      model.phase === 'revoking'
+        ? h.p([h.Role('status'), h.Class('admin-notice')], ['Revoking access'])
         : h.empty,
-      ...model.users.map((user) =>
-        h.button([h.OnClick(Message.UserSelected({ user }))], [`${user.name} · ${user.email}`]),
-      ),
-      !model.selected && model.users.length === 0
-        ? h.p([], ['Search for a user to inspect active sessions.'])
-        : h.empty,
-      model.selected
-        ? h.div(
-            [],
-            [
-              h.h3([], [`Sessions for ${model.selected.name}`]),
-              h.p([], [model.selected.email]),
-              h.div(
-                [h.Class('creator-actions')],
-                [
-                  h.button(
-                    [h.OnClick(Message.Clear()), h.Disabled(model.phase !== 'ready')],
-                    ['Clear selection'],
-                  ),
-                  h.button(
-                    [h.OnClick(Message.Refresh()), h.Disabled(model.phase !== 'ready')],
-                    ['Refresh sessions'],
-                  ),
+      frame(h, [
+        h.form(
+          [h.OnSubmit(Message.SearchRequested()), h.Role('search'), h.Class('admin-toolbar')],
+          [
+            h.input([
+              h.Type('search'),
+              h.AriaLabel('Search user by email'),
+              h.Placeholder('Search user by email'),
+              h.Value(model.query),
+              h.OnInput((query) => Message.QueryChanged({ query })),
+            ]),
+            h.button(
+              [
+                h.Type('submit'),
+                h.Disabled(model.query.trim().length < 3 || model.phase !== 'ready'),
+              ],
+              ['Search users'],
+            ),
+          ],
+        ),
+        model.selected
+          ? h.empty
+          : dataTable(h, {
+              label: 'Matching users',
+              loading: model.phase === 'loading',
+              minWidth: '30rem',
+              columns: [
+                { label: 'Name', width: '35%' },
+                { label: 'Email' },
+                { label: '', className: 'admin-col-actions', width: '9rem' },
+              ],
+              rows: model.users.map((user) => ({
+                key: user.id,
+                cells: [
+                  h.strong([], [user.name]),
+                  user.email,
                   h.button(
                     [
-                      h.OnClick(Message.ConfirmAll()),
-                      h.Disabled(model.phase !== 'ready' || model.sessions.length === 0),
+                      h.AriaLabel(`View sessions for ${user.email}`),
+                      h.OnClick(Message.UserSelected({ user })),
                     ],
-                    ['Revoke all'],
+                    ['View sessions'],
                   ),
                 ],
-              ),
-              model.confirming
-                ? h.div(
-                    [h.Role('alert'), h.Class('dashboard-panel')],
-                    [
-                      h.p(
-                        [],
-                        [
-                          `Revoke all sessions for ${model.selected.name}? They will need to sign in again.`,
-                        ],
-                      ),
-                      h.button(
-                        [
-                          h.OnClick(Message.Revoke({ sessionId: null })),
-                          h.Disabled(model.phase !== 'ready'),
-                        ],
-                        ['Confirm revoke all'],
-                      ),
-                      h.button(
-                        [
-                          h.OnClick(Message.CancelConfirmation()),
-                          h.Disabled(model.phase !== 'ready'),
-                        ],
-                        ['Keep sessions'],
-                      ),
-                    ],
-                  )
-                : h.empty,
-              model.sessions.length === 0 && model.phase === 'ready'
-                ? h.p([], ['No active sessions found.'])
-                : h.empty,
-              h.ul(
-                [h.Class('dashboard-list session-list')],
-                model.sessions.map((session) =>
-                  h.li(
-                    [h.Key(session.id)],
-                    [
-                      h.div(
-                        [],
-                        [
-                          h.strong([], [`Session ${session.id.slice(0, 8)}`]),
-                          h.small([], [`Created: ${session.createdAt}`]),
-                          h.small([], [`Expires: ${session.expiresAt}`]),
-                          h.small([], [`Device: ${session.userAgent ?? 'Unknown'}`]),
-                          h.small([], [`IP: ${session.ipAddress ?? '—'}`]),
-                        ],
-                      ),
-                      h.button(
-                        [
-                          h.OnClick(Message.Revoke({ sessionId: session.id })),
-                          h.Disabled(model.phase !== 'ready'),
-                        ],
-                        ['Revoke session'],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          )
-        : h.empty,
+              })),
+              empty: emptyState(h, 'Search for a user to inspect active sessions.'),
+            }),
+      ]),
+      model.selected ? selectedView(model, h, model.selected) : h.empty,
     ],
   ),
 )

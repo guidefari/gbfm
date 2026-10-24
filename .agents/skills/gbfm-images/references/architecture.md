@@ -49,10 +49,8 @@ The work began after an intermittent Safari first load exposed a missing feature
 
 ### Web app
 
-- `apps/www/src/lib/image.ts` adds options only for the trusted GBFM CDN hostname.
-- `apps/www/src/components/common/Artwork.tsx` gives shared artwork consumers responsive WebP sources and fallback handling.
+- `apps/www/src/view/artwork.ts` adds options only for the trusted GBFM CDN hostname and gives shared artwork consumers responsive WebP sources and fallback handling.
 - The featured home image has explicit widths, viewport-aware `sizes`, eager loading, and high fetch priority because it is the likely LCP element.
-- `packages/ui/src/components/artwork.tsx` remains reusable UI and does not know about Cloudflare or GBFM hostnames.
 
 ## Coverage and limits
 

@@ -52,10 +52,14 @@ export const init: Runtime.ApplicationInit<Model, Message, Flags, Services> = (f
     Match.orElse(() => ''),
   )
 
-  const dashboard = Dashboard.init(section || 'favorites', {
-    id: flags.principal?.id ?? '',
-    role: role && isRole(role) ? role : null,
-  })()
+  const dashboard = Dashboard.init(
+    section || 'favorites',
+    {
+      id: flags.principal?.id ?? '',
+      role: role && isRole(role) ? role : null,
+    },
+    url.searchParams,
+  )()
 
   const preparedDashboard = flags.dashboard
     ? Dashboard.update(dashboard.model, Dashboard.Message.Loaded({ document: flags.dashboard }))
@@ -75,6 +79,8 @@ export const init: Runtime.ApplicationInit<Model, Message, Flags, Services> = (f
       pendingPath: null,
       pageCache: seedCache(flags),
       interactive: false,
+      passwordVisible: false,
+      authSubmitting: false,
       navigationId: 0,
       tweetReader: TweetReader.init(flags.principal?.id ?? 'anonymous'),
       error: null,

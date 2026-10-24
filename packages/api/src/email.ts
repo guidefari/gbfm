@@ -140,6 +140,12 @@ export const SendMixNotificationResponse = Schema.Struct({
 
 export type SendMixNotificationResponse = typeof SendMixNotificationResponse.Type
 
+/** Admin-only choices for reviewing a mix announcement before submission. */
+export const MixAnnouncementOptions = Schema.Struct({
+  mixes: Schema.Array(Schema.Struct({ slug: Schema.String, title: Schema.String })),
+  recipients: Schema.Array(Schema.String),
+})
+
 export const EmailLogsQuery = Schema.Struct({
   ...PaginationQuery,
   status: Schema.optional(EmailLogStatus),
@@ -159,6 +165,12 @@ export const EmailLogsQuery = Schema.Struct({
 export type EmailLogsQuery = typeof EmailLogsQuery.Type
 
 export const EmailGroup = HttpApiGroup.make('email')
+  .add(
+    HttpApiEndpoint.get('getMixAnnouncementOptions', '/api/email/mix-announcement-options', {
+      success: MixAnnouncementOptions,
+      error: [HttpApiError.Forbidden, HttpApiError.InternalServerError],
+    }).middleware(AuthMiddleware),
+  )
   .add(
     HttpApiEndpoint.post('sendMixNotification', '/api/email/send-mix-notification', {
       payload: SendMixNotificationInput,

@@ -6,7 +6,6 @@
     "./utils": "./src/utils/index.ts",
     "./utils/slug": "./src/utils/slug.ts",
     "./api": "./src/api/index.ts",
-    "./feature-flags": "./src/feature-flags/index.ts",
     "./observability/request-id": "./src/observability/request-id.ts",
     "./observability/local-loki": "./src/observability/local-loki.ts",
     "./observability/trace-sampling": "./src/observability/trace-sampling.ts",
@@ -23,12 +22,7 @@
   },
   "devDependencies": {
     "@types/bun": "1.4.4",
-    "@types/react": "19.3.0",
-    "react": "19.2.7",
     "typescript": "7.0.2",
     "vitest": "5.0.5"
-  },
-  "peerDependencies": {
-    "react": "^19.0.0"
   }
 }

@@ -270,6 +270,26 @@ const requireAdmin = Effect.gen(function* () {
 
 export const EmailHandlersLive = HttpApiBuilder.group(Api, 'email', (handlers) =>
   handlers
+    .handle('getMixAnnouncementOptions', () =>
+      Effect.gen(function* () {
+        yield* requireAdmin
+        const db = yield* Database
+
+        const mixes = yield* databaseEffect('select', 'audio', () =>
+          db
+            .select({ slug: audioTable.slug, title: audioTable.title })
+            .from(audioTable)
+            .where(and(eq(audioTable.type, 'mix'), eq(audioTable.draft, false)))
+            .orderBy(audioTable.title),
+        ).pipe(dieOnDatabaseError)
+
+        const recipients = yield* databaseEffect('select', 'email_recipients', () =>
+          getActiveMixRecipients(db),
+        ).pipe(dieOnDatabaseError)
+
+        return { mixes, recipients: recipients.sort() }
+      }),
+    )
     .handle('sendMixNotification', ({ payload }) =>
       Effect.gen(function* () {
         yield* requireAdmin

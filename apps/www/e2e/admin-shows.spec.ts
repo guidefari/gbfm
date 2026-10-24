@@ -15,6 +15,7 @@ test('show drafts, failed edits, publication and confirmed deletion persist in D
   const slug = `show-check-${Date.now()}`
   const anonymous = await playwright.request.newContext({ baseURL })
   await page.goto('/dashboard/shows')
+  await page.getByRole('button', { name: 'New show', exact: true }).click()
   const form = page.locator('.dashboard-content form')
   await form.getByRole('textbox', { name: 'Title', exact: true }).fill('A private show draft')
   await form.getByRole('textbox', { name: 'Slug', exact: true }).fill(slug)
@@ -23,8 +24,15 @@ test('show drafts, failed edits, publication and confirmed deletion persist in D
     .getByRole('textbox', { name: 'Tags (comma separated)', exact: true })
     .fill('house, ambient')
   await form.getByRole('button', { name: 'Create show', exact: true }).click()
-  const row = page.locator('.dashboard-list li').filter({ hasText: slug })
+
+  const row = page
+    .getByRole('table', { name: 'Shows' })
+    .locator('tbody > tr.admin-row')
+    .filter({ hasText: slug })
+
+  await expect(form).toHaveCount(0)
   await expect(row).toContainText('Draft')
+
   try {
     expect((await anonymous.get(`/api/shows/${slug}`)).status()).toBe(404)
     await page.reload()
@@ -48,6 +56,7 @@ test('show drafts, failed edits, publication and confirmed deletion persist in D
     await expect(row).toContainText('Published')
     const published = await anonymous.get(`/api/shows/${slug}`)
     expect(published.ok()).toBe(true)
+
     const detail = Schema.decodeUnknownSync(
       Schema.Struct({
         title: Schema.String,
@@ -56,12 +65,14 @@ test('show drafts, failed edits, publication and confirmed deletion persist in D
         draft: Schema.Boolean,
       }),
     )(await published.json())
+
     expect(detail).toEqual({
       title: 'Published from Foldkit',
       content: 'A full show description.',
       tags: ['house', 'ambient'],
       draft: false,
     })
+
     for (const theme of ['dark', 'light'] as const) {
       await page.emulateMedia({ colorScheme: theme })
       await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
@@ -71,6 +82,7 @@ test('show drafts, failed edits, publication and confirmed deletion persist in D
         contentType: 'image/png',
       })
     }
+
     await row.getByRole('button', { name: 'Delete', exact: true }).click()
     await page.getByRole('button', { name: 'Keep show', exact: true }).click()
     expect((await anonymous.get(`/api/shows/${slug}`)).ok()).toBe(true)
@@ -78,9 +90,11 @@ test('show drafts, failed edits, publication and confirmed deletion persist in D
     await page.getByRole('button', { name: 'Confirm delete', exact: true }).click()
     await expect(row).toHaveCount(0)
     expect((await anonymous.get(`/api/shows/${slug}`)).status()).toBe(404)
+
     const managed = Schema.decodeUnknownSync(GetAllShowsResponse)(
       await (await page.request.get('/api/shows/manage?limit=100&offset=0')).json(),
     )
+
     expect(managed.data.some((show) => show.slug === slug)).toBe(false)
   } finally {
     await page.request.delete(`/api/shows/${slug}`)

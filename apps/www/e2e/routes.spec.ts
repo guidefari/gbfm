@@ -91,9 +91,10 @@ test('creator profile persists and private SSR avoids a duplicate browser accoun
   const response = await page.request.get('/dashboard/profile')
   expect(response.headers()['cache-control']).toContain('no-store')
   expect(await response.text()).toContain(bio)
-  await expect(page.getByRole('navigation', { name: 'Dashboard', exact: true })).not.toContainText(
-    'Users',
+  await expect(page.getByRole('navigation', { name: 'Dashboard sections' })).not.toContainText(
+    'People',
   )
+  await expect(page.getByRole('navigation', { name: 'Dashboard workspaces' })).toHaveCount(0)
   await page.goto('/dashboard/users')
   await expect(page.getByRole('heading', { name: 'Administrator access required' })).toBeVisible()
 })

@@ -2,6 +2,8 @@ import { isRole } from '@gbfm/core/roles'
 import { Match, Option, Schema } from 'effect'
 import * as Server from 'foldkit/experimental/server'
 
+import { authErrorKey, authErrorLocation, readAuthErrorCode } from '../page/auth/errors'
+import { authHref, safeReturnPath } from '../page/auth/links'
 import { readModeCookie } from '../page/tweet/navigation'
 import { apiRequest } from './api'
 import { randomTweet } from './tweet-random'
@@ -185,6 +187,16 @@ export const handleFormAction = async (request: Request): Promise<Server.Respond
     ),
   })
 
+  if (!response.ok && authPath)
+    return redirect(
+      authErrorLocation(action, authErrorKey(response.status, await readAuthErrorCode(response)), {
+        returnTo: field('returnTo'),
+        token: field('token'),
+        email: field('email'),
+        name: field('name'),
+      }),
+    )
+
   if (!response.ok)
     return Server.Responded(
       new Response('The request could not be completed. Check your details and try again.', {
@@ -193,14 +205,13 @@ export const handleFormAction = async (request: Request): Promise<Server.Respond
       }),
     )
 
-  const returnUrl = URL.parse(field('returnTo') || '/dashboard', url.origin)
-
-  const returnPath =
-    returnUrl?.origin === url.origin ? `${returnUrl.pathname}${returnUrl.search}` : '/dashboard'
+  const returnPath = safeReturnPath(field('returnTo'), url.origin)
 
   return redirect(
     Match.value(action).pipe(
-      Match.when('/auth/forgot-password', () => '/auth/forgot-password?sent=1'),
+      Match.when('/auth/forgot-password', () =>
+        authHref('/auth/forgot-password', { sent: '1', returnTo: field('returnTo') }),
+      ),
       Match.when('/auth/reset-password', () => '/auth/sign-in?reset=1'),
       Match.orElse(() =>
         authPath ? returnPath : `/tweet/${encodeURIComponent(url.searchParams.get('slug') ?? '')}`,

@@ -1,3 +1,53 @@
+# [2.106.0](https://github.com/guidefari/gbfm/compare/v2.105.0...v2.106.0) (2026-10-23)
+
+
+### Bug Fixes
+
+* **dev:** isolate local Alchemy state from cloud deployments ([96a08b2](https://github.com/guidefari/gbfm/commit/96a08b2b41eb73037414bc3e835491f73e0300d5))
+* **server:** land email verification on the verify-email page ([3cde072](https://github.com/guidefari/gbfm/commit/3cde0726037624a534d6080ab4523c410f225ec6))
+* **server:** resolve the database tracer per query ([e558275](https://github.com/guidefari/gbfm/commit/e5582751d4c0f82a0ed7d5055d241b131458f43b))
+* **www:** bring the dashboard down to a compact type scale ([d52104d](https://github.com/guidefari/gbfm/commit/d52104d224173f5b71c3c3daa3408a57b11d24de))
+* **www:** carry returnTo across auth page links and the reset email redirect ([eb0b1cb](https://github.com/guidefari/gbfm/commit/eb0b1cb4d3e74938d3c42b71e0771d21ade38cf3))
+* **www:** disable the auth submit button while the form is sending ([58c50ba](https://github.com/guidefari/gbfm/commit/58c50ba406fb2201991388f78f7dd2d1b08ea19e))
+* **www:** give dashboard nav items distinct names and drop duplicate comms tabs ([8cabf9a](https://github.com/guidefari/gbfm/commit/8cabf9a28d64b6fec010e653a6afc6ec06df8548))
+* **www:** keep the dashboard sidebar in view and tighten its links ([d713059](https://github.com/guidefari/gbfm/commit/d7130596ca951498943c29e74b596be79d9c7785))
+* **www:** keep the typed email and name after an auth error ([e4b8d62](https://github.com/guidefari/gbfm/commit/e4b8d62db4b679434f6a29e37bcfb466ed0f7219))
+* **www:** return to the current page from log in links and never back into auth ([c24d278](https://github.com/guidefari/gbfm/commit/c24d278003e32cbb02469102451e7dfeb2279fcc))
+* **www:** send signed-in people past the sign-in and sign-up pages ([a0583a9](https://github.com/guidefari/gbfm/commit/a0583a9c027add60ee8b2003b300c29f469808c6))
+* **www:** show an expired link state instead of the reset form for bad tokens ([21f64ec](https://github.com/guidefari/gbfm/commit/21f64ecded3d325ea74889aa1d49766eadf6cd16))
+* **www:** tab to forgot password after the password field ([7bf0b58](https://github.com/guidefari/gbfm/commit/7bf0b58ce9f9246ac30e03deb4feb2eb967e29bb))
+* **www:** tidy dashboard settings pages and copy ([a56c1ed](https://github.com/guidefari/gbfm/commit/a56c1edebf38cdf6d355e9c8d0a41f3e287df768))
+* **www:** tie auth errors to their fields and focus the field to fix ([9771129](https://github.com/guidefari/gbfm/commit/9771129bc952f3f442c1d0d3a9ea4c79fce8afd3))
+* **www:** unblock dashboard search, telemetry and content paging ([27c8de0](https://github.com/guidefari/gbfm/commit/27c8de0d5c04518f370e4310a6b57ab4b3099c52))
+* **www:** widen the tap area of small auth links ([f607b06](https://github.com/guidefari/gbfm/commit/f607b0653531f8d901f158044936a15b4979fc81))
+
+
+### Features
+
+* **comms:** add admin email review and subscriber tools ([e435e66](https://github.com/guidefari/gbfm/commit/e435e66618422dc01007557376f3c510d84cf89c))
+* **www:** add a next-step link to auth errors people can act on ([fbf0661](https://github.com/guidefari/gbfm/commit/fbf0661c9c9a6f15d5c99672601585c262cc1d58))
+* **www:** add faint wordmark backdrop to auth screens ([16e27b8](https://github.com/guidefari/gbfm/commit/16e27b8fe5885ecdc6975de766185cf35aede041))
+* **www:** add shared admin list primitives ([c4ea387](https://github.com/guidefari/gbfm/commit/c4ea387c88f08269339c24654750b6e536744c9c))
+* **www:** confirm a sent reset link instead of showing the form again ([029b84c](https://github.com/guidefari/gbfm/commit/029b84c68005fe174d923b1b4d607fde81dbf9ae))
+* **www:** hint and enforce password length on new passwords ([d7e0a5e](https://github.com/guidefari/gbfm/commit/d7e0a5e819b64594ff06030518beac14d682745c))
+* **www:** label the sign-up name field as a display name ([376c690](https://github.com/guidefari/gbfm/commit/376c690fef02f4cbbd01e5741cf0075bca77f6d1))
+* **www:** let people show or hide their password on auth forms ([5470d8d](https://github.com/guidefari/gbfm/commit/5470d8d679322b22a6d6b7110213c6b966c366ef))
+* **www:** list catalog entries and content as tables ([50740a2](https://github.com/guidefari/gbfm/commit/50740a2fbbb68a175d531d4b21618540070d9db5))
+* **www:** open the show form on demand above a shows table ([0a6e18c](https://github.com/guidefari/gbfm/commit/0a6e18c9167132fbc450627502f6f1cf4e62076e))
+* **www:** rebuild delivery history as a filterable log table ([8916f99](https://github.com/guidefari/gbfm/commit/8916f991bd5b99b9befa484ba23071c1b60841e7))
+* **www:** replace the dashboard sidebar with workspace and section tabs ([5e7d6ce](https://github.com/guidefari/gbfm/commit/5e7d6ce78fee1d96170842d8751f8611f34bb17f))
+* **www:** restyle auth screens with clearer hierarchy and primary action ([7253a88](https://github.com/guidefari/gbfm/commit/7253a880b5e5225f71881e6222f76cef7d09ade2))
+* **www:** show auth failures inline instead of a plain-text page ([37b3f91](https://github.com/guidefari/gbfm/commit/37b3f9180b0da4aa6e9488177c25d526e8123458))
+* **www:** show newsletter subscribers as a compact table ([5a59ac7](https://github.com/guidefari/gbfm/commit/5a59ac7860b4d7b3a975da43ab89daf0a8bf802c))
+* **www:** show the full uncropped emblem beside the auth form ([28dab96](https://github.com/guidefari/gbfm/commit/28dab96cda4049f01dc39f1db59af9d9028357fe))
+* **www:** show user sessions in a table with relative times ([06da642](https://github.com/guidefari/gbfm/commit/06da642d7be66edb17ea15d5aa460a92f2f6c09d))
+* **www:** show verified and failed states on the verify-email page ([76a0b92](https://github.com/guidefari/gbfm/commit/76a0b927233fd3a0ad25aa68f7a27e4046f2a51b))
+* **www:** show verify-email in the shared auth panel ([d54a631](https://github.com/guidefari/gbfm/commit/d54a63156a22b563411774d24c859f16fc85a27a))
+* **www:** split playlists into a list and a detail view ([1194925](https://github.com/guidefari/gbfm/commit/1194925cdd8e3b7b72b6936e8cbe17eb93f72d8e))
+* **www:** turn the admin overview into a task hub ([70a9e9a](https://github.com/guidefari/gbfm/commit/70a9e9aae470e417f18310bced6c810817d74c0b))
+* **www:** turn user accounts into a dense table with row menus ([99b6474](https://github.com/guidefari/gbfm/commit/99b6474fcaa94dad8dbce6e05153837ffad6cfda))
+* **www:** use shared sub-tabs for catalog and all content types ([aea21fd](https://github.com/guidefari/gbfm/commit/aea21fd8caa4391a134533ab6b1d8edd5942a736))
+
 # [2.105.0](https://github.com/guidefari/gbfm/compare/v2.104.0...v2.105.0) (2026-10-15)
 
 

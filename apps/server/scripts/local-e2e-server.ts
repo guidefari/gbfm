@@ -3,6 +3,7 @@ import { Layer } from 'effect'
 
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { user } from '@/db/auth.schema'
+import { emailDeliveryLogsTable } from '@/db/email.schema'
 import { replaceEntityLabels } from '@/db/labels'
 import { makeDatabaseClient } from '@/db/layer'
 import {
@@ -11,6 +12,7 @@ import {
   musicSourceIdentitiesTable,
   musicTracksTable,
 } from '@/db/music-entity.schema'
+import { newsletterSubscribersTable } from '@/db/newsletter.schema'
 import { postCreators, postsTable } from '@/db/post.schema'
 import { releasesTable } from '@/db/release.schema'
 import { seedLocalUsers } from '@/db/seed-local-users'
@@ -28,6 +30,28 @@ const database = makeDatabaseClient(resource.database)
 
 await seedLocalUsers(database)
 await seedMusicLookups(database)
+
+await database.insert(newsletterSubscribersTable).values([
+  { email: 'aya@example.test', name: 'Aya Listener', source: 'subscribe_page' },
+  { email: 'ben@example.test', name: 'Ben Listener', source: 'footer' },
+  {
+    email: 'former@example.test',
+    name: 'Former Listener',
+    source: 'subscribe_page',
+    unsubscribedAt: new Date('2026-10-01T10:00:00Z'),
+  },
+])
+
+for (let index = 0; index < 27; index += 1) {
+  await database.insert(emailDeliveryLogsTable).values({
+    recipientEmail: 'history@example.test',
+    emailType: 'MIX_RELEASE',
+    templateName: 'mix-notification',
+    subject: `Archived announcement ${index + 1}`,
+    status: 'SENT',
+    createdAt: new Date(Date.UTC(2026, 8, index + 1, 12)),
+  })
+}
 
 const [creator] = await database
   .select({ id: user.id })

@@ -2,6 +2,8 @@ import { ROLES } from '@gbfm/core/roles'
 import { Schema } from 'effect'
 import { inertHtml as h } from 'foldkit/html'
 
+import { badge, dataTable, drawer, emptyState, frame, pageHeader, pageRange, pager } from '../ui'
+
 export const AdminUsers = Schema.Struct({
   users: Schema.Array(
     Schema.Struct({
@@ -20,6 +22,8 @@ export const AdminUsers = Schema.Struct({
   offset: Schema.optional(Schema.Number),
 })
 
+type AdminUser = (typeof AdminUsers.Type)['users'][number]
+
 const hidden = (name: string, value: string) =>
   h.input([h.Type('hidden'), h.Name(name), h.Value(value)])
 
@@ -31,6 +35,16 @@ const roleSelect = (selected: string) =>
     [h.Name('role'), h.AriaLabel('Role')],
     ROLES.map((role) => h.option([h.Value(role), h.Selected(role === selected)], [role])),
   )
+
+const statusBadge = (user: AdminUser) =>
+  user.banned
+    ? badge(h, 'Banned', 'error', user.banReason ?? undefined)
+    : user.emailVerified === false
+      ? badge(h, 'Unverified', 'warn')
+      : badge(h, 'Active', 'ok')
+
+const usersHref = (query: string, offset: number) =>
+  `/dashboard/users?${new URLSearchParams({ search: query, offset: String(offset) })}`
 
 export const usersView = (
   users: typeof AdminUsers.Type | undefined,
@@ -45,36 +59,63 @@ export const usersView = (
     ),
   ]
 
-  return h.section(
-    [h.Class('dashboard-panel dashboard-form')],
+  const menu = (user: AdminUser) =>
+    h.details(
+      [h.Class('admin-menu')],
+      [
+        h.summary([h.Class('admin-button-small')], ['More']),
+        h.div(
+          [h.Class('admin-menu-body')],
+          [
+            h.form(action('invite'), [
+              hidden('userId', user.id),
+              h.button([h.Type('submit')], ['Invite']),
+            ]),
+            user.banned
+              ? h.form(action('unban-user'), [
+                  hidden('userId', user.id),
+                  h.button([h.Type('submit')], ['Unban']),
+                ])
+              : h.details(
+                  [],
+                  [
+                    h.summary([], ['Ban']),
+                    h.form(
+                      [...action('ban-user'), h.Class('dashboard-form')],
+                      [
+                        hidden('userId', user.id),
+                        field('Ban reason (optional)', 'banReason'),
+                        h.button([h.Type('submit')], ['Confirm ban']),
+                      ],
+                    ),
+                  ],
+                ),
+            h.details(
+              [],
+              [
+                h.summary([], ['Delete']),
+                h.form(
+                  [...action('remove-user'), h.Class('dashboard-form')],
+                  [
+                    hidden('userId', user.id),
+                    h.p([], [`Permanently delete ${user.name}? This cannot be undone.`]),
+                    h.button([h.Type('submit')], ['Confirm delete']),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    )
+
+  return h.div(
+    [h.Class('admin-page')],
     [
-      h.h2([], ['User accounts']),
-      notice
-        ? h.p(
-            [h.Role(notice === 'failed' ? 'alert' : 'status')],
-            [
-              notice === 'failed'
-                ? 'The account action failed. Your access or the submitted values may have changed.'
-                : 'Account action completed.',
-            ],
-          )
-        : h.empty,
-      h.form(
-        [h.Method('get'), h.Action('/dashboard/users')],
-        [
-          h.label(
-            [],
-            ['Search by email', h.input([h.Type('search'), h.Name('search'), h.Value(query)])],
-          ),
-          h.button([h.Type('submit')], ['Search users']),
-        ],
-      ),
-      h.details(
-        [],
-        [
-          h.summary([], ['Create user']),
+      pageHeader(h, 'Accounts, roles and access.', [
+        drawer(h, 'New user', [
           h.form(
-            [...action('create-user'), h.Class('dashboard-form')],
+            [...action('create-user'), h.Class('dashboard-form admin-form-grid')],
             [
               field('Display name', 'name'),
               field('Username', 'username'),
@@ -82,139 +123,101 @@ export const usersView = (
               field('Password (optional)', 'password', 'password'),
               h.label([], ['Role', roleSelect('user')]),
               h.p(
-                [],
+                [h.Class('admin-description')],
                 [
-                  'Provide an email or username. A blank password is generated securely; use Invite to send access instructions.',
+                  'Provide an email or username. A blank password is generated securely. Use Invite to send access instructions.',
                 ],
               ),
-              h.button([h.Type('submit')], ['Create account']),
+              h.button([h.Type('submit'), h.Class('dashboard-button-primary')], ['Create account']),
             ],
           ),
-        ],
-      ),
-      !users
-        ? h.p([h.Role('alert')], ['Could not load user accounts.'])
-        : h.div(
-            [],
+        ]),
+      ]),
+      notice
+        ? h.p(
+            [h.Role(notice === 'failed' ? 'alert' : 'status'), h.Class('admin-notice')],
             [
-              h.p([], [`${users.total} users`]),
-              h.ul(
-                [h.Class('dashboard-list admin-users')],
-                users.users.map((user) =>
-                  h.li(
-                    [h.Key(user.id)],
-                    [
-                      h.div(
-                        [],
-                        [
-                          h.strong([], [user.name]),
-                          h.small([], [user.email]),
-                          user.username
-                            ? h.a(
-                                [h.Href(`/profile/${encodeURIComponent(user.username)}`)],
-                                [`@${user.username}`],
-                              )
-                            : h.empty,
-                          h.p(
-                            [],
-                            [
-                              user.banned
-                                ? `Banned${user.banReason ? `: ${user.banReason}` : ''}`
-                                : user.emailVerified === false
-                                  ? 'Unverified'
-                                  : 'Active',
-                            ],
-                          ),
-                          h.form(
-                            [...action('set-role'), h.Class('creator-actions')],
-                            [
-                              hidden('userId', user.id),
-                              roleSelect(user.role ?? 'user'),
-                              h.button([h.Type('submit')], ['Save role']),
-                            ],
-                          ),
-                          h.div(
-                            [h.Class('creator-actions')],
-                            [
-                              h.form(action('invite'), [
-                                hidden('userId', user.id),
-                                h.button([h.Type('submit')], ['Invite']),
-                              ]),
-                              user.banned
-                                ? h.form(action('unban-user'), [
-                                    hidden('userId', user.id),
-                                    h.button([h.Type('submit')], ['Unban']),
-                                  ])
-                                : h.details(
-                                    [],
-                                    [
-                                      h.summary([], ['Ban']),
-                                      h.form(
-                                        [...action('ban-user'), h.Class('dashboard-form')],
-                                        [
-                                          hidden('userId', user.id),
-                                          field('Ban reason (optional)', 'banReason'),
-                                          h.button([h.Type('submit')], ['Confirm ban']),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                              h.details(
-                                [],
-                                [
-                                  h.summary([], ['Delete']),
-                                  h.form(action('remove-user'), [
-                                    hidden('userId', user.id),
-                                    h.p(
-                                      [],
-                                      [`Permanently delete ${user.name}? This cannot be undone.`],
-                                    ),
-                                    h.button([h.Type('submit')], ['Confirm delete']),
-                                  ]),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              users.users.length === 0 ? h.p([], ['No users found.']) : h.empty,
-              h.nav(
-                [h.AriaLabel('User pages'), h.Class('user-pagination')],
-                [
-                  offset > 0
-                    ? h.a(
-                        [
-                          h.Href(
-                            `/dashboard/users?${new URLSearchParams({ search: query, offset: String(Math.max(0, offset - 25)) })}`,
-                          ),
-                        ],
-                        ['Previous users'],
-                      )
-                    : h.empty,
-                  h.span(
-                    [],
-                    [
-                      `${users.total === 0 ? 0 : offset + 1}–${Math.min(users.total, offset + users.users.length)} of ${users.total}`,
-                    ],
-                  ),
-                  offset + users.users.length < users.total
-                    ? h.a(
-                        [
-                          h.Href(
-                            `/dashboard/users?${new URLSearchParams({ search: query, offset: String(offset + 25) })}`,
-                          ),
-                        ],
-                        ['Next users'],
-                      )
-                    : h.empty,
-                ],
-              ),
+              notice === 'failed'
+                ? 'The account action failed. Your access or the submitted values may have changed.'
+                : 'Account action completed.',
             ],
-          ),
+          )
+        : h.empty,
+      frame(h, [
+        h.form(
+          [
+            h.Method('get'),
+            h.Action('/dashboard/users'),
+            h.Role('search'),
+            h.Class('admin-toolbar'),
+          ],
+          [
+            h.input([
+              h.Type('search'),
+              h.Name('search'),
+              h.AriaLabel('Search by email'),
+              h.Placeholder('Search by email'),
+              h.Attribute('value', query),
+            ]),
+            h.button([h.Type('submit')], ['Search users']),
+            query
+              ? h.a([h.Href('/dashboard/users'), h.Class('admin-toolbar-end')], ['Clear'])
+              : h.empty,
+          ],
+        ),
+        !users
+          ? h.p([h.Role('alert'), h.Class('admin-empty')], ['Could not load user accounts.'])
+          : dataTable(h, {
+              label: 'User accounts',
+              minWidth: '48rem',
+              columns: [
+                { label: 'User' },
+                { label: 'Username', width: '18%' },
+                { label: 'Role', width: '13.5rem' },
+                { label: 'Status', width: '7.5rem' },
+                { label: '', className: 'admin-col-actions', width: '5rem' },
+              ],
+              rows: users.users.map((user) => ({
+                key: user.id,
+                cells: [
+                  h.div(
+                    [h.Class('admin-cell-stack')],
+                    [h.strong([], [user.name]), h.small([], [user.email])],
+                  ),
+                  user.username
+                    ? h.a(
+                        [h.Href(`/profile/${encodeURIComponent(user.username)}`)],
+                        [`@${user.username}`],
+                      )
+                    : h.span([h.Class('admin-muted')], ['None']),
+                  h.form(
+                    [...action('set-role'), h.Class('admin-inline-form')],
+                    [
+                      hidden('userId', user.id),
+                      roleSelect(user.role ?? 'user'),
+                      h.button([h.Type('submit'), h.AriaLabel('Save role')], ['Save']),
+                    ],
+                  ),
+                  statusBadge(user),
+                  menu(user),
+                ],
+              })),
+              empty: query
+                ? emptyState(h, 'No users match this search.', { href: '/dashboard/users' })
+                : emptyState(h, 'No users found.'),
+            }),
+        users && users.total > 0
+          ? pager(h, {
+              label: 'User pages',
+              summary: pageRange(offset, users.users.length, users.total),
+              previous: offset > 0 ? { href: usersHref(query, Math.max(0, offset - 25)) } : null,
+              next:
+                offset + users.users.length < users.total
+                  ? { href: usersHref(query, offset + 25) }
+                  : null,
+            })
+          : h.empty,
+      ]),
     ],
   )
 }
