@@ -12,6 +12,7 @@ test('catalog tabs, label creation and album metadata/link management persist in
   await expect(page).toHaveURL(/\/dashboard$/)
   const slug = `catalog-check-${Date.now()}`
   await page.goto('/dashboard/music?tab=labels')
+  await expect(page.getByRole('button', { name: 'Menu', exact: true })).toBeEnabled()
   await page
     .locator('summary')
     .filter({ hasText: /^New label$/ })

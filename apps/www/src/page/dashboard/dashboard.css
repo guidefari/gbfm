@@ -717,7 +717,7 @@
 .admin-table .admin-col-muted {
   color: var(--dash-muted);
 }
-.admin-table .admin-col-mono {
+.admin-table td.admin-col-mono {
   color: var(--dash-muted);
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 0.8125rem;
@@ -895,9 +895,11 @@
 }
 .admin-header:has(.admin-drawer[open]) .admin-header-actions {
   flex-basis: 100%;
+  min-width: 0;
 }
 .admin-header .admin-drawer[open] {
   width: 100%;
+  min-width: 0;
 }
 .admin-inline-form {
   display: flex;
@@ -1006,8 +1008,10 @@
   line-height: 1.4;
 }
 .gbfm-dashboard .admin-import input {
-  width: 22rem;
-  max-width: 100%;
+  width: 100%;
+  max-width: 22rem;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 .gbfm-dashboard .admin-link-button {
   display: inline-flex;

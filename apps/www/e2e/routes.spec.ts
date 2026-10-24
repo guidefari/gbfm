@@ -117,10 +117,11 @@ test('auth forms accept their forwarded development origin', async ({ request })
       'x-forwarded-proto': 'https',
     },
     form: { email: 'nobody@invalid.example', password: 'wrong' },
+    maxRedirects: 0,
   })
 
-  expect(response.status()).toBe(401)
-  expect(await response.text()).toContain('Check your details')
+  expect(response.status()).toBe(303)
+  expect(response.headers()['location']).toContain('/auth/sign-in?error=credentials')
 })
 
 test('playback advances and persists through client navigation', async ({ page }) => {

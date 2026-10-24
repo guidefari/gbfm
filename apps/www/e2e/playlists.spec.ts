@@ -145,6 +145,7 @@ test('Spotify playlist import and sync distinguish accepted work from failed enr
 
   try {
     await page.goto('/dashboard/playlists')
+    await expect(page.getByRole('button', { name: 'Menu', exact: true })).toBeEnabled()
     await page
       .locator('summary')
       .filter({ hasText: /^Import from Spotify$/ })

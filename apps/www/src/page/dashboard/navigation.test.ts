@@ -12,7 +12,6 @@ const located = (section: string, role: Parameters<typeof resolveSection>[1] = '
 
 describe('dashboard navigation', () => {
   it('places every personal section in the You workspace', () => {
-    expect(located('overview')).toBe('You / Home / Home')
     expect(located('favorites')).toBe('You / Library / Favorites')
     expect(located('reminders')).toBe('You / Library / Reminders')
     expect(located('content/mixes')).toBe('You / My content / Mixes')
@@ -64,10 +63,10 @@ describe('dashboard navigation', () => {
           `${workspace.label}: ${workspace.groups.map((group) => group.label).join(', ')}`,
       )
 
-    expect(labels('user')).toEqual(['You: Home, Library, Settings'])
-    expect(labels('creator')).toEqual(['You: Home, Library, My content, Settings'])
+    expect(labels('user')).toEqual(['You: Library, Settings'])
+    expect(labels('creator')).toEqual(['You: Library, My content, Settings'])
     expect(labels('admin')).toEqual([
-      'You: Home, Library, My content, Settings',
+      'You: Library, My content, Settings',
       'Admin: Overview, Content, Music, People, Comms, System',
     ])
   })
