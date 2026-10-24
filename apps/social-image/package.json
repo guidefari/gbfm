@@ -10,18 +10,18 @@
   "dependencies": {
     "@gbfm/social-card": "workspace:*",
     "@resvg/resvg-wasm": "2.6.2",
-    "effect": "4.0.5",
+    "effect": "4.0.6",
     "qrcode": "1.5.4",
     "react": "19.2.7",
     "satori": "0.19.3"
   },
   "devDependencies": {
-    "@cloudflare/vitest-plugin": "1.4.2",
-    "@cloudflare/workers-types": "5.20261015.1",
-    "@types/bun": "1.4.3",
+    "@cloudflare/vitest-plugin": "1.4.7",
+    "@cloudflare/workers-types": "5.20261023.1",
+    "@types/bun": "1.4.4",
     "@types/qrcode": "1.5.6",
     "@types/react": "19.3.0",
     "@typescript/native-preview": "7.0.0-dev.20260707.2",
-    "vitest": "5.0.4"
+    "vitest": "5.0.5"
   }
 }
