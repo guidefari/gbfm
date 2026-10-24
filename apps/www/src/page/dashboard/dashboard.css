@@ -717,7 +717,7 @@
 .admin-table .admin-col-muted {
   color: var(--dash-muted);
 }
-.admin-table .admin-col-mono {
+.admin-table td.admin-col-mono {
   color: var(--dash-muted);
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 0.8125rem;
