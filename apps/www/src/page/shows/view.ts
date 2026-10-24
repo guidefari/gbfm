@@ -242,7 +242,10 @@ export const view = <M>(
               ),
               h.section(
                 [h.AriaLabel('Episodes')],
-                [pending ? episodeRowsSkeleton() : episodeList(h, document, playback, interactive)],
+                [
+                  h.h2([h.Class('sr-only')], ['Episodes']),
+                  pending ? episodeRowsSkeleton() : episodeList(h, document, playback, interactive),
+                ],
               ),
               !pending && document.richContent?.blocks.length
                 ? h.section(
