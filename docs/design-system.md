@@ -30,6 +30,16 @@ See [FOLDKIT.md](../FOLDKIT.md) for runtime, navigation, and folder conventions.
 - Preserve bottom content clearance for the fixed player and mobile-first navigation.
 - Keep prose headings, bold text, links, and blockquotes readable against their surface.
 
+The normal-style weights have Latin WOFF2 subsets; the original faces remain as non-Latin fallbacks. Regenerate the subsets from the repository root after replacing the originals:
+
+```sh
+for weight in SemiBold Bold ExtraBold; do
+  uvx --from 'fonttools[woff]' pyftsubset "apps/www/public/fonts/JetBrainsMono-$weight.woff2" \
+    --unicodes='U+0000-00FF,U+2000-206F,U+20AC,U+2122' --flavor=woff2 --layout-features='*' \
+    --output-file="apps/www/public/fonts/JetBrainsMono-$weight-latin.woff2"
+done
+```
+
 ## Interaction and states
 
 - Motion confirms interactivity: small lifts, border emphasis, subtle image scaling, and short transitions. Respect reduced motion.
