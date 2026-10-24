@@ -1,5 +1,7 @@
 # `@gbfm/www` — Features and Affordances
 
+Historical inventory of the retired React WWW app. This is not current implementation guidance. See [FOLDKIT.md](../../FOLDKIT.md) and the [Design System](../design-system.md) for the current UI owners.
+
 `apps/www` is the public web app for **goosebumps.fm** — a curated archive of DJ mixes, radio shows, editorial writing, and music discovery. It is a Vite + React 19 SPA that talks to a separate Effect-TS backend (`@gbfm/vps`) and uses TanStack Router for client-side routing.
 
 This document describes what the app *does* (features) and what surfaces the user can *interact with* (affordances).

@@ -1,7 +1,7 @@
 ## Local development
 
 With the `cmdz` executable installed, run `bun dev`, then open `https://gbfm.localhost`.
-Cmdz starts Alchemy and the web app; Mobile, UI Playground, Email Preview, and Jaeger are
+Cmdz starts Alchemy and the web app; Mobile, Email Preview, and Jaeger are
 available as opt-in commands. Alchemy attaches to the externally managed web server rather
 than starting a duplicate. Portless creates and trusts its local HTTPS certificate on first use.
 
@@ -18,8 +18,8 @@ Dev & infra via [SST](https://sst.dev)
 
 ### Frontend
 
-- Vite + React
-- The idea is also to have an `agnostic` or well separated frontend. I was starting to feel too locked into NextJS/Vercel.
+- WWW uses Vite + Foldkit. See [FOLDKIT.md](FOLDKIT.md) for UI ownership and [Design System](docs/design-system.md) for visual guidance.
+- Expo mobile, email templates, and social-image rendering retain React.
 
 ### Backend
 
