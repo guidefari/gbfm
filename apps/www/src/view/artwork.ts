@@ -1,6 +1,7 @@
 import { inertHtml as h } from 'foldkit/html'
 
-const fallback = 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'
+/** Versioned, lossless copy of the default cover, served without a third-party connection. */
+export const fallbackArtwork = '/gb-default-v1.webp'
 
 /** Only the GBFM image CDN accepts transformation parameters; original/external URLs stay valid. */
 export const artworkUrl = (src: string, width: number): string => {
@@ -29,7 +30,7 @@ const srcset = (original: string) =>
 
 /** Fetches and decodes the exact candidate an `artwork` with the same sizes will pick, so it paints without a gap. */
 export const preloadArtwork = (src: string | null | undefined, sizes: string) => {
-  const original = src || fallback
+  const original = src || fallbackArtwork
   const image = new Image()
   const candidates = srcset(original)
   image.sizes = sizes
@@ -48,7 +49,7 @@ export const artwork = (
   eager = false,
   className = '',
 ) => {
-  const original = src || fallback
+  const original = src || fallbackArtwork
   const candidates = srcset(original)
 
   return h.img([
@@ -68,9 +69,13 @@ export const artwork = (
 /** Capturing error events also covers image failures before hydration and avoids fallback loops. */
 export const startArtworkFallback = () => {
   const recover = (image: HTMLImageElement) => {
-    if (!image.classList.contains('artwork') || image.src === fallback) return
+    if (
+      !image.classList.contains('artwork') ||
+      image.src === new URL(fallbackArtwork, document.baseURI).href
+    )
+      return
     image.removeAttribute('srcset')
-    image.src = fallback
+    image.src = fallbackArtwork
   }
 
   const onError = (event: Event) => {

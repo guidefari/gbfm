@@ -1,6 +1,8 @@
 import { dark, light } from '@gbfm/theme'
 import * as Server from 'foldkit/experimental/server'
 
+import { fallbackArtwork } from '../view/artwork'
+
 // Foldkit passes the same application object from Rendered to renderDocument.
 // Weak keys keep concurrent requests isolated without retaining completed pages.
 const pageHeads = new WeakMap<Server.RenderedApplication, string>()
@@ -33,7 +35,7 @@ ${import.meta.env.DEV ? '<link rel="stylesheet" href="/src/styles/main.css">' : 
       const queue = JSON.parse(localStorage.getItem('gbfm-audio-queue.json') || 'null')
       const current = queue && Array.isArray(queue.tracks) ? queue.tracks[queue.currentIndex] : null
       if (!current) return
-      const art = new URL(current.thumbnailUrl || 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png')
+      const art = new URL(current.thumbnailUrl || '${fallbackArtwork}', location.origin)
       if (art.hostname === 'cdn.goosebumps.fm') {
         art.searchParams.set('w', '96')
         art.searchParams.set('q', '80')

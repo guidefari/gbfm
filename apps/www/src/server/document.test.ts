@@ -132,6 +132,7 @@ test.each(['light', 'dark', 'system', 'blocked'])(
     const dataset: Record<string, string> = {}
     runInNewContext(script, {
       URL,
+      location: { origin: 'https://preview.example' },
       localStorage: {
         getItem: (key: string) => {
           if (theme === 'blocked') throw new Error('Storage blocked')
@@ -142,7 +143,7 @@ test.each(['light', 'dark', 'system', 'blocked'])(
                 currentIndex: 1,
                 tracks: [
                   { thumbnailUrl: 'https://example.com/wrong.png' },
-                  { thumbnailUrl: 'https://cdn.goosebumps.fm/art.png' },
+                  { thumbnailUrl: theme === 'light' ? null : 'https://cdn.goosebumps.fm/art.png' },
                 ],
               })
         },
@@ -160,8 +161,12 @@ test.each(['light', 'dark', 'system', 'blocked'])(
     expect(dataset.theme).toBe(theme === 'light' ? 'light' : 'dark')
 
     expect(dataset.queued).toBe(theme === 'blocked' ? undefined : '')
-    expect(properties.get('--queued-art')).toBe(
-      theme === 'blocked' ? undefined : 'url("https://cdn.goosebumps.fm/art.png?w=96&q=80&f=webp")',
-    )
+
+    const expectedArtwork =
+      theme === 'light'
+        ? 'url("https://preview.example/gb-default-v1.webp")'
+        : 'url("https://cdn.goosebumps.fm/art.png?w=96&q=80&f=webp")'
+
+    expect(properties.get('--queued-art')).toBe(theme === 'blocked' ? undefined : expectedArtwork)
   },
 )
