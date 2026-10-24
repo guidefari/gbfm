@@ -10,6 +10,9 @@ than starting a duplicate. Portless creates and trusts its local HTTPS certifica
 read or reset the shared Cloudflare state store. Deployment commands still use remote state;
 local startup does not repair unreadable deployment state.
 
+For the October 2026 deployment-state failure and recovery, see the
+[Alchemy incident retro](docs/operations/2026-10-24-alchemy-state-recovery.md).
+
 ## Current architecture
 
 Dev & infra via [SST](https://sst.dev)
