@@ -1,7 +1,18 @@
-import { inertHtml as h } from 'foldkit/html'
+import type { HtmlBuilder } from 'foldkit/html'
 
-/** Server-backed newsletter forms work before hydration and require an explicit token confirmation. */
-export const view = (mode: string, url: URL) => {
+import type { Message } from '../../message'
+import type { Status } from '../../signup-challenge/model'
+import { SignupChallenge } from '../../signup-challenge/mount'
+import { challengeView } from '../../signup-challenge/view'
+
+/** Subscription requires a browser challenge; unsubscribe remains a native server-backed form. */
+export const view = (
+  h: HtmlBuilder<Message>,
+  mode: string,
+  url: URL,
+  sitekey: string,
+  status: Status,
+) => {
   const subscribing = mode === 'subscribe'
   const token = url.searchParams.get('token')
   const complete = url.searchParams.get('complete')
@@ -30,7 +41,14 @@ export const view = (mode: string, url: URL) => {
             ],
           )
         : h.form(
-            [h.Method('post'), h.Action(`/actions/${mode}`)],
+            [
+              h.Key(`newsletter-${mode}-${sitekey}`),
+              h.Method('post'),
+              h.Action(`/actions/${mode}`),
+              ...(subscribing
+                ? [h.OnMount(SignupChallenge({ sitekey, action: 'newsletter-subscribe' }))]
+                : []),
+            ],
             [
               ...(token
                 ? [h.input([h.Type('hidden'), h.Name('token'), h.Value(token)])]
@@ -56,8 +74,12 @@ export const view = (mode: string, url: URL) => {
                       ],
                     ),
                   ]),
+              ...(subscribing ? challengeView(h, sitekey, status, 'Subscribing…') : []),
               h.button(
-                [h.Type('submit')],
+                [
+                  h.Type('submit'),
+                  ...(subscribing ? [h.Disabled(status !== 'ready' || !sitekey)] : []),
+                ],
                 [subscribing ? 'Subscribe' : token ? 'Confirm unsubscribe' : 'Send link'],
               ),
             ],

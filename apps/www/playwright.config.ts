@@ -39,7 +39,8 @@ export default defineConfig({
           reuseExistingServer: !process.env.CI,
         },
         {
-          command: 'VITE_SPOTIFY_CLIENT_ID=gbfm-local-e2e bunx vite --host 127.0.0.1 --port 5173',
+          command:
+            'TURNSTILE_SITE_KEY=1x00000000000000000000AA VITE_SPOTIFY_CLIENT_ID=gbfm-local-e2e bunx vite --host 127.0.0.1 --port 5173',
           url: 'http://127.0.0.1:5173',
           reuseExistingServer: !process.env.CI,
         },

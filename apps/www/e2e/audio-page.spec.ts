@@ -67,7 +67,11 @@ test('signed-in audio SSR contains listener identity and current favorite state'
   baseURL,
 }) => {
   const login = await request.post('/auth/sign-up/email', {
-    headers: { origin: baseURL ?? 'http://127.0.0.1:5173' },
+    headers: {
+      origin: baseURL ?? 'http://127.0.0.1:5173',
+      'x-captcha-response': 'XXXX.DUMMY.TOKEN.XXXX',
+      'cf-connecting-ip': '127.0.0.1',
+    },
     data: {
       name: 'Audio page test listener',
       email: `audio-page-${crypto.randomUUID()}@gbfm.local`,

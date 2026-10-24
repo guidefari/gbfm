@@ -286,7 +286,7 @@ test('root profile resolves public content and latest tweet navigation follows J
   expect(data.headers()['content-type']).toContain('application/json')
 })
 
-test('newsletter forms render without JavaScript and subscription persists through the local API', async ({
+test('subscription explains its JavaScript requirement while unsubscribe remains available without JavaScript', async ({
   browser,
 }) => {
   const context = await browser.newContext({ javaScriptEnabled: false })
@@ -297,8 +297,12 @@ test('newsletter forms render without JavaScript and subscription persists throu
   await page
     .getByRole('textbox', { name: 'Email', exact: true })
     .fill(`subscriber-${Date.now()}@gbfm.local`)
-  await page.getByRole('button', { name: 'Subscribe', exact: true }).click()
-  await expect(page.getByRole('status')).toHaveText("You're subscribed.")
+  await expect(page.getByRole('button', { name: 'Subscribe', exact: true })).toBeDisabled()
+  await expect(
+    page.getByText('JavaScript is required to verify your browser and submit this form.', {
+      exact: false,
+    }),
+  ).toBeVisible()
   await page.goto('/unsubscribe?token=invalid-token')
   await expect(page.getByRole('button', { name: 'Confirm unsubscribe' })).toBeVisible()
   await expect(page.getByRole('status')).toHaveCount(0)

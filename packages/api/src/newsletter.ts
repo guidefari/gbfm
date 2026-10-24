@@ -13,6 +13,7 @@ export const SubscribeInput = Schema.Struct({
   email: Email,
   name: Schema.optional(Schema.String),
   source: Schema.optional(Schema.String),
+  turnstileToken: Schema.String.pipe(Schema.check(Schema.isMinLength(1), Schema.isMaxLength(2048))),
 })
 
 export type SubscribeInput = typeof SubscribeInput.Type
@@ -42,12 +43,23 @@ export const RequestUnsubscribeResponse = Schema.Struct({
   sent: Schema.Boolean,
 })
 
+export class NewsletterRateLimitError extends Schema.TaggedError<NewsletterRateLimitError>()(
+  'NewsletterRateLimitError',
+  {},
+  { httpApiStatus: 429 },
+) {}
+
 export const NewsletterGroup = HttpApiGroup.make('newsletter')
   .add(
     HttpApiEndpoint.post('subscribe', '/api/newsletter/subscribe', {
       payload: SubscribeInput,
       success: SubscribeResponse,
-      error: HttpApiError.InternalServerError,
+      error: [
+        HttpApiError.InternalServerError,
+        HttpApiError.Forbidden,
+        NewsletterRateLimitError,
+        HttpApiError.ServiceUnavailable,
+      ],
     }),
   )
   .add(

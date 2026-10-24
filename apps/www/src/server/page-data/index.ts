@@ -178,6 +178,12 @@ export const loadPageData = async (
 
   const flags: Flags = {
     url: url.pathname === '/spotify/callback' ? `${url.origin}${url.pathname}` : url.href,
+    turnstileSiteKey:
+      url.pathname === '/subscribe' || url.pathname === '/auth/sign-up'
+        ? import.meta.env.PROD
+          ? ((await import('cloudflare:workers')).env.TURNSTILE_SITE_KEY ?? '')
+          : (process.env.TURNSTILE_SITE_KEY ?? '')
+        : '',
     status,
     principal: identity.principal,
     items,

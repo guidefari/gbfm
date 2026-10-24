@@ -1,6 +1,6 @@
 import { Api } from '@gbfm/api/api'
 import type { ReadinessCheckFailedError } from '@gbfm/api/errors'
-import { Effect, Layer } from 'effect'
+import { Effect, Layer, Match, Result } from 'effect'
 import * as FileSystem from 'effect/FileSystem'
 import { HttpRouter, HttpServer, HttpServerRequest, HttpServerResponse } from 'effect/http'
 import { HttpApiBuilder } from 'effect/http-api'
@@ -39,6 +39,7 @@ import { IdentityResolverLive } from '@/middleware/optional-auth.impl'
 import { prepareAuthRequest } from '@/routes/user/better-auth.routes'
 import type { AppLayer } from '@/runtime/services'
 import { AppLoggerLive } from '@/services/logger.service'
+import { SignupProtection } from '@/services/signup-protection'
 
 type AppServicesLive = Layer.Layer<Layer.Success<ReturnType<typeof AppLayer>>>
 
@@ -46,6 +47,33 @@ type AppServicesLive = Layer.Layer<Layer.Success<ReturnType<typeof AppLayer>>>
 // its own path (not under /api) since its basePath appears in emailed links.
 const betterAuthRoute = HttpRouter.add('*', '/auth/*', (request) =>
   Effect.gen(function* () {
+    const path = new URL(request.url, 'http://localhost').pathname
+      .replace(/\/{2,}/g, '/')
+      .replace(/\/$/, '')
+
+    if (request.method === 'POST' && path === '/auth/sign-up/email') {
+      const protection = yield* SignupProtection
+
+      const result = yield* Effect.result(
+        protection.authorize({
+          token: request.headers['x-captcha-response'] ?? '',
+          ip: request.headers['cf-connecting-ip'],
+          action: 'account-signup',
+        }),
+      )
+
+      if (Result.isFailure(result)) {
+        return HttpServerResponse.empty({
+          status: Match.value(result.failure.reason).pipe(
+            Match.when('rate-limit', () => 429),
+            Match.when('unavailable', () => 503),
+            Match.when('verification', () => 403),
+            Match.exhaustive,
+          ),
+        })
+      }
+    }
+
     const auth = yield* Auth
     const webRequest = yield* HttpServerRequest.toWeb(request)
 

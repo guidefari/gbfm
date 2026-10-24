@@ -132,11 +132,39 @@ export const handleFormAction = async (request: Request): Promise<Server.Respond
   )
 
   if (newsletterPath) {
+    const subscribing = action === '/actions/subscribe'
+
+    if (subscribing && !field('cf-turnstile-response').trim())
+      return Server.Responded(
+        new Response(
+          'Browser verification is required. Enable JavaScript and retry from the subscription page.',
+          {
+            status: 400,
+            headers: { 'cache-control': 'no-store', 'content-type': 'text/plain; charset=utf-8' },
+          },
+        ),
+      )
+    const headers = new Headers({ 'content-type': 'application/json', origin: url.origin })
+
+    const clientIp =
+      request.headers.get('cf-connecting-ip') ?? (import.meta.env.DEV ? '127.0.0.1' : null)
+
+    // Only Cloudflare's original client header is trusted, never form fields or X-Forwarded-For.
+    if (subscribing && clientIp) headers.set('cf-connecting-ip', clientIp)
+
     const response = await apiRequest(request, newsletterPath, {
       method: 'POST',
-      headers: { 'content-type': 'application/json', origin: url.origin },
+      headers,
       body: JSON.stringify(
-        field('token') ? { token: field('token') } : { email: field('email'), name: field('name') },
+        subscribing
+          ? {
+              email: field('email'),
+              name: field('name'),
+              turnstileToken: field('cf-turnstile-response'),
+            }
+          : field('token')
+            ? { token: field('token') }
+            : { email: field('email'), name: field('name') },
       ),
     })
 
@@ -170,9 +198,30 @@ export const handleFormAction = async (request: Request): Promise<Server.Respond
 
   if (!path) return Server.Responded(new Response('Not found', { status: 404 }))
 
+  const signup = action === '/auth/sign-up'
+  const headers = new Headers({ 'content-type': 'application/json', origin: url.origin })
+
+  if (signup) {
+    const challenge = field('cf-turnstile-response').trim()
+
+    if (!challenge || challenge.length > 2048)
+      return Server.Responded(
+        new Response('Browser verification is required. Please retry verification.', {
+          status: 400,
+          headers: { 'cache-control': 'no-store' },
+        }),
+      )
+    headers.set('x-captcha-response', challenge)
+
+    const clientIp =
+      request.headers.get('cf-connecting-ip') ?? (import.meta.env.DEV ? '127.0.0.1' : null)
+
+    if (clientIp) headers.set('cf-connecting-ip', clientIp)
+  }
+
   const response = await apiRequest(request, path, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', origin: url.origin },
+    headers,
     body: JSON.stringify(
       authPath
         ? {
@@ -186,6 +235,14 @@ export const handleFormAction = async (request: Request): Promise<Server.Respond
         : { content: field('content') },
     ),
   })
+
+  if (signup && [403, 429, 503].includes(response.status))
+    return Server.Responded(
+      new Response('Account creation could not be completed. Please retry verification.', {
+        status: response.status,
+        headers: { 'cache-control': 'no-store' },
+      }),
+    )
 
   if (!response.ok && authPath)
     return redirect(

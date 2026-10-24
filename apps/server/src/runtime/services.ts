@@ -42,6 +42,10 @@ import { RichContentMusicResolverLayer } from '@/services/rich-content-music.ser
 import { S3ServiceLayer } from '@/services/s3.service'
 import { SearchServiceLayer } from '@/services/search.service'
 import { ShowServiceLayer, ShowSubscriptionServiceLayer } from '@/services/show.service'
+import {
+  type SignupProtection,
+  SignupProtectionUnavailableLayer,
+} from '@/services/signup-protection'
 import type { SpotifyImportResolver } from '@/services/spotify-import-resolver.service'
 import { SpotifyServiceLayer } from '@/services/spotify.service'
 import {
@@ -73,6 +77,7 @@ export interface AppLayerOptions {
   readonly musicCoverImageFetcher?: Layer.Layer<never>
   readonly adminTelemetry?: Layer.Layer<AdminTelemetryService>
   readonly requestTelemetry?: Layer.Layer<RequestTelemetry>
+  readonly signupProtection?: Layer.Layer<SignupProtection>
 }
 
 export const AppLayer = ({
@@ -89,6 +94,7 @@ export const AppLayer = ({
   musicCoverImageFetcher: musicCoverImageFetcherLive = Layer.succeed(MusicCoverImageFetcher, fetch),
   adminTelemetry: adminTelemetryLive = AdminTelemetryUnavailableLayer,
   requestTelemetry: requestTelemetryLive = RequestTelemetryUnavailableLayer,
+  signupProtection: signupProtectionLive = SignupProtectionUnavailableLayer,
 }: AppLayerOptions) => {
   const EmailDeliveryWithDependencies = EmailDeliveryLive.pipe(
     Layer.provide(Layer.mergeAll(databaseLive, configLive, emailTransportLive)),
@@ -135,6 +141,7 @@ export const AppLayer = ({
     DevToolsLive,
     adminTelemetryLive,
     requestTelemetryLive,
+    signupProtectionLive,
   ).pipe(Layer.provideMerge(configLive), Layer.provide(databaseLive))
 
   const CanonicalMusicIdentityLive = CanonicalMusicIdentityLayer.pipe(

@@ -90,7 +90,11 @@ test('missing shows return 404 for HTML and navigation data', async ({ request }
 
 test('signed-in show subscription survives a page reload', async ({ page, baseURL }) => {
   const signup = await page.request.post('/auth/sign-up/email', {
-    headers: { origin: baseURL ?? 'http://127.0.0.1:5173' },
+    headers: {
+      origin: baseURL ?? 'http://127.0.0.1:5173',
+      'x-captcha-response': 'XXXX.DUMMY.TOKEN.XXXX',
+      'cf-connecting-ip': '127.0.0.1',
+    },
     data: {
       name: 'Show page test listener',
       email: `show-page-${crypto.randomUUID()}@gbfm.local`,

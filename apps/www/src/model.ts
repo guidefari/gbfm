@@ -20,6 +20,7 @@ import * as PublicActions from './public-actions'
 import { Route } from './route'
 import * as Search from './search'
 import { SheetDrag } from './sheet-drag'
+import { Status as ChallengeStatus } from './signup-challenge/model'
 
 export const Principal = Schema.Struct({
   id: Schema.String,
@@ -53,6 +54,7 @@ export type ContentItem = typeof ContentItem.Type
 
 export const Flags = Schema.Struct({
   url: Schema.String,
+  turnstileSiteKey: Schema.optional(Schema.String),
   status: Schema.Number,
   principal: Schema.NullOr(Principal),
   items: Schema.Array(ContentItem),
@@ -81,6 +83,7 @@ export type PageCache = HashMap.HashMap<string, AsyncData.AsyncData<Flags, strin
 
 export const Model = Schema.Struct({
   route: Route,
+  challengeStatus: ChallengeStatus,
   flags: Flags,
   mobileMenu: Dialog.Model,
   menuDrag: SheetDrag,

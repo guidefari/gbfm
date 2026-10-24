@@ -13,6 +13,7 @@ export interface WebsiteInput {
   readonly api: Cloudflare.Worker
   readonly socialImages: SocialImageWorker
   readonly apiUrl: Output.Output<string | undefined>
+  readonly turnstileSitekey: Output.Output<string>
 }
 
 const requireApiUrl = (url: string | undefined) => {
@@ -21,7 +22,14 @@ const requireApiUrl = (url: string | undefined) => {
   return url
 }
 
-export const website = ({ config, websiteConfig, api, socialImages, apiUrl }: WebsiteInput) =>
+export const website = ({
+  config,
+  websiteConfig,
+  api,
+  socialImages,
+  apiUrl,
+  turnstileSitekey,
+}: WebsiteInput) =>
   Effect.gen(function* () {
     const browserTelemetry = yield* Cloudflare.AnalyticsEngine.Dataset('BrowserTelemetry', {
       dataset: `gbfm_www_${config.stage}`,
@@ -35,6 +43,7 @@ export const website = ({ config, websiteConfig, api, socialImages, apiUrl }: We
       observability: workerObservability(config.isProduction),
       env: {
         API: api,
+        TURNSTILE_SITE_KEY: turnstileSitekey,
         SOCIAL_IMAGES: socialImages,
         BROWSER_TELEMETRY: browserTelemetry,
         BROWSER_TELEMETRY_RATE_LIMIT: Cloudflare.RateLimit('BrowserTelemetryRateLimit', {

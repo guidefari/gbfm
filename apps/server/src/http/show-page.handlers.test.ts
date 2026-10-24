@@ -1,12 +1,13 @@
 import { GetShowEpisodesResponse, ShowPageResponse } from '@gbfm/api/shows'
 import { SiteMetadata } from '@gbfm/site-metadata'
 import { eq } from 'drizzle-orm'
-import { Schema } from 'effect'
+import { Effect, Layer, Schema } from 'effect'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 
 import { audioTable } from '@/db/audio.schema'
 import { session, user } from '@/db/auth.schema'
 import { showCreators, showsTable, showSubscriptionsTable } from '@/db/show.schema'
+import { SignupProtection } from '@/services/signup-protection'
 import { db, d1 } from '@/test/database'
 import { createTestWebHandler } from '@/test/http-handler'
 
@@ -36,7 +37,14 @@ const requestPage = async (showSlug = slug, token?: string) => {
 }
 
 beforeAll(async () => {
-  webHandler = createTestWebHandler(d1)
+  webHandler = createTestWebHandler(
+    d1,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    Layer.succeed(SignupProtection, { authorize: () => Effect.void }),
+  )
   await db.insert(user).values([
     { id: listenerId, name: 'Listener', email: 'show-page-listener@example.com' },
     { id: hostId, name: 'Host', email: 'show-page-host@example.com', role: 'creator' },

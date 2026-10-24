@@ -37,6 +37,7 @@ export const CorsLive = Layer.unwrap(
           'Authorization',
           'Cookie',
           'Refresh-Token',
+          'x-captcha-response',
           'sentry-trace',
           'baggage',
           'b3',

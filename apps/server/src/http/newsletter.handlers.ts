@@ -1,4 +1,5 @@
 import { Api } from '@gbfm/api/api'
+import { NewsletterRateLimitError } from '@gbfm/api/newsletter'
 import {
   buildNewsletterAdminNotificationEmail,
   buildNewsletterUnsubscribeLinkEmail,
@@ -8,6 +9,7 @@ import {
 } from '@gbfm/email/index'
 import { and, eq, isNull } from 'drizzle-orm'
 import { Clock, Effect, Result } from 'effect'
+import { HttpServerRequest } from 'effect/http'
 import { HttpApiBuilder, HttpApiError } from 'effect/http-api'
 
 import { EMAIL_NOTIFICATION_TYPES } from '@/db/email.schema'
@@ -18,6 +20,7 @@ import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-uti
 import { globalUnsubscribe } from '@/repositories/email-preferences.repository'
 import { ConfigService } from '@/services/config.service'
 import { EmailDelivery } from '@/services/email-delivery.service'
+import { SignupProtection } from '@/services/signup-protection'
 
 const dieOnDatabaseError = makeDieOnDatabaseError('newsletter')
 
@@ -81,6 +84,23 @@ export const NewsletterHandlersLive = HttpApiBuilder.group(Api, 'newsletter', (h
   handlers
     .handle('subscribe', ({ payload }) =>
       Effect.gen(function* () {
+        const request = yield* HttpServerRequest.HttpServerRequest
+        const protection = yield* SignupProtection
+        yield* protection
+          .authorize({
+            token: payload.turnstileToken,
+            ip: request.headers['cf-connecting-ip'],
+            action: 'newsletter-subscribe',
+          })
+          .pipe(
+            Effect.mapError((error) => {
+              if (error.reason === 'rate-limit') return new NewsletterRateLimitError()
+
+              if (error.reason === 'unavailable') return new HttpApiError.ServiceUnavailable()
+
+              return new HttpApiError.Forbidden()
+            }),
+          )
         const db = yield* Database
         const normalizedEmail = payload.email.trim().toLowerCase()
 
