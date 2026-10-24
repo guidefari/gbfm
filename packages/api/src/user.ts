@@ -185,98 +185,99 @@ const SearchUsersQuery = {
 
 const UserIdParam = { userId: Schema.String }
 
-export const UserGroup = HttpApiGroup.make('user')
-  .add(
-    HttpApiEndpoint.patch('updateProfile', '/api/user/profile', {
-      payload: [UpdateProfileJsonInput, UpdateProfileMultipartInput],
-      success: UserProfileResponse,
-      error: [HttpApiError.BadRequest, HttpApiError.NotFound, HttpApiError.InternalServerError],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('getProfile', '/api/user/profile', {
-      success: UserProfileResponse,
-      error: HttpApiError.NotFound,
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('getSocialLinks', '/api/user/profile/social-links', {
-      success: SocialLinksResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.put('replaceSocialLinks', '/api/user/profile/social-links', {
-      payload: SocialLinksInput,
-      success: SocialLinksResponse,
-      error: [HttpApiError.BadRequest, HttpApiError.NotFound, HttpApiError.InternalServerError],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('getAdminUserSocialLinks', '/api/user/admin/:userId/social-links', {
-      params: UserIdParam,
-      success: SocialLinksResponse,
-      error: [HttpApiError.Forbidden, HttpApiError.NotFound, HttpApiError.InternalServerError],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.put('replaceAdminUserSocialLinks', '/api/user/admin/:userId/social-links', {
-      params: UserIdParam,
-      payload: SocialLinksInput,
-      success: SocialLinksResponse,
-      error: [
-        HttpApiError.BadRequest,
-        HttpApiError.Forbidden,
-        HttpApiError.NotFound,
-        HttpApiError.InternalServerError,
-      ],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.patch('updateAdminUserBio', '/api/user/admin/:userId/bio', {
-      params: UserIdParam,
-      payload: UpdateAdminBioInput,
-      success: BioResponse,
-      error: [HttpApiError.Forbidden, HttpApiError.NotFound, HttpApiError.InternalServerError],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('getAdminUserBio', '/api/user/admin/:userId/bio', {
-      params: UserIdParam,
-      success: BioResponse,
-      error: [HttpApiError.Forbidden, HttpApiError.NotFound, HttpApiError.InternalServerError],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('getEmailPreferences', '/api/user/email-preferences', {
-      success: EmailPreferences,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.patch('updateEmailPreferences', '/api/user/email-preferences', {
-      payload: UpdateEmailPreferencesInput,
-      success: EmailPreferences,
-      error: [HttpApiError.BadRequest, HttpApiError.NotFound, HttpApiError.InternalServerError],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('getUserSubscriptions', '/api/user/subscriptions', {
-      query: PaginationQuery,
-      success: GetUserSubscriptionsResponse,
-      error: HttpApiError.InternalServerError,
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('listDjs', '/api/user/djs', {
-      success: ListDjsResponse,
-      error: HttpApiError.InternalServerError,
-    }),
-  )
-  .add(
-    HttpApiEndpoint.get('searchUsers', '/api/user/search', {
-      query: SearchUsersQuery,
-      success: SearchUsersResponse,
-      error: HttpApiError.InternalServerError,
-    }).middleware(AuthMiddleware),
-  )
+export const UserGroup = /* @__PURE__ */ (() =>
+  HttpApiGroup.make('user')
+    .add(
+      HttpApiEndpoint.patch('updateProfile', '/api/user/profile', {
+        payload: [UpdateProfileJsonInput, UpdateProfileMultipartInput],
+        success: UserProfileResponse,
+        error: [HttpApiError.BadRequest, HttpApiError.NotFound, HttpApiError.InternalServerError],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('getProfile', '/api/user/profile', {
+        success: UserProfileResponse,
+        error: HttpApiError.NotFound,
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('getSocialLinks', '/api/user/profile/social-links', {
+        success: SocialLinksResponse,
+        error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.put('replaceSocialLinks', '/api/user/profile/social-links', {
+        payload: SocialLinksInput,
+        success: SocialLinksResponse,
+        error: [HttpApiError.BadRequest, HttpApiError.NotFound, HttpApiError.InternalServerError],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('getAdminUserSocialLinks', '/api/user/admin/:userId/social-links', {
+        params: UserIdParam,
+        success: SocialLinksResponse,
+        error: [HttpApiError.Forbidden, HttpApiError.NotFound, HttpApiError.InternalServerError],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.put('replaceAdminUserSocialLinks', '/api/user/admin/:userId/social-links', {
+        params: UserIdParam,
+        payload: SocialLinksInput,
+        success: SocialLinksResponse,
+        error: [
+          HttpApiError.BadRequest,
+          HttpApiError.Forbidden,
+          HttpApiError.NotFound,
+          HttpApiError.InternalServerError,
+        ],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.patch('updateAdminUserBio', '/api/user/admin/:userId/bio', {
+        params: UserIdParam,
+        payload: UpdateAdminBioInput,
+        success: BioResponse,
+        error: [HttpApiError.Forbidden, HttpApiError.NotFound, HttpApiError.InternalServerError],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('getAdminUserBio', '/api/user/admin/:userId/bio', {
+        params: UserIdParam,
+        success: BioResponse,
+        error: [HttpApiError.Forbidden, HttpApiError.NotFound, HttpApiError.InternalServerError],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('getEmailPreferences', '/api/user/email-preferences', {
+        success: EmailPreferences,
+        error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.patch('updateEmailPreferences', '/api/user/email-preferences', {
+        payload: UpdateEmailPreferencesInput,
+        success: EmailPreferences,
+        error: [HttpApiError.BadRequest, HttpApiError.NotFound, HttpApiError.InternalServerError],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('getUserSubscriptions', '/api/user/subscriptions', {
+        query: PaginationQuery,
+        success: GetUserSubscriptionsResponse,
+        error: HttpApiError.InternalServerError,
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('listDjs', '/api/user/djs', {
+        success: ListDjsResponse,
+        error: HttpApiError.InternalServerError,
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get('searchUsers', '/api/user/search', {
+        query: SearchUsersQuery,
+        success: SearchUsersResponse,
+        error: HttpApiError.InternalServerError,
+      }).middleware(AuthMiddleware),
+    ))()

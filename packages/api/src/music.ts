@@ -481,406 +481,396 @@ export const RescrapeEntityLinksResponse = Schema.Struct({
   links: EntityLinkListResponse,
 })
 
-export const MusicGroup = HttpApiGroup.make('music')
-  .add(HttpApiEndpoint.get('listArtists', '/api/music/artists', { success: ArtistListResponse }))
-  .add(
-    HttpApiEndpoint.post('createArtist', '/api/music/artists', {
-      payload: CreateArtistInput,
-      success: ArtistResponse,
-      error: HttpApiError.Forbidden,
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('getArtist', '/api/music/artists/:id', {
-      params: artistIdParam,
-      success: ArtistResponse,
-      error: HttpApiError.NotFound,
-    }),
-  )
-  .add(
-    HttpApiEndpoint.patch('updateArtist', '/api/music/artists/:id', {
-      params: artistIdParam,
-      payload: UpdateArtistInput,
-      success: ArtistResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.delete('deleteArtist', '/api/music/artists/:id', {
-      params: artistIdParam,
-      success: HttpApiSchema.NoContent,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('listArtistLabels', '/api/music/artists/:artistId/labels', {
-      params: { artistId: Schema.String },
-      success: LabelListResponse,
-      error: HttpApiError.Forbidden,
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.put('addArtistToAlbum', '/api/music/albums/:albumId/artists/:artistId', {
-      params: { albumId: Schema.String, artistId: Schema.String },
-      payload: ArtistJunctionInput,
-      success: HttpApiSchema.NoContent,
-      error: HttpApiError.Forbidden,
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.delete(
-      'removeArtistFromAlbum',
-      '/api/music/albums/:albumId/artists/:artistId',
-      {
-        params: { albumId: Schema.String, artistId: Schema.String },
-        success: HttpApiSchema.NoContent,
+export const MusicGroup = /* @__PURE__ */ (() =>
+  HttpApiGroup.make('music')
+    .add(HttpApiEndpoint.get('listArtists', '/api/music/artists', { success: ArtistListResponse }))
+    .add(
+      HttpApiEndpoint.post('createArtist', '/api/music/artists', {
+        payload: CreateArtistInput,
+        success: ArtistResponse,
         error: HttpApiError.Forbidden,
-      },
-    ).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.put('addArtistToTrack', '/api/music/tracks/:trackId/artists/:artistId', {
-      params: { trackId: Schema.String, artistId: Schema.String },
-      payload: ArtistJunctionInput,
-      success: HttpApiSchema.NoContent,
-      error: HttpApiError.Forbidden,
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.delete(
-      'removeArtistFromTrack',
-      '/api/music/tracks/:trackId/artists/:artistId',
-      {
-        params: { trackId: Schema.String, artistId: Schema.String },
-        success: HttpApiSchema.NoContent,
-        error: HttpApiError.Forbidden,
-      },
-    ).middleware(AuthMiddleware),
-  )
-  // ---------------------------------------------------------------------
-  // Albums
-  // ---------------------------------------------------------------------
-  .add(HttpApiEndpoint.get('listAlbums', '/api/music/albums', { success: AlbumListResponse }))
-  .add(
-    HttpApiEndpoint.post('createAlbum', '/api/music/albums', {
-      payload: CreateAlbumInput,
-      success: AlbumResponse,
-      error: HttpApiError.Forbidden,
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('getAlbum', '/api/music/albums/:id', {
-      params: albumIdParam,
-      success: AlbumResponse,
-      error: HttpApiError.NotFound,
-    }),
-  )
-  .add(
-    HttpApiEndpoint.patch('updateAlbum', '/api/music/albums/:id', {
-      params: albumIdParam,
-      payload: UpdateAlbumInput,
-      success: AlbumResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.delete('deleteAlbum', '/api/music/albums/:id', {
-      params: albumIdParam,
-      success: HttpApiSchema.NoContent,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('listAlbumLabels', '/api/music/albums/:albumId/labels', {
-      params: { albumId: Schema.String },
-      success: LabelListResponse,
-      error: HttpApiError.Forbidden,
-    }).middleware(AuthMiddleware),
-  )
-  // ---------------------------------------------------------------------
-  // Tracks
-  // ---------------------------------------------------------------------
-  .add(HttpApiEndpoint.get('listTracks', '/api/music/tracks', { success: TrackListResponse }))
-  .add(
-    HttpApiEndpoint.post('createTrack', '/api/music/tracks', {
-      payload: CreateTrackInput,
-      success: TrackResponse,
-      error: HttpApiError.Forbidden,
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('getTrack', '/api/music/tracks/:id', {
-      params: trackIdParam,
-      success: TrackResponse,
-      error: HttpApiError.NotFound,
-    }),
-  )
-  .add(
-    HttpApiEndpoint.patch('updateTrack', '/api/music/tracks/:id', {
-      params: trackIdParam,
-      payload: UpdateTrackInput,
-      success: TrackResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.delete('deleteTrack', '/api/music/tracks/:id', {
-      params: trackIdParam,
-      success: HttpApiSchema.NoContent,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden],
-    }).middleware(AuthMiddleware),
-  )
-  // ---------------------------------------------------------------------
-  // Playlists
-  // ---------------------------------------------------------------------
-  .add(
-    HttpApiEndpoint.get('listPlaylists', '/api/music/playlists', { success: PlaylistListResponse }),
-  )
-  .add(
-    HttpApiEndpoint.post('createPlaylist', '/api/music/playlists', {
-      payload: CreatePlaylistInput,
-      success: PlaylistResponse,
-      error: HttpApiError.Forbidden,
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('getPlaylist', '/api/music/playlists/:id', {
-      params: playlistIdParam,
-      success: PlaylistResponse,
-      error: HttpApiError.NotFound,
-    }),
-  )
-  .add(
-    HttpApiEndpoint.patch('updatePlaylist', '/api/music/playlists/:id', {
-      params: playlistIdParam,
-      payload: UpdatePlaylistInput,
-      success: PlaylistResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.delete('deletePlaylist', '/api/music/playlists/:id', {
-      params: playlistIdParam,
-      success: HttpApiSchema.NoContent,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden],
-    }).middleware(AuthMiddleware),
-  )
-  .add(HttpApiEndpoint.get('listLabels', '/api/music/labels', { success: LabelListResponse }))
-  .add(
-    HttpApiEndpoint.get('listLabelsForAdmin', '/api/music/labels/manage', {
-      success: LabelListResponse,
-      error: HttpApiError.Forbidden,
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.post('createLabel', '/api/music/labels', {
-      payload: CreateLabelInput,
-      success: LabelResponse,
-      error: [HttpApiError.Forbidden, ValidationHttpError],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('getLabelBySlug', '/api/music/labels/slug/:slug', {
-      params: { slug: Schema.String },
-      success: LabelResponse,
-      error: HttpApiError.NotFound,
-    }),
-  )
-  .add(
-    HttpApiEndpoint.get('getLabel', '/api/music/labels/:id', {
-      params: labelIdParam,
-      success: LabelResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.patch('updateLabel', '/api/music/labels/:id', {
-      params: labelIdParam,
-      payload: UpdateLabelInput,
-      success: LabelResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden, ValidationHttpError],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.delete('deleteLabel', '/api/music/labels/:id', {
-      params: labelIdParam,
-      success: HttpApiSchema.NoContent,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('listLabelArtists', '/api/music/labels/:labelId/artists', {
-      params: { labelId: Schema.String },
-      success: ArtistListResponse,
-      error: HttpApiError.Forbidden,
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('listLabelAlbums', '/api/music/labels/:labelId/albums', {
-      params: { labelId: Schema.String },
-      success: AlbumListResponse,
-      error: HttpApiError.Forbidden,
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.put(
-      'affiliateArtistWithLabel',
-      '/api/music/labels/:labelId/artists/:artistId',
-      {
-        params: { labelId: Schema.String, artistId: Schema.String },
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('getArtist', '/api/music/artists/:id', {
+        params: artistIdParam,
+        success: ArtistResponse,
+        error: HttpApiError.NotFound,
+      }),
+    )
+    .add(
+      HttpApiEndpoint.patch('updateArtist', '/api/music/artists/:id', {
+        params: artistIdParam,
+        payload: UpdateArtistInput,
+        success: ArtistResponse,
+        error: [HttpApiError.NotFound, HttpApiError.Forbidden],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.delete('deleteArtist', '/api/music/artists/:id', {
+        params: artistIdParam,
         success: HttpApiSchema.NoContent,
         error: [HttpApiError.NotFound, HttpApiError.Forbidden],
-      },
-    ).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.delete(
-      'unaffiliateArtistFromLabel',
-      '/api/music/labels/:labelId/artists/:artistId',
-      {
-        params: { labelId: Schema.String, artistId: Schema.String },
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('listArtistLabels', '/api/music/artists/:artistId/labels', {
+        params: { artistId: Schema.String },
+        success: LabelListResponse,
+        error: HttpApiError.Forbidden,
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.put('addArtistToAlbum', '/api/music/albums/:albumId/artists/:artistId', {
+        params: { albumId: Schema.String, artistId: Schema.String },
+        payload: ArtistJunctionInput,
         success: HttpApiSchema.NoContent,
         error: HttpApiError.Forbidden,
-      },
-    ).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.put('affiliateAlbumWithLabel', '/api/music/labels/:labelId/albums/:albumId', {
-      params: { labelId: Schema.String, albumId: Schema.String },
-      success: HttpApiSchema.NoContent,
-      error: [HttpApiError.NotFound, HttpApiError.Forbidden],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.delete(
-      'unaffiliateAlbumFromLabel',
-      '/api/music/labels/:labelId/albums/:albumId',
-      {
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.delete(
+        'removeArtistFromAlbum',
+        '/api/music/albums/:albumId/artists/:artistId',
+        {
+          params: { albumId: Schema.String, artistId: Schema.String },
+          success: HttpApiSchema.NoContent,
+          error: HttpApiError.Forbidden,
+        },
+      ).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.put('addArtistToTrack', '/api/music/tracks/:trackId/artists/:artistId', {
+        params: { trackId: Schema.String, artistId: Schema.String },
+        payload: ArtistJunctionInput,
+        success: HttpApiSchema.NoContent,
+        error: HttpApiError.Forbidden,
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.delete(
+        'removeArtistFromTrack',
+        '/api/music/tracks/:trackId/artists/:artistId',
+        {
+          params: { trackId: Schema.String, artistId: Schema.String },
+          success: HttpApiSchema.NoContent,
+          error: HttpApiError.Forbidden,
+        },
+      ).middleware(AuthMiddleware),
+    )
+    // ---------------------------------------------------------------------
+    // Albums
+    // ---------------------------------------------------------------------
+    .add(HttpApiEndpoint.get('listAlbums', '/api/music/albums', { success: AlbumListResponse }))
+    .add(
+      HttpApiEndpoint.post('createAlbum', '/api/music/albums', {
+        payload: CreateAlbumInput,
+        success: AlbumResponse,
+        error: HttpApiError.Forbidden,
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('getAlbum', '/api/music/albums/:id', {
+        params: albumIdParam,
+        success: AlbumResponse,
+        error: HttpApiError.NotFound,
+      }),
+    )
+    .add(
+      HttpApiEndpoint.patch('updateAlbum', '/api/music/albums/:id', {
+        params: albumIdParam,
+        payload: UpdateAlbumInput,
+        success: AlbumResponse,
+        error: [HttpApiError.NotFound, HttpApiError.Forbidden],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.delete('deleteAlbum', '/api/music/albums/:id', {
+        params: albumIdParam,
+        success: HttpApiSchema.NoContent,
+        error: [HttpApiError.NotFound, HttpApiError.Forbidden],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('listAlbumLabels', '/api/music/albums/:albumId/labels', {
+        params: { albumId: Schema.String },
+        success: LabelListResponse,
+        error: HttpApiError.Forbidden,
+      }).middleware(AuthMiddleware),
+    )
+    // ---------------------------------------------------------------------
+    // Tracks
+    // ---------------------------------------------------------------------
+    .add(HttpApiEndpoint.get('listTracks', '/api/music/tracks', { success: TrackListResponse }))
+    .add(
+      HttpApiEndpoint.post('createTrack', '/api/music/tracks', {
+        payload: CreateTrackInput,
+        success: TrackResponse,
+        error: HttpApiError.Forbidden,
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('getTrack', '/api/music/tracks/:id', {
+        params: trackIdParam,
+        success: TrackResponse,
+        error: HttpApiError.NotFound,
+      }),
+    )
+    .add(
+      HttpApiEndpoint.patch('updateTrack', '/api/music/tracks/:id', {
+        params: trackIdParam,
+        payload: UpdateTrackInput,
+        success: TrackResponse,
+        error: [HttpApiError.NotFound, HttpApiError.Forbidden],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.delete('deleteTrack', '/api/music/tracks/:id', {
+        params: trackIdParam,
+        success: HttpApiSchema.NoContent,
+        error: [HttpApiError.NotFound, HttpApiError.Forbidden],
+      }).middleware(AuthMiddleware),
+    )
+    // ---------------------------------------------------------------------
+    // Playlists
+    // ---------------------------------------------------------------------
+    .add(
+      HttpApiEndpoint.get('listPlaylists', '/api/music/playlists', {
+        success: PlaylistListResponse,
+      }),
+    )
+    .add(
+      HttpApiEndpoint.post('createPlaylist', '/api/music/playlists', {
+        payload: CreatePlaylistInput,
+        success: PlaylistResponse,
+        error: HttpApiError.Forbidden,
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('getPlaylist', '/api/music/playlists/:id', {
+        params: playlistIdParam,
+        success: PlaylistResponse,
+        error: HttpApiError.NotFound,
+      }),
+    )
+    .add(
+      HttpApiEndpoint.patch('updatePlaylist', '/api/music/playlists/:id', {
+        params: playlistIdParam,
+        payload: UpdatePlaylistInput,
+        success: PlaylistResponse,
+        error: [HttpApiError.NotFound, HttpApiError.Forbidden],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.delete('deletePlaylist', '/api/music/playlists/:id', {
+        params: playlistIdParam,
+        success: HttpApiSchema.NoContent,
+        error: [HttpApiError.NotFound, HttpApiError.Forbidden],
+      }).middleware(AuthMiddleware),
+    )
+    .add(HttpApiEndpoint.get('listLabels', '/api/music/labels', { success: LabelListResponse }))
+    .add(
+      HttpApiEndpoint.get('listLabelsForAdmin', '/api/music/labels/manage', {
+        success: LabelListResponse,
+        error: HttpApiError.Forbidden,
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.post('createLabel', '/api/music/labels', {
+        payload: CreateLabelInput,
+        success: LabelResponse,
+        error: [HttpApiError.Forbidden, ValidationHttpError],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('getLabelBySlug', '/api/music/labels/slug/:slug', {
+        params: { slug: Schema.String },
+        success: LabelResponse,
+        error: HttpApiError.NotFound,
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get('getLabel', '/api/music/labels/:id', {
+        params: labelIdParam,
+        success: LabelResponse,
+        error: [HttpApiError.NotFound, HttpApiError.Forbidden],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.patch('updateLabel', '/api/music/labels/:id', {
+        params: labelIdParam,
+        payload: UpdateLabelInput,
+        success: LabelResponse,
+        error: [HttpApiError.NotFound, HttpApiError.Forbidden, ValidationHttpError],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.delete('deleteLabel', '/api/music/labels/:id', {
+        params: labelIdParam,
+        success: HttpApiSchema.NoContent,
+        error: [HttpApiError.NotFound, HttpApiError.Forbidden],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('listLabelArtists', '/api/music/labels/:labelId/artists', {
+        params: { labelId: Schema.String },
+        success: ArtistListResponse,
+        error: HttpApiError.Forbidden,
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('listLabelAlbums', '/api/music/labels/:labelId/albums', {
+        params: { labelId: Schema.String },
+        success: AlbumListResponse,
+        error: HttpApiError.Forbidden,
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.put(
+        'affiliateArtistWithLabel',
+        '/api/music/labels/:labelId/artists/:artistId',
+        {
+          params: { labelId: Schema.String, artistId: Schema.String },
+          success: HttpApiSchema.NoContent,
+          error: [HttpApiError.NotFound, HttpApiError.Forbidden],
+        },
+      ).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.delete(
+        'unaffiliateArtistFromLabel',
+        '/api/music/labels/:labelId/artists/:artistId',
+        {
+          params: { labelId: Schema.String, artistId: Schema.String },
+          success: HttpApiSchema.NoContent,
+          error: HttpApiError.Forbidden,
+        },
+      ).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.put('affiliateAlbumWithLabel', '/api/music/labels/:labelId/albums/:albumId', {
         params: { labelId: Schema.String, albumId: Schema.String },
         success: HttpApiSchema.NoContent,
+        error: [HttpApiError.NotFound, HttpApiError.Forbidden],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.delete(
+        'unaffiliateAlbumFromLabel',
+        '/api/music/labels/:labelId/albums/:albumId',
+        {
+          params: { labelId: Schema.String, albumId: Schema.String },
+          success: HttpApiSchema.NoContent,
+          error: HttpApiError.Forbidden,
+        },
+      ).middleware(AuthMiddleware),
+    )
+    // ---------------------------------------------------------------------
+    // Playlist tracks
+    // ---------------------------------------------------------------------
+    .add(
+      HttpApiEndpoint.get('getPlaylistTracks', '/api/music/playlists/:id/tracks', {
+        params: playlistIdParam,
+        success: Schema.Array(PlaylistTrackEntry),
+      }),
+    )
+    .add(
+      HttpApiEndpoint.post('addTrackToPlaylist', '/api/music/playlists/:id/tracks', {
+        params: playlistIdParam,
+        payload: AddTrackToPlaylistInput,
+        success: AddTrackToPlaylistResponse,
         error: HttpApiError.Forbidden,
-      },
-    ).middleware(AuthMiddleware),
-  )
-  // ---------------------------------------------------------------------
-  // Playlist tracks
-  // ---------------------------------------------------------------------
-  .add(
-    HttpApiEndpoint.get('getPlaylistTracks', '/api/music/playlists/:id/tracks', {
-      params: playlistIdParam,
-      success: Schema.Array(PlaylistTrackEntry),
-    }),
-  )
-  .add(
-    HttpApiEndpoint.post('addTrackToPlaylist', '/api/music/playlists/:id/tracks', {
-      params: playlistIdParam,
-      payload: AddTrackToPlaylistInput,
-      success: AddTrackToPlaylistResponse,
-      error: HttpApiError.Forbidden,
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.delete('removeTrackFromPlaylist', '/api/music/playlists/:id/tracks/:trackId', {
-      params: { id: Schema.String, trackId: Schema.String },
-      success: HttpApiSchema.NoContent,
-      error: HttpApiError.Forbidden,
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.put('reorderPlaylistTracks', '/api/music/playlists/:id/tracks/order', {
-      params: playlistIdParam,
-      payload: ReorderPlaylistTracksInput,
-      success: HttpApiSchema.NoContent,
-      error: [HttpApiError.BadRequest, HttpApiError.Forbidden],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.post('addSpotifyTrackToPlaylist', '/api/music/playlists/:id/tracks/spotify', {
-      params: playlistIdParam,
-      payload: AddSpotifyTrackToPlaylistInput,
-      success: AddSpotifyTrackResultResponse,
-      error: [
-        HttpApiError.BadRequest,
-        HttpApiError.NotFound,
-        HttpApiError.Conflict,
-        HttpApiError.Forbidden,
-        MusicServiceUnavailableHttpError,
-      ],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.post('importSpotifyPlaylist', '/api/music/playlists/import/spotify', {
-      payload: ImportSpotifyPlaylistInput,
-      success: ImportSpotifyPlaylistResponse,
-      error: [
-        HttpApiError.BadRequest,
-        HttpApiError.NotFound,
-        HttpApiError.Conflict,
-        HttpApiError.Forbidden,
-        MusicServiceUnavailableHttpError,
-      ],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.post('syncPlaylistLinks', '/api/music/playlists/:id/sync-links', {
-      params: playlistIdParam,
-      success: SyncPlaylistLinksResponse,
-      error: [
-        HttpApiError.BadRequest,
-        HttpApiError.NotFound,
-        HttpApiError.Conflict,
-        HttpApiError.Forbidden,
-        MusicServiceUnavailableHttpError,
-      ],
-    }).middleware(AuthMiddleware),
-  )
-  // ---------------------------------------------------------------------
-  // Resolve a pasted URL into a music entity
-  // ---------------------------------------------------------------------
-  .add(
-    HttpApiEndpoint.post('resolveMusicEntity', '/api/music/resolve', {
-      payload: ResolveMusicEntityInput,
-      success: ResolvedMusicEntityResponse,
-      error: [
-        HttpApiError.BadRequest,
-        HttpApiError.NotFound,
-        HttpApiError.Conflict,
-        HttpApiError.Forbidden,
-        MusicServiceUnavailableHttpError,
-      ],
-    }).middleware(AuthMiddleware),
-  )
-  // ---------------------------------------------------------------------
-  // Links -- per entity
-  // ---------------------------------------------------------------------
-  .add(
-    HttpApiEndpoint.get('listEntityLinks', '/api/music/:entityType/:entityId/links', {
-      params: entityLinkParams,
-      query: Schema.Struct({ status: Schema.optional(LinkStatus) }),
-      success: EntityLinkListResponse,
-    }),
-  )
-  .add(
-    HttpApiEndpoint.post('addEntityLink', '/api/music/:entityType/:entityId/links', {
-      params: entityLinkParams,
-      payload: AddEntityLinkInput,
-      success: EntityLinkResponse,
-      error: [
-        HttpApiError.BadRequest,
-        HttpApiError.NotFound,
-        HttpApiError.Conflict,
-        HttpApiError.Forbidden,
-        MusicServiceUnavailableHttpError,
-      ],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.patch(
-      'updateEntityLinkStatus',
-      '/api/music/:entityType/:entityId/links/:linkId',
-      {
-        params: { ...entityLinkParams, linkId: Schema.String },
-        payload: UpdateEntityLinkStatusInput,
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.delete(
+        'removeTrackFromPlaylist',
+        '/api/music/playlists/:id/tracks/:trackId',
+        {
+          params: { id: Schema.String, trackId: Schema.String },
+          success: HttpApiSchema.NoContent,
+          error: HttpApiError.Forbidden,
+        },
+      ).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.put('reorderPlaylistTracks', '/api/music/playlists/:id/tracks/order', {
+        params: playlistIdParam,
+        payload: ReorderPlaylistTracksInput,
+        success: HttpApiSchema.NoContent,
+        error: [HttpApiError.BadRequest, HttpApiError.Forbidden],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.post('addSpotifyTrackToPlaylist', '/api/music/playlists/:id/tracks/spotify', {
+        params: playlistIdParam,
+        payload: AddSpotifyTrackToPlaylistInput,
+        success: AddSpotifyTrackResultResponse,
+        error: [
+          HttpApiError.BadRequest,
+          HttpApiError.NotFound,
+          HttpApiError.Conflict,
+          HttpApiError.Forbidden,
+          MusicServiceUnavailableHttpError,
+        ],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.post('importSpotifyPlaylist', '/api/music/playlists/import/spotify', {
+        payload: ImportSpotifyPlaylistInput,
+        success: ImportSpotifyPlaylistResponse,
+        error: [
+          HttpApiError.BadRequest,
+          HttpApiError.NotFound,
+          HttpApiError.Conflict,
+          HttpApiError.Forbidden,
+          MusicServiceUnavailableHttpError,
+        ],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.post('syncPlaylistLinks', '/api/music/playlists/:id/sync-links', {
+        params: playlistIdParam,
+        success: SyncPlaylistLinksResponse,
+        error: [
+          HttpApiError.BadRequest,
+          HttpApiError.NotFound,
+          HttpApiError.Conflict,
+          HttpApiError.Forbidden,
+          MusicServiceUnavailableHttpError,
+        ],
+      }).middleware(AuthMiddleware),
+    )
+    // ---------------------------------------------------------------------
+    // Resolve a pasted URL into a music entity
+    // ---------------------------------------------------------------------
+    .add(
+      HttpApiEndpoint.post('resolveMusicEntity', '/api/music/resolve', {
+        payload: ResolveMusicEntityInput,
+        success: ResolvedMusicEntityResponse,
+        error: [
+          HttpApiError.BadRequest,
+          HttpApiError.NotFound,
+          HttpApiError.Conflict,
+          HttpApiError.Forbidden,
+          MusicServiceUnavailableHttpError,
+        ],
+      }).middleware(AuthMiddleware),
+    )
+    // ---------------------------------------------------------------------
+    // Links -- per entity
+    // ---------------------------------------------------------------------
+    .add(
+      HttpApiEndpoint.get('listEntityLinks', '/api/music/:entityType/:entityId/links', {
+        params: entityLinkParams,
+        query: Schema.Struct({ status: Schema.optional(LinkStatus) }),
+        success: EntityLinkListResponse,
+      }),
+    )
+    .add(
+      HttpApiEndpoint.post('addEntityLink', '/api/music/:entityType/:entityId/links', {
+        params: entityLinkParams,
+        payload: AddEntityLinkInput,
         success: EntityLinkResponse,
         error: [
           HttpApiError.BadRequest,
@@ -889,50 +879,71 @@ export const MusicGroup = HttpApiGroup.make('music')
           HttpApiError.Forbidden,
           MusicServiceUnavailableHttpError,
         ],
-      },
-    ).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.delete('deleteEntityLink', '/api/music/:entityType/:entityId/links/:linkId', {
-      params: { ...entityLinkParams, linkId: Schema.String },
-      success: HttpApiSchema.NoContent,
-      error: [
-        HttpApiError.BadRequest,
-        HttpApiError.NotFound,
-        HttpApiError.Conflict,
-        HttpApiError.Forbidden,
-        MusicServiceUnavailableHttpError,
-      ],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.post('rescrapeEntityLinks', '/api/music/:entityType/:entityId/links/rescrape', {
-      params: { entityType: ScrapeEntityType, entityId: Schema.String },
-      success: RescrapeEntityLinksResponse,
-      error: [
-        HttpApiError.BadRequest,
-        HttpApiError.NotFound,
-        HttpApiError.Conflict,
-        HttpApiError.Forbidden,
-        MusicServiceUnavailableHttpError,
-      ],
-    }).middleware(AuthMiddleware),
-  )
-  // ---------------------------------------------------------------------
-  // Scrape -- trigger link discovery for an entity
-  // ---------------------------------------------------------------------
-  .add(
-    HttpApiEndpoint.post('scrapeEntityLinks', '/api/music/:entityType/scrape', {
-      params: { entityType: ScrapeEntityType },
-      payload: ScrapeEntityLinksInput,
-      success: ScrapeEntityLinksResponse,
-      error: [
-        HttpApiError.BadRequest,
-        HttpApiError.NotFound,
-        HttpApiError.Conflict,
-        HttpApiError.Forbidden,
-        MusicServiceUnavailableHttpError,
-      ],
-    }).middleware(AuthMiddleware),
-  )
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.patch(
+        'updateEntityLinkStatus',
+        '/api/music/:entityType/:entityId/links/:linkId',
+        {
+          params: { ...entityLinkParams, linkId: Schema.String },
+          payload: UpdateEntityLinkStatusInput,
+          success: EntityLinkResponse,
+          error: [
+            HttpApiError.BadRequest,
+            HttpApiError.NotFound,
+            HttpApiError.Conflict,
+            HttpApiError.Forbidden,
+            MusicServiceUnavailableHttpError,
+          ],
+        },
+      ).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.delete('deleteEntityLink', '/api/music/:entityType/:entityId/links/:linkId', {
+        params: { ...entityLinkParams, linkId: Schema.String },
+        success: HttpApiSchema.NoContent,
+        error: [
+          HttpApiError.BadRequest,
+          HttpApiError.NotFound,
+          HttpApiError.Conflict,
+          HttpApiError.Forbidden,
+          MusicServiceUnavailableHttpError,
+        ],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.post(
+        'rescrapeEntityLinks',
+        '/api/music/:entityType/:entityId/links/rescrape',
+        {
+          params: { entityType: ScrapeEntityType, entityId: Schema.String },
+          success: RescrapeEntityLinksResponse,
+          error: [
+            HttpApiError.BadRequest,
+            HttpApiError.NotFound,
+            HttpApiError.Conflict,
+            HttpApiError.Forbidden,
+            MusicServiceUnavailableHttpError,
+          ],
+        },
+      ).middleware(AuthMiddleware),
+    )
+    // ---------------------------------------------------------------------
+    // Scrape -- trigger link discovery for an entity
+    // ---------------------------------------------------------------------
+    .add(
+      HttpApiEndpoint.post('scrapeEntityLinks', '/api/music/:entityType/scrape', {
+        params: { entityType: ScrapeEntityType },
+        payload: ScrapeEntityLinksInput,
+        success: ScrapeEntityLinksResponse,
+        error: [
+          HttpApiError.BadRequest,
+          HttpApiError.NotFound,
+          HttpApiError.Conflict,
+          HttpApiError.Forbidden,
+          MusicServiceUnavailableHttpError,
+        ],
+      }).middleware(AuthMiddleware),
+    ))()
 // ---------------------------------------------------------------------

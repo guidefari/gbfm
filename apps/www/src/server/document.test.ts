@@ -96,7 +96,7 @@ test('document rendering isolates page heads and preserves HTTP metadata, assets
 
   for (const asset of [assets.entryScript, ...assets.stylesheets, ...assets.modulePreloads])
     expect(html).toContain(asset)
-  expect(html).toContain('/fonts/JetBrainsMono-ExtraBold.woff2')
+  expect(html).toContain('/fonts/JetBrainsMono-ExtraBold-latin.woff2')
   expect(html).toContain('/fav.png')
   expect(html).toContain(`background-color: ${dark.backgroundHex}`)
   expect(html).toContain(`background-color: ${light.backgroundHex}`)

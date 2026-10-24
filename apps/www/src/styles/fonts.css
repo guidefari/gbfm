@@ -47,3 +47,32 @@
     local(''),
     url('/fonts/JetBrainsMono-ExtraBoldItalic.woff2') format('woff2');
 }
+
+/* Prefer small Latin faces for the common body/heading weights. The full faces
+   above remain available for all other characters, including Cyrillic/Greek. */
+@font-face {
+  font-family: 'JetBrainsMono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/JetBrainsMono-SemiBold-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+2000-206F, U+20AC, U+2122;
+}
+
+@font-face {
+  font-family: 'JetBrainsMono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/JetBrainsMono-Bold-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+2000-206F, U+20AC, U+2122;
+}
+
+@font-face {
+  font-family: 'JetBrainsMono';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url('/fonts/JetBrainsMono-ExtraBold-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+2000-206F, U+20AC, U+2122;
+}

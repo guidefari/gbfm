@@ -1,4 +1,5 @@
 import * as Dialog from '@foldkit/ui/dialog'
+import { RichContentDiagnostic } from '@gbfm/rich-content/schema'
 import { Schema } from 'effect'
 import { defineMessageUnion } from 'foldkit/message'
 
@@ -46,6 +47,8 @@ export const Message = defineMessageUnion({
     coverImageUrl: Schema.NullOr(Schema.String),
   },
   EditorModeChanged: { mode: Schema.Literals(['source', 'preview']) },
+  DiagnosticsLoaded: { content: Schema.String, diagnostics: Schema.Array(RichContentDiagnostic) },
+  DiagnosticsFailed: { content: Schema.String },
   FormatInserted: { before: Schema.String, after: Schema.String, sample: Schema.String },
   ExternalMediaChanged: { value: Schema.String },
   ExternalMediaInserted: {},

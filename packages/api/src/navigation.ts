@@ -40,31 +40,32 @@ export const ReadingHistoryResetResponse = Schema.Struct({ reset: Schema.Boolean
 
 export type ReadingHistoryResetResponse = typeof ReadingHistoryResetResponse.Type
 
-export const NavigationGroup = HttpApiGroup.make('navigation')
-  .add(
-    HttpApiEndpoint.get('getMicroPostNeighbours', '/api/content/posts/micro/:slug/neighbours', {
-      params: SlugParam,
-      success: MicroPostNeighboursResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
-    }),
-  )
-  .add(
-    HttpApiEndpoint.get('getRandomUnreadMicroPost', '/api/content/posts/micro/:slug/random', {
-      params: SlugParam,
-      success: MicroPostRandomUnreadResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
-    }),
-  )
-  .add(
-    HttpApiEndpoint.post('markMicroPostSeen', '/api/content/posts/micro/:slug/seen', {
-      params: SlugParam,
-      success: MicroPostSeenResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
-    }),
-  )
-  .add(
-    HttpApiEndpoint.delete('resetReadingHistory', '/api/navigation/reading-history', {
-      success: ReadingHistoryResetResponse,
-      error: HttpApiError.InternalServerError,
-    }),
-  )
+export const NavigationGroup = /* @__PURE__ */ (() =>
+  HttpApiGroup.make('navigation')
+    .add(
+      HttpApiEndpoint.get('getMicroPostNeighbours', '/api/content/posts/micro/:slug/neighbours', {
+        params: SlugParam,
+        success: MicroPostNeighboursResponse,
+        error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get('getRandomUnreadMicroPost', '/api/content/posts/micro/:slug/random', {
+        params: SlugParam,
+        success: MicroPostRandomUnreadResponse,
+        error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+      }),
+    )
+    .add(
+      HttpApiEndpoint.post('markMicroPostSeen', '/api/content/posts/micro/:slug/seen', {
+        params: SlugParam,
+        success: MicroPostSeenResponse,
+        error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+      }),
+    )
+    .add(
+      HttpApiEndpoint.delete('resetReadingHistory', '/api/navigation/reading-history', {
+        success: ReadingHistoryResetResponse,
+        error: HttpApiError.InternalServerError,
+      }),
+    ))()

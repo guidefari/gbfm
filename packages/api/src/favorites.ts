@@ -58,31 +58,32 @@ const GetFavoritesQuery = {
   offset: Schema.optional(Schema.NumberFromString),
 }
 
-export const FavoritesGroup = HttpApiGroup.make('favorites')
-  .add(
-    HttpApiEndpoint.post('addFavorite', '/api/favorites', {
-      payload: AddFavoriteInput,
-      success: FavoriteActionResponse,
-      error: [HttpApiError.BadRequest, HttpApiError.Conflict, HttpApiError.NotFound],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.delete('removeFavorite', '/api/favorites/:audioId', {
-      params: { audioId: Uuid },
-      success: FavoriteActionResponse,
-      error: HttpApiError.NotFound,
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.delete('removeShowFavorite', '/api/favorites/show/:showId', {
-      params: { showId: Uuid },
-      success: FavoriteActionResponse,
-      error: HttpApiError.NotFound,
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('getFavorites', '/api/favorites', {
-      query: GetFavoritesQuery,
-      success: GetFavoritesResponse,
-    }).middleware(AuthMiddleware),
-  )
+export const FavoritesGroup = /* @__PURE__ */ (() =>
+  HttpApiGroup.make('favorites')
+    .add(
+      HttpApiEndpoint.post('addFavorite', '/api/favorites', {
+        payload: AddFavoriteInput,
+        success: FavoriteActionResponse,
+        error: [HttpApiError.BadRequest, HttpApiError.Conflict, HttpApiError.NotFound],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.delete('removeFavorite', '/api/favorites/:audioId', {
+        params: { audioId: Uuid },
+        success: FavoriteActionResponse,
+        error: HttpApiError.NotFound,
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.delete('removeShowFavorite', '/api/favorites/show/:showId', {
+        params: { showId: Uuid },
+        success: FavoriteActionResponse,
+        error: HttpApiError.NotFound,
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('getFavorites', '/api/favorites', {
+        query: GetFavoritesQuery,
+        success: GetFavoritesResponse,
+      }).middleware(AuthMiddleware),
+    ))()

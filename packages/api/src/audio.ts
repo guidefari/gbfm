@@ -187,95 +187,97 @@ const AudioTypeParam = { type: AudioType }
 
 const AudioTypeSlugParams = { type: AudioType, slug: Schema.String }
 
-export const AudioGroup = HttpApiGroup.make('audio')
-  .add(
-    HttpApiEndpoint.get('getHomepageMixes', '/api/content/homepage-mixes', {
-      success: HomepageMixesResponse,
-      error: HttpApiError.InternalServerError,
-    }),
-  )
-  .add(
-    HttpApiEndpoint.post('createMix', '/api/content/mixes', {
-      payload: CreateAudioInput,
-      success: AudioResponse,
-      error: [HttpApiError.Conflict, ValidationHttpError, HttpApiError.InternalServerError],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('getAudioTags', '/api/content/audio/:type/tags', {
-      params: AudioTypeParam,
-      success: GetAudioTagsResponse,
-      error: HttpApiError.InternalServerError,
-    }),
-  )
-  .add(
-    HttpApiEndpoint.get('getAudioByType', '/api/content/audio/:type', {
-      params: AudioTypeParam,
-      query: GetAudioByTypeQuery,
-      success: GetAudioByTypeResponse,
-      error: HttpApiError.InternalServerError,
-    }),
-  )
-  .add(
-    HttpApiEndpoint.get('getAudioByTypeForEdit', '/api/content/audio/:type/manage', {
-      params: AudioTypeParam,
-      query: ManageAudioQuery,
-      success: GetAudioByTypeResponse,
-      error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('getAudioBySlug', '/api/content/audio/:type/:slug', {
-      params: AudioTypeSlugParams,
-      success: CompiledAudioResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
-    }),
-  )
-  .add(
-    HttpApiEndpoint.get('getAudioPage', '/api/content/audio/:type/:slug/page', {
-      params: AudioTypeSlugParams,
-      success: AudioPageResponse,
-      error: HttpApiError.InternalServerError,
-    }),
-  )
-  .add(
-    HttpApiEndpoint.get('getAudioBySlugForEdit', '/api/content/audio/:type/:slug/edit', {
-      params: AudioTypeSlugParams,
-      success: CompiledAudioResponse,
-      error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.patch('updateAudioBySlug', '/api/content/audio/:type/:slug', {
-      params: AudioTypeSlugParams,
-      payload: UpdateAudioInput,
-      success: CompiledAudioResponse,
-      error: [
-        HttpApiError.NotFound,
-        HttpApiError.Unauthorized,
-        ValidationHttpError,
-        HttpApiError.InternalServerError,
-      ],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.post('createAudio', '/api/content/audio', {
-      payload: CreateAudioInput,
-      success: AudioResponse,
-      error: [HttpApiError.Conflict, ValidationHttpError, HttpApiError.InternalServerError],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.post('trackAudioPlay', '/api/content/audio/:id/play', {
-      params: { id: Uuid },
-      success: TrackAudioPlayResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
-    }),
-  )
-  .add(
-    HttpApiEndpoint.get('getMixQRPdf', '/api/content/audio/mix/:slug/qr-pdf', {
-      params: { slug: Schema.String },
-      success: GetMixQRPdfResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
-    }),
-  )
+// Route construction is pure; schema-only clients must not initialize the server endpoints.
+export const AudioGroup = /* @__PURE__ */ (() =>
+  HttpApiGroup.make('audio')
+    .add(
+      HttpApiEndpoint.get('getHomepageMixes', '/api/content/homepage-mixes', {
+        success: HomepageMixesResponse,
+        error: HttpApiError.InternalServerError,
+      }),
+    )
+    .add(
+      HttpApiEndpoint.post('createMix', '/api/content/mixes', {
+        payload: CreateAudioInput,
+        success: AudioResponse,
+        error: [HttpApiError.Conflict, ValidationHttpError, HttpApiError.InternalServerError],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('getAudioTags', '/api/content/audio/:type/tags', {
+        params: AudioTypeParam,
+        success: GetAudioTagsResponse,
+        error: HttpApiError.InternalServerError,
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get('getAudioByType', '/api/content/audio/:type', {
+        params: AudioTypeParam,
+        query: GetAudioByTypeQuery,
+        success: GetAudioByTypeResponse,
+        error: HttpApiError.InternalServerError,
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get('getAudioByTypeForEdit', '/api/content/audio/:type/manage', {
+        params: AudioTypeParam,
+        query: ManageAudioQuery,
+        success: GetAudioByTypeResponse,
+        error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('getAudioBySlug', '/api/content/audio/:type/:slug', {
+        params: AudioTypeSlugParams,
+        success: CompiledAudioResponse,
+        error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get('getAudioPage', '/api/content/audio/:type/:slug/page', {
+        params: AudioTypeSlugParams,
+        success: AudioPageResponse,
+        error: HttpApiError.InternalServerError,
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get('getAudioBySlugForEdit', '/api/content/audio/:type/:slug/edit', {
+        params: AudioTypeSlugParams,
+        success: CompiledAudioResponse,
+        error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.patch('updateAudioBySlug', '/api/content/audio/:type/:slug', {
+        params: AudioTypeSlugParams,
+        payload: UpdateAudioInput,
+        success: CompiledAudioResponse,
+        error: [
+          HttpApiError.NotFound,
+          HttpApiError.Unauthorized,
+          ValidationHttpError,
+          HttpApiError.InternalServerError,
+        ],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.post('createAudio', '/api/content/audio', {
+        payload: CreateAudioInput,
+        success: AudioResponse,
+        error: [HttpApiError.Conflict, ValidationHttpError, HttpApiError.InternalServerError],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.post('trackAudioPlay', '/api/content/audio/:id/play', {
+        params: { id: Uuid },
+        success: TrackAudioPlayResponse,
+        error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get('getMixQRPdf', '/api/content/audio/mix/:slug/qr-pdf', {
+        params: { slug: Schema.String },
+        success: GetMixQRPdfResponse,
+        error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+      }),
+    ))()

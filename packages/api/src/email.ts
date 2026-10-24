@@ -164,24 +164,25 @@ export const EmailLogsQuery = Schema.Struct({
 
 export type EmailLogsQuery = typeof EmailLogsQuery.Type
 
-export const EmailGroup = HttpApiGroup.make('email')
-  .add(
-    HttpApiEndpoint.get('getMixAnnouncementOptions', '/api/email/mix-announcement-options', {
-      success: MixAnnouncementOptions,
-      error: [HttpApiError.Forbidden, HttpApiError.InternalServerError],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.post('sendMixNotification', '/api/email/send-mix-notification', {
-      payload: SendMixNotificationInput,
-      success: SendMixNotificationResponse,
-      error: [HttpApiError.Forbidden, HttpApiError.NotFound, HttpApiError.InternalServerError],
-    }).middleware(AuthMiddleware),
-  )
-  .add(
-    HttpApiEndpoint.get('getEmailLogs', '/api/email/logs', {
-      query: EmailLogsQuery,
-      success: EmailLogsResponse,
-      error: [HttpApiError.Forbidden, HttpApiError.InternalServerError],
-    }).middleware(AuthMiddleware),
-  )
+export const EmailGroup = /* @__PURE__ */ (() =>
+  HttpApiGroup.make('email')
+    .add(
+      HttpApiEndpoint.get('getMixAnnouncementOptions', '/api/email/mix-announcement-options', {
+        success: MixAnnouncementOptions,
+        error: [HttpApiError.Forbidden, HttpApiError.InternalServerError],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.post('sendMixNotification', '/api/email/send-mix-notification', {
+        payload: SendMixNotificationInput,
+        success: SendMixNotificationResponse,
+        error: [HttpApiError.Forbidden, HttpApiError.NotFound, HttpApiError.InternalServerError],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.get('getEmailLogs', '/api/email/logs', {
+        query: EmailLogsQuery,
+        success: EmailLogsResponse,
+        error: [HttpApiError.Forbidden, HttpApiError.InternalServerError],
+      }).middleware(AuthMiddleware),
+    ))()

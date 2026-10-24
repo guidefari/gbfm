@@ -38,10 +38,11 @@ export const ResolveResult = Schema.Union([ResolvedProfile, ResolvedShow])
 
 export type ResolveResult = typeof ResolveResult.Type
 
-export const ResolveGroup = HttpApiGroup.make('resolve').add(
-  HttpApiEndpoint.get('resolveSlug', '/api/resolve/:slug', {
-    params: { slug: Schema.String },
-    success: ResolveResult,
-    error: HttpApiError.NotFound,
-  }),
-)
+export const ResolveGroup = /* @__PURE__ */ (() =>
+  HttpApiGroup.make('resolve').add(
+    HttpApiEndpoint.get('resolveSlug', '/api/resolve/:slug', {
+      params: { slug: Schema.String },
+      success: ResolveResult,
+      error: HttpApiError.NotFound,
+    }),
+  ))()

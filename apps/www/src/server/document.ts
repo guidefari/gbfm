@@ -15,7 +15,7 @@ export const withDocumentHead = (application: Server.RenderedApplication, head: 
 const shellHead = String.raw`
 ${import.meta.env.DEV ? '<link rel="stylesheet" href="/src/styles/main.css">' : ''}
 <link rel="icon" type="image/png" href="/fav.png">
-<link rel="preload" href="/fonts/JetBrainsMono-ExtraBold.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/JetBrainsMono-ExtraBold-latin.woff2" as="font" type="font/woff2" crossorigin>
 <meta name="theme-color" content="${dark.backgroundHex}" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="${light.backgroundHex}" media="(prefers-color-scheme: light)">
 <script>

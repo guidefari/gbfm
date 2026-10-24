@@ -4,6 +4,7 @@ import { Update } from 'foldkit'
 
 import {
   CancelUpload,
+  Diagnose,
   PauseUpload,
   PersistDraft,
   ResolveMusic,
@@ -22,8 +23,17 @@ const changed = (
   model: Model,
   draft: CreatorDraft,
 ): Update.Return<Model, Message, CreatorService> => ({
-  model: { ...model, draft, saveState: 'unsaved', error: null },
-  commands: [PersistDraft({ key: keyOf(draft), draft })],
+  model: {
+    ...model,
+    draft,
+    saveState: 'unsaved',
+    error: null,
+    diagnostics: draft.content === model.draft.content ? model.diagnostics : [],
+  },
+  commands: [
+    PersistDraft({ key: keyOf(draft), draft }),
+    ...(draft.content === model.draft.content ? [] : [Diagnose({ content: draft.content })]),
+  ],
 })
 
 const appendBlock = (content: string, block: string) =>
@@ -168,6 +178,15 @@ export const update = (
             { ...model.draft, musicEntityType: entityType, musicEntityId: entityId },
           ),
     EditorModeChanged: ({ mode }) => ({ model: { ...model, editorMode: mode } }),
+    DiagnosticsLoaded: ({ content, diagnostics }) => ({
+      model: content === model.draft.content ? { ...model, diagnostics } : model,
+    }),
+    DiagnosticsFailed: ({ content }) => ({
+      model:
+        content === model.draft.content
+          ? { ...model, error: 'Source diagnostics could not load. Try editing the source again.' }
+          : model,
+    }),
     FormatInserted: ({ before, after, sample }) =>
       changed(model, {
         ...model.draft,
@@ -258,6 +277,7 @@ export const update = (
         phase: 'writing',
         saveState: draft ? 'saved-locally' : model.saveState,
       },
+      commands: [Diagnose({ content: (draft ?? model.draft).content })],
     }),
     LocallySaved: () => ({
       model:
