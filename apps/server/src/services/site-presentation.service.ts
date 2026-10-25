@@ -67,6 +67,7 @@ const presentationFromProfile = (profile: PublicProfile, slug: string, siteUrl: 
   const metadata = makeProfileSiteMetadata({
     slug,
     title: profile.name,
+    description: profile.bio,
     imageUrl: profile.image,
     publishedAt: iso(profile.createdAt),
     contributionCount,

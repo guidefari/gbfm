@@ -1,4 +1,5 @@
 import {
+  getStaticSiteMetadata,
   makeStaticSiteMetadata,
   renderDocumentHead,
   SiteMetadata,
@@ -104,7 +105,9 @@ export const createPageResponse = async (
           : null)
 
   const sourceMetadata =
-    publicMetadata ?? makeStaticSiteMetadata(title, flags.description, url.pathname)
+    publicMetadata ??
+    (status === 200 ? getStaticSiteMetadata(url.pathname) : null) ??
+    makeStaticSiteMetadata(title, flags.description, url.pathname)
 
   // Preview and dev origins must not become competing public canonical URLs.
   const metadata = {

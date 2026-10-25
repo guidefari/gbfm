@@ -59,6 +59,31 @@ const page = (
 
 afterEach(() => vi.unstubAllEnvs())
 
+test('SSR and navigation responses use public homepage metadata instead of generic flags', async () => {
+  vi.stubEnv('FOLDKIT_BUILD_ID', 'document-test')
+  const fixture = page('/', 'goosebumps.fm')
+  const home = { ...fixture, flags: { ...fixture.flags, metadata: null } }
+  const request = new Request(home.url)
+  const rendered = await createPageResponse(request, false, 0, home)
+  const html = await Server.toResponse((app) => renderDocument(app, assets), rendered).text()
+
+  expect(html).toContain('<title>goosebumps.fm (gbfm) — Independent Radio &amp; DJ Mixes</title>')
+  expect(html).toContain('"alternateName":"gbfm"')
+  expect(html).toContain('Discover curated music mixes, tracks, and releases.')
+  expect(html).toContain('href="https://goosebumps.fm/"')
+  expect(html).not.toContain('noindex, nofollow')
+
+  const data = await createPageResponse(request, true, 0, home)
+
+  const response = Server.toResponse(() => {
+    throw new Error('Data must not render')
+  }, data)
+
+  expect(await response.json()).toMatchObject({
+    metadata: { title: 'goosebumps.fm (gbfm) — Independent Radio & DJ Mixes' },
+  })
+})
+
 test('document rendering isolates page heads and preserves HTTP metadata, assets and hydration', async () => {
   vi.stubEnv('FOLDKIT_BUILD_ID', 'document-test')
   const first = page('/about', 'Music "&" </script><script>bad()</script>')

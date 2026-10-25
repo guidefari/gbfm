@@ -1,3 +1,5 @@
+import { STATIC_SITE_METADATA } from '@gbfm/site-metadata'
+
 export const staticPages = new Map([
   ['spotify-callback', { title: 'Spotify connection', paragraphs: [] }],
   ['invite/charlie3000', { title: 'An invitation for Charlie3000', paragraphs: [] }],
@@ -5,9 +7,7 @@ export const staticPages = new Map([
     'about',
     {
       title: 'About',
-      paragraphs: [
-        'goosebumps.fm is home to radio shows, mixes and editorial from the people behind them.',
-      ],
+      paragraphs: [STATIC_SITE_METADATA.about.description],
     },
   ],
   [

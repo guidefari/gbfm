@@ -60,12 +60,16 @@ export interface DocumentHead {
   }>
 }
 
-/** The document and share title, including show hosts where available. */
+/** The document and share title, including mix artists and show hosts where available. */
 export const siteMetadataTitle = (metadata: SiteMetadata) => {
+  if (metadata.kind === 'page' && metadata.canonicalUrl === `${SITE_URL}/`) return metadata.title
+
   const title =
     metadata.kind === 'show' && metadata.creators.length > 0
       ? `${metadata.title} with ${metadata.creators.join(', ')}`
-      : metadata.title
+      : metadata.kind === 'mix'
+        ? `${metadata.creators.length > 0 ? `${metadata.creators.join(', ')} — ` : ''}${metadata.title} (DJ Mix)`
+        : metadata.title
 
   return title === 'goosebumps.fm' ? title : `${title} | goosebumps.fm`
 }
@@ -135,7 +139,12 @@ const jsonLdFor = (metadata: SiteMetadata) => {
   return {
     ...base,
     '@type': 'WebPage',
-    isPartOf: { '@type': 'WebSite', name: 'goosebumps.fm', url: SITE_URL },
+    isPartOf: {
+      '@type': 'WebSite',
+      name: 'goosebumps.fm',
+      alternateName: 'gbfm',
+      url: `${SITE_URL}/`,
+    },
   }
 }
 
@@ -274,11 +283,15 @@ export const makeAudioSiteMetadata = (
   },
 ) => {
   const title = input.title || input.slug
+  const mixDescription = `${input.creators.length > 0 ? `${input.creators.join(', ')} — ` : ''}${title}. Listen to the DJ mix on goosebumps.fm (gbfm).`
 
   return makeSiteMetadata({
     kind: input.kind,
     title,
-    description: input.description || `Listen to ${title} on goosebumps.fm`,
+    description:
+      input.kind === 'mix'
+        ? `${mixDescription}${input.description ? ` ${input.description}` : ''}`
+        : input.description || `Listen to ${title} on goosebumps.fm`,
     canonicalUrl: `${siteUrlFor(input)}/${input.kind === 'mix' ? 'mixes' : 'tracks'}/${input.slug}`,
     imageUrl: input.imageUrl,
     imageAlt: `${title} cover art`,
@@ -349,7 +362,7 @@ export const makeLabelSiteMetadata = (input: ContentMetadataInput) => {
 
 /** Builds canonical metadata for a public profile. */
 export const makeProfileSiteMetadata = (
-  input: Omit<ContentMetadataInput, 'description' | 'creators' | 'modifiedAt'> & {
+  input: Omit<ContentMetadataInput, 'creators' | 'modifiedAt'> & {
     readonly contributionCount: number
   },
 ) => {
@@ -359,9 +372,10 @@ export const makeProfileSiteMetadata = (
     kind: 'profile',
     title,
     description:
-      input.contributionCount > 0
+      input.description ||
+      (input.contributionCount > 0
         ? `${title} has ${input.contributionCount} ${input.contributionCount === 1 ? 'contribution' : 'contributions'} on goosebumps.fm`
-        : `${title}'s profile on goosebumps.fm`,
+        : `${title}'s profile on goosebumps.fm`),
     canonicalUrl: `${siteUrlFor(input)}/${input.slug}`,
     imageUrl: input.imageUrl,
     imageAlt: `${title}'s profile picture`,
@@ -416,9 +430,14 @@ export const makeStaticSiteMetadata = (title: string, description: string, path:
 /** Shared metadata for public pages that do not require server data. */
 export const STATIC_SITE_METADATA = {
   home: makeStaticSiteMetadata(
-    'goosebumps.fm',
+    'goosebumps.fm (gbfm) — Independent Radio & DJ Mixes',
     'Discover curated music mixes, tracks, and releases. Your destination for ambient, bass, drywall, jazz and a wide variety of sounds.',
     '/',
+  ),
+  about: makeStaticSiteMetadata(
+    'About goosebumps.fm (gbfm)',
+    'goosebumps.fm, also known as gbfm, is home to independent radio shows, DJ mixes and editorial.',
+    '/about',
   ),
   labels: makeStaticSiteMetadata(
     'Record Labels',
@@ -470,6 +489,7 @@ export const STATIC_SITE_METADATA = {
 
 const staticMetadataByPath = new Map<string, SiteMetadata>([
   ['/', STATIC_SITE_METADATA.home],
+  ['/about', STATIC_SITE_METADATA.about],
   ['/labels', STATIC_SITE_METADATA.labels],
   ['/shows', STATIC_SITE_METADATA.shows],
   ['/editorial', STATIC_SITE_METADATA.editorial],
