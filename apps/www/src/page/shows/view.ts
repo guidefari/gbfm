@@ -3,7 +3,7 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 import { artwork } from '../../view/artwork'
 import { iconPaths, lucide } from '../../view/icons'
 import { episodeRowsSkeleton } from '../../view/skeletons'
-import { aboutInline, aboutSidebar } from './about'
+import { about as aboutView } from './about'
 import type { Episode, ShowsDocument, ShowsPlayback } from './document'
 import { episodeList } from './episodes'
 
@@ -241,18 +241,18 @@ export const view = <M>(
                 pending ? h.empty : actions,
                 interactive,
               ),
-              about ? aboutInline(h, about) : h.empty,
               h.div(
                 [
                   h.Class(
                     about
-                      ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start lg:gap-10'
+                      ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-12'
                       : '',
                   ),
                 ],
                 [
+                  about ? aboutView(h, selected.title, about) : h.empty,
                   h.section(
-                    [h.AriaLabel('Episodes')],
+                    [h.AriaLabel('Episodes'), h.Class('lg:col-start-1 lg:row-start-1')],
                     [
                       h.h2([h.Class('sr-only')], ['Episodes']),
                       pending
@@ -260,7 +260,6 @@ export const view = <M>(
                         : episodeList(h, document, playback, interactive),
                     ],
                   ),
-                  about ? aboutSidebar(h, about) : h.empty,
                 ],
               ),
             ],

@@ -1,46 +1,80 @@
 import type { RichContentDocument } from '@gbfm/rich-content/schema'
 import type { HtmlBuilder } from 'foldkit/html'
 
+import { iconPaths, lucide } from '../../view/icons'
 import { richContentView } from '../../view/rich-content/render'
 
-const heading = <M>(h: HtmlBuilder<M>, className: string) =>
-  h.h2([h.Class(className)], ['About the show'])
+const panelId = 'show-about-panel'
 
 const compactProse =
   'text-foreground/80 [&_.rich-content>*]:my-3 [&_.rich-content>:first-child]:mt-0 [&_li]:text-sm [&_li]:leading-relaxed [&_p]:text-sm [&_p]:leading-relaxed'
 
-/** A CSS-only toggle so the clamp works before hydration and survives re-renders without model state. */
-export const aboutInline = <M>(h: HtmlBuilder<M>, document: RichContentDocument) =>
-  h.section(
-    [h.AriaLabel('About the show'), h.Class('mb-6 border-t border-border pt-5 lg:hidden')],
+const blurb = (document: RichContentDocument): RichContentDocument => ({
+  ...document,
+  blocks: document.blocks.slice(0, 1),
+})
+
+/** Native popover so the full write-up opens before hydration without model state. */
+const panel = <M>(h: HtmlBuilder<M>, title: string, document: RichContentDocument) =>
+  h.div(
     [
-      heading(h, 'mb-3 text-lg font-bold'),
-      h.input([h.Type('checkbox'), h.Id('show-about-toggle'), h.Class('peer sr-only')]),
+      h.Id(panelId),
+      h.Attribute('popover', ''),
+      h.AriaLabel(`About ${title}`),
+      h.Class(
+        'fixed inset-0 m-auto h-fit max-h-[85vh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto rounded-sm border border-border bg-background p-6 text-foreground shadow-2xl backdrop:bg-background/80 backdrop:backdrop-blur-sm sm:p-10',
+      ),
+    ],
+    [
       h.div(
+        [h.Class('mb-6 flex items-start justify-between gap-4')],
         [
-          h.Class(
-            `${compactProse} max-h-32 overflow-hidden [mask-image:linear-gradient(to_bottom,black_50%,transparent)] peer-checked:max-h-none peer-checked:[mask-image:none]`,
+          h.div(
+            [],
+            [
+              h.p([h.Class('m-0 text-xs text-muted-foreground')], ['About the show']),
+              h.h2([h.Class('m-0 mt-1 text-3xl font-black leading-none tracking-tight')], [title]),
+            ],
+          ),
+          h.button(
+            [
+              h.Type('button'),
+              h.Attribute('popovertarget', panelId),
+              h.Attribute('popovertargetaction', 'hide'),
+              h.AriaLabel('Close'),
+              h.Class(
+                'grid h-9 w-9 shrink-0 place-items-center rounded-sm border border-border bg-transparent text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              ),
+            ],
+            [lucide(iconPaths.close, 'h-4 w-4')],
           ),
         ],
-        [richContentView(document, h)],
       ),
-      h.label(
-        [
-          h.For('show-about-toggle'),
-          h.Class(
-            'mt-2 inline-block cursor-pointer rounded-sm text-sm font-semibold text-highlight peer-focus-visible:ring-2 peer-focus-visible:ring-ring [&>span:last-child]:hidden peer-checked:[&>span:first-child]:hidden peer-checked:[&>span:last-child]:inline',
-          ),
-        ],
-        [h.span([], ['Read more']), h.span([], ['Show less'])],
-      ),
+      h.div([h.Class('max-w-prose')], [richContentView(document, h)]),
     ],
   )
 
-export const aboutSidebar = <M>(h: HtmlBuilder<M>, document: RichContentDocument) =>
+export const about = <M>(h: HtmlBuilder<M>, title: string, document: RichContentDocument) =>
   h.aside(
     [
       h.AriaLabel('About the show'),
-      h.Class(`hidden border-l border-border pl-8 lg:block ${compactProse}`),
+      h.Class(
+        'mb-6 border-t border-border pt-5 lg:col-start-2 lg:row-start-1 lg:mb-0 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0',
+      ),
     ],
-    [heading(h, 'mb-4 text-lg font-bold'), richContentView(document, h)],
+    [
+      h.h2([h.Class('mb-3 text-lg font-bold')], ['About the show']),
+      h.div([h.Class(`${compactProse} [&_p]:line-clamp-5`)], [richContentView(blurb(document), h)]),
+      h.button(
+        [
+          h.Type('button'),
+          h.Attribute('popovertarget', panelId),
+          h.Class(
+            'mt-1 inline-flex items-center gap-1 rounded-sm border-0 bg-transparent p-0 text-sm font-semibold text-highlight hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          ),
+        ],
+        ['Read more', lucide(iconPaths.chevronRight, 'h-4 w-4')],
+      ),
+      panel(h, title, document),
+    ],
   )
