@@ -8,6 +8,7 @@ import { FileManagerGroup } from './file-manager'
 import { HealthGroup } from './health'
 import { InternalGroup } from './internal'
 import { InviteGroup } from './invite'
+import { ListeningGroup } from './listening'
 import { MusicGroup } from './music'
 import { MusicRemindersGroup } from './music-reminders'
 import { NavigationGroup } from './navigation'
@@ -38,6 +39,7 @@ export const Api = HttpApi.make('gbfm')
   .add(AudioGroup)
   .add(EmailGroup)
   .add(FavoritesGroup)
+  .add(ListeningGroup)
   .add(MusicRemindersGroup)
   .add(NavigationGroup)
   .add(NewsletterGroup)

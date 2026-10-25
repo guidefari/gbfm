@@ -12,6 +12,8 @@ export * as Home from './home'
 
 export * as Invitation from './invitation'
 
+export * as Listening from './listening/view'
+
 export * as Newsletter from './newsletter'
 
 export * as Profile from './profile'

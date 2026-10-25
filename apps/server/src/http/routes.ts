@@ -16,6 +16,7 @@ import { CorsLive, RequestLoggerLive, SentryDefectLive } from '@/http/global-mid
 import { checkDatabase, makeHealthHandlers } from '@/http/health.handlers'
 import { InternalHandlersLive } from '@/http/internal.handlers'
 import { InviteHandlersLive } from '@/http/invite.handlers'
+import { ListeningHandlersLive } from '@/http/listening.handlers'
 import { MusicRemindersHandlersLive } from '@/http/music-reminders.handlers'
 import { MusicHandlersLive } from '@/http/music.handlers'
 import { NavigationHandlersLive } from '@/http/navigation.handlers'
@@ -114,6 +115,7 @@ export const createWebHandler = (options: {
     Layer.provide(ResolveHandlersLive),
     Layer.provide(AdminHandlersLive),
     Layer.provide(InviteHandlersLive),
+    Layer.provide(ListeningHandlersLive),
     Layer.provide(ReleaseHandlersLive),
     Layer.provide(PostHandlersLive),
     Layer.provide(AudioHandlersLive),

@@ -8,6 +8,7 @@ import changelog from 'virtual:repo-changelog'
 import type { Flags } from '../../model'
 import { loadAudioDetailData } from '../../page/content/page-data'
 import { loadDashboardData } from '../../page/dashboard/page-data'
+import { loadListeningPage } from '../../page/listening/page-data'
 import { loadShowDetailData } from '../../page/shows/detail-page-data'
 import { loadShowsData } from '../../page/shows/page-data'
 import { staticPages } from '../../page/static/pages'
@@ -47,6 +48,7 @@ export const loadPageData = async (
   const showsPromise = loadShowsData(ownedRequest, endpoint, route, url)
 
   const identity = await loadIdentity(ownedRequest)
+  const listening = await loadListeningPage(ownedRequest, route, url, identity.principal !== null)
   const dashboard = await loadDashboardData(ownedRequest, route, url, identity.principal)
   const tweetData = tweetPromise ? await tweetPromise : null
   const showsData = showsPromise ? await showsPromise : null
@@ -151,6 +153,13 @@ export const loadPageData = async (
     : null
 
   const title =
+    (listening
+      ? listening.page.workspace
+        ? 'Your listening pile'
+        : Route.guards.Detail(route)
+          ? (listening.page.document.collections[0]?.title ?? 'Collection')
+          : 'Mix collections'
+      : null) ??
     (Route.guards.Detail(route) && route.kind === 'tags' ? `#${route.slug}` : null) ??
     shows?.shows.find((show) => show.slug === shows.selectedSlug)?.title ??
     profile?.name ??
@@ -170,11 +179,12 @@ export const loadPageData = async (
     })
 
   const status =
-    Route.guards.NotFound(route) || response?.status === 404
+    listening?.status ??
+    (Route.guards.NotFound(route) || response?.status === 404
       ? 404
       : endpoint && !response?.ok
         ? 503
-        : 200
+        : 200)
 
   const flags: Flags = {
     url: url.pathname === '/spotify/callback' ? `${url.origin}${url.pathname}` : url.href,
@@ -200,6 +210,7 @@ export const loadPageData = async (
     tweet,
     neighbours,
     dashboard,
+    listening: listening?.page,
     profile,
     shows,
     changelog: Route.guards.Static(route) && route.page === 'changelog' ? changelog : null,

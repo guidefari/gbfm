@@ -156,6 +156,7 @@ export const createPageResponse = async (
     Route.guards.Dashboard(route) ||
     Route.guards.Composer(route) ||
     Route.guards.Auth(route) ||
+    url.pathname === '/listening' ||
     url.pathname === '/spotify/callback'
 
   return Server.Rendered(
