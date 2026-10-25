@@ -3585,7 +3585,8 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
       expect(metadata).toMatchObject({
         kind: 'mix',
         title: 'Metadata mix',
-        description: 'A mix with one canonical metadata model.',
+        description:
+          'Metadata mix. Listen to the DJ mix on goosebumps.fm (gbfm). A mix with one canonical metadata model.',
         canonicalUrl: `http://127.0.0.1:5173/mixes/${slug}`,
         image: {
           url: card.images.openGraph,

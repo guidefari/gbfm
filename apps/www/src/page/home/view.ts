@@ -1,3 +1,4 @@
+import { STATIC_SITE_METADATA } from '@gbfm/site-metadata'
 import type { HtmlBuilder } from 'foldkit/html'
 
 import { Message } from '../../message'
@@ -30,7 +31,20 @@ export const view = (model: Model, h: HtmlBuilder<Message>) => {
   return h.section(
     [h.Class('home')],
     [
-      h.h1([], ['goosebumps.', h.br([]), h.span([], ['fm'])]),
+      h.div(
+        [],
+        [
+          h.h1([], ['goosebumps.', h.br([]), h.span([], ['fm'])]),
+          h.p(
+            [
+              h.Class(
+                'mt-6 max-w-sm text-sm leading-relaxed text-muted-foreground lg:pr-12 lg:text-right',
+              ),
+            ],
+            [STATIC_SITE_METADATA.home.description],
+          ),
+        ],
+      ),
       h.div(
         [h.Class('featured')],
         [

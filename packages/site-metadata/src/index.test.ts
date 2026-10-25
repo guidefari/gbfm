@@ -3,6 +3,7 @@ import { describe, expect, test } from 'vitest'
 import {
   getStaticSiteMetadata,
   makeAudioSiteMetadata,
+  makeProfileSiteMetadata,
   makeStaticSiteMetadata,
   renderDocumentHead,
   renderMetadataHtml,
@@ -86,6 +87,93 @@ describe('site metadata', () => {
       property: 'og:audio',
       content: 'https://audio.example.com/track',
     })
+  })
+
+  test('identifies gbfm as the alternative site name on the homepage', () => {
+    const home = getStaticSiteMetadata('/')
+
+    if (!home) throw new Error('Missing homepage metadata')
+    const head = renderDocumentHead(home)
+
+    expect(head.meta).toContainEqual({
+      title: 'goosebumps.fm (gbfm) — Independent Radio & DJ Mixes',
+    })
+    expect(head.meta).toContainEqual({
+      name: 'description',
+      content:
+        'goosebumps.fm, also known as gbfm, is home to independent radio shows, DJ mixes and editorial.',
+    })
+    expect(JSON.parse(head.scripts[0]?.children ?? '')).toMatchObject({
+      '@type': 'WebPage',
+      isPartOf: {
+        '@type': 'WebSite',
+        name: 'goosebumps.fm',
+        alternateName: 'gbfm',
+        url: 'https://goosebumps.fm/',
+      },
+    })
+  })
+
+  test('mix search titles and descriptions identify artists without renaming recordings', () => {
+    const input = {
+      slug: 'signal-arrives',
+      title: 'SIGNAL ARRIVES',
+      description: 'A listening document.',
+      imageUrl: null,
+      creators: ['[kimetsu.]', 'Guest'],
+      publishedAt: null,
+      modifiedAt: null,
+      audioUrl: 'https://audio.example.com/signal-arrives.mp3',
+    }
+
+    const mix = makeAudioSiteMetadata({ ...input, kind: 'mix' })
+    const head = renderDocumentHead(mix)
+
+    expect(head.meta).toContainEqual({
+      title: '[kimetsu.], Guest — SIGNAL ARRIVES (DJ Mix) | goosebumps.fm',
+    })
+    expect(mix.description).toBe(
+      '[kimetsu.], Guest — SIGNAL ARRIVES. Listen to the DJ mix on goosebumps.fm (gbfm). A listening document.',
+    )
+    expect(JSON.parse(head.scripts[0]?.children ?? '')).toMatchObject({
+      name: 'SIGNAL ARRIVES',
+      byArtist: [{ name: '[kimetsu.]' }, { name: 'Guest' }],
+    })
+
+    const anonymous = makeAudioSiteMetadata({
+      ...input,
+      kind: 'mix',
+      creators: [],
+      description: null,
+    })
+
+    expect(renderDocumentHead(anonymous).meta).toContainEqual({
+      title: 'SIGNAL ARRIVES (DJ Mix) | goosebumps.fm',
+    })
+    expect(anonymous.description).toBe(
+      'SIGNAL ARRIVES. Listen to the DJ mix on goosebumps.fm (gbfm).',
+    )
+    const track = makeAudioSiteMetadata({ ...input, kind: 'track' })
+    expect(track.description).toBe('A listening document.')
+    expect(renderDocumentHead(track).meta).toContainEqual({
+      title: 'SIGNAL ARRIVES | goosebumps.fm',
+    })
+  })
+
+  test('profile search descriptions use the artist bio with a fallback for empty bios', () => {
+    const input = {
+      slug: 'kimetsu',
+      title: '[kimetsu.]',
+      description: 'A Johannesburg-based sonic and visual artist from Ivory Park.',
+      imageUrl: null,
+      publishedAt: null,
+      contributionCount: 3,
+    }
+
+    expect(makeProfileSiteMetadata(input).description).toBe(input.description)
+    expect(makeProfileSiteMetadata({ ...input, description: null }).description).toBe(
+      '[kimetsu.] has 3 contributions on goosebumps.fm',
+    )
   })
 
   test('centralizes content fallbacks and canonical paths', () => {
