@@ -1,3 +1,10 @@
+## [2.108.1](https://github.com/planetaryescape/gbfm/compare/v2.108.0...v2.108.1) (2026-10-25)
+
+
+### Bug Fixes
+
+* **upload:** normalize R2 multipart ETags for completion ([f2b5784](https://github.com/planetaryescape/gbfm/commit/f2b5784487af86b5e6f609ce189171d6b19c3172))
+
 # [2.108.0](https://github.com/guidefari/gbfm/compare/v2.107.3...v2.108.0) (2026-10-25)
 
 
