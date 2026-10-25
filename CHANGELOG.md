@@ -1,3 +1,10 @@
+## [2.112.1](https://github.com/planetaryescape/gbfm/compare/v2.112.0...v2.112.1) (2026-10-25)
+
+
+### Bug Fixes
+
+* **www:** restore upload controls and browser regression coverage ([0a983d2](https://github.com/planetaryescape/gbfm/commit/0a983d28fa92a42f7b8ad97e3754e3782b110a8f))
+
 # [2.112.0](https://github.com/planetaryescape/gbfm/compare/v2.111.2...v2.112.0) (2026-10-25)
 
 
