@@ -136,7 +136,7 @@ const masthead = <M>(
   return h.header(
     [
       h.Class(
-        'show-masthead grid gap-6 py-8 sm:grid-cols-[minmax(0,14rem)_1fr] sm:items-end sm:gap-10 sm:py-12',
+        'show-masthead grid gap-6 py-8 sm:grid-cols-[minmax(0,14rem)_1fr] sm:items-start sm:gap-10 sm:py-12',
       ),
     ],
     [
