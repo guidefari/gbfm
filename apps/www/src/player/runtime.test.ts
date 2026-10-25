@@ -1,5 +1,11 @@
-import { AudioEngine } from '@gbfm/player'
-import { Context, Effect, Layer } from 'effect'
+import {
+  AudioEngine,
+  makePlayerCore,
+  PlayerStorageInMemory,
+  PlayReporterNoop,
+  type QueueTrackType,
+} from '@gbfm/player'
+import { Context, Effect, Fiber, Layer } from 'effect'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { createPreviewSession } from '../media-preview/session'
@@ -115,6 +121,109 @@ describe('HTML audio engine', () => {
       }).pipe(Effect.scoped),
     )
   })
+
+  it.each(['pause', 'clear', 'replace', 'play-again'] as const)(
+    'does not let a pending renewal override a newer %s command',
+    async (command) => {
+      const audio = new TestAudio()
+      const url = 'https://cdn.goosebumps.fm/user-content/private/owner/id/song.mp3'
+      const window = new EventTarget()
+      let now = 0
+      let apiRequests = 0
+      let release = () => {}
+
+      let started = () => {}
+
+      const waiting = new Promise<void>((resolve) => {
+        started = resolve
+      })
+
+      const gate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+
+      const errors: Array<string> = []
+
+      const layer = makeHtmlAudioEngineLayer(audio, (source, onDenied) =>
+        createPreviewSession(source, {
+          now: () => now,
+          onDenied,
+          window,
+          fetch: async (input) => {
+            const path =
+              input instanceof Request ? input.url : input instanceof URL ? input.href : input
+
+            if (path.startsWith('/api/')) {
+              if (++apiRequests === 2) {
+                started()
+                await gate
+              }
+
+              return Response.json({
+                sessionUrl: 'https://cdn.goosebumps.fm/preview-session',
+                grant: 'disposable-test',
+                expiresAt: now + 300_000,
+              })
+            }
+
+            return new Response(null, { status: 204 })
+          },
+        }),
+      )
+
+      await Effect.runPromise(
+        Effect.gen(function* () {
+          const core = yield* makePlayerCore({
+            onStatus: () => {},
+            onTrackFinished: () => {},
+            onError: (message) => {
+              errors.push(message)
+            },
+          })
+
+          const track: QueueTrackType = {
+            id: 'private',
+            slug: 'private',
+            title: 'Private',
+            url,
+            thumbnailUrl: null,
+            type: 'mix',
+          }
+
+          yield* core.setSource(track)
+          now += 6_000
+          window.dispatchEvent(new Event('online'))
+          yield* Effect.promise(() => waiting)
+          const pending = yield* Effect.forkScoped(core.play(track.id))
+          yield* Effect.yieldNow
+
+          if (command === 'clear') yield* core.setSource(null)
+          else if (command === 'replace')
+            yield* core.setSource({ ...track, id: 'public', url: '/public.mp3' })
+          else yield* core.pause
+
+          const newer =
+            command === 'play-again' ? yield* Effect.forkScoped(core.play(track.id)) : null
+
+          yield* Effect.yieldNow
+          release()
+          yield* Fiber.join(pending)
+
+          if (newer) yield* Fiber.join(newer)
+          expect(audio.paused).toBe(command !== 'play-again')
+          expect(yield* core.isDesiredPlaying).toBe(command === 'play-again')
+          expect(audio.src).toBe(
+            { pause: url, clear: '', replace: '/public.mp3', 'play-again': url }[command],
+          )
+          expect(errors).toEqual([])
+        }).pipe(
+          // oxlint-disable-next-line effecttsgo/strict-effect-provide -- This scoped runPromise is the test application's entry point.
+          Effect.provide(Layer.mergeAll(layer, PlayerStorageInMemory, PlayReporterNoop)),
+          Effect.scoped,
+        ),
+      )
+    },
+  )
 
   it('does not load or play private media after permission is denied', async () => {
     const audio = new TestAudio()

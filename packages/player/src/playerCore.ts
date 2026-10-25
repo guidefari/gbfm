@@ -235,6 +235,8 @@ export const playerCore = (
         }),
         Effect.catchTag('PlaybackRejected', (error) =>
           Effect.sync(() => {
+            if (error.reason === 'superseded') return
+
             if (session === active) {
               active.intent = transitionPlaybackIntent(
                 active.intent,

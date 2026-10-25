@@ -323,6 +323,10 @@ describe('private CDN access through real R2 bindings', () => {
     expect(image.status).toBe(200)
     expect(new TextDecoder().decode(await image.arrayBuffer())).toBe('image bytes')
     expect(image.headers.get('cache-control')).toBe('private, no-store')
+    expect(image.headers.get('content-security-policy')).toBe(
+      "sandbox; default-src 'none'; style-src 'unsafe-inline'",
+    )
+    expect(image.headers.get('x-content-type-options')).toBe('nosniff')
     const missingPath = '/user-content/private/test-user/object/missing.png'
     const missing = await read(`${cookieName}=${await grant(missingPath)}`, missingPath)
     expect(missing.status).toBe(404)
