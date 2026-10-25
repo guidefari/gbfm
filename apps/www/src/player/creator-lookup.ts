@@ -43,20 +43,22 @@ export const createCreatorLookup =
         Effect.mapError(() => new CreatorLookupFailed({ reason: 'permanent' })),
       )
 
+      const credits = audio.artists?.length ? audio.artists : audio.creators
+
       if (
         audio.id !== track.id ||
         audio.type !== track.type ||
         audio.slug !== track.slug ||
-        !audio.creators
+        !credits
       ) {
         return yield* Effect.fail(new CreatorLookupFailed({ reason: 'permanent' }))
       }
 
-      const [first, ...rest] = audio.creators
+      const [first, ...rest] = credits
 
       if (!first) return CreatorLookupOutcome.NoCreators()
 
-      if (!hasCompleteCreators(audio))
+      if (!hasCompleteCreators({ ...audio, creators: credits }))
         return yield* Effect.fail(new CreatorLookupFailed({ reason: 'permanent' }))
 
       return CreatorLookupOutcome.CreatorsFound({ creators: [first, ...rest] })

@@ -39,6 +39,7 @@ export const AudioResponse = Schema.Struct({
   createdAt: Schema.String,
   updatedAt: Schema.String,
   creators: Schema.optional(Schema.Array(Creator)),
+  artists: Schema.optional(Schema.Array(Creator)),
 })
 
 /** Only the display and playback data needed by the homepage featured card. */
@@ -52,6 +53,7 @@ export const HomepageMixesResponse = Schema.Struct({
       url: Schema.String,
       thumbnailUrl: Schema.NullOr(Schema.String),
       creators: Schema.Array(Creator),
+      artists: Schema.optional(Schema.Array(Creator)),
     }),
   ),
 })
@@ -143,6 +145,7 @@ const insertAudioFields = {
   url: UrlString,
   showId: Schema.optional(Uuid),
   episodeNumber: Schema.optional(Schema.Int.pipe(Schema.check(Schema.isGreaterThan(0)))),
+  artistIds: Schema.optional(Schema.Array(Uuid)),
 }
 
 export const CreateAudioInput = Schema.Struct({
@@ -167,6 +170,7 @@ export const UpdateAudioInput = Schema.Struct({
   draft: Schema.optional(Schema.Boolean),
   tags: Schema.optional(Schema.Array(Schema.String)),
   url: Schema.optional(UrlString),
+  artistIds: Schema.optional(Schema.Array(Uuid)),
   showId: Schema.optional(Uuid),
   episodeNumber: Schema.optional(Schema.Int.pipe(Schema.check(Schema.isGreaterThan(0)))),
   creatorIds: Schema.optional(Schema.Array(Schema.String)),

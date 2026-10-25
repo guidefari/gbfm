@@ -1,7 +1,7 @@
-import { and, asc, count, desc, eq, like, or, sql } from 'drizzle-orm'
+import { and, asc, count, desc, eq, like, notInArray, or, sql } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 
-import { audioCreators, audioTable } from '@/db/audio.schema'
+import { audioArtists, audioCreators, audioTable } from '@/db/audio.schema'
 import {
   SOCIAL_LINK_PLATFORMS,
   type SocialLinkPlatform,
@@ -15,6 +15,8 @@ import {
   getOrCreateEmailPreferencesByUserId,
   updateEmailPreferences as updateEmailPreferencesRepo,
 } from '@/repositories/email-preferences.repository'
+
+import { listArtistDjs } from './dj-artists'
 
 function isSocialLinkPlatform(value: string): value is SocialLinkPlatform {
   return SOCIAL_LINK_PLATFORMS.some((platform) => platform === value)
@@ -348,7 +350,13 @@ const listDjsEffect = () =>
           .from(userTable)
           .innerJoin(audioCreators, eq(audioCreators.creatorId, userTable.id))
           .innerJoin(audioTable, eq(audioTable.id, audioCreators.audioId))
-          .where(and(eq(userTable.banned, false), eq(audioTable.draft, false)))
+          .where(
+            and(
+              eq(userTable.banned, false),
+              eq(audioTable.draft, false),
+              notInArray(audioTable.id, db.select({ id: audioArtists.audioId }).from(audioArtists)),
+            ),
+          )
           .groupBy(userTable.id, userTable.name, userTable.username, userTable.image, userTable.bio)
           .orderBy(desc(mixCountExpr), asc(userTable.name)),
       catch: (error) =>
@@ -359,7 +367,12 @@ const listDjsEffect = () =>
         }),
     })
 
-    return rows
+    const artists = yield* listArtistDjs()
+    const usernames = new Set(rows.map((row) => row.username))
+
+    return [...rows, ...artists.filter((artist) => !usernames.has(artist.username))].toSorted(
+      (left, right) => right.mixCount - left.mixCount || left.name.localeCompare(right.name),
+    )
   })
 
 const updateUserEmailPreferencesEffect = (

@@ -103,6 +103,22 @@ const load = (type: 'mix' | 'track' = 'mix', slug = 'fixture-audio') => {
 }
 
 describe('Audio detail WWW data loading', () => {
+  test('uses artist credits for mix display and playback without changing account ownership', async () => {
+    const artists = [{ id: 'alias', name: 'The Ensemble', username: 'the-ensemble' }]
+    payload = Schema.decodeUnknownSync(Schema.Json)(
+      AudioPageResponse.cases.Ready.make({
+        ...ready,
+        audio: {
+          ...ready.audio,
+          artists,
+          creators: [{ id: 'owner', name: 'Host', username: 'host' }],
+        },
+      }),
+    )
+    const page = await load()
+    expect(page.flags.items[0]?.creators).toEqual(artists)
+  })
+
   test('one API request provides identity, content, favorite state, metadata and refresh cookies', async () => {
     const page = await load()
     expect(calls).toEqual([

@@ -1,7 +1,7 @@
-import { and, asc, eq } from 'drizzle-orm'
+import { and, asc, eq, notInArray } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 
-import { audioTable } from '@/db/audio.schema'
+import { audioArtists, audioTable } from '@/db/audio.schema'
 import {
   SOCIAL_LINK_PLATFORMS,
   type SocialLinkPlatform,
@@ -13,6 +13,8 @@ import { Database } from '@/db/layer'
 import { postCreators, postsTable } from '@/db/post.schema'
 import { showCreators, showsTable } from '@/db/show.schema'
 import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
+
+import { getArtistDjProfile } from './dj-artists'
 
 function isSocialLinkPlatform(value: string): value is SocialLinkPlatform {
   return SOCIAL_LINK_PLATFORMS.some((platform) => platform === value)
@@ -99,7 +101,9 @@ export const getPublicProfileEffect = (username: string) =>
 
     const foundUser = userRecords[0]
 
-    if (!foundUser || foundUser.banned) {
+    if (!foundUser) return yield* getArtistDjProfile(username)
+
+    if (foundUser.banned) {
       return yield* new NotFoundError({
         message: 'User not found',
         resource: 'user',
@@ -142,7 +146,11 @@ export const getPublicProfileEffect = (username: string) =>
               columns: { thumbnailUrl: true },
             },
           },
-          where: and(audioIdsForCreator(db, foundUser.id), eq(audioTable.draft, false)),
+          where: and(
+            audioIdsForCreator(db, foundUser.id),
+            eq(audioTable.draft, false),
+            notInArray(audioTable.id, db.select({ id: audioArtists.audioId }).from(audioArtists)),
+          ),
           orderBy: asc(audioTable.createdAt),
         }),
       catch: (error) =>

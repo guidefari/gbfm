@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto'
 
-import { and, asc, desc, eq, like, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, like, notInArray, or, sql } from 'drizzle-orm'
 import { Effect } from 'effect'
 import { describe, expect, test } from 'vitest'
 
-import { audioCreators, audioTable } from '@/db/audio.schema'
+import { audioArtists, audioCreators, audioTable } from '@/db/audio.schema'
 import { audioIdsForCreator, showIdsForCreator } from '@/db/creator-membership'
 import { entityTagsProjection } from '@/db/entity-label-projection'
 import { Database } from '@/db/layer'
@@ -39,6 +39,10 @@ describe('relational query smoke matrix', () => {
         orderBy: desc(audioTable.createdAt),
         with: {
           audioCreators: { with: { creator: true } },
+          audioArtists: {
+            orderBy: [asc(audioArtists.position), asc(audioArtists.artistId)],
+            with: { artist: { columns: { id: true, name: true, slug: true } } },
+          },
           show: { columns: { thumbnailUrl: true } },
         },
       })
@@ -58,6 +62,10 @@ describe('relational query smoke matrix', () => {
         extras: (audio) => ({ tagsJson: entityTagsProjection('audio', audio.id) }),
         with: {
           audioCreators: { with: { creator: true } },
+          audioArtists: {
+            orderBy: [asc(audioArtists.position), asc(audioArtists.artistId)],
+            with: { artist: { columns: { id: true, name: true, slug: true } } },
+          },
           show: { columns: { thumbnailUrl: true, slug: true, title: true } },
         },
       }),
@@ -92,7 +100,11 @@ describe('relational query smoke matrix', () => {
           showId: true,
         },
         with: { show: { columns: { thumbnailUrl: true } } },
-        where: and(audioIdsForCreator(db, actorId), eq(audioTable.draft, false)),
+        where: and(
+          audioIdsForCreator(db, actorId),
+          eq(audioTable.draft, false),
+          notInArray(audioTable.id, db.select({ id: audioArtists.audioId }).from(audioArtists)),
+        ),
         orderBy: asc(audioTable.createdAt),
       }),
     ).resolves.toBeDefined()
@@ -130,6 +142,10 @@ describe('relational query smoke matrix', () => {
         offset: 0,
         orderBy: desc(audioTable.createdAt),
         with: {
+          audioArtists: {
+            orderBy: [asc(audioArtists.position), asc(audioArtists.artistId)],
+            with: { artist: { columns: { id: true, name: true, slug: true } } },
+          },
           audioCreators: { with: { creator: true } },
           show: { columns: { thumbnailUrl: true } },
         },
@@ -154,6 +170,10 @@ describe('relational query smoke matrix', () => {
           offset: 0,
           orderBy: desc(audioTable.createdAt),
           with: {
+            audioArtists: {
+              orderBy: [asc(audioArtists.position), asc(audioArtists.artistId)],
+              with: { artist: { columns: { id: true, name: true, slug: true } } },
+            },
             audioCreators: { with: { creator: true } },
             show: { columns: { thumbnailUrl: true } },
           },

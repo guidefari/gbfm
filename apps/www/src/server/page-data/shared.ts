@@ -38,6 +38,10 @@ export const contentItems = (payload: Schema.Json, path: string): ReadonlyArray<
 
     if (!slug) return []
 
+    const artists = Option.getOrUndefined(
+      Schema.decodeUnknownOption(ContentItem.fields.creators)(item.artists),
+    )
+
     return [
       {
         id: text(item.id, slug),
@@ -52,9 +56,11 @@ export const contentItems = (payload: Schema.Json, path: string): ReadonlyArray<
           Schema.decodeUnknownOption(ContentItem.fields.audioType)(item.type),
         ),
         show: Option.getOrNull(Schema.decodeUnknownOption(ContentItem.fields.show)(item.show)),
-        creators: Option.getOrUndefined(
-          Schema.decodeUnknownOption(ContentItem.fields.creators)(item.creators),
-        ),
+        creators: artists?.length
+          ? artists
+          : Option.getOrUndefined(
+              Schema.decodeUnknownOption(ContentItem.fields.creators)(item.creators),
+            ),
         tags: Option.getOrNull(Schema.decodeUnknownOption(ContentItem.fields.tags)(item.tags)),
         streamingLinks: Option.getOrNull(
           Schema.decodeUnknownOption(ContentItem.fields.streamingLinks)(item.streamingLinks),

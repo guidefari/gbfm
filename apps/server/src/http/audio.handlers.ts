@@ -177,7 +177,7 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
     .handle('updateAudioBySlug', ({ params, payload }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
-        const { tags, creatorIds, ...updateData } = payload
+        const { tags, creatorIds, artistIds, ...updateData } = payload
 
         const svc = yield* AudioService
 
@@ -192,6 +192,7 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
                 ...updateData,
                 ...(tags && { tags: [...tags] }),
                 ...(creatorIds && { creatorIds: [...creatorIds] }),
+                ...(artistIds && { artistIds: [...artistIds] }),
               }),
             )
             .pipe(
@@ -265,7 +266,7 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
               slug: mix.slug,
               title: mix.title,
               thumbnailUrl: mix.thumbnailUrl,
-              creators: mix.creators,
+              creators: mix.artists?.length ? mix.artists : mix.creators,
             }),
           ),
         )

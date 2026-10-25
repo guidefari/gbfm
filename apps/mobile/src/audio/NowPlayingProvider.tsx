@@ -67,7 +67,7 @@ const toQueueTrack = (track: Track): QueueTrackType => ({
   url: track.url,
   thumbnailUrl: track.thumbnailUrl,
   type: track.type,
-  creators: track.creators,
+  creators: track.artists?.length ? track.artists : track.creators,
 })
 
 const initialSnapshot: PlaybackSnapshot = {

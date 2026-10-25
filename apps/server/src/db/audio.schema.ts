@@ -3,6 +3,7 @@ import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle
 import { index, integer, sqliteTable, primaryKey, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 import { user } from './auth.schema'
+import { musicArtistsTable } from './music-entity.schema'
 import { showsTable } from './show.schema'
 import { defaultContentFields } from './util'
 
@@ -39,6 +40,7 @@ type BaseSelectAudio = Omit<InferSelectModel<typeof audioTable>, AudioPersistenc
 
 export type InsertAudio = Omit<InferInsertModel<typeof audioTable>, AudioPersistenceFields> & {
   tags?: Array<string>
+  artistIds?: ReadonlyArray<string>
 }
 
 export type Creator = {
@@ -50,7 +52,25 @@ export type Creator = {
 export type SelectAudio = BaseSelectAudio & {
   tags: Array<string> | null
   creators?: Array<Creator>
+  artists?: Array<Creator>
 }
+
+export const audioArtists = sqliteTable(
+  'audio_artists',
+  {
+    audioId: text('audio_id')
+      .notNull()
+      .references(() => audioTable.id, { onDelete: 'cascade' }),
+    artistId: text('artist_id')
+      .notNull()
+      .references(() => musicArtistsTable.id, { onDelete: 'cascade' }),
+    position: integer().notNull().default(0),
+  },
+  (table) => [
+    primaryKey({ columns: [table.audioId, table.artistId] }),
+    index('audio_artists_artist_id_idx').on(table.artistId),
+  ],
+)
 
 export type SelectMdxCompiledAudio = SelectAudio & {
   compiledContent: string
@@ -75,9 +95,18 @@ export const audioCreators = sqliteTable(
 
 export const audioRelations = relations(audioTable, ({ many, one }) => ({
   audioCreators: many(audioCreators),
+  audioArtists: many(audioArtists),
   show: one(showsTable, {
     fields: [audioTable.showId],
     references: [showsTable.id],
+  }),
+}))
+
+export const audioArtistsRelations = relations(audioArtists, ({ one }) => ({
+  audio: one(audioTable, { fields: [audioArtists.audioId], references: [audioTable.id] }),
+  artist: one(musicArtistsTable, {
+    fields: [audioArtists.artistId],
+    references: [musicArtistsTable.id],
   }),
 }))
 

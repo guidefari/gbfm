@@ -89,7 +89,8 @@ export const presentationFromAudio = (
   audio: SelectMdxCompiledAudio,
   siteUrl: string,
 ) => {
-  const creators = audio.creators?.map((creator) => creator.name) ?? []
+  const creators =
+    (audio.artists?.length ? audio.artists : audio.creators)?.map((creator) => creator.name) ?? []
 
   const metadata = makeAudioSiteMetadata({
     kind,

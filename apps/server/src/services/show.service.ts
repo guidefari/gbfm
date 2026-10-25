@@ -1,7 +1,7 @@
 import { and, asc, count, desc, eq, inArray } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 
-import { audioTable, type SelectAudio } from '@/db/audio.schema'
+import { audioArtists, audioTable, type SelectAudio } from '@/db/audio.schema'
 import { showIdsForCreator } from '@/db/creator-membership'
 import { decodeEntityTags, entityTagsProjection } from '@/db/entity-label-projection'
 import { projectEntityLabels, replaceEntityLabels } from '@/db/labels'
@@ -25,6 +25,8 @@ import {
 import { requireCreatorOrAdmin } from '@/lib/authorization'
 import { MdxService, validateCanonicalContent } from '@/lib/mdx'
 import { createPaginationMetadata, type PaginationMetadata } from '@/lib/pagination'
+
+import { artistCredits } from './audio-artists'
 
 export { ShowSubscriptionService, ShowSubscriptionServiceLayer } from './show-subscription.service'
 
@@ -540,6 +542,10 @@ const getEpisodesEffect = (
               offset,
               orderBy: desc(audioTable.createdAt),
               with: {
+                audioArtists: {
+                  orderBy: [asc(audioArtists.position), asc(audioArtists.artistId)],
+                  with: { artist: { columns: { id: true, name: true, slug: true } } },
+                },
                 audioCreators: {
                   with: { creator: true },
                 },
@@ -575,15 +581,18 @@ const getEpisodesEffect = (
 
     const total = countResult[0]?.total ?? 0
 
-    const data = episodes.map(({ audioCreators: creators, show: episodeShow, ...episode }) => ({
-      ...episode,
-      thumbnailUrl: episode.thumbnailUrl ?? episodeShow?.thumbnailUrl ?? null,
-      creators: creators.map(({ creator }) => ({
-        id: creator.id,
-        name: creator.name,
-        username: creator.username,
-      })),
-    }))
+    const data = episodes.map(
+      ({ audioCreators: creators, audioArtists: credits, show: episodeShow, ...episode }) => ({
+        ...episode,
+        artists: artistCredits(credits),
+        thumbnailUrl: episode.thumbnailUrl ?? episodeShow?.thumbnailUrl ?? null,
+        creators: creators.map(({ creator }) => ({
+          id: creator.id,
+          name: creator.name,
+          username: creator.username,
+        })),
+      }),
+    )
 
     return {
       data,

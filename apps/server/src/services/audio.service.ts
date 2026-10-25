@@ -4,6 +4,7 @@ import { Hex } from 'effect/encoding'
 
 import {
   audioCreators,
+  audioArtists,
   audioTable,
   type InsertAudio,
   type SelectAudio,
@@ -36,6 +37,13 @@ import { createPaginationMetadata, type PaginationMetadata } from '@/lib/paginat
 import { recordAudioCreate } from '@/lib/performance-monitoring'
 import { ConfigService } from '@/services/config.service'
 import { markAttachedAssets, UploadAssetService } from '@/services/upload-asset.service'
+
+import {
+  artistCredits,
+  projectAudioArtists,
+  replaceAudioArtists,
+  validateAudioArtists,
+} from './audio-artists'
 
 type AudioType = 'mix' | 'track' | 'misc'
 
@@ -232,6 +240,10 @@ const getByTypeEffect = (
               offset,
               orderBy,
               with: {
+                audioArtists: {
+                  orderBy: [asc(audioArtists.position), asc(audioArtists.artistId)],
+                  with: { artist: { columns: { id: true, name: true, slug: true } } },
+                },
                 audioCreators: {
                   with: { creator: true },
                 },
@@ -260,15 +272,18 @@ const getByTypeEffect = (
         }),
     })
 
-    const data = projectedAudio.map(({ audioCreators: creators, show, ...audio }) => ({
-      ...audio,
-      thumbnailUrl: audio.thumbnailUrl ?? show?.thumbnailUrl ?? null,
-      creators: creators.map(({ creator }) => ({
-        id: creator.id,
-        name: creator.name,
-        username: creator.username,
-      })),
-    }))
+    const data = projectedAudio.map(
+      ({ audioCreators: creators, audioArtists: credits, show, ...audio }) => ({
+        ...audio,
+        artists: artistCredits(credits),
+        thumbnailUrl: audio.thumbnailUrl ?? show?.thumbnailUrl ?? null,
+        creators: creators.map(({ creator }) => ({
+          id: creator.id,
+          name: creator.name,
+          username: creator.username,
+        })),
+      }),
+    )
 
     return {
       data,
@@ -348,6 +363,10 @@ const findAudioBySlug = (_type: AudioType, slug: string, mdx: MdxService, where:
           where,
           extras: (audio) => ({ tagsJson: entityTagsProjection('audio', audio.id) }),
           with: {
+            audioArtists: {
+              orderBy: [asc(audioArtists.position), asc(audioArtists.artistId)],
+              with: { artist: { columns: { id: true, name: true, slug: true } } },
+            },
             audioCreators: {
               with: { creator: true },
             },
@@ -389,10 +408,11 @@ const findAudioBySlug = (_type: AudioType, slug: string, mdx: MdxService, where:
       compiledContent = yield* mdx.compile(audio.content).pipe(Effect.orElseSucceed(() => ''))
     }
 
-    const { audioCreators: creators, show, ...audioFields } = audio
+    const { audioCreators: creators, audioArtists: credits, show, ...audioFields } = audio
 
     return {
       ...audioFields,
+      artists: artistCredits(credits),
       thumbnailUrl: audioFields.thumbnailUrl ?? show?.thumbnailUrl ?? null,
       show: show ? { slug: show.slug, title: show.title } : null,
       compiledContent,
@@ -441,12 +461,13 @@ const createEffect = (
 ) =>
   Effect.gen(function* () {
     yield* validateCanonicalContent(data.content)
+    yield* validateAudioArtists(data.artistIds)
     const db = yield* Database
     const idempotencyFingerprint = yield* createAudioFingerprint(data, creatorIds)
     // thumbnailUrl is intentionally left as-is (NULL when not provided): the
     // show's artwork is resolved at read time instead of copied here, so
     // episodes stay in sync when a show's art changes later.
-    const { tags, ...audioData } = data
+    const { tags, artistIds, ...audioData } = data
     const id = crypto.randomUUID()
 
     const result = yield* Effect.tryPromise({
@@ -469,6 +490,25 @@ const createEffect = (
                   .select({
                     audioId: audioTable.id,
                     creatorId: sql<string>`${creatorId}`.as('creatorId'),
+                  })
+                  .from(audioTable)
+                  .where(
+                    and(
+                      eq(audioTable.id, id),
+                      eq(audioTable.idempotencyActorId, actorId),
+                      eq(audioTable.idempotencyKey, idempotencyKey),
+                      eq(audioTable.idempotencyFingerprint, idempotencyFingerprint),
+                    ),
+                  ),
+              ),
+            ),
+            ...[...new Set(artistIds)].map((artistId, position) =>
+              db.insert(audioArtists).select(
+                db
+                  .select({
+                    audioId: audioTable.id,
+                    artistId: sql<string>`${artistId}`.as('artistId'),
+                    position: sql<number>`${position}`.as('position'),
                   })
                   .from(audioTable)
                   .where(
@@ -562,7 +602,9 @@ const createEffect = (
         }),
     })
 
-    return { ...result.audio, tags: projectedTags }
+    const [credited] = yield* projectAudioArtists([result.audio])
+
+    return { ...result.audio, tags: projectedTags, artists: credited?.artists ?? [] }
   })
 
 const updateEffect = (
@@ -603,11 +645,12 @@ const updateEffect = (
 
     yield* requireCreatorOrAdmin('audio', existingAudio.id, userId, userRole)
     yield* validateCanonicalContent(data.content)
+    yield* validateAudioArtists(data.artistIds)
 
-    const { creatorIds, tags, ...updateData } = data
+    const { creatorIds, tags, artistIds, ...updateData } = data
     let updatedAudio = existingAudio
 
-    if (Object.keys(updateData).length > 0) {
+    if (Object.keys(updateData).length > 0 || artistIds !== undefined) {
       const updatedRecords = yield* Effect.tryPromise({
         try: () =>
           db
@@ -662,6 +705,8 @@ const updateEffect = (
           }),
       })
     }
+
+    if (artistIds !== undefined) yield* replaceAudioArtists(updatedAudio.id, artistIds)
 
     if (tags !== undefined) {
       yield* Effect.tryPromise({
@@ -729,8 +774,11 @@ const updateEffect = (
         }),
     })
 
+    const [credited] = yield* projectAudioArtists([updatedAudio])
+
     return {
       ...updatedAudio,
+      artists: credited?.artists ?? [],
       tags: projectedTags,
       thumbnailUrl: updatedAudio.thumbnailUrl ?? showThumbnailUrl,
       compiledContent,

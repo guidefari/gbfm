@@ -30,6 +30,12 @@ const audio = {
 }
 
 describe('creator lookup boundary', () => {
+  it('uses credited artists instead of the account that manages the mix', async () => {
+    const artists = [{ id: 'alias', name: 'The Ensemble', username: 'the-ensemble' }]
+    const lookup = createCreatorLookup(async () => Response.json({ ...audio, artists }))
+    expect(await Effect.runPromise(lookup(track))).toMatchObject({ creators: artists })
+  })
+
   it('uses the public type/slug endpoint and decodes authoritative creators', async () => {
     const calls: Array<{ url: string; init: RequestInit | undefined }> = []
 

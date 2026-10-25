@@ -11,6 +11,8 @@ import { MdxService } from '@/lib/mdx'
 import { isReservedSlug } from '@/lib/reserved-slugs'
 import { getPublicProfileEffect, type PublicProfile } from '@/services/profile.service'
 
+import { getArtistDjProfile } from './dj-artists'
+
 type ShowData = {
   id: string
   title: string
@@ -154,11 +156,13 @@ const resolveEffect = (slug: string) =>
       }
     }
 
-    return yield* new NotFoundError({
-      message: 'Not found',
-      resource: 'slug',
-      id: slug,
-    })
+    if (!foundUser) {
+      const profile = yield* getArtistDjProfile(slug)
+
+      return { type: 'profile' as const, data: profile }
+    }
+
+    return yield* new NotFoundError({ message: 'Not found', resource: 'slug', id: slug })
   })
 
 export const ResolveServiceLayer = Layer.effect(

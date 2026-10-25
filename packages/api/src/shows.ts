@@ -83,6 +83,7 @@ const EpisodeResponse = Schema.Struct({
   episodeNumber: Schema.NullOr(Schema.Number),
   playCount: Schema.Number,
   creators: AudioResponse.fields.creators,
+  artists: AudioResponse.fields.artists,
 })
 
 export const GetShowEpisodesResponse = Schema.Struct({

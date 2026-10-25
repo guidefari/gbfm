@@ -103,7 +103,9 @@ export function FeaturedMixCard({
     )
   }
 
-  const creatorNames = mix.creators?.map((creator) => creator.name).join(', ')
+  const creatorNames = (mix.artists?.length ? mix.artists : mix.creators)
+    ?.map((creator) => creator.name)
+    .join(', ')
 
   return (
     <View style={cardContainerStyle}>

@@ -1,10 +1,12 @@
-import { and, desc, eq, isNotNull, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, isNotNull, or, sql } from 'drizzle-orm'
 import { Effect } from 'effect'
 
-import { audioTable } from '@/db/audio.schema'
+import { audioArtists, audioTable } from '@/db/audio.schema'
 import { featuredMixTable } from '@/db/featured-mix.schema'
 import { Database } from '@/db/layer'
 import { DatabaseError, ValidationError } from '@/errors'
+
+import { artistCredits } from './audio-artists'
 
 /** Lists all published choices and the stored selection, even when it is no longer published. */
 export const loadFeaturedMix = Effect.fn('FeaturedMix.load')(function* () {
@@ -72,6 +74,10 @@ export const getHomepageMixes = Effect.fn('FeaturedMix.homepage')(function* () {
         where: eq(audioTable.id, sql`coalesce((${selected}), (${newest}))`),
         columns: { id: true, title: true, slug: true, url: true, thumbnailUrl: true },
         with: {
+          audioArtists: {
+            orderBy: [asc(audioArtists.position), asc(audioArtists.artistId)],
+            with: { artist: { columns: { id: true, name: true, slug: true } } },
+          },
           audioCreators: {
             columns: {},
             with: { creator: { columns: { id: true, name: true, username: true } } },
@@ -88,12 +94,13 @@ export const getHomepageMixes = Effect.fn('FeaturedMix.homepage')(function* () {
   })
 
   if (!mix) return { data: [] }
-  const { audioCreators, show, ...audio } = mix
+  const { audioCreators, audioArtists: credits, show, ...audio } = mix
 
   return {
     data: [
       {
         ...audio,
+        artists: credits.length ? artistCredits(credits) : undefined,
         type: 'mix' as const,
         thumbnailUrl: audio.thumbnailUrl ?? show?.thumbnailUrl ?? null,
         creators: audioCreators.map(({ creator }) => creator),

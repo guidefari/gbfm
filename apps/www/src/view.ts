@@ -45,7 +45,14 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
   const playback = {
     prefetch: (href: string) => Message.PrefetchRequested({ href }),
     play: (episode: Page.Shows.Episode) =>
-      Message.GotPlayerMessage({ message: Player.Message.PlayTrack({ track: episode }) }),
+      Message.GotPlayerMessage({
+        message: Player.Message.PlayTrack({
+          track: {
+            ...episode,
+            creators: episode.artists?.length ? episode.artists : episode.creators,
+          },
+        }),
+      }),
     toggle: Message.GotPlayerMessage({ message: Player.Message.TogglePlayPause() }),
     currentId: model.player.snapshot.queue.current?.id ?? null,
     isPlaying: model.player.snapshot.transport.isPlaying,
