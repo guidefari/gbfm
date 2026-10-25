@@ -74,6 +74,10 @@ export const view = (model: Model, h: HtmlBuilder<Message>) => {
             [h.Href('/shows'), h.Class('browse-shows')],
             [lucide(iconPaths.radio, 'size-4'), h.span([], ['Browse radio shows'])],
           ),
+          h.a(
+            [h.Href('/subscribe'), h.Class('home-email-updates')],
+            [lucide(iconPaths.mail, 'size-3.5'), h.span([], ['Email updates'])],
+          ),
         ],
       ),
     ],

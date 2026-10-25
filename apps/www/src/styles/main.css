@@ -808,6 +808,27 @@
 .featured button:hover {
   opacity: 0.9;
 }
+.home-email-updates {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: var(--muted-foreground);
+  text-decoration: none;
+}
+.home-email-updates:hover {
+  color: var(--foreground);
+  text-decoration: underline;
+  text-decoration-color: var(--highlight);
+}
+.home-email-updates:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
 .featured button:focus-visible,
 .browse-shows:focus-visible {
   outline: 2px solid var(--ring);
