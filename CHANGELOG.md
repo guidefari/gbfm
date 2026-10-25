@@ -1,3 +1,10 @@
+## [2.111.1](https://github.com/planetaryescape/gbfm/compare/v2.111.0...v2.111.1) (2026-10-25)
+
+
+### Bug Fixes
+
+* **shows:** group read more with the blurb and quiet it ([1485768](https://github.com/planetaryescape/gbfm/commit/14857683592a5931d95d21b4db838da4eb403fa4))
+
 # [2.111.0](https://github.com/planetaryescape/gbfm/compare/v2.110.0...v2.111.0) (2026-10-25)
 
 
