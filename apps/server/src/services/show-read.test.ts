@@ -14,7 +14,9 @@ import { MdxServiceLayer } from '@/lib/mdx'
 import { db, d1 } from '@/test/database'
 import { withTestLayer } from '@/test/effect'
 
+import { ConfigServiceLayer } from './config.service'
 import { ShowService, ShowServiceLayer } from './show.service'
+import { UnavailableObjectStoreClientLayer } from './storage/object-store-client'
 
 const owner = { userId: 'show-read-owner', userRole: 'user' }
 
@@ -30,6 +32,8 @@ const read = async <A, E>(operation: (service: ShowService) => Effect.Effect<A, 
 
   const layer = ShowServiceLayer.pipe(
     Layer.provide(MdxServiceLayer),
+    Layer.provide(ConfigServiceLayer),
+    Layer.provide(UnavailableObjectStoreClientLayer),
     Layer.provide(Layer.succeed(Database, client)),
   )
 

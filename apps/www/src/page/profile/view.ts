@@ -1,6 +1,7 @@
 import type { PublicProfileResponse } from '@gbfm/api/profile'
 import { inertHtml as h } from 'foldkit/html'
 
+import { imageSource } from '../../view/artwork'
 import { contentSection } from './content-section'
 import { socialLinks } from './social-links'
 
@@ -19,7 +20,7 @@ export const view = (profile: PublicProfileResponse) => {
         [h.Class('profile-identity')],
         [
           profile.image
-            ? h.img([h.Src(profile.image), h.Alt(profile.name), h.Class('profile-avatar')])
+            ? h.img([imageSource(profile.image), h.Alt(profile.name), h.Class('profile-avatar')])
             : h.empty,
           h.p([h.Class('profile-eyebrow')], ['On Goosebumps']),
           h.h1([], [profile.name]),

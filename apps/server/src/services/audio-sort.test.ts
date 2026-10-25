@@ -7,6 +7,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import { audioTable } from '@/db/audio.schema'
 import { MdxServiceLayer } from '@/lib/mdx'
 import { ConfigServiceLayer } from '@/services/config.service'
+import { UnavailableObjectStoreClientLayer } from '@/services/storage/object-store-client'
 import { UploadAssetServiceLayer } from '@/services/upload-asset.service'
 import { DatabaseTestLayer, db } from '@/test/database'
 import { withTestLayer } from '@/test/effect'
@@ -42,6 +43,7 @@ const getService = () =>
       }),
       AudioServiceLayer.pipe(
         Layer.provide(MdxServiceLayer),
+        Layer.provide(UnavailableObjectStoreClientLayer),
         Layer.provide(Layer.mergeAll(ConfigServiceLayer, UploadAssetServiceLayer)),
         Layer.provide(DatabaseTestLayer),
       ),

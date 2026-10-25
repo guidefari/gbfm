@@ -46,6 +46,7 @@ export const ReleaseHandlersLive = HttpApiBuilder.group(Api, 'release', (handler
               Effect.catchTag('ConflictError', () => new HttpApiError.Conflict()),
               Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
               Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized()),
+              Effect.catchTag('S3Error', () => new HttpApiError.InternalServerError()),
               Effect.catchTag('ValidationError', () => new ValidationHttpError()),
             ),
         )
@@ -104,6 +105,7 @@ export const ReleaseHandlersLive = HttpApiBuilder.group(Api, 'release', (handler
             .pipe(
               Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
               Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized()),
+              Effect.catchTag('S3Error', () => new HttpApiError.InternalServerError()),
               Effect.catchTag('ValidationError', () => new ValidationHttpError()),
             ),
         )

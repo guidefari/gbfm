@@ -11,6 +11,7 @@ import {
   type R2BucketCapability,
   type R2ObjectStoreBuckets,
 } from './r2-object-store-client'
+import { signedRequest } from './r2-signing'
 
 const config = createConfig()
 
@@ -75,6 +76,7 @@ const makeBucket = () => {
 const runWithStore = <A, E>(
   buckets: R2ObjectStoreBuckets,
   effect: Effect.Effect<A, E, ObjectStoreClient>,
+  request?: typeof signedRequest,
 ) => {
   const storage = {
     provider: 'r2' as const,
@@ -86,7 +88,7 @@ const runWithStore = <A, E>(
   }
 
   const configLayer = Layer.succeed(ConfigService, { ...config, storage })
-  const storeLayer = R2ObjectStoreClientLayer(buckets).pipe(Layer.provide(configLayer))
+  const storeLayer = R2ObjectStoreClientLayer(buckets, request).pipe(Layer.provide(configLayer))
 
   return Effect.runPromise(withTestLayer(effect, storeLayer))
 }
@@ -125,6 +127,59 @@ describe('R2ObjectStoreClientLayer', () => {
     } finally {
       await miniflare.dispose()
     }
+  })
+
+  test('copies server-side using the signed S3 copy-source header and rejects embedded HTTP 200 errors', async () => {
+    const bucket = makeBucket().bucket
+
+    const requests: Array<{
+      method: string
+      url: string
+      source: string | null
+      authorization: string | null
+    }> = []
+
+    let responseBody = '<CopyObjectResult><ETag>test-etag</ETag></CopyObjectResult>'
+
+    const request: typeof signedRequest = (input) =>
+      signedRequest({
+        ...input,
+        fetch: async (url, init) => {
+          const headers = new Headers(init?.headers)
+          requests.push({
+            method: init?.method ?? 'GET',
+            url,
+            source: headers.get('x-amz-copy-source'),
+            authorization: headers.get('authorization'),
+          })
+
+          return new Response(responseBody, { status: 200 })
+        },
+      })
+
+    const copy = Effect.gen(function* () {
+      const store = yield* ObjectStoreClient
+      yield* Effect.promise(() =>
+        store.copyObject(
+          config.buckets.userContent,
+          'private/owner/image/id/a b.png',
+          'public/owner/image/id/a b.png',
+        ),
+      )
+    })
+
+    await runWithStore({ userContent: bucket, mixes: bucket }, copy, request)
+    expect(requests).toHaveLength(1)
+    expect(requests[0]).toMatchObject({
+      method: 'PUT',
+      url: `https://test-account.r2.cloudflarestorage.com/${config.buckets.userContent}/public/owner/image/id/a%20b.png`,
+      source: `/${encodeURIComponent(config.buckets.userContent)}/private/owner/image/id/a%20b.png`,
+    })
+    expect(requests[0]?.authorization).toContain('x-amz-copy-source')
+    responseBody = '<Error><Code>InternalError</Code></Error>'
+    await expect(
+      runWithStore({ userContent: bucket, mixes: bucket }, copy, request),
+    ).rejects.toThrow('R2 object copy failed')
   })
 
   test('uses native bindings for object writes, reads, deletes, and paginated lists', async () => {

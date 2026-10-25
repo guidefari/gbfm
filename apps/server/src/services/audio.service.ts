@@ -30,6 +30,7 @@ import {
   NotFoundError,
   type UnauthorizedError,
   type ValidationError,
+  type S3Error,
 } from '@/errors'
 import { requireCreatorOrAdmin } from '@/lib/authorization'
 import { CryptoLive } from '@/lib/crypto'
@@ -37,6 +38,8 @@ import { MdxService, validateCanonicalContent } from '@/lib/mdx'
 import { createPaginationMetadata, type PaginationMetadata } from '@/lib/pagination'
 import { recordAudioCreate } from '@/lib/performance-monitoring'
 import { ConfigService } from '@/services/config.service'
+import { makeMediaPublication, type MediaPublication } from '@/services/media-publication'
+import { ObjectStoreClient } from '@/services/storage/object-store-client'
 import { markAttachedAssets, UploadAssetService } from '@/services/upload-asset.service'
 
 import {
@@ -68,6 +71,7 @@ const audioOrderBy = (sort: AudioSortField, order: AudioSortOrder) => {
 
 type CreateAudioOptions = {
   actorId: string
+  actorRole?: string
   idempotencyKey: string
 }
 
@@ -162,7 +166,10 @@ export interface AudioService {
     data: CreateAudioData,
     creatorIds: Array<string>,
     options: CreateAudioOptions,
-  ) => Effect.Effect<SelectAudio, DatabaseError | ConflictError | ValidationError>
+  ) => Effect.Effect<
+    SelectAudio,
+    DatabaseError | ConflictError | ValidationError | UnauthorizedError | S3Error
+  >
   readonly update: (
     type: AudioType,
     slug: string,
@@ -171,7 +178,7 @@ export interface AudioService {
     data: Partial<InsertAudio> & { creatorIds?: Array<string> },
   ) => Effect.Effect<
     SelectMdxCompiledAudio,
-    DatabaseError | NotFoundError | UnauthorizedError | ValidationError
+    DatabaseError | NotFoundError | UnauthorizedError | ValidationError | S3Error
   >
   readonly trackPlay: (
     id: string,
@@ -444,7 +451,8 @@ const getBySlugUnfilteredEffect = (type: AudioType, slug: string, mdx: MdxServic
 const createEffect = (
   data: CreateAudioData,
   creatorIds: Array<string>,
-  { actorId, idempotencyKey }: CreateAudioOptions,
+  { actorId, actorRole, idempotencyKey }: CreateAudioOptions,
+  media: MediaPublication,
 ) =>
   Effect.gen(function* () {
     yield* validateCanonicalContent(data.content)
@@ -454,7 +462,8 @@ const createEffect = (
     // thumbnailUrl is intentionally left as-is (NULL when not provided): the
     // show's artwork is resolved at read time instead of copied here, so
     // episodes stay in sync when a show's art changes later.
-    const { tags, artistIds, ...audioData } = data
+    const publication = yield* media(data, { userId: actorId, userRole: actorRole ?? 'user' })
+    const { tags, artistIds, ...audioData } = publication.data
     const id = crypto.randomUUID()
 
     const result = yield* Effect.tryPromise({
@@ -589,6 +598,8 @@ const createEffect = (
         }),
     })
 
+    yield* publication.publish
+
     const [credited] = yield* projectAudioArtists([result.audio])
 
     return { ...result.audio, tags: projectedTags, artists: credited?.artists ?? [] }
@@ -601,6 +612,7 @@ const updateEffect = (
   userRole: string,
   data: Partial<InsertAudio> & { creatorIds?: Array<string> },
   mdx: MdxService,
+  media: MediaPublication,
 ) =>
   Effect.gen(function* () {
     const db = yield* Database
@@ -634,7 +646,8 @@ const updateEffect = (
     yield* validateCanonicalContent(data.content)
     yield* validateAudioArtists(data.artistIds)
 
-    const { creatorIds, tags, artistIds, ...updateData } = data
+    const publication = yield* media(data, { userId, userRole }, existingAudio)
+    const { creatorIds, tags, artistIds, ...updateData } = publication.data
     let updatedAudio = existingAudio
 
     if (Object.keys(updateData).length > 0 || artistIds !== undefined) {
@@ -706,6 +719,8 @@ const updateEffect = (
           }),
       })
     }
+
+    yield* publication.publish
 
     const creatorRows = yield* Effect.tryPromise({
       try: () =>
@@ -853,6 +868,8 @@ export const AudioServiceLayer = Layer.effect(
     const crypto = yield* Crypto.Crypto
     const config = yield* ConfigService
     const uploadAssetService = yield* UploadAssetService
+    const store = yield* ObjectStoreClient
+    const media = makeMediaPublication(config, store)
     const provideDb = Effect.provideService(Database, db)
 
     return {
@@ -882,14 +899,14 @@ export const AudioServiceLayer = Layer.effect(
           }),
         ).pipe(Effect.withSpan('audio.getBySlugForEdit', { attributes: { type, slug } })),
       create: (data, creatorIds, options) =>
-        provideDb(createEffect(data, creatorIds, options)).pipe(
+        provideDb(createEffect(data, creatorIds, options, media)).pipe(
           Effect.provideService(Crypto.Crypto, crypto),
           Effect.provideService(ConfigService, config),
           Effect.provideService(UploadAssetService, uploadAssetService),
           Effect.withSpan('audio.create'),
         ),
       update: (type, slug, userId, userRole, data) =>
-        provideDb(updateEffect(type, slug, userId, userRole, data, mdx)).pipe(
+        provideDb(updateEffect(type, slug, userId, userRole, data, mdx, media)).pipe(
           Effect.provideService(ConfigService, config),
           Effect.provideService(UploadAssetService, uploadAssetService),
           Effect.withSpan('audio.update', { attributes: { type, slug } }),

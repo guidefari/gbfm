@@ -1,5 +1,6 @@
 import * as Alchemy from 'alchemy'
 import * as Cloudflare from 'alchemy/Cloudflare'
+import { Random } from 'alchemy/Random'
 import * as Effect from 'effect/Effect'
 
 import { apiWorker } from './alchemy/api'
@@ -36,7 +37,8 @@ export default Alchemy.Stack(
 
     const email = yield* emailResources(config, emailConfig)
     const store = yield* storage(config)
-    const cdn = yield* cdnRouter(config, store)
+    const mediaPreviewKey = yield* Random('MediaPreviewKey', { bytes: 32 })
+    const cdn = yield* cdnRouter(config, store, mediaPreviewKey.text)
     const qrPdf = yield* qrPdfWorker(config, store, cdn)
 
     const turnstile = yield* Cloudflare.Turnstile.Widget('SignupTurnstile', {
@@ -57,6 +59,7 @@ export default Alchemy.Stack(
       adminEmail: deployment.adminEmail,
       cloudflareAccountId: deployment.cloudflareAccountId,
       turnstile,
+      mediaPreviewKey: mediaPreviewKey.text,
     })
 
     const evaluator =

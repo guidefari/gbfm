@@ -26,6 +26,7 @@ const testStore = () => {
     },
     presignPutObject: async () => 'https://object-store.test/upload',
     deleteObject: async () => {},
+    copyObject: async () => {},
     headObject: async () => null,
     listObjects: async () => [],
     listBuckets: async () => ['user-content', 'mixes'],

@@ -3,6 +3,7 @@ import { HashMap, Match, Option } from 'effect'
 import { AsyncData } from 'foldkit'
 import type { Document, HtmlBuilder } from 'foldkit/html'
 
+import { ObservePrivateMedia } from './media-preview/mount'
 import { Message } from './message'
 import type { Model } from './model'
 import * as Page from './page'
@@ -179,7 +180,11 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
       model.flags.metadata?.canonicalUrl ??
       `https://goosebumps.fm${new URL(model.flags.url).pathname}`,
     body: h.div(
-      [h.Class('site'), h.DataAttribute('interactive', String(model.interactive))],
+      [
+        h.Class('site'),
+        h.DataAttribute('interactive', String(model.interactive)),
+        h.OnMount(ObservePrivateMedia()),
+      ],
       [
         stationNav(h, {
           pathname: model.pendingPath ?? new URL(model.flags.url).pathname,

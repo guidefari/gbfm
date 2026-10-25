@@ -82,6 +82,32 @@ const tweetFlags = (slug: string): Flags => {
 
 const changed = (href: string) => Message.ChangedUrl({ url: Option.getOrThrow(fromString(href)) })
 
+it('reveals preview denial outside the player overlays without losing playback position', () => {
+  const initial = init(flags).model
+
+  const snapshot = {
+    ...initial.player.snapshot,
+    transport: { ...initial.player.snapshot.transport, currentTime: 83, duration: 180 },
+  }
+
+  const model = {
+    ...initial,
+    player: {
+      ...initial.player,
+      snapshot,
+      playerDialog: { ...initial.player.playerDialog, isOpen: true },
+      queueDialog: { ...initial.player.queueDialog, isOpen: true },
+    },
+  }
+
+  const denied = update(model, Message.MediaPreviewDenied()).model
+
+  expect(denied.error).toContain('Private media preview is unavailable')
+  expect(denied.player.playerDialog.isOpen).toBe(false)
+  expect(denied.player.queueDialog.isOpen).toBe(false)
+  expect(denied.player.snapshot).toEqual(snapshot)
+})
+
 describe('Tweet reader navigation ownership', () => {
   it('preserves unrelated submodels on identical revalidation and scopes reader metadata to identity', () => {
     const initial = init(flags).model

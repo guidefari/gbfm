@@ -14,7 +14,9 @@ import { MdxServiceLayer } from '@/lib/mdx'
 import { DatabaseTestLayer, db } from '@/test/database'
 import { withTestLayer } from '@/test/effect'
 
+import { ConfigServiceLayer } from './config.service'
 import { ShowService, ShowServiceLayer } from './show.service'
+import { UnavailableObjectStoreClientLayer } from './storage/object-store-client'
 
 const hostId = `show-creators-${randomUUID()}`
 
@@ -22,6 +24,8 @@ const otherHostId = `show-creators-other-${randomUUID()}`
 
 const ShowServiceTestLayer = ShowServiceLayer.pipe(
   Layer.provide(MdxServiceLayer),
+  Layer.provide(ConfigServiceLayer),
+  Layer.provide(UnavailableObjectStoreClientLayer),
   Layer.provide(DatabaseTestLayer),
 )
 

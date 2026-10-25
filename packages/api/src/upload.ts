@@ -106,6 +106,17 @@ export const MultipartUploadStatusResponse = Schema.Struct({
 
 export const UploadGroup = HttpApiGroup.make('upload')
   .add(
+    HttpApiEndpoint.post('previewMedia', '/api/upload/preview', {
+      payload: Schema.Struct({ url: Schema.NonEmptyString }),
+      success: Schema.Struct({
+        sessionUrl: Schema.String,
+        grant: Schema.String,
+        expiresAt: Schema.Number,
+      }),
+      error: [HttpApiError.BadRequest, HttpApiError.Forbidden, HttpApiError.ServiceUnavailable],
+    }).middleware(AuthMiddleware),
+  )
+  .add(
     HttpApiEndpoint.post('presignImage', '/api/upload/image/presign', {
       payload: PresignImageUploadInput,
       success: PresignImageUploadResponse,

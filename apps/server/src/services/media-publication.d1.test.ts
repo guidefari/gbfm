@@ -1,0 +1,452 @@
+import { eq } from 'drizzle-orm'
+import { Effect, Layer, Result } from 'effect'
+import { describe, expect, test } from 'vitest'
+
+import { audioTable } from '@/db/audio.schema'
+import { user } from '@/db/auth.schema'
+import { DatabaseLayer, makeDatabaseClient } from '@/db/layer'
+import { musicLabelsTable, musicLabelCreatorsTable } from '@/db/music-entity.schema'
+import { showsTable } from '@/db/show.schema'
+import { DatabaseError, S3Error, UnauthorizedError, ValidationError } from '@/errors'
+import { CryptoLive } from '@/lib/crypto'
+import { MdxServiceLayer } from '@/lib/mdx'
+import { withTestLayer } from '@/test/effect'
+import { createMigratedD1Database } from '@/test/migrate-d1'
+
+import { AudioService, AudioServiceLayer } from './audio.service'
+import { ConfigService, createConfig } from './config.service'
+import { attachedMediaUrls, makeMediaPublication } from './media-publication'
+import { PostService, PostServiceLayer } from './post.service'
+import { ReleaseService, ReleaseServiceLayer } from './release.service'
+import { ShowService, ShowServiceLayer } from './show.service'
+import { ObjectStoreClient } from './storage/object-store-client'
+import { UploadAssetServiceLayer } from './upload-asset.service'
+
+const actor = { userId: 'owner', userRole: 'user' }
+
+const collaborator = { userId: 'collaborator', userRole: 'user' }
+
+const config = {
+  ...createConfig(),
+  urls: { ...createConfig().urls, bucketRouter: 'https://media.example.test' },
+}
+
+const imageKey = 'private/owner/image/image-id/cover.png'
+
+const audioKey = 'private/owner/multipart/audio-id/123/audio_track.mp3'
+
+const assetUrl = (key: string) => `${config.urls.bucketRouter}/user-content/${key}`
+
+const publicKey = (key: string) => key.replace('private/', 'public/')
+
+function memoryStorage() {
+  const objects = new Map<string, string>([
+    [imageKey, 'image bytes'],
+    [audioKey, 'audio bytes'],
+  ])
+
+  const copies: Array<{ source: string; destination: string }> = []
+  const heads: Array<string> = []
+  let failCopies = false
+  const unused = () => Promise.reject(new Error('Unexpected storage operation'))
+
+  const store: ObjectStoreClient = {
+    provider: 'r2',
+    putObject: unused,
+    presignPutObject: unused,
+    deleteObject: unused,
+    listObjects: unused,
+    listBuckets: unused,
+    createMultipartUpload: unused,
+    presignUploadPart: unused,
+    completeMultipartUpload: unused,
+    abortMultipartUpload: unused,
+    listMultipartParts: unused,
+    headObject: async (_bucket, key) => {
+      heads.push(key)
+      const body = objects.get(key)
+
+      return body === undefined ? null : { size: body.length, metadata: {} }
+    },
+    copyObject: async (_bucket, source, destination) => {
+      if (failCopies) throw new Error('Disposable test storage outage')
+      const body = objects.get(source)
+
+      if (body === undefined) throw new Error('Missing source')
+      objects.set(destination, body)
+      copies.push({ source, destination })
+    },
+  }
+
+  return {
+    store,
+    objects,
+    copies,
+    heads,
+    fail: (value: boolean) => {
+      failCopies = value
+    },
+  }
+}
+
+async function harness() {
+  const resource = await createMigratedD1Database()
+  const db = makeDatabaseClient(resource.database)
+  await db.insert(user).values(
+    [actor, collaborator].map(({ userId }) => ({
+      id: userId,
+      name: userId,
+      email: `${userId}@example.test`,
+    })),
+  )
+  const storage = memoryStorage()
+
+  const deps = Layer.mergeAll(
+    Layer.succeed(ConfigService, config),
+    Layer.succeed(ObjectStoreClient, storage.store),
+    MdxServiceLayer,
+    CryptoLive,
+    UploadAssetServiceLayer,
+  )
+
+  const layer = Layer.mergeAll(
+    ShowServiceLayer,
+    AudioServiceLayer,
+    PostServiceLayer,
+    ReleaseServiceLayer,
+  ).pipe(Layer.provide(deps), Layer.provide(DatabaseLayer(resource.database)))
+
+  const services = await Effect.runPromise(
+    withTestLayer(
+      Effect.gen(function* () {
+        return {
+          show: yield* ShowService,
+          audio: yield* AudioService,
+          post: yield* PostService,
+          release: yield* ReleaseService,
+        }
+      }),
+      layer,
+    ),
+  )
+
+  return { ...services, ...storage, db, [Symbol.asyncDispose]: () => resource.dispose() }
+}
+
+describe('media publication at the content/storage seam', () => {
+  test('release drafts preserve originals and publish media only after a successful save', async () => {
+    await using h = await harness()
+    await h.db
+      .insert(musicLabelsTable)
+      .values({ id: 'label', name: 'Fixture label', slug: 'label' })
+    await h.db.insert(musicLabelCreatorsTable).values({ labelId: 'label', creatorId: actor.userId })
+
+    const release = await Effect.runPromise(
+      h.release.create(
+        {
+          title: 'Release',
+          slug: 'release',
+          labelId: 'label',
+          releaseDate: new Date('2026-01-01'),
+          content: `![cover](${assetUrl(imageKey)})`,
+          thumbnailUrl: assetUrl(imageKey),
+          bannerImageUrl: assetUrl(imageKey),
+          draft: true,
+        },
+        actor.userId,
+        actor.userRole,
+      ),
+    )
+
+    expect(release.thumbnailUrl).toBe(assetUrl(imageKey))
+    expect(h.copies).toEqual([])
+
+    const published = await Effect.runPromise(
+      h.release.update('release', actor.userId, actor.userRole, { draft: false }),
+    )
+
+    expect(published.thumbnailUrl).toBe(assetUrl(publicKey(imageKey)))
+    expect(published.bannerImageUrl).toBe(assetUrl(publicKey(imageKey)))
+    expect(attachedMediaUrls(published)).toEqual([
+      assetUrl(publicKey(imageKey)),
+      assetUrl(publicKey(imageKey)),
+      assetUrl(publicKey(imageKey)),
+    ])
+    expect(h.copies).toHaveLength(1)
+  })
+
+  test('image extraction does not treat prose, code, links or unsupported HTML as attachments', async () => {
+    const h = memoryStorage()
+    const content = `${assetUrl(imageKey)}\n\n[link](${assetUrl(imageKey)})\n\n\`![code](${assetUrl(imageKey)})\`\n\n<img src="${assetUrl(imageKey)}">`
+    expect(attachedMediaUrls({ content })).toEqual([])
+
+    const prepared = await Effect.runPromise(
+      makeMediaPublication(config, h.store)({ content }, collaborator),
+    )
+
+    await Effect.runPromise(prepared.publish)
+    expect(prepared.data.content).toBe(content)
+    expect(h.copies).toEqual([])
+    expect(h.heads).toEqual([])
+  })
+
+  test('drafts do not copy; publication rewrites artwork and parsed inline images only; unpublishing does not revoke copies', async () => {
+    await using h = await harness()
+    const source = `Prose ${assetUrl(imageKey)}\n\n![cover](${assetUrl(imageKey)})\n\n\`${assetUrl(imageKey)}\``
+
+    const draft = await Effect.runPromise(
+      h.show.create(
+        {
+          title: 'Show',
+          slug: 'show',
+          content: source,
+          draft: true,
+          thumbnailUrl: assetUrl(imageKey),
+        },
+        [actor.userId],
+        actor,
+      ),
+    )
+
+    expect(draft.thumbnailUrl).toBe(assetUrl(imageKey))
+    expect(h.copies).toEqual([])
+
+    const published = await Effect.runPromise(
+      h.show.update('show', actor.userId, actor.userRole, { draft: false }),
+    )
+
+    expect(published.thumbnailUrl).toBe(assetUrl(publicKey(imageKey)))
+    expect(published.content).toBe(
+      `Prose ${assetUrl(imageKey)}\n\n![cover](<${assetUrl(publicKey(imageKey))}>)\n\n\`${assetUrl(imageKey)}\``,
+    )
+    expect(h.objects.get(publicKey(imageKey))).toBe('image bytes')
+    expect(h.objects.get(imageKey)).toBe('image bytes')
+
+    const unpublished = await Effect.runPromise(
+      h.show.update('show', actor.userId, actor.userRole, { draft: true }),
+    )
+
+    expect(unpublished.thumbnailUrl).toBe(published.thumbnailUrl)
+    // Publication is permanent even when the original page returns to draft.
+    expect(h.objects.has(publicKey(imageKey))).toBe(true)
+    expect(h.copies).toHaveLength(1)
+    await Effect.runPromise(
+      h.show.create(
+        {
+          title: 'Shared draft',
+          slug: 'shared',
+          content: '',
+          draft: true,
+          thumbnailUrl: published.thumbnailUrl,
+        },
+        [collaborator.userId],
+        collaborator,
+      ),
+    )
+    expect(h.copies).toHaveLength(1)
+  })
+
+  test('failed atomic D1 saves cannot expose a copy', async () => {
+    await using h = await harness()
+
+    const result = await Effect.runPromise(
+      h.show
+        .create(
+          {
+            title: 'Invalid creator',
+            slug: 'invalid',
+            content: '',
+            thumbnailUrl: assetUrl(imageKey),
+          },
+          ['nonexistent-user'],
+          actor,
+        )
+        .pipe(Effect.result),
+    )
+
+    expect(Result.isFailure(result) && result.failure).toBeInstanceOf(DatabaseError)
+    expect(await h.db.select().from(showsTable).where(eq(showsTable.slug, 'invalid'))).toEqual([])
+    expect(h.copies).toEqual([])
+    expect(h.objects.has(publicKey(imageKey))).toBe(false)
+  })
+
+  test('copy outage returns typed failure after commit; identical collaborator retry repairs destination', async () => {
+    await using h = await harness()
+    await Effect.runPromise(
+      h.show.create(
+        {
+          title: 'Retry',
+          slug: 'retry',
+          content: '',
+          draft: true,
+          thumbnailUrl: assetUrl(imageKey),
+        },
+        [actor.userId, collaborator.userId],
+        actor,
+      ),
+    )
+    h.fail(true)
+    const payload = { draft: false, thumbnailUrl: assetUrl(imageKey) }
+
+    const failed = await Effect.runPromise(
+      h.show
+        .update('retry', collaborator.userId, collaborator.userRole, payload)
+        .pipe(Effect.result),
+    )
+
+    expect(Result.isFailure(failed) && failed.failure).toBeInstanceOf(S3Error)
+    const [saved] = await h.db.select().from(showsTable).where(eq(showsTable.slug, 'retry'))
+    expect(saved?.thumbnailUrl).toBe(assetUrl(publicKey(imageKey)))
+    expect(saved?.draft).toBe(false)
+    expect(h.objects.has(publicKey(imageKey))).toBe(false)
+    h.fail(false)
+
+    const repaired = await Effect.runPromise(
+      h.show.update('retry', collaborator.userId, collaborator.userRole, payload),
+    )
+
+    expect(repaired.thumbnailUrl).toBe(saved?.thumbnailUrl)
+    expect(h.objects.has(publicKey(imageKey))).toBe(true)
+    expect(h.copies).toHaveLength(1)
+  })
+
+  test('audio create retries resume copying without duplicating the committed content', async () => {
+    await using h = await harness()
+
+    const data = {
+      title: 'Audio',
+      slug: 'audio',
+      content: '',
+      type: 'mix' as const,
+      url: assetUrl(audioKey),
+      thumbnailUrl: assetUrl(imageKey),
+    }
+
+    const options = { actorId: actor.userId, idempotencyKey: 'audio-retry' }
+    h.fail(true)
+
+    const failed = await Effect.runPromise(
+      h.audio.create(data, [actor.userId], options).pipe(Effect.result),
+    )
+
+    expect(Result.isFailure(failed) && failed.failure).toBeInstanceOf(S3Error)
+    h.fail(false)
+    const repaired = await Effect.runPromise(h.audio.create(data, [actor.userId], options))
+    expect(repaired.url).toBe(assetUrl(publicKey(audioKey)))
+    expect(repaired.thumbnailUrl).toBe(assetUrl(publicKey(imageKey)))
+    expect(await h.db.select().from(audioTable)).toHaveLength(1)
+    expect(h.objects.get(publicKey(audioKey))).toBe('audio bytes')
+  })
+
+  test('a URL holder cannot attach another uploader private image even to a draft, or relabel it public', async () => {
+    await using h = await harness()
+
+    for (const draft of [true, false]) {
+      for (const key of [imageKey, publicKey(imageKey)]) {
+        const result = await Effect.runPromise(
+          h.show
+            .create(
+              {
+                title: 'Stolen',
+                slug: `stolen-${draft}-${key.startsWith('public')}`,
+                content: '',
+                draft,
+                thumbnailUrl: assetUrl(key),
+              },
+              [collaborator.userId],
+              collaborator,
+            )
+            .pipe(Effect.result),
+        )
+
+        expect(Result.isFailure(result) && result.failure).toBeInstanceOf(UnauthorizedError)
+      }
+    }
+
+    expect(await h.db.select().from(showsTable)).toEqual([])
+    expect(h.copies).toEqual([])
+  })
+
+  test('already assigned creator can publish existing attachment but cannot introduce an unrelated private attachment', async () => {
+    await using h = await harness()
+    await Effect.runPromise(
+      h.show.create(
+        {
+          title: 'Collaborative',
+          slug: 'collaborative',
+          content: '',
+          draft: true,
+          thumbnailUrl: assetUrl(imageKey),
+        },
+        [actor.userId, collaborator.userId],
+        actor,
+      ),
+    )
+
+    const denied = await Effect.runPromise(
+      h.show
+        .update('collaborative', collaborator.userId, collaborator.userRole, {
+          bannerImageUrl: assetUrl(audioKey),
+        })
+        .pipe(Effect.result),
+    )
+
+    expect(Result.isFailure(denied) && denied.failure).toBeInstanceOf(UnauthorizedError)
+
+    const published = await Effect.runPromise(
+      h.show.update('collaborative', collaborator.userId, collaborator.userRole, { draft: false }),
+    )
+
+    expect(published.thumbnailUrl).toBe(assetUrl(publicKey(imageKey)))
+  })
+
+  test('post banners, art and inline images publish together; admin can attach another uploader original', async () => {
+    await using h = await harness()
+
+    const post = await Effect.runPromise(
+      h.post.create(
+        {
+          title: 'Editorial',
+          slug: 'editorial',
+          type: 'post',
+          content: `![cover](${assetUrl(imageKey)})`,
+          thumbnailUrl: assetUrl(imageKey),
+          bannerImageUrl: assetUrl(imageKey),
+        },
+        [collaborator.userId],
+        { ...collaborator, userRole: 'admin' },
+      ),
+    )
+
+    expect(post.thumbnailUrl).toBe(assetUrl(publicKey(imageKey)))
+    expect(post.bannerImageUrl).toBe(assetUrl(publicKey(imageKey)))
+    expect(attachedMediaUrls(post)).toEqual([
+      assetUrl(publicKey(imageKey)),
+      assetUrl(publicKey(imageKey)),
+      assetUrl(publicKey(imageKey)),
+    ])
+    expect(h.copies).toHaveLength(1)
+  })
+
+  test('missing originals fail validation; existing legacy URLs require no storage lookup', async () => {
+    const h = memoryStorage()
+    const prepare = makeMediaPublication(config, h.store)
+
+    const legacy = await Effect.runPromise(
+      prepare({ thumbnailUrl: assetUrl('owner/legacy.png'), draft: false }, undefined),
+    )
+
+    await Effect.runPromise(legacy.publish)
+    expect(h.heads).toEqual([])
+
+    const missing = await Effect.runPromise(
+      prepare({ thumbnailUrl: assetUrl('private/owner/image/missing/missing.png') }, actor).pipe(
+        Effect.result,
+      ),
+    )
+
+    expect(Result.isFailure(missing) && missing.failure).toBeInstanceOf(ValidationError)
+    // Historical nonprivate objects stay public; this does not migrate old draft assets.
+    expect(h.copies).toEqual([])
+  })
+})

@@ -1,6 +1,7 @@
 import * as Cloudflare from 'alchemy/Cloudflare'
 import * as Output from 'alchemy/Output'
 import * as Effect from 'effect/Effect'
+import type * as Redacted from 'effect/Redacted'
 
 import type { NavigationLockDurableObject } from '../apps/server/src/durable-objects/navigation-lock.do'
 import type { SpotifyImportResolverDurableObject } from '../apps/server/src/durable-objects/spotify-import-resolver.do'
@@ -29,6 +30,7 @@ export interface ApiWorkerInput {
   readonly adminEmail: string
   readonly cloudflareAccountId: string
   readonly turnstile: Cloudflare.Turnstile.Widget
+  readonly mediaPreviewKey: Output.Output<Redacted.Redacted>
 }
 
 export const apiWorker = ({
@@ -42,6 +44,7 @@ export const apiWorker = ({
   adminEmail,
   cloudflareAccountId,
   turnstile,
+  mediaPreviewKey,
 }: ApiWorkerInput) =>
   Effect.gen(function* () {
     const sentryDsn = secrets.SENTRY_BACKEND_DSN
@@ -64,6 +67,7 @@ export const apiWorker = ({
       observability: workerObservability(config.isProduction),
       env: {
         DB: store.db,
+        MEDIA_PREVIEW_KEY: mediaPreviewKey,
         TURNSTILE_SECRET_KEY: turnstile.secret,
         TURNSTILE_HOSTNAMES: turnstile.domains,
         SIGNUP_RATE_LIMIT: Cloudflare.RateLimit('SignupRateLimit', {

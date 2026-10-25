@@ -9,8 +9,10 @@ import {
   dieOnS3Error as makeDieOnS3Error,
 } from '@/http/handler-utils'
 import { ConfigService } from '@/services/config.service'
+import { makeMediaPublication } from '@/services/media-publication'
 import { S3Service } from '@/services/s3.service'
 import { ShowSubscriptionService } from '@/services/show.service'
+import { ObjectStoreClient } from '@/services/storage/object-store-client'
 import { UserService } from '@/services/user.service'
 
 const dieOnDatabaseError = makeDieOnDatabaseError('user')
@@ -102,12 +104,26 @@ export const UserHandlersLive = HttpApiBuilder.group(Api, 'user', (handlers) =>
         }
 
         const svc = yield* UserService
+        const config = yield* ConfigService
+        const store = yield* ObjectStoreClient
+
+        const publication = yield* dieOnS3Error(
+          makeMediaPublication(config, store)(updateData, {
+            userId: user.id,
+            userRole: user.role ?? 'user',
+          }).pipe(
+            Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized()),
+            Effect.catchTag('ValidationError', () => new HttpApiError.BadRequest()),
+          ),
+        )
 
         const profile = yield* dieOnDatabaseError(
           svc
-            .updateUserProfile(user.id, updateData)
+            .updateUserProfile(user.id, publication.data)
             .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
         )
+
+        yield* dieOnS3Error(publication.publish)
 
         const socialLinks = yield* dieOnDatabaseError(
           svc
@@ -204,12 +220,27 @@ export const UserHandlersLive = HttpApiBuilder.group(Api, 'user', (handlers) =>
         if (payload.image !== undefined) updateData.image = payload.image
 
         const svc = yield* UserService
+        const { user } = yield* AuthSession
+        const config = yield* ConfigService
+        const store = yield* ObjectStoreClient
+
+        const publication = yield* dieOnS3Error(
+          makeMediaPublication(config, store)(updateData, {
+            userId: user.id,
+            userRole: user.role ?? 'user',
+          }).pipe(
+            Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized()),
+            Effect.catchTag('ValidationError', () => new HttpApiError.BadRequest()),
+          ),
+        )
 
         const updated = yield* dieOnDatabaseError(
           svc
-            .updateUserProfile(params.userId, updateData)
+            .updateUserProfile(params.userId, publication.data)
             .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
         )
+
+        yield* dieOnS3Error(publication.publish)
 
         return { bio: updated.bio }
       }),

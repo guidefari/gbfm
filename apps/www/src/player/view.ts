@@ -4,7 +4,7 @@ import type { HtmlBuilder } from 'foldkit/html'
 import { defineView } from 'foldkit/submodel'
 
 import { onDragStart } from '../sheet-drag'
-import { artworkUrl } from '../view/artwork'
+import { artworkUrl, imageSource } from '../view/artwork'
 import { iconPaths, lucide } from '../view/icons'
 import { SuppressDragClick } from './drag-handle'
 import { Message, type Model } from './model'
@@ -98,7 +98,7 @@ const fullscreen = (model: Model, h: H, current: QueueTrackType) => {
                 ],
                 [
                   h.img([
-                    h.Src(artworkUrl(current.thumbnailUrl || fallbackArtwork, 1280)),
+                    imageSource(artworkUrl(current.thumbnailUrl || fallbackArtwork, 1280)),
                     h.Alt(current.title),
                     h.Draggable(false),
                     h.Class('max-h-full max-w-full rounded-sm object-contain shadow-2xl'),

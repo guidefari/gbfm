@@ -1,10 +1,17 @@
 import { inertHtml as h } from 'foldkit/html'
 
+import { isPrivateMedia } from '../media-preview/session'
+
 /** Versioned, lossless copy of the default cover, served without a third-party connection. */
 export const fallbackArtwork = '/gb-default-v1.webp'
 
+/** Hold private images inert until the root Mount has installed the exact-path cookie. */
+export const imageSource = (src: string) =>
+  isPrivateMedia(src) ? h.DataAttribute('private-media-src', src) : h.Src(src)
+
 /** Only the GBFM image CDN accepts transformation parameters; original/external URLs stay valid. */
 export const artworkUrl = (src: string, width: number): string => {
+  if (isPrivateMedia(src)) return src
   let url: URL
 
   try {
@@ -31,6 +38,8 @@ const srcset = (original: string) =>
 /** Fetches and decodes the exact candidate an `artwork` with the same sizes will pick, so it paints without a gap. */
 export const preloadArtwork = (src: string | null | undefined, sizes: string) => {
   const original = src || fallbackArtwork
+
+  if (isPrivateMedia(original)) return Promise.resolve()
   const image = new Image()
   const candidates = srcset(original)
   image.sizes = sizes
@@ -53,7 +62,7 @@ export const artwork = (
   const candidates = srcset(original)
 
   return h.img([
-    h.Src(artworkUrl(original, 640)),
+    imageSource(artworkUrl(original, 640)),
     h.Alt(alt),
     h.Class(`artwork ${className}`.trim()),
     h.Width('640'),
@@ -71,6 +80,8 @@ export const startArtworkFallback = () => {
   const recover = (image: HTMLImageElement) => {
     if (
       !image.classList.contains('artwork') ||
+      image.hasAttribute('data-private-media-src') ||
+      isPrivateMedia(image.src) ||
       image.src === new URL(fallbackArtwork, document.baseURI).href
     )
       return

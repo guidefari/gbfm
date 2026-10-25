@@ -10,6 +10,7 @@ import { showsTable } from '@/db/show.schema'
 import { CryptoLive } from '@/lib/crypto'
 import { MdxServiceLayer } from '@/lib/mdx'
 import { ConfigServiceLayer } from '@/services/config.service'
+import { UnavailableObjectStoreClientLayer } from '@/services/storage/object-store-client'
 import { UploadAssetServiceLayer } from '@/services/upload-asset.service'
 import { DatabaseTestLayer, db } from '@/test/database'
 import { withTestLayer } from '@/test/effect'
@@ -36,6 +37,7 @@ const getService = () =>
       }),
       AudioServiceLayer.pipe(
         Layer.provide(MdxServiceLayer),
+        Layer.provide(UnavailableObjectStoreClientLayer),
         Layer.provide(Layer.mergeAll(ConfigServiceLayer, UploadAssetServiceLayer)),
         Layer.provide(DatabaseTestLayer),
       ),

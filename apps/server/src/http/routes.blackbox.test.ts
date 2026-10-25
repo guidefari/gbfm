@@ -70,6 +70,7 @@ const writableObjectStoreLayer = Layer.succeed(ObjectStoreClient, {
   putObject: () => Promise.resolve(),
   presignPutObject: () => Promise.resolve('https://object-store.test/upload'),
   deleteObject: () => Promise.resolve(),
+  copyObject: () => Promise.resolve(),
   headObject: () => Promise.resolve(null),
   listObjects: () => Promise.resolve([]),
   listBuckets: () => Promise.resolve([]),

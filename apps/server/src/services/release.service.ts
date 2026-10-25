@@ -18,9 +18,13 @@ import {
   NotFoundError,
   type UnauthorizedError,
   type ValidationError,
+  type S3Error,
 } from '@/errors'
 import { requireCreatorOrAdmin } from '@/lib/authorization'
 import { MdxService, validateCanonicalContent } from '@/lib/mdx'
+import { ConfigService } from '@/services/config.service'
+import { makeMediaPublication, type MediaPublication } from '@/services/media-publication'
+import { ObjectStoreClient } from '@/services/storage/object-store-client'
 
 export interface ReleaseService {
   readonly getBySlug: (
@@ -37,7 +41,7 @@ export interface ReleaseService {
     userRole: string,
   ) => Effect.Effect<
     SelectRelease,
-    DatabaseError | NotFoundError | ConflictError | UnauthorizedError | ValidationError
+    DatabaseError | NotFoundError | ConflictError | UnauthorizedError | ValidationError | S3Error
   >
   readonly update: (
     slug: string,
@@ -46,7 +50,7 @@ export interface ReleaseService {
     data: Partial<InsertRelease> & { releaseDate?: Date },
   ) => Effect.Effect<
     SelectMdxCompiledRelease,
-    DatabaseError | NotFoundError | UnauthorizedError | ValidationError
+    DatabaseError | NotFoundError | UnauthorizedError | ValidationError | S3Error
   >
   readonly delete: (
     slug: string,
@@ -135,11 +139,13 @@ const createEffect = (
   data: InsertRelease & { releaseDate: Date },
   userId: string,
   userRole: string,
+  media: MediaPublication,
 ) =>
   Effect.gen(function* () {
     yield* validateCanonicalContent(data.content)
     const db = yield* Database
-    const { tags, ...releaseData } = data
+    const publication = yield* media(data, { userId, userRole })
+    const { tags, ...releaseData } = publication.data
 
     const labelRecords = yield* Effect.tryPromise({
       try: () =>
@@ -213,6 +219,8 @@ const createEffect = (
       })
     }
 
+    yield* publication.publish
+
     return yield* Effect.tryPromise({
       try: () => projectEntityLabels(db, 'release', newRelease),
       catch: (error) =>
@@ -229,10 +237,10 @@ const updateEffect = (
   userId: string,
   userRole: string,
   data: Partial<InsertRelease> & { releaseDate?: Date },
+  media: MediaPublication,
 ) =>
   Effect.gen(function* () {
     const db = yield* Database
-    const { tags, ...releaseData } = data
 
     const existingRecords = yield* Effect.tryPromise({
       try: () => db.select().from(releasesTable).where(eq(releasesTable.slug, slug)).limit(1),
@@ -256,6 +264,8 @@ const updateEffect = (
 
     yield* requireCreatorOrAdmin('label', existingRelease.labelId, userId, userRole)
     yield* validateCanonicalContent(data.content)
+    const publication = yield* media(data, { userId, userRole }, existingRelease)
+    const { tags, ...releaseData } = publication.data
 
     if (data.labelId && data.labelId !== existingRelease.labelId) {
       const destinationLabelId = data.labelId
@@ -328,6 +338,8 @@ const updateEffect = (
           }),
       })
     }
+
+    yield* publication.publish
 
     const { tags: projectedTags } = yield* Effect.tryPromise({
       try: () => projectEntityLabels(db, 'release', updatedRelease),
@@ -411,6 +423,9 @@ export const ReleaseServiceLayer = Layer.effect(
   Effect.gen(function* () {
     const db = yield* Database
     const mdx = yield* MdxService
+    const config = yield* ConfigService
+    const store = yield* ObjectStoreClient
+    const media = makeMediaPublication(config, store)
     const provideDb = Effect.provideService(Database, db)
 
     return {
@@ -428,10 +443,14 @@ export const ReleaseServiceLayer = Layer.effect(
           }).pipe(Effect.provideService(MdxService, mdx)),
         ).pipe(Effect.withSpan('release.getBySlugForEdit', { attributes: { slug } })),
       create: (data, userId, userRole) =>
-        provideDb(createEffect(data, userId, userRole)).pipe(Effect.withSpan('release.create')),
+        provideDb(createEffect(data, userId, userRole, media)).pipe(
+          Effect.withSpan('release.create'),
+        ),
       update: (slug, userId, userRole, data) =>
         provideDb(
-          updateEffect(slug, userId, userRole, data).pipe(Effect.provideService(MdxService, mdx)),
+          updateEffect(slug, userId, userRole, data, media).pipe(
+            Effect.provideService(MdxService, mdx),
+          ),
         ).pipe(Effect.withSpan('release.update', { attributes: { slug } })),
       delete: (slug, userId, userRole) =>
         provideDb(deleteEffect(slug, userId, userRole)).pipe(

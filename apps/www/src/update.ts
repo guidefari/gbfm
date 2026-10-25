@@ -314,6 +314,21 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
     ReadModeFailed: () => ({
       model: { ...model, error: 'Could not save your tweet reading preference. Try again.' },
     }),
+    MediaPreviewDenied: () => {
+      const player = Player.closeOverlays(model.player)
+
+      return {
+        model: {
+          ...model,
+          player: player.model,
+          error:
+            'Private media preview is unavailable. Check your sign-in and permission, then try again.',
+        },
+        commands: Command.mapMessages(player.commands ?? [], (message) =>
+          Message.GotPlayerMessage({ message }),
+        ),
+      }
+    },
     LoadedReplies: ({ slug, replies, navigationId }) =>
       model.navigationId === navigationId && model.flags.tweet?.post.slug === slug
         ? {

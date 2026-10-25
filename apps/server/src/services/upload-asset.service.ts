@@ -174,7 +174,11 @@ export const markAttachedAssets = (
       if (!url) return []
       const key = keyFromAssetUrl(url, config.urls.bucketRouter)
 
-      return key === null ? [] : [key]
+      if (key === null) return []
+
+      // Publication preserves the private upload. The informational upload row
+      // belongs to that original, not to its deterministic public copy.
+      return [key.startsWith('public/') ? `private/${key.slice('public/'.length)}` : key]
     })
 
     for (const key of keys) {

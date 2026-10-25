@@ -1,7 +1,7 @@
 import * as Dialog from '@foldkit/ui/dialog'
 import type { HtmlBuilder } from 'foldkit/html'
 
-import { artworkUrl } from '../view/artwork'
+import { artworkUrl, imageSource } from '../view/artwork'
 import { iconPaths, lucide } from '../view/icons'
 import { Message, type Model } from './model'
 import { fallbackArtwork, ghostButton } from './view-styles'
@@ -72,7 +72,7 @@ export const queueSheet = (model: Model, h: H) => {
                                   [h.Class('flex items-center gap-3')],
                                   [
                                     h.img([
-                                      h.Src(
+                                      imageSource(
                                         artworkUrl(current.thumbnailUrl || fallbackArtwork, 160),
                                       ),
                                       h.Alt(current.title),
@@ -134,7 +134,7 @@ export const queueSheet = (model: Model, h: H) => {
                                       ],
                                       [
                                         h.img([
-                                          h.Src(
+                                          imageSource(
                                             artworkUrl(track.thumbnailUrl || fallbackArtwork, 96),
                                           ),
                                           h.Alt(''),

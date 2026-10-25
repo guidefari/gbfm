@@ -15,6 +15,7 @@ import { withTestLayer } from '@/test/effect'
 
 import { AudioService, AudioServiceLayer } from './audio.service'
 import { ConfigServiceLayer } from './config.service'
+import { UnavailableObjectStoreClientLayer } from './storage/object-store-client'
 import { UploadAssetServiceLayer } from './upload-asset.service'
 
 const owner = { userId: 'audio-read-owner', userRole: 'user' }
@@ -33,6 +34,7 @@ const read = async (slug: string, actor?: typeof owner, edit = false) => {
 
   const layer = AudioServiceLayer.pipe(
     Layer.provide(MdxServiceLayer),
+    Layer.provide(UnavailableObjectStoreClientLayer),
     Layer.provide(Layer.mergeAll(ConfigServiceLayer, UploadAssetServiceLayer)),
     Layer.provide(Layer.succeed(Database, client)),
   )

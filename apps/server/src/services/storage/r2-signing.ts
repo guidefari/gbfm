@@ -73,6 +73,7 @@ export const signedRequest = async (input: {
   readonly headers?: Readonly<Record<string, string>>
   readonly body?: string
   readonly now?: Date
+  readonly fetch?: (url: string, init: RequestInit) => Promise<Response>
 }) => {
   const now = input.now ?? new Date()
   const amzDate = formatAmzDate(now)
@@ -122,7 +123,7 @@ export const signedRequest = async (input: {
   const authorization = `AWS4-HMAC-SHA256 Credential=${input.config.accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`
   const url = `https://${host}${path}${query ? `?${query}` : ''}`
 
-  return fetch(
+  return (input.fetch ?? fetch)(
     url,
     omitUndefined({
       method: input.method,

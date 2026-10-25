@@ -125,16 +125,24 @@ export const AppLayer = ({
         Layer.mergeAll(SpotifyServiceLayer, DeezerServiceLayer, MusicBrainzIdentityLive),
       ),
     ),
-    AudioServiceLayer.pipe(Layer.provide(MdxLive), Layer.provide(UploadAssetDepsLive)),
-    PostServiceLayer.pipe(Layer.provide(MdxLive), Layer.provide(UploadAssetDepsLive)),
+    AudioServiceLayer.pipe(
+      Layer.provide(MdxLive),
+      Layer.provide(UploadAssetDepsLive),
+      Layer.provide(objectStoreLive),
+    ),
+    PostServiceLayer.pipe(
+      Layer.provide(MdxLive),
+      Layer.provide(UploadAssetDepsLive),
+      Layer.provide(objectStoreLive),
+    ),
     ProfileServiceLayer,
     ResolveServiceLayer.pipe(Layer.provide(MdxLive)),
-    ReleaseServiceLayer.pipe(Layer.provide(MdxLive)),
+    ReleaseServiceLayer.pipe(Layer.provide(MdxLive), Layer.provide(objectStoreLive)),
     S3ServiceLayer.pipe(Layer.provide(Layer.mergeAll(objectStoreLive, configLive))),
     SearchServiceLayer,
     sentryLive,
     tracingLive,
-    ShowServiceLayer.pipe(Layer.provide(MdxLive)),
+    ShowServiceLayer.pipe(Layer.provide(MdxLive), Layer.provide(objectStoreLive)),
     ShowSubscriptionServiceLayer,
     UploadAssetServiceLayer,
     UserServiceLayer,
@@ -161,6 +169,7 @@ export const AppLayer = ({
 
   return Layer.mergeAll(
     ServicesLayer,
+    objectStoreLive,
     databaseLive,
     sitemapCacheLive,
     AuthLive.pipe(
