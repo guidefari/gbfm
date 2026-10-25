@@ -1,3 +1,4 @@
+import { Match } from 'effect'
 import type { HtmlBuilder } from 'foldkit/html'
 
 import type { Message } from '../message'
@@ -13,15 +14,21 @@ export const challengeView = (
   h.p(
     [h.Role('status'), h.AriaLive('polite')],
     [
-      !sitekey || status === 'unavailable'
-        ? 'Browser verification is unavailable. Please try again later.'
-        : status === 'ready'
-          ? 'Verification complete. You can submit the form.'
-          : status === 'failed'
-            ? 'Verification or submission failed. Your details are still here. Please retry verification.'
-            : status === 'submitting'
-              ? submitting
-              : 'Verifying your browser…',
+      Match.value(sitekey ? status : 'unavailable').pipe(
+        Match.when(
+          'unavailable',
+          () => 'Browser verification is unavailable. Please try again later.',
+        ),
+        Match.when('ready', () => 'Verification complete. You can submit the form.'),
+        Match.when(
+          'failed',
+          () =>
+            'Verification or submission failed. Your details are still here. Please retry verification.',
+        ),
+        Match.when('submitting', () => submitting),
+        Match.when('verifying', () => 'Verifying your browser…'),
+        Match.exhaustive,
+      ),
     ],
   ),
   h.p(
