@@ -1,4 +1,5 @@
 import { Effect, Layer, Redacted, Schema } from 'effect'
+import { FetchHttpClient } from 'effect/http'
 import { expect, test } from 'vitest'
 
 import { user } from '@/db/auth.schema'
@@ -25,17 +26,10 @@ test('only verified, rate-limited newsletter and account signups can persist or 
   const attempts = new Map<string, number>()
   const redeemed = new Set<string>()
 
-  const protection = SignupProtectionLayer({
-    secret: Redacted.make('test-secret'),
-    hostnames: ['goosebumps.fm'],
-    limit: async (key) => {
-      const count = (attempts.get(key) ?? 0) + 1
-      attempts.set(key, count)
-
-      return count <= 2
-    },
-    fetch: async (url, init) => {
-      expect(url).toBe('https://challenges.cloudflare.com/turnstile/v0/siteverify')
+  const siteverify: typeof fetch = Object.assign(
+    async (url: string | URL | Request, init?: RequestInit) => {
+      const request = new Request(url, init)
+      expect(request.url).toBe('https://challenges.cloudflare.com/turnstile/v0/siteverify')
 
       const { response: token } = Schema.decodeUnknownSync(
         Schema.Struct({
@@ -43,11 +37,14 @@ test('only verified, rate-limited newsletter and account signups can persist or 
           response: Schema.String,
           remoteip: Schema.String,
         }),
-      )(JSON.parse(Schema.decodeUnknownSync(Schema.String)(init.body)))
+      )(await request.json())
 
       if (token === 'outage') throw new Error('provider unavailable')
 
       if (token === 'malformed') return Response.json({ surprise: true })
+
+      if (token === 'invalid-input-secret' || token === 'missing-input-secret')
+        return Response.json({ success: false, 'error-codes': [token] })
 
       const success = token !== 'invalid' && !redeemed.has(token)
       redeemed.add(token)
@@ -62,7 +59,23 @@ test('only verified, rate-limited newsletter and account signups can persist or 
             : 'newsletter-subscribe',
       })
     },
-  })
+    { preconnect: () => {} },
+  )
+
+  const protection = SignupProtectionLayer({
+    secret: Redacted.make('test-secret'),
+    hostnames: ['goosebumps.fm'],
+    limit: async (key) => {
+      const count = (attempts.get(key) ?? 0) + 1
+      attempts.set(key, count)
+
+      return count <= 2
+    },
+  }).pipe(
+    Layer.provide(
+      FetchHttpClient.layer.pipe(Layer.provide(Layer.succeed(FetchHttpClient.Fetch, siteverify))),
+    ),
+  )
 
   const handler = createTestWebHandler(
     resource.database,
@@ -94,6 +107,8 @@ test('only verified, rate-limited newsletter and account signups can persist or 
     expect(await submit('action@example.test', 'wrong-action', '192.0.2.4')).toBe(403)
     expect(await submit('outage@example.test', 'outage', '192.0.2.5')).toBe(503)
     expect(await submit('malformed@example.test', 'malformed', '192.0.2.6')).toBe(503)
+    expect(await submit('config@example.test', 'invalid-input-secret', '192.0.2.9')).toBe(503)
+    expect(await submit('secret@example.test', 'missing-input-secret', '192.0.2.10')).toBe(503)
     expect(await submit('first@example.test', 'valid-first')).toBe(200)
     expect(await submit('second@example.test', 'valid-second')).toBe(200)
     expect(await submit('blocked@example.test', 'valid-blocked')).toBe(429)
@@ -111,13 +126,18 @@ test('only verified, rate-limited newsletter and account signups can persist or 
     ])
     expect(messages).toHaveLength(6)
 
-    const signup = async (email: string, token: string, path = '/auth/sign-up/email') => {
+    const signup = async (
+      email: string,
+      token: string,
+      path = '/auth/sign-up/email',
+      ip = '192.0.2.1',
+    ) => {
       const response = await handler.handler(
         new Request(`https://api.goosebumps.fm${path}`, {
           method: 'POST',
           headers: {
             'content-type': 'application/json',
-            'cf-connecting-ip': '192.0.2.1',
+            'cf-connecting-ip': ip,
             'x-captcha-response': token,
           },
           body: JSON.stringify({ email, name: 'Signup fixture', password: 'LocalTest123!' }),
@@ -130,6 +150,14 @@ test('only verified, rate-limited newsletter and account signups can persist or 
     }
 
     expect(await signup('missing-account@example.test', '')).toBe(403)
+    expect(
+      await signup(
+        'config-account@example.test',
+        'invalid-input-secret',
+        '/auth/sign-up/email',
+        '192.0.2.11',
+      ),
+    ).toBe(503)
     expect(
       await signup('cross-action@example.test', 'newsletter-token', '/auth/sign-up/email/'),
     ).toBe(403)

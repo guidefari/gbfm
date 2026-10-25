@@ -207,7 +207,7 @@ const appServicesLive = (
       secret: Redacted.make(env.TURNSTILE_SECRET_KEY),
       hostnames: env.TURNSTILE_HOSTNAMES,
       limit: async (key) => (await env.SIGNUP_RATE_LIMIT.limit({ key })).success,
-    }),
+    }).pipe(Layer.provide(FetchHttpClient.layer)),
     emailTransport:
       env.EMAIL !== undefined
         ? CloudflareEmailTransportLayer(env.EMAIL)
