@@ -69,7 +69,7 @@ test('SSR and navigation responses use public homepage metadata instead of gener
 
   expect(html).toContain('<title>goosebumps.fm (gbfm) — Independent Radio &amp; DJ Mixes</title>')
   expect(html).toContain('"alternateName":"gbfm"')
-  expect(html).toContain('also known as gbfm')
+  expect(html).toContain('Discover curated music mixes, tracks, and releases.')
   expect(html).toContain('href="https://goosebumps.fm/"')
   expect(html).not.toContain('noindex, nofollow')
 

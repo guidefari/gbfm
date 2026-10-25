@@ -101,7 +101,7 @@ describe('site metadata', () => {
     expect(head.meta).toContainEqual({
       name: 'description',
       content:
-        'goosebumps.fm, also known as gbfm, is home to independent radio shows, DJ mixes and editorial.',
+        'Discover curated music mixes, tracks, and releases. Your destination for ambient, bass, drywall, jazz and a wide variety of sounds.',
     })
     expect(JSON.parse(head.scripts[0]?.children ?? '')).toMatchObject({
       '@type': 'WebPage',

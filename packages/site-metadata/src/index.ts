@@ -431,7 +431,7 @@ export const makeStaticSiteMetadata = (title: string, description: string, path:
 export const STATIC_SITE_METADATA = {
   home: makeStaticSiteMetadata(
     'goosebumps.fm (gbfm) — Independent Radio & DJ Mixes',
-    'goosebumps.fm, also known as gbfm, is home to independent radio shows, DJ mixes and editorial.',
+    'Discover curated music mixes, tracks, and releases. Your destination for ambient, bass, drywall, jazz and a wide variety of sounds.',
     '/',
   ),
   about: makeStaticSiteMetadata(
