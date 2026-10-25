@@ -1,3 +1,10 @@
+# [2.109.0](https://github.com/planetaryescape/gbfm/compare/v2.108.1...v2.109.0) (2026-10-25)
+
+
+### Features
+
+* **djs:** support artist identities and separate mix credits ([13321cf](https://github.com/planetaryescape/gbfm/commit/13321cfab04a3889de0b5024ced2da691efa0194))
+
 ## [2.108.1](https://github.com/planetaryescape/gbfm/compare/v2.108.0...v2.108.1) (2026-10-25)
 
 
