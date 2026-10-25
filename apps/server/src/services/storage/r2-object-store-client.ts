@@ -5,10 +5,10 @@ import { ConfigService } from '@/services/config.service'
 
 import {
   ObjectStoreClient,
-  type MultipartPart,
   type ObjectStoreClient as ObjectStoreClientType,
 } from './object-store-client'
 import { StorageProvider } from './provider'
+import { parseMultipartParts } from './r2-multipart'
 import { ensureOk, presignedUrl, signedRequest, type R2SigningConfig } from './r2-signing'
 
 interface R2Object {
@@ -54,36 +54,6 @@ export interface R2ObjectStoreBuckets {
   readonly mixes: R2BucketCapability
 }
 
-const extractTag = (body: string, name: string) =>
-  new RegExp(`<${name}>([^<]+)</${name}>`).exec(body)?.[1]
-
-const parseMultipartParts = (body: string): Array<MultipartPart> => {
-  const parts: Array<MultipartPart> = []
-
-  for (const match of body.matchAll(/<Part>([\s\S]*?)<\/Part>/g)) {
-    const part = match[1]
-
-    if (!part) continue
-
-    const partNumber = Number(extractTag(part, 'PartNumber'))
-    const etag = extractTag(part, 'ETag')
-    const size = Number(extractTag(part, 'Size'))
-
-    if (
-      !Number.isInteger(partNumber) ||
-      partNumber < 1 ||
-      etag === undefined ||
-      !Number.isFinite(size)
-    ) {
-      throw new Error('R2 returned an invalid multipart part')
-    }
-
-    parts.push({ partNumber, etag, size })
-  }
-
-  return parts
-}
-
 const createSigningConfig = (
   storage: {
     readonly provider: string
@@ -127,6 +97,7 @@ export const R2ObjectStoreClientLayer = (buckets: R2ObjectStoreBuckets) =>
     ObjectStoreClient,
     Effect.gen(function* () {
       const config = yield* ConfigService
+      const services = yield* Effect.context<ConfigService>()
       const names = config.buckets
 
       const signingConfig = (bucketName: string) =>
@@ -198,7 +169,12 @@ export const R2ObjectStoreClientLayer = (buckets: R2ObjectStoreBuckets) =>
         completeMultipartUpload: async ({ bucketName, key, uploadId, parts }) => {
           await bucket(bucketName)
             .resumeMultipartUpload(key, uploadId)
-            .complete(parts.map((part) => ({ ...part })))
+            .complete(
+              parts.map((part) => ({
+                partNumber: part.partNumber,
+                etag: part.etag.replace(/^"(.*)"$/, '$1'),
+              })),
+            )
         },
         abortMultipartUpload: async (bucketName, key, uploadId) => {
           await bucket(bucketName).resumeMultipartUpload(key, uploadId).abort()
@@ -213,7 +189,7 @@ export const R2ObjectStoreClientLayer = (buckets: R2ObjectStoreBuckets) =>
 
           await ensureOk(response)
 
-          return parseMultipartParts(await response.text())
+          return Effect.runPromiseWith(services)(parseMultipartParts(await response.text()))
         },
       } satisfies ObjectStoreClientType
     }),

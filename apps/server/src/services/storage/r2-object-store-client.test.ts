@@ -1,4 +1,5 @@
 import { Effect, Layer, Redacted } from 'effect'
+import { Miniflare } from 'miniflare'
 import { describe, expect, test } from 'vitest'
 
 import { withTestLayer } from '@/test/effect'
@@ -91,6 +92,41 @@ const runWithStore = <A, E>(
 }
 
 describe('R2ObjectStoreClientLayer', () => {
+  test('completes a native R2 upload using quoted S3 response ETags', async () => {
+    const miniflare = new Miniflare({
+      modules: true,
+      script: 'export default { fetch() { return new Response("ok") } }',
+      r2Buckets: ['UPLOADS'],
+      compatibilityDate: '2026-08-01',
+    })
+
+    try {
+      const bucket = await miniflare.getR2Bucket('UPLOADS')
+      const key = 'multipart/test.mp3'
+      const upload = await bucket.createMultipartUpload(key)
+      const part = await upload.uploadPart(1, new TextEncoder().encode('audio fixture'))
+
+      await runWithStore(
+        { userContent: bucket, mixes: bucket },
+        Effect.gen(function* () {
+          const store = yield* ObjectStoreClient
+          yield* Effect.promise(() =>
+            store.completeMultipartUpload({
+              bucketName: config.buckets.userContent,
+              key,
+              uploadId: upload.uploadId,
+              parts: [{ partNumber: 1, etag: `"${part.etag}"` }],
+            }),
+          )
+        }),
+      )
+
+      expect(await (await bucket.get(key))?.text()).toBe('audio fixture')
+    } finally {
+      await miniflare.dispose()
+    }
+  })
+
   test('uses native bindings for object writes, reads, deletes, and paginated lists', async () => {
     const userContent = makeBucket()
     const mixes = makeBucket()
