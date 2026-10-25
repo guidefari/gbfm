@@ -120,16 +120,15 @@ export const view = <M>(
 
   const signInLabel = `Sign in to ${document.target.kind === 'show' ? 'subscribe' : 'favorite'}`
 
-  const icon = lucide(
-    document.target.kind === 'show' ? iconPaths.rss : iconPaths.heart,
-    `h-5 w-5 ${active ? 'fill-current' : ''}`,
-  )
+  const iconPath = document.target.kind === 'show' ? iconPaths.rss : iconPaths.heart
+
+  const icon = lucide(iconPath, `h-5 w-5 ${active ? 'fill-current' : ''}`)
 
   const iconButton =
     'inline-flex h-11 w-11 items-center justify-center rounded-sm border-0 bg-transparent p-0 text-muted-foreground no-underline transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50 aria-pressed:text-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
   const outlineButton =
-    'inline-flex h-10 items-center gap-2 rounded-sm border border-border bg-transparent px-4 text-sm font-semibold text-foreground no-underline transition-colors hover:border-foreground hover:bg-muted disabled:opacity-50 aria-pressed:border-highlight aria-pressed:text-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+    'inline-flex h-10 items-center gap-2 rounded-sm border border-border bg-transparent px-4 text-sm font-semibold text-foreground no-underline transition-colors hover:border-foreground hover:bg-muted disabled:opacity-50 aria-pressed:[&_svg]:text-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
   return h.div(
     [h.Class('flex flex-wrap items-center gap-3')],
@@ -161,7 +160,7 @@ export const view = <M>(
               ...(iconOnly ? [h.AriaLabel(label), h.Title(label)] : []),
               h.Class(iconOnly ? iconButton : outlineButton),
             ],
-            [iconOnly ? icon : model.busy ? 'Saving…' : label],
+            iconOnly ? [icon] : [lucide(iconPath, 'h-4 w-4'), model.busy ? 'Saving…' : label],
           ),
         ),
       ),
