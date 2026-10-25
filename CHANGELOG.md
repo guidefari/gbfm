@@ -1,3 +1,11 @@
+## [2.107.2](https://github.com/guidefari/gbfm/compare/v2.107.1...v2.107.2) (2026-10-25)
+
+
+### Bug Fixes
+
+* **signup:** block automated newsletter and account registrations ([f48fabf](https://github.com/guidefari/gbfm/commit/f48fabff1b9ef7c26f3c3526f119a50bcc81fd97))
+* **signup:** diagnose verifier failures and cancel interrupted requests ([6cfa310](https://github.com/guidefari/gbfm/commit/6cfa31033ed96803a058a103fd2129ab54a034d7))
+
 ## [2.107.1](https://github.com/guidefari/gbfm/compare/v2.107.0...v2.107.1) (2026-10-24)
 
 
