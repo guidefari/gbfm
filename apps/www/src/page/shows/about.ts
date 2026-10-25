@@ -6,6 +6,9 @@ import { richContentView } from '../../view/rich-content/render'
 const heading = <M>(h: HtmlBuilder<M>, className: string) =>
   h.h2([h.Class(className)], ['About the show'])
 
+const compactProse =
+  'text-foreground/80 [&_.rich-content>*]:my-3 [&_.rich-content>:first-child]:mt-0 [&_li]:text-sm [&_li]:leading-relaxed [&_p]:text-sm [&_p]:leading-relaxed'
+
 /** A CSS-only toggle so the clamp works before hydration and survives re-renders without model state. */
 export const aboutInline = <M>(h: HtmlBuilder<M>, document: RichContentDocument) =>
   h.section(
@@ -16,7 +19,7 @@ export const aboutInline = <M>(h: HtmlBuilder<M>, document: RichContentDocument)
       h.div(
         [
           h.Class(
-            'max-h-28 overflow-hidden [mask-image:linear-gradient(to_bottom,black_50%,transparent)] peer-checked:max-h-none peer-checked:[mask-image:none]',
+            `${compactProse} max-h-32 overflow-hidden [mask-image:linear-gradient(to_bottom,black_50%,transparent)] peer-checked:max-h-none peer-checked:[mask-image:none]`,
           ),
         ],
         [richContentView(document, h)],
@@ -35,6 +38,9 @@ export const aboutInline = <M>(h: HtmlBuilder<M>, document: RichContentDocument)
 
 export const aboutSidebar = <M>(h: HtmlBuilder<M>, document: RichContentDocument) =>
   h.aside(
-    [h.AriaLabel('About the show'), h.Class('hidden border-l border-border pl-8 text-sm lg:block')],
+    [
+      h.AriaLabel('About the show'),
+      h.Class(`hidden border-l border-border pl-8 lg:block ${compactProse}`),
+    ],
     [heading(h, 'mb-4 text-lg font-bold'), richContentView(document, h)],
   )
