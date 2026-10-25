@@ -90,6 +90,7 @@ export const init: Runtime.ApplicationInit<Model, Message, Flags, Services> = (f
       publicAction: PublicActions.init(flags.publicAction),
       creator: creator.model,
       dashboard: preparedDashboard.model,
+      listeningDraft: null,
     },
     commands: [
       StartClient(),

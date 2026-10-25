@@ -69,6 +69,8 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
             model.flags.listening,
             new URL(model.flags.url),
             model.flags.principal !== null,
+            h,
+            model.listeningDraft,
           )
         : model.flags.shows
           ? Page.Shows.view(

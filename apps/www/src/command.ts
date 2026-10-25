@@ -1,7 +1,7 @@
 import { MicroPostScreenRepliesResponse } from '@gbfm/api/post'
 import { SiteMetadata } from '@gbfm/site-metadata'
 import { Effect, Schema } from 'effect'
-import { Command, Navigation } from 'foldkit'
+import { Command, Dom, Navigation } from 'foldkit'
 
 import { updateDocumentHead } from './document-head'
 import { Message } from './message'
@@ -110,7 +110,7 @@ export const SetResolvedUrl = Command.define('Navigation.SetResolvedUrl', {
   },
   messages: [Message.NavigationCompleted],
   execute: ({ href, expected, metadata, noindex }) =>
-    Effect.sync(() => {
+    Effect.gen(function* () {
       if (pageKey(location.href) !== expected) return Message.NavigationCompleted()
       const target = new URL(href)
 
@@ -118,6 +118,16 @@ export const SetResolvedUrl = Command.define('Navigation.SetResolvedUrl', {
 
       if (`${location.pathname}${location.search}` !== `${target.pathname}${target.search}`)
         history.replaceState(history.state, '', `${target.pathname}${target.search}`)
+
+      if (
+        target.pathname === '/listening' &&
+        target.searchParams.has('mix') &&
+        location.hash === '#mix-notes'
+      ) {
+        yield* Dom.scrollIntoViewAfterPaint('#mix-notes', { block: 'start' }).pipe(
+          Effect.catchTag('ElementNotFound', () => Effect.void),
+        )
+      }
 
       return Message.NavigationCompleted()
     }),

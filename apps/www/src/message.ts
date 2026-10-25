@@ -1,5 +1,6 @@
 import * as Dialog from '@foldkit/ui/dialog'
 import * as Popover from '@foldkit/ui/popover'
+import { SavedMix } from '@gbfm/api/listening'
 import { MicroPostScreenRepliesResponse } from '@gbfm/api/post'
 import { Schema } from 'effect'
 import { defineMessageUnion } from 'foldkit/message'
@@ -24,6 +25,15 @@ export const Message = defineMessageUnion({
   PasswordVisibilityToggled: {},
   AuthFormSubmitted: {},
   AuthFormRestored: {},
+  ListeningDraftChanged: {
+    id: Schema.String,
+    change: Schema.Union([
+      Schema.Struct({ title: Schema.String }),
+      Schema.Struct({ notes: Schema.String }),
+      Schema.Struct({ status: SavedMix.fields.status }),
+      Schema.Struct({ published: Schema.Boolean }),
+    ]),
+  },
   GotMobileMenuMessage: { message: Dialog.Message },
   MenuDragStarted: { pointerId: Schema.Number, clientY: Schema.Number },
   MenuDragMoved: { pointerId: Schema.Number, clientY: Schema.Number },

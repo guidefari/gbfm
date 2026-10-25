@@ -1,6 +1,7 @@
 import * as Dialog from '@foldkit/ui/dialog'
 import * as Popover from '@foldkit/ui/popover'
 import { AudioResponse, AudioShow } from '@gbfm/api/audio'
+import { SavedMix } from '@gbfm/api/listening'
 import { MicroPostNeighboursResponse } from '@gbfm/api/navigation'
 import { MicroPostScreenResponse } from '@gbfm/api/post'
 import { PublicProfileResponse } from '@gbfm/api/profile'
@@ -107,6 +108,7 @@ export const Model = Schema.Struct({
   publicAction: PublicActions.Model,
   creator: Creator.Model,
   dashboard: Dashboard.Model,
+  listeningDraft: Schema.NullOr(SavedMix),
 })
 
 export type Model = typeof Model.Type

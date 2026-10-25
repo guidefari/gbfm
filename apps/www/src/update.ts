@@ -167,7 +167,8 @@ const showPage = (
           Route.guards.Dashboard(next.model.route) ||
           Route.guards.Composer(next.model.route) ||
           Route.guards.Auth(next.model.route) ||
-          (Route.guards.Static(next.model.route) && next.model.route.page === 'spotify-callback'),
+          (Route.guards.Static(next.model.route) &&
+            ['spotify-callback', 'listening'].includes(next.model.route.page)),
       }),
     ],
   }
@@ -259,6 +260,14 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
     }),
     AuthFormSubmitted: () => ({ model: { ...model, authSubmitting: true } }),
     AuthFormRestored: () => ({ model: { ...model, authSubmitting: false } }),
+    ListeningDraftChanged: ({ id, change }) => {
+      const draft =
+        model.listeningDraft?.id === id
+          ? model.listeningDraft
+          : model.flags.listening?.document.mixes.find((mix) => mix.id === id)
+
+      return draft ? { model: { ...model, listeningDraft: { ...draft, ...change } } } : { model }
+    },
     ChallengeStatusChanged: ({ status }) => ({ model: { ...model, challengeStatus: status } }),
     MenuToggled: () => (model.mobileMenu.isOpen ? closeMobileMenu(model) : openMobileMenu(model)),
     GotMobileMenuMessage: ({ message }) => updateMobileMenu(model, message),

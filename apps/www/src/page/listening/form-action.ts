@@ -97,10 +97,21 @@ export const handleListeningAction = async (request: Request, form: FormData) =>
 
     if (!response.ok) return fail(response.status)
 
+    const returnTo = URL.parse(field('returnTo'), request.url)
+    const query = new URLSearchParams({ saved: '1' })
+
+    if (returnTo?.origin === new URL(request.url).origin && returnTo.pathname === '/listening') {
+      for (const key of ['collection', 'status', 'mix']) {
+        const value = returnTo.searchParams.get(key)
+
+        if (value) query.set(key, value)
+      }
+    }
+
     return Server.Responded(
       new Response(null, {
         status: 303,
-        headers: { location: '/listening?saved=1', 'cache-control': 'private, no-store' },
+        headers: { location: `/listening?${query}`, 'cache-control': 'private, no-store' },
       }),
     )
   } catch {

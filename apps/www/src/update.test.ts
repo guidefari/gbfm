@@ -208,6 +208,7 @@ describe('Tweet reader navigation ownership', () => {
 
   it('entry aliases bypass the cache and reject delayed resume resolutions after another navigation', () => {
     for (const path of ['/tweets', '/tweet', '/tweet/latest']) expect(isCacheable(path)).toBe(false)
+    expect(isCacheable('/listening?mix=saved-mix')).toBe(false)
     expect(isCacheable('/tweets?q=search')).toBe(true)
 
     const initial = {

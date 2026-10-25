@@ -4,7 +4,15 @@ import { AsyncData } from 'foldkit'
 import type { Flags, PageCache } from './model'
 import { isEntry } from './page/tweet/reader'
 
-const uncachedPrefixes = ['/dashboard', '/new', '/mix-upload', '/auth', '/reminders', '/spotify']
+const uncachedPrefixes = [
+  '/dashboard',
+  '/new',
+  '/mix-upload',
+  '/auth',
+  '/reminders',
+  '/spotify',
+  '/listening',
+]
 
 /** Keys ignore the origin because server-rendered Flags carry the internal worker host. */
 export const pageKey = (href: string) => {
