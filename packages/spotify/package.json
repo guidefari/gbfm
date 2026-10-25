@@ -3,7 +3,8 @@
   "version": "0.0.1",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./entity": "./src/entity.ts"
   },
   "scripts": {
     "typecheck": "tsgo --noEmit",

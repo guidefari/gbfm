@@ -3,7 +3,11 @@ import {
   fetchSpotifyProfileEffect,
   getValidSpotifyAuthSessionEffect,
   logoutSpotifyEffect,
+  playSpotifyEntityEffect,
+  queueSpotifyEntityEffect,
   readAuthorizationCallback,
+  spotifyEntityFromUrl,
+  spotifyErrorMessage,
   SpotifyBrowser,
   SPOTIFY_WEB_SCOPES,
   startSpotifyPkceLoginEffect,
@@ -78,6 +82,49 @@ const connectionLayer = Layer.effect(
 
     return {
       status,
+      playback: ({ url, action }) =>
+        Effect.gen(function* () {
+          const entity = spotifyEntityFromUrl(url)
+
+          if (!entity)
+            return yield* Effect.fail(
+              new SpotifyConnectionError({ message: 'Unsupported Spotify link.' }),
+            )
+          const session = yield* getValidSpotifyAuthSessionEffect()
+
+          if (!session)
+            return yield* Effect.fail(
+              new SpotifyConnectionError({ message: 'Connect Spotify to play or queue music.' }),
+            )
+          const devices = yield* spotify.player.getMyDevices()
+
+          if (!devices.some((device) => device.is_active && !device.is_restricted))
+            return 'No active Spotify device. Open Spotify, start playback on a device, then try again.'
+
+          if (action === 'play') {
+            yield* playSpotifyEntityEffect(entity)
+
+            return 'Playing on your active Spotify device.'
+          }
+
+          const count = yield* queueSpotifyEntityEffect(entity)
+
+          return count === 0
+            ? 'No playable tracks found.'
+            : `Added ${count} ${count === 1 ? 'track' : 'tracks'} to your Spotify queue.`
+        }).pipe(
+          Effect.provideService(SpotifyBrowser, spotify),
+          Effect.mapError((error) =>
+            error instanceof SpotifyConnectionError
+              ? error
+              : new SpotifyConnectionError({
+                  message:
+                    spotifyErrorMessage(error) === 'No active Spotify device'
+                      ? 'No active Spotify device. Open Spotify, start playback on a device, then try again.'
+                      : 'Spotify could not complete this action. Check your Premium account and device, then try again. Queue actions may have partially completed.',
+                }),
+          ),
+        ),
       connect: Effect.gen(function* () {
         const state = yield* boundary(() => crypto.randomUUID())
 

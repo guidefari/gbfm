@@ -6,6 +6,16 @@ import {
 import type { PrivateUser, SpotifyRequestError } from '@spotify-effect/core'
 import { SpotifyHttpError, SpotifyRateLimitError } from '@spotify-effect/core'
 import * as Effect from 'effect/Effect'
+import * as Schema from 'effect/Schema'
+
+import { SPOTIFY_ENTITY_KIND, spotifyEntityFromUrl, type SpotifyEntityRef } from './entity'
+
+export {
+  SPOTIFY_ENTITY_KIND,
+  spotifyEntityFromUrl,
+  type SpotifyEntityRef,
+  type SpotifyEntityKind,
+} from './entity'
 
 export const SPOTIFY_WEB_SCOPES = [
   'user-read-email',
@@ -27,36 +37,6 @@ export type SpotifyAuthSession = BrowserRefreshableTokens
 export type SpotifyProfile = PrivateUser
 
 export { readAuthorizationCallback, SpotifyBrowser }
-
-export const SPOTIFY_ENTITY_KIND = {
-  TRACK: 'track',
-  ALBUM: 'album',
-  PLAYLIST: 'playlist',
-} as const
-
-export type SpotifyEntityKind = (typeof SPOTIFY_ENTITY_KIND)[keyof typeof SPOTIFY_ENTITY_KIND]
-
-export type SpotifyEntityRef = {
-  kind: SpotifyEntityKind
-  id: string
-  uri: string
-}
-
-const ENTITY_URL_PATTERN = /spotify\.com\/(?:intl-[a-z-]+\/)?(track|album|playlist)\/([A-Za-z0-9]+)/
-
-const ENTITY_URI_PATTERN = /^spotify:(track|album|playlist):([A-Za-z0-9]+)$/
-
-export const spotifyEntityFromUrl = (url: string): SpotifyEntityRef | null => {
-  const match = url.match(ENTITY_URL_PATTERN) ?? url.match(ENTITY_URI_PATTERN)
-  const kind = match?.[1]
-  const id = match?.[2]
-
-  if (!kind || !id) return null
-
-  if (kind !== 'track' && kind !== 'album' && kind !== 'playlist') return null
-
-  return { kind, id, uri: `spotify:${kind}:${id}` }
-}
 
 export const spotifyUriFromUrl = (url: string): string | null => {
   const entity = spotifyEntityFromUrl(url)
@@ -132,7 +112,7 @@ export const hasActiveSpotifyDeviceEffect = Effect.fn('hasActiveSpotifyDevice')(
   return devices.length > 0
 })
 
-const QUEUE_TRACK_LIMIT = 50
+const QUEUE_PAGE_SIZE = 50
 
 export const collectEntityTrackUrisEffect = Effect.fn('collectEntityTrackUris')(function* (
   entity: SpotifyEntityRef,
@@ -141,15 +121,32 @@ export const collectEntityTrackUrisEffect = Effect.fn('collectEntityTrackUris')(
 
   if (entity.kind === SPOTIFY_ENTITY_KIND.TRACK) return [entity.uri]
 
-  if (entity.kind === SPOTIFY_ENTITY_KIND.ALBUM) {
-    const page = yield* spotify.albums.getAlbumTracks(entity.id, { limit: QUEUE_TRACK_LIMIT })
+  const uris: Array<string> = []
+  let offset = 0
 
-    return page.items.map((track) => track.uri).filter((uri): uri is string => Boolean(uri))
+  while (true) {
+    const options = { limit: QUEUE_PAGE_SIZE, offset }
+
+    const page =
+      entity.kind === SPOTIFY_ENTITY_KIND.ALBUM
+        ? yield* spotify.albums
+            .getAlbumTracks(entity.id, options)
+            .pipe(Effect.map((page) => ({ ...page, uris: page.items.map((track) => track.uri) })))
+        : yield* spotify.playlists
+            .getPlaylistItems(entity.id, options)
+            .pipe(
+              Effect.map((page) => ({ ...page, uris: page.items.map((item) => item.track?.uri) })),
+            )
+
+    for (const uri of page.uris) {
+      if (Schema.is(Schema.String)(uri) && uri.startsWith('spotify:track:')) uris.push(uri)
+    }
+
+    if (!page.next || page.items.length === 0) break
+    offset += page.items.length
   }
 
-  const page = yield* spotify.playlists.getPlaylistItems(entity.id, { limit: QUEUE_TRACK_LIMIT })
-
-  return page.items.map((item) => item.track?.uri).filter((uri): uri is string => Boolean(uri))
+  return uris
 })
 
 /**

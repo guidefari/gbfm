@@ -23,6 +23,7 @@ import { Route } from './route'
 import * as Search from './search'
 import { SheetDrag } from './sheet-drag'
 import { Status as ChallengeStatus } from './signup-challenge/model'
+import * as SpotifyPlayback from './spotify/playback'
 
 export const Principal = Schema.Struct({
   id: Schema.String,
@@ -106,6 +107,7 @@ export const Model = Schema.Struct({
   repliesStatus: Schema.Literals(['loading', 'ready', 'error']),
   player: Player.Model,
   publicAction: PublicActions.Model,
+  spotifyPlayback: SpotifyPlayback.Model,
   creator: Creator.Model,
   dashboard: Dashboard.Model,
   listeningDraft: Schema.NullOr(SavedMix),

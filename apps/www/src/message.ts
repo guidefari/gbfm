@@ -15,6 +15,7 @@ import * as Player from './player'
 import * as PublicActions from './public-actions'
 import * as Search from './search'
 import { Status as ChallengeStatus } from './signup-challenge/model'
+import * as SpotifyPlayback from './spotify/playback'
 
 export const Message = defineMessageUnion({
   ClientStarted: {},
@@ -47,6 +48,7 @@ export const Message = defineMessageUnion({
   GotAccountMenuMessage: { message: Popover.Message },
   GotSearchMessage: { message: Search.Message },
   GotPublicActionMessage: { message: PublicActions.Message },
+  GotSpotifyPlaybackMessage: { message: SpotifyPlayback.Message },
   SkipSeenChanged: { value: Schema.Boolean },
   ReadModeFailed: {},
   GotPlayerMessage: { message: Player.Message },

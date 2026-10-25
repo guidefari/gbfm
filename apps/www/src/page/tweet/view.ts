@@ -84,7 +84,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>) => {
             ? h.h1([h.Class('m-0 text-lg font-medium leading-snug tracking-tight')], [post.title])
             : h.empty,
           tweetBody(post, 'base'),
-          post.music ? musicCard(post.music, true) : h.empty,
+          post.music ? musicCard(post.music, model, h, true) : h.empty,
           screen.quote ? quoteCard(screen.quote) : h.empty,
           post.tags?.length ? h.div([h.Class('pt-1')], [tagLinks(post.tags)]) : h.empty,
           h.div(
@@ -152,7 +152,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>) => {
             ? h.div(
                 [],
                 replies.map((reply, index) =>
-                  replyCard(reply, index === replies.length - 1, canEdit(reply)),
+                  replyCard(reply, index === replies.length - 1, canEdit(reply), model, h),
                 ),
               )
             : h.empty,

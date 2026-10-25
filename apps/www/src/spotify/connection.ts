@@ -15,6 +15,10 @@ export class SpotifyConnection extends Context.Service<
   SpotifyConnection,
   {
     readonly status: Effect.Effect<typeof SpotifyStatus.Type, SpotifyConnectionError>
+    readonly playback: (input: {
+      readonly url: string
+      readonly action: 'play' | 'queue'
+    }) => Effect.Effect<string, SpotifyConnectionError>
     readonly connect: Effect.Effect<void, SpotifyConnectionError>
     readonly disconnect: Effect.Effect<typeof SpotifyStatus.Type, SpotifyConnectionError>
     readonly completeCallback: Effect.Effect<void, SpotifyConnectionError>
@@ -50,6 +54,7 @@ const withConnection = <A>(
 
 export const SpotifyConnectionLive = Layer.succeed(SpotifyConnection, {
   status: withConnection((connection) => connection.status),
+  playback: (input) => withConnection((connection) => connection.playback(input)),
   connect: withConnection((connection) => connection.connect),
   disconnect: withConnection((connection) => connection.disconnect),
   completeCallback: withConnection((connection) => connection.completeCallback),

@@ -16,6 +16,7 @@ import * as PublicActions from './public-actions'
 import { parseRoute } from './route'
 import * as Search from './search'
 import type { SpotifyConnection } from './spotify/connection'
+import * as SpotifyPlayback from './spotify/playback'
 
 export type Services =
   | Player.PlayerClient
@@ -88,12 +89,20 @@ export const init: Runtime.ApplicationInit<Model, Message, Flags, Services> = (f
       repliesStatus: flags.tweet ? 'loading' : 'ready',
       player: Player.initialModel,
       publicAction: PublicActions.init(flags.publicAction),
+      spotifyPlayback: SpotifyPlayback.initialModel,
       creator: creator.model,
       dashboard: preparedDashboard.model,
       listeningDraft: null,
     },
     commands: [
       StartClient(),
+      ...(flags.tweet
+        ? [
+            Command.mapMessage(SpotifyPlayback.Load(), (message) =>
+              Message.GotSpotifyPlaybackMessage({ message }),
+            ),
+          ]
+        : []),
       ...(creatorKind
         ? Command.mapMessages(creator.commands ?? [], (message) =>
             Message.GotCreatorResult({ message, navigationId: 0 }),
