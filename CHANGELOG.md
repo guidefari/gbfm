@@ -1,3 +1,10 @@
+# [2.108.0](https://github.com/guidefari/gbfm/compare/v2.107.3...v2.108.0) (2026-10-25)
+
+
+### Features
+
+* **www:** restyle email updates page and invite readers after mixes and articles ([499ef39](https://github.com/guidefari/gbfm/commit/499ef395954450d689f030b9746227eae1d34370))
+
 ## [2.107.3](https://github.com/guidefari/gbfm/compare/v2.107.2...v2.107.3) (2026-10-25)
 
 
