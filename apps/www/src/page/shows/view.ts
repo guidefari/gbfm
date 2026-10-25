@@ -6,6 +6,7 @@ import { episodeRowsSkeleton } from '../../view/skeletons'
 import { about as aboutView } from './about'
 import type { Episode, ShowsDocument, ShowsPlayback } from './document'
 import { episodeList } from './episodes'
+import { linkHostMentions } from './host-links'
 
 type Show = ShowsDocument['shows'][number]
 
@@ -250,7 +251,9 @@ export const view = <M>(
                   ),
                 ],
                 [
-                  about ? aboutView(h, selected.title, about) : h.empty,
+                  about
+                    ? aboutView(h, selected.title, linkHostMentions(about, selected.hosts))
+                    : h.empty,
                   h.section(
                     [h.AriaLabel('Episodes'), h.Class('lg:col-start-1 lg:row-start-1')],
                     [
