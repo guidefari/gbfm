@@ -6,8 +6,12 @@ test('client navigation replaces structured data and private robots metadata wit
   await page.goto('/auth/sign-in')
   await expect(page.getByRole('button', { name: 'Menu', exact: true })).toBeEnabled()
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow')
-  await page.getByRole('link', { name: 'Privacy', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Privacy Policy', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Menu', exact: true }).click()
+  await page
+    .getByRole('dialog', { name: 'Menu', exact: true })
+    .getByRole('link', { name: 'About', exact: true })
+    .click()
+  await expect(page.getByRole('heading', { name: 'About', exact: true })).toBeVisible()
   await expect(page.locator('meta[name="robots"]')).toHaveCount(0)
   await page.goto('/shows/e2e-local-radio')
   await expect(page.getByRole('button', { name: 'Menu', exact: true })).toBeEnabled()
@@ -21,7 +25,11 @@ test('client navigation replaces structured data and private robots metadata wit
   await expect
     .poll(() => page.locator('script[type="application/ld+json"]').textContent())
     .toContain('MusicRecording')
-  await page.getByRole('link', { name: 'Privacy', exact: true }).click()
+  await page.getByRole('button', { name: 'Menu', exact: true }).click()
+  await page
+    .getByRole('dialog', { name: 'Menu', exact: true })
+    .getByRole('link', { name: 'About', exact: true })
+    .click()
   await expect(page.locator('meta[property="og:type"]')).toHaveAttribute('content', 'website')
   await expect
     .poll(() => page.locator('script[type="application/ld+json"]').textContent())
@@ -44,8 +52,8 @@ test('a menu opened during navigation stays open when the page arrives', async (
   await page.getByRole('link', { name: 'Editorial', exact: true }).click()
   await expect(page.getByRole('status', { name: 'Loading page' })).toBeVisible()
   await page.getByRole('button', { name: 'Menu', exact: true }).click()
-  await expect(page.getByRole('complementary', { name: 'Menu', exact: true })).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Menu', exact: true })).toBeVisible()
   release()
   await expect(page.getByRole('status', { name: 'Loading page' })).toHaveCount(0)
-  await expect(page.getByRole('complementary', { name: 'Menu', exact: true })).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Menu', exact: true })).toBeVisible()
 })

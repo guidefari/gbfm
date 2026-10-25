@@ -152,8 +152,12 @@ test('playback advances and persists through client navigation', async ({ page }
     )
     .toBeGreaterThan(0.5)
   await page.getByRole('button', { name: 'Collapse player', exact: true }).click()
-  await page.getByRole('link', { name: 'Privacy', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible()
+  await page.getByRole('button', { name: 'Menu', exact: true }).click()
+  await page
+    .getByRole('dialog', { name: 'Menu', exact: true })
+    .getByRole('link', { name: 'About', exact: true })
+    .click()
+  await expect(page.getByRole('heading', { name: 'About', exact: true })).toBeVisible()
   await page
     .getByRole('navigation', { name: 'Primary', exact: true })
     .getByRole('button', { name: 'Now playing', exact: true })
@@ -258,8 +262,12 @@ test('appearance persists explicit themes and responds to system changes', async
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
   await page.getByRole('button', { name: 'Dark Always use the dark interface' }).click()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
-  await page.getByRole('link', { name: 'Privacy', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible()
+  await page.getByRole('button', { name: 'Menu', exact: true }).click()
+  await page
+    .getByRole('dialog', { name: 'Menu', exact: true })
+    .getByRole('link', { name: 'About', exact: true })
+    .click()
+  await expect(page.getByRole('heading', { name: 'About', exact: true })).toBeVisible()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
 })
 

@@ -14,7 +14,9 @@ test('show detail renders episodes and metadata without JavaScript', async ({
     await expect(page.getByRole('heading', { name: 'Episodes', level: 2 })).toHaveCount(1)
     await expect(page.getByRole('link', { name: 'Local Frequencies', exact: true })).toBeVisible()
     await expect(page.getByRole('link', { name: 'Sign in to subscribe' })).toBeVisible()
-    await expect(page.getByRole('region', { name: 'About the show' })).toContainText(
+    await page.getByRole('button', { name: 'Read more', exact: true }).click()
+    await expect(page.getByLabel('About Local Radio', { exact: true })).toBeVisible()
+    await expect(page.getByLabel('About Local Radio', { exact: true })).toContainText(
       'A disposable show for browser tests.',
     )
     await expect(page).toHaveTitle('Local Radio with Local Creator | goosebumps.fm')
@@ -53,10 +55,12 @@ test('show dial navigation preserves the document and updates metadata', async (
     'https://goosebumps.fm/shows/e2e-quiet-hours',
   )
   await expect(page.getByRole('link', { name: 'Local Frequencies', exact: true })).toHaveCount(0)
-  await expect(page.getByRole('region', { name: 'About the show' })).toContainText(
+  await page.getByRole('button', { name: 'Read more', exact: true }).click()
+  await expect(page.getByLabel('About Quiet Hours', { exact: true })).toBeVisible()
+  await expect(page.getByLabel('About Quiet Hours', { exact: true })).toContainText(
     'A show without episodes.',
   )
-  await expect(page.getByRole('region', { name: 'About the show' })).not.toContainText(
+  await expect(page.getByLabel('About Quiet Hours', { exact: true })).not.toContainText(
     'A disposable show for browser tests.',
   )
   await expect(page).toHaveTitle('Quiet Hours | goosebumps.fm')

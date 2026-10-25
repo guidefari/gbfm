@@ -386,9 +386,21 @@ const mixFields = (model: Model, h: Builder, busy: boolean): Html =>
       ),
       model.uploadState !== 'idle'
         ? h.div(
-            [h.Class('upload-progress')],
+            [h.Class('upload-progress'), h.Role('region'), h.AriaLabel('Audio upload')],
             [
-              h.p([h.Role('status')], [`${model.uploadState} · ${model.uploadPercent}%`]),
+              h.p(
+                [h.Role('status')],
+                [
+                  `${Match.value(model.uploadState).pipe(
+                    Match.when('running', () => 'Uploading'),
+                    Match.when('pausing', () => 'Pausing after the current part'),
+                    Match.when('paused', () => 'Upload paused'),
+                    Match.when('failed', () => 'Upload failed'),
+                    Match.when('cancelling', () => 'Cancelling upload'),
+                    Match.exhaustive,
+                  )} · ${model.uploadPercent}%`,
+                ],
+              ),
               h.progress(
                 [
                   h.Value(String(model.uploadPercent)),
@@ -397,6 +409,27 @@ const mixFields = (model: Model, h: Builder, busy: boolean): Html =>
                 ],
                 [],
               ),
+              model.uploadState === 'running'
+                ? h.button(
+                    [h.Type('button'), h.OnClick(Message.UploadPauseRequested())],
+                    ['Pause upload'],
+                  )
+                : h.empty,
+              model.uploadState === 'paused' || model.uploadState === 'failed'
+                ? h.div(
+                    [],
+                    [
+                      h.button(
+                        [h.Type('button'), h.OnClick(Message.UploadResumeRequested())],
+                        ['Resume upload'],
+                      ),
+                      h.button(
+                        [h.Type('button'), h.OnClick(Message.UploadCancelRequested())],
+                        ['Cancel upload'],
+                      ),
+                    ],
+                  )
+                : h.empty,
             ],
           )
         : h.empty,

@@ -10,7 +10,7 @@ test('guest invitation preserves its public content, links and metadata without 
   const page = await context.newPage()
   const response = await page.goto('/invite/charlie3000')
   expect(response?.status()).toBe(200)
-  await expect(page).toHaveTitle('An invitation for Charlie3000 | goosebumps.fm')
+  await expect(page).toHaveTitle('An invite for Charlie3000 | goosebumps.fm')
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
     'hi Charlie! I’d love to host a guest mix from you',
   )
@@ -25,7 +25,7 @@ test('guest invitation preserves its public content, links and metadata without 
   )
   await expect(page.locator('meta[name="description"]')).toHaveAttribute(
     'content',
-    'An invitation to contribute a guest mix to goosebumps.fm',
+    'A personal invitation to Charlie3000 to record a guest mix for goosebumps.fm',
   )
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     'href',

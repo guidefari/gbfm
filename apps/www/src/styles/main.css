@@ -1154,6 +1154,10 @@
   transition: none;
   will-change: transform;
 }
+.player-panel[data-dragging] *,
+.menu-sheet[data-dragging] * {
+  user-select: none;
+}
 .player-drag-surface {
   touch-action: none;
   user-select: none;
@@ -1642,6 +1646,16 @@
 .creator-mix-fields {
   display: grid;
   gap: 0.75rem;
+}
+.upload-progress {
+  display: grid;
+  justify-items: start;
+  gap: 0.75rem;
+}
+.upload-progress > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 .creator-music-copy {
   min-width: 0;

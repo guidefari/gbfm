@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { Schema } from 'effect'
 
 const openReader = async (page: Page) => {
   await page.locator('summary[aria-label="Reading options"]').click()
@@ -217,6 +218,26 @@ test('tweet search URLs do not resume and unread failures do not claim caught up
 test('Next unread goes older first, then clearly changes to newer, and reports caught up only at zero', async ({
   page,
 }) => {
+  // Other journeys publish tweets into the shared fixture DB. Isolate this reader's history,
+  // not the feed: only the three seed roots should remain unread for this scenario.
+  const api = page.context().request
+  expect((await api.get('/api/content/posts/micro/e2e-archive-two/neighbours')).ok()).toBe(true)
+  const response = await api.get('/api/content/posts/micro?limit=100')
+  expect(response.ok()).toBe(true)
+  const feed = Schema.decodeUnknownSync(
+    Schema.Struct({
+      data: Schema.Array(
+        Schema.Struct({ slug: Schema.String, parentPostId: Schema.NullOr(Schema.String) }),
+      ),
+      pagination: Schema.Struct({ hasMore: Schema.Boolean }),
+    }),
+  )(await response.json())
+  expect(feed.pagination.hasMore).toBe(false)
+  const seeds = new Set(['e2e-archive-one', 'e2e-archive-two', 'e2e-music-thread'])
+  for (const post of feed.data)
+    if (post.parentPostId === null && !seeds.has(post.slug))
+      expect((await api.post(`/api/content/posts/micro/${post.slug}/seen`)).ok()).toBe(true)
+
   await page.goto('/tweet/e2e-archive-two')
   await expect(page.getByRole('button', { name: 'Menu', exact: true })).toBeEnabled()
   const first = await openReader(page)
@@ -321,7 +342,7 @@ test('a modified Latest click opens a separate tab without changing the current 
     context.waitForEvent('page'),
     (await openReader(page))
       .getByRole('link', { name: 'Latest', exact: true })
-      .click({ modifiers: ['Meta'] }),
+      .click({ modifiers: ['ControlOrMeta'] }),
   ])
 
   await other.waitForURL(/\/tweet\/(?!latest|e2e-archive-one)[^?]+$/)

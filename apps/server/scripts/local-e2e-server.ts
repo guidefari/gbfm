@@ -310,10 +310,27 @@ const handler = createTestWebHandler(
 const server = Bun.serve({
   hostname: '127.0.0.1',
   port,
-  fetch: (request) =>
-    new URL(request.url).pathname === '/api/e2e-audio.wav'
-      ? new Response(audio, { headers: { 'content-type': 'audio/wav' } })
-      : handler.handler(request),
+  fetch: async (request) => {
+    if (new URL(request.url).pathname === '/api/e2e-audio.wav')
+      return new Response(audio, { headers: { 'content-type': 'audio/wav' } })
+
+    const response = await handler.handler(request)
+    const cookies = response.headers.getSetCookie()
+    if (!cookies.some((cookie) => cookie.startsWith('gbfm-navigation-device='))) return response
+
+    // This loopback-only fixture is HTTP. WebKit rejects Secure cookies here, unlike Chromium.
+    // Keep the production resolver's Secure cookie unchanged; this is not a TLS security fixture.
+    const headers = new Headers(response.headers)
+    headers.delete('set-cookie')
+    for (const cookie of cookies)
+      headers.append(
+        'set-cookie',
+        cookie.startsWith('gbfm-navigation-device=')
+          ? cookie.replace(/;\s*Secure\b/gi, '')
+          : cookie,
+      )
+    return new Response(response.body, { status: response.status, headers })
+  },
 })
 
 console.log(`Local E2E API listening on ${server.url}`)

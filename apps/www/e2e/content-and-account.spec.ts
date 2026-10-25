@@ -29,7 +29,9 @@ test('tags link to all matching public post types and handle an empty tag', asyn
   await expect(
     page.getByRole('heading', { name: 'Local listening notes', exact: true }),
   ).toBeVisible()
-  await expect(page.getByRole('navigation', { name: 'Content tags' })).toContainText('#local-music')
+  await expect(page.getByRole('navigation', { name: 'Tags', exact: true })).toContainText(
+    '#local-music',
+  )
   await page.goto('/tags/e2e-empty-tag')
   await expect(page.getByText('No posts with this tag yet.', { exact: true })).toBeVisible()
 })
@@ -97,6 +99,10 @@ test('reset form preserves its token and signing out invalidates the session', a
   await page.getByRole('textbox', { name: 'Password', exact: true }).fill('LocalTest123!')
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
   await expect(page).toHaveURL(/\/dashboard$/)
+  await page
+    .getByRole('navigation', { name: 'Dashboard sections' })
+    .getByRole('link', { name: 'Settings', exact: true })
+    .click()
   await page.getByRole('link', { name: 'Player', exact: true }).click()
   await expect(page.getByRole('checkbox', { name: 'Continue through queue' })).toBeChecked()
   await page.getByRole('checkbox', { name: 'Continue through queue' }).uncheck()

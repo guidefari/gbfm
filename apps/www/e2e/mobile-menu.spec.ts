@@ -62,7 +62,7 @@ test('mobile menu contains scrolling and restores the page after dismissal and n
     .not.toBe('hidden')
   await trigger.click()
   await sheet.getByRole('link', { name: 'Tweets', exact: true }).click()
-  await expect(page).toHaveURL(/\/tweets$/)
+  await expect(page).toHaveURL(/\/tweet\/(?!latest)[^/?]+$/)
   await expect(sheet).not.toBeVisible()
   await expect
     .poll(() => page.evaluate(() => getComputedStyle(document.documentElement).overflow))
@@ -161,7 +161,9 @@ test('pulling the mobile menu follows the pointer, snaps back, and dismisses pas
   await expect(sheet).not.toHaveAttribute('data-dragging')
   await page.mouse.move(x, y)
   await page.mouse.down()
+  await expect(sheet).toHaveAttribute('data-dragging')
   await page.mouse.move(x, y + 200, { steps: 10 })
+  await expect.poll(async () => (await sheet.boundingBox())?.y).toBeCloseTo(restingY + 200)
   await page.mouse.up()
   await expect(sheet).not.toBeVisible()
   await expect
