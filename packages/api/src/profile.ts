@@ -23,6 +23,7 @@ const MixSummary = Schema.Struct({
   thumbnailUrl: Schema.NullOr(Schema.String),
   type: Schema.Literals(['mix', 'track', 'misc']),
   showId: Schema.NullOr(Schema.String),
+  draft: Schema.optional(Schema.Boolean),
 })
 
 const ShowSummary = Schema.Struct({

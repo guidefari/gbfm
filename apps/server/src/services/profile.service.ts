@@ -1,6 +1,7 @@
 import { and, asc, eq, notInArray } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 
+import { audioVisibilityCondition, type AudioViewer } from '@/db/audio-visibility'
 import { audioArtists, audioTable } from '@/db/audio.schema'
 import {
   SOCIAL_LINK_PLATFORMS,
@@ -40,6 +41,7 @@ export type PublicProfile = {
       thumbnailUrl: string | null
       type: 'mix' | 'track' | 'misc'
       showId: string | null
+      draft?: boolean
     }>
     shows: Array<{
       id: string
@@ -67,12 +69,13 @@ export type PublicProfile = {
 export interface ProfileService {
   readonly getPublicProfile: (
     username: string,
+    viewer?: AudioViewer,
   ) => Effect.Effect<PublicProfile, DatabaseError | NotFoundError>
 }
 
 export const ProfileService = Context.Service<ProfileService>('ProfileService')
 
-export const getPublicProfileEffect = (username: string) =>
+export const getPublicProfileEffect = (username: string, viewer?: AudioViewer) =>
   Effect.gen(function* () {
     const db = yield* Database
 
@@ -101,7 +104,7 @@ export const getPublicProfileEffect = (username: string) =>
 
     const foundUser = userRecords[0]
 
-    if (!foundUser) return yield* getArtistDjProfile(username)
+    if (!foundUser) return yield* getArtistDjProfile(username, viewer)
 
     if (foundUser.banned) {
       return yield* new NotFoundError({
@@ -140,6 +143,7 @@ export const getPublicProfileEffect = (username: string) =>
             thumbnailUrl: true,
             type: true,
             showId: true,
+            draft: true,
           },
           with: {
             show: {
@@ -148,7 +152,7 @@ export const getPublicProfileEffect = (username: string) =>
           },
           where: and(
             audioIdsForCreator(db, foundUser.id),
-            eq(audioTable.draft, false),
+            audioVisibilityCondition(db, viewer),
             notInArray(audioTable.id, db.select({ id: audioArtists.audioId }).from(audioArtists)),
           ),
           orderBy: asc(audioTable.createdAt),
@@ -251,8 +255,8 @@ export const ProfileServiceLayer = Layer.effect(
     const db = yield* Database
 
     return {
-      getPublicProfile: (username) =>
-        getPublicProfileEffect(username).pipe(
+      getPublicProfile: (username, viewer) =>
+        getPublicProfileEffect(username, viewer).pipe(
           Effect.provideService(Database, db),
           Effect.withSpan('profile.getPublic'),
         ),

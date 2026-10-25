@@ -4,6 +4,7 @@ import { and, asc, desc, eq, like, notInArray, or, sql } from 'drizzle-orm'
 import { Effect } from 'effect'
 import { describe, expect, test } from 'vitest'
 
+import { audioVisibilityCondition } from '@/db/audio-visibility'
 import { audioArtists, audioCreators, audioTable } from '@/db/audio.schema'
 import { audioIdsForCreator, showIdsForCreator } from '@/db/creator-membership'
 import { entityTagsProjection } from '@/db/entity-label-projection'
@@ -88,26 +89,33 @@ describe('relational query smoke matrix', () => {
     ).resolves.toBeUndefined()
   })
 
-  test('profile.service public mixes', async () => {
-    await expect(
-      db.query.audioTable.findMany({
-        columns: {
-          id: true,
-          title: true,
-          slug: true,
-          thumbnailUrl: true,
-          type: true,
-          showId: true,
-        },
-        with: { show: { columns: { thumbnailUrl: true } } },
-        where: and(
-          audioIdsForCreator(db, actorId),
-          eq(audioTable.draft, false),
-          notInArray(audioTable.id, db.select({ id: audioArtists.audioId }).from(audioArtists)),
-        ),
-        orderBy: asc(audioTable.createdAt),
-      }),
-    ).resolves.toBeDefined()
+  test('profile.service public, manager and admin mixes', async () => {
+    for (const viewer of [
+      undefined,
+      { userId: actorId, userRole: 'creator' },
+      { userId: actorId, userRole: 'admin' },
+    ]) {
+      await expect(
+        db.query.audioTable.findMany({
+          columns: {
+            id: true,
+            title: true,
+            slug: true,
+            thumbnailUrl: true,
+            type: true,
+            showId: true,
+            draft: true,
+          },
+          with: { show: { columns: { thumbnailUrl: true } } },
+          where: and(
+            audioIdsForCreator(db, actorId),
+            audioVisibilityCondition(db, viewer),
+            notInArray(audioTable.id, db.select({ id: audioArtists.audioId }).from(audioArtists)),
+          ),
+          orderBy: asc(audioTable.createdAt),
+        }),
+      ).resolves.toBeDefined()
+    }
   })
 
   test('show.service getAll, both visibility branches', async () => {

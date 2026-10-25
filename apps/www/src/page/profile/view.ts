@@ -50,7 +50,12 @@ export const view = (profile: PublicProfileResponse) => {
                               h.Href(`/${section.path}/${encodeURIComponent(item.slug)}`),
                               h.Class('card card-copy'),
                             ],
-                            [h.h3([], [item.title || item.slug])],
+                            [
+                              h.h3([], [item.title || item.slug]),
+                              'draft' in item && item.draft
+                                ? h.small([h.Class('muted')], ['Draft'])
+                                : h.empty,
+                            ],
                           ),
                         ),
                       ),

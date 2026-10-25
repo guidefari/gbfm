@@ -5,16 +5,20 @@ import { HttpApiBuilder, HttpApiError } from 'effect/http-api'
 import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
 import { ProfileService } from '@/services/profile.service'
 
+import { resolvePageSession } from './page-session'
+
 const dieOnDatabaseError = makeDieOnDatabaseError('profile')
 
 export const ProfileHandlersLive = HttpApiBuilder.group(Api, 'profile', (handlers) =>
   handlers.handle('getPublicProfile', ({ params }) =>
     Effect.gen(function* () {
       const svc = yield* ProfileService
+      const principal = yield* resolvePageSession()
+      const viewer = principal ? { userId: principal.id, userRole: principal.role } : undefined
 
       const profile = yield* dieOnDatabaseError(
         svc
-          .getPublicProfile(params.username)
+          .getPublicProfile(params.username, viewer)
           .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
       )
 

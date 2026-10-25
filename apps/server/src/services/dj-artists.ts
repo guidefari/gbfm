@@ -1,6 +1,7 @@
 import { and, asc, count, eq, inArray, isNotNull } from 'drizzle-orm'
 import { Effect } from 'effect'
 
+import { audioVisibilityCondition, type AudioViewer } from '@/db/audio-visibility'
 import { audioArtists, audioTable } from '@/db/audio.schema'
 import { Database } from '@/db/layer'
 import { musicArtistsTable } from '@/db/music-entity.schema'
@@ -59,6 +60,7 @@ export const listArtistDjs = Effect.fn('artist.listDjs')(function* () {
 
 export const getArtistDjProfile = Effect.fn('artist.getDjProfile')(function* (
   slug: string,
+  viewer?: AudioViewer,
 ): Effect.fn.Return<PublicProfile, DatabaseError | NotFoundError, Database> {
   const db = yield* Database
 
@@ -99,6 +101,7 @@ export const getArtistDjProfile = Effect.fn('artist.getDjProfile')(function* (
           showThumbnailUrl: showsTable.thumbnailUrl,
           type: audioTable.type,
           showId: audioTable.showId,
+          draft: audioTable.draft,
         })
         .from(audioArtists)
         .innerJoin(audioTable, eq(audioTable.id, audioArtists.audioId))
@@ -107,7 +110,7 @@ export const getArtistDjProfile = Effect.fn('artist.getDjProfile')(function* (
           and(
             eq(audioArtists.artistId, artist.id),
             eq(audioTable.type, 'mix'),
-            eq(audioTable.draft, false),
+            audioVisibilityCondition(db, viewer),
           ),
         )
         .orderBy(asc(audioTable.createdAt)),

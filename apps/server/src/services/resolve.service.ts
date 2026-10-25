@@ -2,6 +2,7 @@ import type { RichContentDocument } from '@gbfm/rich-content/schema'
 import { and, eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 
+import type { AudioViewer } from '@/db/audio-visibility'
 import { user as userTable } from '@/db/auth.schema'
 import { readEntityLabels } from '@/db/labels'
 import { Database } from '@/db/layer'
@@ -32,12 +33,15 @@ export type ResolveResult =
   | { type: 'show'; data: ShowData }
 
 export interface ResolveService {
-  readonly resolve: (slug: string) => Effect.Effect<ResolveResult, DatabaseError | NotFoundError>
+  readonly resolve: (
+    slug: string,
+    viewer?: AudioViewer,
+  ) => Effect.Effect<ResolveResult, DatabaseError | NotFoundError>
 }
 
 export const ResolveService = Context.Service<ResolveService>('ResolveService')
 
-const resolveEffect = (slug: string) =>
+const resolveEffect = (slug: string, viewer?: AudioViewer) =>
   Effect.gen(function* () {
     const db = yield* Database
 
@@ -71,7 +75,7 @@ const resolveEffect = (slug: string) =>
     const foundUser = userRecords[0]
 
     if (foundUser && !foundUser.banned) {
-      const profile = yield* getPublicProfileEffect(slug)
+      const profile = yield* getPublicProfileEffect(slug, viewer)
 
       return { type: 'profile' as const, data: profile }
     }
@@ -157,7 +161,7 @@ const resolveEffect = (slug: string) =>
     }
 
     if (!foundUser) {
-      const profile = yield* getArtistDjProfile(slug)
+      const profile = yield* getArtistDjProfile(slug, viewer)
 
       return { type: 'profile' as const, data: profile }
     }
@@ -172,8 +176,8 @@ export const ResolveServiceLayer = Layer.effect(
     const mdx = yield* MdxService
 
     return {
-      resolve: (slug) =>
-        resolveEffect(slug).pipe(
+      resolve: (slug, viewer) =>
+        resolveEffect(slug, viewer).pipe(
           Effect.provideService(Database, db),
           Effect.provideService(MdxService, mdx),
           Effect.withSpan('resolve.slug', { attributes: { slug } }),

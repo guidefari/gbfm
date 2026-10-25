@@ -102,6 +102,29 @@ describe('getPublicProfile mixes', () => {
     expect(profile.content.mixes.map((mix) => mix.id)).not.toContain(draft.id)
   })
 
+  test('shows draft mixes only to their manager and admins', async () => {
+    const service = await getService()
+
+    const draft = await insertAudio({
+      slug: `scoped-draft-${randomUUID()}`,
+      creatorId: ownerId,
+      draft: true,
+    })
+
+    for (const [viewer, visible] of [
+      [{ userId: ownerId, userRole: 'creator' }, true],
+      [{ userId: otherId, userRole: 'admin' }, true],
+      [{ userId: otherId, userRole: 'creator' }, false],
+    ] as const) {
+      const profile = await Effect.runPromise(service.getPublicProfile(username, viewer))
+      expect(profile.content.mixes.some(({ id }) => id === draft.id)).toBe(visible)
+
+      expect(profile.content.mixes.find(({ id }) => id === draft.id)?.draft).toBe(
+        visible ? true : undefined,
+      )
+    }
+  })
+
   test('falls back to the show thumbnailUrl when a mix has none', async () => {
     const service = await getService()
     const showSlug = `profile-show-${randomUUID()}`
