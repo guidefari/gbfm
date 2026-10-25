@@ -15,6 +15,7 @@ import { ConfigServiceLayer } from './config.service'
 import { getHomepageMixes } from './featured-mix'
 import { ProfileService, ProfileServiceLayer } from './profile.service'
 import { ResolveService, ResolveServiceLayer } from './resolve.service'
+import { UnavailableObjectStoreClientLayer } from './storage/object-store-client'
 import { UploadAssetServiceLayer } from './upload-asset.service'
 import { UserService, UserServiceLayer } from './user.service'
 
@@ -51,6 +52,7 @@ test('DJ artist identities preserve ownership and expose only published mix cont
     ResolveServiceLayer,
   ).pipe(
     Layer.provide(MdxServiceLayer),
+    Layer.provide(UnavailableObjectStoreClientLayer),
     Layer.provide(Layer.mergeAll(ConfigServiceLayer, UploadAssetServiceLayer)),
     Layer.provide(DatabaseLayer(resource.database)),
   )
