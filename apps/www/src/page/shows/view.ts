@@ -2,8 +2,8 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 
 import { artwork } from '../../view/artwork'
 import { iconPaths, lucide } from '../../view/icons'
-import { richContentView } from '../../view/rich-content/render'
 import { episodeRowsSkeleton } from '../../view/skeletons'
+import { aboutInline, aboutSidebar } from './about'
 import type { Episode, ShowsDocument, ShowsPlayback } from './document'
 import { episodeList } from './episodes'
 
@@ -207,6 +207,7 @@ export const view = <M>(
   pending = false,
 ) => {
   const selected = document.shows.find((show) => show.slug === document.selectedSlug)
+  const about = !pending && document.richContent?.blocks.length ? document.richContent : null
 
   if (!document.shows.length)
     return h.div(
@@ -240,22 +241,28 @@ export const view = <M>(
                 pending ? h.empty : actions,
                 interactive,
               ),
-              h.section(
-                [h.AriaLabel('Episodes')],
+              about ? aboutInline(h, about) : h.empty,
+              h.div(
                 [
-                  h.h2([h.Class('sr-only')], ['Episodes']),
-                  pending ? episodeRowsSkeleton() : episodeList(h, document, playback, interactive),
+                  h.Class(
+                    about
+                      ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start lg:gap-10'
+                      : '',
+                  ),
+                ],
+                [
+                  h.section(
+                    [h.AriaLabel('Episodes')],
+                    [
+                      h.h2([h.Class('sr-only')], ['Episodes']),
+                      pending
+                        ? episodeRowsSkeleton()
+                        : episodeList(h, document, playback, interactive),
+                    ],
+                  ),
+                  about ? aboutSidebar(h, about) : h.empty,
                 ],
               ),
-              !pending && document.richContent?.blocks.length
-                ? h.section(
-                    [h.AriaLabel('About the show'), h.Class('mt-12 max-w-prose')],
-                    [
-                      h.h2([h.Class('mb-6 text-2xl font-bold')], ['About the show']),
-                      richContentView(document.richContent, h),
-                    ],
-                  )
-                : h.empty,
             ],
           )
         : h.p([h.Class('py-12 text-muted-foreground')], ['Choose a show to see its episodes.']),
