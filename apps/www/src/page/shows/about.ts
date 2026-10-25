@@ -6,8 +6,8 @@ import { richContentView } from '../../view/rich-content/render'
 
 const panelId = 'show-about-panel'
 
-const compactProse =
-  'text-foreground/80 [&_.rich-content>*]:my-3 [&_.rich-content>:first-child]:mt-0 [&_li]:text-sm [&_li]:leading-relaxed [&_p]:text-sm [&_p]:leading-relaxed'
+const blurbProse =
+  'text-foreground/80 [&_.rich-content>*]:my-0 [&_p]:line-clamp-2 [&_p]:text-sm [&_p]:leading-relaxed'
 
 const blurb = (document: RichContentDocument): RichContentDocument => ({
   ...document,
@@ -72,18 +72,15 @@ const panel = <M>(h: HtmlBuilder<M>, title: string, document: RichContentDocumen
 
 export const about = <M>(h: HtmlBuilder<M>, title: string, document: RichContentDocument) =>
   h.div(
-    [h.Class('mt-4 max-w-prose')],
+    [h.Class('mt-5 max-w-prose')],
     [
-      h.div(
-        [h.Class(`${compactProse} [&_.rich-content>*]:my-0 [&_p]:line-clamp-3`)],
-        [richContentView(blurb(document), h)],
-      ),
+      h.div([h.Class(blurbProse)], [richContentView(blurb(document), h)]),
       h.button(
         [
           h.Type('button'),
           h.Attribute('popovertarget', panelId),
           h.Class(
-            'mt-2 inline-flex items-center gap-0.5 rounded-sm border-0 bg-transparent p-0 text-sm text-muted-foreground underline decoration-border underline-offset-4 transition-colors hover:text-foreground hover:decoration-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            'mt-1 inline-flex items-center gap-0.5 rounded-sm border-0 bg-transparent p-0 text-sm text-muted-foreground underline decoration-border underline-offset-4 transition-colors hover:text-foreground hover:decoration-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           ),
         ],
         ['Read more', lucide(iconPaths.chevronRight, 'h-3.5 w-3.5')],

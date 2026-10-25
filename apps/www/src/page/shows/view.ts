@@ -10,7 +10,7 @@ import { linkHostMentions } from './host-links'
 
 type Show = ShowsDocument['shows'][number]
 
-const mastheadArtSizes = '(min-width: 640px) 224px, 60vw'
+const mastheadArtSizes = '(min-width: 640px) 288px, 60vw'
 
 const hostLine = (show: Show) => show.hosts.map((host) => host.name).join(', ')
 
@@ -136,7 +136,7 @@ const masthead = <M>(
   return h.header(
     [
       h.Class(
-        'show-masthead grid gap-6 py-8 sm:grid-cols-[minmax(0,14rem)_1fr] sm:items-start sm:gap-10 sm:py-12',
+        'show-masthead grid gap-6 py-8 sm:grid-cols-[minmax(0,18rem)_1fr] sm:gap-10 sm:py-12',
       ),
     ],
     [
@@ -145,10 +145,10 @@ const masthead = <M>(
         show.title,
         mastheadArtSizes,
         true,
-        'show-masthead-art w-3/5 max-w-56 rounded-sm shadow-2xl sm:w-full sm:max-w-none',
+        'show-masthead-art w-3/5 max-w-56 rounded-sm shadow-2xl sm:w-full sm:max-w-none sm:self-start',
       ),
       h.div(
-        [h.Class('show-masthead-copy min-w-0')],
+        [h.Class('show-masthead-copy flex min-w-0 flex-col')],
         [
           h.h1(
             [
@@ -160,7 +160,7 @@ const masthead = <M>(
           ),
           show.hosts.length
             ? h.p(
-                [h.Class('mt-4 text-sm text-muted-foreground')],
+                [h.Class('m-0 mt-3 text-sm text-muted-foreground')],
                 [
                   'hosted by ',
                   ...show.hosts.flatMap((host, index) => [
@@ -187,12 +187,12 @@ const masthead = <M>(
           about ??
             (show.description
               ? h.p(
-                  [h.Class('mt-4 max-w-prose text-base leading-relaxed text-foreground/80')],
+                  [h.Class('mt-5 max-w-prose text-base leading-relaxed text-foreground/80')],
                   [show.description],
                 )
               : h.empty),
           h.div(
-            [h.Class('mt-6 flex min-h-10 flex-wrap items-center gap-3')],
+            [h.Class('mt-6 flex min-h-10 flex-wrap items-center gap-3 sm:mt-auto sm:pt-6')],
             [latest ? latestButton(h, latest, playback, interactive, false) : h.empty, actions],
           ),
         ],
