@@ -1,3 +1,13 @@
+## [2.111.2](https://github.com/planetaryescape/gbfm/compare/v2.111.1...v2.111.2) (2026-10-25)
+
+
+### Bug Fixes
+
+* **media:** protect new uploads without rotating playback URLs ([4cc49e3](https://github.com/planetaryescape/gbfm/commit/4cc49e3e1cde8056633e928b1fd4bf5256cc73a1))
+* **media:** sandbox uploads and cancel superseded playback ([b1ed3df](https://github.com/planetaryescape/gbfm/commit/b1ed3df7954f8f4d26db360c12111773f879891f))
+* **public-actions:** give subscribe and favorite buttons an icon and quiet pressed state ([ebb9ee0](https://github.com/planetaryescape/gbfm/commit/ebb9ee044ddc16720fcbe601bb1cb559cb95aa6e))
+* **shows:** tighten masthead rhythm and pin actions to art baseline ([48fca9e](https://github.com/planetaryescape/gbfm/commit/48fca9e7aa5b97b77e0045d435765c22edad697e))
+
 ## [2.111.1](https://github.com/planetaryescape/gbfm/compare/v2.111.0...v2.111.1) (2026-10-25)
 
 
