@@ -2,7 +2,7 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 
 import type { Principal } from '../model'
 import { signInHref } from '../page/auth/links'
-import { artworkUrl, fallbackArtwork } from './artwork'
+import { artworkUrl, fallbackArtwork, imageSource } from './artwork'
 import { iconPaths, lucide } from './icons'
 import { isActiveNavLink } from './nav-active'
 import { wordmark } from './wordmark'
@@ -197,7 +197,7 @@ export const stationNav = <M>(h: HtmlBuilder<M>, props: StationNavProps<M>) => {
                     ],
                     [
                       h.img([
-                        h.Src(artworkUrl(nowPlaying.thumbnailUrl || fallbackArtwork, 96)),
+                        imageSource(artworkUrl(nowPlaying.thumbnailUrl || fallbackArtwork, 96)),
                         h.Alt(''),
                         h.Class('size-full object-cover'),
                       ]),

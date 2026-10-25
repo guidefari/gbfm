@@ -4,6 +4,7 @@ import type { HtmlBuilder } from 'foldkit/html'
 
 import { Message } from '../message'
 import type { Principal } from '../model'
+import { imageSource } from './artwork'
 
 const rowClass =
   'flex min-h-10 w-full items-center rounded-sm px-3 py-2 text-left text-sm text-popover-foreground no-underline transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
@@ -43,7 +44,11 @@ export const accountMenu = (
               ],
               [
                 principal.image
-                  ? h.img([h.Src(principal.image), h.Alt(''), h.Class('size-full object-cover')])
+                  ? h.img([
+                      imageSource(principal.image),
+                      h.Alt(''),
+                      h.Class('size-full object-cover'),
+                    ])
                   : (name[0] ?? '?'),
               ],
             ),

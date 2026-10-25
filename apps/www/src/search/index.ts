@@ -5,6 +5,8 @@ import { Command, Dom, Navigation, Subscription, Update } from 'foldkit'
 import { defineMessageUnion } from 'foldkit/message'
 import { defineView } from 'foldkit/submodel'
 
+import { imageSource } from '../view/artwork'
+
 export const Model = Schema.Struct({
   dialog: Dialog.Model,
   query: Schema.String,
@@ -208,7 +210,7 @@ export const view = defineView<Model, Message>((model, h) =>
                                               [
                                                 item.thumbnailUrl
                                                   ? h.img([
-                                                      h.Src(item.thumbnailUrl),
+                                                      imageSource(item.thumbnailUrl),
                                                       h.Alt(''),
                                                       h.Loading('lazy'),
                                                     ])

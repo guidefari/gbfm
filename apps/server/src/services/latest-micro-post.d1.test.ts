@@ -6,6 +6,7 @@ import { beforeAll, describe, expect, test } from 'vitest'
 import { postsTable } from '@/db/post.schema'
 import { MdxServiceLayer } from '@/lib/mdx'
 import { ConfigServiceLayer } from '@/services/config.service'
+import { UnavailableObjectStoreClientLayer } from '@/services/storage/object-store-client'
 import { UploadAssetServiceLayer } from '@/services/upload-asset.service'
 import { DatabaseTestLayer, db } from '@/test/database'
 import { withTestLayer } from '@/test/effect'
@@ -16,6 +17,7 @@ const publishedId = randomUUID()
 
 const TestPostServiceLayer = PostServiceLayer.pipe(
   Layer.provide(MdxServiceLayer),
+  Layer.provide(UnavailableObjectStoreClientLayer),
   Layer.provide(Layer.mergeAll(ConfigServiceLayer, UploadAssetServiceLayer)),
   Layer.provide(DatabaseTestLayer),
 )

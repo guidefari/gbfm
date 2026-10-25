@@ -48,6 +48,7 @@ export type WorkerConfigBindings = Readonly<
       BROWSER_TELEMETRY_DATASET?: string
       LOCAL_DEV?: 'true'
       CDN_ROUTER_URL?: string
+      MEDIA_PREVIEW_KEY?: string
       FRONTEND_URL?: string
       SHARE_URL?: string
       R2AccountId?: string
@@ -137,6 +138,7 @@ const ConfigSchema = Schema.Struct({
     mixes: Schema.String,
   }),
   storage: StorageConfigSchema,
+  mediaPreviewKey: Schema.optional(Schema.Redacted(Schema.String)),
   resources: Schema.Struct({
     available: Schema.Boolean,
   }),
@@ -274,6 +276,9 @@ export function createConfig(bindings?: WorkerConfigBindings): ConfigService {
       mixes: mixesBucketName,
     },
     storage,
+    ...(bindings?.MEDIA_PREVIEW_KEY
+      ? { mediaPreviewKey: Redacted.make(bindings.MEDIA_PREVIEW_KEY) }
+      : undefined),
     app: {
       stage: appStage,
       nodeEnv,

@@ -1,6 +1,8 @@
 import type { PublicProfileResponse } from '@gbfm/api/profile'
 import { inertHtml as h } from 'foldkit/html'
 
+import { imageSource } from '../../view/artwork'
+
 export const view = (profile: PublicProfileResponse) => {
   const sections = [
     { title: 'Mixes', path: 'mixes', items: profile.content.mixes },
@@ -16,7 +18,7 @@ export const view = (profile: PublicProfileResponse) => {
         [],
         [
           profile.image
-            ? h.img([h.Src(profile.image), h.Alt(profile.name), h.Class('profile-avatar')])
+            ? h.img([imageSource(profile.image), h.Alt(profile.name), h.Class('profile-avatar')])
             : h.empty,
           h.h1([], [profile.name]),
           profile.username ? h.p([h.Class('muted')], [`@${profile.username}`]) : h.empty,

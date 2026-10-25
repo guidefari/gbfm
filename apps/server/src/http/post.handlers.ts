@@ -346,6 +346,8 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
             .pipe(
               Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
               Effect.catchTag('ConflictError', () => new HttpApiError.Conflict()),
+              Effect.catchTag('S3Error', () => new HttpApiError.InternalServerError()),
+              Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized()),
               Effect.catchTag('ValidationError', () => new ValidationHttpError()),
               Effect.catchTag('ParentPostNotReplyableError', () => new ValidationHttpError()),
               Effect.catchTag('QuotedPostNotEmbeddableError', () => new ValidationHttpError()),
@@ -441,9 +443,12 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
             .create(
               omitUndefined({ ...postData, tags: postData.tags ? [...postData.tags] : undefined }),
               finalCreatorIds,
+              { userId: user.id, userRole: user.role ?? 'user' },
             )
             .pipe(
               Effect.catchTag('ConflictError', () => new HttpApiError.Conflict()),
+              Effect.catchTag('S3Error', () => new HttpApiError.InternalServerError()),
+              Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized()),
               Effect.catchTag('ValidationError', () => new ValidationHttpError()),
               Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
               Effect.catchTag('QuotedPostNotEmbeddableError', () => new ValidationHttpError()),
@@ -475,6 +480,7 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
             .pipe(
               Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
               Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized()),
+              Effect.catchTag('S3Error', () => new HttpApiError.InternalServerError()),
               Effect.catchTag('ValidationError', () => new ValidationHttpError()),
             ),
         )

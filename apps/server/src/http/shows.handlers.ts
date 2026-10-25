@@ -119,9 +119,12 @@ export const ShowsHandlersLive = HttpApiBuilder.group(Api, 'shows', (handlers) =
             .create(
               omitUndefined({ ...showData, tags: tags ? [...tags] : undefined }),
               finalHostIds,
+              { userId: user.id, userRole: user.role ?? 'user' },
             )
             .pipe(
               Effect.catchTag('ConflictError', () => new HttpApiError.Conflict()),
+              Effect.catchTag('S3Error', () => new HttpApiError.InternalServerError()),
+              Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized()),
               Effect.catchTag('ValidationError', () => new ValidationHttpError()),
             ),
         )
@@ -154,6 +157,7 @@ export const ShowsHandlersLive = HttpApiBuilder.group(Api, 'shows', (handlers) =
             .pipe(
               Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
               Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized()),
+              Effect.catchTag('S3Error', () => new HttpApiError.InternalServerError()),
               Effect.catchTag('ValidationError', () => new ValidationHttpError()),
             ),
         )

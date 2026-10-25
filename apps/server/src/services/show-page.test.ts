@@ -22,6 +22,7 @@ import {
   ShowSubscriptionService,
   ShowSubscriptionServiceLayer,
 } from './show.service'
+import { UnavailableObjectStoreClientLayer } from './storage/object-store-client'
 
 const slug = 'show-page-service'
 
@@ -34,7 +35,12 @@ const principal: AudioPagePrincipal = {
 }
 
 const services = Layer.mergeAll(
-  ShowServiceLayer.pipe(Layer.provide(MdxServiceLayer), Layer.provide(DatabaseTestLayer)),
+  ShowServiceLayer.pipe(
+    Layer.provide(MdxServiceLayer),
+    Layer.provide(ConfigServiceLayer),
+    Layer.provide(UnavailableObjectStoreClientLayer),
+    Layer.provide(DatabaseTestLayer),
+  ),
   ShowSubscriptionServiceLayer.pipe(Layer.provide(DatabaseTestLayer)),
   ConfigServiceLayer,
 )
@@ -75,7 +81,12 @@ describe('Show page composition read ownership and failure boundaries', () => {
     const databaseLayer = Layer.succeed(Database, database)
 
     const trackedServices = Layer.mergeAll(
-      ShowServiceLayer.pipe(Layer.provide(MdxServiceLayer), Layer.provide(databaseLayer)),
+      ShowServiceLayer.pipe(
+        Layer.provide(MdxServiceLayer),
+        Layer.provide(ConfigServiceLayer),
+        Layer.provide(UnavailableObjectStoreClientLayer),
+        Layer.provide(databaseLayer),
+      ),
       ShowSubscriptionServiceLayer.pipe(Layer.provide(databaseLayer)),
       ConfigServiceLayer,
     )

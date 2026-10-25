@@ -14,6 +14,7 @@ import { loadAudioPage } from './audio-page'
 import { AudioService, AudioServiceLayer } from './audio.service'
 import { ConfigService, ConfigServiceLayer } from './config.service'
 import { FavoriteService, FavoriteServiceLayer } from './favorite.service'
+import { UnavailableObjectStoreClientLayer } from './storage/object-store-client'
 import { UploadAssetServiceLayer } from './upload-asset.service'
 
 const principal: AudioPagePrincipal = {
@@ -29,6 +30,7 @@ const slug = 'audio-page-service-public'
 const services = Layer.mergeAll(
   AudioServiceLayer.pipe(
     Layer.provide(MdxServiceLayer),
+    Layer.provide(UnavailableObjectStoreClientLayer),
     Layer.provide(Layer.mergeAll(ConfigServiceLayer, UploadAssetServiceLayer)),
     Layer.provide(DatabaseTestLayer),
   ),

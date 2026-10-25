@@ -1,11 +1,21 @@
 import { Api } from '@gbfm/api/api'
 import { FileTooLargeError } from '@gbfm/api/errors'
 import { AuthSession } from '@gbfm/api/middleware/auth'
-import { Effect } from 'effect'
+import { createPreviewGrant, isPrivateMediaPath, PREVIEW_TTL_MS } from '@gbfm/core/media-preview'
+import { eq } from 'drizzle-orm'
+import { Clock, Effect, Redacted } from 'effect'
+import { HttpServerResponse } from 'effect/http'
 import { HttpApiBuilder, HttpApiError } from 'effect/http-api'
 
+import { audioCreators, audioTable } from '@/db/audio.schema'
+import { Database } from '@/db/layer'
+import { musicLabelCreatorsTable } from '@/db/music-entity.schema'
+import { postCreators, postsTable } from '@/db/post.schema'
+import { releasesTable } from '@/db/release.schema'
+import { showCreators, showsTable } from '@/db/show.schema'
 import { dieOnS3Error as makeDieOnS3Error } from '@/http/handler-utils'
 import { ConfigService } from '@/services/config.service'
+import { attachedMediaUrls } from '@/services/media-publication'
 import { S3Service } from '@/services/s3.service'
 import { UploadAssetService } from '@/services/upload-asset.service'
 
@@ -47,13 +57,13 @@ const buildObjectKey = (
 ): string => {
   const sanitizedName = sanitizeKeySegment(fileName)
 
-  return `${sanitizeKeySegment(userId)}/multipart/${crypto.randomUUID()}/${expectedSize}/${fileType}_${sanitizedName}`
+  return `private/${sanitizeKeySegment(userId)}/multipart/${crypto.randomUUID()}/${expectedSize}/${fileType}_${sanitizedName}`
 }
 
 const buildImageObjectKey = (userId: string, fileName: string): string => {
   const sanitizedName = sanitizeKeySegment(fileName)
 
-  return `${sanitizeKeySegment(userId)}/image/${crypto.randomUUID()}/${sanitizedName}`
+  return `private/${sanitizeKeySegment(userId)}/image/${crypto.randomUUID()}/${sanitizedName}`
 }
 
 // Best-effort: a failure recording lifecycle state must never fail the
@@ -70,7 +80,10 @@ const recordAssetLifecycle = <A>(effect: Effect.Effect<A, { readonly _tag: 'Data
   )
 
 export const assertKeyOwnership = (userId: string, key: string) =>
-  key.startsWith(`${sanitizeKeySegment(userId)}/`) ? Effect.void : new HttpApiError.BadRequest()
+  key.startsWith(`${sanitizeKeySegment(userId)}/`) ||
+  key.startsWith(`private/${sanitizeKeySegment(userId)}/`)
+    ? Effect.void
+    : new HttpApiError.BadRequest()
 
 export const assertContiguousParts = (parts: ReadonlyArray<{ partNumber: number }>) => {
   const sorted = parts.toSorted((a, b) => a.partNumber - b.partNumber)
@@ -121,7 +134,7 @@ export const matchesCompletedObject = (
 ) => object?.size === expectedSize && object.metadata['expected-size'] === String(expectedSize)
 
 const expectedSizeFromKey = (userId: string, key: string) => {
-  const prefix = `${sanitizeKeySegment(userId)}/multipart/`
+  const prefix = `${key.startsWith('private/') ? 'private/' : ''}${sanitizeKeySegment(userId)}/multipart/`
 
   if (!key.startsWith(prefix)) return null
   const segments = key.slice(prefix.length).split('/')
@@ -144,6 +157,119 @@ const requireExpectedSize = (userId: string, key: string) => {
 
 export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers) =>
   handlers
+    .handle('previewMedia', ({ payload }) =>
+      Effect.gen(function* () {
+        const { user } = yield* AuthSession
+        const config = yield* ConfigService
+
+        const url = yield* Effect.try({
+          try: () => new URL(payload.url),
+          catch: () => new HttpApiError.BadRequest(),
+        })
+
+        const cdn = new URL(config.urls.bucketRouter)
+
+        if (
+          url.origin !== cdn.origin ||
+          url.username ||
+          url.password ||
+          url.hash ||
+          !isPrivateMediaPath(url.pathname) ||
+          !url.pathname.startsWith('/user-content/private/')
+        )
+          return yield* new HttpApiError.BadRequest()
+
+        const owned = url.pathname.startsWith(
+          `/user-content/private/${sanitizeKeySegment(user.id)}/`,
+        )
+
+        if (!owned && user.role !== 'admin') {
+          const db = yield* Database
+          const canonicalUrl = `${url.origin}${url.pathname}`
+
+          const allowed = yield* Effect.tryPromise({
+            try: async () => {
+              const [audio, posts, shows, releases] = await Promise.all([
+                db
+                  .select({
+                    url: audioTable.url,
+                    thumbnailUrl: audioTable.thumbnailUrl,
+                    bannerImageUrl: audioTable.bannerImageUrl,
+                    content: audioTable.content,
+                  })
+                  .from(audioTable)
+                  .innerJoin(audioCreators, eq(audioCreators.audioId, audioTable.id))
+                  .where(eq(audioCreators.creatorId, user.id)),
+                db
+                  .select({
+                    thumbnailUrl: postsTable.thumbnailUrl,
+                    bannerImageUrl: postsTable.bannerImageUrl,
+                    content: postsTable.content,
+                  })
+                  .from(postsTable)
+                  .innerJoin(postCreators, eq(postCreators.postId, postsTable.id))
+                  .where(eq(postCreators.creatorId, user.id)),
+                db
+                  .select({
+                    thumbnailUrl: showsTable.thumbnailUrl,
+                    bannerImageUrl: showsTable.bannerImageUrl,
+                    content: showsTable.content,
+                  })
+                  .from(showsTable)
+                  .innerJoin(showCreators, eq(showCreators.showId, showsTable.id))
+                  .where(eq(showCreators.creatorId, user.id)),
+                db
+                  .select({
+                    thumbnailUrl: releasesTable.thumbnailUrl,
+                    bannerImageUrl: releasesTable.bannerImageUrl,
+                    content: releasesTable.content,
+                  })
+                  .from(releasesTable)
+                  .innerJoin(
+                    musicLabelCreatorsTable,
+                    eq(musicLabelCreatorsTable.labelId, releasesTable.labelId),
+                  )
+                  .where(eq(musicLabelCreatorsTable.creatorId, user.id)),
+              ])
+
+              // An episode's caller-supplied showId is not authority over private show artwork.
+              return [...audio, ...posts, ...shows, ...releases].some((item) =>
+                attachedMediaUrls(item).some(
+                  (reference) => reference === canonicalUrl || reference === url.pathname,
+                ),
+              )
+            },
+            catch: () => new HttpApiError.ServiceUnavailable(),
+          })
+
+          if (!allowed) return yield* new HttpApiError.Forbidden()
+        }
+
+        const secret = config.mediaPreviewKey
+
+        if (!secret) return yield* new HttpApiError.ServiceUnavailable()
+        const expiresAt = (yield* Clock.currentTimeMillis) + PREVIEW_TTL_MS
+
+        const grant = yield* Effect.tryPromise({
+          try: () =>
+            createPreviewGrant(
+              { path: url.pathname, audience: cdn.origin, expiresAt },
+              Redacted.value(secret),
+            ),
+          catch: () => new HttpApiError.ServiceUnavailable(),
+        })
+
+        return HttpServerResponse.setHeader(
+          yield* HttpServerResponse.json({
+            sessionUrl: new URL('/preview-session', cdn).href,
+            grant,
+            expiresAt,
+          }).pipe(Effect.orDie),
+          'cache-control',
+          'private, no-store',
+        )
+      }),
+    )
     // Images are a single PUT (no chunking, no multipart session) -- the
     // browser asks for a presigned URL scoped to a key it doesn't control,
     // then PUTs bytes straight to S3. Unlike the old uploadFile proxy, this

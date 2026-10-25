@@ -6,6 +6,7 @@
     "./utils": "./src/utils/index.ts",
     "./utils/slug": "./src/utils/slug.ts",
     "./api": "./src/api/index.ts",
+    "./media-preview": "./src/media-preview.ts",
     "./observability/request-id": "./src/observability/request-id.ts",
     "./observability/local-loki": "./src/observability/local-loki.ts",
     "./observability/trace-sampling": "./src/observability/trace-sampling.ts",

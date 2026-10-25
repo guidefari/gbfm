@@ -59,10 +59,12 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
             .create(
               omitUndefined({ ...mixData, tags: mixData.tags ? [...mixData.tags] : undefined }),
               finalCreatorIds,
-              { actorId: user.id, idempotencyKey },
+              { actorId: user.id, actorRole: user.role ?? 'user', idempotencyKey },
             )
             .pipe(
               Effect.catchTag('ConflictError', () => new HttpApiError.Conflict()),
+              Effect.catchTag('S3Error', () => new HttpApiError.InternalServerError()),
+              Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized()),
               Effect.catchTag('ValidationError', () => new ValidationHttpError()),
             ),
         )
@@ -196,6 +198,7 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
             )
             .pipe(
               Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
+              Effect.catchTag('S3Error', () => new HttpApiError.InternalServerError()),
               Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized()),
               Effect.catchTag('ValidationError', () => new ValidationHttpError()),
             ),
@@ -220,10 +223,12 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
                 tags: audioData.tags ? [...audioData.tags] : undefined,
               }),
               finalCreatorIds,
-              { actorId: user.id, idempotencyKey },
+              { actorId: user.id, actorRole: user.role ?? 'user', idempotencyKey },
             )
             .pipe(
               Effect.catchTag('ConflictError', () => new HttpApiError.Conflict()),
+              Effect.catchTag('S3Error', () => new HttpApiError.InternalServerError()),
+              Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized()),
               Effect.catchTag('ValidationError', () => new ValidationHttpError()),
             ),
         )

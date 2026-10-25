@@ -21,10 +21,18 @@ import {
   NotFoundError,
   type UnauthorizedError,
   type ValidationError,
+  type S3Error,
 } from '@/errors'
 import { requireCreatorOrAdmin } from '@/lib/authorization'
 import { MdxService, validateCanonicalContent } from '@/lib/mdx'
 import { createPaginationMetadata, type PaginationMetadata } from '@/lib/pagination'
+import { ConfigService } from '@/services/config.service'
+import {
+  makeMediaPublication,
+  type MediaActor,
+  type MediaPublication,
+} from '@/services/media-publication'
+import { ObjectStoreClient } from '@/services/storage/object-store-client'
 
 export { ShowSubscriptionService, ShowSubscriptionServiceLayer } from './show-subscription.service'
 
@@ -62,7 +70,11 @@ export interface ShowService {
   readonly create: (
     data: InsertShow,
     hostIds: Array<string>,
-  ) => Effect.Effect<SelectShow, DatabaseError | ConflictError | ValidationError>
+    actor?: MediaActor,
+  ) => Effect.Effect<
+    SelectShow,
+    DatabaseError | ConflictError | ValidationError | UnauthorizedError | S3Error
+  >
   readonly update: (
     slug: string,
     userId: string,
@@ -70,7 +82,7 @@ export interface ShowService {
     data: Partial<InsertShow> & { hostIds?: Array<string> },
   ) => Effect.Effect<
     SelectMdxCompiledShow,
-    DatabaseError | NotFoundError | UnauthorizedError | ValidationError
+    DatabaseError | NotFoundError | UnauthorizedError | ValidationError | S3Error
   >
   readonly delete: (
     slug: string,
@@ -233,11 +245,17 @@ const getBySlugEffect = (slug: string, includeDrafts = false) =>
     } satisfies SelectMdxCompiledShow
   })
 
-const createEffect = (data: InsertShow, hostIds: Array<string>) =>
+const createEffect = (
+  data: InsertShow,
+  hostIds: Array<string>,
+  media: MediaPublication,
+  actor?: MediaActor,
+) =>
   Effect.gen(function* () {
     yield* validateCanonicalContent(data.content)
     const db = yield* Database
-    const { tags, ...showData } = data
+    const publication = yield* media(data, actor)
+    const { tags, ...showData } = publication.data
     const id = crypto.randomUUID()
 
     const result = yield* Effect.tryPromise({
@@ -296,6 +314,8 @@ const createEffect = (data: InsertShow, hostIds: Array<string>) =>
         }),
     })
 
+    yield* publication.publish
+
     return { ...result, tags: projectedTags }
   })
 
@@ -304,10 +324,10 @@ const updateEffect = (
   userId: string,
   userRole: string,
   data: Partial<InsertShow> & { hostIds?: Array<string> },
+  media: MediaPublication,
 ) =>
   Effect.gen(function* () {
     const db = yield* Database
-    const { hostIds, tags, ...updateData } = data
 
     const existingRecords = yield* Effect.tryPromise({
       try: () => db.select().from(showsTable).where(eq(showsTable.slug, slug)).limit(1),
@@ -331,6 +351,8 @@ const updateEffect = (
 
     yield* requireCreatorOrAdmin('show', existingShow.id, userId, userRole)
     yield* validateCanonicalContent(data.content)
+    const publication = yield* media(data, { userId, userRole }, existingShow)
+    const { hostIds, tags, ...updateData } = publication.data
 
     const updatedRecords = yield* Effect.tryPromise({
       try: async () => {
@@ -386,6 +408,8 @@ const updateEffect = (
           }),
       })
     }
+
+    yield* publication.publish
 
     const hostRows = yield* Effect.tryPromise({
       try: () =>
@@ -596,6 +620,9 @@ export const ShowServiceLayer = Layer.effect(
   Effect.gen(function* () {
     const db = yield* Database
     const mdx = yield* MdxService
+    const config = yield* ConfigService
+    const store = yield* ObjectStoreClient
+    const media = makeMediaPublication(config, store)
     const provideDb = Effect.provideService(Database, db)
 
     return {
@@ -632,11 +659,13 @@ export const ShowServiceLayer = Layer.effect(
             return show
           }).pipe(Effect.provideService(MdxService, mdx)),
         ).pipe(Effect.withSpan('show.getBySlugForEdit', { attributes: { slug } })),
-      create: (data, hostIds) =>
-        provideDb(createEffect(data, hostIds)).pipe(Effect.withSpan('show.create')),
+      create: (data, hostIds, actor) =>
+        provideDb(createEffect(data, hostIds, media, actor)).pipe(Effect.withSpan('show.create')),
       update: (slug, userId, userRole, data) =>
         provideDb(
-          updateEffect(slug, userId, userRole, data).pipe(Effect.provideService(MdxService, mdx)),
+          updateEffect(slug, userId, userRole, data, media).pipe(
+            Effect.provideService(MdxService, mdx),
+          ),
         ).pipe(Effect.withSpan('show.update', { attributes: { slug } })),
       delete: (slug, userId, userRole) =>
         provideDb(deleteEffect(slug, userId, userRole)).pipe(

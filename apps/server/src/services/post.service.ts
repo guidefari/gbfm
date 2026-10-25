@@ -58,12 +58,19 @@ import {
   QuotedPostNotEmbeddableError,
   type UnauthorizedError,
   ValidationError,
+  type S3Error,
 } from '@/errors'
 import { checkCreatorAuthorship, requireCreatorOrAdmin } from '@/lib/authorization'
 import { MdxService, validateCanonicalContent } from '@/lib/mdx'
 import { createPaginationMetadata, type PaginationMetadata } from '@/lib/pagination'
 import { ConfigService } from '@/services/config.service'
+import {
+  makeMediaPublication,
+  type MediaActor,
+  type MediaPublication,
+} from '@/services/media-publication'
 import { SentryService } from '@/services/sentry.service'
+import { ObjectStoreClient } from '@/services/storage/object-store-client'
 import { toSlug } from '@/services/to-slug'
 import { markAttachedAssets, UploadAssetService } from '@/services/upload-asset.service'
 
@@ -183,9 +190,16 @@ export interface PostService {
   readonly create: (
     data: Partial<InsertPost>,
     creatorIds: Array<string>,
+    actor?: MediaActor,
   ) => Effect.Effect<
     SelectPost,
-    DatabaseError | ConflictError | ValidationError | NotFoundError | QuotedPostNotEmbeddableError
+    | DatabaseError
+    | ConflictError
+    | ValidationError
+    | NotFoundError
+    | QuotedPostNotEmbeddableError
+    | UnauthorizedError
+    | S3Error
   >
   readonly createMicroPostReply: (options: {
     parentSlug: string
@@ -203,6 +217,8 @@ export interface PostService {
     | ValidationError
     | ParentPostNotReplyableError
     | QuotedPostNotEmbeddableError
+    | UnauthorizedError
+    | S3Error
   >
   readonly getMicroPostReplies: (
     parentSlug: string,
@@ -232,7 +248,7 @@ export interface PostService {
     data: Partial<InsertPost> & { creatorIds?: Array<string> },
   ) => Effect.Effect<
     SelectMdxCompiledPost,
-    DatabaseError | NotFoundError | UnauthorizedError | ValidationError
+    DatabaseError | NotFoundError | UnauthorizedError | ValidationError | S3Error
   >
 }
 
@@ -1822,7 +1838,12 @@ export const generatePostSlug = (title?: string | null, content?: string | null)
   return source ? toSlug(source) : toSlug('post')
 }
 
-const createEffect = (data: Partial<InsertPost>, creatorIds: Array<string>) =>
+const createEffect = (
+  data: Partial<InsertPost>,
+  creatorIds: Array<string>,
+  media: MediaPublication,
+  actor?: MediaActor,
+) =>
   Effect.gen(function* () {
     const db = yield* Database
     const normalizedData = normalizePostData(data, data.type)
@@ -1833,7 +1854,8 @@ const createEffect = (data: Partial<InsertPost>, creatorIds: Array<string>) =>
       yield* validateQuotedPost(normalizedData.quotedPostId)
     }
 
-    const { tags, ...postData } = normalizedData
+    const publication = yield* media(normalizedData, actor)
+    const { tags, ...postData } = publication.data
 
     const dataWithSlug: InsertPost = {
       ...postData,
@@ -1906,6 +1928,8 @@ const createEffect = (data: Partial<InsertPost>, creatorIds: Array<string>) =>
 
     yield* markAttachedAssets('posts', result.id, [result.thumbnailUrl, result.bannerImageUrl])
 
+    yield* publication.publish
+
     return yield* Effect.tryPromise({
       try: () => projectEntityLabels(db, 'post', result),
       catch: (error) =>
@@ -1941,6 +1965,7 @@ const createMicroPostReplyEffect = (
     quotedPostId?: string | null
   },
   mdx: MdxService,
+  media: MediaPublication,
 ) =>
   Effect.gen(function* () {
     const db = yield* Database
@@ -2010,9 +2035,12 @@ const createMicroPostReplyEffect = (
     )
 
     yield* validatePostData(normalizedData)
+    yield* validateCanonicalContent(normalizedData.content)
+
+    const publication = yield* media(normalizedData, { userId: actorUserId, userRole: 'user' })
 
     const replyData: InsertPost = {
-      ...normalizedData,
+      ...publication.data,
       type: 'micro',
       slug: generateReplySlug(),
       musicEntityType,
@@ -2062,6 +2090,7 @@ const createMicroPostReplyEffect = (
     })
 
     yield* Effect.annotateCurrentSpan('postId', result.id)
+    yield* publication.publish
     yield* Effect.annotateCurrentSpan('parentPostId', threadFields.parentPostId)
     yield* Effect.annotateCurrentSpan('rootPostId', threadFields.rootPostId)
     yield* Effect.annotateCurrentSpan('depth', threadFields.depth)
@@ -2352,6 +2381,7 @@ const updateEffect = (
   userRole: string,
   rawData: Partial<InsertPost> & { creatorIds?: Array<string> },
   mdx: MdxService,
+  media: MediaPublication,
 ) =>
   Effect.gen(function* () {
     const db = yield* Database
@@ -2390,7 +2420,14 @@ const updateEffect = (
     yield* validatePostData(normalizedNextPostData)
 
     const { creatorIds, tags, ...updateData } = data
-    const normalizedUpdateData = normalizePostData(updateData, nextPostData.type)
+
+    const publication = yield* media(
+      normalizePostData(updateData, nextPostData.type),
+      { userId, userRole },
+      existingPost,
+    )
+
+    const normalizedUpdateData = publication.data
     let updatedPost = existingPost
 
     if (Object.keys(normalizedUpdateData).length > 0) {
@@ -2460,6 +2497,8 @@ const updateEffect = (
       })
     }
 
+    yield* publication.publish
+
     return yield* buildPostWithCreators(updatedPost, mdx)
   })
 
@@ -2470,6 +2509,8 @@ export const PostServiceLayer = Layer.effect(
     const mdx = yield* MdxService
     const config = yield* ConfigService
     const uploadAssetService = yield* UploadAssetService
+    const store = yield* ObjectStoreClient
+    const media = makeMediaPublication(config, store)
     const provideDb = Effect.provideService(Database, db)
 
     return {
@@ -2502,17 +2543,17 @@ export const PostServiceLayer = Layer.effect(
       getRandomMicroPost: (excludeSlugs) => provideDb(getRandomMicroPostEffect(excludeSlugs)),
       searchMicroPosts: (opts) => provideDb(searchMicroPostsEffect(opts, mdx)),
       getByTag: (tag, opts) => provideDb(getByTagEffect(tag, opts)),
-      create: (data, creatorIds) =>
-        provideDb(createEffect(data, creatorIds)).pipe(
+      create: (data, creatorIds, actor) =>
+        provideDb(createEffect(data, creatorIds, media, actor)).pipe(
           Effect.provideService(ConfigService, config),
           Effect.provideService(UploadAssetService, uploadAssetService),
         ),
-      createMicroPostReply: (opts) => provideDb(createMicroPostReplyEffect(opts, mdx)),
+      createMicroPostReply: (opts) => provideDb(createMicroPostReplyEffect(opts, mdx, media)),
       getMicroPostReplies: (parentSlug, opts) =>
         provideDb(getMicroPostRepliesEffect(parentSlug, opts, mdx)),
       getMicroPostThread: (slug, opts) => provideDb(getMicroPostThreadEffect(slug, opts, mdx)),
       update: (slug, userId, userRole, data) =>
-        provideDb(updateEffect(slug, userId, userRole, data, mdx)).pipe(
+        provideDb(updateEffect(slug, userId, userRole, data, mdx, media)).pipe(
           Effect.provideService(ConfigService, config),
           Effect.provideService(UploadAssetService, uploadAssetService),
         ),

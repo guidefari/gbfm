@@ -17,6 +17,7 @@ import { Status as ChallengeStatus } from './signup-challenge/model'
 
 export const Message = defineMessageUnion({
   ClientStarted: {},
+  MediaPreviewDenied: {},
   ChallengeStatusChanged: { status: ChallengeStatus },
   GotTweetReaderMessage: { message: TweetReader.Message },
   MenuToggled: {},

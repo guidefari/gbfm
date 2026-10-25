@@ -238,7 +238,12 @@ export const UserGroup = /* @__PURE__ */ (() =>
         params: UserIdParam,
         payload: UpdateAdminBioInput,
         success: BioResponse,
-        error: [HttpApiError.Forbidden, HttpApiError.NotFound, HttpApiError.InternalServerError],
+        error: [
+          HttpApiError.BadRequest,
+          HttpApiError.Forbidden,
+          HttpApiError.NotFound,
+          HttpApiError.InternalServerError,
+        ],
       }).middleware(AuthMiddleware),
     )
     .add(

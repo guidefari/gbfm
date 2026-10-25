@@ -1,6 +1,8 @@
 import type { RichContentBlock, RichContentDocument } from '@gbfm/rich-content/schema'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
+import { imageSource } from '../artwork'
+
 type RichContentInline = Extract<
   RichContentBlock,
   { readonly _tag: 'Paragraph' }
@@ -52,7 +54,7 @@ const inlineView = <Message>(inline: RichContentInline, h: HtmlBuilder<Message>)
       )
     case 'Image':
       return h.img([
-        h.Src(inline.src),
+        imageSource(inline.src),
         h.Alt(inline.alt),
         h.Loading('lazy'),
         h.Decoding('async'),
@@ -172,7 +174,7 @@ const musicView = <Message>(
         ? []
         : [
             h.img([
-              h.Src(music.imageUrl),
+              imageSource(music.imageUrl),
               h.Alt(`Artwork for ${music.title}`),
               h.Loading('lazy'),
               h.Decoding('async'),

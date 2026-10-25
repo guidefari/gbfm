@@ -13,6 +13,11 @@ import {
 } from '@gbfm/player'
 import { Context, Data, Effect, Layer, ManagedRuntime, Queue, Stream } from 'effect'
 
+import {
+  browserPreviewSession,
+  isPrivateMedia,
+  type PreviewSession,
+} from '../media-preview/session'
 import { reportPlayerTelemetry } from '../telemetry/browser'
 import { createCreatorLookup } from './creator-lookup'
 import { recoverPlayerCreators, type CreatorLookup } from './creator-recovery'
@@ -20,6 +25,7 @@ import { readPlayerPreferences } from './preferences'
 
 export type AudioPort = {
   src: string
+  crossOrigin?: string | null
   currentTime: number
   readonly duration: number
   readonly paused: boolean
@@ -54,12 +60,25 @@ const status = (audio: AudioPort, finished: boolean, generation: number | null):
 
 const hasMediaSession = () => 'navigator' in globalThis && 'mediaSession' in navigator
 
-export const makeHtmlAudioEngineLayer = (audio: AudioPort) =>
+export const makeHtmlAudioEngineLayer = (
+  audio: AudioPort,
+  createPreview: (url: string, onDenied: () => void) => PreviewSession = browserPreviewSession,
+) =>
   Layer.effect(
     AudioEngine,
     Effect.gen(function* () {
       let finished = false
       let generation: number | null = null
+      let privateSource: string | null = null
+      let preview: PreviewSession | undefined
+
+      const resetPreview = () => {
+        preview?.dispose()
+        preview = undefined
+        privateSource = null
+      }
+
+      yield* Effect.addFinalizer(() => Effect.sync(resetPreview))
 
       const changes = Stream.callback<EngineStatus>((queue) =>
         Effect.gen(function* () {
@@ -135,20 +154,58 @@ export const makeHtmlAudioEngineLayer = (audio: AudioPort) =>
 
       return {
         replace: (url: string, nextGeneration: number) =>
-          Effect.sync(() => {
+          Effect.promise(async () => {
+            resetPreview()
             generation = nextGeneration
             finished = false
+
+            if (isPrivateMedia(url)) {
+              audio.pause()
+              privateSource = url
+              preview = createPreview(url, () => audio.pause())
+              const active = preview
+              const result = await active.ensure()
+
+              if (preview !== active || !result.ok) return
+              audio.crossOrigin = 'use-credentials'
+              audio.src = url
+              privateSource = null
+              audio.load()
+
+              return
+            }
+
+            if (audio.crossOrigin === 'use-credentials') audio.crossOrigin = null
             audio.src = url
             audio.load()
           }),
         clearSource: Effect.sync(() => {
+          resetPreview()
           generation = null
           finished = false
           audio.src = ''
           audio.load()
         }),
         play: Effect.tryPromise({
-          try: () => audio.play(),
+          try: async () => {
+            const active = preview
+
+            if (active) {
+              const result = await active.ensure()
+
+              if (!result.ok || preview !== active)
+                throw new Error('Private media preview unavailable')
+
+              if (privateSource !== null) {
+                audio.crossOrigin = 'use-credentials'
+                audio.src = privateSource
+                privateSource = null
+                audio.load()
+              }
+            }
+
+            await audio.play()
+          },
           catch: (cause) => new PlaybackRejected({ cause }),
         }),
         pause: Effect.sync(() => audio.pause()),

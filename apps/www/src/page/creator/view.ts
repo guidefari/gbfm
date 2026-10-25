@@ -3,6 +3,7 @@ import { Match } from 'effect'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { defineView } from 'foldkit/submodel'
 
+import { imageSource } from '../../view/artwork'
 import { richContent } from '../../view/rich-content/fallback'
 import { Message } from './message'
 import { draftValidationError, TWEET_MAX_LENGTH, type Model } from './model'
@@ -165,7 +166,7 @@ const musicSlot = (model: Model, h: Builder, busy: boolean): Html =>
         [h.Class('creator-music-card')],
         [
           model.musicPreviewImage
-            ? h.img([h.Src(model.musicPreviewImage), h.Alt('Music cover art')])
+            ? h.img([imageSource(model.musicPreviewImage), h.Alt('Music cover art')])
             : h.div([h.Class('creator-music-placeholder'), h.AriaHidden(true)], ['♫']),
           h.div(
             [h.Class('creator-music-copy')],
@@ -227,7 +228,7 @@ const metadata = (model: Model, h: Builder, busy: boolean): Html =>
             [
               h.span([], ['Artwork']),
               model.draft.thumbnailUrl
-                ? h.img([h.Src(model.draft.thumbnailUrl), h.Alt('Editorial artwork preview')])
+                ? h.img([imageSource(model.draft.thumbnailUrl), h.Alt('Editorial artwork preview')])
                 : h.label(
                     [h.Class('creator-artwork-upload')],
                     [

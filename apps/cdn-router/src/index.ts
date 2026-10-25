@@ -1,4 +1,5 @@
 import { parseImageOptions, toContentType } from './image-options'
+import { approvedPreviewOrigin, hasPreviewCookie, previewSession, privateResponse } from './preview'
 import { matchRoute } from './route'
 
 const imageCacheControl = 'public, max-age=31536000, immutable'
@@ -144,9 +145,57 @@ const fetchObject = async (
 
 export default {
   async fetch(request, env): Promise<Response> {
-    const route = matchRoute(new URL(request.url).pathname, env)
+    const url = new URL(request.url)
+
+    if (url.pathname === '/preview-session') return previewSession(request, env)
+    const route = matchRoute(url.pathname, env)
 
     if (route === null) return withCors(notFound())
+
+    // Decode only to reject reserved-prefix aliases, never to select an R2 object.
+    // Existing public keys retain their literal path spelling and fast public path.
+    if (!route.key.startsWith('private/') && route.key.includes('%')) {
+      try {
+        if (decodeURIComponent(route.key).startsWith('private/'))
+          return privateResponse(notFound(), request, env)
+      } catch {
+        // Malformed escapes remain literal public R2 keys, as before.
+      }
+    }
+
+    if (route.key.startsWith('private/')) {
+      const reply = (response: Response) => privateResponse(response, request, env)
+
+      if (
+        /[\\%]/.test(url.pathname) ||
+        route.key.split('/').some((part) => part === '' || part === '.' || part === '..')
+      )
+        return reply(notFound())
+
+      if (!env.MEDIA_PREVIEW_KEY || !env.MEDIA_PREVIEW_ORIGIN)
+        return reply(new Response(null, { status: 503 }))
+
+      // /mixes must never be an unsigned alias, nor an alternate signed asset URL.
+      if (!url.pathname.startsWith('/user-content/private/'))
+        return reply(new Response(null, { status: 403 }))
+
+      if (request.method === 'OPTIONS') {
+        return reply(
+          new Response(null, { status: approvedPreviewOrigin(request, env) !== null ? 204 : 403 }),
+        )
+      }
+
+      if (!(await hasPreviewCookie(request, env.MEDIA_PREVIEW_KEY, url.origin, url.pathname)))
+        return reply(new Response(null, { status: 403 }))
+
+      if (request.method !== 'GET' && request.method !== 'HEAD') return reply(methodNotAllowed())
+
+      try {
+        return reply(await fetchObject(request, route.bucket, route.key, env.IMAGES))
+      } catch {
+        return reply(new Response(null, { status: 500 }))
+      }
+    }
 
     if (request.method !== 'GET' && request.method !== 'HEAD') return withCors(methodNotAllowed())
 

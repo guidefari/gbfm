@@ -122,7 +122,10 @@ const selectBucket = (
 }
 
 /** Creates the Worker object-storage capability from native R2 bindings. */
-export const R2ObjectStoreClientLayer = (buckets: R2ObjectStoreBuckets) =>
+export const R2ObjectStoreClientLayer = (
+  buckets: R2ObjectStoreBuckets,
+  request: typeof signedRequest = signedRequest,
+) =>
   Layer.effect(
     ObjectStoreClient,
     Effect.gen(function* () {
@@ -149,6 +152,24 @@ export const R2ObjectStoreClientLayer = (buckets: R2ObjectStoreBuckets) =>
             expiresSeconds: expiresInSeconds,
           }),
         deleteObject: (bucketName, key) => bucket(bucketName).delete(key),
+        copyObject: async (bucketName, sourceKey, key) => {
+          const response = await request({
+            config: signingConfig(bucketName),
+            method: 'PUT',
+            key,
+            query: [],
+            headers: {
+              'x-amz-copy-source': `/${encodeURIComponent(bucketName)}/${sourceKey.split('/').map(encodeURIComponent).join('/')}`,
+            },
+          })
+
+          await ensureOk(response)
+          // S3 can report a copy failure inside an HTTP 200 response.
+          const body = await response.text()
+
+          if (!body.includes('<CopyObjectResult') || body.includes('<Error>'))
+            throw new Error('R2 object copy failed')
+        },
         headObject: async (bucketName, key) => {
           const object = await bucket(bucketName).head(key)
 
@@ -204,7 +225,7 @@ export const R2ObjectStoreClientLayer = (buckets: R2ObjectStoreBuckets) =>
           await bucket(bucketName).resumeMultipartUpload(key, uploadId).abort()
         },
         listMultipartParts: async (bucketName, key, uploadId) => {
-          const response = await signedRequest({
+          const response = await request({
             config: signingConfig(bucketName),
             method: 'GET',
             key,

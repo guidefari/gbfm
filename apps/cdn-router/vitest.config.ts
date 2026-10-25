@@ -11,6 +11,7 @@ export default defineConfig({
       miniflare: {
         compatibilityDate: '2026-08-08',
         r2Buckets: ['USER_CONTENT', 'MIXES'],
+        images: { binding: 'IMAGES' },
       },
     }),
   ],

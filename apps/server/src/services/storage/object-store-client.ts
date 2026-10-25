@@ -34,6 +34,8 @@ export interface ObjectStoreClient {
     readonly expiresInSeconds: number
   }) => Promise<string>
   readonly deleteObject: (bucketName: string, key: string) => Promise<void>
+  /** Server-side copy; source bytes and metadata are preserved. */
+  readonly copyObject: (bucketName: string, sourceKey: string, key: string) => Promise<void>
   readonly headObject: (bucketName: string, key: string) => Promise<StoredObjectMetadata | null>
   readonly listObjects: (bucketName: string, prefix: string) => Promise<Array<StoredObject>>
   readonly listBuckets: () => Promise<Array<string>>
@@ -77,6 +79,7 @@ export const UnavailableObjectStoreClientLayer = Layer.succeed(ObjectStoreClient
   putObject: unavailable,
   presignPutObject: unavailable,
   deleteObject: unavailable,
+  copyObject: unavailable,
   headObject: unavailable,
   listObjects: unavailable,
   listBuckets: unavailable,
