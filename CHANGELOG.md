@@ -1,3 +1,11 @@
+## [2.107.3](https://github.com/guidefari/gbfm/compare/v2.107.2...v2.107.3) (2026-10-25)
+
+
+### Bug Fixes
+
+* **seo:** identify gbfm and artists in public metadata ([80dc66f](https://github.com/guidefari/gbfm/commit/80dc66f1c145e8950c9dbdc2c6c458cf22db6173))
+* **www:** preserve homepage design and original description ([191866b](https://github.com/guidefari/gbfm/commit/191866b91b1a039a9ec536e7816b03766a0f2061))
+
 ## [2.107.2](https://github.com/guidefari/gbfm/compare/v2.107.1...v2.107.2) (2026-10-25)
 
 
