@@ -9,6 +9,29 @@ const episodeArtSizes = '64px'
 
 const mixHref = (episode: Episode) => `/mixes/${encodeURIComponent(episode.slug)}`
 
+const episodeCredits = <M>(h: HtmlBuilder<M>, episode: Episode) => {
+  const credits = episode.artists?.length ? episode.artists : (episode.creators ?? [])
+
+  if (!credits.length) return h.empty
+
+  return h.p(
+    [h.Class('mt-1 text-sm text-muted-foreground')],
+    credits.flatMap((credit, index) => [
+      index > 0 ? ', ' : '',
+      h.a(
+        [
+          h.Key(credit.id),
+          h.Href(`/profile/${encodeURIComponent(credit.username ?? credit.id)}`),
+          h.Class(
+            'font-semibold text-foreground/90 no-underline transition-colors hover:text-highlight hover:underline',
+          ),
+        ],
+        [credit.name],
+      ),
+    ]),
+  )
+}
+
 const equalizer = <M>(h: HtmlBuilder<M>) =>
   h.span(
     [h.AriaHidden(true), h.Class('flex h-4 items-end gap-[3px]')],
@@ -128,6 +151,7 @@ const episodeRow = <M>(
               ),
             ],
           ),
+          episodeCredits(h, episode),
           h.p(
             [h.Class('mt-1 flex items-center gap-3 text-xs text-muted-foreground sm:hidden')],
             [h.time([h.Datetime(episode.createdAt)], [formatDate(episode.createdAt)])],
