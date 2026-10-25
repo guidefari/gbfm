@@ -130,6 +130,7 @@ const masthead = <M>(
   latest: Episode | null,
   playback: ShowsPlayback<M>,
   actions: Html,
+  about: Html | null,
   interactive: boolean,
 ) => {
   return h.header(
@@ -183,12 +184,13 @@ const masthead = <M>(
                 ],
               )
             : h.empty,
-          show.description
-            ? h.p(
-                [h.Class('mt-4 max-w-prose text-base leading-relaxed text-foreground/80')],
-                [show.description],
-              )
-            : h.empty,
+          about ??
+            (show.description
+              ? h.p(
+                  [h.Class('mt-4 max-w-prose text-base leading-relaxed text-foreground/80')],
+                  [show.description],
+                )
+              : h.empty),
           h.div(
             [h.Class('mt-6 flex min-h-10 flex-wrap items-center gap-3')],
             [latest ? latestButton(h, latest, playback, interactive, false) : h.empty, actions],
@@ -240,29 +242,16 @@ export const view = <M>(
                 pending ? null : (document.episodes?.data[0] ?? null),
                 playback,
                 pending ? h.empty : actions,
+                about
+                  ? aboutView(h, selected.title, linkHostMentions(about, selected.hosts))
+                  : null,
                 interactive,
               ),
-              h.div(
+              h.section(
+                [h.AriaLabel('Episodes')],
                 [
-                  h.Class(
-                    about
-                      ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-12'
-                      : '',
-                  ),
-                ],
-                [
-                  about
-                    ? aboutView(h, selected.title, linkHostMentions(about, selected.hosts))
-                    : h.empty,
-                  h.section(
-                    [h.AriaLabel('Episodes'), h.Class('lg:col-start-1 lg:row-start-1')],
-                    [
-                      h.h2([h.Class('sr-only')], ['Episodes']),
-                      pending
-                        ? episodeRowsSkeleton()
-                        : episodeList(h, document, playback, interactive),
-                    ],
-                  ),
+                  h.h2([h.Class('sr-only')], ['Episodes']),
+                  pending ? episodeRowsSkeleton() : episodeList(h, document, playback, interactive),
                 ],
               ),
             ],

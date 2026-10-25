@@ -71,16 +71,10 @@ const panel = <M>(h: HtmlBuilder<M>, title: string, document: RichContentDocumen
   )
 
 export const about = <M>(h: HtmlBuilder<M>, title: string, document: RichContentDocument) =>
-  h.aside(
+  h.div(
+    [h.Class('mt-4 max-w-prose')],
     [
-      h.AriaLabel('About the show'),
-      h.Class(
-        'mb-6 border-t border-border pt-5 lg:col-start-2 lg:row-start-1 lg:mb-0 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0',
-      ),
-    ],
-    [
-      h.h2([h.Class('mb-3 text-lg font-bold')], ['About the show']),
-      h.div([h.Class(`${compactProse} [&_p]:line-clamp-5`)], [richContentView(blurb(document), h)]),
+      h.div([h.Class(`${compactProse} [&_p]:line-clamp-3`)], [richContentView(blurb(document), h)]),
       h.button(
         [
           h.Type('button'),
