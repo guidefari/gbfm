@@ -31,10 +31,12 @@ export type PlaybackCommandHandlers = {
   readonly onSeekTo: (time: number) => void
 }
 
-/** Playback was refused by the platform, typically because the call did not
- *  originate from a user gesture (Safari's autoplay policy). */
+/** Playback did not start: the platform refused it (for example, autoplay policy)
+ *  or a newer command superseded this attempt. */
 export class PlaybackRejected extends Data.TaggedError('PlaybackRejected')<{
   readonly cause?: unknown
+  /** A newer command owns playback; this completion must not change intent or report an error. */
+  readonly reason?: 'superseded'
 }> {}
 
 export interface AudioEngineContract {

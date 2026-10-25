@@ -8,6 +8,30 @@ const IncomingRequest = Request<unknown, IncomingRequestCfProperties>
 const fetchWorker = (request: Request) => worker.fetch(new IncomingRequest(request), env)
 
 describe('CDN router Worker', () => {
+  test('isolates active uploaded documents on public and historical routes, including transforms', async () => {
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'
+
+    for (const [bucket, route] of [
+      [env.USER_CONTENT, 'user-content'],
+      [env.MIXES, 'mixes'],
+    ] as const) {
+      await bucket.put('active.svg', svg, { httpMetadata: { contentType: 'image/svg+xml' } })
+
+      for (const suffix of ['', '?w=100&f=webp']) {
+        const response = await fetchWorker(
+          new Request(`https://cdn.example/${route}/active.svg${suffix}`),
+        )
+
+        expect(response.status).toBe(200)
+        expect(response.headers.get('content-security-policy')).toBe(
+          "sandbox; default-src 'none'; style-src 'unsafe-inline'",
+        )
+        expect(response.headers.get('x-content-type-options')).toBe('nosniff')
+        await response.arrayBuffer()
+      }
+    }
+  })
+
   test('serves byte ranges with the original object size', async () => {
     const body = Uint8Array.from({ length: 256 }, (_, index) => index)
     await env.USER_CONTENT.put('range.bin', body)

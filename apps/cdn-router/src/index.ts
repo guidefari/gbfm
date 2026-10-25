@@ -15,6 +15,14 @@ const withCors = (response: Response) => {
     response.headers.set(name, value)
   }
 
+  // Uploaded documents must never execute with this origin's private-media cookies.
+  // Apply even to legacy public objects and failed image-transform fallbacks.
+  response.headers.set(
+    'content-security-policy',
+    "sandbox; default-src 'none'; style-src 'unsafe-inline'",
+  )
+  response.headers.set('x-content-type-options', 'nosniff')
+
   return response
 }
 

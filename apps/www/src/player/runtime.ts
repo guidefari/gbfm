@@ -71,8 +71,10 @@ export const makeHtmlAudioEngineLayer = (
       let generation: number | null = null
       let privateSource: string | null = null
       let preview: PreviewSession | undefined
+      let playVersion = 0
 
       const resetPreview = () => {
+        playVersion++
         preview?.dispose()
         preview = undefined
         privateSource = null
@@ -186,29 +188,40 @@ export const makeHtmlAudioEngineLayer = (
           audio.src = ''
           audio.load()
         }),
-        play: Effect.tryPromise({
-          try: async () => {
-            const active = preview
+        play: Effect.gen(function* () {
+          const version = playVersion
+          const active = preview
 
-            if (active) {
-              const result = await active.ensure()
+          if (active) {
+            const result = yield* Effect.promise(() => active.ensure())
 
-              if (!result.ok || preview !== active)
-                throw new Error('Private media preview unavailable')
+            if (version !== playVersion || preview !== active)
+              return yield* new PlaybackRejected({ reason: 'superseded' })
 
-              if (privateSource !== null) {
-                audio.crossOrigin = 'use-credentials'
-                audio.src = privateSource
-                privateSource = null
-                audio.load()
-              }
+            if (!result.ok) return yield* new PlaybackRejected({})
+
+            if (privateSource !== null) {
+              audio.crossOrigin = 'use-credentials'
+              audio.src = privateSource
+              privateSource = null
+              audio.load()
             }
+          }
 
-            await audio.play()
-          },
-          catch: (cause) => new PlaybackRejected({ cause }),
+          yield* Effect.tryPromise({
+            try: () => audio.play(),
+            catch: (cause) =>
+              new PlaybackRejected(version !== playVersion ? { reason: 'superseded' } : { cause }),
+          })
+
+          if (version !== playVersion) return yield* new PlaybackRejected({ reason: 'superseded' })
+
+          return undefined
         }),
-        pause: Effect.sync(() => audio.pause()),
+        pause: Effect.sync(() => {
+          playVersion++
+          audio.pause()
+        }),
         seekTo: (seconds: number) =>
           Effect.sync(() => {
             audio.currentTime = Math.max(0, seconds)
