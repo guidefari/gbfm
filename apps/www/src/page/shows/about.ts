@@ -22,12 +22,21 @@ const panel = <M>(h: HtmlBuilder<M>, title: string, document: RichContentDocumen
       h.Attribute('popover', ''),
       h.AriaLabel(`About ${title}`),
       h.Class(
-        'fixed inset-0 m-auto h-fit max-h-[85vh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto rounded-sm border border-border bg-background p-6 text-foreground shadow-2xl backdrop:bg-background/80 backdrop:backdrop-blur-sm sm:p-10',
+        [
+          'fixed inset-0 m-auto h-fit max-h-[85vh] w-[calc(100%-2rem)] max-w-2xl flex-col overflow-hidden rounded-sm border border-border bg-background p-0 text-foreground shadow-2xl open:flex',
+          'translate-y-4 scale-[0.98] opacity-0 transition-[opacity,translate,scale,display,overlay] duration-200 ease-out transition-discrete open:translate-y-0 open:scale-100 open:opacity-100 starting:open:translate-y-4 starting:open:scale-[0.98] starting:open:opacity-0',
+          'backdrop:bg-transparent backdrop:transition-[background-color,backdrop-filter,display,overlay] backdrop:duration-200 backdrop:transition-discrete open:backdrop:bg-background/80 open:backdrop:backdrop-blur-sm starting:open:backdrop:bg-transparent starting:open:backdrop:backdrop-blur-none',
+          'motion-reduce:transition-none motion-reduce:backdrop:transition-none',
+        ].join(' '),
       ),
     ],
     [
       h.div(
-        [h.Class('mb-6 flex items-start justify-between gap-4')],
+        [
+          h.Class(
+            'flex shrink-0 items-center justify-between gap-4 border-b border-border px-6 py-4 sm:px-10 sm:py-5',
+          ),
+        ],
         [
           h.div(
             [],
@@ -43,14 +52,21 @@ const panel = <M>(h: HtmlBuilder<M>, title: string, document: RichContentDocumen
               h.Attribute('popovertargetaction', 'hide'),
               h.AriaLabel('Close'),
               h.Class(
-                'grid h-9 w-9 shrink-0 place-items-center rounded-sm border border-border bg-transparent text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                'flex h-9 w-9 shrink-0 items-center justify-center rounded-sm border border-border bg-transparent p-0 text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               ),
             ],
-            [lucide(iconPaths.close, 'h-4 w-4')],
+            [lucide(iconPaths.close, 'block h-4 w-4')],
           ),
         ],
       ),
-      h.div([h.Class('max-w-prose')], [richContentView(document, h)]),
+      h.div(
+        [
+          h.Class(
+            'min-h-0 overflow-y-auto overscroll-contain px-6 py-6 sm:px-10 sm:py-8 [&_.rich-content>:first-child]:mt-0',
+          ),
+        ],
+        [h.div([h.Class('max-w-prose')], [richContentView(document, h)])],
+      ),
     ],
   )
 
