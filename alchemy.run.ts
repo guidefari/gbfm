@@ -1,6 +1,7 @@
 import * as Alchemy from 'alchemy'
 import * as Cloudflare from 'alchemy/Cloudflare'
 import { Random } from 'alchemy/Random'
+import { retain } from 'alchemy/RemovalPolicy'
 import * as Effect from 'effect/Effect'
 
 import { apiWorker } from './alchemy/api'
@@ -14,7 +15,6 @@ import { socialImageWorker } from './alchemy/social-image'
 import { stageConfig } from './alchemy/stage'
 import { stackState } from './alchemy/state'
 import { storage } from './alchemy/storage'
-import { telemetryEvaluator } from './alchemy/telemetry-evaluator'
 import { website } from './alchemy/www'
 import { emailDeploymentConfig } from './apps/server/src/email-deployment-config'
 
@@ -62,17 +62,9 @@ export default Alchemy.Stack(
       mediaPreviewKey: mediaPreviewKey.text,
     })
 
-    const evaluator =
-      email === undefined
-        ? undefined
-        : yield* telemetryEvaluator({
-            config,
-            accountId: deployment.cloudflareAccountId,
-            email,
-            analyticsApiToken: deployment.secrets.CloudflareAnalyticsApiToken,
-            alertEmail: emailConfig.destinationAddress ?? deployment.adminEmail,
-            senderEmail: emailConfig.emailSender,
-          })
+    if (email !== undefined) {
+      yield* Cloudflare.KV.Namespace('TelemetryEvaluatorState').pipe(retain())
+    }
 
     const socialImages = yield* socialImageWorker(config, store, api)
 
@@ -98,7 +90,6 @@ export default Alchemy.Stack(
       userContentBucketName: store.userContent.bucketName,
       mixesBucketName: store.mixes.bucketName,
       socialCardsBucketName: store.socialCards.bucketName,
-      telemetryEvaluatorName: evaluator?.workerName,
     }
   }),
 )

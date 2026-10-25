@@ -190,18 +190,6 @@
         "vitest": "5.0.5",
       },
     },
-    "apps/telemetry-evaluator": {
-      "name": "@gbfm/telemetry-evaluator",
-      "version": "0.0.1",
-      "dependencies": {
-        "effect": "4.0.6",
-      },
-      "devDependencies": {
-        "@cloudflare/workers-types": "5.20261023.1",
-        "typescript": "7.0.2",
-        "vitest": "5.0.5",
-      },
-    },
     "apps/www": {
       "name": "@gbfm/www",
       "version": "0.4.7",
@@ -899,8 +887,6 @@
     "@gbfm/social-image": ["@gbfm/social-image@workspace:apps/social-image"],
 
     "@gbfm/spotify": ["@gbfm/spotify@workspace:packages/spotify"],
-
-    "@gbfm/telemetry-evaluator": ["@gbfm/telemetry-evaluator@workspace:apps/telemetry-evaluator"],
 
     "@gbfm/theme": ["@gbfm/theme@workspace:packages/theme"],
 
