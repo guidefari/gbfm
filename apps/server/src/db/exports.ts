@@ -12,6 +12,8 @@ export * from './favorites.schema.ts'
 
 export * from './featured-mix.schema.ts'
 
+export * from './listening.schema.ts'
+
 export * from './music-entity.schema.ts'
 
 export * from './music-reminder.schema.ts'

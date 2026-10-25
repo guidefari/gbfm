@@ -23,6 +23,7 @@ const listingKinds = new Set([
   'releases',
   'tags',
   'djs',
+  'collections',
 ])
 
 const serverPaths = ['/rss.xml', '/sitemap.xml', '/robots.txt', '/api/', '/health', '/s/']
@@ -70,7 +71,9 @@ export const parseRoute = (pathname: string): Route => {
   if (first === 'mix-upload') return Route.cases.Composer.make({ kind: 'mix' })
 
   if (
-    ['about', 'privacy', 'terms', 'changelog', 'subscribe', 'unsubscribe'].includes(first) &&
+    ['about', 'privacy', 'terms', 'changelog', 'subscribe', 'unsubscribe', 'listening'].includes(
+      first,
+    ) &&
     !second
   )
     return Route.cases.Static.make({ page: first })

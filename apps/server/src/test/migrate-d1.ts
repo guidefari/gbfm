@@ -22,6 +22,7 @@ export const d1MigrationFiles = [
   '0008_canonical_audio_urls.sql',
   '0009_featured_mix.sql',
   '0010_audio_artists.sql',
+  '0011_listening_collections.sql',
 ] as const
 
 const splitStatements = (migration: string) =>

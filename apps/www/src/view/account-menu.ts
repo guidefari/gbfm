@@ -74,6 +74,7 @@ export const accountMenu = (
                         [h.Class('py-1')],
                         [
                           item('/dashboard', 'Dashboard'),
+                          item('/listening', 'Listening pile'),
                           item('/dashboard/profile', 'Edit profile'),
                         ],
                       ),

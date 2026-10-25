@@ -20,6 +20,7 @@ import { stationNav } from './view/station-nav'
 
 const nav = [
   ['/shows', 'Radio Shows'],
+  ['/collections', 'Collections'],
   ['/editorial', 'Editorial'],
   ['/tweets', 'Tweets'],
   ['/labels', 'Record Labels'],
@@ -63,68 +64,62 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
     model.flags.status === 404 &&
     !(Route.guards.Detail(model.route) && model.route.kind === 'tweets')
       ? h.section([h.Class('page')], [h.h1([], ['Page not found']), link(h, '/', 'Return home')])
-      : model.flags.shows
-        ? Page.Shows.view(
-            model.flags.shows,
-            h,
-            playback,
-            PublicActions.view(
-              model.publicAction,
-              h,
-              (message) => Message.GotPublicActionMessage({ message }),
-              model.interactive,
-            ),
-            model.interactive,
+      : model.flags.listening
+        ? Page.Listening.view(
+            model.flags.listening,
+            new URL(model.flags.url),
+            model.flags.principal !== null,
           )
-        : Route.match(model.route, {
-            Home: () => Page.Home.view(model, h),
-            Listing: ({ kind }) =>
-              kind === 'tweets' && isEntry(model.flags.url)
-                ? h.section(
-                    [h.Class('page')],
-                    [
-                      h.p([h.Role('status')], ['Opening Tweets…']),
-                      link(h, '/tweet/latest', 'Latest'),
-                    ],
-                  )
-                : kind === 'editorial'
-                  ? Page.EditorialList.view(
-                      model.flags.items,
-                      model.flags.renderedAt,
-                      model.flags.failure ?? null,
+        : model.flags.shows
+          ? Page.Shows.view(
+              model.flags.shows,
+              h,
+              playback,
+              PublicActions.view(
+                model.publicAction,
+                h,
+                (message) => Message.GotPublicActionMessage({ message }),
+                model.interactive,
+              ),
+              model.interactive,
+            )
+          : Route.match(model.route, {
+              Home: () => Page.Home.view(model, h),
+              Listing: ({ kind }) =>
+                kind === 'tweets' && isEntry(model.flags.url)
+                  ? h.section(
+                      [h.Class('page')],
+                      [
+                        h.p([h.Role('status')], ['Opening Tweets…']),
+                        link(h, '/tweet/latest', 'Latest'),
+                      ],
                     )
-                  : Page.Content.listingView(model, h, kind),
-            Detail: ({ kind }) =>
-              kind === 'tweets'
-                ? Page.Tweet.view(model, h)
-                : kind === 'tags'
-                  ? Page.Content.taggedPostsView(model, h)
-                  : model.flags.profile
-                    ? Page.Profile.view(model.flags.profile)
-                    : Page.Content.detailView(model, h, kind),
-            Auth: ({ action }) => Page.Auth.view(h, action, new URL(model.flags.url), model),
-            Composer: () =>
-              h.submodel({
-                slotId: 'creator',
-                view: Page.Creator.view,
-                model: model.creator,
-                viewInputs: { role: model.flags.principal?.role ?? null },
-                toParentMessage: (message) => Message.GotCreatorMessage({ message }),
-              }),
-            Dashboard: () =>
-              model.flags.principal
-                ? h.submodel({
-                    slotId: 'dashboard',
-                    view: Page.Dashboard.view,
-                    model: model.dashboard,
-                    viewInputs: { role: model.dashboard.principal.role, url: model.flags.url },
-                    toParentMessage: (message) => Message.GotDashboardMessage({ message }),
-                  })
-                : Page.Auth.view(h, 'sign-in', new URL(model.flags.url), model),
-            Static: ({ page }) =>
-              page === 'invite/charlie3000'
-                ? Page.Invitation.view()
-                : page === 'spotify-callback'
+                  : kind === 'editorial'
+                    ? Page.EditorialList.view(
+                        model.flags.items,
+                        model.flags.renderedAt,
+                        model.flags.failure ?? null,
+                      )
+                    : Page.Content.listingView(model, h, kind),
+              Detail: ({ kind }) =>
+                kind === 'tweets'
+                  ? Page.Tweet.view(model, h)
+                  : kind === 'tags'
+                    ? Page.Content.taggedPostsView(model, h)
+                    : model.flags.profile
+                      ? Page.Profile.view(model.flags.profile)
+                      : Page.Content.detailView(model, h, kind),
+              Auth: ({ action }) => Page.Auth.view(h, action, new URL(model.flags.url), model),
+              Composer: () =>
+                h.submodel({
+                  slotId: 'creator',
+                  view: Page.Creator.view,
+                  model: model.creator,
+                  viewInputs: { role: model.flags.principal?.role ?? null },
+                  toParentMessage: (message) => Message.GotCreatorMessage({ message }),
+                }),
+              Dashboard: () =>
+                model.flags.principal
                   ? h.submodel({
                       slotId: 'dashboard',
                       view: Page.Dashboard.view,
@@ -132,21 +127,33 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
                       viewInputs: { role: model.dashboard.principal.role, url: model.flags.url },
                       toParentMessage: (message) => Message.GotDashboardMessage({ message }),
                     })
-                  : ['subscribe', 'unsubscribe'].includes(page)
-                    ? Page.Newsletter.view(
-                        h,
-                        page,
-                        new URL(model.flags.url),
-                        model.flags.turnstileSiteKey ?? '',
-                        model.challengeStatus,
-                      )
-                    : Page.Static.view(h, page, model.flags.title, model.flags.changelog),
-            NotFound: () =>
-              h.section(
-                [h.Class('page')],
-                [h.h1([], ['Page not found']), link(h, '/', 'Return home')],
-              ),
-          })
+                  : Page.Auth.view(h, 'sign-in', new URL(model.flags.url), model),
+              Static: ({ page }) =>
+                page === 'invite/charlie3000'
+                  ? Page.Invitation.view()
+                  : page === 'spotify-callback'
+                    ? h.submodel({
+                        slotId: 'dashboard',
+                        view: Page.Dashboard.view,
+                        model: model.dashboard,
+                        viewInputs: { role: model.dashboard.principal.role, url: model.flags.url },
+                        toParentMessage: (message) => Message.GotDashboardMessage({ message }),
+                      })
+                    : ['subscribe', 'unsubscribe'].includes(page)
+                      ? Page.Newsletter.view(
+                          h,
+                          page,
+                          new URL(model.flags.url),
+                          model.flags.turnstileSiteKey ?? '',
+                          model.challengeStatus,
+                        )
+                      : Page.Static.view(h, page, model.flags.title, model.flags.changelog),
+              NotFound: () =>
+                h.section(
+                  [h.Class('page')],
+                  [h.h1([], ['Page not found']), link(h, '/', 'Return home')],
+                ),
+            })
 
   const target = model.loading && model.pendingPath ? parseRoute(model.pendingPath) : null
   const shows = target ? knownShows(model) : null

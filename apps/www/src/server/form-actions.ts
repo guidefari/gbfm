@@ -4,6 +4,7 @@ import * as Server from 'foldkit/experimental/server'
 
 import { authErrorKey, authErrorLocation, readAuthErrorCode } from '../page/auth/errors'
 import { authHref, safeReturnPath } from '../page/auth/links'
+import { handleListeningAction } from '../page/listening/form-action'
 import { readModeCookie } from '../page/tweet/navigation'
 import { apiRequest } from './api'
 import { randomTweet } from './tweet-random'
@@ -28,6 +29,8 @@ export const handleFormAction = async (request: Request): Promise<Server.Respond
     Option.getOrElse(Schema.decodeUnknownOption(Schema.String)(form.get(name)), () => '')
 
   const action = url.pathname
+
+  if (action.startsWith('/actions/listening/')) return handleListeningAction(request, form)
 
   if (action.startsWith('/actions/admin/')) {
     const operation = action.slice('/actions/admin/'.length)

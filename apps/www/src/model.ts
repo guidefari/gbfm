@@ -13,6 +13,7 @@ import { AsyncData } from 'foldkit'
 import * as Creator from './page/creator'
 import * as Dashboard from './page/dashboard'
 import { DashboardDocument } from './page/dashboard/document'
+import { ListeningPage } from './page/listening/document'
 import { ShowsDocument } from './page/shows/document'
 import * as TweetReader from './page/tweet/reader'
 import * as Player from './player'
@@ -66,6 +67,7 @@ export const Flags = Schema.Struct({
   tweet: Schema.NullOr(MicroPostScreenResponse),
   neighbours: Schema.NullOr(MicroPostNeighboursResponse),
   dashboard: Schema.NullOr(DashboardDocument),
+  listening: Schema.optional(ListeningPage),
   profile: Schema.NullOr(PublicProfileResponse),
   shows: Schema.NullOr(ShowsDocument),
   changelog: Schema.NullOr(RichContentDocument),
