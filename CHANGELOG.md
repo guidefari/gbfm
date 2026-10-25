@@ -1,3 +1,11 @@
+# [2.112.0](https://github.com/planetaryescape/gbfm/compare/v2.111.2...v2.112.0) (2026-10-25)
+
+
+### Features
+
+* **listening:** build a focused listening desk and public journal ([fd9b261](https://github.com/planetaryescape/gbfm/commit/fd9b261112a85486fc9e3ff4ff1eb31a113d4089))
+* **listening:** save mixes and publish annotated collections ([83bc152](https://github.com/planetaryescape/gbfm/commit/83bc152f899c5a22595b8b4a053f21aa2f0530a4))
+
 ## [2.111.2](https://github.com/planetaryescape/gbfm/compare/v2.111.1...v2.111.2) (2026-10-25)
 
 
