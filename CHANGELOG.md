@@ -1,3 +1,20 @@
+# [2.111.0](https://github.com/planetaryescape/gbfm/compare/v2.110.0...v2.111.0) (2026-10-25)
+
+
+### Bug Fixes
+
+* **profiles:** use compact artwork rows and branded platform links ([aa85275](https://github.com/planetaryescape/gbfm/commit/aa852754e93ab2441d7a2fd2a83f676466a7072b))
+* **shows:** pin the about panel header and animate it open ([5fa0794](https://github.com/planetaryescape/gbfm/commit/5fa079410ce9b978124862981e6d2d59da411722))
+* **shows:** tighten about the show typography ([bf1be09](https://github.com/planetaryescape/gbfm/commit/bf1be095612b2e7247e40016b3453d77a4f3fe8a))
+* **shows:** top-align masthead art with the title ([9b42190](https://github.com/planetaryescape/gbfm/commit/9b42190fe6110a1825b409dd317aef37dd5da000))
+
+
+### Features
+
+* **shows:** link host mentions in the show write-up ([c81df88](https://github.com/planetaryescape/gbfm/commit/c81df88bbde4b9b984d38d3f434b476ae8d90d86))
+* **shows:** move the about blurb into the show masthead ([4c0b698](https://github.com/planetaryescape/gbfm/commit/4c0b6982273644f3c2625eb3722aaf5bc5166e23))
+* **shows:** show an about blurb with a full write-up panel ([3cce0e9](https://github.com/planetaryescape/gbfm/commit/3cce0e90f5e90d7aff30d803c24b5f454a33dd7d))
+
 # [2.110.0](https://github.com/planetaryescape/gbfm/compare/v2.109.0...v2.110.0) (2026-10-25)
 
 
