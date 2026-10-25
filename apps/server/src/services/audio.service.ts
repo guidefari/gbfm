@@ -1,7 +1,8 @@
-import { and, asc, count, desc, eq, or, type SQL, sql } from 'drizzle-orm'
+import { and, asc, count, desc, eq, type SQL, sql } from 'drizzle-orm'
 import { Context, Crypto, Effect, Layer } from 'effect'
 import { Hex } from 'effect/encoding'
 
+import { audioVisibilityCondition } from '@/db/audio-visibility'
 import {
   audioCreators,
   audioArtists,
@@ -325,20 +326,6 @@ const getTagsEffect = (type: AudioType) =>
       .filter((tag) => tag.length > 0)
       .toSorted()
   })
-
-// Single-item lookup: a non-admin actor sees public content plus their own
-// drafts, so a creator following a link to their own unpublished mix doesn't
-// 404 on it.
-const audioVisibilityCondition = (
-  db: Database['Service'],
-  actor?: { userId: string; userRole: string },
-) => {
-  if (actor?.userRole === 'admin') return undefined
-
-  if (actor) return or(eq(audioTable.draft, false), audioIdsForCreator(db, actor.userId))
-
-  return eq(audioTable.draft, false)
-}
 
 // Manage/dashboard list: a non-admin actor sees only their own content
 // (draft or live), not the public catalog plus their drafts.
