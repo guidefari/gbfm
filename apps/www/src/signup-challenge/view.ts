@@ -12,7 +12,15 @@ export const challengeView = (
 ) => [
   h.div([h.DataAttribute('turnstile', '')], []),
   h.p(
-    [h.Role('status'), h.AriaLive('polite')],
+    [
+      h.Role('status'),
+      h.AriaLive('polite'),
+      h.Class(
+        status === 'failed' || !sitekey
+          ? 'challenge-status auth-status auth-error'
+          : 'challenge-status',
+      ),
+    ],
     [
       Match.value(sitekey ? status : 'unavailable').pipe(
         Match.when(
@@ -38,7 +46,12 @@ export const challengeView = (
     ],
   ),
   h.button(
-    [h.Type('button'), h.DataAttribute('challenge-retry', ''), h.Hidden(status !== 'failed')],
+    [
+      h.Type('button'),
+      h.Class('challenge-retry'),
+      h.DataAttribute('challenge-retry', ''),
+      h.Hidden(status !== 'failed'),
+    ],
     ['Retry verification'],
   ),
 ]

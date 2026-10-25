@@ -7,6 +7,7 @@ import * as Player from '../../player'
 import * as PublicActions from '../../public-actions'
 import { artwork } from '../../view/artwork'
 import { breadcrumbs, crumbCurrent, crumbLink } from '../../view/breadcrumbs'
+import { emailUpdatesInvite } from '../../view/email-updates'
 import { formatDate } from '../../view/format-date'
 import { iconPaths, lucide } from '../../view/icons'
 import { richContent } from '../../view/rich-content/fallback'
@@ -247,6 +248,7 @@ export const detailView = (model: Model, h: HtmlBuilder<Message>, kind: string) 
             : richContentView(item.richContent, h),
         ],
       ),
+      kind === 'mixes' || kind === 'editorial' ? emailUpdatesInvite(h) : h.empty,
     ],
   )
 }
