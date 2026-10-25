@@ -1,3 +1,16 @@
+# [2.110.0](https://github.com/planetaryescape/gbfm/compare/v2.109.0...v2.110.0) (2026-10-25)
+
+
+### Bug Fixes
+
+* **profiles:** show drafts to admins and mix managers ([fabfd9c](https://github.com/planetaryescape/gbfm/commit/fabfd9cfefd75be42485025c00a6f57ca2fb1c25))
+
+
+### Features
+
+* **shows:** link DJ credits on episode rows ([97dbdcd](https://github.com/planetaryescape/gbfm/commit/97dbdcded30175f96695bff1375137ca01f36099))
+* **shows:** move about the show beside episodes ([e4d8986](https://github.com/planetaryescape/gbfm/commit/e4d89862a23f2ace516ac165dadd285d8443282a))
+
 # [2.109.0](https://github.com/planetaryescape/gbfm/compare/v2.108.1...v2.109.0) (2026-10-25)
 
 
