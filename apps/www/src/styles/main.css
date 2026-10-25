@@ -823,35 +823,190 @@
 }
 .public-profile {
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
-  gap: 3rem;
+  grid-template-columns: 280px minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(2rem, 5vw, 5rem);
   max-width: 1280px;
   margin: auto;
   padding: 3rem 1.5rem 8rem;
 }
 .public-profile h1 {
   font-size: 2rem;
-  font-weight: 900;
+  font-weight: 800;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  margin: 0.5rem 0;
 }
 .public-profile h2 {
-  font-size: 1.5rem;
+  font-size: 1.125rem;
   font-weight: 700;
-  margin-bottom: 1rem;
+  margin: 0;
 }
 .profile-avatar {
-  width: 160px;
-  height: 160px;
+  width: 120px;
+  height: 120px;
   object-fit: cover;
   border-radius: 50%;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.75rem;
 }
-.public-profile nav,
 .profile-content {
   display: grid;
-  gap: 1rem;
-}
-.profile-content {
   gap: 3rem;
+  min-width: 0;
+}
+.profile-eyebrow {
+  color: var(--muted-foreground);
+  font-size: 0.625rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.profile-identity > .muted {
+  font-size: 0.8rem;
+}
+.profile-identity .content-paragraph {
+  font-size: 0.8125rem;
+  line-height: 1.85;
+  margin: 1.5rem 0;
+}
+.profile-socials {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+.profile-social {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  text-decoration: none;
+  transition:
+    color 150ms,
+    border-color 150ms,
+    background-color 150ms;
+}
+.profile-social > svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+.profile-social > .profile-social-external {
+  width: 0.625rem;
+  height: 0.625rem;
+  margin-left: auto;
+}
+.profile-social-bandcamp {
+  --platform-color: #1da0c3;
+}
+.profile-social-substack {
+  --platform-color: #ff6719;
+}
+.profile-social-soundcloud {
+  --platform-color: #ff7700;
+}
+.profile-social-instagram {
+  --platform-color: #f56093;
+}
+.profile-social-twitter {
+  --platform-color: #1da1f2;
+}
+.profile-social-tiktok {
+  --platform-color: #25c9d0;
+}
+.profile-social:hover,
+.profile-social:focus-visible {
+  color: var(--platform-color);
+  border-color: currentColor;
+  background: color-mix(in srgb, var(--platform-color) 8%, var(--background));
+}
+.profile-social:focus-visible,
+.profile-card:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 4px;
+}
+.profile-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.25rem;
+}
+.profile-section-count {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 1.5rem;
+}
+.profile-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.875rem 0;
+  border-bottom: 1px solid var(--border);
+  min-width: 0;
+  text-decoration: none;
+  color: var(--foreground);
+}
+.profile-card-art {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  overflow: hidden;
+  aspect-ratio: 1;
+  background: var(--card);
+  border: 1px solid var(--border);
+  transition: border-color 150ms;
+}
+.profile-card-art .artwork {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.profile-card h3 {
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  font-weight: 600;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.profile-card-copy {
+  display: grid;
+  justify-items: start;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.profile-card:hover h3 {
+  color: var(--highlight);
+}
+.profile-card:hover .profile-card-art {
+  border-color: var(--highlight);
+}
+.profile-draft {
+  padding: 0;
+  color: var(--muted-foreground);
+  font-size: 0.5625rem;
+  line-height: 1.2;
+}
+@media (max-width: 639px) {
+  .public-profile {
+    padding: 1.5rem 1rem 8rem;
+  }
+  .profile-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .profile-socials {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 360px;
+  }
 }
 .mobile-menu-dialog:not([open]) {
   display: none;

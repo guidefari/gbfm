@@ -55,6 +55,11 @@ test('artist profile drafts are visible to admins and managers, never unrelated 
     await page.goto(path)
     await expect(page.getByRole('heading', { name: artist.name, exact: true })).toBeVisible()
     await expect(page.getByRole('link', { name: /Unpublished artist mix/ })).toContainText('Draft')
+    await expect(page.locator('.profile-draft')).toHaveCSS('padding', '0px')
+    await expect(page.locator('.profile-draft')).toHaveCSS('font-size', '9px')
+    await expect(
+      page.getByRole('link', { name: /Unpublished artist mix/ }).locator('img'),
+    ).toBeVisible()
     await page.reload()
     await expect(page.getByRole('link', { name: /Unpublished artist mix/ })).toBeVisible()
   }
@@ -78,4 +83,53 @@ test('artist profile drafts are visible to admins and managers, never unrelated 
   await page.goto(`/profile/${slug}`)
   await expect(page.getByText('No public content yet.', { exact: true })).toBeVisible()
   await expect(page.getByRole('link', { name: /Unpublished artist mix/ })).toHaveCount(0)
+})
+
+test('profile platform links have icons, brand hover colors and keyboard focus at desktop and mobile sizes', async ({
+  page,
+}) => {
+  await signIn(page, 'admin')
+
+  const platforms = [
+    { platform: 'bandcamp', label: 'Bandcamp', color: 'rgb(29, 160, 195)' },
+    { platform: 'substack', label: 'Substack', color: 'rgb(255, 103, 25)' },
+    { platform: 'soundcloud', label: 'SoundCloud', color: 'rgb(255, 119, 0)' },
+    { platform: 'instagram', label: 'Instagram', color: 'rgb(245, 96, 147)' },
+    { platform: 'twitter', label: 'X / Twitter', color: 'rgb(29, 161, 242)' },
+    { platform: 'tiktok', label: 'TikTok', color: 'rgb(37, 201, 208)' },
+  ]
+
+  const response = await page.request.put('/api/user/profile/social-links', {
+    data: platforms.map(({ platform }, position) => ({
+      platform,
+      url: `https://example.test/${platform}`,
+      position,
+    })),
+  })
+
+  expect(response.ok()).toBe(true)
+
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 1000 })
+    await page.goto('/profile/local-admin')
+    const socials = page.getByRole('navigation', { name: 'Social links' })
+    await expect(socials.getByRole('link')).toHaveCount(6)
+
+    for (const { label, color } of platforms) {
+      const link = socials.getByRole('link', { name: `${label} (opens in a new tab)`, exact: true })
+      await expect(link.locator('svg')).toHaveCount(2)
+      await expect(link).toHaveAttribute('target', '_blank')
+      await expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+      await link.hover()
+      await expect(link).toHaveCSS('color', color)
+      await page.mouse.move(0, 0)
+      await link.focus()
+      await expect(link).toHaveCSS('color', color)
+      await expect(link).toHaveCSS('outline-style', 'solid')
+    }
+
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true)
+  }
 })
