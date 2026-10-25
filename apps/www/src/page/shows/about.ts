@@ -74,16 +74,19 @@ export const about = <M>(h: HtmlBuilder<M>, title: string, document: RichContent
   h.div(
     [h.Class('mt-4 max-w-prose')],
     [
-      h.div([h.Class(`${compactProse} [&_p]:line-clamp-3`)], [richContentView(blurb(document), h)]),
+      h.div(
+        [h.Class(`${compactProse} [&_.rich-content>*]:my-0 [&_p]:line-clamp-3`)],
+        [richContentView(blurb(document), h)],
+      ),
       h.button(
         [
           h.Type('button'),
           h.Attribute('popovertarget', panelId),
           h.Class(
-            'mt-1 inline-flex items-center gap-1 rounded-sm border-0 bg-transparent p-0 text-sm font-semibold text-highlight hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            'mt-2 inline-flex items-center gap-0.5 rounded-sm border-0 bg-transparent p-0 text-sm text-muted-foreground underline decoration-border underline-offset-4 transition-colors hover:text-foreground hover:decoration-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           ),
         ],
-        ['Read more', lucide(iconPaths.chevronRight, 'h-4 w-4')],
+        ['Read more', lucide(iconPaths.chevronRight, 'h-3.5 w-3.5')],
       ),
       panel(h, title, document),
     ],
