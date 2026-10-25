@@ -28,6 +28,7 @@ export interface ApiWorkerInput {
   readonly qrPdf: QrPdfWorker
   readonly adminEmail: string
   readonly cloudflareAccountId: string
+  readonly turnstile: Cloudflare.Turnstile.Widget
 }
 
 export const apiWorker = ({
@@ -40,6 +41,7 @@ export const apiWorker = ({
   qrPdf,
   adminEmail,
   cloudflareAccountId,
+  turnstile,
 }: ApiWorkerInput) =>
   Effect.gen(function* () {
     const sentryDsn = secrets.SENTRY_BACKEND_DSN
@@ -62,6 +64,12 @@ export const apiWorker = ({
       observability: workerObservability(config.isProduction),
       env: {
         DB: store.db,
+        TURNSTILE_SECRET_KEY: turnstile.secret,
+        TURNSTILE_HOSTNAMES: turnstile.domains,
+        SIGNUP_RATE_LIMIT: Cloudflare.RateLimit('SignupRateLimit', {
+          namespaceId: 1_002,
+          simple: { limit: 5, period: 60 },
+        }),
         REQUEST_TELEMETRY: requestTelemetry,
         USER_CONTENT: store.userContent,
         MIXES: store.mixes,

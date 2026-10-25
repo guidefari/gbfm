@@ -68,6 +68,7 @@ export const init: Runtime.ApplicationInit<Model, Message, Flags, Services> = (f
   return {
     model: {
       route,
+      challengeStatus: 'verifying',
       flags,
       mobileMenu: Dialog.init({ id: 'mobile-menu', isAnimated: true }),
       menuDrag: null,

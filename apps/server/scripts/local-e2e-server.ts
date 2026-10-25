@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import { Layer } from 'effect'
+import { Effect, Layer } from 'effect'
 
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { user } from '@/db/auth.schema'
@@ -19,6 +19,7 @@ import { seedLocalUsers } from '@/db/seed-local-users'
 import { seedMusicLookups } from '@/db/seed-music-lookups'
 import { showCreators, showsTable } from '@/db/show.schema'
 import { ConfigService, createConfig } from '@/services/config.service'
+import { SignupProtection, SignupRejected } from '@/services/signup-protection'
 import { createTestWebHandler } from '@/test/http-handler'
 import { createMigratedD1Database } from '@/test/migrate-d1'
 
@@ -289,7 +290,22 @@ const configLive = Layer.succeed(ConfigService, {
   },
 })
 
-const handler = createTestWebHandler(resource.database, undefined, undefined, undefined, configLive)
+// Browser fixtures use Cloudflare's public test widget, never production keys or outbound mail.
+const signupProtection = Layer.succeed(SignupProtection, {
+  authorize: ({ token, ip }) =>
+    token === 'XXXX.DUMMY.TOKEN.XXXX' && ip
+      ? Effect.void
+      : Effect.fail(new SignupRejected({ reason: 'verification' })),
+})
+
+const handler = createTestWebHandler(
+  resource.database,
+  undefined,
+  undefined,
+  undefined,
+  configLive,
+  signupProtection,
+)
 
 const server = Bun.serve({
   hostname: '127.0.0.1',

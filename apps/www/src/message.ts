@@ -13,9 +13,11 @@ import * as TweetReader from './page/tweet/reader'
 import * as Player from './player'
 import * as PublicActions from './public-actions'
 import * as Search from './search'
+import { Status as ChallengeStatus } from './signup-challenge/model'
 
 export const Message = defineMessageUnion({
   ClientStarted: {},
+  ChallengeStatusChanged: { status: ChallengeStatus },
   GotTweetReaderMessage: { message: TweetReader.Message },
   MenuToggled: {},
   PasswordVisibilityToggled: {},

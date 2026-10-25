@@ -39,6 +39,13 @@ export default Alchemy.Stack(
     const cdn = yield* cdnRouter(config, store)
     const qrPdf = yield* qrPdfWorker(config, store, cdn)
 
+    const turnstile = yield* Cloudflare.Turnstile.Widget('SignupTurnstile', {
+      domains: config.isProduction
+        ? ['goosebumps.fm', 'www.goosebumps.fm']
+        : ['goosebumps.fm', 'www.goosebumps.fm', 'gbfm.localhost', 'localhost', '127.0.0.1'],
+      mode: 'managed',
+    })
+
     const api = yield* apiWorker({
       config,
       store,
@@ -49,6 +56,7 @@ export default Alchemy.Stack(
       qrPdf,
       adminEmail: deployment.adminEmail,
       cloudflareAccountId: deployment.cloudflareAccountId,
+      turnstile,
     })
 
     const evaluator =
@@ -73,6 +81,7 @@ export default Alchemy.Stack(
       api,
       socialImages,
       apiUrl: api.url,
+      turnstileSitekey: turnstile.sitekey,
     })
 
     return {

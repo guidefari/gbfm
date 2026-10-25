@@ -4,6 +4,8 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 import { authFormAttribute } from '../../auth-submit'
 import type { Message } from '../../message'
 import type { Model } from '../../model'
+import { SignupChallenge } from '../../signup-challenge/mount'
+import { challengeView } from '../../signup-challenge/view'
 import { authCopy } from './copy'
 import { authErrorAction, authErrorMessage, parseAuthErrorKey } from './errors'
 import { fieldStates, formFields } from './field-state'
@@ -22,7 +24,8 @@ import { authShell, link } from './shell'
 
 type Builder = HtmlBuilder<Message>
 
-export type AuthViewState = PasswordReveal & Pick<Model, 'authSubmitting'>
+export type AuthViewState = PasswordReveal &
+  Pick<Model, 'authSubmitting' | 'flags' | 'challengeStatus'>
 
 const footer = (h: Builder, action: string, returnTo: string): Html =>
   h.p(
@@ -52,15 +55,21 @@ const authForm = (h: Builder, action: string, url: URL, state: AuthViewState): H
   const email = url.searchParams.get('email') ?? ''
   const states = fieldStates(action, errorKey)
   const returnTo = url.searchParams.get('returnTo') ?? ''
+  const signup = action === 'sign-up'
+  const sitekey = state.flags.turnstileSiteKey ?? ''
+  const submitting = signup ? state.challengeStatus === 'submitting' : state.authSubmitting
 
   return authShell(
     h,
     h.form(
       [
+        h.Key(`auth-${action}-${signup ? sitekey : ''}`),
         h.Class('auth-panel'),
         h.Method('post'),
         h.Action(`/auth/${action}`),
-        h.DataAttribute(authFormAttribute, ''),
+        ...(signup
+          ? [h.OnMount(SignupChallenge({ sitekey, action: 'account-signup' }))]
+          : [h.DataAttribute(authFormAttribute, '')]),
       ],
       [
         h.header(
@@ -99,12 +108,15 @@ const authForm = (h: Builder, action: string, url: URL, state: AuthViewState): H
               : h.empty,
           ],
         ),
+        ...(signup
+          ? challengeView(h, sitekey, state.challengeStatus, 'Creating your account…')
+          : []),
         h.button(
           [
             h.Type('submit'),
             h.Class('auth-submit'),
-            h.Disabled(state.authSubmitting),
-            h.AriaBusy(state.authSubmitting),
+            h.Disabled(signup ? state.challengeStatus !== 'ready' || !sitekey : submitting),
+            h.AriaBusy(submitting),
           ],
           [copy.submit],
         ),

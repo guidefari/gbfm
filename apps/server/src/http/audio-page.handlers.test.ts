@@ -1,13 +1,14 @@
 import { AudioPageResponse, CompiledAudioResponse } from '@gbfm/api/audio'
 import { SiteMetadata } from '@gbfm/site-metadata'
 import { eq } from 'drizzle-orm'
-import { Schema } from 'effect'
+import { Effect, Layer, Schema } from 'effect'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { session, user } from '@/db/auth.schema'
 import { favoritesTable } from '@/db/favorites.schema'
 import { showsTable } from '@/db/show.schema'
+import { SignupProtection } from '@/services/signup-protection'
 import { db, d1 } from '@/test/database'
 import { createTestWebHandler } from '@/test/http-handler'
 
@@ -39,7 +40,14 @@ const requestPage = async (slug = publicSlug, token?: string, type = 'mix') => {
 }
 
 beforeAll(async () => {
-  webHandler = createTestWebHandler(d1)
+  webHandler = createTestWebHandler(
+    d1,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    Layer.succeed(SignupProtection, { authorize: () => Effect.void }),
+  )
   await db.insert(user).values([
     { id: creatorId, name: 'Creator', email: 'audio-page-creator@example.com', role: 'creator' },
     { id: listenerId, name: 'Listener', email: 'audio-page-listener@example.com' },

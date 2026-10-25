@@ -7,6 +7,7 @@ import type {
   KVNamespace,
   MessageBatch,
   Queue,
+  RateLimit,
   R2Bucket,
   ScheduledController,
   SendEmail,
@@ -15,7 +16,7 @@ import { resolveRequestId } from '@gbfm/core/observability/request-id'
 import { traceSampleRate } from '@gbfm/core/observability/trace-sampling'
 import * as Sentry from '@sentry/cloudflare'
 import type { ErrorEvent, TracesSamplerSamplingContext, TransactionEvent } from '@sentry/core'
-import { Effect, Layer, Predicate, Schema, Tracer } from 'effect'
+import { Effect, Layer, Predicate, Redacted, Schema, Tracer } from 'effect'
 import { FetchHttpClient } from 'effect/http'
 
 import { DatabaseLayer, makeDatabaseClient } from '@/db/layer'
@@ -68,6 +69,7 @@ import { ReminderQueue, ReminderQueueLayer, type ReminderJob } from '@/services/
 import { RequestTelemetryLive } from '@/services/request-telemetry.service'
 import { resolveSecretBindings } from '@/services/secrets-store.service'
 import { SentryServiceLayer } from '@/services/sentry.service'
+import { SignupProtectionLayer } from '@/services/signup-protection'
 import { SitemapCacheLayer } from '@/services/sitemap-cache'
 import {
   canonicalSpotifyImportResolverName,
@@ -99,6 +101,9 @@ export type ApiEnv = WorkerConfigBindings & {
   readonly SPOTIFY_IMPORT_RESOLVER: DurableObjectNamespace<SpotifyImportResolverDurableObject>
   readonly SENTRY_DSN?: string
   readonly SENTRY_ENVIRONMENT?: string
+  readonly TURNSTILE_SECRET_KEY: string
+  readonly TURNSTILE_HOSTNAMES: ReadonlyArray<string>
+  readonly SIGNUP_RATE_LIMIT: RateLimit
 }
 
 const workerSentryEnvLive = (env: ApiEnv) =>
@@ -198,6 +203,11 @@ const appServicesLive = (
       ...(waitUntil ? { waitUntil } : undefined),
     }),
     adminTelemetry: adminTelemetryLive,
+    signupProtection: SignupProtectionLayer({
+      secret: Redacted.make(env.TURNSTILE_SECRET_KEY),
+      hostnames: env.TURNSTILE_HOSTNAMES,
+      limit: async (key) => (await env.SIGNUP_RATE_LIMIT.limit({ key })).success,
+    }).pipe(Layer.provide(FetchHttpClient.layer)),
     emailTransport:
       env.EMAIL !== undefined
         ? CloudflareEmailTransportLayer(env.EMAIL)

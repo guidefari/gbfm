@@ -17,6 +17,7 @@ import {
 } from '@/services/email-transport.service'
 import { PlaylistEnrichmentQueueTestLayer } from '@/services/playlist-enrichment-queue'
 import { SentryServiceLayer } from '@/services/sentry.service'
+import type { SignupProtection } from '@/services/signup-protection'
 import { SitemapCacheLayer, type SitemapKv } from '@/services/sitemap-cache'
 import { SpotifyImportResolverLocalLayer } from '@/services/spotify-import-resolver.service'
 import type { ObjectStoreClient } from '@/services/storage/object-store-client'
@@ -62,6 +63,7 @@ export const createTestWebHandler = (
   objectStoreLive?: Layer.Layer<ObjectStoreClient>,
   musicCoverImageFetcherLive: Layer.Layer<never> = Layer.succeed(MusicCoverImageFetcher, fetch),
   configLive?: Layer.Layer<ConfigService>,
+  signupProtection?: Layer.Layer<SignupProtection>,
 ) => {
   const baseServices = {
     database: DatabaseLayer(d1),
@@ -72,6 +74,7 @@ export const createTestWebHandler = (
     tracing: WorkerTracingLive,
     emailTransport: emailTransportLive,
     musicCoverImageFetcher: musicCoverImageFetcherLive,
+    ...(signupProtection ? { signupProtection } : undefined),
   }
 
   const services = configLive === undefined ? baseServices : { ...baseServices, config: configLive }

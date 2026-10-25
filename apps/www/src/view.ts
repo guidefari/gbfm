@@ -125,7 +125,13 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
                       toParentMessage: (message) => Message.GotDashboardMessage({ message }),
                     })
                   : ['subscribe', 'unsubscribe'].includes(page)
-                    ? Page.Newsletter.view(page, new URL(model.flags.url))
+                    ? Page.Newsletter.view(
+                        h,
+                        page,
+                        new URL(model.flags.url),
+                        model.flags.turnstileSiteKey ?? '',
+                        model.challengeStatus,
+                      )
                     : Page.Static.view(h, page, model.flags.title, model.flags.changelog),
             NotFound: () =>
               h.section(
