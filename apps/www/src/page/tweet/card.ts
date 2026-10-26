@@ -7,6 +7,7 @@ import * as SpotifyPlayback from '../../spotify/playback'
 import { artwork } from '../../view/artwork'
 import { formatDate } from '../../view/format-date'
 import { iconPaths, lucide, spotifyIcon } from '../../view/icons'
+import { musicEntityLabels, musicPlatformLabel } from '../../view/music-platform'
 import { richContent } from '../../view/rich-content/fallback'
 import { richContentView } from '../../view/rich-content/render'
 
@@ -28,22 +29,6 @@ export const tweetImages = (screen: MicroPostScreenResponse) =>
   )
 
 type Creator = NonNullable<TweetPost['creators']>[number]
-
-const platformLabels = new Map([
-  ['spotify', 'Spotify'],
-  ['youtube', 'YouTube'],
-  ['youtube_music', 'YT Music'],
-  ['apple_music', 'Apple Music'],
-  ['bandcamp', 'Bandcamp'],
-  ['soundcloud', 'SoundCloud'],
-  ['tidal', 'Tidal'],
-  ['deezer', 'Deezer'],
-  ['amazon_music', 'Amazon Music'],
-  ['website', 'Website'],
-  ['other', 'Link'],
-])
-
-const entityLabels = { album: 'Album', track: 'Track', playlist: 'Playlist' } as const
 
 const actionClassName =
   '-mx-2 inline-flex min-h-8 items-center gap-1.5 rounded-sm px-2 text-xs text-muted-foreground no-underline transition-colors hover:bg-muted/60 hover:text-foreground'
@@ -145,7 +130,7 @@ const streamLinks = (links: NonNullable<TweetPost['music']>['links']) =>
         ],
         [
           link.platform === 'spotify' ? spotifyIcon('h-3.5 w-3.5') : h.empty,
-          platformLabels.get(link.platform) ?? link.platform,
+          musicPlatformLabel(link.platform),
           lucide(iconPaths.externalLink, 'h-3 w-3 opacity-40'),
         ],
       ),
@@ -190,7 +175,7 @@ export const musicCard = (
             [
               h.p(
                 [h.Class('text-[10px] font-bold tracking-[0.3em] text-muted-foreground/70')],
-                [entityLabels[music.entity.type]],
+                [musicEntityLabels[music.entity.type]],
               ),
               h.h2(
                 [

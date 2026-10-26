@@ -2450,27 +2450,258 @@
     text-decoration: none;
   }
   .rich-content-music-card {
-    display: grid;
-    grid-template-columns: minmax(5rem, 8rem) 1fr;
-    gap: 1rem;
-    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    min-width: 0;
+    border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
     border-radius: var(--radius);
+    background: color-mix(in srgb, var(--muted) 20%, var(--card));
     padding: 1rem;
+    line-height: 1.5;
   }
-  .rich-content-music-card:not(:has(> img)) {
+  .rich-content-music-head {
+    display: grid;
+    grid-template-columns: 5rem minmax(0, 1fr);
+    align-items: start;
+    gap: 1rem;
+  }
+  /* Without artwork, the copy takes the whole row instead of the artwork column. */
+  .rich-content-music-head:not(:has(> img)) {
     grid-template-columns: minmax(0, 1fr);
   }
-  .rich-content-music-card > img {
+  .rich-content .rich-content-music-art {
     width: 100%;
+    height: auto;
     aspect-ratio: 1;
     object-fit: cover;
+    background: var(--muted);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--border) 60%, transparent);
+  }
+  .rich-content-music-copy {
+    display: grid;
+    min-width: 0;
+    gap: 0.25rem;
+    align-content: start;
+  }
+  .rich-content .rich-content-music-card p {
+    margin: 0;
+    line-height: 1.5;
+    white-space: normal;
+  }
+  .rich-content-music-card li {
+    margin: 0;
+    list-style: none;
+  }
+  .rich-content .rich-content-music-type {
+    color: var(--muted-foreground);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+  .rich-content .rich-content-music-title {
+    margin: 0;
+    color: var(--foreground);
+    font-size: 1.125rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+  .rich-content .rich-content-music-title a {
+    color: inherit;
+    text-decoration: none;
+  }
+  .rich-content .rich-content-music-title a:hover {
+    text-decoration: underline;
+    text-decoration-color: var(--highlight);
+  }
+  .rich-content .rich-content-music-artists {
+    color: var(--muted-foreground);
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+  .rich-content .rich-content-music-description {
+    color: var(--muted-foreground);
+    font-size: 0.875rem;
+  }
+  .rich-content .rich-content-music-genres {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin: 0.375rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .rich-content-music-genres li {
+    border: 1px solid var(--border);
+    padding: 0.0625rem 0.5rem;
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+    line-height: 1.5;
+  }
+  .rich-content .rich-content-music-blurb {
+    border-left: 2px solid var(--highlight);
+    padding-left: 0.875rem;
+    color: var(--foreground);
+    font-size: 0.875rem;
+  }
+  .rich-content-music-tracks {
+    border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    padding-top: 0.5rem;
+  }
+  .rich-content .rich-content-track-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.875rem;
+  }
+  .rich-content-track-list li {
+    display: grid;
+    grid-template-columns: 2rem minmax(0, 1fr);
+    align-items: baseline;
+    gap: 0 0.75rem;
+    margin: 0;
+    list-style: none;
+    line-height: 1.4;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+    padding: 0.375rem 0;
+  }
+  .rich-content-track-list li:last-child {
+    border-bottom: 0;
+  }
+  .rich-content-track-number {
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+  .rich-content-track-title {
+    min-width: 0;
+    color: var(--foreground);
+    overflow-wrap: anywhere;
+  }
+  .rich-content .rich-content-track-title a {
+    color: inherit;
+    text-decoration: none;
+  }
+  .rich-content .rich-content-track-title a:hover {
+    text-decoration: underline;
+    text-decoration-color: var(--highlight);
+  }
+  /* Artists sit under the title on narrow screens so they never squeeze it. */
+  .rich-content-track-artists {
+    grid-column: 2;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .rich-content-music-tracks summary {
+    min-height: 2.75rem;
+    display: flex;
+    align-items: center;
+    padding-left: 2.75rem;
+    color: var(--muted-foreground);
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .rich-content-music-tracks summary:hover {
+    color: var(--foreground);
+  }
+  .rich-content-music-tracks details[open] summary {
+    display: none;
+  }
+  .rich-content-music-tracks details .rich-content-track-list {
+    border-top: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+  }
+  .rich-content .rich-content-music-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: auto -1rem -1rem;
+    border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    padding: 0.75rem 1rem;
+    list-style: none;
+  }
+  .rich-content .rich-content-music-links a {
+    display: inline-flex;
+    min-height: 2rem;
+    align-items: center;
+    gap: 0.375rem;
+    border: 1px solid var(--border);
+    padding: 0 0.625rem;
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition:
+      background-color 150ms,
+      color 150ms;
+  }
+  .rich-content .rich-content-music-links a:hover {
+    background: var(--muted);
+    color: var(--foreground);
+  }
+  .rich-content-music-link-icon {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+  .rich-content-music-link-external {
+    width: 0.75rem;
+    height: 0.75rem;
+    opacity: 0.5;
+  }
+  @media (min-width: 640px) {
+    .rich-content-music-card {
+      padding: 1.25rem;
+    }
+    .rich-content-music-head {
+      grid-template-columns: 7rem minmax(0, 1fr);
+      gap: 1.25rem;
+    }
+    .rich-content .rich-content-music-title {
+      font-size: 1.25rem;
+    }
+    .rich-content .rich-content-music-links {
+      margin: auto -1.25rem -1.25rem;
+      padding: 0.75rem 1.25rem;
+    }
+    .rich-content-track-list li:has(> .rich-content-track-artists) {
+      grid-template-columns: 2rem minmax(0, 1fr) minmax(0, 14rem);
+    }
+    .rich-content-track-artists {
+      grid-column: auto;
+      text-align: right;
+    }
   }
   .rich-content-card-group {
     display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(18rem, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
     gap: 1rem;
-    overflow-x: auto;
+  }
+  .rich-content-card-group > * {
+    margin: 0;
+  }
+  .rich-content .rich-content-card-group .rich-content-music-description {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  /* Cards in a row share less width, so artwork stays compact beside the copy. */
+  .rich-content-card-group .rich-content-music-head {
+    grid-template-columns: 4rem minmax(0, 1fr);
+    gap: 0.875rem;
+  }
+  .rich-content-card-group .rich-content-music-head:not(:has(> img)) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .rich-content .rich-content-card-group .rich-content-music-title {
+    font-size: 1rem;
   }
   .rich-content-unavailable,
   .rich-content-unsupported {
