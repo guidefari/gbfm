@@ -75,6 +75,7 @@ export interface AppLayerOptions {
   readonly objectStore?: Layer.Layer<ObjectStoreClient>
   readonly qrCode?: Layer.Layer<QRCodeService>
   readonly musicCoverImageFetcher?: Layer.Layer<never>
+  readonly externalMediaFetcher?: Layer.Layer<never>
   readonly adminTelemetry?: Layer.Layer<AdminTelemetryService>
   readonly requestTelemetry?: Layer.Layer<RequestTelemetry>
   readonly signupProtection?: Layer.Layer<SignupProtection>
@@ -92,6 +93,7 @@ export const AppLayer = ({
   objectStore: objectStoreLive = UnavailableObjectStoreClientLayer,
   qrCode: qrCodeLive = QRCodeServiceUnavailableLayer,
   musicCoverImageFetcher: musicCoverImageFetcherLive = Layer.succeed(MusicCoverImageFetcher, fetch),
+  externalMediaFetcher: externalMediaFetcherLive = Layer.empty,
   adminTelemetry: adminTelemetryLive = AdminTelemetryUnavailableLayer,
   requestTelemetry: requestTelemetryLive = RequestTelemetryUnavailableLayer,
   signupProtection: signupProtectionLive = SignupProtectionUnavailableLayer,
@@ -105,6 +107,7 @@ export const AppLayer = ({
   const MdxLive = MdxServiceCatalogLayer.pipe(
     Layer.provide(RichContentMusicResolverLayer),
     Layer.provide(databaseLive),
+    Layer.provide(externalMediaFetcherLive),
   )
 
   const BaseServicesLayer = Layer.mergeAll(

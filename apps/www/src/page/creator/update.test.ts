@@ -22,6 +22,42 @@ describe('creator model', () => {
     expect(result.commands?.[0]?.name).toBe('Creator.PersistDraft')
   })
 
+  it('keeps author IDs internal and preserves restored collaborators until explicitly removed', () => {
+    const initial = initialModel(input)
+
+    const restored = update(
+      initial,
+      Message.Hydrated({
+        draft: { ...initial.draft, creatorIds: ['user-1', 'unknown-restored'] },
+        creators: [],
+      }),
+    ).model
+
+    const queried = update(restored, Message.AuthorQueryChanged({ value: 'Ada' })).model
+    const creator = { id: 'collaborator', name: 'Ada', username: 'ada' }
+    const found = update(queried, Message.AuthorsFound({ query: 'Ada', creators: [creator] })).model
+    const selected = update(found, Message.AuthorSelected({ id: creator.id })).model
+    expect(selected.draft.creatorIds).toEqual(['user-1', 'unknown-restored', 'collaborator'])
+    expect(selected.creators).toEqual([creator])
+    expect(update(selected, Message.AuthorSelected({ id: creator.id })).model).toEqual(selected)
+    expect(update(selected, Message.AuthorSelected({ id: 'not-a-search-result' })).model).toEqual(
+      selected,
+    )
+    const removed = update(selected, Message.AuthorRemoved({ id: 'unknown-restored' })).model
+    expect(removed.draft.creatorIds).toEqual(['user-1', 'collaborator'])
+    const sole = update(removed, Message.AuthorRemoved({ id: 'user-1' })).model
+    expect(
+      update(sole, Message.AuthorRemoved({ id: 'collaborator' })).model.draft.creatorIds,
+    ).toEqual(['collaborator'])
+    const changedQuery = update(selected, Message.AuthorQueryChanged({ value: 'Grace' })).model
+    expect(
+      update(changedQuery, Message.AuthorsFound({ query: 'Ada', creators: [] })).model,
+    ).toEqual(changedQuery)
+    expect(update(changedQuery, Message.AuthorSearchFailed({ query: 'Ada' })).model).toEqual(
+      changedQuery,
+    )
+  })
+
   it('keeps source diagnostics tied to the current content, including out-of-order failures', () => {
     const model = initialModel(input)
     const oldContent = '<script>old</script>'
@@ -232,5 +268,74 @@ describe('creator model', () => {
     expect(update(paused, Message.UploadResumeRequested()).commands?.[0]?.name).toBe(
       'Creator.UploadAudio',
     )
+  })
+
+  it('embeds only links that render as players, and explains rejected links in place', () => {
+    const model = { ...initialModel(input), phase: 'writing' as const }
+
+    const page =
+      'http://babakushi.bandcamp.com/track/the-vigil-of-mashonisa-feat-b-man-lukorito-ntombela-alberto-ranfery-gusto-new-york-zulu-yuba-ushiii'
+
+    for (const url of [
+      'https://bandcamp.com',
+      'https://babakushi.bandcamp.com/music',
+      'not a url',
+    ]) {
+      const rejected = update(
+        update(model, Message.ExternalMediaChanged({ value: url })).model,
+        Message.ExternalMediaInserted(),
+      )
+
+      expect(rejected.model.draft.content).toBe('')
+      expect(rejected.model.externalMediaError).toContain('Bandcamp track or album')
+      expect(rejected.commands).toBeUndefined()
+    }
+
+    const typed = update(model, Message.ExternalMediaChanged({ value: page })).model
+    const inserted = update(typed, Message.ExternalMediaInserted()).model
+    expect(inserted.draft.content).toBe(`::media{url="${page.replace('http:', 'https:')}"}`)
+    expect(inserted.externalMediaUrl).toBe('')
+    expect(inserted.externalMediaError).toBeNull()
+  })
+
+  it('previews the publishing render for the current source and ignores stale responses', () => {
+    const model = { ...initialModel(input), phase: 'writing' as const }
+    const first = update(model, Message.Changed({ field: 'content', value: 'First' })).model
+    const previewing = update(first, Message.EditorModeChanged({ mode: 'preview' }))
+    expect(previewing.model.preview).toBe('loading')
+    expect(previewing.commands?.map((command) => command.name)).toEqual(['Creator.RenderPreview'])
+
+    const document = { version: 1 as const, blocks: [] }
+    const edited = update(previewing.model, Message.MusicEmbedInserted()).model
+
+    const second = update(
+      { ...edited, draft: { ...edited.draft, musicEntityType: 'track', musicEntityId: 'track-1' } },
+      Message.MusicEmbedInserted(),
+    )
+
+    expect(second.model.previewContent).toBe(second.model.draft.content)
+    expect(second.commands?.map((command) => command.name)).toContain('Creator.RenderPreview')
+
+    const stale = update(second.model, Message.PreviewLoaded({ content: 'First', document }))
+    expect(stale.model.preview).toBe('loading')
+
+    const failed = update(
+      second.model,
+      Message.PreviewFailed({ content: second.model.draft.content }),
+    )
+
+    expect(failed.model.preview).toBe('failed')
+    const retried = update(failed.model, Message.PreviewRequested())
+    expect(retried.model.preview).toBe('loading')
+
+    const loaded = update(
+      retried.model,
+      Message.PreviewLoaded({ content: retried.model.draft.content, document }),
+    )
+
+    expect(loaded.model).toMatchObject({ preview: 'ready', previewDocument: document })
+    expect(
+      update(loaded.model, Message.EditorModeChanged({ mode: 'preview' })).commands,
+    ).toBeUndefined()
   })
 })

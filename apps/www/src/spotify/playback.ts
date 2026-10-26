@@ -81,9 +81,8 @@ export const view = <M>(
         h.Type('button'),
         h.Disabled(!interactive || model.status === null || model.busy),
         h.OnClick(toMessage(Message.Requested({ action, url }))),
-        h.Class(
-          'inline-flex min-h-10 items-center rounded-sm border border-border px-3 text-xs font-medium transition-colors hover:bg-muted disabled:opacity-50',
-        ),
+        h.AriaBusy(model.busy && model.target === url),
+        h.Class(action === 'play' ? 'btn btn-primary' : 'btn'),
       ],
       [label],
     )

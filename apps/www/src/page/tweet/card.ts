@@ -46,7 +46,7 @@ const platformLabels = new Map([
 const entityLabels = { album: 'Album', track: 'Track', playlist: 'Playlist' } as const
 
 const actionClassName =
-  'inline-flex items-center gap-1.5 text-xs text-muted-foreground no-underline transition-colors hover:text-foreground'
+  '-mx-2 inline-flex min-h-8 items-center gap-1.5 rounded-sm px-2 text-xs text-muted-foreground no-underline transition-colors hover:bg-muted/60 hover:text-foreground'
 
 const snippet = (text: string, max: number) => {
   const flattened = text.replace(/\s+/g, ' ').trim()
@@ -140,7 +140,7 @@ const streamLinks = (links: NonNullable<TweetPost['music']>['links']) =>
           h.Target('_blank'),
           h.Rel('noopener noreferrer'),
           h.Class(
-            'inline-flex h-7 items-center gap-1.5 rounded-sm border border-border px-2.5 text-xs font-medium text-muted-foreground no-underline transition-colors hover:border-border hover:bg-muted hover:text-foreground',
+            'inline-flex h-8 items-center gap-1.5 rounded-sm border border-border px-2.5 text-xs font-medium text-muted-foreground no-underline transition-colors hover:border-border hover:bg-muted hover:text-foreground',
           ),
         ],
         [

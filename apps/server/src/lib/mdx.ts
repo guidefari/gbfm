@@ -1,4 +1,5 @@
 /* oxlint-disable anti-slop-effect/no-manual-tagged-construction, anti-slop-effect/no-manual-tag-comparison -- Rich-content nodes are Schema-owned recursive unions without generated constructors or matchers. */
+import { directMediaEmbed } from '@gbfm/rich-content/media'
 import type { RichContentBlock, RichContentDocument, SafeUrl } from '@gbfm/rich-content/schema'
 import {
   parseRichContent,
@@ -9,6 +10,7 @@ import {
 import { Cache, Context, Data, Duration, Effect, Exit, Layer } from 'effect'
 
 import { ValidationError } from '@/errors'
+import { makeExternalMediaResolver, type ExternalMediaResolver } from '@/lib/external-media'
 import {
   RichContentMusicResolver,
   type RichContentMusicResolver as RichContentMusicResolverService,
@@ -52,9 +54,30 @@ const unavailableMusicResolver: RichContentMusicResolverService = {
   resolve: () => Effect.succeed(null),
 }
 
+const directMediaResolver: ExternalMediaResolver = {
+  resolve: (url) => Effect.succeed(directMediaEmbed(url)),
+}
+
+interface Resolvers {
+  readonly music: RichContentMusicResolverService
+  readonly media: ExternalMediaResolver
+}
+
+const hasUnavailableMedia = (blocks: ReadonlyArray<RichContentBlock>): boolean =>
+  blocks.some((block) => {
+    if (block._tag === 'UnavailableEmbed') return block.kind === 'media'
+
+    if (block._tag === 'Quote' || block._tag === 'CardGroup')
+      return hasUnavailableMedia(block.children)
+
+    if (block._tag === 'List') return block.items.some((item) => hasUnavailableMedia(item.children))
+
+    return false
+  })
+
 const makeService = (
   fn: (content: string) => Promise<string>,
-  musicResolver: RichContentMusicResolverService,
+  resolvers: Resolvers,
 ): Effect.Effect<MdxService> =>
   Effect.gen(function* () {
     const compiledCache = yield* Cache.makeWith(makeLookup(fn), {
@@ -63,10 +86,14 @@ const makeService = (
     })
 
     const renderCache = yield* Cache.makeWith(
-      (content: string) => resolveDocument(parseRichContent(content).document, musicResolver),
+      (content: string) => resolveDocument(parseRichContent(content).document, resolvers),
       {
         capacity: 256,
-        timeToLive: () => Duration.hours(1),
+        // A provider lookup that failed is retried soon instead of pinning the fallback for an hour.
+        timeToLive: (exit) =>
+          Exit.isSuccess(exit) && hasUnavailableMedia(exit.value.blocks)
+            ? Duration.minutes(5)
+            : Duration.hours(1),
       },
     )
 
@@ -91,16 +118,17 @@ export const MdxService = Context.Service<MdxService>('MdxService')
 
 export const MdxServiceLayer: Layer.Layer<MdxService> = Layer.effect(
   MdxService,
-  makeService(defaultFn, unavailableMusicResolver),
+  makeService(defaultFn, { music: unavailableMusicResolver, media: directMediaResolver }),
 )
 
 export const MdxServiceCatalogLayer: Layer.Layer<MdxService, never, RichContentMusicResolver> =
   Layer.effect(
     MdxService,
     Effect.gen(function* () {
-      const musicResolver = yield* RichContentMusicResolver
+      const music = yield* RichContentMusicResolver
+      const media = yield* makeExternalMediaResolver
 
-      return yield* makeService(defaultFn, musicResolver)
+      return yield* makeService(defaultFn, { music, media })
     }),
   )
 
@@ -108,7 +136,9 @@ export const MdxServiceCatalogLayer: Layer.Layer<MdxService, never, RichContentM
 
 export const makeMdxServiceTest = (
   fn: (content: string) => Promise<string>,
-): Layer.Layer<MdxService> => Layer.effect(MdxService, makeService(fn, unavailableMusicResolver))
+  media: ExternalMediaResolver = directMediaResolver,
+): Layer.Layer<MdxService> =>
+  Layer.effect(MdxService, makeService(fn, { music: unavailableMusicResolver, media }))
 
 // ── Backward-compat shim (for show, label, release, resolve services) ─────────
 
@@ -153,67 +183,6 @@ const unavailable = (
   href: SafeUrl | null,
 ): RichContentBlock => ({ _tag: 'UnavailableEmbed', kind, label, href })
 
-const externalMedia = (
-  url: SafeUrl,
-): Extract<RichContentBlock, { _tag: 'ExternalMediaEmbed' }> | null => {
-  const parsed = new URL(url)
-  const host = parsed.hostname.toLowerCase()
-  const parts = parsed.pathname.split('/').filter(Boolean)
-
-  if (
-    host === 'youtu.be' ||
-    host === 'youtube.com' ||
-    host === 'www.youtube.com' ||
-    host === 'youtube-nocookie.com' ||
-    host === 'www.youtube-nocookie.com'
-  ) {
-    const videoId = host === 'youtu.be' ? parts[0] : (parsed.searchParams.get('v') ?? parts[1])
-
-    if (!videoId) return null
-
-    return {
-      _tag: 'ExternalMediaEmbed',
-      provider: 'youtube',
-      canonicalUrl: url,
-      embedUrl: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}`,
-      title: 'YouTube video',
-      aspectRatio: 16 / 9,
-    }
-  }
-
-  if (host === 'soundcloud.com' || host.endsWith('.soundcloud.com'))
-    return {
-      _tag: 'ExternalMediaEmbed',
-      provider: 'soundcloud',
-      canonicalUrl: url,
-      embedUrl: `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}`,
-      title: 'SoundCloud player',
-      aspectRatio: 16 / 5,
-    }
-
-  if (host === 'open.spotify.com' && parts.length === 2)
-    return {
-      _tag: 'ExternalMediaEmbed',
-      provider: 'spotify',
-      canonicalUrl: url,
-      embedUrl: `https://open.spotify.com/embed/${parts[0]}/${encodeURIComponent(parts[1] ?? '')}`,
-      title: 'Spotify player',
-      aspectRatio: 16 / 9,
-    }
-
-  if (host === 'bandcamp.com' && parts[0] === 'EmbeddedPlayer')
-    return {
-      _tag: 'ExternalMediaEmbed',
-      provider: 'bandcamp',
-      canonicalUrl: url,
-      embedUrl: url,
-      title: 'Bandcamp player',
-      aspectRatio: 16 / 5,
-    }
-
-  return null
-}
-
 type MusicReference = Extract<EmbedReference, { readonly _tag: 'MusicUrl' | 'MusicCatalog' }>
 
 const musicEmbed = (
@@ -238,26 +207,31 @@ const musicEmbed = (
 
 const resolveBlock = (
   block: UnresolvedBlock,
-  musicResolver: RichContentMusicResolverService,
+  resolvers: Resolvers,
 ): Effect.Effect<RichContentBlock> => {
   if (block._tag === 'EmbedReference') {
     if (block.reference._tag === 'ExternalMedia') {
-      return Effect.succeed(
-        externalMedia(block.reference.url) ??
-          unavailable('media', 'This media embed is unavailable.', block.reference.url),
-      )
+      const url = block.reference.url
+
+      return resolvers.media
+        .resolve(url)
+        .pipe(
+          Effect.map(
+            (embed) => embed ?? unavailable('media', 'This player could not be loaded.', url),
+          ),
+        )
     }
 
     const reference = block.reference
 
-    return musicResolver
+    return resolvers.music
       .resolve(reference)
       .pipe(Effect.map((music) => musicEmbed(reference, music)))
   }
 
   if (block._tag === 'Quote' || block._tag === 'CardGroup')
     return Effect.all(
-      block.children.map((child) => resolveBlock(child, musicResolver)),
+      block.children.map((child) => resolveBlock(child, resolvers)),
       { concurrency: 8 },
     ).pipe(Effect.map((children) => ({ ...block, children })))
 
@@ -265,7 +239,7 @@ const resolveBlock = (
     return Effect.all(
       block.items.map((item) =>
         Effect.all(
-          item.children.map((child) => resolveBlock(child, musicResolver)),
+          item.children.map((child) => resolveBlock(child, resolvers)),
           { concurrency: 8 },
         ).pipe(Effect.map((children) => ({ ...item, children }))),
       ),
@@ -277,15 +251,20 @@ const resolveBlock = (
 
 const resolveDocument = (
   document: UnresolvedDocument,
-  musicResolver: RichContentMusicResolverService,
+  resolvers: Resolvers,
 ): Effect.Effect<RichContentDocument> =>
   Effect.all(
-    document.blocks.map((block) => resolveBlock(block, musicResolver)),
+    document.blocks.map((block) => resolveBlock(block, resolvers)),
     { concurrency: 8 },
   ).pipe(Effect.map((blocks) => ({ version: 1 as const, blocks })))
 
 export const renderRichContent = (source: string): RichContentDocument =>
-  Effect.runSync(resolveDocument(parseRichContent(source).document, unavailableMusicResolver))
+  Effect.runSync(
+    resolveDocument(parseRichContent(source).document, {
+      music: unavailableMusicResolver,
+      media: directMediaResolver,
+    }),
+  )
 
 export const validateCanonicalContent = (
   source: string | null | undefined,

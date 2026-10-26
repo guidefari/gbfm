@@ -50,6 +50,8 @@ test('desktop account actions support keyboard, dismissal, navigation and sign-o
   await trigger.click()
   await expect(menu.getByRole('link', { name: 'Dashboard', exact: true })).toBeFocused()
   await page.keyboard.press(browserName === 'webkit' ? 'Alt+Tab' : 'Tab')
+  await expect(menu.getByRole('link', { name: 'Listening pile', exact: true })).toBeFocused()
+  await page.keyboard.press(browserName === 'webkit' ? 'Alt+Tab' : 'Tab')
   await expect(menu.getByRole('link', { name: 'Edit profile', exact: true })).toBeFocused()
   await page.keyboard.press('Enter')
   await expect(page).toHaveURL(/\/dashboard\/profile$/)

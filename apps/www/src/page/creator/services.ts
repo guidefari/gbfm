@@ -1,4 +1,5 @@
 import { PostMusicResolutionError, ResolvePostMusicResponse } from '@gbfm/api/post'
+import { RichContentDocument } from '@gbfm/rich-content/schema'
 import { Context, Data, Effect, Layer, Option, Schema } from 'effect'
 
 export type CreatorKind = 'micro' | 'post' | 'mix'
@@ -45,8 +46,15 @@ export class CreatorUploadError extends Data.TaggedError('CreatorUploadError')<{
 
 export type CreatorError = CreatorRequestError | CreatorStorageError | CreatorUploadError
 
+export const CreatorIdentity = Schema.Struct({
+  id: Schema.String,
+  name: Schema.NullOr(Schema.String),
+  username: Schema.NullOr(Schema.String),
+})
+
 export interface EditableContent extends CreatorDraft {
   readonly draft: boolean
+  readonly creators: ReadonlyArray<typeof CreatorIdentity.Type>
 }
 
 export interface SaveInput {
@@ -56,6 +64,9 @@ export interface SaveInput {
 }
 
 export interface CreatorOperations {
+  readonly searchAuthors: (
+    query: string,
+  ) => Effect.Effect<ReadonlyArray<typeof CreatorIdentity.Type>, CreatorRequestError>
   readonly readLocalDraft: (key: string) => Effect.Effect<CreatorDraft | null, CreatorStorageError>
   readonly writeLocalDraft: (
     key: string,
@@ -95,6 +106,9 @@ export interface CreatorOperations {
   readonly save: (
     input: SaveInput,
   ) => Effect.Effect<{ readonly id: string; readonly slug: string }, CreatorRequestError>
+  readonly renderPreview: (
+    content: string,
+  ) => Effect.Effect<typeof RichContentDocument.Type, CreatorRequestError>
   readonly uploadImage: (file: File) => Effect.Effect<string, CreatorUploadError>
 }
 
@@ -118,7 +132,7 @@ const EditableResponse = Schema.Struct({
   draft: Schema.optional(Schema.Boolean),
   showId: Schema.optional(Schema.NullOr(Schema.String)),
   episodeNumber: Schema.optional(Schema.NullOr(Schema.Number)),
-  creators: Schema.optional(Schema.Array(Schema.Struct({ id: Schema.String }))),
+  creators: Schema.optional(Schema.Array(CreatorIdentity)),
 })
 
 const SavedResponse = Schema.Struct({ id: Schema.String, slug: Schema.String })
@@ -139,6 +153,8 @@ const QuoteResponse = Schema.Struct({
   title: Schema.NullOr(Schema.String),
   content: Schema.NullOr(Schema.String),
 })
+
+const PreviewResponse = Schema.Struct({ richContent: RichContentDocument })
 
 const ImageResponse = Schema.Struct({
   uploadUrl: Schema.String,
@@ -222,6 +238,12 @@ const json = (body: JsonBody): RequestInit => ({
 const draftKey = (key: string) => `gbfm:creator:${key}`
 
 export const CreatorServiceLive = Layer.succeed(CreatorService, {
+  searchAuthors: (query) =>
+    requestJson(
+      'search authors',
+      Schema.Array(CreatorIdentity),
+      `/user/search?q=${encodeURIComponent(query)}`,
+    ),
   readLocalDraft: (key) =>
     Effect.try({
       try: () => localStorage.getItem(draftKey(key)),
@@ -278,6 +300,7 @@ export const CreatorServiceLive = Layer.succeed(CreatorService, {
         showId: item.showId ?? null,
         episodeNumber: item.episodeNumber ?? null,
         creatorIds: (item.creators ?? []).map(({ id }) => id),
+        creators: item.creators ?? [],
         draft: item.draft ?? false,
       })),
     ),
@@ -319,6 +342,13 @@ export const CreatorServiceLive = Layer.succeed(CreatorService, {
       QuoteResponse,
       `/content/posts/micro/${encodeURIComponent(slug)}`,
     ),
+  renderPreview: (content) =>
+    requestJson(
+      'render preview',
+      PreviewResponse,
+      '/content/posts/preview',
+      json({ content }),
+    ).pipe(Effect.map(({ richContent }) => richContent)),
   save: ({ draft, creatorId, publish }) => {
     const slug =
       draft.slug ||

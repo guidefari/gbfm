@@ -1,4 +1,5 @@
 import * as Dialog from '@foldkit/ui/dialog'
+import { mediaReference, SUPPORTED_MEDIA_HINT } from '@gbfm/rich-content/media'
 import { Option } from 'effect'
 import { Update } from 'foldkit'
 
@@ -7,9 +8,11 @@ import {
   Diagnose,
   PauseUpload,
   PersistDraft,
+  RenderPreview,
   ResolveMusic,
   ResolvePostMusic,
   ResolveQuote,
+  SearchAuthors,
   Save,
   UploadArtwork,
   UploadAudio,
@@ -20,22 +23,68 @@ import { draftValidationError, keyOf, type Model } from './model'
 import type { CreatorDraft, CreatorService } from './services'
 import type { CreatorUpload } from './upload/runtime'
 
+/** Renders the current source on the server unless that exact source is already shown or loading. */
+const requestPreview = (model: Model): Update.Return<Model, Message, CreatorService> => {
+  const content = model.draft.content
+
+  if (!content.trim() || (model.previewContent === content && model.preview !== 'failed'))
+    return { model }
+
+  return {
+    model: { ...model, preview: 'loading', previewContent: content },
+    commands: [RenderPreview({ content })],
+  }
+}
+
 const changed = (
   model: Model,
   draft: CreatorDraft,
-): Update.Return<Model, Message, CreatorService> => ({
-  model: {
+): Update.Return<Model, Message, CreatorService> => {
+  const contentChanged = draft.content !== model.draft.content
+
+  const next: Model = {
     ...model,
     draft,
     saveState: 'unsaved',
     error: null,
-    diagnostics: draft.content === model.draft.content ? model.diagnostics : [],
-  },
-  commands: [
-    PersistDraft({ key: keyOf(draft), draft }),
-    ...(draft.content === model.draft.content ? [] : [Diagnose({ content: draft.content })]),
-  ],
-})
+    diagnostics: contentChanged ? [] : model.diagnostics,
+  }
+
+  const preview =
+    contentChanged && (model.editorMode === 'preview' || model.phase === 'reviewing')
+      ? requestPreview(next)
+      : { model: next }
+
+  return {
+    model: preview.model,
+    commands: [
+      PersistDraft({ key: keyOf(draft), draft }),
+      ...(contentChanged ? [Diagnose({ content: draft.content })] : []),
+      ...(preview.commands ?? []),
+    ],
+  }
+}
+
+/** Accepts only links the renderer can turn into a player, normalised so the directive stays valid. */
+const mediaUrl = (value: string): string | null => {
+  let url: URL
+
+  try {
+    url = new URL(value.trim())
+  } catch {
+    return null
+  }
+
+  if (url.protocol === 'http:') url.protocol = 'https:'
+
+  return url.protocol === 'https:' &&
+    !url.username &&
+    !url.password &&
+    !url.port &&
+    mediaReference(url)
+    ? url.href
+    : null
+}
 
 const appendBlock = (content: string, block: string) =>
   content.trim().length === 0 ? block : `${content.replace(/\s+$/, '')}\n\n${block}`
@@ -70,21 +119,48 @@ export const update = (
 ): Update.Return<Model, Message, CreatorService | CreatorUpload> =>
   Message.match<Update.Return<Model, Message, CreatorService | CreatorUpload>>(message, {
     Changed: ({ field, value }) => changed(model, { ...model.draft, [field]: value }),
-    CreatorsChanged: ({ value }) =>
-      changed(
-        { ...model, creatorsInput: value },
-        {
-          ...model.draft,
-          creatorIds: [
-            ...new Set(
-              value
-                .split(',')
-                .map((id) => id.trim())
-                .filter(Boolean),
-            ),
-          ],
-        },
-      ),
+    AuthorQueryChanged: ({ value }) => ({
+      model: { ...model, authorQuery: value, authorSearch: 'idle', authorResults: [] },
+    }),
+    AuthorSearchRequested: () =>
+      model.authorQuery.trim() && model.authorized
+        ? {
+            model: { ...model, authorSearch: 'loading' },
+            commands: [SearchAuthors({ query: model.authorQuery.trim() })],
+          }
+        : { model },
+    AuthorsFound: ({ query, creators }) => ({
+      model:
+        query === model.authorQuery.trim()
+          ? { ...model, authorSearch: 'ready', authorResults: creators }
+          : model,
+    }),
+    AuthorSearchFailed: ({ query }) => ({
+      model:
+        query === model.authorQuery.trim()
+          ? { ...model, authorSearch: 'failed', authorResults: [] }
+          : model,
+    }),
+    AuthorSelected: ({ id }) => {
+      const creator = model.authorResults.find((creator) => creator.id === id)
+
+      return creator && !model.draft.creatorIds.includes(id)
+        ? changed(
+            {
+              ...model,
+              creators: [...model.creators.filter((creator) => creator.id !== id), creator],
+            },
+            { ...model.draft, creatorIds: [...model.draft.creatorIds, id] },
+          )
+        : { model }
+    },
+    AuthorRemoved: ({ id }) =>
+      model.draft.creatorIds.length > 1
+        ? changed(model, {
+            ...model.draft,
+            creatorIds: model.draft.creatorIds.filter((creatorId) => creatorId !== id),
+          })
+        : { model },
     QuoteChanged: ({ value }) =>
       model.draft.editSlug
         ? { model }
@@ -159,7 +235,7 @@ export const update = (
       ),
     KindChanged: ({ kind }) =>
       model.draft.editSlug ? { model } : changed(model, { ...model.draft, kind }),
-    ReviewRequested: () => openReviewDialog(model),
+    ReviewRequested: () => Update.combine(model, [openReviewDialog, requestPreview]),
     ReviewClosed: () => closeReviewDialog(model),
     GotReviewDialogMessage: ({ message }) => updateReviewDialog(model, message),
     ResolvePostMusicRequested: () =>
@@ -220,7 +296,20 @@ export const update = (
             },
             { ...model.draft, musicEntityType: entityType, musicEntityId: entityId },
           ),
-    EditorModeChanged: ({ mode }) => ({ model: { ...model, editorMode: mode } }),
+    EditorModeChanged: ({ mode }) =>
+      mode === 'preview'
+        ? requestPreview({ ...model, editorMode: mode })
+        : { model: { ...model, editorMode: mode } },
+    PreviewRequested: () => requestPreview({ ...model, previewContent: null }),
+    PreviewLoaded: ({ content, document }) => ({
+      model:
+        content === model.previewContent
+          ? { ...model, preview: 'ready', previewDocument: document }
+          : model,
+    }),
+    PreviewFailed: ({ content }) => ({
+      model: content === model.previewContent ? { ...model, preview: 'failed' } : model,
+    }),
     DiagnosticsLoaded: ({ content, diagnostics }) => ({
       model: content === model.draft.content ? { ...model, diagnostics } : model,
     }),
@@ -235,19 +324,26 @@ export const update = (
         ...model.draft,
         content: `${model.draft.content}${before}${sample}${after}`,
       }),
-    ExternalMediaChanged: ({ value }) => ({ model: { ...model, externalMediaUrl: value } }),
+    ExternalMediaChanged: ({ value }) => ({
+      model: { ...model, externalMediaUrl: value, externalMediaError: null },
+    }),
     ExternalMediaInserted: () => {
-      const value = model.externalMediaUrl.trim()
+      const url = mediaUrl(model.externalMediaUrl)
 
-      return /^https?:\/\/\S+$/.test(value)
+      return url
         ? changed(
-            { ...model, externalMediaUrl: '' },
+            { ...model, externalMediaUrl: '', externalMediaError: null },
             {
               ...model.draft,
-              content: appendBlock(model.draft.content, `::media{url="${value}"}`),
+              content: appendBlock(model.draft.content, `::media{url="${url}"}`),
             },
           )
-        : { model: { ...model, error: 'media: Enter a complete media URL.' } }
+        : {
+            model: {
+              ...model,
+              externalMediaError: `This link has no embeddable player. ${SUPPORTED_MEDIA_HINT}`,
+            },
+          }
     },
     MusicEmbedInserted: () =>
       model.draft.musicEntityType && model.draft.musicEntityId
@@ -273,7 +369,7 @@ export const update = (
           phase: 'writing',
           saveState: 'unsaved',
           draft: { ...reset.draft, creatorIds: model.draft.creatorIds },
-          creatorsInput: model.creatorsInput,
+          creators: model.creators,
         },
       }
     },
@@ -319,12 +415,12 @@ export const update = (
     Failed: ({ operation, message }) => ({
       model: { ...model, phase: 'writing', saveState: 'failed', error: `${operation}: ${message}` },
     }),
-    Hydrated: ({ draft }) => ({
+    Hydrated: ({ draft, creators }) => ({
       model: {
         ...model,
         draft: draft ?? model.draft,
+        creators,
         tagsInput: (draft ?? model.draft).tags.join(', '),
-        creatorsInput: (draft ?? model.draft).creatorIds.join(', '),
         episodeInput: (draft ?? model.draft).episodeNumber?.toString() ?? '',
         phase: 'writing',
         saveState: draft ? 'saved-locally' : model.saveState,

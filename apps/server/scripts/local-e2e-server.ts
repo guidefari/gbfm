@@ -20,6 +20,7 @@ import { releasesTable } from '@/db/release.schema'
 import { seedLocalUsers } from '@/db/seed-local-users'
 import { seedMusicLookups } from '@/db/seed-music-lookups'
 import { showCreators, showsTable } from '@/db/show.schema'
+import { ExternalMediaFetcher } from '@/lib/external-media'
 import { ConfigService, createConfig } from '@/services/config.service'
 import { SignupProtection, SignupRejected } from '@/services/signup-protection'
 import { createTestWebHandler } from '@/test/http-handler'
@@ -324,6 +325,21 @@ const signupProtection = Layer.succeed(SignupProtection, {
       : Effect.fail(new SignupRejected({ reason: 'verification' })),
 })
 
+// Media lookups never leave the machine: one known Bandcamp release page resolves to its public
+// player ID, and every other page behaves like an unreachable provider.
+const bandcampFixturePage =
+  'https://babakushi.bandcamp.com/track/the-vigil-of-mashonisa-feat-b-man-lukorito-ntombela-alberto-ranfery-gusto-new-york-zulu-yuba-ushiii'
+
+const externalMediaFetcher = Layer.succeed(ExternalMediaFetcher, async (input: string) =>
+  input === bandcampFixturePage
+    ? new Response(
+        `<meta property="og:title" content="THE VIGIL OF MASHONISA, by BABA KUSHI">
+<meta name="bc-page-properties" content="{&quot;item_type&quot;:&quot;t&quot;,&quot;item_id&quot;:1395951450}">`,
+        { headers: { 'content-type': 'text/html' } },
+      )
+    : new Response('Not found', { status: 404 }),
+)
+
 const handler = createTestWebHandler(
   resource.database,
   undefined,
@@ -331,6 +347,7 @@ const handler = createTestWebHandler(
   undefined,
   configLive,
   signupProtection,
+  externalMediaFetcher,
 )
 
 const server = Bun.serve({

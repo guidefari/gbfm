@@ -64,6 +64,7 @@ export const createTestWebHandler = (
   musicCoverImageFetcherLive: Layer.Layer<never> = Layer.succeed(MusicCoverImageFetcher, fetch),
   configLive?: Layer.Layer<ConfigService>,
   signupProtection?: Layer.Layer<SignupProtection>,
+  externalMediaFetcherLive?: Layer.Layer<never>,
 ) => {
   const baseServices = {
     database: DatabaseLayer(d1),
@@ -75,6 +76,7 @@ export const createTestWebHandler = (
     emailTransport: emailTransportLive,
     musicCoverImageFetcher: musicCoverImageFetcherLive,
     ...(signupProtection ? { signupProtection } : undefined),
+    ...(externalMediaFetcherLive ? { externalMediaFetcher: externalMediaFetcherLive } : undefined),
   }
 
   const services = configLive === undefined ? baseServices : { ...baseServices, config: configLive }
