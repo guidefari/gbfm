@@ -1,3 +1,10 @@
+## [2.115.1](https://github.com/planetaryescape/gbfm/compare/v2.115.0...v2.115.1) (2026-10-26)
+
+
+### Bug Fixes
+
+* **nav:** keep Collections discoverable only to admins ([#406](https://github.com/planetaryescape/gbfm/issues/406)) ([0c2c8f0](https://github.com/planetaryescape/gbfm/commit/0c2c8f0d8b5a66d6038c9a5ac7c5686a65e87524))
+
 # [2.115.0](https://github.com/planetaryescape/gbfm/compare/v2.114.1...v2.115.0) (2026-10-26)
 
 
