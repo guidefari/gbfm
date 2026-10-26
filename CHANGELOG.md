@@ -1,3 +1,10 @@
+# [2.113.0](https://github.com/planetaryescape/gbfm/compare/v2.112.2...v2.113.0) (2026-10-26)
+
+
+### Features
+
+* **posts:** resolve music for individual saved posts ([#398](https://github.com/planetaryescape/gbfm/issues/398)) ([c39da23](https://github.com/planetaryescape/gbfm/commit/c39da23a7ac67523c027778ea9307fc0eb677acd))
+
 ## [2.112.2](https://github.com/planetaryescape/gbfm/compare/v2.112.1...v2.112.2) (2026-10-26)
 
 
