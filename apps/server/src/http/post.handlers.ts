@@ -185,6 +185,8 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
               limit: query.limit ?? 20,
               offset: query.offset ?? 0,
               tag: query.tag,
+              musicEntityType: query.musicEntityType,
+              musicEntityId: query.musicEntityId,
             }),
           ),
         )

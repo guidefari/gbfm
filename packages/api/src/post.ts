@@ -164,6 +164,8 @@ export const GetMicroTagsResponse = Schema.Array(Schema.String)
 export const GetMicroPostsQuery = {
   ...PaginationQuery,
   tag: Schema.optional(Schema.String),
+  musicEntityType: Schema.optional(MusicEntityType),
+  musicEntityId: Schema.optional(Uuid),
 }
 
 const MicroPostSummary = Schema.Struct({

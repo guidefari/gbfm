@@ -10,6 +10,34 @@ import { CreatorUpload } from './upload/runtime'
 const failure = (operation: string) => (error: CreatorError) =>
   Message.Failed({ operation, message: error.message })
 
+export const FindMusicReferences = Command.define('Creator.FindMusicReferences', {
+  args: {
+    requestId: Schema.Number,
+    entityType: Schema.Literals(['album', 'track', 'playlist']),
+    entityId: Schema.String,
+    offset: Schema.Number,
+  },
+  messages: [Message.MusicReferencesLoaded, Message.MusicReferencesFailed],
+  execute: ({ requestId, entityType, entityId, offset }) =>
+    Effect.flatMap(CreatorService, (service) =>
+      service.findMusicReferences(entityType, entityId, offset),
+    ).pipe(
+      Effect.map(({ data, pagination }) =>
+        Message.MusicReferencesLoaded({
+          requestId,
+          entityType,
+          entityId,
+          offset,
+          references: data,
+          hasMore: pagination.hasMore,
+        }),
+      ),
+      Effect.catch(() =>
+        Effect.succeed(Message.MusicReferencesFailed({ requestId, entityType, entityId })),
+      ),
+    ),
+})
+
 export const SearchAuthors = Command.define('Creator.SearchAuthors', {
   args: { query: Schema.String },
   messages: [Message.AuthorsFound, Message.AuthorSearchFailed],
