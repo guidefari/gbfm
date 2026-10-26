@@ -1,3 +1,10 @@
+# [2.115.0](https://github.com/planetaryescape/gbfm/compare/v2.114.1...v2.115.0) (2026-10-26)
+
+
+### Features
+
+* **content:** redesign embedded music cards and track lists ([#405](https://github.com/planetaryescape/gbfm/issues/405)) ([0338a26](https://github.com/planetaryescape/gbfm/commit/0338a264176e9ab1148ed8e0c63eb50ab4c3cfc5))
+
 ## [2.114.1](https://github.com/planetaryescape/gbfm/compare/v2.114.0...v2.114.1) (2026-10-26)
 
 
