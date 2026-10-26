@@ -138,6 +138,8 @@ export interface PostService {
     limit: number
     offset: number
     tag?: string
+    musicEntityType?: 'album' | 'track' | 'playlist'
+    musicEntityId?: string
   }) => Effect.Effect<
     { data: Array<SelectMdxCompiledMicroPost>; pagination: PaginationMetadata },
     DatabaseError,
@@ -530,6 +532,8 @@ const getAllEffect = (
     source?: PostSourceFilter
     draft?: boolean
     q?: string
+    musicEntityType?: 'album' | 'track' | 'playlist'
+    musicEntityId?: string
   },
   mdx: MdxService,
   actor?: { userId: string; userRole: string },
@@ -578,6 +582,8 @@ const getAllEffect = (
       sourceCondition,
       draftCondition,
       searchCondition,
+      options.musicEntityType ? eq(postsTable.musicEntityType, options.musicEntityType) : undefined,
+      options.musicEntityId ? eq(postsTable.musicEntityId, options.musicEntityId) : undefined,
     )
 
     const countResult = yield* Effect.tryPromise({
@@ -1153,11 +1159,15 @@ const getEditorialsEffect = (
   }).pipe(Effect.withSpan('post.getEditorials'))
 
 const getMicroPostsEffect = (
-  options: { limit: number; offset: number; tag?: string },
+  options: Parameters<PostService['getMicroPosts']>[0],
   mdx: MdxService,
 ) =>
   Effect.gen(function* () {
-    const posts = yield* getAllEffect({ ...options, type: 'micro', topLevelOnly: true }, mdx)
+    const posts = yield* getAllEffect(
+      { ...options, type: 'micro', topLevelOnly: !options.musicEntityId },
+      mdx,
+    )
+
     const sentry = yield* SentryService
 
     const rawData = yield* Effect.forEach(

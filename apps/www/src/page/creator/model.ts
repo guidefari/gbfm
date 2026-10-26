@@ -3,7 +3,7 @@ import { RichContentDiagnostic, RichContentDocument } from '@gbfm/rich-content/s
 import { Schema } from 'effect'
 
 import type { CreatorDraft } from './services'
-import { CreatorDraftSchema as Draft, CreatorIdentity } from './services'
+import { CreatorDraftSchema as Draft, CreatorIdentity, MusicReference } from './services'
 
 export const Kind = Schema.Literals(['micro', 'post', 'mix'])
 
@@ -41,6 +41,11 @@ export const Model = Schema.Struct({
   musicPreviewTitle: Schema.NullOr(Schema.String),
   musicPreviewMeta: Schema.NullOr(Schema.String),
   musicPreviewImage: Schema.NullOr(Schema.String),
+  musicReferences: Schema.Array(MusicReference),
+  musicReferenceState: Schema.Literals(['idle', 'loading', 'ready', 'failed']),
+  musicReferenceOffset: Schema.Number,
+  musicReferenceRequestId: Schema.Number,
+  musicReferencesHasMore: Schema.Boolean,
   resolvingPostMusic: Schema.Boolean,
   postMusicNotice: Schema.NullOr(Schema.String),
   quotePreview: Schema.NullOr(Schema.String),

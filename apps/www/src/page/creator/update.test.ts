@@ -22,6 +22,143 @@ describe('creator model', () => {
     expect(result.commands?.[0]?.name).toBe('Creator.PersistDraft')
   })
 
+  it('checks canonical music references without changing edits, blocking publication, or accepting stale results', () => {
+    const draft = {
+      ...initialModel(input).draft,
+      title: 'My unsaved thoughts',
+      musicUrl: 'https://example.test/song',
+    }
+
+    const attached = update(
+      { ...initialModel(input), phase: 'writing', draft },
+      Message.MusicResolved({
+        entityType: 'track',
+        entityId: 'track-1',
+        url: draft.musicUrl,
+        title: 'Song',
+        artistNames: ['Artist'],
+        coverImageUrl: null,
+      }),
+    )
+
+    expect(attached.model.musicReferenceState).toBe('loading')
+    expect(attached.commands?.map((command) => command.name)).toContain(
+      'Creator.FindMusicReferences',
+    )
+
+    const failed = update(
+      attached.model,
+      Message.MusicReferencesFailed({ requestId: 1, entityType: 'track', entityId: 'track-1' }),
+    ).model
+
+    expect(failed.error).toBeNull()
+    expect(failed.saveState).toBe('unsaved')
+    expect(update(failed, Message.PublishRequested()).model.phase).toBe('saving')
+    const retry = update(failed, Message.MusicReferencesRequested()).model
+
+    const result = {
+      requestId: 2,
+      entityType: 'track' as const,
+      entityId: 'track-1',
+      offset: 0,
+      references: [
+        {
+          id: 'tweet-1',
+          slug: 'old-song',
+          title: 'Earlier thoughts',
+          content: null,
+          creators: [{ id: 'author', name: 'Aya', username: null }],
+        },
+      ],
+      hasMore: true,
+    }
+
+    const loaded = update(retry, Message.MusicReferencesLoaded(result)).model
+    expect(loaded.draft).toEqual(attached.model.draft)
+    expect(loaded.musicReferences).toEqual(result.references)
+    const more = update(loaded, Message.MusicReferencesRequested()).model
+    expect(more.musicReferenceOffset).toBe(1)
+    expect(update(more, Message.MusicReferencesLoaded(result)).model).toEqual(more)
+
+    const nextPage = update(
+      more,
+      Message.MusicReferencesLoaded({
+        ...result,
+        requestId: 3,
+        offset: 1,
+        references: [{ ...result.references[0], id: 'tweet-2', slug: 'second-song' }],
+        hasMore: false,
+      }),
+    ).model
+
+    expect(nextPage.musicReferences.map((post) => post.id)).toEqual(['tweet-1', 'tweet-2'])
+    expect(nextPage.musicReferencesHasMore).toBe(false)
+    const removed = update(more, Message.MusicRemoved()).model
+    expect(removed.musicReferences).toEqual([])
+    expect(update(removed, Message.MusicReferencesLoaded(result)).model).toEqual(removed)
+
+    const hydrated = update(
+      initialModel(input),
+      Message.Hydrated({ draft: attached.model.draft, creators: [] }),
+    )
+
+    expect(hydrated.model.musicReferenceState).toBe('loading')
+    expect(hydrated.commands?.map((command) => command.name)).toContain(
+      'Creator.FindMusicReferences',
+    )
+  })
+
+  it('ignores old success and failure when the same music is reattached during a lookup', () => {
+    const initial = { ...initialModel(input), phase: 'writing' as const }
+
+    const attach = Message.MusicResolved({
+      entityType: 'track',
+      entityId: 'track-1',
+      url: '',
+      title: 'Song',
+      artistNames: [],
+      coverImageUrl: null,
+    })
+
+    const first = update(initial, attach).model
+    const second = update(update(first, Message.MusicRemoved()).model, attach).model
+    expect(second.musicReferenceRequestId).toBe(2)
+
+    const oldFailure = Message.MusicReferencesFailed({
+      requestId: 1,
+      entityType: 'track',
+      entityId: 'track-1',
+    })
+
+    const oldSuccess = Message.MusicReferencesLoaded({
+      requestId: 1,
+      entityType: 'track',
+      entityId: 'track-1',
+      offset: 0,
+      references: [],
+      hasMore: true,
+    })
+
+    expect(update(second, oldFailure).model).toEqual(second)
+    expect(update(second, oldSuccess).model).toEqual(second)
+
+    const latest = update(
+      second,
+      Message.MusicReferencesLoaded({
+        requestId: 2,
+        entityType: 'track',
+        entityId: 'track-1',
+        offset: 0,
+        references: [],
+        hasMore: false,
+      }),
+    ).model
+
+    expect(latest.musicReferenceState).toBe('ready')
+    expect(update(latest, oldFailure).model).toEqual(latest)
+    expect(update(latest, oldSuccess).model).toEqual(latest)
+  })
+
   it('keeps author IDs internal and preserves restored collaborators until explicitly removed', () => {
     const initial = initialModel(input)
 

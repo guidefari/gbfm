@@ -86,6 +86,7 @@ test('a creator resolves a saved draft from the dashboard without saving other e
   ).toBeVisible()
   await expect(page.locator('.creator-music-card')).toContainText('Grapefruit')
   await expect(canvas).toHaveValue('An unsaved edit must stay in the editor.')
+  await expect(page.getByRole('region', { name: 'Previous music references' })).toBeVisible()
   await testInfo.attach('post-music-success', {
     body: await page.screenshot({ path: testInfo.outputPath('post-music-success.png') }),
     contentType: 'image/png',
@@ -471,6 +472,99 @@ test('composer restores metadata, reviews type changes and publishes a quoted tw
   expect(saved.creators?.map(({ id }) => id).sort()).toEqual([...creatorIds].sort())
   await page.goto(`/new/tweet?edit=${slug}`)
   await expect(page.getByRole('textbox', { name: 'Quote a tweet', exact: true })).toHaveCount(0)
+})
+
+test('music references show published tweets without losing the draft and recover from lookup failure', async ({
+  page,
+}, testInfo) => {
+  await signIn(page)
+  const suffix = crypto.randomUUID()
+  const entityId = '00000000-0000-4000-8000-000000000001'
+  for (const draft of [false, true]) {
+    const response = await page.request.post('/api/content/post', {
+      data: {
+        type: 'micro',
+        title: draft ? 'Private listening notes' : 'A late-night favourite',
+        slug: `e2e-reference-${draft}-${suffix}`,
+        draft,
+        musicEntityType: 'track',
+        musicEntityId: entityId,
+      },
+    })
+    expect(response.ok()).toBe(true)
+  }
+  await page.goto('/new/tweet')
+  const title = page.getByRole('textbox', { name: 'Title', exact: true })
+  await title.fill('A fresh thought about this song')
+  await page
+    .getByRole('textbox', { name: 'Music URL', exact: true })
+    .fill('https://open.spotify.com/track/E2ERootTrack')
+  const endpoint = '**/api/content/posts/micro?musicEntityType=*'
+  let release: () => void = () => {}
+  const pending = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  await page.route(endpoint, async (route) => {
+    await pending
+    await route.continue()
+  })
+  await page.getByRole('button', { name: 'Attach music', exact: true }).click()
+  const references = page.getByRole('region', { name: 'Previous music references' })
+  await expect(references).toContainText('Checking published tweets…')
+  await expect(page.getByRole('button', { name: 'Save draft', exact: true })).toBeEnabled()
+  await references.scrollIntoViewIfNeeded()
+  await testInfo.attach('references-loading', {
+    body: await references.screenshot({ path: testInfo.outputPath('references-loading.png') }),
+    contentType: 'image/png',
+  })
+  release()
+  await expect(references).toContainText('A late-night favourite')
+  await expect(references).not.toContainText('Private listening notes')
+  const earlier = references.locator(`a[href="/tweet/e2e-reference-false-${suffix}"]`)
+  await expect(earlier).toHaveAttribute('target', '_blank')
+  await expect(references).toContainText('Local Admin')
+  await expect(title).toHaveValue('A fresh thought about this song')
+  await testInfo.attach('references-found', {
+    body: await references.screenshot({ path: testInfo.outputPath('references-found.png') }),
+    contentType: 'image/png',
+  })
+  const popupPromise = page.waitForEvent('popup')
+  await earlier.click()
+  const popup = await popupPromise
+  await expect(popup).toHaveURL(new RegExp(`e2e-reference-false-${suffix}`))
+  await popup.close()
+  await expect(title).toHaveValue('A fresh thought about this song')
+  await page.unroute(endpoint)
+  await page.route(endpoint, (route) => route.fulfill({ status: 503, body: '{}' }))
+  await page.reload()
+  await expect(references).toContainText('Could not check previous tweets')
+  await expect(page.getByRole('alert')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Save draft', exact: true })).toBeEnabled()
+  await references.scrollIntoViewIfNeeded()
+  await testInfo.attach('references-failed', {
+    body: await references.screenshot({ path: testInfo.outputPath('references-failed.png') }),
+    contentType: 'image/png',
+  })
+  await page.unroute(endpoint)
+  await page.getByRole('button', { name: 'Retry reference check' }).click()
+  await expect(references).toContainText('A late-night favourite')
+  await page.getByRole('button', { name: 'Remove music', exact: true }).click()
+  await expect(references).toHaveCount(0)
+  await expect(title).toHaveValue('A fresh thought about this song')
+  // The shared fixture suite can publish this track earlier; isolate the empty response state.
+  await page.route(endpoint, (route) =>
+    route.fulfill({ json: { data: [], pagination: { hasMore: false } } }),
+  )
+  await page
+    .getByRole('textbox', { name: 'Music URL', exact: true })
+    .fill('https://open.spotify.com/track/2Mf7lfHxdiABiO7j0BDbHc')
+  await page.getByRole('button', { name: 'Attach music', exact: true }).click()
+  await expect(references).toContainText('No other published tweets found')
+  await references.scrollIntoViewIfNeeded()
+  await testInfo.attach('references-empty', {
+    body: await references.screenshot({ path: testInfo.outputPath('references-empty.png') }),
+    contentType: 'image/png',
+  })
 })
 
 test('an attached track and an embedded Bandcamp page preview and publish as players', async ({

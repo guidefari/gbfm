@@ -5,7 +5,7 @@ import { Schema } from 'effect'
 import { defineMessageUnion } from 'foldkit/message'
 
 import { Kind } from './model'
-import { CreatorDraftSchema as Draft, CreatorIdentity } from './services'
+import { CreatorDraftSchema as Draft, CreatorIdentity, MusicReference } from './services'
 
 export const Message = defineMessageUnion({
   Changed: {
@@ -39,6 +39,20 @@ export const Message = defineMessageUnion({
   ShowChanged: { value: Schema.String },
   EpisodeChanged: { value: Schema.String },
   MusicRemoved: {},
+  MusicReferencesRequested: {},
+  MusicReferencesLoaded: {
+    requestId: Schema.Number,
+    entityType: Schema.Literals(['album', 'track', 'playlist']),
+    entityId: Schema.String,
+    offset: Schema.Number,
+    references: Schema.Array(MusicReference),
+    hasMore: Schema.Boolean,
+  },
+  MusicReferencesFailed: {
+    requestId: Schema.Number,
+    entityType: Schema.Literals(['album', 'track', 'playlist']),
+    entityId: Schema.String,
+  },
   KindChanged: { kind: Kind },
   ReviewRequested: {},
   GotReviewDialogMessage: { message: Dialog.Message },

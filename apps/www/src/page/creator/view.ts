@@ -264,6 +264,73 @@ const attachRow = (
     ],
   )
 
+const musicReferences = (model: Model, h: Builder): Html => {
+  if (model.draft.kind !== 'micro' || !model.draft.musicEntityId) return h.empty
+
+  const references = model.musicReferences.filter((post) => post.id !== model.draft.postId)
+
+  return h.section(
+    [
+      h.Class('border border-border bg-card p-4 space-y-3'),
+      h.AriaLabel('Previous music references'),
+    ],
+    [
+      h.strong([], ['Previously shared?']),
+      h.p(
+        [h.Class('text-sm text-muted-foreground'), h.Role('status')],
+        [
+          model.musicReferenceState === 'loading'
+            ? 'Checking published tweets…'
+            : model.musicReferenceState === 'failed'
+              ? 'Could not check previous tweets. You can still save or publish.'
+              : references.length
+                ? 'This music appears in these published tweets. You can still share it again.'
+                : 'No other published tweets found for this music.',
+        ],
+      ),
+      h.ul(
+        [h.Class('space-y-3')],
+        references.map((post) =>
+          h.li(
+            [],
+            [
+              h.a(
+                [
+                  h.Href(`/tweet/${encodeURIComponent(post.slug)}`),
+                  h.Target('_blank'),
+                  h.Rel('noopener noreferrer'),
+                  h.Class('text-highlight underline underline-offset-4 wrap-anywhere'),
+                ],
+                [(post.title?.trim() || post.content?.trim() || 'View tweet').slice(0, 255)],
+              ),
+              h.p(
+                [h.Class('text-sm text-muted-foreground')],
+                [
+                  post.creators
+                    .map((creator) => creator.name || creator.username || 'Unknown author')
+                    .join(', ') || 'Unknown author',
+                  ' · Opens in a new tab',
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      model.musicReferenceState === 'failed' || model.musicReferencesHasMore
+        ? h.button(
+            [
+              h.Type('button'),
+              h.Class('btn btn-quiet btn-sm'),
+              h.Disabled(model.musicReferenceState === 'loading'),
+              h.OnClick(Message.MusicReferencesRequested()),
+            ],
+            [model.musicReferenceState === 'failed' ? 'Retry reference check' : 'Show more tweets'],
+          )
+        : h.empty,
+    ],
+  )
+}
+
 const musicSlot = (model: Model, h: Builder, busy: boolean): Html =>
   model.draft.musicEntityId
     ? h.article(
@@ -795,6 +862,7 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
                     ],
                   ),
                   model.draft.kind !== 'mix' ? musicSlot(model, h, busy) : h.empty,
+                  musicReferences(model, h),
                   model.draft.kind !== 'mix' && model.draft.postId
                     ? h.section(
                         [h.AriaLabel('Saved post music')],

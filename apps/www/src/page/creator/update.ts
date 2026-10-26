@@ -6,6 +6,7 @@ import { Update } from 'foldkit'
 import {
   CancelUpload,
   Diagnose,
+  FindMusicReferences,
   PauseUpload,
   PersistDraft,
   RenderPreview,
@@ -22,6 +23,25 @@ import { Message } from './message'
 import { draftValidationError, keyOf, type Model } from './model'
 import type { CreatorDraft, CreatorService } from './services'
 import type { CreatorUpload } from './upload/runtime'
+
+const requestMusicReferences = (model: Model): Update.Return<Model, Message, CreatorService> => {
+  const { musicEntityType: entityType, musicEntityId: entityId } = model.draft
+  const requestId = model.musicReferenceRequestId + 1
+
+  return model.draft.kind === 'micro' && entityType && entityId
+    ? {
+        model: { ...model, musicReferenceState: 'loading', musicReferenceRequestId: requestId },
+        commands: [
+          FindMusicReferences({
+            requestId,
+            entityType,
+            entityId,
+            offset: model.musicReferenceOffset,
+          }),
+        ],
+      }
+    : { model }
+}
 
 /** Renders the current source on the server unless that exact source is already shown or loading. */
 const requestPreview = (model: Model): Update.Return<Model, Message, CreatorService> => {
@@ -42,12 +62,21 @@ const changed = (
 ): Update.Return<Model, Message, CreatorService> => {
   const contentChanged = draft.content !== model.draft.content
 
+  const musicChanged =
+    draft.musicEntityId !== model.draft.musicEntityId ||
+    draft.musicEntityType !== model.draft.musicEntityType ||
+    draft.kind !== model.draft.kind
+
   const next: Model = {
     ...model,
     draft,
     saveState: 'unsaved',
     error: null,
     diagnostics: contentChanged ? [] : model.diagnostics,
+    musicReferences: musicChanged ? [] : model.musicReferences,
+    musicReferenceState: musicChanged ? 'idle' : model.musicReferenceState,
+    musicReferenceOffset: musicChanged ? 0 : model.musicReferenceOffset,
+    musicReferencesHasMore: musicChanged ? false : model.musicReferencesHasMore,
   }
 
   const preview =
@@ -55,12 +84,15 @@ const changed = (
       ? requestPreview(next)
       : { model: next }
 
+  const references = musicChanged ? requestMusicReferences(preview.model) : preview
+
   return {
-    model: preview.model,
+    model: references.model,
     commands: [
       PersistDraft({ key: keyOf(draft), draft }),
       ...(contentChanged ? [Diagnose({ content: draft.content })] : []),
       ...(preview.commands ?? []),
+      ...(musicChanged ? (references.commands ?? []) : []),
     ],
   }
 }
@@ -218,6 +250,34 @@ export const update = (
         },
         { ...model.draft, musicUrl: '', musicEntityType: null, musicEntityId: null },
       ),
+    MusicReferencesRequested: () =>
+      model.musicReferenceState === 'loading' ? { model } : requestMusicReferences(model),
+    MusicReferencesLoaded: ({ requestId, entityType, entityId, offset, references, hasMore }) => ({
+      model:
+        model.musicReferenceRequestId === requestId &&
+        model.draft.kind === 'micro' &&
+        model.draft.musicEntityType === entityType &&
+        model.draft.musicEntityId === entityId &&
+        model.musicReferenceOffset === offset &&
+        model.musicReferenceState === 'loading'
+          ? {
+              ...model,
+              musicReferenceState: 'ready',
+              musicReferences: [...model.musicReferences, ...references],
+              musicReferenceOffset: offset + references.length,
+              musicReferencesHasMore: hasMore,
+            }
+          : model,
+    }),
+    MusicReferencesFailed: ({ requestId, entityType, entityId }) => ({
+      model:
+        model.musicReferenceRequestId === requestId &&
+        model.musicReferenceState === 'loading' &&
+        model.draft.musicEntityType === entityType &&
+        model.draft.musicEntityId === entityId
+          ? { ...model, musicReferenceState: 'failed' }
+          : model,
+    }),
     TagsChanged: ({ value }) =>
       changed(
         { ...model, tagsInput: value },
@@ -366,6 +426,7 @@ export const update = (
       return {
         model: {
           ...reset,
+          musicReferenceRequestId: model.musicReferenceRequestId,
           phase: 'writing',
           saveState: 'unsaved',
           draft: { ...reset.draft, creatorIds: model.draft.creatorIds },
@@ -415,18 +476,22 @@ export const update = (
     Failed: ({ operation, message }) => ({
       model: { ...model, phase: 'writing', saveState: 'failed', error: `${operation}: ${message}` },
     }),
-    Hydrated: ({ draft, creators }) => ({
-      model: {
-        ...model,
-        draft: draft ?? model.draft,
-        creators,
-        tagsInput: (draft ?? model.draft).tags.join(', '),
-        episodeInput: (draft ?? model.draft).episodeNumber?.toString() ?? '',
-        phase: 'writing',
-        saveState: draft ? 'saved-locally' : model.saveState,
-      },
-      commands: [Diagnose({ content: (draft ?? model.draft).content })],
-    }),
+    Hydrated: ({ draft, creators }) =>
+      Update.combine(model, [
+        (model) => ({
+          model: {
+            ...model,
+            draft: draft ?? model.draft,
+            creators,
+            tagsInput: (draft ?? model.draft).tags.join(', '),
+            episodeInput: (draft ?? model.draft).episodeNumber?.toString() ?? '',
+            phase: 'writing',
+            saveState: draft ? 'saved-locally' : model.saveState,
+          },
+          commands: [Diagnose({ content: (draft ?? model.draft).content })],
+        }),
+        requestMusicReferences,
+      ]),
     LocallySaved: () => ({
       model:
         model.phase === 'saving' || model.phase === 'published'

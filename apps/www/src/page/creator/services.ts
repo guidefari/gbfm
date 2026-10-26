@@ -52,6 +52,19 @@ export const CreatorIdentity = Schema.Struct({
   username: Schema.NullOr(Schema.String),
 })
 
+export const MusicReference = Schema.Struct({
+  id: Schema.String,
+  slug: Schema.String,
+  title: Schema.NullOr(Schema.String),
+  content: Schema.NullOr(Schema.String),
+  creators: Schema.Array(CreatorIdentity),
+})
+
+const MusicReferencesResponse = Schema.Struct({
+  data: Schema.Array(MusicReference),
+  pagination: Schema.Struct({ hasMore: Schema.Boolean }),
+})
+
 export interface EditableContent extends CreatorDraft {
   readonly draft: boolean
   readonly creators: ReadonlyArray<typeof CreatorIdentity.Type>
@@ -64,6 +77,11 @@ export interface SaveInput {
 }
 
 export interface CreatorOperations {
+  readonly findMusicReferences: (
+    entityType: 'album' | 'track' | 'playlist',
+    entityId: string,
+    offset: number,
+  ) => Effect.Effect<typeof MusicReferencesResponse.Type, CreatorRequestError>
   readonly searchAuthors: (
     query: string,
   ) => Effect.Effect<ReadonlyArray<typeof CreatorIdentity.Type>, CreatorRequestError>
@@ -238,6 +256,12 @@ const json = (body: JsonBody): RequestInit => ({
 const draftKey = (key: string) => `gbfm:creator:${key}`
 
 export const CreatorServiceLive = Layer.succeed(CreatorService, {
+  findMusicReferences: (entityType, entityId, offset) =>
+    requestJson(
+      'find music references',
+      MusicReferencesResponse,
+      `/content/posts/micro?${new URLSearchParams({ musicEntityType: entityType, musicEntityId: entityId, limit: '20', offset: String(offset) })}`,
+    ),
   searchAuthors: (query) =>
     requestJson(
       'search authors',

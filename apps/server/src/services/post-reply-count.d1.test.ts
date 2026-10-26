@@ -87,6 +87,115 @@ beforeAll(async () => {
 })
 
 describe('searchMicroPosts reply counts', () => {
+  test('canonical music filtering includes replies but excludes drafts, editorials and other identities', async () => {
+    const entityId = randomUUID()
+    const otherEntityId = randomUUID()
+    const ownerId = randomUUID()
+    const otherOwnerId = randomUUID()
+    const referenceParentId = randomUUID()
+    await db.insert(postsTable).values({
+      id: referenceParentId,
+      slug: referenceParentId,
+      type: 'micro',
+      title: 'Reference parent',
+      draft: false,
+    })
+    await db.insert(user).values([
+      { id: ownerId, email: `${ownerId}@example.test`, name: 'Aya' },
+      { id: otherOwnerId, email: `${otherOwnerId}@example.test`, name: 'Ben' },
+    ])
+
+    const rows = (
+      [
+        {
+          title: 'Published reference',
+          type: 'micro',
+          draft: false,
+          musicEntityType: 'track',
+          musicEntityId: entityId,
+        },
+        {
+          title: 'Reply reference',
+          type: 'micro',
+          draft: false,
+          musicEntityType: 'track',
+          musicEntityId: entityId,
+          parentPostId: referenceParentId,
+        },
+        {
+          title: 'Own private draft',
+          type: 'micro',
+          draft: true,
+          musicEntityType: 'track',
+          musicEntityId: entityId,
+        },
+        {
+          title: 'Other author private draft',
+          type: 'micro',
+          draft: true,
+          musicEntityType: 'track',
+          musicEntityId: entityId,
+        },
+        {
+          title: 'Editorial reference',
+          type: 'post',
+          draft: false,
+          musicEntityType: 'track',
+          musicEntityId: entityId,
+        },
+        {
+          title: 'Wrong entity type',
+          type: 'micro',
+          draft: false,
+          musicEntityType: 'album',
+          musicEntityId: entityId,
+        },
+        {
+          title: 'Wrong entity ID',
+          type: 'micro',
+          draft: false,
+          musicEntityType: 'track',
+          musicEntityId: otherEntityId,
+        },
+      ] as const
+    ).map((row) => ({ ...row, id: randomUUID(), slug: randomUUID(), content: 'Listening notes' }))
+
+    await db.insert(postsTable).values(rows)
+    await db.insert(postCreators).values(
+      rows.map((row, index) => ({
+        postId: row.id,
+        creatorId: index === 3 ? otherOwnerId : ownerId,
+      })),
+    )
+
+    const first = await runPostEffect((service) =>
+      service.getMicroPosts({
+        limit: 1,
+        offset: 0,
+        musicEntityType: 'track',
+        musicEntityId: entityId,
+      }),
+    )
+
+    const second = await runPostEffect((service) =>
+      service.getMicroPosts({
+        limit: 1,
+        offset: 1,
+        musicEntityType: 'track',
+        musicEntityId: entityId,
+      }),
+    )
+
+    expect(first.pagination).toMatchObject({ total: 2, hasMore: true })
+    expect(second.pagination).toMatchObject({ total: 2, hasMore: false })
+    expect(
+      [...first.data, ...second.data]
+        .map((post) => post.title)
+        .sort((a, b) => (a ?? '').localeCompare(b ?? '')),
+    ).toEqual(['Published reference', 'Reply reference'])
+    expect(first.data[0]?.creators?.[0]?.name).toBe('Aya')
+  })
+
   test('reports the direct reply count for a searched tweet that has replies', async () => {
     const result = await runPostEffect((service) =>
       service.searchMicroPosts({ q: SEARCH_TERM, limit: 20, offset: 0 }),
