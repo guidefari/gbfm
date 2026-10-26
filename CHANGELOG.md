@@ -1,3 +1,15 @@
+# [2.114.0](https://github.com/planetaryescape/gbfm/compare/v2.113.1...v2.114.0) (2026-10-26)
+
+
+### Bug Fixes
+
+* **media:** diagnose unavailable Bandcamp players safely ([#401](https://github.com/planetaryescape/gbfm/issues/401)) ([e37e41f](https://github.com/planetaryescape/gbfm/commit/e37e41f3854696fa223dfb98f557a4e6ade26402))
+
+
+### Features
+
+* **creator:** show previous tweets for attached music ([#402](https://github.com/planetaryescape/gbfm/issues/402)) ([a5b7e67](https://github.com/planetaryescape/gbfm/commit/a5b7e671e01485e6c2d886781fd9974625aa9006))
+
 ## [2.113.1](https://github.com/planetaryescape/gbfm/compare/v2.113.0...v2.113.1) (2026-10-26)
 
 
