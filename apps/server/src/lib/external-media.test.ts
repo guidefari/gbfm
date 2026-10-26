@@ -1,7 +1,9 @@
 /* oxlint-disable anti-slop-effect/no-manual-tagged-construction -- Assertions describe the public tagged render block. */
 import type { SafeUrl } from '@gbfm/rich-content/schema'
-import { Effect } from 'effect'
+import { Effect, Logger } from 'effect'
 import { describe, expect, test } from 'vitest'
+
+import { withTestLayer } from '@/test/effect'
 
 import {
   ExternalMediaFetcher,
@@ -97,6 +99,38 @@ describe('external media resolver', () => {
     expect(rejected).toBeNull()
   })
 
+  test('failure diagnostics retain reasons without leaking authored URLs, HTML or exceptions', async () => {
+    const logs: Array<unknown> = []
+
+    const urls: ReadonlyArray<SafeUrl> = [
+      'https://artist.bandcamp.com/track/private-authored-slug',
+      'https://artist.bandcamp.com/track/private-network-slug',
+    ]
+
+    const results = await Effect.runPromise(
+      withTestLayer(
+        Effect.gen(function* () {
+          const resolver = yield* makeExternalMediaResolver
+
+          return yield* Effect.forEach(urls, (url) => resolver.resolve(url))
+        }).pipe(
+          Effect.provideService(ExternalMediaFetcher, async (url) => {
+            if (url === urls[0]) return html('<title>Private HTML sentinel</title>')
+
+            throw new Error('Private exception sentinel')
+          }),
+        ),
+        Logger.layer([Logger.make(({ message, cause }) => logs.push({ message, cause }))]),
+      ),
+    )
+
+    expect(results).toEqual([null, null])
+    const diagnostic = JSON.stringify(logs)
+    expect(diagnostic).toContain('missing-metadata')
+    expect(diagnostic).toContain('network-error')
+    expect(diagnostic).not.toMatch(/private|bandcamp\.com|<title>/i)
+  })
+
   test('derives other players without fetching', async () => {
     const [youtube] = await resolveWith(
       () => Promise.reject(new Error('must not fetch')),
@@ -138,7 +172,7 @@ describe('external media resolver', () => {
       ]) {
         const { requested, result } = lookup(() => redirect(location))
 
-        expect(await result).toBeNull()
+        expect(await result).toEqual({ item: null, reason: 'rejected-url' })
         expect(requested).toEqual([trackPage])
       }
     })
@@ -150,17 +184,24 @@ describe('external media resolver', () => {
         url === trackPage ? redirect('/track/night-vigil-2') : html(bandcampHtml),
       )
 
-      expect(await followed.result).toMatchObject({ id: '1395951450' })
+      expect(await followed.result).toMatchObject({
+        item: { id: '1395951450' },
+        reason: 'resolved',
+      })
       expect(followed.requested).toEqual([trackPage, moved])
 
       const looping = lookup(() => redirect(trackPage))
 
-      expect(await looping.result).toBeNull()
+      expect(await looping.result).toEqual({ item: null, reason: 'redirect-limit' })
       expect(looping.requested).toHaveLength(3)
     })
 
     test('rejects non-HTML responses and stops reading after the size bound', async () => {
-      expect(await lookup(() => new Response(bandcampHtml)).result).toBeNull()
+      expect(await lookup(() => new Response(bandcampHtml)).result).toEqual({
+        item: null,
+        reason: 'non-html',
+        status: 200,
+      })
 
       let sent = 0
       const chunk = new TextEncoder().encode(`<!-- ${'x'.repeat(64 * 1024)} -->`)
@@ -172,8 +213,58 @@ describe('external media resolver', () => {
         },
       })
 
-      expect(await lookup(() => html(endless)).result).toBeNull()
+      expect(await lookup(() => html(endless)).result).toMatchObject({
+        item: null,
+        reason: 'missing-metadata',
+        headBytes: MAX_BANDCAMP_PAGE_BYTES,
+      })
       expect(sent).toBeLessThan(MAX_BANDCAMP_PAGE_BYTES + 3 * chunk.byteLength)
+    })
+
+    test('distinguishes rejected HTTP responses from HTML missing release metadata', async () => {
+      expect(await lookup(() => html('Provider unavailable', { status: 503 })).result).toEqual({
+        item: null,
+        reason: 'http-error',
+        status: 503,
+      })
+
+      const challenge =
+        '<html><head><title>Private page title</title></head><body>Verify you are human</body></html>'
+
+      expect(await lookup(() => html(challenge)).result).toEqual({
+        item: null,
+        reason: 'missing-metadata',
+        status: 200,
+        headBytes: new TextEncoder().encode(challenge).byteLength,
+        pageProperties: false,
+        openGraphPlayer: false,
+        challengeMarkerObserved: true,
+      })
+
+      const chunks = [
+        '<html><head><title>Captcha</title></head>',
+        '<body>Verify you are human</body></html>',
+      ]
+
+      const split = new ReadableStream<Uint8Array>({
+        pull: (controller) => controller.enqueue(new TextEncoder().encode(chunks.shift() ?? '')),
+      })
+
+      expect(await lookup(() => html(split)).result).toMatchObject({
+        reason: 'missing-metadata',
+        challengeMarkerObserved: false,
+      })
+    })
+
+    test('counts retained bytes before decoding a multibyte sequence cut at the bound', async () => {
+      const bytes = new Uint8Array(MAX_BANDCAMP_PAGE_BYTES + 2).fill(0x20)
+      bytes.set([0xe2, 0x82, 0xac], MAX_BANDCAMP_PAGE_BYTES - 1)
+
+      expect(await lookup(() => html(bytes)).result).toMatchObject({
+        item: null,
+        reason: 'missing-metadata',
+        headBytes: MAX_BANDCAMP_PAGE_BYTES,
+      })
     })
 
     test('stops reading once the page head is complete', async () => {
@@ -187,7 +278,10 @@ describe('external media resolver', () => {
         },
       })
 
-      expect(await lookup(() => html(page)).result).toMatchObject({ kind: 'track' })
+      expect(await lookup(() => html(page)).result).toMatchObject({
+        item: { kind: 'track' },
+        reason: 'resolved',
+      })
       expect(pulls).toBeLessThanOrEqual(2)
     })
   })

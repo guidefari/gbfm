@@ -20,6 +20,24 @@ export interface BandcampItem {
   readonly title: string | null
 }
 
+export interface BandcampLookup {
+  readonly item: BandcampItem | null
+  readonly reason:
+    | 'resolved'
+    | 'rejected-url'
+    | 'redirect-limit'
+    | 'http-error'
+    | 'non-html'
+    | 'missing-metadata'
+  readonly status?: number
+  /** Retained response-prefix bytes, not total response length or an exact head-only slice. */
+  readonly headBytes?: number
+  readonly pageProperties?: boolean
+  readonly openGraphPlayer?: boolean
+  /** Presence-only hint in inspected bytes; false does not exclude a challenge. */
+  readonly challengeMarkerObserved?: boolean
+}
+
 const decodeEntities = (value: string) =>
   value
     .replace(/&quot;/g, '"')
@@ -92,8 +110,8 @@ const bandcampPageUrl = (value: string, base?: string): string | null => {
 }
 
 /** Reads at most `limit` bytes, stopping early once the document head is complete. */
-const readHead = async (response: Response, limit: number): Promise<string> => {
-  if (!response.body) return ''
+const readHead = async (response: Response, limit: number) => {
+  if (!response.body) return { text: '', bytesRead: 0 }
 
   const reader = response.body.getReader()
   const decoder = new TextDecoder()
@@ -113,7 +131,7 @@ const readHead = async (response: Response, limit: number): Promise<string> => {
     await reader.cancel().catch(() => undefined)
   }
 
-  return html + decoder.decode()
+  return { text: html + decoder.decode(), bytesRead: size }
 }
 
 /**
@@ -124,7 +142,7 @@ export const fetchBandcampPage = async (
   fetcher: ExternalMediaFetch,
   url: string,
   signal: AbortSignal,
-): Promise<BandcampItem | null> => {
+): Promise<BandcampLookup> => {
   let target = bandcampPageUrl(url)
 
   for (let hop = 0; target !== null && hop <= MAX_BANDCAMP_REDIRECTS; hop += 1) {
@@ -147,13 +165,30 @@ export const fetchBandcampPage = async (
     if (!response.ok || !/^text\/html\b/i.test(response.headers.get('content-type') ?? '')) {
       await response.body?.cancel().catch(() => undefined)
 
-      return null
+      return {
+        item: null,
+        reason: response.ok ? 'non-html' : 'http-error',
+        status: response.status,
+      }
     }
 
-    return parseBandcampPage(await readHead(response, MAX_BANDCAMP_PAGE_BYTES))
+    const head = await readHead(response, MAX_BANDCAMP_PAGE_BYTES)
+    const item = parseBandcampPage(head.text)
+
+    return {
+      item,
+      reason: item === null ? 'missing-metadata' : 'resolved',
+      status: response.status,
+      headBytes: head.bytesRead,
+      pageProperties: metaContent(head.text, 'name', 'bc-page-properties') !== null,
+      openGraphPlayer:
+        metaContent(head.text, 'property', 'og:video:secure_url') !== null ||
+        metaContent(head.text, 'property', 'og:video') !== null,
+      challengeMarkerObserved: /challenge-platform|cf-chl-|verify you are human/i.test(head.text),
+    }
   }
 
-  return null
+  return { item: null, reason: target === null ? 'rejected-url' : 'redirect-limit' }
 }
 
 export interface ExternalMediaResolver {
@@ -168,12 +203,39 @@ export const makeExternalMediaResolver = Effect.gen(function* () {
     (url: string) =>
       Effect.tryPromise({
         try: (signal) => fetchBandcampPage(fetcher, url, signal),
-        catch: () => null,
+        catch: () => 'network-error' as const,
       }).pipe(
         Effect.timeoutOption(LOOKUP_TIMEOUT),
-        Effect.map(Option.flatMap(Option.fromNullishOr)),
-        Effect.orElseSucceed(() => Option.none<BandcampItem>()),
-        Effect.withSpan('richContent.bandcampLookup', { attributes: { 'media.url': url } }),
+        Effect.flatMap((lookup) => {
+          if (Option.isNone(lookup))
+            return Effect.logWarning('Bandcamp player lookup unavailable', {
+              provider: 'bandcamp',
+              reason: 'timeout',
+            }).pipe(Effect.as(Option.none<BandcampItem>()))
+
+          const result = lookup.value
+
+          if (result.item !== null) return Effect.succeed(Option.some(result.item))
+
+          return Effect.logWarning('Bandcamp player lookup unavailable', {
+            provider: 'bandcamp',
+            reason: result.reason,
+            status: result.status,
+            headBytes: result.headBytes,
+            pageProperties: result.pageProperties,
+            openGraphPlayer: result.openGraphPlayer,
+            challengeMarkerObserved: result.challengeMarkerObserved,
+          }).pipe(Effect.as(Option.none<BandcampItem>()))
+        }),
+        Effect.catch((reason) =>
+          Effect.logWarning('Bandcamp player lookup unavailable', {
+            provider: 'bandcamp',
+            reason,
+          }).pipe(Effect.as(Option.none<BandcampItem>())),
+        ),
+        Effect.withSpan('richContent.bandcampLookup', {
+          attributes: { 'media.provider': 'bandcamp' },
+        }),
       ),
     {
       capacity: 512,
