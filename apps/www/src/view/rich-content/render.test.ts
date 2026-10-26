@@ -266,6 +266,66 @@ describe('richContentView', () => {
     expect(attribute(listen, 'href')).toBe('https://artist.bandcamp.com/track/night-vigil')
   })
 
+  it('keeps every playlist track and verified provider link when a long list is collapsed', () => {
+    const tracks = Array.from({ length: 12 }, (_, index) => ({
+      title: `Track ${index + 1}`,
+      artists: [],
+      url: index === 11 ? safeUrl('https://open.spotify.com/track/last') : null,
+    }))
+
+    const rendered = richContentView(
+      {
+        version: 1,
+        blocks: [
+          {
+            // oxlint-disable-next-line anti-slop-effect/no-manual-tagged-construction -- This models a decoded document fixture at the renderer's typed boundary.
+            _tag: 'MusicEmbed',
+            genres: [],
+            blurb: null,
+            showTracks: true,
+            music: {
+              entityType: 'playlist',
+              entityId: 'playlist-1',
+              title: 'Long Playlist',
+              artists: [],
+              description: null,
+              imageUrl: null,
+              canonicalUrl: safeUrl('https://open.spotify.com/playlist/long'),
+              links: [
+                { platform: 'spotify', url: safeUrl('https://open.spotify.com/playlist/long') },
+                { platform: 'apple_music', url: safeUrl('https://music.apple.com/playlist/long') },
+              ],
+              tracks,
+            },
+          },
+        ],
+      },
+      h,
+    )
+
+    const view = first(rendered === null ? [] : [rendered])
+    const [visible, hidden] = findAll(view, 'ol')
+    const disclosure = first(findAll(view, 'details'))
+    const links = findAll(first(findAll(view, '.rich-content-music-links')), 'a')
+
+    expect(findAll(view, 'img')).toHaveLength(0)
+    expect(findAll(visible ?? first([]), 'li').map(textContent)).toEqual(
+      tracks.slice(0, 10).map((track, index) => `${index + 1}${track.title}`),
+    )
+    expect(attribute(hidden ?? first([]), 'start')).toBe(11)
+    expect(findAll(disclosure, 'li').map(textContent)).toEqual(['11Track 11', '12Track 12'])
+    expect(textContent(first(findAll(disclosure, '.rich-content-disclosure-closed')))).toBe(
+      'Show all 12 tracks',
+    )
+    expect(attribute(first(findAll(disclosure, 'a')), 'href')).toBe(
+      'https://open.spotify.com/track/last',
+    )
+    expect(links.map((link) => [textContent(link), attribute(link, 'href')])).toEqual([
+      ['Spotify', 'https://open.spotify.com/playlist/long'],
+      ['Apple Music', 'https://music.apple.com/playlist/long'],
+    ])
+  })
+
   it('gives Bandcamp a fixed-height player per theme and links the release page', () => {
     const rendered = render()
     const view = first(rendered === null ? [] : [rendered])

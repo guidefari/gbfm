@@ -92,23 +92,24 @@ test('a migrated legacy track renders from the GBFM catalog without client metad
     .locator('.rich-content-music-card')
     .filter({ hasText: 'A retained playlist without cover artwork' })
   await expect(fallback.locator('img')).toHaveCount(0)
-  await expect(fallback.getByRole('link', { name: 'spotify', exact: true })).toHaveAttribute(
+  await expect(fallback.getByRole('link', { name: 'Spotify', exact: true })).toHaveAttribute(
     'href',
     'https://open.spotify.com/playlist/3m4J7Xt1mA5CqSnXl4zgpZ',
   )
+  const copyShare = (music: typeof card) =>
+    music.evaluate((element) => {
+      const head = element.querySelector('.rich-content-music-head')
+      const copy = element.querySelector('.rich-content-music-copy')
+
+      return (copy?.clientWidth ?? 0) / (head?.clientWidth ?? 1)
+    })
   for (const width of [390, 1280]) {
     await page.setViewportSize({ width, height: 1000 })
-    const layout = await fallback.evaluate((element) => {
-      const styles = getComputedStyle(element)
-
-      return {
-        available:
-          element.clientWidth - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight),
-        text: element.firstElementChild?.getBoundingClientRect().width ?? 0,
-      }
-    })
-    expect(layout.text).toBeGreaterThan(layout.available * 0.9)
+    expect(await copyShare(fallback)).toBeGreaterThan(0.99)
     await expect(card.locator('img')).toHaveCount(1)
+    const withArtwork = await copyShare(card)
+    expect(withArtwork).toBeGreaterThan(0.5)
+    expect(withArtwork).toBeLessThan(0.95)
   }
   expect(spotifyRequests).toEqual([])
 })

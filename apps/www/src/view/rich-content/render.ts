@@ -8,8 +8,9 @@ import {
 import type { RichContentBlock, RichContentDocument } from '@gbfm/rich-content/schema'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
-import { imageSource } from '../artwork'
-import { iconPaths, lucide } from '../icons'
+import { artwork, imageSource } from '../artwork'
+import { iconPaths, lucide, spotifyIcon } from '../icons'
+import { musicEntityLabels, musicPlatformLabel } from '../music-platform'
 
 type RichContentInline = Extract<
   RichContentBlock,
@@ -169,6 +170,85 @@ const tableView = <Message>(
   )
 }
 
+const visibleTrackCount = 10
+
+const musicTrackRow = <Message>(
+  track: Extract<RichContentBlock, { readonly _tag: 'MusicEmbed' }>['music']['tracks'][number],
+  position: number,
+  h: HtmlBuilder<Message>,
+): Html =>
+  h.li(
+    [],
+    [
+      h.span([h.Class('rich-content-track-number'), h.AriaHidden(true)], [String(position)]),
+      h.span(
+        [h.Class('rich-content-track-title')],
+        [track.url === null ? track.title : h.a(linkAttributes(track.url, h), [track.title])],
+      ),
+      ...(track.artists.length === 0
+        ? []
+        : [
+            h.span(
+              [h.Class('rich-content-track-artists'), h.Title(track.artists.join(', '))],
+              [track.artists.join(', ')],
+            ),
+          ]),
+    ],
+  )
+
+const musicTracksView = <Message>(
+  title: string,
+  tracks: Extract<RichContentBlock, { readonly _tag: 'MusicEmbed' }>['music']['tracks'],
+  h: HtmlBuilder<Message>,
+): Html => {
+  const visible = tracks.slice(0, visibleTrackCount)
+  const hidden = tracks.slice(visibleTrackCount)
+
+  return h.div(
+    [h.Class('rich-content-music-tracks')],
+    [
+      h.ol(
+        [h.Class('rich-content-track-list'), h.Role('list'), h.AriaLabel(`${title} tracks`)],
+        visible.map((track, index) => musicTrackRow(track, index + 1, h)),
+      ),
+      ...(hidden.length === 0
+        ? []
+        : [
+            h.details(
+              [],
+              [
+                h.summary(
+                  [],
+                  [
+                    h.span(
+                      [h.Class('rich-content-disclosure-closed')],
+                      [`Show all ${tracks.length} tracks`],
+                    ),
+                    h.span(
+                      [h.Class('rich-content-disclosure-open')],
+                      [`Hide tracks ${visibleTrackCount + 1}–${tracks.length}`],
+                    ),
+                    lucide(iconPaths.chevronDown, 'rich-content-disclosure-icon'),
+                  ],
+                ),
+                h.ol(
+                  [
+                    h.Class('rich-content-track-list'),
+                    h.Role('list'),
+                    h.Start(visibleTrackCount + 1),
+                    h.AriaLabel(`More ${title} tracks`),
+                  ],
+                  hidden.map((track, index) =>
+                    musicTrackRow(track, visibleTrackCount + index + 1, h),
+                  ),
+                ),
+              ],
+            ),
+          ]),
+    ],
+  )
+}
+
 const musicView = <Message>(
   block: Extract<RichContentBlock, { readonly _tag: 'MusicEmbed' }>,
   h: HtmlBuilder<Message>,
@@ -176,64 +256,73 @@ const musicView = <Message>(
   const music = block.music
 
   return h.article(
-    [h.Class('rich-content-music-card')],
+    [h.Class('rich-content-music-card not-prose')],
     [
-      ...(music.imageUrl === null
-        ? []
-        : [
-            h.img([
-              imageSource(music.imageUrl),
-              h.Alt(`Artwork for ${music.title}`),
-              h.Loading('lazy'),
-              h.Decoding('async'),
-            ]),
-          ]),
       h.div(
-        [],
+        [h.Class('rich-content-music-head')],
         [
-          h.p([h.Class('rich-content-eyebrow')], [music.entityType]),
-          h.h3([], [h.a(linkAttributes(music.canonicalUrl, h), [music.title])]),
-          ...(music.artists.length === 0 ? [] : [h.p([], [music.artists.join(', ')])]),
-          ...(music.description === null ? [] : [h.p([], [music.description])]),
-          ...(block.genres.length === 0
+          ...(music.imageUrl === null
             ? []
             : [
-                h.ul(
-                  [h.AriaLabel('Genres')],
-                  block.genres.map((genre) => h.li([], [genre])),
+                artwork(
+                  music.imageUrl,
+                  `Artwork for ${music.title}`,
+                  '(min-width: 640px) 112px, 80px',
+                  false,
+                  'rich-content-music-art',
                 ),
               ]),
-          ...(block.blurb === null ? [] : [h.p([], [block.blurb])]),
-          ...(music.links.length === 0
-            ? []
-            : [
-                h.ul(
-                  [h.AriaLabel('Listen on')],
-                  music.links.map((link) =>
-                    h.li([], [h.a(linkAttributes(link.url, h), [link.platform])]),
-                  ),
-                ),
-              ]),
-          ...(block.showTracks && music.tracks.length > 0
-            ? [
-                h.ol(
-                  [h.AriaLabel(`${music.title} tracks`)],
-                  music.tracks.map((track) =>
-                    h.li(
-                      [],
-                      [
-                        track.url === null
-                          ? track.title
-                          : h.a(linkAttributes(track.url, h), [track.title]),
-                        ...(track.artists.length === 0 ? [] : [` — ${track.artists.join(', ')}`]),
-                      ],
+          h.div(
+            [h.Class('rich-content-music-copy')],
+            [
+              h.p([h.Class('rich-content-music-type')], [musicEntityLabels[music.entityType]]),
+              h.h3(
+                [h.Class('rich-content-music-title')],
+                [h.a(linkAttributes(music.canonicalUrl, h), [music.title])],
+              ),
+              ...(music.artists.length === 0
+                ? []
+                : [h.p([h.Class('rich-content-music-artists')], [music.artists.join(', ')])]),
+              ...(music.description === null
+                ? []
+                : [h.p([h.Class('rich-content-music-description')], [music.description])]),
+              ...(block.genres.length === 0
+                ? []
+                : [
+                    h.ul(
+                      [h.Class('rich-content-music-genres'), h.Role('list'), h.AriaLabel('Genres')],
+                      block.genres.map((genre) => h.li([], [genre])),
                     ),
-                  ),
-                ),
-              ]
-            : []),
+                  ]),
+            ],
+          ),
         ],
       ),
+      ...(block.blurb === null ? [] : [h.p([h.Class('rich-content-music-blurb')], [block.blurb])]),
+      ...(block.showTracks && music.tracks.length > 0
+        ? [musicTracksView(music.title, music.tracks, h)]
+        : []),
+      ...(music.links.length === 0
+        ? []
+        : [
+            h.ul(
+              [h.Class('rich-content-music-links'), h.Role('list'), h.AriaLabel('Listen on')],
+              music.links.map((link) =>
+                h.li(
+                  [],
+                  [
+                    h.a(linkAttributes(link.url, h), [
+                      ...(link.platform === 'spotify'
+                        ? [spotifyIcon('rich-content-music-link-icon')]
+                        : []),
+                      musicPlatformLabel(link.platform),
+                      lucide(iconPaths.externalLink, 'rich-content-music-link-external'),
+                    ]),
+                  ],
+                ),
+              ),
+            ),
+          ]),
     ],
   )
 }
@@ -411,8 +500,23 @@ const blockView = <Message>(block: RichContentBlock, h: HtmlBuilder<Message>): H
       return mediaView(block, h)
     case 'Tracklist':
       return h.ol(
-        [h.Class('rich-content-tracklist'), h.AriaLabel('Tracklist')],
-        block.tracks.map((track) => h.li([], [track.title])),
+        [
+          h.Class('rich-content-tracklist rich-content-track-list not-prose'),
+          h.Role('list'),
+          h.AriaLabel('Tracklist'),
+        ],
+        block.tracks.map((track, index) =>
+          h.li(
+            [],
+            [
+              h.span(
+                [h.Class('rich-content-track-number'), h.AriaHidden(true)],
+                [String(index + 1)],
+              ),
+              h.span([h.Class('rich-content-track-title')], [track.title]),
+            ],
+          ),
+        ),
       )
     case 'CardGroup':
       return h.div(
