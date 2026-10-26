@@ -2,32 +2,11 @@ import { RichContentDocument } from '@gbfm/rich-content/schema'
 import { Schema } from 'effect'
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup, HttpApiSchema } from 'effect/http-api'
 
+import { MusicServiceUnavailableHttpError } from './errors'
 import { AuthMiddleware } from './middleware/auth'
 import { ValidationHttpError } from './post'
 
-export class MusicServiceUnavailableResponse extends Schema.Error<MusicServiceUnavailableResponse>(
-  'MusicServiceUnavailableResponse',
-)({
-  _tag: Schema.tag('ServiceUnavailable'),
-  retryAfterSeconds: Schema.optional(Schema.Number),
-}) {}
-
-export const MusicServiceUnavailableHttpError = MusicServiceUnavailableResponse.pipe(
-  HttpApiSchema.encodeToWithHeaders(
-    {
-      body: HttpApiError.ServiceUnavailable,
-      headers: { 'retry-after': Schema.optional(Schema.Number) },
-    },
-    {
-      decode: ({ headers }) =>
-        new MusicServiceUnavailableResponse({ retryAfterSeconds: headers['retry-after'] }),
-      encode: (error) => ({
-        body: new HttpApiError.ServiceUnavailable(),
-        headers: { 'retry-after': error.retryAfterSeconds },
-      }),
-    },
-  ),
-)
+export { MusicServiceUnavailableHttpError, MusicServiceUnavailableResponse } from './errors'
 
 // Mirrors apps/server/src/db/music-entity.schema.ts's selectMusicArtistSchema
 // (Zod, DB-facing) -- response fields are nullable to match actual column

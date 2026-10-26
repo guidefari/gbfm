@@ -1,4 +1,5 @@
 import * as Dialog from '@foldkit/ui/dialog'
+import { ResolvePostMusicResponse } from '@gbfm/api/post'
 import { RichContentDiagnostic } from '@gbfm/rich-content/schema'
 import { Schema } from 'effect'
 import { defineMessageUnion } from 'foldkit/message'
@@ -38,6 +39,9 @@ export const Message = defineMessageUnion({
   GotReviewDialogMessage: { message: Dialog.Message },
   ReviewClosed: {},
   ResolveMusicRequested: {},
+  ResolvePostMusicRequested: {},
+  PostMusicResolved: ResolvePostMusicResponse.fields,
+  PostMusicFailed: { postId: Schema.String, message: Schema.String },
   MusicResolved: {
     entityType: Schema.Literals(['album', 'track', 'playlist']),
     entityId: Schema.String,
@@ -56,7 +60,7 @@ export const Message = defineMessageUnion({
   DiscardRequested: {},
   PublishRequested: {},
   DraftSaveRequested: {},
-  Saved: { slug: Schema.String, published: Schema.Boolean },
+  Saved: { id: Schema.String, slug: Schema.String, published: Schema.Boolean },
   Failed: { operation: Schema.String, message: Schema.String },
   Hydrated: { draft: Schema.NullOr(Draft) },
   LocallySaved: {},

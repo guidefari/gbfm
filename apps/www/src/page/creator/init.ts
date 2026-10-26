@@ -49,6 +49,8 @@ export const initialModel = ({ kind, editSlug, creatorId, authorized }: InitInpu
   musicPreviewTitle: null,
   musicPreviewMeta: null,
   musicPreviewImage: null,
+  resolvingPostMusic: false,
+  postMusicNotice: null,
   quotePreview: null,
   uploadPercent: 0,
   uploadState: 'idle',
