@@ -81,12 +81,35 @@ test('a migrated legacy track renders from the GBFM catalog without client metad
   })
 
   await page.goto('/editorial/e2e-listening-notes')
-  const card = page.locator('.rich-content-music-card')
+  const card = page.locator('.rich-content-music-card').filter({ hasText: 'Grapefruit' })
   await expect(card).toContainText('Grapefruit')
   await expect(card).toContainText('Lack')
   await expect(card).toContainText('experimental')
   await expect(card).toContainText('A catalog-backed selection from the original article.')
   await expect(page.locator('.rich-content')).not.toContainText('::track')
+
+  const fallback = page
+    .locator('.rich-content-music-card')
+    .filter({ hasText: 'A retained playlist without cover artwork' })
+  await expect(fallback.locator('img')).toHaveCount(0)
+  await expect(fallback.getByRole('link', { name: 'spotify', exact: true })).toHaveAttribute(
+    'href',
+    'https://open.spotify.com/playlist/3m4J7Xt1mA5CqSnXl4zgpZ',
+  )
+  for (const width of [390, 1280]) {
+    await page.setViewportSize({ width, height: 1000 })
+    const layout = await fallback.evaluate((element) => {
+      const styles = getComputedStyle(element)
+
+      return {
+        available:
+          element.clientWidth - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight),
+        text: element.firstElementChild?.getBoundingClientRect().width ?? 0,
+      }
+    })
+    expect(layout.text).toBeGreaterThan(layout.available * 0.9)
+    await expect(card.locator('img')).toHaveCount(1)
+  }
   expect(spotifyRequests).toEqual([])
 })
 

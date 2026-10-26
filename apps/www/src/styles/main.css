@@ -2457,6 +2457,9 @@
     border-radius: var(--radius);
     padding: 1rem;
   }
+  .rich-content-music-card:not(:has(> img)) {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .rich-content-music-card > img {
     width: 100%;
     aspect-ratio: 1;

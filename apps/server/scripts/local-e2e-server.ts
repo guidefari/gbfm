@@ -222,13 +222,39 @@ for (const kind of ['album', 'playlist'] as const) {
   })
 }
 
+const artworkFreePlaylistId = crypto.randomUUID()
+const artworkFreeSpotifyId = '3m4J7Xt1mA5CqSnXl4zgpZ'
+const artworkFreeSpotifyUrl = `https://open.spotify.com/playlist/${artworkFreeSpotifyId}`
+await database.insert(musicPlaylistsTable).values({
+  id: artworkFreePlaylistId,
+  title: 'A retained playlist without cover artwork',
+  slug: 'e2e-artwork-free-playlist',
+  coverImageUrl: null,
+})
+await database.insert(musicEntityLinksTable).values({
+  entityType: 'playlist',
+  entityId: artworkFreePlaylistId,
+  platform: 'spotify',
+  url: artworkFreeSpotifyUrl,
+})
+await database.insert(musicSourceIdentitiesTable).values({
+  sourceKey: `spotify:playlist:${artworkFreeSpotifyId}`,
+  platform: 'spotify',
+  sourceEntityType: 'playlist',
+  externalId: artworkFreeSpotifyId,
+  canonicalUrl: artworkFreeSpotifyUrl,
+  state: 'resolved',
+  entityType: 'playlist',
+  entityId: artworkFreePlaylistId,
+  resolvedAt: new Date(),
+})
+
 const [editorial] = await database
   .insert(postsTable)
   .values({
     slug: 'e2e-listening-notes',
     title: 'Local listening notes',
-    content:
-      'An editorial about **independent music**, migrated from a legacy music embed.\n\n::track{url="https://open.spotify.com/track/2Mf7lfHxdiABiO7j0BDbHc" genres="experimental, dub" blurb="A catalog-backed selection from the original article."}',
+    content: `An editorial about **independent music**, migrated from a legacy music embed.\n\n::track{url="https://open.spotify.com/track/2Mf7lfHxdiABiO7j0BDbHc" genres="experimental, dub" blurb="A catalog-backed selection from the original article."}\n\n::playlist{url="${artworkFreeSpotifyUrl}"}`,
     type: 'post',
     draft: false,
   })
