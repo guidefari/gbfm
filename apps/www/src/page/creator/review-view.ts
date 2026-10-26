@@ -1,10 +1,41 @@
+import * as Button from '@foldkit/ui/button'
 import * as Dialog from '@foldkit/ui/dialog'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
+import { imageSource } from '../../view/artwork'
+import { richContentView } from '../../view/rich-content/render'
 import { Message } from './message'
 import { TWEET_MAX_LENGTH, type Model } from './model'
 
 type Builder = HtmlBuilder<typeof Message.Type>
+
+const reviewBody = (model: Model, h: Builder): Html => {
+  const current = model.previewContent === model.draft.content
+
+  if (model.previewDocument && current && model.preview === 'ready')
+    return h.div(
+      [h.Class('creator-review-body')],
+      [
+        richContentView(model.previewDocument, h, {
+          className: 'prose prose-sm dark:prose-invert max-w-none',
+        }),
+      ],
+    )
+
+  if (model.preview === 'failed')
+    return h.div(
+      [h.Class('creator-inline-alert'), h.Role('alert')],
+      [
+        h.p([], ['The preview could not load, so embeds are not shown here.']),
+        h.button(
+          [h.Type('button'), h.Class('btn btn-sm'), h.OnClick(Message.PreviewRequested())],
+          ['Try again'],
+        ),
+      ],
+    )
+
+  return h.p([h.Class('creator-preview-status'), h.Role('status')], ['Rendering preview…'])
+}
 
 export const review = (
   model: Model,
@@ -38,6 +69,7 @@ export const review = (
                             h.button(
                               [
                                 h.Type('button'),
+                                h.Class('btn btn-quiet btn-icon'),
                                 h.AriaLabel('Close publish review'),
                                 h.OnClick(Message.ReviewClosed()),
                               ],
@@ -62,14 +94,29 @@ export const review = (
                               [h.Class('creator-review')],
                               [
                                 h.h3([], [model.draft.title || 'Untitled']),
-                                model.draft.content
-                                  ? h.p([h.Class('creator-review-copy')], [model.draft.content])
-                                  : h.empty,
+                                model.draft.content.trim() ? reviewBody(model, h) : h.empty,
                                 model.draft.musicEntityId
-                                  ? h.p(
+                                  ? h.div(
                                       [h.Class('creator-review-music')],
                                       [
-                                        `♫ ${model.musicPreviewTitle ?? `Attached ${model.draft.musicEntityType ?? 'music'}`}`,
+                                        model.musicPreviewImage
+                                          ? h.img([imageSource(model.musicPreviewImage), h.Alt('')])
+                                          : h.span([h.AriaHidden(true)], ['♫']),
+                                        h.span(
+                                          [],
+                                          [
+                                            h.strong(
+                                              [],
+                                              [
+                                                model.musicPreviewTitle ??
+                                                  `Attached ${model.draft.musicEntityType ?? 'music'}`,
+                                              ],
+                                            ),
+                                            model.musicPreviewMeta
+                                              ? h.small([], [model.musicPreviewMeta])
+                                              : h.empty,
+                                          ],
+                                        ),
                                       ],
                                     )
                                   : h.empty,
@@ -94,20 +141,33 @@ export const review = (
                           [h.Class('creator-publish-actions')],
                           [
                             h.button(
-                              [h.Type('button'), h.OnClick(Message.ReviewClosed())],
-                              ['Keep editing'],
-                            ),
-                            h.button(
                               [
                                 h.Type('button'),
-                                h.OnClick(Message.PublishRequested()),
-                                h.Disabled(
-                                  busy ||
-                                    !canContinue ||
-                                    (model.draft.kind === 'mix' && !model.draft.audioUrl),
-                                ),
+                                h.Class('btn btn-quiet'),
+                                h.OnClick(Message.ReviewClosed()),
                               ],
-                              [busy ? 'Publishing…' : model.draft.editSlug ? 'Update' : 'Publish'],
+                              ['Keep editing'],
+                            ),
+                            Button.view(
+                              {
+                                onClick: Message.PublishRequested(),
+                                isDisabled:
+                                  busy ||
+                                  !canContinue ||
+                                  (model.draft.kind === 'mix' && !model.draft.audioUrl),
+                                toView: ({ button }) =>
+                                  h.button(
+                                    [...button, h.Class('btn btn-primary'), h.AriaBusy(busy)],
+                                    [
+                                      busy
+                                        ? 'Publishing…'
+                                        : model.draft.editSlug
+                                          ? 'Update'
+                                          : 'Publish',
+                                    ],
+                                  ),
+                              },
+                              h,
                             ),
                           ],
                         ),

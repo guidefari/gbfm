@@ -1,4 +1,5 @@
 import { LINK_STATUS } from '@gbfm/core/status'
+import type { RichContentDocument } from '@gbfm/rich-content/schema'
 import type { TweetCardEntityInput, TweetCardPresentationInput } from '@gbfm/social-card'
 import {
   and,
@@ -250,6 +251,8 @@ export interface PostService {
     SelectMdxCompiledPost,
     DatabaseError | NotFoundError | UnauthorizedError | ValidationError | S3Error
   >
+  /** Renders draft source through the publishing pipeline without storing it. */
+  readonly renderPreview: (content: string) => Effect.Effect<RichContentDocument>
 }
 
 export const PostService = Context.Service<PostService>('PostService')
@@ -2557,6 +2560,7 @@ export const PostServiceLayer = Layer.effect(
           Effect.provideService(ConfigService, config),
           Effect.provideService(UploadAssetService, uploadAssetService),
         ),
+      renderPreview: (content) => mdx.render(content),
     }
   }),
 )

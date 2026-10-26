@@ -10,6 +10,16 @@ import { CreatorUpload } from './upload/runtime'
 const failure = (operation: string) => (error: CreatorError) =>
   Message.Failed({ operation, message: error.message })
 
+export const SearchAuthors = Command.define('Creator.SearchAuthors', {
+  args: { query: Schema.String },
+  messages: [Message.AuthorsFound, Message.AuthorSearchFailed],
+  execute: ({ query }) =>
+    Effect.flatMap(CreatorService, (service) => service.searchAuthors(query)).pipe(
+      Effect.map((creators) => Message.AuthorsFound({ query, creators: [...creators] })),
+      Effect.catch(() => Effect.succeed(Message.AuthorSearchFailed({ query }))),
+    ),
+})
+
 export const Diagnose = Command.define('Creator.Diagnose', {
   args: { content: Schema.String },
   messages: [Message.DiagnosticsLoaded, Message.DiagnosticsFailed],
@@ -42,11 +52,10 @@ export const Hydrate = Command.define('Creator.Hydrate', {
     Effect.gen(function* () {
       const service = yield* CreatorService
 
-      const draft: CreatorDraft | null = editSlug
-        ? yield* service.loadEditable(kind, editSlug)
-        : yield* service.readLocalDraft(key)
+      const editable = editSlug ? yield* service.loadEditable(kind, editSlug) : null
+      const draft: CreatorDraft | null = editable ?? (yield* service.readLocalDraft(key))
 
-      return Message.Hydrated({ draft })
+      return Message.Hydrated({ draft, creators: editable?.creators ?? [] })
     }).pipe(Effect.catch((error) => Effect.succeed(failure('load')(error)))),
 })
 
@@ -88,6 +97,16 @@ export const ResolveQuote = Command.define('Creator.ResolveQuote', {
     Effect.flatMap(CreatorService, (service) => service.resolveQuote(slug)).pipe(
       Effect.map(({ id, title, content }) => Message.QuoteResolved({ id, slug, title, content })),
       Effect.catch((error) => Effect.succeed(failure('resolve quote')(error))),
+    ),
+})
+
+export const RenderPreview = Command.define('Creator.RenderPreview', {
+  args: { content: Schema.String },
+  messages: [Message.PreviewLoaded, Message.PreviewFailed],
+  execute: ({ content }) =>
+    Effect.flatMap(CreatorService, (service) => service.renderPreview(content)).pipe(
+      Effect.map((document) => Message.PreviewLoaded({ content, document })),
+      Effect.catch(() => Effect.succeed(Message.PreviewFailed({ content }))),
     ),
 })
 

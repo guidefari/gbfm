@@ -117,7 +117,10 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
                   slotId: 'creator',
                   view: Page.Creator.view,
                   model: model.creator,
-                  viewInputs: { role: model.flags.principal?.role ?? null },
+                  viewInputs: {
+                    role: model.flags.principal?.role ?? null,
+                    principal: model.flags.principal,
+                  },
                   toParentMessage: (message) => Message.GotCreatorMessage({ message }),
                 }),
               Dashboard: () =>

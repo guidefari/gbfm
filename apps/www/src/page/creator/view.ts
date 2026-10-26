@@ -1,16 +1,19 @@
+import * as Button from '@foldkit/ui/button'
 import { canCreatePosts } from '@gbfm/core/roles'
 import { Match } from 'effect'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { defineView } from 'foldkit/submodel'
 
+import type { Principal } from '../../model'
 import { imageSource } from '../../view/artwork'
-import { richContent } from '../../view/rich-content/fallback'
+import { richContentView } from '../../view/rich-content/render'
 import { Message } from './message'
 import { draftValidationError, TWEET_MAX_LENGTH, type Model } from './model'
 import { review } from './review-view'
 
 export interface ViewInputs {
   readonly role: string | null
+  readonly principal: Principal | null
 }
 
 type Builder = HtmlBuilder<typeof Message.Type>
@@ -61,6 +64,49 @@ const publishType = (model: Model, h: Builder, busy: boolean) =>
     ],
   )
 
+/** Prose classes shared with published tweets so the preview matches the public page. */
+export const previewProseClass =
+  'prose prose-base dark:prose-invert max-w-none prose-headings:font-black prose-headings:tracking-tighter prose-p:leading-relaxed prose-a:text-foreground prose-a:underline'
+
+const preview = (model: Model, h: Builder): Html => {
+  if (!model.draft.content.trim())
+    return h.p([h.Class('creator-empty')], ['Your rendered post will appear here.'])
+
+  const stale = model.previewContent !== model.draft.content || model.preview === 'loading'
+
+  return h.div(
+    [h.Class('creator-preview-state'), h.AriaBusy(model.preview === 'loading')],
+    [
+      model.preview === 'failed'
+        ? h.div(
+            [h.Class('creator-inline-alert'), h.Role('alert')],
+            [
+              h.p([], ['The preview could not load. Your draft is still saved on this device.']),
+              h.button(
+                [h.Type('button'), h.Class('btn btn-sm'), h.OnClick(Message.PreviewRequested())],
+                ['Try again'],
+              ),
+            ],
+          )
+        : h.empty,
+      model.preview === 'loading'
+        ? h.p([h.Class('creator-preview-status'), h.Role('status')], ['Rendering preview…'])
+        : h.empty,
+      model.previewDocument && model.preview !== 'failed'
+        ? h.div(
+            [h.Class(stale ? 'creator-preview-body is-stale' : 'creator-preview-body')],
+            [richContentView(model.previewDocument, h, { className: previewProseClass })],
+          )
+        : model.preview === 'loading'
+          ? h.div(
+              [h.Class('creator-preview-skeleton'), h.AriaHidden(true)],
+              [h.span([]), h.span([]), h.span([])],
+            )
+          : h.empty,
+    ],
+  )
+}
+
 const editor = (model: Model, h: Builder): Html => {
   const controls = [
     ['Heading', '## ', '', 'Heading'],
@@ -71,6 +117,26 @@ const editor = (model: Model, h: Builder): Html => {
     ['List', '- ', '', 'List item'],
   ] as const
 
+  const previewing = model.editorMode === 'preview'
+
+  const tool = (label: string, title: string, message: Message) =>
+    Button.view(
+      {
+        onClick: message,
+        isDisabled: previewing,
+        toView: ({ button }) =>
+          h.button(
+            [
+              ...button,
+              h.Title(previewing ? `${title} (switch to Source to edit)` : title),
+              h.AriaLabel(title),
+            ],
+            [label],
+          ),
+      },
+      h,
+    )
+
   return h.section(
     [h.Class('creator-editor'), h.AriaLabel('Rich text editor')],
     [
@@ -78,34 +144,22 @@ const editor = (model: Model, h: Builder): Html => {
         [h.Class('creator-editor-bar')],
         [
           h.div(
-            [h.Class('creator-editor-tools'), h.AriaLabel('Formatting controls')],
+            [
+              h.Class('creator-editor-tools'),
+              h.Role('toolbar'),
+              h.AriaLabel('Formatting controls'),
+            ],
             [
               ...controls.map(([label, before, after, sample]) =>
-                h.button(
-                  [
-                    h.Type('button'),
-                    h.Title(label),
-                    h.AriaLabel(label),
-                    h.OnClick(Message.FormatInserted({ before, after, sample })),
-                  ],
-                  [label],
-                ),
+                tool(label, label, Message.FormatInserted({ before, after, sample })),
               ),
               model.draft.musicEntityId
-                ? h.button(
-                    [
-                      h.Type('button'),
-                      h.Title('Insert attached music'),
-                      h.AriaLabel('Insert attached music'),
-                      h.OnClick(Message.MusicEmbedInserted()),
-                    ],
-                    ['Music'],
-                  )
+                ? tool('Music', 'Insert attached music', Message.MusicEmbedInserted())
                 : h.empty,
             ],
           ),
           h.div(
-            [h.Class('creator-editor-modes'), h.AriaLabel('Editor view')],
+            [h.Class('creator-editor-modes'), h.Role('group'), h.AriaLabel('Editor view')],
             [
               h.button(
                 [
@@ -118,7 +172,7 @@ const editor = (model: Model, h: Builder): Html => {
               h.button(
                 [
                   h.Type('button'),
-                  h.AriaPressed(String(model.editorMode === 'preview')),
+                  h.AriaPressed(String(previewing)),
                   h.OnClick(Message.EditorModeChanged({ mode: 'preview' })),
                 ],
                 ['Preview'],
@@ -127,8 +181,9 @@ const editor = (model: Model, h: Builder): Html => {
           ),
         ],
       ),
-      model.editorMode === 'source'
-        ? h.label(
+      previewing
+        ? h.div([h.Class('creator-preview')], [preview(model, h)])
+        : h.label(
             [h.Class('creator-source')],
             [
               h.span([h.Class('sr-only')], ['Writing canvas']),
@@ -138,14 +193,6 @@ const editor = (model: Model, h: Builder): Html => {
                 h.Rows(18),
                 h.Placeholder('Start writing…'),
               ]),
-            ],
-          )
-        : h.div(
-            [h.Class('creator-preview')],
-            [
-              model.draft.content.trim()
-                ? richContent(model.draft.content)
-                : h.p([h.Class('creator-empty')], ['Your rendered post will appear here.']),
             ],
           ),
       model.diagnostics.length
@@ -160,10 +207,67 @@ const editor = (model: Model, h: Builder): Html => {
   )
 }
 
+/** One URL field with its submit action, so Enter attaches and every attachment looks alike. */
+const attachRow = (
+  h: Builder,
+  input: {
+    readonly id: string
+    readonly label: string
+    readonly hint: string
+    readonly value: string
+    readonly placeholder: string
+    readonly action: string
+    readonly busy?: boolean
+    readonly error?: string | null
+    readonly onInput: (value: string) => Message
+    readonly onSubmit: Message
+  },
+): Html =>
+  h.div(
+    [h.Class('creator-attach')],
+    [
+      h.label([h.For(`${input.id}-input`), h.Class('creator-attach-label')], [input.label]),
+      h.form(
+        [h.Class('creator-attach-row'), h.OnSubmit(input.onSubmit)],
+        [
+          h.input([
+            h.Id(`${input.id}-input`),
+            h.Type('url'),
+            h.Value(input.value),
+            h.Disabled(Boolean(input.busy)),
+            h.Placeholder(input.placeholder),
+            h.AriaDescribedBy(`${input.id}-hint${input.error ? ` ${input.id}-error` : ''}`),
+            h.AriaInvalid(Boolean(input.error)),
+            h.OnInput(input.onInput),
+          ]),
+          Button.view(
+            {
+              type: 'submit',
+              isDisabled: !input.value.trim() || Boolean(input.busy),
+              toView: ({ button }) =>
+                h.button(
+                  [...button, h.Class('btn'), h.AriaBusy(Boolean(input.busy))],
+                  [input.action],
+                ),
+            },
+            h,
+          ),
+        ],
+      ),
+      input.error
+        ? h.p(
+            [h.Id(`${input.id}-error`), h.Class('creator-field-error'), h.Role('alert')],
+            [input.error],
+          )
+        : h.empty,
+      h.small([h.Id(`${input.id}-hint`), h.Class('creator-attach-hint')], [input.hint]),
+    ],
+  )
+
 const musicSlot = (model: Model, h: Builder, busy: boolean): Html =>
   model.draft.musicEntityId
     ? h.article(
-        [h.Class('creator-music-card')],
+        [h.Class('creator-music-card'), h.AriaLabel('Attached music')],
         [
           model.musicPreviewImage
             ? h.img([imageSource(model.musicPreviewImage), h.Alt('Music cover art')])
@@ -173,7 +277,7 @@ const musicSlot = (model: Model, h: Builder, busy: boolean): Html =>
             [
               h.strong([], [model.musicPreviewTitle ?? 'Attached music']),
               h.small([], [model.musicPreviewMeta ?? model.draft.musicEntityType ?? 'music']),
-              h.small([], [model.draft.musicUrl]),
+              model.draft.musicUrl ? h.small([], [model.draft.musicUrl]) : h.empty,
             ],
           ),
           h.div(
@@ -182,6 +286,7 @@ const musicSlot = (model: Model, h: Builder, busy: boolean): Html =>
               h.button(
                 [
                   h.Type('button'),
+                  h.Class('btn btn-quiet btn-sm'),
                   h.Title('Remove music'),
                   h.AriaLabel('Remove music'),
                   h.Disabled(busy),
@@ -193,37 +298,21 @@ const musicSlot = (model: Model, h: Builder, busy: boolean): Html =>
           ),
         ],
       )
-    : h.div(
-        [h.Class('creator-attach-row')],
-        [
-          h.label(
-            [],
-            [
-              h.span([h.Class('sr-only')], ['Music URL']),
-              h.input([
-                h.Value(model.draft.musicUrl),
-                h.Disabled(busy),
-                h.OnInput((value) => Message.Changed({ field: 'musicUrl', value })),
-                h.Placeholder('Paste a Spotify, Apple Music or Bandcamp link'),
-              ]),
-            ],
-          ),
-          h.button(
-            [
-              h.Type('button'),
-              h.OnClick(
-                model.draft.postId
-                  ? Message.ResolvePostMusicRequested()
-                  : Message.ResolveMusicRequested(),
-              ),
-              h.Disabled(busy || !model.draft.musicUrl.trim()),
-            ],
-            [model.draft.postId ? 'Attach & save music' : 'Attach music'],
-          ),
-        ],
-      )
+    : attachRow(h, {
+        id: 'creator-music',
+        label: 'Music URL',
+        busy,
+        hint: 'Attached music shows as a catalog card with listening links under the post.',
+        value: model.draft.musicUrl,
+        placeholder: 'Spotify, Apple Music or Bandcamp link',
+        action: model.draft.postId ? 'Attach & save music' : 'Attach music',
+        onInput: (value) => Message.Changed({ field: 'musicUrl', value }),
+        onSubmit: model.draft.postId
+          ? Message.ResolvePostMusicRequested()
+          : Message.ResolveMusicRequested(),
+      })
 
-const metadata = (model: Model, h: Builder, busy: boolean): Html =>
+const metadata = (model: Model, h: Builder, busy: boolean, principal: Principal | null): Html =>
   h.section(
     [h.Class('creator-metadata'), h.AriaLabel('Post details')],
     [
@@ -262,16 +351,115 @@ const metadata = (model: Model, h: Builder, busy: boolean): Html =>
                 'A short introduction',
               )
             : h.empty,
-          h.label(
-            [],
+          h.div(
+            [h.Class('flex flex-col gap-2')],
             [
-              'Authors',
-              h.input([
-                h.Value(model.creatorsInput),
-                h.AriaLabel('Authors'),
-                h.Disabled(busy),
-                h.OnInput((value) => Message.CreatorsChanged({ value })),
-              ]),
+              h.span([], ['Authors']),
+              h.ul(
+                [h.AriaLabel('Authors'), h.Class('m-0 list-none p-0 text-sm')],
+                (model.draft.creatorIds.length ? model.draft.creatorIds : [model.creatorId]).map(
+                  (id) => {
+                    const creator =
+                      principal?.id === id
+                        ? principal
+                        : model.creators.find((creator) => creator.id === id)
+
+                    return h.li(
+                      [h.Key(id), h.Class('flex items-center justify-between gap-3 py-1')],
+                      [
+                        creator?.name?.trim() ||
+                          (creator?.username?.trim()
+                            ? `@${creator.username.trim()}`
+                            : 'Author name unavailable — retained from saved draft'),
+                        h.button(
+                          [
+                            h.Type('button'),
+                            h.Class('btn btn-quiet btn-sm'),
+                            h.Disabled(busy || model.draft.creatorIds.length <= 1),
+                            h.OnClick(Message.AuthorRemoved({ id })),
+                          ],
+                          ['Remove'],
+                        ),
+                      ],
+                    )
+                  },
+                ),
+              ),
+              h.details(
+                [h.Class('text-xs text-muted-foreground')],
+                [
+                  h.summary([h.Class('cursor-pointer min-h-11 content-center')], ['Add authors']),
+                  h.form(
+                    [h.OnSubmit(Message.AuthorSearchRequested())],
+                    [
+                      h.label(
+                        [h.Class('mt-2')],
+                        [
+                          'Search by name or username',
+                          h.input([
+                            h.Value(model.authorQuery),
+                            h.AriaLabel('Search authors'),
+                            h.Disabled(busy),
+                            h.OnInput((value) => Message.AuthorQueryChanged({ value })),
+                          ]),
+                        ],
+                      ),
+                      h.button(
+                        [
+                          h.Type('submit'),
+                          h.Class('btn mt-2'),
+                          h.Disabled(
+                            busy || !model.authorQuery.trim() || model.authorSearch === 'loading',
+                          ),
+                        ],
+                        ['Search authors'],
+                      ),
+                    ],
+                  ),
+                  h.p(
+                    [h.Role('status')],
+                    [
+                      Match.value(model.authorSearch).pipe(
+                        Match.when('loading', () => 'Searching authors…'),
+                        Match.when(
+                          'failed',
+                          () =>
+                            'Could not search authors. Check your connection and sign-in, then try again.',
+                        ),
+                        Match.when('ready', () =>
+                          model.authorResults.length
+                            ? 'Select an author to add. Showing up to 10 matches.'
+                            : 'No authors found. Try another name or username.',
+                        ),
+                        Match.orElse(
+                          () => 'At least one author is required. Search to add collaborators.',
+                        ),
+                      ),
+                    ],
+                  ),
+                  h.ul(
+                    [h.AriaLabel('Author search results'), h.Class('m-0 list-none p-0')],
+                    model.authorResults.map((creator) =>
+                      h.li(
+                        [h.Key(creator.id)],
+                        [
+                          h.button(
+                            [
+                              h.Type('button'),
+                              h.Class('btn creator-author-result'),
+                              h.Disabled(busy || model.draft.creatorIds.includes(creator.id)),
+                              h.OnClick(Message.AuthorSelected({ id: creator.id })),
+                            ],
+                            [
+                              `${creator.name || creator.username || 'Unnamed author'}${creator.username ? ` · @${creator.username}` : ''}${model.draft.creatorIds.includes(creator.id) ? ' — Selected' : ''}`,
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
           field(h, 'Story URL', model.draft.slug, 'slug', 'generated-from-title'),
@@ -301,51 +489,33 @@ const composerExtras = (model: Model, h: Builder): Html =>
         ? h.div(
             [h.Class('creator-quote')],
             [
-              h.label(
-                [],
-                [
-                  'Quote a tweet',
-                  h.input([
-                    h.Value(model.draft.quoteUrl),
-                    h.OnInput((value) => Message.QuoteUrlChanged({ value })),
-                    h.Placeholder('https://goosebumps.fm/tweet/…'),
-                  ]),
-                ],
-              ),
-              h.button(
-                [h.Type('button'), h.OnClick(Message.ResolveQuoteRequested())],
-                ['Attach quote'],
-              ),
+              attachRow(h, {
+                id: 'creator-quote',
+                label: 'Quote a tweet',
+                hint: 'Paste a goosebumps.fm tweet link.',
+                value: model.draft.quoteUrl,
+                placeholder: 'https://goosebumps.fm/tweet/…',
+                action: 'Attach quote',
+                onInput: (value) => Message.QuoteUrlChanged({ value }),
+                onSubmit: Message.ResolveQuoteRequested(),
+              }),
               model.quotePreview
                 ? h.blockquote([], [h.small([], ['Quoted tweet']), h.p([], [model.quotePreview])])
                 : h.empty,
             ],
           )
         : h.empty,
-      h.div(
-        [h.Class('creator-media-insert')],
-        [
-          h.label(
-            [],
-            [
-              'External media',
-              h.input([
-                h.Value(model.externalMediaUrl),
-                h.OnInput((value) => Message.ExternalMediaChanged({ value })),
-                h.Placeholder('YouTube, SoundCloud, Bandcamp or Spotify URL'),
-              ]),
-            ],
-          ),
-          h.button(
-            [
-              h.Type('button'),
-              h.Disabled(!model.externalMediaUrl.trim()),
-              h.OnClick(Message.ExternalMediaInserted()),
-            ],
-            ['Insert media'],
-          ),
-        ],
-      ),
+      attachRow(h, {
+        id: 'creator-media',
+        label: 'Embed media',
+        hint: 'Adds a YouTube, SoundCloud, Bandcamp or Spotify player inside the post.',
+        value: model.externalMediaUrl,
+        placeholder: 'https://…',
+        action: 'Embed',
+        error: model.externalMediaError,
+        onInput: (value) => Message.ExternalMediaChanged({ value }),
+        onSubmit: Message.ExternalMediaInserted(),
+      }),
     ],
   )
 
@@ -416,7 +586,11 @@ const mixFields = (model: Model, h: Builder, busy: boolean): Html =>
               ),
               model.uploadState === 'running'
                 ? h.button(
-                    [h.Type('button'), h.OnClick(Message.UploadPauseRequested())],
+                    [
+                      h.Type('button'),
+                      h.Class('btn btn-sm'),
+                      h.OnClick(Message.UploadPauseRequested()),
+                    ],
                     ['Pause upload'],
                   )
                 : h.empty,
@@ -425,11 +599,19 @@ const mixFields = (model: Model, h: Builder, busy: boolean): Html =>
                     [],
                     [
                       h.button(
-                        [h.Type('button'), h.OnClick(Message.UploadResumeRequested())],
+                        [
+                          h.Type('button'),
+                          h.Class('btn btn-sm'),
+                          h.OnClick(Message.UploadResumeRequested()),
+                        ],
                         ['Resume upload'],
                       ),
                       h.button(
-                        [h.Type('button'), h.OnClick(Message.UploadCancelRequested())],
+                        [
+                          h.Type('button'),
+                          h.Class('btn btn-quiet btn-sm'),
+                          h.OnClick(Message.UploadCancelRequested()),
+                        ],
                         ['Cancel upload'],
                       ),
                     ],
@@ -477,36 +659,83 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
             [h.Class('creator-status')],
             [
               model.draft.editSlug
-                ? h.a([h.Href(`/${publicPath}/${model.draft.editSlug}`)], ['Back to post'])
+                ? h.a(
+                    [
+                      h.Href(`/${publicPath}/${model.draft.editSlug}`),
+                      h.Class('btn btn-quiet btn-sm'),
+                    ],
+                    ['← Back to post'],
+                  )
                 : h.empty,
               h.span(
-                [h.Role('status'), h.AriaLive('polite')],
-                [model.saveState === 'saved-locally' ? 'Draft saved locally' : model.saveState],
+                [
+                  h.Role('status'),
+                  h.AriaLive('polite'),
+                  h.DataAttribute('save-state', model.saveState),
+                ],
+                [
+                  model.phase === 'saving'
+                    ? 'Saving…'
+                    : Match.value(model.saveState).pipe(
+                        Match.when('saved-locally', () => 'Draft saved locally'),
+                        Match.when('saved', () => 'All changes saved'),
+                        Match.when('unsaved', () => 'Unsaved changes'),
+                        Match.when('failed', () => 'Not saved'),
+                        Match.exhaustive,
+                      ),
+                ],
               ),
             ],
           ),
           h.div(
             [h.Class('creator-actions')],
             [
-              h.button(
-                [h.Type('button'), h.OnClick(Message.DiscardRequested()), h.Disabled(busy)],
-                ['Discard'],
+              validationError && !busy
+                ? h.small(
+                    [h.Id('creator-continue-hint'), h.Class('creator-actions-hint')],
+                    [validationError],
+                  )
+                : h.empty,
+              Button.view(
+                {
+                  onClick: Message.DiscardRequested(),
+                  isDisabled: busy,
+                  toView: ({ button }) =>
+                    h.button([...button, h.Class('btn btn-quiet')], ['Discard']),
+                },
+                h,
               ),
-              h.button(
-                [
-                  h.Type('button'),
-                  h.OnClick(Message.DraftSaveRequested()),
-                  h.Disabled(busy || !canContinue),
-                ],
-                ['Save draft'],
+              Button.view(
+                {
+                  onClick: Message.DraftSaveRequested(),
+                  isDisabled: busy || !canContinue,
+                  toView: ({ button }) =>
+                    h.button(
+                      [
+                        ...button,
+                        h.Class('btn'),
+                        ...(validationError ? [h.AriaDescribedBy('creator-continue-hint')] : []),
+                      ],
+                      ['Save draft'],
+                    ),
+                },
+                h,
               ),
-              h.button(
-                [
-                  h.Type('button'),
-                  h.OnClick(Message.ReviewRequested()),
-                  h.Disabled(busy || !canContinue),
-                ],
-                ['Continue'],
+              Button.view(
+                {
+                  onClick: Message.ReviewRequested(),
+                  isDisabled: busy || !canContinue,
+                  toView: ({ button }) =>
+                    h.button(
+                      [
+                        ...button,
+                        h.Class('btn btn-primary'),
+                        ...(validationError ? [h.AriaDescribedBy('creator-continue-hint')] : []),
+                      ],
+                      ['Continue'],
+                    ),
+                },
+                h,
               ),
             ],
           ),
@@ -536,7 +765,7 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
         : h.empty,
       review(model, h, busy, canContinue, {
         publishType: publishType(model, h, busy),
-        metadata: metadata(model, h, busy),
+        metadata: metadata(model, h, busy, inputs.principal),
       }),
       model.phase === 'reviewing'
         ? h.empty

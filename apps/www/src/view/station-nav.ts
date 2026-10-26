@@ -31,7 +31,10 @@ export type StationNavProps<M> = {
 
 const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
-const desktopLinkClass = `shrink-0 rounded-sm px-2 py-1 text-xs font-semibold tracking-wide no-underline transition-colors text-muted-foreground hover:text-foreground aria-[current=page]:text-foreground ${focusRing}`
+// 32px targets with a highlight underline, so the current section reads without relying on colour.
+const desktopLinkClass = `inline-flex h-8 shrink-0 items-center rounded-sm px-2.5 text-xs font-semibold tracking-wide no-underline transition-colors text-muted-foreground hover:bg-muted/60 hover:text-foreground aria-[current=page]:text-foreground aria-[current=page]:shadow-[inset_0_-2px_0_var(--highlight)] ${focusRing}`
+
+const desktopIconButtonClass = `flex size-8 shrink-0 items-center justify-center rounded-sm p-0 transition-colors hover:bg-muted ${focusRing}`
 
 const tabClass =
   "relative flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-1 border-0 bg-transparent p-0 no-underline text-muted-foreground transition-colors before:absolute before:inset-x-1/4 before:top-0 before:h-0.5 before:rounded-b-sm before:bg-highlight before:opacity-0 before:transition-opacity before:content-[''] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring aria-[current=page]:text-foreground aria-[current=page]:before:opacity-100"
@@ -98,10 +101,10 @@ export const stationNav = <M>(h: HtmlBuilder<M>, props: StationNavProps<M>) => {
           h.Disabled(!props.interactive),
           h.OnClick(props.openSearch),
           h.Class(
-            `flex size-7 shrink-0 items-center justify-center rounded-sm border-0 bg-transparent p-0 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground ${focusRing}`,
+            `${desktopIconButtonClass} border-0 bg-transparent text-muted-foreground hover:text-foreground`,
           ),
         ],
-        [lucide(iconPaths.search, 'h-3 w-3')],
+        [lucide(iconPaths.search, 'h-4 w-4')],
       ),
       h.div([h.Class('min-w-0 flex-1')], []),
       h.div(
@@ -121,7 +124,7 @@ export const stationNav = <M>(h: HtmlBuilder<M>, props: StationNavProps<M>) => {
                       h.AriaLabel(nowPlaying.isPlaying ? 'Pause' : 'Play'),
                       h.OnClick(props.togglePlay),
                       h.Class(
-                        `flex size-7 shrink-0 items-center justify-center rounded-sm border border-border bg-transparent p-0 text-foreground transition-colors hover:bg-muted ${focusRing}`,
+                        `${desktopIconButtonClass} border border-border bg-transparent text-foreground`,
                       ),
                     ],
                     [playIcon(nowPlaying.isPlaying, 'h-3.5 w-3.5')],
@@ -145,7 +148,7 @@ export const stationNav = <M>(h: HtmlBuilder<M>, props: StationNavProps<M>) => {
                 [
                   h.Href(signInHref(props.pathname)),
                   h.Class(
-                    'shrink-0 text-xs font-semibold text-highlight no-underline hover:opacity-90',
+                    `inline-flex h-8 shrink-0 items-center rounded-sm px-2.5 text-xs font-semibold text-highlight no-underline transition-colors hover:bg-muted/60 ${focusRing}`,
                   ),
                 ],
                 ['Log in'],

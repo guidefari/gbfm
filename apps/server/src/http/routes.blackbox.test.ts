@@ -19,6 +19,7 @@ import {
   MicroPostScreenResponse,
   MicroPostThreadResponse,
   PostResponse,
+  PreviewPostContentResponse,
 } from '@gbfm/api/post'
 import { SearchResults } from '@gbfm/api/search'
 import { decodeResponseBody } from '@gbfm/api/testing'
@@ -27,7 +28,7 @@ import { SocialCardPresentation, TweetCardPresentation } from '@gbfm/social-card
 import { and, eq, inArray } from 'drizzle-orm'
 import { Layer } from 'effect'
 import { XMLValidator } from 'fast-xml-parser'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest'
 
 import { audioTable } from '@/db/audio.schema'
 import { session, user } from '@/db/auth.schema'
@@ -3674,6 +3675,61 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
 
     expect(res.status).toBe(404)
     expect(body).toContain('Mix not found')
+  })
+})
+
+describe('POST /api/content/posts/preview', () => {
+  it('requires a creator session, bounds source size, and returns resolved content', async () => {
+    const preview = (content: string, token?: string) => {
+      const headers = new Headers({ 'content-type': 'application/json' })
+
+      if (token) headers.set('authorization', `Bearer ${token}`)
+
+      return webHandler.handler(
+        new Request('http://localhost/api/content/posts/preview', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ content }),
+        }),
+      )
+    }
+
+    expect((await preview('Draft')).status).toBe(401)
+
+    const responses: Array<Response> = []
+
+    for (const role of ['listener', 'creator']) {
+      const userId = `preview-${role}-${crypto.randomUUID()}`
+      const token = `token-${userId}`
+      await db
+        .insert(user)
+        .values({ id: userId, name: role, email: `${userId}@example.test`, role })
+      await db.insert(session).values({
+        id: crypto.randomUUID(),
+        userId,
+        token,
+        expiresAt: new Date(Date.now() + 60_000),
+      })
+
+      try {
+        const response = await preview('::media{url="https://youtu.be/preview123"}', token)
+        expect(response.status).toBe(role === 'creator' ? 200 : 403)
+        responses.push(response)
+        expect((await preview('x'.repeat(100 * 1024 + 1), token)).status).toBe(400)
+      } finally {
+        await db.delete(user).where(eq(user.id, userId))
+      }
+    }
+
+    const creatorResponse = responses[1]
+    assert(creatorResponse, 'Creator preview returned a response')
+    const body = await decodeResponseBody(PreviewPostContentResponse, creatorResponse)
+    expect(body.richContent.blocks).toHaveLength(1)
+    expect(body.richContent.blocks[0]).toHaveProperty('_tag', 'ExternalMediaEmbed')
+    expect(body.richContent.blocks[0]).toHaveProperty(
+      'embedUrl',
+      'https://www.youtube-nocookie.com/embed/preview123',
+    )
   })
 })
 

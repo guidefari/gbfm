@@ -7,6 +7,7 @@ import remarkParse from 'remark-parse'
 import { unified } from 'unified'
 
 import { RICH_CONTENT_LIMITS } from './limits.ts'
+import { mediaReference } from './media.ts'
 import {
   RichContentValidationError,
   SafeUrl,
@@ -155,50 +156,6 @@ const sourceOf = (node: Node, source: string) => {
   const end = node.position?.end.offset
 
   return start === undefined || end === undefined ? '' : source.slice(start, end)
-}
-
-const mediaReference = (
-  url: URL,
-): {
-  provider: 'spotify' | 'youtube' | 'soundcloud' | 'bandcamp'
-  musicType?: 'track' | 'album' | 'playlist'
-} | null => {
-  const host = url.hostname.toLowerCase()
-  const parts = url.pathname.split('/').filter(Boolean)
-
-  if (host === 'open.spotify.com' && parts.length === 2) {
-    const kind = parts[0]
-
-    if (kind === 'track' || kind === 'album' || kind === 'playlist')
-      return { provider: 'spotify', musicType: kind }
-
-    if (kind === 'episode' || kind === 'show') return { provider: 'spotify' }
-  }
-
-  if (
-    (host === 'youtube.com' ||
-      host === 'www.youtube.com' ||
-      host === 'youtube-nocookie.com' ||
-      host === 'www.youtube-nocookie.com') &&
-    ((parts[0] === 'watch' && url.searchParams.has('v')) ||
-      (parts[0] === 'embed' && parts.length === 2))
-  )
-    return { provider: 'youtube' }
-
-  if (host === 'youtu.be' && parts.length === 1) return { provider: 'youtube' }
-
-  if ((host === 'soundcloud.com' || host.endsWith('.soundcloud.com')) && parts.length >= 2)
-    return { provider: 'soundcloud' }
-
-  if (
-    (host === 'bandcamp.com' || host.endsWith('.bandcamp.com')) &&
-    (parts[0] === 'track' || parts[0] === 'album')
-  )
-    return { provider: 'bandcamp' }
-
-  if (host === 'bandcamp.com' && parts[0] === 'EmbeddedPlayer') return { provider: 'bandcamp' }
-
-  return null
 }
 
 const inlines = (

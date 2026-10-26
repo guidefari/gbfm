@@ -292,6 +292,13 @@ export type MicroPostScreenMusic = typeof MicroPostScreenMusic.Type
 
 export type PostCreator = typeof Creator.Type
 
+/** Draft source rendered exactly as publishing would, so creators preview resolved embeds. */
+export const PreviewPostContentInput = Schema.Struct({
+  content: Schema.String.pipe(Schema.check(Schema.isMaxLength(100 * 1024))),
+})
+
+export const PreviewPostContentResponse = Schema.Struct({ richContent: RichContentDocument })
+
 export const PostGroup = /* @__PURE__ */ (() =>
   HttpApiGroup.make('post')
     .add(
@@ -434,6 +441,13 @@ export const PostGroup = /* @__PURE__ */ (() =>
         params: SlugParam,
         success: CompiledPostResponse,
         error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.post('previewPostContent', '/api/content/posts/preview', {
+        payload: PreviewPostContentInput,
+        success: PreviewPostContentResponse,
+        error: [HttpApiError.Forbidden],
       }).middleware(AuthMiddleware),
     )
     .add(

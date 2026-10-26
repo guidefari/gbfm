@@ -1,7 +1,15 @@
+import {
+  bandcampDarkPlayerUrl,
+  BANDCAMP_PLAYER_HEIGHT,
+  mediaProviderLabels,
+  mediaReference,
+  type MediaProvider,
+} from '@gbfm/rich-content/media'
 import type { RichContentBlock, RichContentDocument } from '@gbfm/rich-content/schema'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 import { imageSource } from '../artwork'
+import { iconPaths, lucide } from '../icons'
 
 type RichContentInline = Extract<
   RichContentBlock,
@@ -230,20 +238,82 @@ const musicView = <Message>(
   )
 }
 
+/** Fixed heights for audio players whose layout does not scale with width. */
+const playerHeight = (
+  block: Extract<RichContentBlock, { readonly _tag: 'ExternalMediaEmbed' }>,
+): number | null => {
+  if (block.provider === 'bandcamp') return BANDCAMP_PLAYER_HEIGHT
+
+  if (block.provider === 'soundcloud') return 166
+
+  if (block.provider === 'spotify')
+    return /\/embed\/(track|episode)\//.test(block.embedUrl) ? 152 : 352
+
+  return null
+}
+
+const hostOf = (href: string) => {
+  try {
+    return new URL(href).hostname.replace(/^www\./, '')
+  } catch {
+    return href
+  }
+}
+
+const providerOf = (href: string): MediaProvider | null => {
+  try {
+    return mediaReference(new URL(href))?.provider ?? null
+  } catch {
+    return null
+  }
+}
+
+const providerMark = <Message>(provider: MediaProvider | null, h: HtmlBuilder<Message>) =>
+  h.span(
+    [
+      h.Class('rich-content-provider'),
+      ...(provider ? [h.DataAttribute('provider', provider)] : []),
+    ],
+    [
+      h.span([h.Class('rich-content-provider-dot'), h.AriaHidden(true)], []),
+      provider ? mediaProviderLabels[provider] : 'Media',
+    ],
+  )
+
 const mediaView = <Message>(
   block: Extract<RichContentBlock, { readonly _tag: 'ExternalMediaEmbed' }>,
   h: HtmlBuilder<Message>,
-): Html =>
-  h.figure(
-    [h.Class('rich-content-media')],
+): Html => {
+  const height = playerHeight(block)
+  const label = mediaProviderLabels[block.provider]
+  const dark = bandcampDarkPlayerUrl(block.embedUrl)
+
+  // Hidden lazy frames never intersect the viewport, so only the visible theme's player loads.
+  const players = dark
+    ? [
+        { src: block.embedUrl, theme: 'light' },
+        { src: dark, theme: 'dark' },
+      ]
+    : [{ src: block.embedUrl, theme: null }]
+
+  return h.figure(
+    [h.Class('rich-content-media not-prose'), h.DataAttribute('provider', block.provider)],
     [
       h.div(
-        [h.Style({ aspectRatio: String(block.aspectRatio) })],
         [
+          h.Class('rich-content-media-frame'),
+          h.Style(
+            height === null
+              ? { aspectRatio: String(block.aspectRatio) }
+              : { height: `${height}px` },
+          ),
+        ],
+        players.map(({ src, theme }) =>
           h.iframe(
             [
-              h.Src(block.embedUrl),
-              h.Title(block.title),
+              h.Src(src),
+              ...(theme ? [h.Class(`rich-content-media-${theme}`)] : []),
+              h.Title(`${label} player: ${block.title}`),
               h.Width('100%'),
               h.Height('100%'),
               h.Loading('lazy'),
@@ -253,14 +323,59 @@ const mediaView = <Message>(
             ],
             [],
           ),
-        ],
+        ),
       ),
       h.figcaption(
-        [],
-        [h.a(linkAttributes(block.canonicalUrl, h), [`Open ${block.title} on ${block.provider}`])],
+        [h.Class('rich-content-media-source')],
+        [
+          providerMark(block.provider, h),
+          h.a(
+            [...linkAttributes(block.canonicalUrl, h), h.AriaLabel(`Open on ${label}`)],
+            [
+              h.span([h.Class('rich-content-media-host')], [hostOf(block.canonicalUrl)]),
+              lucide(iconPaths.externalLink, 'rich-content-media-icon'),
+            ],
+          ),
+        ],
       ),
     ],
   )
+}
+
+/** A link card for media whose player could not be resolved, so the post still reads well. */
+const unavailableMediaView = <Message>(
+  block: Extract<RichContentBlock, { readonly _tag: 'UnavailableEmbed' }>,
+  h: HtmlBuilder<Message>,
+): Html => {
+  const provider = block.href === null ? null : providerOf(block.href)
+  const label = provider ? mediaProviderLabels[provider] : null
+
+  return h.aside(
+    [
+      h.Class('rich-content-link-card not-prose'),
+      ...(provider ? [h.DataAttribute('provider', provider)] : []),
+    ],
+    [
+      h.div(
+        [h.Class('rich-content-link-card-copy')],
+        [
+          providerMark(provider, h),
+          h.p(
+            [h.Class('rich-content-link-card-title')],
+            [block.href === null ? 'Embedded media' : hostOf(block.href)],
+          ),
+          h.p([h.Class('rich-content-link-card-meta')], ['Player unavailable right now']),
+        ],
+      ),
+      block.href === null
+        ? h.empty
+        : h.a(
+            [...linkAttributes(block.href, h), h.Class('btn btn-sm')],
+            [label ? `Listen on ${label}` : 'Open link', lucide(iconPaths.externalLink, 'h-3 w-3')],
+          ),
+    ],
+  )
+}
 
 const blockView = <Message>(block: RichContentBlock, h: HtmlBuilder<Message>): Html => {
   // oxlint-disable-next-line anti-slop-effect/no-manual-tag-comparison -- Schema-owned recursive unions have no generated matcher; this switch provides compile-time exhaustiveness.
@@ -305,6 +420,8 @@ const blockView = <Message>(block: RichContentBlock, h: HtmlBuilder<Message>): H
         block.children.map((child) => blockView(child, h)),
       )
     case 'UnavailableEmbed':
+      if (block.kind === 'media') return unavailableMediaView(block, h)
+
       return h.aside(
         [h.Class('rich-content-unavailable'), h.Role('status')],
         [

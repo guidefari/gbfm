@@ -1,9 +1,9 @@
 import * as Dialog from '@foldkit/ui/dialog'
-import { RichContentDiagnostic } from '@gbfm/rich-content/schema'
+import { RichContentDiagnostic, RichContentDocument } from '@gbfm/rich-content/schema'
 import { Schema } from 'effect'
 
 import type { CreatorDraft } from './services'
-import { CreatorDraftSchema as Draft } from './services'
+import { CreatorDraftSchema as Draft, CreatorIdentity } from './services'
 
 export const Kind = Schema.Literals(['micro', 'post', 'mix'])
 
@@ -11,6 +11,7 @@ export const Model = Schema.Struct({
   draft: Draft,
   reviewDialog: Dialog.Model,
   creatorId: Schema.String,
+  creators: Schema.Array(CreatorIdentity),
   authorized: Schema.Boolean,
   phase: Schema.Literals([
     'loading',
@@ -25,11 +26,18 @@ export const Model = Schema.Struct({
   error: Schema.NullOr(Schema.String),
   episodeError: Schema.NullOr(Schema.String),
   tagsInput: Schema.String,
-  creatorsInput: Schema.String,
+  authorQuery: Schema.String,
+  authorSearch: Schema.Literals(['idle', 'loading', 'ready', 'failed']),
+  authorResults: Schema.Array(CreatorIdentity),
   episodeInput: Schema.String,
   editorMode: Schema.Literals(['source', 'preview']),
   diagnostics: Schema.Array(RichContentDiagnostic),
   externalMediaUrl: Schema.String,
+  externalMediaError: Schema.NullOr(Schema.String),
+  /** Server-rendered preview of `previewContent`, the same document publishing produces. */
+  preview: Schema.Literals(['idle', 'loading', 'ready', 'failed']),
+  previewContent: Schema.NullOr(Schema.String),
+  previewDocument: Schema.NullOr(RichContentDocument),
   musicPreviewTitle: Schema.NullOr(Schema.String),
   musicPreviewMeta: Schema.NullOr(Schema.String),
   musicPreviewImage: Schema.NullOr(Schema.String),

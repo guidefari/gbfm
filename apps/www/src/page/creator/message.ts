@@ -1,11 +1,11 @@
 import * as Dialog from '@foldkit/ui/dialog'
 import { ResolvePostMusicResponse } from '@gbfm/api/post'
-import { RichContentDiagnostic } from '@gbfm/rich-content/schema'
+import { RichContentDiagnostic, RichContentDocument } from '@gbfm/rich-content/schema'
 import { Schema } from 'effect'
 import { defineMessageUnion } from 'foldkit/message'
 
 import { Kind } from './model'
-import { CreatorDraftSchema as Draft } from './services'
+import { CreatorDraftSchema as Draft, CreatorIdentity } from './services'
 
 export const Message = defineMessageUnion({
   Changed: {
@@ -21,7 +21,12 @@ export const Message = defineMessageUnion({
     value: Schema.String,
   },
   TagsChanged: { value: Schema.String },
-  CreatorsChanged: { value: Schema.String },
+  AuthorQueryChanged: { value: Schema.String },
+  AuthorSearchRequested: {},
+  AuthorsFound: { query: Schema.String, creators: Schema.Array(CreatorIdentity) },
+  AuthorSearchFailed: { query: Schema.String },
+  AuthorSelected: { id: Schema.String },
+  AuthorRemoved: { id: Schema.String },
   QuoteChanged: { value: Schema.String },
   QuoteUrlChanged: { value: Schema.String },
   ResolveQuoteRequested: {},
@@ -56,13 +61,16 @@ export const Message = defineMessageUnion({
   FormatInserted: { before: Schema.String, after: Schema.String, sample: Schema.String },
   ExternalMediaChanged: { value: Schema.String },
   ExternalMediaInserted: {},
+  PreviewRequested: {},
+  PreviewLoaded: { content: Schema.String, document: RichContentDocument },
+  PreviewFailed: { content: Schema.String },
   MusicEmbedInserted: {},
   DiscardRequested: {},
   PublishRequested: {},
   DraftSaveRequested: {},
   Saved: { id: Schema.String, slug: Schema.String, published: Schema.Boolean },
   Failed: { operation: Schema.String, message: Schema.String },
-  Hydrated: { draft: Schema.NullOr(Draft) },
+  Hydrated: { draft: Schema.NullOr(Draft), creators: Schema.Array(CreatorIdentity) },
   LocallySaved: {},
   ArtworkChosen: { files: Schema.Array(Schema.instanceOf(File)) },
   ArtworkUploaded: { url: Schema.String },

@@ -1,3 +1,4 @@
+import { bandcampPlayerUrl } from '@gbfm/rich-content/media'
 import type { RichContentDocument, SafeUrl } from '@gbfm/rich-content/schema'
 import { inertHtml as h, type Html } from 'foldkit/html'
 import { describe, expect, it } from 'vitest'
@@ -127,7 +128,15 @@ const document: RichContentDocument = {
       _tag: 'UnavailableEmbed',
       kind: 'media',
       label: 'Media unavailable',
-      href: null,
+      href: safeUrl('https://artist.bandcamp.com/track/night-vigil'),
+    },
+    {
+      _tag: 'ExternalMediaEmbed',
+      provider: 'bandcamp',
+      canonicalUrl: safeUrl('https://artist.bandcamp.com/track/night-vigil'),
+      embedUrl: safeUrl(bandcampPlayerUrl('track', '42')),
+      title: 'Night Vigil',
+      aspectRatio: 16 / 5,
     },
     {
       _tag: 'Unsupported',
@@ -230,7 +239,7 @@ describe('richContentView', () => {
     expect(attribute(link, 'rel')).toBe('noopener noreferrer')
     expect(attribute(link, 'target')).toBe('_blank')
     expect(attribute(iframe, 'src')).toBe('https://youtube.com/embed/video')
-    expect(attribute(iframe, 'title')).toBe('Test video')
+    expect(attribute(iframe, 'title')).toBe('YouTube player: Test video')
     expect(attribute(iframe, 'loading')).toBe('lazy')
     expect(attribute(iframe, 'referrerpolicy')).toBe('strict-origin-when-cross-origin')
     expect(attribute(iframe, 'sandbox')).toBe(
@@ -241,15 +250,37 @@ describe('richContentView', () => {
     )
   })
 
-  it('renders unavailable embeds with and without validated fallbacks', () => {
+  it('renders unavailable music as a notice and unavailable media as a provider link card', () => {
     const rendered = render()
     const view = first(rendered === null ? [] : [rendered])
     const unavailable = findAll(view, '.rich-content-unavailable')
+    const card = first(findAll(view, '.rich-content-link-card'))
+    const listen = first(findAll(card, 'a'))
 
-    expect(unavailable).toHaveLength(2)
-    expect(findAll(first(unavailable), 'a')).toHaveLength(1)
-    expect(findAll(unavailable[1] ?? first([]), 'a')).toHaveLength(0)
+    expect(unavailable).toHaveLength(1)
     expect(textContent(first(unavailable))).toContain('Music unavailable')
-    expect(textContent(unavailable[1] ?? first([]))).toContain('Media unavailable')
+    expect(findAll(first(unavailable), 'a')).toHaveLength(1)
+    expect(textContent(card)).toContain('Bandcamp')
+    expect(textContent(card)).toContain('artist.bandcamp.com')
+    expect(textContent(listen)).toBe('Listen on Bandcamp')
+    expect(attribute(listen, 'href')).toBe('https://artist.bandcamp.com/track/night-vigil')
+  })
+
+  it('gives Bandcamp a fixed-height player per theme and links the release page', () => {
+    const rendered = render()
+    const view = first(rendered === null ? [] : [rendered])
+
+    const figure = first(
+      findAll(view, 'figure').filter((node) => textContent(node).includes('Bandcamp')),
+    )
+
+    const [light, dark] = findAll(figure, 'iframe')
+
+    expect(attribute(light ?? first([]), 'src')).toContain('/track=42/size=large/bgcol=ffffff/')
+    expect(attribute(dark ?? first([]), 'src')).toContain('/track=42/size=large/bgcol=333333/')
+    expect(hasClass(dark ?? first([]), 'rich-content-media-dark')).toBe(true)
+    expect(attribute(first(findAll(figure, 'a')), 'href')).toBe(
+      'https://artist.bandcamp.com/track/night-vigil',
+    )
   })
 })

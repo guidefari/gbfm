@@ -115,17 +115,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>) => {
                   ]),
                   h.div(
                     [h.Class('flex justify-end')],
-                    [
-                      h.button(
-                        [
-                          h.Type('submit'),
-                          h.Class(
-                            'inline-flex h-8 items-center rounded-sm border-0 bg-primary px-3 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90',
-                          ),
-                        ],
-                        ['Reply'],
-                      ),
-                    ],
+                    [h.button([h.Type('submit'), h.Class('btn btn-primary btn-sm')], ['Reply'])],
                   ),
                 ],
               )

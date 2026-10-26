@@ -429,6 +429,17 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
         return toDateStrings(post)
       }),
     )
+    .handle('previewPostContent', ({ payload }) =>
+      Effect.gen(function* () {
+        const { user } = yield* AuthSession
+
+        if (!canCreatePosts(user.role)) return yield* new HttpApiError.Forbidden()
+
+        const svc = yield* PostService
+
+        return { richContent: yield* svc.renderPreview(payload.content) }
+      }),
+    )
     .handle('createPost', ({ payload }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
