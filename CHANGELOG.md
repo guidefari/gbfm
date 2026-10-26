@@ -1,3 +1,10 @@
+## [2.112.2](https://github.com/planetaryescape/gbfm/compare/v2.112.1...v2.112.2) (2026-10-26)
+
+
+### Bug Fixes
+
+* **www:** restore Spotify controls on tweet music cards ([#397](https://github.com/planetaryescape/gbfm/issues/397)) ([53b6fba](https://github.com/planetaryescape/gbfm/commit/53b6fbafa52f50efdfa2d0db2ec3bf0737157849))
+
 ## [2.112.1](https://github.com/planetaryescape/gbfm/compare/v2.112.0...v2.112.1) (2026-10-25)
 
 
