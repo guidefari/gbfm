@@ -314,7 +314,9 @@ describe('richContentView', () => {
     )
     expect(attribute(hidden ?? first([]), 'start')).toBe(11)
     expect(findAll(disclosure, 'li').map(textContent)).toEqual(['11Track 11', '12Track 12'])
-    expect(textContent(first(findAll(disclosure, 'summary')))).toBe('Show all 12 tracks')
+    expect(textContent(first(findAll(disclosure, '.rich-content-disclosure-closed')))).toBe(
+      'Show all 12 tracks',
+    )
     expect(attribute(first(findAll(disclosure, 'a')), 'href')).toBe(
       'https://open.spotify.com/track/last',
     )

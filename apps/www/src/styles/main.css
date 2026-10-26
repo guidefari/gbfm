@@ -2551,10 +2551,12 @@
     padding-top: 0.5rem;
   }
   .rich-content .rich-content-track-list {
-    margin: 0;
     padding: 0;
     list-style: none;
     font-size: 0.875rem;
+  }
+  .rich-content .rich-content-music-tracks .rich-content-track-list {
+    margin: 0;
   }
   .rich-content-track-list li {
     display: grid;
@@ -2603,16 +2605,33 @@
     min-height: 2.75rem;
     display: flex;
     align-items: center;
+    gap: 0.375rem;
     padding-left: 2.75rem;
     color: var(--muted-foreground);
     cursor: pointer;
     font-size: 0.75rem;
     font-weight: 600;
   }
+  .rich-content-music-tracks summary::-webkit-details-marker {
+    display: none;
+  }
   .rich-content-music-tracks summary:hover {
     color: var(--foreground);
   }
-  .rich-content-music-tracks details[open] summary {
+  .rich-content-music-tracks summary:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  .rich-content-disclosure-icon {
+    width: 0.875rem;
+    height: 0.875rem;
+    transition: transform 150ms;
+  }
+  .rich-content-music-tracks details[open] .rich-content-disclosure-icon {
+    transform: rotate(180deg);
+  }
+  .rich-content-music-tracks details:not([open]) .rich-content-disclosure-open,
+  .rich-content-music-tracks details[open] .rich-content-disclosure-closed {
     display: none;
   }
   .rich-content-music-tracks details .rich-content-track-list {
@@ -2671,7 +2690,7 @@
       padding: 0.75rem 1.25rem;
     }
     .rich-content-track-list li:has(> .rich-content-track-artists) {
-      grid-template-columns: 2rem minmax(0, 1fr) minmax(0, 14rem);
+      grid-template-columns: 2rem minmax(0, 1fr) minmax(0, min(14rem, 40%));
     }
     .rich-content-track-artists {
       grid-column: auto;
@@ -2680,7 +2699,7 @@
   }
   .rich-content-card-group {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
     gap: 1rem;
   }
   .rich-content-card-group > * {
@@ -2702,6 +2721,14 @@
   }
   .rich-content .rich-content-card-group .rich-content-music-title {
     font-size: 1rem;
+  }
+  /* Grouped cards are too narrow for a separate artists column. */
+  .rich-content-card-group .rich-content-track-list li:has(> .rich-content-track-artists) {
+    grid-template-columns: 2rem minmax(0, 1fr);
+  }
+  .rich-content-card-group .rich-content-track-artists {
+    grid-column: 2;
+    text-align: left;
   }
   .rich-content-unavailable,
   .rich-content-unsupported {

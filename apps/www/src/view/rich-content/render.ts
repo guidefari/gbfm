@@ -187,7 +187,12 @@ const musicTrackRow = <Message>(
       ),
       ...(track.artists.length === 0
         ? []
-        : [h.span([h.Class('rich-content-track-artists')], [track.artists.join(', ')])]),
+        : [
+            h.span(
+              [h.Class('rich-content-track-artists'), h.Title(track.artists.join(', '))],
+              [track.artists.join(', ')],
+            ),
+          ]),
     ],
   )
 
@@ -203,7 +208,7 @@ const musicTracksView = <Message>(
     [h.Class('rich-content-music-tracks')],
     [
       h.ol(
-        [h.Class('rich-content-track-list'), h.AriaLabel(`${title} tracks`)],
+        [h.Class('rich-content-track-list'), h.Role('list'), h.AriaLabel(`${title} tracks`)],
         visible.map((track, index) => musicTrackRow(track, index + 1, h)),
       ),
       ...(hidden.length === 0
@@ -212,10 +217,24 @@ const musicTracksView = <Message>(
             h.details(
               [],
               [
-                h.summary([], [`Show all ${tracks.length} tracks`]),
+                h.summary(
+                  [],
+                  [
+                    h.span(
+                      [h.Class('rich-content-disclosure-closed')],
+                      [`Show all ${tracks.length} tracks`],
+                    ),
+                    h.span(
+                      [h.Class('rich-content-disclosure-open')],
+                      [`Hide tracks ${visibleTrackCount + 1}–${tracks.length}`],
+                    ),
+                    lucide(iconPaths.chevronDown, 'rich-content-disclosure-icon'),
+                  ],
+                ),
                 h.ol(
                   [
                     h.Class('rich-content-track-list'),
+                    h.Role('list'),
                     h.Start(visibleTrackCount + 1),
                     h.AriaLabel(`More ${title} tracks`),
                   ],
@@ -237,10 +256,7 @@ const musicView = <Message>(
   const music = block.music
 
   return h.article(
-    [
-      h.Class('rich-content-music-card not-prose'),
-      h.DataAttribute('entity-type', music.entityType),
-    ],
+    [h.Class('rich-content-music-card not-prose')],
     [
       h.div(
         [h.Class('rich-content-music-head')],
@@ -274,7 +290,7 @@ const musicView = <Message>(
                 ? []
                 : [
                     h.ul(
-                      [h.Class('rich-content-music-genres'), h.AriaLabel('Genres')],
+                      [h.Class('rich-content-music-genres'), h.Role('list'), h.AriaLabel('Genres')],
                       block.genres.map((genre) => h.li([], [genre])),
                     ),
                   ]),
@@ -290,21 +306,18 @@ const musicView = <Message>(
         ? []
         : [
             h.ul(
-              [h.Class('rich-content-music-links'), h.AriaLabel('Listen on')],
+              [h.Class('rich-content-music-links'), h.Role('list'), h.AriaLabel('Listen on')],
               music.links.map((link) =>
                 h.li(
                   [],
                   [
-                    h.a(
-                      [...linkAttributes(link.url, h), h.DataAttribute('platform', link.platform)],
-                      [
-                        ...(link.platform === 'spotify'
-                          ? [spotifyIcon('rich-content-music-link-icon')]
-                          : []),
-                        musicPlatformLabel(link.platform),
-                        lucide(iconPaths.externalLink, 'rich-content-music-link-external'),
-                      ],
-                    ),
+                    h.a(linkAttributes(link.url, h), [
+                      ...(link.platform === 'spotify'
+                        ? [spotifyIcon('rich-content-music-link-icon')]
+                        : []),
+                      musicPlatformLabel(link.platform),
+                      lucide(iconPaths.externalLink, 'rich-content-music-link-external'),
+                    ]),
                   ],
                 ),
               ),
@@ -489,6 +502,7 @@ const blockView = <Message>(block: RichContentBlock, h: HtmlBuilder<Message>): H
       return h.ol(
         [
           h.Class('rich-content-tracklist rich-content-track-list not-prose'),
+          h.Role('list'),
           h.AriaLabel('Tracklist'),
         ],
         block.tracks.map((track, index) =>
