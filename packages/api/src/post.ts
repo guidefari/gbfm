@@ -2,6 +2,7 @@ import { RichContentDocument } from '@gbfm/rich-content/schema'
 import { Schema } from 'effect'
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/http-api'
 
+import { MusicServiceUnavailableHttpError } from './errors'
 import { AuthMiddleware } from './middleware/auth'
 
 const UuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -22,6 +23,22 @@ export class ValidationHttpError extends Schema.TaggedError<ValidationHttpError>
 const PostType = Schema.Literals(['post', 'micro'])
 
 const MusicEntityType = Schema.Literals(['album', 'track', 'playlist'])
+
+export const ResolvePostMusicResponse = Schema.Struct({
+  postId: Schema.String,
+  entityType: MusicEntityType,
+  entityId: Schema.String,
+  url: Schema.String,
+  title: Schema.String,
+  artistNames: Schema.Array(Schema.String),
+  coverImageUrl: Schema.NullOr(Schema.String),
+})
+
+export class PostMusicResolutionError extends Schema.TaggedError<PostMusicResolutionError>()(
+  'PostMusicResolutionError',
+  { message: Schema.String },
+  { httpApiStatus: 422 },
+) {}
 
 const Creator = Schema.Struct({
   id: Schema.String,
@@ -428,6 +445,22 @@ export const PostGroup = /* @__PURE__ */ (() =>
           HttpApiError.Forbidden,
           HttpApiError.Conflict,
           HttpApiError.NotFound,
+          HttpApiError.InternalServerError,
+        ],
+      }).middleware(AuthMiddleware),
+    )
+    .add(
+      HttpApiEndpoint.post('resolvePostMusic', '/api/content/posts/:id/resolve-music-entity', {
+        params: IdParam,
+        payload: Schema.Struct({ url: Schema.optional(Schema.String) }),
+        success: ResolvePostMusicResponse,
+        error: [
+          PostMusicResolutionError,
+          HttpApiError.BadRequest,
+          HttpApiError.NotFound,
+          HttpApiError.Unauthorized,
+          HttpApiError.Conflict,
+          MusicServiceUnavailableHttpError,
           HttpApiError.InternalServerError,
         ],
       }).middleware(AuthMiddleware),

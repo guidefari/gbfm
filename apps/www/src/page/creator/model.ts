@@ -33,6 +33,8 @@ export const Model = Schema.Struct({
   musicPreviewTitle: Schema.NullOr(Schema.String),
   musicPreviewMeta: Schema.NullOr(Schema.String),
   musicPreviewImage: Schema.NullOr(Schema.String),
+  resolvingPostMusic: Schema.Boolean,
+  postMusicNotice: Schema.NullOr(Schema.String),
   quotePreview: Schema.NullOr(Schema.String),
   uploadPercent: Schema.Number,
   uploadState: Schema.Literals(['idle', 'running', 'pausing', 'paused', 'failed', 'cancelling']),

@@ -202,6 +202,7 @@ const musicSlot = (model: Model, h: Builder, busy: boolean): Html =>
               h.span([h.Class('sr-only')], ['Music URL']),
               h.input([
                 h.Value(model.draft.musicUrl),
+                h.Disabled(busy),
                 h.OnInput((value) => Message.Changed({ field: 'musicUrl', value })),
                 h.Placeholder('Paste a Spotify, Apple Music or Bandcamp link'),
               ]),
@@ -210,10 +211,14 @@ const musicSlot = (model: Model, h: Builder, busy: boolean): Html =>
           h.button(
             [
               h.Type('button'),
-              h.OnClick(Message.ResolveMusicRequested()),
-              h.Disabled(!model.draft.musicUrl.trim()),
+              h.OnClick(
+                model.draft.postId
+                  ? Message.ResolvePostMusicRequested()
+                  : Message.ResolveMusicRequested(),
+              ),
+              h.Disabled(busy || !model.draft.musicUrl.trim()),
             ],
-            ['Attach music'],
+            [model.draft.postId ? 'Attach & save music' : 'Attach music'],
           ),
         ],
       )
@@ -447,7 +452,10 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
     return h.section([h.Class('page narrow')], [h.p([], ['Loading draft…'])])
 
   const busy =
-    model.phase === 'saving' || model.phase === 'uploading' || model.uploadState !== 'idle'
+    model.phase === 'saving' ||
+    model.phase === 'uploading' ||
+    model.uploadState !== 'idle' ||
+    model.resolvingPostMusic
 
   const validationError = draftValidationError(model.draft)
   const canContinue = !validationError && !model.episodeError
@@ -558,6 +566,37 @@ export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, i
                     ],
                   ),
                   model.draft.kind !== 'mix' ? musicSlot(model, h, busy) : h.empty,
+                  model.draft.kind !== 'mix' && model.draft.postId
+                    ? h.section(
+                        [h.AriaLabel('Saved post music')],
+                        [
+                          h.button(
+                            [
+                              h.Type('button'),
+                              h.Class('secondary'),
+                              h.Disabled(busy),
+                              h.OnClick(Message.ResolvePostMusicRequested()),
+                            ],
+                            [
+                              model.resolvingPostMusic
+                                ? 'Resolving music…'
+                                : model.draft.musicEntityId
+                                  ? 'Re-resolve saved post music'
+                                  : 'Resolve saved post music',
+                            ],
+                          ),
+                          h.p(
+                            [],
+                            [
+                              'Uses Music URL, or finds a link in saved content. Saves only the music attachment; it does not publish or save other edits.',
+                            ],
+                          ),
+                          model.postMusicNotice
+                            ? h.p([h.Role('status')], [model.postMusicNotice])
+                            : h.empty,
+                        ],
+                      )
+                    : h.empty,
                   editor(model, h),
                   composerExtras(model, h),
                   model.draft.kind === 'mix' ? mixFields(model, h, busy) : h.empty,

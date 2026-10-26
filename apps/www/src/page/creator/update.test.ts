@@ -72,7 +72,12 @@ describe('creator model', () => {
     const saved = update(reviewed, Message.LocallySaved()).model
     expect(saved.phase).toBe('reviewing')
     expect(saved.saveState).toBe('saved-locally')
-    const published = update(saved, Message.Saved({ slug: 'published', published: true })).model
+
+    const published = update(
+      saved,
+      Message.Saved({ id: 'published-id', slug: 'published', published: true }),
+    ).model
+
     expect(update(published, Message.LocallySaved()).model).toEqual(published)
   })
 
@@ -122,6 +127,41 @@ describe('creator model', () => {
       musicEntityId: null,
     })
     expect(update(removed, resolved).model).toBe(removed)
+  })
+
+  it('resolves saved music after saving or publishing without discarding other edits', () => {
+    for (const published of [false, true]) {
+      const model = update(
+        initialModel(input),
+        Message.Saved({ id: 'saved-post', slug: 'saved', published }),
+      ).model
+
+      const edited = update(
+        model,
+        Message.Changed({ field: 'content', value: 'Unsaved notes' }),
+      ).model
+
+      const pending = update(edited, Message.ResolvePostMusicRequested()).model
+      expect(pending.resolvingPostMusic).toBe(true)
+      expect(update(pending, Message.ResolvePostMusicRequested()).model).toBe(pending)
+
+      const resolved = update(
+        pending,
+        Message.PostMusicResolved({
+          postId: 'saved-post',
+          entityType: 'track',
+          entityId: 'track-1',
+          title: 'Music',
+          artistNames: [],
+          coverImageUrl: null,
+          url: 'https://open.spotify.com/track/fixture',
+        }),
+      ).model
+
+      expect(resolved.resolvingPostMusic).toBe(false)
+      expect(resolved.draft).toMatchObject({ content: 'Unsaved notes', musicEntityId: 'track-1' })
+      expect(resolved.phase).toBe(model.phase)
+    }
   })
 
   it('enforces the tweet boundary in the model while editorials remain long-form', () => {

@@ -5,6 +5,7 @@ import {
   GetEditorialTagsResponse,
   GetMicroTagsResponse,
   GetPostTagsResponse,
+  PostMusicResolutionError,
   ValidationHttpError,
 } from '@gbfm/api/post'
 import { canCreatePosts } from '@gbfm/core/roles'
@@ -14,7 +15,10 @@ import { HttpApiBuilder, HttpApiError } from 'effect/http-api'
 
 import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
 import { omitUndefined } from '@/lib/omit-undefined'
+import { resolvePostMusic } from '@/services/post-music-resolution'
 import { PostService } from '@/services/post.service'
+
+import { mapMusicIdentityErrors } from './music-identity-http'
 
 const dieOnDatabaseError = makeDieOnDatabaseError('post')
 
@@ -456,6 +460,29 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
         )
 
         return toDateStrings(post)
+      }),
+    )
+    .handle('resolvePostMusic', ({ params, payload }) =>
+      Effect.gen(function* () {
+        const { user } = yield* AuthSession
+
+        return yield* dieOnDatabaseError(
+          mapMusicIdentityErrors(
+            resolvePostMusic(
+              params.id,
+              { userId: user.id, userRole: user.role ?? 'user' },
+              payload.url,
+            ),
+          ).pipe(
+            Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
+            Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized()),
+            Effect.catchTag('ConflictError', () => new HttpApiError.Conflict()),
+            Effect.catchTag(
+              'ValidationError',
+              ({ message }) => new PostMusicResolutionError({ message }),
+            ),
+          ),
+        )
       }),
     )
     .handle('updatePostBySlug', ({ params, payload }) =>

@@ -1,11 +1,11 @@
 import { AudioResponse } from '@gbfm/api/audio'
-import { CompiledPostResponse } from '@gbfm/api/post'
+import { CompiledPostResponse, PostResponse } from '@gbfm/api/post'
 import { expect, test, type Page } from '@playwright/test'
 import { Schema } from 'effect'
 
-const signIn = async (page: Page) => {
+const signIn = async (page: Page, email = 'admin@gbfm.local') => {
   await page.goto('/auth/sign-in')
-  await page.getByRole('textbox', { name: 'Email', exact: true }).fill('admin@gbfm.local')
+  await page.getByRole('textbox', { name: 'Email', exact: true }).fill(email)
   await page.getByRole('textbox', { name: 'Password', exact: true }).fill('LocalTest123!')
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
   await expect(page).toHaveURL(/\/dashboard$/)
@@ -36,6 +36,141 @@ test('source diagnostics update after editing and restoring a local draft', asyn
   await expect(diagnostics).toContainText('Raw HTML is unsupported')
   await canvas.fill('Ordinary **Markdown**')
   await expect(diagnostics).toHaveCount(0)
+})
+
+test('a creator resolves a saved draft from the dashboard without saving other edits or publishing', async ({
+  page,
+}, testInfo) => {
+  await signIn(page, 'creator@gbfm.local')
+  const slug = `e2e-manual-resolution-${crypto.randomUUID()}`
+  const content = 'Listening: https://open.spotify.com/track/2Mf7lfHxdiABiO7j0BDbHc'
+  const created = await page.request.post('/api/content/post', {
+    data: { type: 'micro', title: 'Resolve my saved draft', content, slug, draft: true },
+  })
+  expect(created.ok()).toBe(true)
+  const post = Schema.decodeUnknownSync(PostResponse)(await created.json())
+  await page.goto('/dashboard/content/tweets')
+  await page.locator(`a[href="/new/tweet?edit=${slug}"]`).click()
+  await expect(
+    page.getByRole('button', { name: 'Resolve saved post music', exact: true }),
+  ).toBeVisible()
+  await testInfo.attach('post-music-idle', {
+    body: await page.screenshot({ path: testInfo.outputPath('post-music-idle.png') }),
+    contentType: 'image/png',
+  })
+  const canvas = page.getByRole('textbox', { name: 'Writing canvas', exact: true })
+  await canvas.fill('An unsaved edit must stay in the editor.')
+  const endpoint = `**/api/content/posts/${post.id}/resolve-music-entity`
+  await page.route(endpoint, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 700))
+    await route.continue()
+  })
+  await page.getByRole('button', { name: 'Resolve saved post music', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Resolving music…', exact: true })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Save draft', exact: true })).toBeDisabled()
+  await testInfo.attach('post-music-pending', {
+    body: await page.screenshot({ path: testInfo.outputPath('post-music-pending.png') }),
+    contentType: 'image/png',
+  })
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Music attachment saved.' }),
+  ).toBeVisible()
+  await expect(page.locator('.creator-music-card')).toContainText('Grapefruit')
+  await expect(canvas).toHaveValue('An unsaved edit must stay in the editor.')
+  await testInfo.attach('post-music-success', {
+    body: await page.screenshot({ path: testInfo.outputPath('post-music-success.png') }),
+    contentType: 'image/png',
+  })
+  const saved = Schema.decodeUnknownSync(CompiledPostResponse)(
+    await (await page.request.get(`/api/content/posts/${slug}/edit`)).json(),
+  )
+  expect(saved).toMatchObject({
+    content,
+    draft: true,
+    musicEntityId: '00000000-0000-4000-8000-000000000003',
+    musicEntityType: 'track',
+  })
+  await page.reload()
+  await expect(page.locator('.creator-music-card')).toContainText('Attached music')
+  await expect(canvas).toHaveValue(content)
+  await page.getByRole('button', { name: 'Re-resolve saved post music', exact: true }).click()
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Music attachment saved.' }),
+  ).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  await page.getByRole('button', { name: 'Continue', exact: true }).click()
+  await page.getByRole('button', { name: 'Update', exact: true }).click()
+  await expect(page.locator('.creator-published')).toContainText('Published.')
+  const resolvedAfterPublication = page.waitForResponse(
+    (response) =>
+      response.url().endsWith(`/posts/${post.id}/resolve-music-entity`) &&
+      response.request().method() === 'POST',
+  )
+  await page.getByRole('button', { name: 'Re-resolve saved post music', exact: true }).click()
+  expect((await resolvedAfterPublication).status()).toBe(200)
+})
+
+test('saved-post resolution explains missing links and provider retry delays, then allows retry', async ({
+  page,
+}, testInfo) => {
+  await signIn(page, 'creator@gbfm.local')
+  const slug = `e2e-resolution-errors-${crypto.randomUUID()}`
+  const created = await page.request.post('/api/content/post', {
+    data: {
+      type: 'post',
+      title: 'A draft without a music link',
+      content: 'Listening notes.',
+      slug,
+      draft: true,
+    },
+  })
+  expect(created.ok()).toBe(true)
+  const post = Schema.decodeUnknownSync(PostResponse)(await created.json())
+  await page.goto(`/new/editorial?edit=${slug}`)
+  const resolve = page.getByRole('button', { name: 'Resolve saved post music', exact: true })
+  await resolve.click()
+  await expect(page.getByRole('alert')).toContainText('No music link found in the saved post.')
+  await expect(resolve).toBeEnabled()
+  await testInfo.attach('post-music-no-link', {
+    body: await page.screenshot({ path: testInfo.outputPath('post-music-no-link.png') }),
+    contentType: 'image/png',
+  })
+  const url = 'https://open.spotify.com/track/2Mf7lfHxdiABiO7j0BDbHc'
+  await page.getByRole('textbox', { name: 'Music URL', exact: true }).fill(url)
+  const endpoint = `**/api/content/posts/${post.id}/resolve-music-entity`
+  await page.route(endpoint, (route) =>
+    route.fulfill({
+      status: 503,
+      headers: { 'retry-after': '30' },
+      json: { _tag: 'ServiceUnavailable' },
+    }),
+  )
+  await page.getByRole('button', { name: 'Attach & save music', exact: true }).click()
+  await expect(page.getByRole('alert')).toHaveText(
+    'Music providers are busy or temporarily unavailable. Try again in 30 seconds.',
+  )
+  await expect(resolve).toBeEnabled()
+  await expect(page.getByRole('textbox', { name: 'Music URL', exact: true })).toHaveValue(url)
+  await testInfo.attach('post-music-provider-busy', {
+    body: await page.screenshot({ path: testInfo.outputPath('post-music-provider-busy.png') }),
+    contentType: 'image/png',
+  })
+  await page.unroute(endpoint)
+  await page.getByRole('button', { name: 'Attach & save music', exact: true }).click()
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Music attachment saved.' }),
+  ).toBeVisible()
+  expect(
+    Schema.decodeUnknownSync(CompiledPostResponse)(
+      await (await page.request.get(`/api/content/posts/${slug}/edit`)).json(),
+    ),
+  ).toMatchObject({ draft: true, content: 'Listening notes.', musicEntityType: 'track' })
+  await page.goto('/new/tweet')
+  await expect(
+    page.getByRole('button', { name: 'Resolve saved post music', exact: true }),
+  ).toHaveCount(0)
+  await page.goto('/new/mix?edit=e2e-local-frequencies')
+  await expect(page.getByRole('region', { name: 'Saved post music', exact: true })).toHaveCount(0)
 })
 
 test('mix creation satisfies the API contract and editing preserves audio and co-creators', async ({

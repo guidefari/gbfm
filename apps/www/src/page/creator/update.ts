@@ -8,6 +8,7 @@ import {
   PauseUpload,
   PersistDraft,
   ResolveMusic,
+  ResolvePostMusic,
   ResolveQuote,
   Save,
   UploadArtwork,
@@ -161,10 +162,52 @@ export const update = (
     ReviewRequested: () => openReviewDialog(model),
     ReviewClosed: () => closeReviewDialog(model),
     GotReviewDialogMessage: ({ message }) => updateReviewDialog(model, message),
-    ResolveMusicRequested: () => ({
-      model: { ...model, error: null },
-      commands: [ResolveMusic({ url: model.draft.musicUrl.trim(), kind: model.draft.kind })],
+    ResolvePostMusicRequested: () =>
+      model.authorized &&
+      (model.phase === 'writing' || model.phase === 'published') &&
+      !model.resolvingPostMusic &&
+      model.draft.kind !== 'mix' &&
+      model.draft.postId
+        ? {
+            model: { ...model, resolvingPostMusic: true, postMusicNotice: null, error: null },
+            commands: [ResolvePostMusic({ postId: model.draft.postId, url: model.draft.musicUrl })],
+          }
+        : { model },
+    PostMusicResolved: ({
+      postId,
+      entityType,
+      entityId,
+      url,
+      title,
+      artistNames,
+      coverImageUrl,
+    }) =>
+      model.draft.postId !== postId || !model.resolvingPostMusic
+        ? { model }
+        : changed(
+            {
+              ...model,
+              resolvingPostMusic: false,
+              postMusicNotice: 'Music attachment saved. Other edits are unchanged.',
+              musicPreviewTitle: title,
+              musicPreviewMeta: [entityType, artistNames.join(', ')].filter(Boolean).join(' · '),
+              musicPreviewImage: coverImageUrl,
+            },
+            { ...model.draft, musicEntityType: entityType, musicEntityId: entityId, musicUrl: url },
+          ),
+    PostMusicFailed: ({ postId, message }) => ({
+      model:
+        model.draft.postId === postId
+          ? { ...model, resolvingPostMusic: false, error: message }
+          : model,
     }),
+    ResolveMusicRequested: () =>
+      model.resolvingPostMusic
+        ? { model }
+        : {
+            model: { ...model, error: null },
+            commands: [ResolveMusic({ url: model.draft.musicUrl.trim(), kind: model.draft.kind })],
+          },
     MusicResolved: ({ entityType, entityId, url, title, artistNames, coverImageUrl }) =>
       model.draft.musicUrl.trim() !== url
         ? { model }
@@ -235,7 +278,9 @@ export const update = (
       }
     },
     DraftSaveRequested: () =>
-      draftValidationError(model.draft) || (model.draft.kind === 'mix' && model.episodeError)
+      model.resolvingPostMusic ||
+      draftValidationError(model.draft) ||
+      (model.draft.kind === 'mix' && model.episodeError)
         ? { model }
         : model.authorized
           ? {
@@ -244,7 +289,9 @@ export const update = (
             }
           : { model: { ...model, phase: 'forbidden' } },
     PublishRequested: () =>
-      draftValidationError(model.draft) || (model.draft.kind === 'mix' && model.episodeError)
+      model.resolvingPostMusic ||
+      draftValidationError(model.draft) ||
+      (model.draft.kind === 'mix' && model.episodeError)
         ? { model }
         : model.authorized
           ? Update.combine(model, [
@@ -255,10 +302,15 @@ export const update = (
               }),
             ])
           : { model: { ...model, phase: 'forbidden' } },
-    Saved: ({ slug, published }) => ({
+    Saved: ({ id, slug, published }) => ({
       model: {
         ...model,
-        draft: { ...model.draft, slug, editSlug: slug },
+        draft: {
+          ...model.draft,
+          slug,
+          editSlug: slug,
+          postId: model.draft.kind === 'mix' ? undefined : id,
+        },
         phase: published ? 'published' : 'writing',
         saveState: 'saved',
         error: null,

@@ -1,10 +1,12 @@
-import { Context, Data, Effect, Layer, Schema } from 'effect'
+import { PostMusicResolutionError, ResolvePostMusicResponse } from '@gbfm/api/post'
+import { Context, Data, Effect, Layer, Option, Schema } from 'effect'
 
 export type CreatorKind = 'micro' | 'post' | 'mix'
 
 export const CreatorDraftSchema = Schema.Struct({
   kind: Schema.Literals(['micro', 'post', 'mix']),
   editSlug: Schema.NullOr(Schema.String),
+  postId: Schema.optional(Schema.String),
   title: Schema.String,
   slug: Schema.String,
   content: Schema.String,
@@ -86,7 +88,13 @@ export interface CreatorOperations {
     },
     CreatorRequestError
   >
-  readonly save: (input: SaveInput) => Effect.Effect<{ readonly slug: string }, CreatorRequestError>
+  readonly resolvePostMusic: (
+    postId: string,
+    url: string,
+  ) => Effect.Effect<typeof ResolvePostMusicResponse.Type, CreatorRequestError>
+  readonly save: (
+    input: SaveInput,
+  ) => Effect.Effect<{ readonly id: string; readonly slug: string }, CreatorRequestError>
   readonly uploadImage: (file: File) => Effect.Effect<string, CreatorUploadError>
 }
 
@@ -95,6 +103,7 @@ export class CreatorService extends Context.Service<CreatorService, CreatorOpera
 ) {}
 
 const EditableResponse = Schema.Struct({
+  id: Schema.String,
   title: Schema.NullOr(Schema.String),
   slug: Schema.String,
   content: Schema.NullOr(Schema.String),
@@ -112,7 +121,7 @@ const EditableResponse = Schema.Struct({
   creators: Schema.optional(Schema.Array(Schema.Struct({ id: Schema.String }))),
 })
 
-const SavedResponse = Schema.Struct({ slug: Schema.String })
+const SavedResponse = Schema.Struct({ id: Schema.String, slug: Schema.String })
 
 const MusicResponse = Schema.Struct({
   entityType: Schema.String,
@@ -148,10 +157,34 @@ const requestJson = <A>(
       const response = await fetch(`/api${path}`, { credentials: 'include', ...init, signal })
 
       if (!response.ok) {
+        let message = 'The content request failed.'
+
+        if (operation === 'resolve post music') {
+          if (response.status === 503 || response.status === 429) {
+            const retryAfter = Number(response.headers.get('retry-after'))
+            message = `Music providers are busy or temporarily unavailable. Try again${retryAfter > 0 ? ` in ${retryAfter} seconds` : ' later'}.`
+          } else if (response.status === 422) {
+            const error = Schema.decodeUnknownOption(PostMusicResolutionError)(
+              await response.json(),
+            )
+
+            if (Option.isSome(error)) message = error.value.message
+          } else if (response.status === 401 || response.status === 403) {
+            message = 'You do not have permission to resolve music for this post.'
+          } else if (response.status === 409) {
+            message = 'The post or music identity changed. Reload and try again.'
+          } else if (response.status === 400) {
+            message =
+              'This music link could not be resolved. Check the URL and try another album, track or playlist link.'
+          } else if (response.status === 404) {
+            message = 'The post or music entity was not found. Reload and try again.'
+          }
+        }
+
         throw new CreatorRequestError({
           operation,
           status: response.status,
-          message: 'The content request failed.',
+          message,
         })
       }
 
@@ -224,6 +257,7 @@ export const CreatorServiceLive = Layer.succeed(CreatorService, {
       Effect.map((item): EditableContent => ({
         kind: kind === 'mix' ? 'mix' : item.type === 'post' ? 'post' : 'micro',
         editSlug: slug,
+        postId: kind === 'mix' ? undefined : item.id,
         title: item.title ?? '',
         slug: item.slug,
         content: item.content ?? '',
@@ -271,6 +305,13 @@ export const CreatorServiceLive = Layer.succeed(CreatorService, {
               }),
             ),
       ),
+    ),
+  resolvePostMusic: (postId, url) =>
+    requestJson(
+      'resolve post music',
+      ResolvePostMusicResponse,
+      `/content/posts/${encodeURIComponent(postId)}/resolve-music-entity`,
+      json(url.trim() ? { url: url.trim() } : {}),
     ),
   resolveQuote: (slug) =>
     requestJson(

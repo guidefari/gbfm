@@ -69,6 +69,18 @@ export const ResolveMusic = Command.define('Creator.ResolveMusic', {
     ),
 })
 
+export const ResolvePostMusic = Command.define('Creator.ResolvePostMusic', {
+  args: { postId: Schema.String, url: Schema.String },
+  messages: [Message.PostMusicResolved, Message.PostMusicFailed],
+  execute: ({ postId, url }) =>
+    Effect.flatMap(CreatorService, (service) => service.resolvePostMusic(postId, url)).pipe(
+      Effect.map(Message.PostMusicResolved),
+      Effect.catch((error) =>
+        Effect.succeed(Message.PostMusicFailed({ postId, message: error.message })),
+      ),
+    ),
+})
+
 export const ResolveQuote = Command.define('Creator.ResolveQuote', {
   args: { slug: Schema.String },
   messages: [Message.QuoteResolved, Message.Failed],
@@ -85,11 +97,11 @@ export const Save = Command.define('Creator.Save', {
   execute: ({ draft, creatorId, publish }) =>
     Effect.gen(function* () {
       const service = yield* CreatorService
-      const { slug } = yield* service.save({ draft, creatorId, publish })
+      const { id, slug } = yield* service.save({ draft, creatorId, publish })
 
       yield* service.clearLocalDraft(keyOf(draft))
 
-      return Message.Saved({ slug, published: publish })
+      return Message.Saved({ id, slug, published: publish })
     }).pipe(Effect.catch((error) => Effect.succeed(failure('save')(error)))),
 })
 
