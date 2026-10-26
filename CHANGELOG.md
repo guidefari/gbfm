@@ -1,3 +1,10 @@
+## [2.113.1](https://github.com/planetaryescape/gbfm/compare/v2.113.0...v2.113.1) (2026-10-26)
+
+
+### Bug Fixes
+
+* **creator:** align preview, publishing and author selection ([#399](https://github.com/planetaryescape/gbfm/issues/399)) ([55dcfb4](https://github.com/planetaryescape/gbfm/commit/55dcfb4d1ae8804bf9817ec9d9ca578c542e65f0))
+
 # [2.113.0](https://github.com/planetaryescape/gbfm/compare/v2.112.2...v2.113.0) (2026-10-26)
 
 
