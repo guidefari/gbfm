@@ -13,6 +13,27 @@ test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 })
 })
 
+for (const role of ['anonymous', 'listener', 'creator', 'admin'] as const) {
+  test(`Collections navigation is admin-only for ${role}`, async ({ page }) => {
+    if (role === 'anonymous') await page.goto('/privacy')
+    else await signIn(page, `${role}@gbfm.local`)
+
+    const desktopLink = page
+      .getByRole('navigation', { name: 'Primary', exact: true })
+      .getByRole('link', { name: 'Collections', exact: true })
+    await expect(desktopLink).toHaveCount(role === 'admin' ? 1 : 0)
+    if (role === 'admin') await expect(desktopLink).toBeVisible()
+
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.getByRole('button', { name: 'Menu', exact: true }).click()
+    const mobileLink = page
+      .getByRole('dialog', { name: 'Menu', exact: true })
+      .getByRole('link', { name: 'Collections', exact: true })
+    await expect(mobileLink).toHaveCount(role === 'admin' ? 1 : 0)
+    if (role === 'admin') await expect(mobileLink).toBeVisible()
+  })
+}
+
 test('desktop account actions support keyboard, dismissal, navigation and sign-out', async ({
   page,
   browserName,

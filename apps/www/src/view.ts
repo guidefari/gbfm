@@ -44,6 +44,10 @@ const pendingShowSlug = (route: Route, shows: Page.Shows.ShowsDocument) =>
   )
 
 export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
+  const visibleNav = nav.filter(
+    ([href]) => href !== '/collections' || model.flags.principal?.role === 'admin',
+  )
+
   const playback = {
     prefetch: (href: string) => Message.PrefetchRequested({ href }),
     play: (episode: Page.Shows.Episode) =>
@@ -200,7 +204,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
       [
         stationNav(h, {
           pathname: model.pendingPath ?? new URL(model.flags.url).pathname,
-          links: nav,
+          links: visibleNav,
           principal: model.flags.principal,
           accountMenu: model.flags.principal
             ? accountMenu(h, model.flags.principal, model.accountMenu, model.interactive)
@@ -225,7 +229,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
           openSearch: Message.GotSearchMessage({ message: Search.Message.Opened() }),
           toggleMenu: Message.MenuToggled(),
         }),
-        mobileMenu(h, model, nav),
+        mobileMenu(h, model, visibleNav),
         h.submodel({
           slotId: 'search',
           model: model.search,
