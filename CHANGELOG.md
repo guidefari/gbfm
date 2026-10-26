@@ -1,3 +1,10 @@
+## [2.114.1](https://github.com/planetaryescape/gbfm/compare/v2.114.0...v2.114.1) (2026-10-26)
+
+
+### Bug Fixes
+
+* **content:** let artwork-free music cards fill their width ([#403](https://github.com/planetaryescape/gbfm/issues/403)) ([602a275](https://github.com/planetaryescape/gbfm/commit/602a275f725e77902468f98d08f8a87c9678b234))
+
 # [2.114.0](https://github.com/planetaryescape/gbfm/compare/v2.113.1...v2.114.0) (2026-10-26)
 
 
