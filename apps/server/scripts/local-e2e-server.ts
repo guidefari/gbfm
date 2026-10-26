@@ -7,8 +7,10 @@ import { emailDeliveryLogsTable } from '@/db/email.schema'
 import { replaceEntityLabels } from '@/db/labels'
 import { makeDatabaseClient } from '@/db/layer'
 import {
+  musicAlbumsTable,
   musicEntityLinksTable,
   musicLabelsTable,
+  musicPlaylistsTable,
   musicSourceIdentitiesTable,
   musicTracksTable,
 } from '@/db/music-entity.schema'
@@ -154,7 +156,7 @@ await database.insert(musicEntityLinksTable).values([
     entityType: 'track',
     entityId: rootTrackId,
     platform: 'spotify',
-    url: 'https://open.spotify.com/track/e2e-root',
+    url: 'https://open.spotify.com/track/E2ERootTrack',
   },
   {
     entityType: 'track',
@@ -194,6 +196,30 @@ const [rootPost] = await database
   .returning()
 
 if (!rootPost) throw new Error('Local E2E tweet was not seeded')
+
+for (const kind of ['album', 'playlist'] as const) {
+  const id = crypto.randomUUID()
+  await database.insert(kind === 'album' ? musicAlbumsTable : musicPlaylistsTable).values({
+    id,
+    title: `Local ${kind}`,
+    slug: `e2e-spotify-${kind}`,
+    coverImageUrl: '/fav.png',
+  })
+  await database.insert(musicEntityLinksTable).values({
+    entityType: kind,
+    entityId: id,
+    platform: 'spotify',
+    url: `https://open.spotify.com/${kind}/E2ECollection`,
+  })
+  await database.insert(postsTable).values({
+    slug: `e2e-spotify-${kind}`,
+    content: 'A disposable Spotify playback fixture.',
+    type: 'micro',
+    draft: false,
+    musicEntityType: kind,
+    musicEntityId: id,
+  })
+}
 
 const [editorial] = await database
   .insert(postsTable)

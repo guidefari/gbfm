@@ -29,6 +29,7 @@ import * as PublicActions from './public-actions'
 import { isServerPath, Route } from './route'
 import * as Search from './search'
 import { dragOffset, shouldDismiss, startDrag } from './sheet-drag'
+import * as SpotifyPlayback from './spotify/playback'
 
 const mobileMenuFold = {
   read: (model: Model) => Option.some(model.mobileMenu),
@@ -133,6 +134,7 @@ const showPage = (
           : flags,
       repliesStatus: sameTweet ? model.repliesStatus : next.model.repliesStatus,
       player: model.player,
+      spotifyPlayback: model.spotifyPlayback,
       skipSeen: model.skipSeen,
       mobileMenu: model.mobileMenu,
       menuDrag: model.menuDrag,
@@ -176,6 +178,16 @@ const showPage = (
 
 export const update = (model: Model, message: Message): Update.Return<Model, Message, Services> =>
   Message.match<Update.Return<Model, Message, Services>>(message, {
+    GotSpotifyPlaybackMessage: ({ message }) => {
+      const child = SpotifyPlayback.update(model.spotifyPlayback, message)
+
+      return {
+        model: { ...model, spotifyPlayback: child.model },
+        commands: Command.mapMessages(child.commands ?? [], (message) =>
+          Message.GotSpotifyPlaybackMessage({ message }),
+        ),
+      }
+    },
     ClientStarted: () => {
       if (model.interactive) return { model }
       const started = { ...model, interactive: true }

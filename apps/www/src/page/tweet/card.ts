@@ -1,6 +1,9 @@
 import type { MicroPostScreenResponse } from '@gbfm/api/post'
-import { inertHtml as h } from 'foldkit/html'
+import { inertHtml as h, type HtmlBuilder } from 'foldkit/html'
 
+import { Message } from '../../message'
+import type { Model } from '../../model'
+import * as SpotifyPlayback from '../../spotify/playback'
 import { artwork } from '../../view/artwork'
 import { formatDate } from '../../view/format-date'
 import { iconPaths, lucide, spotifyIcon } from '../../view/icons'
@@ -149,7 +152,12 @@ const streamLinks = (links: NonNullable<TweetPost['music']>['links']) =>
     ),
   )
 
-export const musicCard = (music: NonNullable<TweetPost['music']>, eager = false) =>
+export const musicCard = (
+  music: NonNullable<TweetPost['music']>,
+  model: Model,
+  h: HtmlBuilder<Message>,
+  eager = false,
+) =>
   h.article(
     [
       h.Key(music.entity.id),
@@ -202,6 +210,17 @@ export const musicCard = (music: NonNullable<TweetPost['music']>, eager = false)
           ),
         ],
       ),
+      ...music.links
+        .filter((link) => link.platform === 'spotify')
+        .map((link) =>
+          SpotifyPlayback.view(
+            model.spotifyPlayback,
+            h,
+            (message) => Message.GotSpotifyPlaybackMessage({ message }),
+            link.url,
+            model.interactive,
+          ),
+        ),
       music.links.length > 0 ? streamLinks(music.links) : h.empty,
     ],
   )
@@ -300,7 +319,13 @@ export const tweetBody = (post: TweetPost, size: 'base' | 'sm') =>
         `prose ${size === 'base' ? 'prose-base' : 'prose-sm'} dark:prose-invert max-w-none prose-headings:font-black prose-headings:tracking-tighter prose-p:leading-relaxed prose-p:my-0 prose-a:text-foreground prose-a:underline`,
       )
 
-export const replyCard = (reply: TweetPost, isLast: boolean, canEdit: boolean) =>
+export const replyCard = (
+  reply: TweetPost,
+  isLast: boolean,
+  canEdit: boolean,
+  model: Model,
+  h: HtmlBuilder<Message>,
+) =>
   h.div(
     [h.Key(reply.id), h.Class('relative')],
     [
@@ -327,7 +352,7 @@ export const replyCard = (reply: TweetPost, isLast: boolean, canEdit: boolean) =
           ),
           authorRow(reply.creators ?? [], reply.createdAt),
           tweetBody(reply, 'sm'),
-          reply.music ? musicCard(reply.music) : h.empty,
+          reply.music ? musicCard(reply.music, model, h) : h.empty,
           tagLinks(reply.tags ?? []),
           h.div(
             [h.Class('flex items-center gap-4')],

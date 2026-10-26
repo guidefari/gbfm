@@ -31,7 +31,7 @@ index b9189a02f2f851e099e7c22655b73fb0a078f86b..0797744882f398927b418ed30c01055a
  import * as effect_Types from 'effect/Types';
  import * as Schema from 'effect/Schema';
 diff --git a/dist/index.js b/dist/index.js
-index 0a4828fc84fcc2d1d588c7aa2f65b50a8b7cf8cd..2c710c17162a7bbdb2e7321bb65864f266cc89f4 100644
+index 0a4828fc84fcc2d1d588c7aa2f65b50a8b7cf8cd..29999774bbc9c8ac01b27fac3046e46b7ff2a8b2 100644
 --- a/dist/index.js
 +++ b/dist/index.js
 @@ -109,7 +109,7 @@ var cursorPaginateAll = (fetch, pageSize = 20) => Stream.runCollect(cursorPagina
@@ -43,6 +43,15 @@ index 0a4828fc84fcc2d1d588c7aa2f65b50a8b7cf8cd..2c710c17162a7bbdb2e7321bb65864f2
  
  // src/api/Albums.ts
  var Effect4 = __toESM(require("effect/Effect"));
+@@ -611,7 +611,7 @@ var GetAlbumTracksResponseSchema = makePagingSchema(
+     id: Schema2.String,
+     is_playable: Schema2.optionalKey(Schema2.Boolean),
+     name: Schema2.String,
+-    preview_url: Schema2.String,
++    preview_url: Schema2.NullOr(Schema2.String),
+     track_number: Schema2.Number,
+     type: Schema2.Literal("track"),
+     uri: Schema2.String,
 @@ -687,7 +687,7 @@ var Effect3 = __toESM(require("effect/Effect"));
  var Layer4 = __toESM(require("effect/Layer"));
  var Ref = __toESM(require("effect/Ref"));
@@ -62,7 +71,7 @@ index 0a4828fc84fcc2d1d588c7aa2f65b50a8b7cf8cd..2c710c17162a7bbdb2e7321bb65864f2
  // src/constants.ts
  var BASE_API_URL = "https://api.spotify.com/v1";
 diff --git a/dist/index.mjs b/dist/index.mjs
-index 4a8d6d4b833611d06ceda363c17864c1ad371442..31559cb8bcb779e27d4c7043643f7a64d474352e 100644
+index 4a8d6d4b833611d06ceda363c17864c1ad371442..d276e520a2bdf65ed1734e3ad67924d490a17117 100644
 --- a/dist/index.mjs
 +++ b/dist/index.mjs
 @@ -29,7 +29,7 @@ var cursorPaginateAll = (fetch, pageSize = 20) => Stream.runCollect(cursorPagina
@@ -74,6 +83,15 @@ index 4a8d6d4b833611d06ceda363c17864c1ad371442..31559cb8bcb779e27d4c7043643f7a64
  
  // src/api/Albums.ts
  import * as Effect4 from "effect/Effect";
+@@ -531,7 +531,7 @@ var GetAlbumTracksResponseSchema = makePagingSchema(
+     id: Schema2.String,
+     is_playable: Schema2.optionalKey(Schema2.Boolean),
+     name: Schema2.String,
+-    preview_url: Schema2.String,
++    preview_url: Schema2.NullOr(Schema2.String),
+     track_number: Schema2.Number,
+     type: Schema2.Literal("track"),
+     uri: Schema2.String,
 @@ -607,7 +607,7 @@ import * as Effect3 from "effect/Effect";
  import * as Layer4 from "effect/Layer";
  import * as Ref from "effect/Ref";
@@ -92,3 +110,16 @@ index 4a8d6d4b833611d06ceda363c17864c1ad371442..31559cb8bcb779e27d4c7043643f7a64
  
  // src/constants.ts
  var BASE_API_URL = "https://api.spotify.com/v1";
+diff --git a/src/model/SpotifyResponseSchemas.ts b/src/model/SpotifyResponseSchemas.ts
+index ac96b59085cbd97e2294d2008072156098b89779..28a594095c4f39612bc59f1bcb303770f34cbb69 100644
+--- a/src/model/SpotifyResponseSchemas.ts
++++ b/src/model/SpotifyResponseSchemas.ts
+@@ -54,7 +54,7 @@ export const GetAlbumTracksResponseSchema = makePagingSchema(
+     id: Schema.String,
+     is_playable: Schema.optionalKey(Schema.Boolean),
+     name: Schema.String,
+-    preview_url: Schema.String,
++    preview_url: Schema.NullOr(Schema.String),
+     track_number: Schema.Number,
+     type: Schema.Literal("track"),
+     uri: Schema.String,
