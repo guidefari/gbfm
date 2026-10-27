@@ -11,11 +11,13 @@ import {
 import { AppLayer, type AppLayerOptions } from '@/runtime/services'
 import { MusicCoverImageFetcher } from '@/services/canonical-music-identity/artwork-delivery'
 import type { ConfigService } from '@/services/config.service'
+import type { EditorialListCache } from '@/services/editorial-list-cache'
 import {
   RecordingEmailTransportLayer,
   type EmailTransportService,
 } from '@/services/email-transport.service'
 import { PlaylistEnrichmentQueueTestLayer } from '@/services/playlist-enrichment-queue'
+import type { RequestTelemetry } from '@/services/request-telemetry.service'
 import { SentryServiceLayer } from '@/services/sentry.service'
 import type { SignupProtection } from '@/services/signup-protection'
 import { SitemapCacheLayer, type SitemapKv } from '@/services/sitemap-cache'
@@ -65,6 +67,10 @@ export const createTestWebHandler = (
   configLive?: Layer.Layer<ConfigService>,
   signupProtection?: Layer.Layer<SignupProtection>,
   externalMediaFetcherLive?: Layer.Layer<never>,
+  options?: {
+    readonly editorialListCache?: Layer.Layer<EditorialListCache>
+    readonly requestTelemetry?: Layer.Layer<RequestTelemetry>
+  },
 ) => {
   const baseServices = {
     database: DatabaseLayer(d1),
@@ -77,6 +83,7 @@ export const createTestWebHandler = (
     musicCoverImageFetcher: musicCoverImageFetcherLive,
     ...(signupProtection ? { signupProtection } : undefined),
     ...(externalMediaFetcherLive ? { externalMediaFetcher: externalMediaFetcherLive } : undefined),
+    ...options,
   }
 
   const services = configLive === undefined ? baseServices : { ...baseServices, config: configLive }

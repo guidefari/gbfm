@@ -18,6 +18,7 @@ import { omitUndefined } from '@/lib/omit-undefined'
 import { resolvePostMusic } from '@/services/post-music-resolution'
 import { PostService } from '@/services/post.service'
 
+import { cachedEditorialList } from './editorial-list-cache'
 import { mapMusicIdentityErrors } from './music-identity-http'
 
 const dieOnDatabaseError = makeDieOnDatabaseError('post')
@@ -136,29 +137,32 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
       Effect.gen(function* () {
         const svc = yield* PostService
 
-        const result = yield* dieOnDatabaseError(
-          svc.getEditorials(
-            omitUndefined({
-              limit: query.limit ?? 20,
-              offset: query.offset ?? 0,
-              tag: query.tag,
-            }),
+        const options = omitUndefined({
+          limit: query.limit ?? 20,
+          offset: query.offset ?? 0,
+          tag: query.tag,
+        })
+
+        const cached = yield* cachedEditorialList(
+          options,
+          dieOnDatabaseError(svc.getEditorials(options)).pipe(
+            Effect.map((result) => ({
+              data: result.data.map(toDateStrings),
+              pagination: result.pagination,
+            })),
           ),
         )
 
-        const body = {
-          data: result.data.map(toDateStrings),
-          pagination: result.pagination,
-        }
-
-        const encoded = yield* Schema.encodeEffect(GetEditorialPostsResponse)(body).pipe(
+        const encoded = yield* Schema.encodeEffect(GetEditorialPostsResponse)(cached.body).pipe(
           Effect.orDie,
         )
 
-        return HttpServerResponse.setHeader(
-          yield* HttpServerResponse.json(encoded).pipe(Effect.orDie),
-          'Cache-Control',
-          'public, max-age=60, stale-while-revalidate=300',
+        return (yield* HttpServerResponse.json(encoded).pipe(Effect.orDie)).pipe(
+          HttpServerResponse.setHeader(
+            'Cache-Control',
+            'public, max-age=60, stale-while-revalidate=300',
+          ),
+          HttpServerResponse.setHeader('Age', String(cached.ageSeconds)),
         )
       }),
     )
