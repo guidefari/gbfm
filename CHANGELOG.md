@@ -1,3 +1,10 @@
+## [2.115.2](https://github.com/planetaryescape/gbfm/compare/v2.115.1...v2.115.2) (2026-10-27)
+
+
+### Performance Improvements
+
+* **api:** cache public editorial lists for repeat reads ([#408](https://github.com/planetaryescape/gbfm/issues/408)) ([f62b207](https://github.com/planetaryescape/gbfm/commit/f62b207313fc435c5d02a3d590762431b5fc534e))
+
 ## [2.115.1](https://github.com/planetaryescape/gbfm/compare/v2.115.0...v2.115.1) (2026-10-26)
 
 
