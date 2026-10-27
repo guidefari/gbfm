@@ -74,7 +74,7 @@ export const readerDock = (
   return h.div(
     [
       h.Class(
-        'pointer-events-none fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-30 px-3 pb-2 lg:bottom-12',
+        'pointer-events-none fixed inset-x-0 bottom-[calc(var(--mobile-dock-height)+env(safe-area-inset-bottom))] z-30 px-3 pb-2 lg:bottom-12',
       ),
     ],
     [

@@ -1,3 +1,4 @@
+import { dark, light } from '@gbfm/theme'
 import { Option, Schema } from 'effect'
 
 export const Theme = Schema.Literals(['light', 'dark', 'system'])
@@ -27,6 +28,9 @@ const applyTheme = (theme: Theme) => {
   document.documentElement.classList.remove('light', 'dark')
   document.documentElement.classList.add(resolved)
   document.documentElement.dataset.theme = resolved
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute('content', resolved === 'dark' ? dark.backgroundHex : light.backgroundHex)
 }
 
 export const saveTheme = (theme: Theme) => {

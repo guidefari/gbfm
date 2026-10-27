@@ -670,20 +670,27 @@
   }
 }
 .site {
+  --mobile-dock-height: 3.5rem;
   color: var(--foreground);
   background: var(--background);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: calc(var(--mobile-dock-height) + env(safe-area-inset-bottom));
+}
+.site:has(.mobile-player),
+:root[data-queued] .site:has(.mobile-player-pending) {
+  --mobile-dock-height: 7.5rem;
 }
 @media (min-width: 64rem) {
-  .site {
+  .site,
+  .site:has(.mobile-player),
+  :root[data-queued] .site:has(.mobile-player-pending) {
     padding-bottom: calc(3rem + env(safe-area-inset-bottom));
   }
 }
-:root:not([data-queued]) .nav-queued-tab,
-:root[data-queued] .nav-idle-tab {
+:root:not([data-queued]) .mobile-player-pending {
   display: none;
 }
 .site > main {

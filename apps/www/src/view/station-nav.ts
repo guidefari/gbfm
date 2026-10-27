@@ -2,17 +2,10 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 
 import type { Principal } from '../model'
 import { signInHref } from '../page/auth/links'
-import { artworkUrl, fallbackArtwork, imageSource } from './artwork'
 import { iconPaths, lucide } from './icons'
+import { mobilePlayer, type NowPlaying } from './mobile-player'
 import { isActiveNavLink } from './nav-active'
 import { wordmark } from './wordmark'
-
-type NowPlaying = {
-  readonly title: string
-  readonly thumbnailUrl: string | null
-  readonly isPlaying: boolean
-  readonly progress: number
-}
 
 export type StationNavProps<M> = {
   readonly pathname: string
@@ -176,86 +169,15 @@ export const stationNav = <M>(h: HtmlBuilder<M>, props: StationNavProps<M>) => {
     [
       h.AriaLabel('Primary'),
       h.Class(
-        'fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden',
+        'fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] lg:hidden',
       ),
     ],
     [
+      mobilePlayer(h, nowPlaying, props.queueResolved, props.openPlayer, props.togglePlay),
       h.div(
         [h.Class('grid h-14 grid-cols-5')],
         [
-          nowPlaying
-            ? h.button(
-                [
-                  h.Type('button'),
-                  h.AriaLabel('Now playing'),
-                  h.OnClick(props.openPlayer),
-                  h.Class(`${tabClass} text-foreground`),
-                ],
-                [
-                  h.span(
-                    [
-                      h.Class(
-                        'relative flex size-[22px] shrink-0 items-center justify-center overflow-hidden rounded-sm border border-border',
-                      ),
-                    ],
-                    [
-                      h.img([
-                        imageSource(artworkUrl(nowPlaying.thumbnailUrl || fallbackArtwork, 96)),
-                        h.Alt(''),
-                        h.Class('size-full object-cover'),
-                      ]),
-                      h.span(
-                        [
-                          h.Class(
-                            'absolute inset-0 flex items-center justify-center bg-background/40',
-                          ),
-                        ],
-                        [playIcon(nowPlaying.isPlaying, 'h-3 w-3 text-white')],
-                      ),
-                    ],
-                  ),
-                  tabLabel(nowPlaying.isPlaying ? 'Playing' : 'Paused'),
-                ],
-              )
-            : props.queueResolved
-              ? tabLink('/mixes', 'Mixes', iconPaths.disc)
-              : h.div(
-                  [h.Class('contents')],
-                  [
-                    h.button(
-                      [
-                        h.Type('button'),
-                        h.AriaLabel('Now playing'),
-                        h.OnClick(props.openPlayer),
-                        h.Class(`${tabClass} nav-queued-tab text-foreground`),
-                      ],
-                      [
-                        h.span(
-                          [
-                            h.Class(
-                              'relative flex size-[22px] shrink-0 items-center justify-center overflow-hidden rounded-sm border border-border bg-muted bg-cover bg-center [background-image:var(--queued-art)]',
-                            ),
-                          ],
-                          [
-                            h.span(
-                              [
-                                h.Class(
-                                  'absolute inset-0 flex items-center justify-center bg-background/40',
-                                ),
-                              ],
-                              [playIcon(false, 'h-3 w-3 text-white')],
-                            ),
-                          ],
-                        ),
-                        tabLabel('Paused'),
-                      ],
-                    ),
-                    h.div(
-                      [h.Class('nav-idle-tab contents')],
-                      [tabLink('/mixes', 'Mixes', iconPaths.disc)],
-                    ),
-                  ],
-                ),
+          tabLink('/mixes', 'Mixes', iconPaths.disc),
           tabLink('/shows', 'Shows', iconPaths.radio),
           tabLink('/editorial', 'Editorial', iconPaths.book),
           h.button(

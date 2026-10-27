@@ -18,8 +18,7 @@ const shellHead = String.raw`
 ${import.meta.env.DEV ? '<link rel="stylesheet" href="/src/styles/main.css">' : ''}
 <link rel="icon" type="image/png" href="/fav.png">
 <link rel="preload" href="/fonts/JetBrainsMono-ExtraBold-latin.woff2" as="font" type="font/woff2" crossorigin>
-<meta name="theme-color" content="${dark.backgroundHex}" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="${light.backgroundHex}" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="${light.backgroundHex}">
 <script>
   (() => {
     let saved = 'system'
@@ -29,6 +28,8 @@ ${import.meta.env.DEV ? '<link rel="stylesheet" href="/src/styles/main.css">' : 
       : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
     document.documentElement.classList.add(resolved)
     document.documentElement.dataset.theme = resolved
+    document.querySelector('meta[name="theme-color"]').setAttribute('content',
+      resolved === 'dark' ? '${dark.backgroundHex}' : '${light.backgroundHex}')
   })()
   ;(() => {
     try {

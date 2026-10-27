@@ -155,6 +155,7 @@ test.each(['light', 'dark', 'system', 'blocked'])(
     const classes: Array<string> = []
     const properties = new Map<string, string>()
     const dataset: Record<string, string> = {}
+    const metadata = new Map<string, string>()
     runInNewContext(script, {
       URL,
       location: { origin: 'https://preview.example' },
@@ -175,6 +176,9 @@ test.each(['light', 'dark', 'system', 'blocked'])(
       },
       matchMedia: () => ({ matches: true }),
       document: {
+        querySelector: () => ({
+          setAttribute: (name: string, value: string) => metadata.set(name, value),
+        }),
         documentElement: {
           dataset,
           classList: { add: (value: string) => classes.push(value) },
@@ -184,6 +188,9 @@ test.each(['light', 'dark', 'system', 'blocked'])(
     })
     expect(classes).toEqual([theme === 'light' ? 'light' : 'dark'])
     expect(dataset.theme).toBe(theme === 'light' ? 'light' : 'dark')
+    expect(metadata.get('content')).toBe(
+      theme === 'light' ? light.backgroundHex : dark.backgroundHex,
+    )
 
     expect(dataset.queued).toBe(theme === 'blocked' ? undefined : '')
 
