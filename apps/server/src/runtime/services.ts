@@ -3,6 +3,10 @@ import { Layer } from 'effect'
 import type { Database } from '@/db/layer'
 import { AuthLive } from '@/lib/auth'
 import { MdxServiceCatalogLayer } from '@/lib/mdx'
+import {
+  EditorialListCacheUnavailableLayer,
+  type EditorialListCache,
+} from '@/services/editorial-list-cache'
 import type { SentryService } from '@/services/sentry.service'
 import type { SitemapCache } from '@/services/sitemap-cache'
 
@@ -79,6 +83,7 @@ export interface AppLayerOptions {
   readonly adminTelemetry?: Layer.Layer<AdminTelemetryService>
   readonly requestTelemetry?: Layer.Layer<RequestTelemetry>
   readonly signupProtection?: Layer.Layer<SignupProtection>
+  readonly editorialListCache?: Layer.Layer<EditorialListCache>
 }
 
 export const AppLayer = ({
@@ -97,6 +102,7 @@ export const AppLayer = ({
   adminTelemetry: adminTelemetryLive = AdminTelemetryUnavailableLayer,
   requestTelemetry: requestTelemetryLive = RequestTelemetryUnavailableLayer,
   signupProtection: signupProtectionLive = SignupProtectionUnavailableLayer,
+  editorialListCache: editorialListCacheLive = EditorialListCacheUnavailableLayer,
 }: AppLayerOptions) => {
   const EmailDeliveryWithDependencies = EmailDeliveryLive.pipe(
     Layer.provide(Layer.mergeAll(databaseLive, configLive, emailTransportLive)),
@@ -175,6 +181,7 @@ export const AppLayer = ({
     objectStoreLive,
     databaseLive,
     sitemapCacheLive,
+    editorialListCacheLive,
     AuthLive.pipe(
       Layer.provide(Layer.mergeAll(databaseLive, configLive, EmailDeliveryWithDependencies)),
     ),

@@ -47,6 +47,7 @@ import {
   WorkerConfigServiceLayerEffect,
   type WorkerConfigBindings,
 } from '@/services/config.service'
+import { EditorialListCacheLayer } from '@/services/editorial-list-cache'
 import {
   RecordingEmailTransportLayer,
   UnconfiguredEmailTransportLayer,
@@ -156,6 +157,7 @@ const appServicesLive = (
   env: ApiEnv,
   tracing: Layer.Layer<never> = WorkerTracingLive,
   waitUntil?: (delivery: Promise<void>) => void,
+  editorialOrigin?: string,
 ) => {
   const configLive = WorkerConfigServiceLayerEffect(
     resolveSecretBindings(env).pipe(
@@ -186,6 +188,14 @@ const appServicesLive = (
   )
 
   return AppLayer({
+    ...(env.LOCAL_DEV !== 'true' && editorialOrigin
+      ? {
+          editorialListCache: EditorialListCacheLayer(caches.default, {
+            origin: editorialOrigin,
+            release: env.APP_RELEASE,
+          }),
+        }
+      : undefined),
     database: DatabaseLayer(env.DB),
     sitemapCache: SitemapCacheLayer(env.SITEMAP),
     spotifyImportResolver: spotifyImportResolverLive(env),
@@ -371,7 +381,12 @@ export default Sentry.withSentry<ApiEnv, ApiQueueJob>(sentryOptions, {
       const tracing = local ? Layer.succeed(Tracer.Tracer, await localTracer()) : WorkerTracingLive
 
       const webHandler = createWebHandler({
-        appServicesLive: appServicesLive(env, tracing, (delivery) => ctx.waitUntil(delivery)),
+        appServicesLive: appServicesLive(
+          env,
+          tracing,
+          (delivery) => ctx.waitUntil(delivery),
+          url.origin,
+        ),
         localTracing: local,
       })
 
