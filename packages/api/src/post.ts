@@ -143,6 +143,23 @@ export const GetEditorialPostsResponse = Schema.Struct({
   pagination: PaginationMeta,
 })
 
+export const EditorialPostSummary = Schema.Struct({
+  id: PostResponse.fields.id,
+  slug: PostResponse.fields.slug,
+  title: Schema.String,
+  thumbnailUrl: PostResponse.fields.thumbnailUrl,
+  description: PostResponse.fields.description,
+  createdAt: PostResponse.fields.createdAt,
+  updatedAt: PostResponse.fields.updatedAt,
+  creators: Schema.Array(Creator),
+  tags: PostResponse.fields.tags,
+})
+
+export const GetEditorialSummariesResponse = Schema.Struct({
+  data: Schema.Array(EditorialPostSummary),
+  pagination: PaginationMeta,
+})
+
 export const GetMicroPostsResponse = Schema.Struct({
   data: Schema.Array(CompiledMicroPostResponse),
   pagination: PaginationMeta,
@@ -333,6 +350,13 @@ export const PostGroup = /* @__PURE__ */ (() =>
       HttpApiEndpoint.get('getEditorialPosts', '/api/content/posts/editorials', {
         query: GetEditorialPostsQuery,
         success: GetEditorialPostsResponse,
+        error: HttpApiError.InternalServerError,
+      }),
+    )
+    .add(
+      HttpApiEndpoint.get('getEditorialSummaries', '/api/content/editorial-summaries', {
+        query: GetEditorialPostsQuery,
+        success: GetEditorialSummariesResponse,
         error: HttpApiError.InternalServerError,
       }),
     )

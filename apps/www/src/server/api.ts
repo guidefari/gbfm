@@ -54,8 +54,11 @@ const endpoints = new Map([
 export const endpointFor = (route: Route): string | null =>
   Route.match(route, {
     Home: () => '/api/content/homepage-mixes',
-    Listing: ({ kind }) =>
-      kind === 'shows' ? '/api/shows?limit=100&offset=0' : (endpoints.get(kind) ?? null),
+    Listing: ({ kind }) => {
+      if (kind === 'editorial') return '/api/content/editorial-summaries'
+
+      return kind === 'shows' ? '/api/shows?limit=100&offset=0' : (endpoints.get(kind) ?? null)
+    },
     Detail: ({ kind, slug }) => {
       if (kind === 'tags') return `/api/content/tag/${encodeURIComponent(slug)}`
       const root = endpoints.get(kind)
