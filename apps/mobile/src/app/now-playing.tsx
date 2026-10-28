@@ -5,6 +5,7 @@ import type { AccessibilityActionEvent, LayoutChangeEvent } from 'react-native'
 import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native'
 
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
+import { PlayerSheetHeader } from '@/components/NowPlaying/PlayerSheetHeader'
 import { QueueSheet } from '@/components/NowPlaying/QueueSheet'
 import { Screen } from '@/components/Screen'
 import { useThemeColors, withAlpha } from '@/theme/colors'
@@ -75,25 +76,7 @@ export default function NowPlaying() {
 
   return (
     <Screen>
-      <View
-        style={{
-          alignSelf: 'center',
-          width: 36,
-          height: 4,
-          borderRadius: 2,
-          backgroundColor: withAlpha(colors.muted, 0.45),
-          marginTop: 8,
-        }}
-      />
-
-      <Pressable
-        accessibilityRole='button'
-        accessibilityLabel='Close'
-        hitSlop={12}
-        onPress={() => router.back()}
-        style={{ position: 'absolute', top: 16, right: 16, padding: 8 }}>
-        <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 14 }}>Close</Text>
-      </Pressable>
+      <PlayerSheetHeader onClose={() => router.back()} />
 
       {!displayTrack ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
