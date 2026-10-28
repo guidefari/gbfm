@@ -92,6 +92,7 @@ export const Model = Schema.Struct({
   mobileMenu: Dialog.Model,
   menuDrag: SheetDrag,
   menuOffset: Schema.Number,
+  navMinimized: Schema.Boolean,
   accountMenu: Popover.Model,
   search: Search.Model,
   skipSeen: Schema.Boolean,

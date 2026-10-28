@@ -54,15 +54,86 @@ for (const viewport of [
     await expect(pause).toHaveAttribute('aria-pressed', 'true')
     await mini.getByRole('button', { name: 'Pause', exact: true }).click()
     await expect(control).toHaveAttribute('aria-pressed', 'false')
+    await expect(mini.getByRole('button', { name: 'Next track', exact: true })).toBeDisabled()
     await mini.getByRole('button', { name: 'Now playing', exact: true }).click()
     await expect(player).toBeVisible()
     await player.getByRole('button', { name: 'Collapse player' }).click()
     await expect(player).not.toBeVisible()
+
+    const dock = page.locator('.mobile-dock')
+    const showTabs = navigation.locator('.dock-tabs-expand')
+    await expect(showTabs).toHaveAttribute('tabindex', '-1')
+    await expect(showTabs).toHaveAttribute('aria-hidden', 'true')
+    await page.evaluate(() => {
+      document.querySelector('main')?.style.setProperty('min-height', '200vh')
+      window.scrollTo(0, 0)
+    })
+    await page.evaluate(() => window.scrollBy(0, 200))
+    await expect(dock).toHaveAttribute('data-minimized', '')
+    await expect(navigation.getByRole('link', { name: 'Mixes', exact: true })).toBeHidden()
+    await expect(mini).toBeVisible()
+    await navigation.getByRole('button', { name: 'Show tabs', exact: true }).click()
+    await expect(dock).not.toHaveAttribute('data-minimized')
+    await expect(navigation.getByRole('link', { name: 'Mixes', exact: true })).toBeVisible()
+    await page.evaluate(() => window.scrollTo(0, 0))
+    await expect(dock).not.toHaveAttribute('data-minimized')
+
     await page.reload()
     await expect(mini).toContainText('Local Frequencies')
     await expect(mini.getByRole('button', { name: 'Play', exact: true })).toBeEnabled()
   })
 }
+
+test('restored long titles leave compact playback controls reachable', async ({ page }) => {
+  const title = 'Local Frequencies: An Extended Transmission from the Independent Radio Archives'
+  await page.setViewportSize({ width: 320, height: 740 })
+  await page.addInitScript((title) => {
+    localStorage.setItem('vite-ui-theme', 'dark')
+    localStorage.setItem(
+      'gbfm-audio-queue.json',
+      JSON.stringify({
+        currentIndex: 0,
+        tracks: [
+          {
+            id: 'long-title-fixture',
+            title,
+            slug: 'e2e-local-frequencies',
+            thumbnailUrl: null,
+            url: '/api/e2e-audio.wav',
+            type: 'mix',
+          },
+          {
+            id: 'next-title-fixture',
+            title: 'Next local transmission',
+            slug: 'e2e-local-frequencies',
+            thumbnailUrl: null,
+            url: '/api/e2e-audio.wav',
+            type: 'mix',
+          },
+        ],
+      }),
+    )
+  }, title)
+  await page.goto('/shows/e2e-local-radio')
+  const mini = page.getByRole('region', { name: 'Mini player', exact: true })
+  const next = mini.getByRole('button', { name: 'Next track', exact: true })
+  await expect(mini).toContainText(title)
+  await expect(next).toBeEnabled()
+  await page.evaluate(() => {
+    document.querySelector('main')?.style.setProperty('min-height', '200vh')
+    window.scrollBy(0, 200)
+  })
+  await expect(page.locator('.mobile-dock')).toHaveAttribute('data-minimized', '')
+  await expect(next).toHaveCSS('width', '44px')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  await next.click()
+  await expect(mini).toContainText('Next local transmission')
+  await expect(next).toBeDisabled()
+  await mini.getByRole('button', { name: 'Now playing', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: 'Now playing', exact: true })).toContainText(
+    'Next local transmission',
+  )
+})
 
 test('desktop retains episode numbers and reveals playback on keyboard focus', async ({
   browser,

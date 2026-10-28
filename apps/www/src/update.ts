@@ -282,6 +282,7 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
     },
     ChallengeStatusChanged: ({ status }) => ({ model: { ...model, challengeStatus: status } }),
     MenuToggled: () => (model.mobileMenu.isOpen ? closeMobileMenu(model) : openMobileMenu(model)),
+    NavMinimizeChanged: ({ minimized }) => ({ model: { ...model, navMinimized: minimized } }),
     GotMobileMenuMessage: ({ message }) => updateMobileMenu(model, message),
     MenuDragStarted: ({ pointerId, clientY }) =>
       !model.mobileMenu.isOpen ||

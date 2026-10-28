@@ -29,14 +29,14 @@ const creatorLinks = (h: H, track: QueueTrackType) => {
   if (creators.length === 0) return h.span([], ['Unknown creator'])
 
   return h.p(
-    [h.Class('text-base text-muted-foreground')],
+    [h.Class('mt-1 truncate text-base text-muted-foreground')],
     creators.flatMap((creator, index) => [
       creator.username
         ? h.a(
             [
               h.Key(creator.id),
               h.Href(`/profile/${encodeURIComponent(creator.username)}`),
-              h.Class('hover:text-foreground hover:underline'),
+              h.Class('no-underline hover:text-foreground hover:underline'),
             ],
             [creator.name],
           )
@@ -50,20 +50,169 @@ const dragAttributes = (h: H, allowControls = false) => [
   h.OnPointerDown(onDragStart(Message.PlayerDragStarted, allowControls)),
 ]
 
-const fullscreen = (model: Model, h: H, current: QueueTrackType) => {
-  const { transport: playback, volume, queue } = model.snapshot
+const transportButton = `${ghostButton} rounded-[0.875rem] text-foreground transition-[transform,background-color] hover:bg-foreground/10 active:scale-90`
+
+const backdrop = (h: H, current: QueueTrackType) =>
+  h.div(
+    [h.AriaHidden(true), h.Class('pointer-events-none absolute inset-0 -z-10 overflow-hidden')],
+    [
+      h.img([
+        imageSource(artworkUrl(current.thumbnailUrl || fallbackArtwork, 96)),
+        h.Alt(''),
+        h.Draggable(false),
+        h.Class('size-full scale-150 object-cover opacity-60 blur-3xl saturate-150'),
+      ]),
+      h.div(
+        [
+          h.Class(
+            'absolute inset-0 bg-gradient-to-b from-background/50 via-background/75 to-background',
+          ),
+        ],
+        [],
+      ),
+    ],
+  )
+
+const titleBlock = (h: H, current: QueueTrackType) =>
+  h.div(
+    [h.Class('mb-5 min-w-0 shrink-0 sm:mb-8')],
+    [
+      current.slug
+        ? h.a(
+            [
+              h.Href(`/mixes/${encodeURIComponent(current.slug)}`),
+              h.Class(
+                'block truncate text-xl font-semibold leading-tight text-foreground no-underline hover:underline sm:text-2xl',
+              ),
+            ],
+            [current.title],
+          )
+        : h.span(
+            [
+              h.Class(
+                'block truncate text-xl font-semibold leading-tight text-foreground sm:text-2xl',
+              ),
+            ],
+            [current.title],
+          ),
+      creatorLinks(h, current),
+    ],
+  )
+
+const transportControls = (h: H, isPlaying: boolean) =>
+  h.div(
+    [h.Class('mb-5 flex shrink-0 items-center justify-center gap-8 sm:mb-8 sm:gap-12')],
+    [
+      h.button(
+        [
+          h.Type('button'),
+          h.OnClick(Message.Previous()),
+          h.AriaLabel('Previous track'),
+          h.Class(`${transportButton} size-14`),
+        ],
+        [lucide(iconPaths.skipBack, 'size-8 fill-current')],
+      ),
+      h.button(
+        [
+          h.Type('button'),
+          h.OnClick(Message.TogglePlayPause()),
+          h.AriaLabel(isPlaying ? 'Pause' : 'Play'),
+          h.Class(`${transportButton} size-[4.5rem]`),
+        ],
+        [lucide(isPlaying ? iconPaths.pause : iconPaths.play, 'size-12 fill-current')],
+      ),
+      h.button(
+        [
+          h.Type('button'),
+          h.OnClick(Message.Next()),
+          h.AriaLabel('Next track'),
+          h.Class(`${transportButton} size-14`),
+        ],
+        [lucide(iconPaths.skipForward, 'size-8 fill-current')],
+      ),
+    ],
+  )
+
+const utilityRow = (model: Model, h: H) => {
+  const { volume, queue } = model.snapshot
   const muted = volume.isMuted || volume.volume === 0
+
+  return h.div(
+    [h.Class('flex shrink-0 items-center gap-4')],
+    [
+      h.div(
+        [h.Class('hidden min-w-0 flex-1 items-center gap-4 sm:flex')],
+        [
+          h.button(
+            [
+              h.Type('button'),
+              h.OnClick(Message.ToggleMute()),
+              h.AriaLabel(volume.isMuted ? 'Unmute' : 'Mute'),
+              h.Class(
+                `${ghostButton} h-9 px-3 text-muted-foreground hover:bg-muted hover:text-foreground`,
+              ),
+            ],
+            [lucide(muted ? iconPaths.volumeOff : iconPaths.volume, 'h-5 w-5')],
+          ),
+          h.input([
+            h.Type('range'),
+            h.Min('0'),
+            h.Max('100'),
+            h.Value(String(volume.isMuted ? 0 : volume.volume)),
+            h.OnInput((value) => Message.SetVolume({ volume: Number(value) })),
+            h.AriaLabel('Volume'),
+            h.Title(`Volume: ${volume.volume}%`),
+            h.Class(volumeRangeClass),
+          ]),
+          lucide(iconPaths.volume, 'h-5 w-5 text-muted-foreground'),
+        ],
+      ),
+      h.button(
+        [
+          h.Type('button'),
+          h.OnClick(Message.ToggleQueue()),
+          h.Title('Toggle queue'),
+          h.AriaLabel(`Queue (${queue.tracks.length})`),
+          h.Class(
+            `${ghostButton} relative ml-auto size-11 shrink-0 rounded-[0.75rem] text-muted-foreground hover:bg-foreground/10 hover:text-foreground`,
+          ),
+        ],
+        [
+          lucide(iconPaths.list, 'h-6 w-6'),
+          queue.tracks.length > 0
+            ? h.span(
+                [
+                  h.Class(
+                    'absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-sm bg-primary px-0.5 text-[10px] font-bold text-primary-foreground',
+                  ),
+                ],
+                [String(queue.tracks.length)],
+              )
+            : h.empty,
+        ],
+      ),
+    ],
+  )
+}
+
+const fullscreen = (model: Model, h: H, current: QueueTrackType) => {
+  const playback = model.snapshot.transport
 
   return h.section(
     [
       h.AriaLabel('Now playing'),
-      h.Class('absolute inset-0 flex flex-col bg-background text-foreground'),
+      h.Class(
+        'absolute inset-0 isolate flex flex-col overflow-hidden bg-background text-foreground',
+      ),
     ],
     [
+      backdrop(h, current),
       h.div(
         [
           ...dragAttributes(h),
-          h.Class('player-drag-surface flex shrink-0 items-center justify-center px-4 py-2 sm:p-4'),
+          h.Class(
+            'player-drag-surface flex shrink-0 items-center justify-center px-4 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:p-4',
+          ),
         ],
         [
           h.button(
@@ -82,7 +231,7 @@ const fullscreen = (model: Model, h: H, current: QueueTrackType) => {
       h.div(
         [
           h.Class(
-            'flex min-h-0 flex-1 flex-col items-center overflow-y-auto overscroll-contain px-4 pb-6 sm:justify-center sm:px-8 sm:pb-8',
+            'flex min-h-0 flex-1 flex-col items-center overflow-y-auto overscroll-contain px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:justify-center sm:px-8 sm:pb-8',
           ),
         ],
         [
@@ -93,7 +242,7 @@ const fullscreen = (model: Model, h: H, current: QueueTrackType) => {
                 [
                   ...dragAttributes(h),
                   h.Class(
-                    'player-drag-surface mb-4 flex min-h-0 flex-1 items-center justify-center sm:mb-8',
+                    'player-drag-surface mb-6 flex min-h-0 flex-1 items-center justify-center sm:mb-8',
                   ),
                 ],
                 [
@@ -101,63 +250,14 @@ const fullscreen = (model: Model, h: H, current: QueueTrackType) => {
                     imageSource(artworkUrl(current.thumbnailUrl || fallbackArtwork, 1280)),
                     h.Alt(current.title),
                     h.Draggable(false),
-                    h.Class('max-h-full max-w-full rounded-sm object-contain shadow-2xl'),
+                    ...(playback.isPlaying ? [] : [h.DataAttribute('paused', '')]),
+                    h.Class(
+                      'player-artwork max-h-full max-w-full rounded-[0.75rem] object-contain shadow-2xl',
+                    ),
                   ]),
                 ],
               ),
-              h.div(
-                [h.Class('mb-4 shrink-0 sm:mb-8')],
-                [
-                  h.div(
-                    [h.Class('mb-2 flex items-center justify-between')],
-                    [
-                      current.slug
-                        ? h.a(
-                            [
-                              h.Href(`/mixes/${encodeURIComponent(current.slug)}`),
-                              h.Class(
-                                'min-w-0 flex-1 truncate pr-4 text-xl font-semibold leading-tight text-foreground hover:underline sm:text-2xl',
-                              ),
-                            ],
-                            [current.title],
-                          )
-                        : h.span(
-                            [
-                              h.Class(
-                                'min-w-0 flex-1 truncate pr-4 text-xl font-semibold leading-tight text-foreground sm:text-2xl',
-                              ),
-                            ],
-                            [current.title],
-                          ),
-                      h.button(
-                        [
-                          h.Type('button'),
-                          h.OnClick(Message.ToggleQueue()),
-                          h.Title('Toggle queue'),
-                          h.AriaLabel(`Queue (${queue.tracks.length})`),
-                          h.Class(
-                            `${ghostButton} relative h-9 w-9 shrink-0 text-muted-foreground hover:bg-muted hover:text-foreground`,
-                          ),
-                        ],
-                        [
-                          lucide(iconPaths.list, 'h-5 w-5'),
-                          queue.tracks.length > 0
-                            ? h.span(
-                                [
-                                  h.Class(
-                                    'absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-sm bg-primary text-xs text-primary-foreground',
-                                  ),
-                                ],
-                                [String(queue.tracks.length)],
-                              )
-                            : h.empty,
-                        ],
-                      ),
-                    ],
-                  ),
-                  creatorLinks(h, current),
-                ],
-              ),
+              titleBlock(h, current),
               h.div(
                 [h.Class('mb-4 shrink-0 sm:mb-8')],
                 [
@@ -172,7 +272,11 @@ const fullscreen = (model: Model, h: H, current: QueueTrackType) => {
                     h.Class(progressRangeClass),
                   ]),
                   h.div(
-                    [h.Class('mt-2 flex justify-between text-base text-muted-foreground')],
+                    [
+                      h.Class(
+                        'mt-2 flex justify-between text-xs tabular-nums text-muted-foreground',
+                      ),
+                    ],
                     [
                       h.span([], [time(playback.currentTime)]),
                       h.span([], [`-${time(playback.duration - playback.currentTime)}`]),
@@ -180,67 +284,8 @@ const fullscreen = (model: Model, h: H, current: QueueTrackType) => {
                   ),
                 ],
               ),
-              h.div(
-                [h.Class('mb-4 flex shrink-0 items-center justify-center gap-6 sm:mb-8')],
-                [
-                  h.button(
-                    [
-                      h.Type('button'),
-                      h.OnClick(Message.Previous()),
-                      h.AriaLabel('Previous track'),
-                      h.Class(`${ghostButton} h-10 w-10 text-foreground hover:bg-muted`),
-                    ],
-                    [lucide(iconPaths.skipBack, 'h-7 w-7')],
-                  ),
-                  h.button(
-                    [
-                      h.Type('button'),
-                      h.OnClick(Message.TogglePlayPause()),
-                      h.AriaLabel(playback.isPlaying ? 'Pause' : 'Play'),
-                      h.Class(
-                        'inline-flex h-16 w-16 items-center justify-center rounded-sm border-0 bg-primary/20 p-0 text-foreground backdrop-blur-sm transition-colors hover:bg-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                      ),
-                    ],
-                    [lucide(playback.isPlaying ? iconPaths.pause : iconPaths.play, 'h-8 w-8')],
-                  ),
-                  h.button(
-                    [
-                      h.Type('button'),
-                      h.OnClick(Message.Next()),
-                      h.AriaLabel('Next track'),
-                      h.Class(`${ghostButton} h-10 w-10 text-foreground hover:bg-muted`),
-                    ],
-                    [lucide(iconPaths.skipForward, 'h-7 w-7')],
-                  ),
-                ],
-              ),
-              h.div(
-                [h.Class('hidden items-center gap-4 sm:flex')],
-                [
-                  h.button(
-                    [
-                      h.Type('button'),
-                      h.OnClick(Message.ToggleMute()),
-                      h.AriaLabel(volume.isMuted ? 'Unmute' : 'Mute'),
-                      h.Class(
-                        `${ghostButton} h-9 px-3 text-muted-foreground hover:bg-muted hover:text-foreground`,
-                      ),
-                    ],
-                    [lucide(muted ? iconPaths.volumeOff : iconPaths.volume, 'h-5 w-5')],
-                  ),
-                  h.input([
-                    h.Type('range'),
-                    h.Min('0'),
-                    h.Max('100'),
-                    h.Value(String(volume.isMuted ? 0 : volume.volume)),
-                    h.OnInput((value) => Message.SetVolume({ volume: Number(value) })),
-                    h.AriaLabel('Volume'),
-                    h.Title(`Volume: ${volume.volume}%`),
-                    h.Class(volumeRangeClass),
-                  ]),
-                  lucide(iconPaths.volume, 'h-5 w-5 text-muted-foreground'),
-                ],
-              ),
+              transportControls(h, playback.isPlaying),
+              utilityRow(model, h),
             ],
           ),
         ],
@@ -254,7 +299,7 @@ const pendingQueue = (model: Model, h: H) =>
     [
       h.AriaLabel('Audio player'),
       h.Class(
-        'fixed bottom-16 right-4 z-40 flex items-center gap-2 rounded-sm border border-border bg-background/95 px-3 py-2 text-xs text-muted-foreground shadow-lg backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2',
+        'fixed bottom-[calc(var(--mobile-dock-height)+env(safe-area-inset-bottom))] right-4 z-40 flex items-center gap-2 rounded-sm border border-border bg-background/95 px-3 py-2 text-xs text-muted-foreground shadow-lg backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 lg:bottom-16',
       ),
     ],
     [

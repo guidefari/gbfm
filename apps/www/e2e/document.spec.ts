@@ -5,10 +5,8 @@ test.describe('without JavaScript', () => {
 
   test('document styles load before the client, including mobile navigation', async ({ page }) => {
     await page.goto('/mixes/e2e-local-frequencies')
-    await expect(page.getByRole('navigation', { name: 'Primary', exact: true })).toHaveCSS(
-      'position',
-      'fixed',
-    )
+    await expect(page.locator('.mobile-dock')).toHaveCSS('position', 'fixed')
+    await expect(page.getByRole('navigation', { name: 'Primary', exact: true })).toBeVisible()
     await expect(
       page.getByRole('heading', { name: 'Local Frequencies', exact: true }),
     ).toBeVisible()
@@ -110,7 +108,7 @@ for (const theme of ['light', 'dark']) {
       )
       await expect(page.locator('[data-foldkit-refused]')).toHaveCount(0)
       await page
-        .getByRole('navigation', { name: 'Primary', exact: true })
+        .getByRole('region', { name: 'Mini player', exact: true })
         .getByRole('button', { name: 'Now playing', exact: true })
         .click()
       const player = page.getByRole('dialog', { name: 'Now playing', exact: true })
@@ -147,10 +145,19 @@ test('browser chrome follows theme changes and the page surface', async ({ page 
     }))
 
     expect(surfaces.root).toBe(surfaces.page)
-    await expect(page.getByRole('navigation', { name: 'Primary', exact: true })).toHaveCSS(
-      'background-color',
-      surfaces.page,
-    )
+
+    const edge = await page.evaluate(() => {
+      const navigation = document.querySelector('nav.dock-tabs')
+
+      return {
+        floats: navigation ? navigation.getBoundingClientRect().bottom < innerHeight : false,
+        docked: Boolean(
+          document.elementFromPoint(innerWidth / 2, innerHeight - 1)?.closest('.mobile-dock'),
+        ),
+      }
+    })
+
+    expect(edge).toEqual({ floats: true, docked: false })
   }
 })
 

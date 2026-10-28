@@ -16,11 +16,20 @@ export type StationNavProps<M> = {
   readonly menuOpen: boolean
   readonly queueResolved: boolean
   readonly nowPlaying: NowPlaying | null
+  readonly minimized: boolean
   readonly togglePlay: M
+  readonly nextTrack: M
   readonly openPlayer: M
   readonly openSearch: M
   readonly toggleMenu: M
+  readonly expandNav: M
 }
+
+const mobileTabs = [
+  ['/mixes', 'Mixes', iconPaths.disc],
+  ['/shows', 'Shows', iconPaths.radio],
+  ['/editorial', 'Editorial', iconPaths.book],
+] as const
 
 const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
@@ -30,7 +39,7 @@ const desktopLinkClass = `inline-flex h-8 shrink-0 items-center rounded-sm px-2.
 const desktopIconButtonClass = `flex size-8 shrink-0 items-center justify-center rounded-sm p-0 transition-colors hover:bg-muted ${focusRing}`
 
 const tabClass =
-  "relative flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-1 border-0 bg-transparent p-0 no-underline text-muted-foreground transition-colors before:absolute before:inset-x-1/4 before:top-0 before:h-0.5 before:rounded-b-sm before:bg-highlight before:opacity-0 before:transition-opacity before:content-[''] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring aria-[current=page]:text-foreground aria-[current=page]:before:opacity-100"
+  "dock-tab relative isolate flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-[0.875rem] border-0 bg-transparent p-0 no-underline text-muted-foreground transition-colors before:absolute before:inset-0.5 before:-z-10 before:rounded-[0.75rem] before:bg-foreground/10 before:opacity-0 before:transition-opacity before:content-[''] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring aria-[current=page]:text-highlight aria-[current=page]:before:opacity-100"
 
 const tabIconClass = 'size-[22px] shrink-0 [stroke-width:1.75]'
 
@@ -152,7 +161,10 @@ export const stationNav = <M>(h: HtmlBuilder<M>, props: StationNavProps<M>) => {
   )
 
   const tabLabel = (label: string) =>
-    h.span([h.Class('max-w-full truncate px-1 text-[11px] font-medium leading-none')], [label])
+    h.span(
+      [h.Class('max-w-full truncate px-0.5 text-[10px] font-medium leading-none tracking-tight')],
+      [label],
+    )
 
   const tabLink = (href: string, label: string, icon: string) =>
     h.a(
@@ -165,21 +177,38 @@ export const stationNav = <M>(h: HtmlBuilder<M>, props: StationNavProps<M>) => {
       [lucide(icon, tabIconClass), tabLabel(label)],
     )
 
-  const mobile = h.nav(
+  const minimized = props.minimized && nowPlaying !== null
+  const activeTab = mobileTabs.find(([href]) => isActiveNavLink(props.pathname, href))
+
+  const mobile = h.div(
+    [h.Class('mobile-dock lg:hidden'), ...(minimized ? [h.DataAttribute('minimized', '')] : [])],
     [
-      h.AriaLabel('Primary'),
-      h.Class(
-        'fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] lg:hidden',
+      mobilePlayer(
+        h,
+        nowPlaying,
+        props.queueResolved,
+        props.openPlayer,
+        props.togglePlay,
+        props.nextTrack,
       ),
-    ],
-    [
-      mobilePlayer(h, nowPlaying, props.queueResolved, props.openPlayer, props.togglePlay),
-      h.div(
-        [h.Class('grid h-14 grid-cols-5')],
+      h.nav(
+        [h.AriaLabel('Primary'), h.Class('dock-platter dock-tabs')],
         [
-          tabLink('/mixes', 'Mixes', iconPaths.disc),
-          tabLink('/shows', 'Shows', iconPaths.radio),
-          tabLink('/editorial', 'Editorial', iconPaths.book),
+          h.button(
+            [
+              h.Type('button'),
+              h.AriaLabel('Show tabs'),
+              h.Tabindex(minimized ? 0 : -1),
+              h.AriaHidden(!minimized),
+              h.OnClick(props.expandNav),
+              ...(activeTab ? [h.DataAttribute('active', '')] : []),
+              h.Class(
+                `dock-tabs-expand ${tabClass} data-[active]:text-highlight data-[active]:before:opacity-100`,
+              ),
+            ],
+            [lucide(activeTab?.[2] ?? iconPaths.menu, tabIconClass)],
+          ),
+          ...mobileTabs.map(([href, label, icon]) => tabLink(href, label, icon)),
           h.button(
             [
               h.Type('button'),
