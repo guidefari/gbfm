@@ -43,6 +43,12 @@ const pendingShowSlug = (route: Route, shows: Page.Shows.ShowsDocument) =>
     Match.orElse(() => null),
   )
 
+const currentPath = (model: Model) => {
+  const url = new URL(model.flags.url)
+
+  return `${url.pathname}${url.search}`
+}
+
 export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
   const visibleNav = nav.filter(
     ([href]) => href !== '/collections' || model.flags.principal?.role === 'admin',
@@ -286,6 +292,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
           slotId: 'player',
           model: model.player,
           view: Player.view,
+          viewInputs: { returnTo: currentPath(model) },
           toParentMessage: (message) => Message.GotPlayerMessage({ message }),
         }),
       ],

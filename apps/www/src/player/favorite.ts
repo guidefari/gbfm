@@ -1,0 +1,276 @@
+import { AudioPageResponse } from '@gbfm/api/audio'
+import { QueueTrack, type QueueTrackType } from '@gbfm/player'
+import { Effect, Match, Schema } from 'effect'
+import { Command, type Update } from 'foldkit'
+import type { HtmlBuilder } from 'foldkit/html'
+import { defineMessageUnion } from 'foldkit/message'
+
+import { iconPaths, lucide } from '../view/icons'
+
+const Track = Schema.Struct({
+  audioId: Schema.String,
+  type: QueueTrack.fields.type,
+  slug: Schema.String,
+})
+
+type Track = typeof Track.Type
+
+export const Status = Schema.Literals([
+  'idle',
+  'loading',
+  'anonymous',
+  'active',
+  'inactive',
+  'unavailable',
+])
+
+export const Model = Schema.Struct({
+  track: Schema.NullOr(Track),
+  principalId: Schema.NullOr(Schema.String),
+  generation: Schema.Number,
+  status: Status,
+  saving: Schema.Boolean,
+  notice: Schema.NullOr(Schema.String),
+})
+
+export type Model = typeof Model.Type
+
+export const initialModel: Model = {
+  track: null,
+  principalId: null,
+  generation: 0,
+  status: 'idle',
+  saving: false,
+  notice: null,
+}
+
+const LoadedState = Schema.Literals(['anonymous', 'active', 'inactive', 'unavailable'])
+
+export const Message = defineMessageUnion({
+  Loaded: { generation: Schema.Number, state: LoadedState },
+  Toggled: {},
+  Retried: {},
+  Saved: { generation: Schema.Number, audioId: Schema.String, active: Schema.Boolean },
+  SaveFailed: { generation: Schema.Number, unauthorized: Schema.Boolean },
+})
+
+export type Message = typeof Message.Type
+
+const Load = Command.define('PlayerFavorite.Load', {
+  args: { generation: Schema.Number, track: Track },
+  messages: [Message.Loaded],
+  execute: ({ generation, track }) =>
+    Effect.tryPromise(async (signal) => {
+      const response = await fetch(
+        `/api/content/audio/${track.type}/${encodeURIComponent(track.slug)}/page`,
+        { credentials: 'same-origin', signal },
+      )
+
+      if (!response.ok) throw new Error('Favorite status unavailable')
+
+      return response.json()
+    }).pipe(
+      Effect.flatMap(Schema.decodeUnknownEffect(AudioPageResponse)),
+      Effect.map((page) =>
+        Message.Loaded({
+          generation,
+          state:
+            AudioPageResponse.guards.Ready(page) && page.audio.id === track.audioId
+              ? page.favorite
+              : 'unavailable',
+        }),
+      ),
+      Effect.orElseSucceed(() => Message.Loaded({ generation, state: 'unavailable' })),
+    ),
+})
+
+const Save = Command.define('PlayerFavorite.Save', {
+  args: { generation: Schema.Number, audioId: Schema.String, active: Schema.Boolean },
+  messages: [Message.Saved, Message.SaveFailed],
+  execute: ({ generation, audioId, active }) =>
+    Effect.tryPromise(async (signal) => {
+      const response = await fetch(
+        active ? '/api/favorites' : `/api/favorites/${encodeURIComponent(audioId)}`,
+        {
+          method: active ? 'POST' : 'DELETE',
+          credentials: 'same-origin',
+          headers: { 'content-type': 'application/json' },
+          body: active ? JSON.stringify({ audioId }) : undefined,
+          signal,
+        },
+      )
+
+      const settled = response.ok || response.status === (active ? 409 : 404)
+
+      return settled
+        ? Message.Saved({ generation, audioId, active })
+        : Message.SaveFailed({ generation, unauthorized: response.status === 401 })
+    }).pipe(Effect.orElseSucceed(() => Message.SaveFailed({ generation, unauthorized: false }))),
+})
+
+const sameTrack = (left: Track | null, right: Track | null) =>
+  left?.audioId === right?.audioId && left?.type === right?.type && left?.slug === right?.slug
+
+const trackOf = (current: QueueTrackType | null): Track | null =>
+  current?.slug ? { audioId: current.id, type: current.type, slug: current.slug } : null
+
+const load = (model: Model): Update.Return<Model, Message> => {
+  const generation = model.generation + 1
+  const reset = { ...model, generation, saving: false, notice: null }
+
+  if (!model.track) return { model: { ...reset, status: 'idle' } }
+
+  return {
+    model: { ...reset, status: 'loading' },
+    commands: [Load({ generation, track: model.track })],
+  }
+}
+
+/** Resets favorite state whenever the playing track or signed-in account changes. */
+export const sync = (
+  model: Model,
+  current: QueueTrackType | null,
+  principalId: string | null,
+): Update.Return<Model, Message> => {
+  const track = trackOf(current)
+
+  return sameTrack(model.track, track) && model.principalId === principalId
+    ? { model }
+    : load({ ...model, track, principalId })
+}
+
+/** Adopts a server-acknowledged favorite change made by another control for the same audio. */
+export const reconcile = (model: Model, audioId: string, active: boolean): Model =>
+  model.track?.audioId !== audioId ||
+  model.saving ||
+  !['loading', 'active', 'inactive'].includes(model.status)
+    ? model
+    : {
+        ...model,
+        generation: model.generation + 1,
+        status: active ? 'active' : 'inactive',
+        notice: null,
+      }
+
+export const update = (model: Model, message: Message): Update.Return<Model, Message> =>
+  Message.match<Update.Return<Model, Message>>(message, {
+    Loaded: ({ generation, state }) =>
+      generation !== model.generation || model.status !== 'loading'
+        ? { model }
+        : {
+            model: {
+              ...model,
+              status: state,
+              notice: state === 'unavailable' ? 'Favorite status could not be loaded.' : null,
+            },
+          },
+    Retried: () => (model.status === 'unavailable' ? load(model) : { model }),
+    Toggled: () => {
+      if (!model.track || model.saving || !['active', 'inactive'].includes(model.status))
+        return { model }
+
+      return {
+        model: { ...model, saving: true, notice: null },
+        commands: [
+          Save({
+            generation: model.generation,
+            audioId: model.track.audioId,
+            active: model.status !== 'active',
+          }),
+        ],
+      }
+    },
+    Saved: ({ generation, active }) =>
+      generation !== model.generation || !model.saving
+        ? { model }
+        : { model: { ...model, saving: false, status: active ? 'active' : 'inactive' } },
+    SaveFailed: ({ generation, unauthorized }) =>
+      generation !== model.generation || !model.saving
+        ? { model }
+        : {
+            model: {
+              ...model,
+              saving: false,
+              status: unauthorized ? 'anonymous' : model.status,
+              notice: unauthorized
+                ? 'Your session has ended. Sign in to favorite.'
+                : 'Favorite could not be saved. Try again.',
+            },
+          },
+  })
+
+const heartButton =
+  'inline-flex size-11 shrink-0 items-center justify-center rounded-[0.75rem] border-0 bg-transparent p-0 text-muted-foreground no-underline transition-[transform,background-color,color] hover:bg-foreground/10 hover:text-foreground active:scale-90 aria-pressed:text-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50'
+
+export const button = <M>(
+  model: Model,
+  h: HtmlBuilder<M>,
+  toMessage: (message: Message) => M,
+  returnTo: string,
+) => {
+  const heart = (filled: boolean) =>
+    lucide(iconPaths.heart, `size-6 ${filled ? 'fill-current' : ''}`)
+
+  return Match.value(model.status).pipe(
+    Match.when('idle', () => h.empty),
+    Match.when('anonymous', () =>
+      h.a(
+        [
+          h.Href(`/auth/sign-in?returnTo=${encodeURIComponent(returnTo)}`),
+          h.AriaLabel('Sign in to favorite'),
+          h.Title('Sign in to favorite'),
+          h.Class(heartButton),
+        ],
+        [heart(false)],
+      ),
+    ),
+    Match.when('loading', () =>
+      h.button(
+        [
+          h.Type('button'),
+          h.Disabled(true),
+          h.AriaBusy(true),
+          h.AriaLabel('Checking favorite'),
+          h.Class(heartButton),
+        ],
+        [heart(false)],
+      ),
+    ),
+    Match.when('unavailable', () =>
+      h.button(
+        [
+          h.Type('button'),
+          h.OnClick(toMessage(Message.Retried())),
+          h.AriaLabel('Retry loading favorite'),
+          h.Title('Retry loading favorite'),
+          h.Class(heartButton),
+        ],
+        [heart(false)],
+      ),
+    ),
+    Match.whenOr('active', 'inactive', (status) => {
+      const active = status === 'active'
+      const label = active ? 'Remove from favorites' : 'Add to favorites'
+
+      return h.button(
+        [
+          h.Type('button'),
+          h.Disabled(model.saving),
+          h.AriaBusy(model.saving),
+          h.AriaPressed(String(active)),
+          h.OnClick(toMessage(Message.Toggled())),
+          h.AriaLabel(label),
+          h.Title(label),
+          h.Class(heartButton),
+        ],
+        [heart(active)],
+      )
+    }),
+    Match.exhaustive,
+  )
+}
+
+export const notice = <M>(model: Model, h: HtmlBuilder<M>) =>
+  model.notice
+    ? h.p([h.Role('status'), h.Class('mt-2 text-sm text-foreground')], [model.notice])
+    : h.empty

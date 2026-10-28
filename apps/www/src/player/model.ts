@@ -5,6 +5,7 @@ import { Command, Update } from 'foldkit'
 import { defineMessageUnion } from 'foldkit/message'
 
 import { dragOffset, SheetDrag, shouldDismiss, startDrag } from '../sheet-drag'
+import * as Favorite from './favorite'
 import { PlayerClient, type PlayerClientValue } from './runtime'
 
 const QueueView = Schema.Struct({
@@ -34,6 +35,7 @@ export const Model = Schema.Struct({
   playerDrag: SheetDrag,
   playerOffset: Schema.Number,
   hasHadTrack: Schema.Boolean,
+  favorite: Favorite.Model,
 })
 
 export type Model = typeof Model.Type
@@ -59,6 +61,7 @@ export const initialModel: Model = {
   playerDrag: null,
   playerOffset: 0,
   hasHadTrack: false,
+  favorite: Favorite.initialModel,
 }
 
 export const Message = defineMessageUnion({
@@ -95,6 +98,9 @@ export const Message = defineMessageUnion({
   DragStarted: { index: Schema.Number },
   DroppedAt: { index: Schema.Number },
   OperationCompleted: {},
+  GotFavoriteMessage: { message: Favorite.Message },
+  PrincipalChanged: { principalId: Schema.NullOr(Schema.String) },
+  FavoriteChangedElsewhere: { audioId: Schema.String, active: Schema.Boolean },
 })
 
 export type Message = typeof Message.Type
@@ -229,18 +235,30 @@ const closePlayerDialog = Update.foldChildStep({ ...playerDialogFold, update: Di
 
 export const closeOverlays = Update.combine([closeQueueDialog, closePlayerDialog])
 
+const withFavorite = (
+  model: Model,
+  child: Update.Return<Favorite.Model, Favorite.Message>,
+): Update.Return<Model, Message, PlayerClient> => ({
+  model: child.model === model.favorite ? model : { ...model, favorite: child.model },
+  commands: Command.mapMessages(child.commands ?? [], (message) =>
+    Message.GotFavoriteMessage({ message }),
+  ),
+})
+
 export const update = (
   model: Model,
   message: Message,
 ): Update.Return<Model, Message, PlayerClient> =>
   Message.match(message, {
-    SnapshotChanged: ({ snapshot }) => ({
-      model: {
-        ...model,
-        snapshot,
-        hasHadTrack: model.hasHadTrack || snapshot.queue.current !== null,
-      },
-    }),
+    SnapshotChanged: ({ snapshot }) =>
+      withFavorite(
+        {
+          ...model,
+          snapshot,
+          hasHadTrack: model.hasHadTrack || snapshot.queue.current !== null,
+        },
+        Favorite.sync(model.favorite, snapshot.queue.current, model.favorite.principalId),
+      ),
     TogglePlayPause: () => ({ model, commands: [Toggle()] }),
     SeekTo: ({ seconds }) => ({ model, commands: [Seek({ seconds })] }),
     Jump: ({ seconds }) => ({ model, commands: [Jump({ seconds })] }),
@@ -307,4 +325,10 @@ export const update = (
             commands: [Reorder({ from: model.draggedIndex, to: index })],
           },
     OperationCompleted: () => ({ model }),
+    GotFavoriteMessage: ({ message }) =>
+      withFavorite(model, Favorite.update(model.favorite, message)),
+    PrincipalChanged: ({ principalId }) =>
+      withFavorite(model, Favorite.sync(model.favorite, model.snapshot.queue.current, principalId)),
+    FavoriteChangedElsewhere: ({ audioId, active }) =>
+      withFavorite(model, { model: Favorite.reconcile(model.favorite, audioId, active) }),
   })

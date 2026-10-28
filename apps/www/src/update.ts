@@ -25,6 +25,7 @@ import * as Creator from './page/creator'
 import * as Dashboard from './page/dashboard'
 import * as TweetReader from './page/tweet/reader'
 import * as Player from './player'
+import { syncPlayerFavorite } from './player-favorite'
 import * as PublicActions from './public-actions'
 import { isServerPath, Route } from './route'
 import * as Search from './search'
@@ -176,7 +177,10 @@ const showPage = (
   }
 }
 
-export const update = (model: Model, message: Message): Update.Return<Model, Message, Services> =>
+const updateApplication = (
+  model: Model,
+  message: Message,
+): Update.Return<Model, Message, Services> =>
   Message.match<Update.Return<Model, Message, Services>>(message, {
     GotSpotifyPlaybackMessage: ({ message }) => {
       const child = SpotifyPlayback.update(model.spotifyPlayback, message)
@@ -248,7 +252,7 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
         for (const slug of slugs) {
           if (!slug) continue
 
-          const step = update(
+          const step = updateApplication(
             prefetched,
             Message.PrefetchRequested({ href: `/tweet/${encodeURIComponent(slug)}` }),
           )
@@ -387,7 +391,7 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
     },
     GotCreatorResult: ({ message, navigationId }) =>
       navigationId === model.navigationId
-        ? update(model, Message.GotCreatorMessage({ message }))
+        ? updateApplication(model, Message.GotCreatorMessage({ message }))
         : { model },
     GotDashboardMessage: ({ message }) => {
       const child = Dashboard.update(model.dashboard, message)
@@ -401,7 +405,7 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
     },
     GotDashboardResult: ({ message, navigationId }) =>
       navigationId === model.navigationId
-        ? update(model, Message.GotDashboardMessage({ message }))
+        ? updateApplication(model, Message.GotDashboardMessage({ message }))
         : { model },
     RequestedUrl: ({ request }) =>
       UrlRequest.match<Update.Return<Model, Message, Services>>(request, {
@@ -601,6 +605,9 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
     },
     NavigationCompleted: () => ({ model }),
   })
+
+export const update = (model: Model, message: Message): Update.Return<Model, Message, Services> =>
+  syncPlayerFavorite(model, message, updateApplication(model, message))
 
 /** The page the screen is showing: the pending destination while loading, else the loaded page. */
 export const displayedPath = (model: Model) =>

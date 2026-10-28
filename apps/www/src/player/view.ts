@@ -7,11 +7,14 @@ import { onDragStart } from '../sheet-drag'
 import { artworkUrl, imageSource } from '../view/artwork'
 import { iconPaths, lucide } from '../view/icons'
 import { SuppressDragClick } from './drag-handle'
+import * as Favorite from './favorite'
 import { Message, type Model } from './model'
 import { queueSheet } from './queue-view'
 import { fallbackArtwork, ghostButton, progressRangeClass, volumeRangeClass } from './view-styles'
 
 type H = HtmlBuilder<typeof Message.Type>
+
+export type ViewInputs = Readonly<{ returnTo: string }>
 
 const pad = (value: number) => value.toString().padStart(2, '0')
 
@@ -73,29 +76,39 @@ const backdrop = (h: H, current: QueueTrackType) =>
     ],
   )
 
-const titleBlock = (h: H, current: QueueTrackType) =>
+const trackTitle = (h: H, current: QueueTrackType) =>
+  current.slug
+    ? h.a(
+        [
+          h.Href(`/mixes/${encodeURIComponent(current.slug)}`),
+          h.Class(
+            'block truncate text-xl font-semibold leading-tight text-foreground no-underline hover:underline sm:text-2xl',
+          ),
+        ],
+        [current.title],
+      )
+    : h.span(
+        [h.Class('block truncate text-xl font-semibold leading-tight text-foreground sm:text-2xl')],
+        [current.title],
+      )
+
+const titleBlock = (model: Model, h: H, current: QueueTrackType, inputs: ViewInputs) =>
   h.div(
     [h.Class('mb-5 min-w-0 shrink-0 sm:mb-8')],
     [
-      current.slug
-        ? h.a(
-            [
-              h.Href(`/mixes/${encodeURIComponent(current.slug)}`),
-              h.Class(
-                'block truncate text-xl font-semibold leading-tight text-foreground no-underline hover:underline sm:text-2xl',
-              ),
-            ],
-            [current.title],
-          )
-        : h.span(
-            [
-              h.Class(
-                'block truncate text-xl font-semibold leading-tight text-foreground sm:text-2xl',
-              ),
-            ],
-            [current.title],
+      h.div(
+        [h.Class('flex items-center gap-3')],
+        [
+          h.div([h.Class('min-w-0 flex-1')], [trackTitle(h, current), creatorLinks(h, current)]),
+          Favorite.button(
+            model.favorite,
+            h,
+            (message) => Message.GotFavoriteMessage({ message }),
+            inputs.returnTo,
           ),
-      creatorLinks(h, current),
+        ],
+      ),
+      Favorite.notice(model.favorite, h),
     ],
   )
 
@@ -195,7 +208,7 @@ const utilityRow = (model: Model, h: H) => {
   )
 }
 
-const fullscreen = (model: Model, h: H, current: QueueTrackType) => {
+const fullscreen = (model: Model, h: H, current: QueueTrackType, inputs: ViewInputs) => {
   const playback = model.snapshot.transport
 
   return h.section(
@@ -257,7 +270,7 @@ const fullscreen = (model: Model, h: H, current: QueueTrackType) => {
                   ]),
                 ],
               ),
-              titleBlock(h, current),
+              titleBlock(model, h, current, inputs),
               h.div(
                 [h.Class('mb-4 shrink-0 sm:mb-8')],
                 [
@@ -324,7 +337,7 @@ const pendingQueue = (model: Model, h: H) =>
     ],
   )
 
-const playerDialog = (model: Model, h: H) =>
+const playerDialog = (model: Model, h: H, inputs: ViewInputs) =>
   h.submodel({
     slotId: 'player-dialog',
     model: model.playerDialog,
@@ -348,7 +361,7 @@ const playerDialog = (model: Model, h: H) =>
                   ],
                   [
                     model.snapshot.queue.current
-                      ? fullscreen(model, h, model.snapshot.queue.current)
+                      ? fullscreen(model, h, model.snapshot.queue.current, inputs)
                       : h.p([h.Class('player-loading'), h.Role('status')], ['Loading player…']),
                   ],
                 ),
@@ -359,11 +372,11 @@ const playerDialog = (model: Model, h: H) =>
     toParentMessage: (message) => Message.GotPlayerDialogMessage({ message }),
   })
 
-export const view = defineView<Model, typeof Message.Type>((model, h) =>
+export const view = defineView<Model, typeof Message.Type, ViewInputs>((model, inputs, h) =>
   h.div(
     [],
     [
-      playerDialog(model, h),
+      playerDialog(model, h, inputs),
       !model.playerDialog.isOpen &&
       !model.snapshot.queue.current &&
       model.snapshot.queue.tracks.length
