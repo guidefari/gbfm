@@ -28,7 +28,7 @@ export type StationNavProps<M> = {
 const mobileTabs = [
   ['/mixes', 'Mixes', iconPaths.disc],
   ['/shows', 'Shows', iconPaths.radio],
-  ['/editorial', 'Editorial', iconPaths.book],
+  ['/editorial', 'Editorial', iconPaths.editorial],
 ] as const
 
 const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
@@ -178,7 +178,7 @@ export const stationNav = <M>(h: HtmlBuilder<M>, props: StationNavProps<M>) => {
     )
 
   const minimized = props.minimized && nowPlaying !== null
-  const activeTab = mobileTabs.find(([href]) => isActiveNavLink(props.pathname, href))
+  const onTabRoute = mobileTabs.some(([href]) => isActiveNavLink(props.pathname, href))
 
   const mobile = h.div(
     [h.Class('mobile-dock lg:hidden'), ...(minimized ? [h.DataAttribute('minimized', '')] : [])],
@@ -201,10 +201,10 @@ export const stationNav = <M>(h: HtmlBuilder<M>, props: StationNavProps<M>) => {
               h.Tabindex(minimized ? 0 : -1),
               h.AriaHidden(!minimized),
               h.OnClick(props.expandNav),
-              ...(activeTab ? [h.DataAttribute('active', '')] : []),
+              ...(onTabRoute ? [h.DataAttribute('active', '')] : []),
               h.Class(`dock-tabs-expand ${tabClass} data-[active]:text-highlight`),
             ],
-            [lucide(activeTab?.[2] ?? iconPaths.menu, tabIconClass)],
+            [lucide(iconPaths.tabs, tabIconClass)],
           ),
           ...mobileTabs.map(([href, label, icon]) => tabLink(href, label, icon)),
           h.button(

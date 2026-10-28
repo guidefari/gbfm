@@ -44,6 +44,16 @@ for (const theme of ['light', 'dark']) {
     await expect(dock).toHaveAttribute('data-minimized', '')
     await expect(expand).toBeVisible()
     await expect(expand).toHaveCSS('color', activeColor)
+    await expect(expand).not.toHaveAttribute('aria-hidden', 'true')
+
+    const glyph = (locator: typeof expand) =>
+      locator.locator('svg path').evaluate((path) => path.getAttribute('d'))
+
+    expect(await glyph(expand)).not.toBe(await glyph(active))
+
+    const hitArea = await expand.boundingBox()
+    expect(hitArea?.width).toBeGreaterThanOrEqual(44)
+    expect(hitArea?.height).toBeGreaterThanOrEqual(44)
 
     const fade = await dock.evaluate((element) => {
       const style = getComputedStyle(element, '::before')
@@ -63,9 +73,11 @@ for (const theme of ['light', 'dark']) {
     expect(fade.pointerEvents).toBe('none')
     expect(fade.background).toContain('linear-gradient')
     expect(fade.selection).toBe('none')
-    await expand.click()
+    await expand.focus()
+    await page.keyboard.press('Enter')
     await expect(dock).not.toHaveAttribute('data-minimized')
     await expect(active).toBeVisible()
+    await expect(navigation.locator('.dock-tabs-expand')).toHaveAttribute('aria-hidden', 'true')
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   })
 }
