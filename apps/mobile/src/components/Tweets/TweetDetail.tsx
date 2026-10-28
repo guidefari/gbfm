@@ -7,7 +7,6 @@ import { replyCountLabel } from '@/tweets/tweetText'
 
 import { TweetAuthor } from './TweetAuthor'
 import { TweetBody } from './TweetBody'
-import { TweetMusicCard } from './TweetMusicCard'
 import { TweetRow } from './TweetRow'
 
 type Props = {
@@ -43,7 +42,6 @@ export function TweetDetail({ post, parent, quote, replies }: Props) {
 
       <TweetAuthor creator={post.creators?.[0]} createdAt={post.createdAt} />
       <TweetBody tweet={post} />
-      {post.music ? <TweetMusicCard music={post.music} /> : null}
 
       {quote ? (
         <View

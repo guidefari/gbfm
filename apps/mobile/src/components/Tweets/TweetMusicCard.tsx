@@ -1,8 +1,11 @@
-import { Image, Linking, Pressable, Text, View } from 'react-native'
+import { useState } from 'react'
+import { Image, Text, View } from 'react-native'
 
 import type { TweetMusic } from '@/api/tweets'
 import { useThemeColors } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
+
+import { TweetLink } from './TweetLink'
 
 const COVER_SIZE = 88
 
@@ -23,33 +26,15 @@ const platformLabels = new Map([
 const platformLabel = (platform: string) => platformLabels.get(platform) ?? platform
 
 function StreamLink({ platform, url }: { platform: string; url: string }) {
-  const colors = useThemeColors()
   const label = platformLabel(platform)
 
-  return (
-    <Pressable
-      accessibilityRole='link'
-      accessibilityLabel={`Open in ${label}`}
-      onPress={() => void Linking.openURL(url)}
-      style={({ pressed }) => ({
-        minHeight: 36,
-        paddingHorizontal: 12,
-        justifyContent: 'center',
-        borderRadius: 4,
-        borderWidth: 1,
-        borderColor: colors.muted,
-        opacity: pressed ? 0.6 : 1,
-      })}>
-      <Text style={{ color: colors.accent, fontFamily: fonts.monoSemiBold, fontSize: 12 }}>
-        {label} ↗
-      </Text>
-    </Pressable>
-  )
+  return <TweetLink href={url} label={`Open in ${label}`} />
 }
 
 export function TweetMusicCard({ music }: { music: TweetMusic }) {
   const colors = useThemeColors()
   const { entity, links } = music
+  const [failed, setFailed] = useState(false)
 
   return (
     <View
@@ -61,12 +46,13 @@ export function TweetMusicCard({ music }: { music: TweetMusic }) {
         overflow: 'hidden',
       }}>
       <View style={{ flexDirection: 'row', gap: 12, padding: 12 }}>
-        {entity.coverImageUrl ? (
+        {entity.coverImageUrl && !failed ? (
           <Image
             source={{ uri: entity.coverImageUrl }}
             accessibilityLabel={`${entity.title} cover`}
             style={{ width: COVER_SIZE, height: COVER_SIZE, borderRadius: 4 }}
             resizeMode='cover'
+            onError={() => setFailed(true)}
           />
         ) : (
           <View

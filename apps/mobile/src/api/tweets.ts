@@ -1,5 +1,5 @@
 import type {
-  GetMicroPostsResponse,
+  GetMicroPostListResponse,
   MicroPostScreenMusic,
   MicroPostScreenPost,
 } from '@gbfm/api/post'
@@ -7,7 +7,7 @@ import { Effect } from 'effect'
 
 import { getApiClient } from '@/api/client'
 
-export type Tweet = (typeof GetMicroPostsResponse.Type)['data'][number]
+export type Tweet = (typeof GetMicroPostListResponse.Type)['data'][number]
 
 export type TweetScreenPost = MicroPostScreenPost
 

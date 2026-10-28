@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "blocks": [
+    {
+      "_tag": "Paragraph",
+      "children": [
+        {
+          "_tag": "Strong",
+          "children": [
+            { "_tag": "Text", "value": "Before the artwork" },
+            {
+              "_tag": "Image",
+              "src": "https://cdn.goosebumps.fm/cover.webp",
+              "alt": "Record sleeve",
+              "title": null
+            },
+            { "_tag": "Text", "value": "After the artwork" }
+          ]
+        }
+      ]
+    },
+    {
+      "_tag": "CardGroup",
+      "children": [
+        {
+          "_tag": "MusicEmbed",
+          "music": {
+            "entityType": "album",
+            "entityId": "album-1",
+            "title": "A shared record",
+            "artists": ["Fixture artist"],
+            "description": null,
+            "imageUrl": null,
+            "canonicalUrl": "https://example.com/record",
+            "links": [],
+            "tracks": []
+          },
+          "genres": [],
+          "blurb": null,
+          "showTracks": false
+        }
+      ]
+    },
+    {
+      "_tag": "ExternalMediaEmbed",
+      "provider": "youtube",
+      "canonicalUrl": "https://www.youtube.com/watch?v=fixture",
+      "embedUrl": "https://www.youtube.com/embed/fixture",
+      "title": "Radio archive",
+      "aspectRatio": 1.7777777778
+    }
+  ]
+}

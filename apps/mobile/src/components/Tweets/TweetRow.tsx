@@ -4,47 +4,39 @@ import { Pressable, Text, View } from 'react-native'
 import type { Tweet } from '@/api/tweets'
 import { withAlpha, useThemeColors } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
-import { replyCountLabel, tweetSnippet } from '@/tweets/tweetText'
+import { replyCountLabel } from '@/tweets/tweetText'
 
 import { TweetAuthor } from './TweetAuthor'
+import { TweetBody } from './TweetBody'
 
 export function TweetRow({ tweet }: { tweet: Tweet }) {
   const router = useRouter()
   const colors = useThemeColors()
-  const snippet = tweetSnippet(tweet, 280)
   const replyCount = tweet.replyCount ?? 0
+  const openThread = () => router.push({ pathname: '/tweet/[slug]', params: { slug: tweet.slug } })
 
   const meta = [
-    tweet.musicEntityType,
+    tweet.music ? null : tweet.musicEntityType,
     replyCount > 0 ? replyCountLabel(replyCount) : null,
     ...(tweet.tags ?? []).slice(0, 2).map((tag) => `#${tag}`),
   ].filter(Boolean)
 
   return (
-    <Pressable
-      accessibilityRole='button'
-      accessibilityHint='Opens the tweet'
-      onPress={() => router.push({ pathname: '/tweet/[slug]', params: { slug: tweet.slug } })}
-      style={({ pressed }) => ({
+    <View
+      style={{
         gap: 10,
         paddingVertical: 14,
         borderBottomWidth: 1,
         borderBottomColor: withAlpha(colors.muted, 0.25),
-        opacity: pressed ? 0.7 : 1,
-      })}>
-      <TweetAuthor creator={tweet.creators?.[0]} createdAt={tweet.createdAt} />
-      {snippet ? (
-        <Text
-          numberOfLines={6}
-          style={{
-            color: colors.strong,
-            fontFamily: fonts.mono,
-            fontSize: 15,
-            lineHeight: 22,
-          }}>
-          {snippet}
-        </Text>
-      ) : null}
+      }}>
+      <Pressable
+        accessibilityRole='button'
+        accessibilityLabel='Open tweet thread'
+        onPress={openThread}
+        style={{ minHeight: 44, justifyContent: 'center' }}>
+        <TweetAuthor creator={tweet.creators?.[0]} createdAt={tweet.createdAt} />
+      </Pressable>
+      <TweetBody tweet={tweet} size='sm' />
       {meta.length > 0 ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
           {meta.map((item) => (
@@ -54,6 +46,15 @@ export function TweetRow({ tweet }: { tweet: Tweet }) {
           ))}
         </View>
       ) : null}
-    </Pressable>
+      <Pressable
+        accessibilityRole='button'
+        accessibilityLabel='View tweet thread'
+        onPress={openThread}
+        style={{ minHeight: 44, justifyContent: 'center' }}>
+        <Text style={{ color: colors.accent, fontFamily: fonts.mono, fontSize: 12 }}>
+          View thread →
+        </Text>
+      </Pressable>
+    </View>
   )
 }
