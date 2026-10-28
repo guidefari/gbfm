@@ -686,6 +686,7 @@
 /* Floats clear of the bottom edge so iOS Safari tints its toolbar from the page, not the dock. */
 .mobile-dock {
   --dock-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --dock-fade-height: 6rem;
   position: fixed;
   z-index: 40;
   left: max(0.75rem, env(safe-area-inset-left));
@@ -695,6 +696,25 @@
   height: 3.75rem;
   margin-inline: auto;
   pointer-events: none;
+}
+.mobile-dock::before {
+  content: '';
+  position: fixed;
+  z-index: -1;
+  inset-inline: 0;
+  bottom: 0;
+  height: calc(var(--dock-fade-height) + env(safe-area-inset-bottom));
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in oklab, var(--background) 80%, transparent) 55%,
+    var(--background)
+  );
+  pointer-events: none;
+}
+.mobile-dock:has(.mobile-player):not([data-minimized]),
+:root[data-queued] .mobile-dock:has(.mobile-player-pending):not([data-minimized]) {
+  --dock-fade-height: 10rem;
 }
 .dock-platter {
   position: absolute;

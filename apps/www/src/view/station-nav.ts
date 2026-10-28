@@ -39,7 +39,7 @@ const desktopLinkClass = `inline-flex h-8 shrink-0 items-center rounded-sm px-2.
 const desktopIconButtonClass = `flex size-8 shrink-0 items-center justify-center rounded-sm p-0 transition-colors hover:bg-muted ${focusRing}`
 
 const tabClass =
-  "dock-tab relative isolate flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-[0.875rem] border-0 bg-transparent p-0 no-underline text-muted-foreground transition-colors before:absolute before:inset-0.5 before:-z-10 before:rounded-[0.75rem] before:bg-foreground/10 before:opacity-0 before:transition-opacity before:content-[''] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring aria-[current=page]:text-highlight aria-[current=page]:before:opacity-100"
+  'dock-tab relative flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-[0.875rem] border-0 bg-transparent p-0 no-underline text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring aria-[current=page]:text-highlight'
 
 const tabIconClass = 'size-[22px] shrink-0 [stroke-width:1.75]'
 
@@ -202,9 +202,7 @@ export const stationNav = <M>(h: HtmlBuilder<M>, props: StationNavProps<M>) => {
               h.AriaHidden(!minimized),
               h.OnClick(props.expandNav),
               ...(activeTab ? [h.DataAttribute('active', '')] : []),
-              h.Class(
-                `dock-tabs-expand ${tabClass} data-[active]:text-highlight data-[active]:before:opacity-100`,
-              ),
+              h.Class(`dock-tabs-expand ${tabClass} data-[active]:text-highlight`),
             ],
             [lucide(activeTab?.[2] ?? iconPaths.menu, tabIconClass)],
           ),
