@@ -23,6 +23,7 @@ import { showCreators, showsTable } from '@/db/show.schema'
 import { ExternalMediaFetcher } from '@/lib/external-media'
 import { ConfigService, createConfig } from '@/services/config.service'
 import { SignupProtection, SignupRejected } from '@/services/signup-protection'
+import { createAudioFixtureResponse } from '@/test/audio-fixture'
 import { createTestWebHandler } from '@/test/http-handler'
 import { createMigratedD1Database } from '@/test/migrate-d1'
 
@@ -33,6 +34,7 @@ const resource = await createMigratedD1Database()
 const database = makeDatabaseClient(resource.database)
 
 await seedLocalUsers(database)
+
 await seedMusicLookups(database)
 
 await database.insert(newsletterSubscribersTable).values([
@@ -74,8 +76,11 @@ const [show] = await database
     draft: false,
   })
   .returning()
+
 if (!show) throw new Error('Local E2E show was not seeded')
+
 await database.insert(showCreators).values({ showId: show.id, creatorId: creator.id })
+
 await database.insert(showsTable).values({
   title: 'Quiet Hours',
   slug: 'e2e-quiet-hours',
@@ -99,23 +104,38 @@ const [mix] = await database
   .returning()
 
 if (!mix) throw new Error('Local E2E mix was not seeded')
+
 await database.insert(audioCreators).values({ audioId: mix.id, creatorId: creator.id })
 
 // Thirty seconds of quiet PCM audio, served only by this disposable test server.
 const audio = new Uint8Array(44 + 8_000 * 30 * 2)
+
 const wav = new DataView(audio.buffer)
+
 const marker = (offset: number, value: string) => audio.set(new TextEncoder().encode(value), offset)
+
 marker(0, 'RIFF')
+
 wav.setUint32(4, audio.length - 8, true)
+
 marker(8, 'WAVEfmt ')
+
 wav.setUint32(16, 16, true)
+
 wav.setUint16(20, 1, true)
+
 wav.setUint16(22, 1, true)
+
 wav.setUint32(24, 8_000, true)
+
 wav.setUint32(28, 16_000, true)
+
 wav.setUint16(32, 2, true)
+
 wav.setUint16(34, 16, true)
+
 marker(36, 'data')
+
 wav.setUint32(40, audio.length - 44, true)
 
 const rootTrackId = '00000000-0000-4000-8000-000000000001'
@@ -123,7 +143,9 @@ const rootTrackId = '00000000-0000-4000-8000-000000000001'
 const replyTrackId = '00000000-0000-4000-8000-000000000002'
 
 const editorialTrackId = '00000000-0000-4000-8000-000000000003'
+
 const editorialSpotifyId = '2Mf7lfHxdiABiO7j0BDbHc'
+
 const editorialSpotifyUrl = `https://open.spotify.com/track/${editorialSpotifyId}`
 
 await database.batch([
@@ -172,6 +194,7 @@ await database.insert(musicEntityLinksTable).values([
     url: editorialSpotifyUrl,
   },
 ])
+
 await database.insert(musicSourceIdentitiesTable).values({
   sourceKey: `spotify:track:${editorialSpotifyId}`,
   platform: 'spotify',
@@ -223,20 +246,25 @@ for (const kind of ['album', 'playlist'] as const) {
 }
 
 const artworkFreePlaylistId = crypto.randomUUID()
+
 const artworkFreeSpotifyId = '3m4J7Xt1mA5CqSnXl4zgpZ'
+
 const artworkFreeSpotifyUrl = `https://open.spotify.com/playlist/${artworkFreeSpotifyId}`
+
 await database.insert(musicPlaylistsTable).values({
   id: artworkFreePlaylistId,
   title: 'A retained playlist without cover artwork',
   slug: 'e2e-artwork-free-playlist',
   coverImageUrl: null,
 })
+
 await database.insert(musicEntityLinksTable).values({
   entityType: 'playlist',
   entityId: artworkFreePlaylistId,
   platform: 'spotify',
   url: artworkFreeSpotifyUrl,
 })
+
 await database.insert(musicSourceIdentitiesTable).values({
   sourceKey: `spotify:playlist:${artworkFreeSpotifyId}`,
   platform: 'spotify',
@@ -267,12 +295,14 @@ for (const post of [rootPost, editorial]) {
 }
 
 const labelId = crypto.randomUUID()
+
 await database.insert(musicLabelsTable).values({
   id: labelId,
   name: 'Local Records',
   slug: 'e2e-local-records',
   publishedAt: new Date('2020-01-01T00:00:00Z'),
 })
+
 await database.insert(releasesTable).values({
   labelId,
   title: 'Local Signals EP',
@@ -324,6 +354,7 @@ const archivePosts = await database
     },
   ])
   .returning()
+
 await database
   .insert(postCreators)
   .values(archivePosts.map((post) => ({ postId: post.id, creatorId: creator.id })))
@@ -381,16 +412,18 @@ const server = Bun.serve({
   port,
   fetch: async (request) => {
     if (new URL(request.url).pathname === '/api/e2e-audio.wav')
-      return new Response(audio, { headers: { 'content-type': 'audio/wav' } })
+      return createAudioFixtureResponse(request, audio)
 
     const response = await handler.handler(request)
     const cookies = response.headers.getSetCookie()
+
     if (!cookies.some((cookie) => cookie.startsWith('gbfm-navigation-device='))) return response
 
     // This loopback-only fixture is HTTP. WebKit rejects Secure cookies here, unlike Chromium.
     // Keep the production resolver's Secure cookie unchanged; this is not a TLS security fixture.
     const headers = new Headers(response.headers)
     headers.delete('set-cookie')
+
     for (const cookie of cookies)
       headers.append(
         'set-cookie',
@@ -398,14 +431,15 @@ const server = Bun.serve({
           ? cookie.replace(/;\s*Secure\b/gi, '')
           : cookie,
       )
+
     return new Response(response.body, { status: response.status, headers })
   },
 })
 
-console.log(`Local E2E API listening on ${server.url}`)
+process.stdout.write(`Local E2E API listening on ${server.url}\n`)
 
 const stop = async () => {
-  server.stop(true)
+  await server.stop(true)
   await handler.dispose()
   await resource.dispose()
   process.exit()
