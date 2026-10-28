@@ -90,6 +90,18 @@ export interface MicroPostScreenMusic {
   readonly links: ReadonlyArray<{ readonly platform: string; readonly url: string }>
 }
 
+type EditorialSummary = {
+  id: string
+  slug: string
+  title: string
+  thumbnailUrl: string | null
+  description: string | null
+  createdAt: Date
+  updatedAt: Date
+  creators: NonNullable<SelectMdxCompiledPost['creators']>
+  tags: SelectMdxCompiledPost['tags']
+}
+
 export interface PostService {
   readonly getAll: (options: {
     limit: number
@@ -130,6 +142,14 @@ export interface PostService {
     { data: Array<SelectMdxCompiledEditorialPost>; pagination: PaginationMetadata },
     DatabaseError,
     SentryService
+  >
+  readonly getEditorialSummaries: (options: {
+    limit: number
+    offset: number
+    tag?: string
+  }) => Effect.Effect<
+    { data: Array<EditorialSummary>; pagination: PaginationMetadata },
+    DatabaseError
   >
   readonly getEditorialBySlug: (
     slug: string,
@@ -522,7 +542,7 @@ const fetchReplyCountsByParentId = (postIds: Array<string>) =>
     return replyCountsByParentId
   })
 
-const getAllEffect = (
+const getPostRowsEffect = (
   options: {
     limit: number
     offset: number
@@ -535,7 +555,6 @@ const getAllEffect = (
     musicEntityType?: 'album' | 'track' | 'playlist'
     musicEntityId?: string
   },
-  mdx: MdxService,
   actor?: { userId: string; userRole: string },
 ) =>
   Effect.gen(function* () {
@@ -633,6 +652,17 @@ const getAllEffect = (
       offset,
     })
 
+    return { data, pagination: createPaginationMetadata(total, limit, offset) }
+  })
+
+const getAllEffect = (
+  options: Parameters<typeof getPostRowsEffect>[0],
+  mdx: MdxService,
+  actor?: { userId: string; userRole: string },
+) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    const { data, pagination } = yield* getPostRowsEffect(options, actor)
     const postIds = data.map((p) => p.id)
 
     const [{ rows: projectedData, creatorsByPostId }, sourcesData] = yield* Effect.all(
@@ -685,7 +715,7 @@ const getAllEffect = (
 
     return {
       data: compiledData,
-      pagination: createPaginationMetadata(total, limit, offset),
+      pagination,
     }
   }).pipe(
     Effect.withSpan('post.getAll', {
@@ -1123,6 +1153,34 @@ const searchMicroPostsEffect = (
       attributes: { queryLength: options.q.length },
     }),
   )
+
+const getEditorialSummariesEffect = (
+  options: Parameters<PostService['getEditorialSummaries']>[0],
+) =>
+  Effect.gen(function* () {
+    const posts = yield* getPostRowsEffect({ ...options, type: 'post' })
+    const { rows, creatorsByPostId } = yield* loadPostRelations(posts.data)
+
+    const data = rows.flatMap((post) => {
+      if (!isNonBlankString(post.title) || !isNonBlankString(post.content)) return []
+
+      return [
+        {
+          id: post.id,
+          slug: post.slug,
+          title: post.title,
+          thumbnailUrl: post.thumbnailUrl,
+          description: post.description,
+          createdAt: post.createdAt,
+          updatedAt: post.updatedAt,
+          creators: creatorsByPostId.get(post.id) ?? [],
+          tags: post.tags,
+        },
+      ]
+    })
+
+    return { data, pagination: posts.pagination }
+  }).pipe(Effect.withSpan('post.getEditorialSummaries'))
 
 const getEditorialsEffect = (
   options: { limit: number; offset: number; tag?: string },
@@ -2541,6 +2599,7 @@ export const PostServiceLayer = Layer.effect(
           }),
         ),
       getEditorials: (opts) => provideDb(getEditorialsEffect(opts, mdx)),
+      getEditorialSummaries: (opts) => provideDb(getEditorialSummariesEffect(opts)),
       getEditorialBySlug: (slug) => provideDb(getEditorialBySlugEffect(slug, mdx)),
       getMicroPosts: (opts) => provideDb(getMicroPostsEffect(opts, mdx)),
       getLatestMicroPost: provideDb(getLatestMicroPostEffect),

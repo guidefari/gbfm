@@ -166,6 +166,23 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
         )
       }),
     )
+    .handle('getEditorialSummaries', ({ query }) =>
+      Effect.gen(function* () {
+        const svc = yield* PostService
+
+        const result = yield* dieOnDatabaseError(
+          svc.getEditorialSummaries(
+            omitUndefined({
+              limit: query.limit ?? 20,
+              offset: query.offset ?? 0,
+              tag: query.tag,
+            }),
+          ),
+        )
+
+        return { data: result.data.map(toDateStrings), pagination: result.pagination }
+      }),
+    )
     .handle('getEditorialPostBySlug', ({ params }) =>
       Effect.gen(function* () {
         const svc = yield* PostService
