@@ -1,4 +1,6 @@
 import type { QueueTrackType } from '@gbfm/player'
+import { Effect, Fiber, ManagedRuntime } from 'effect'
+import { TestClock } from 'effect/testing'
 import { describe, expect, it } from 'vitest'
 
 import { initialModel, Message, reconcile, sync, update } from './favorite'
@@ -160,5 +162,62 @@ describe('player favorite', () => {
       update(settled, Message.Loaded({ generation: loading.generation, state: 'inactive' })).model
         .status,
     ).toBe('active')
+  })
+
+  it('owns a four-second notice command and ignores its stale dismissals after retry or context changes', async () => {
+    const fail = (model: typeof initialModel) => {
+      const saving = update(model, Message.Toggled()).model
+
+      return update(
+        saving,
+        Message.SaveFailed({ generation: saving.generation, unauthorized: false }),
+      )
+    }
+
+    const first = fail(loaded())
+    const timer = first.commands?.[0]
+    expect(timer?.name).toBe('PlayerFavorite.DismissNotice')
+
+    if (!timer) throw new Error('Expected a notice timer')
+
+    const runtime = ManagedRuntime.make(TestClock.layer())
+
+    try {
+      const dismissed = await runtime.runPromise(
+        Effect.gen(function* () {
+          const delivered: Array<Message> = []
+
+          const fiber = yield* timer.effect.pipe(
+            Effect.tap((message) => Effect.sync(() => delivered.push(message))),
+            Effect.forkChild,
+          )
+
+          yield* TestClock.adjust('3999 millis')
+          expect(delivered).toEqual([])
+          yield* TestClock.adjust('1 millis')
+
+          return yield* Fiber.join(fiber)
+        }),
+      )
+
+      const hidden = update(first.model, dismissed).model
+      expect(hidden.notice).toBeNull()
+      expect(hidden.status).toBe('inactive')
+      const second = fail(hidden).model
+      expect(second.notice).toBe(first.model.notice)
+      expect(second.noticeId).toBeGreaterThan(first.model.noticeId)
+      expect(update(second, dismissed).model).toBe(second)
+
+      for (const changed of [
+        sync(second, track('mix-b'), 'user-1').model,
+        sync(second, track('mix-a'), 'user-2').model,
+        update(second, Message.Toggled()).model,
+      ]) {
+        expect(changed.notice).toBeNull()
+        expect(update(changed, dismissed).model).toBe(changed)
+      }
+    } finally {
+      await runtime.dispose()
+    }
   })
 })

@@ -1,13 +1,10 @@
-import { SymbolView } from 'expo-symbols'
 import { Pressable } from 'react-native'
+import Svg, { Path } from 'react-native-svg'
 
 import { FavoriteStatus, TrackFavorite } from '@/favorites/favoriteState'
 import { useThemeColors, withAlpha } from '@/theme/colors'
 
-const symbols = {
-  heart: { ios: 'heart', android: 'favorite_border', web: 'favorite_border' },
-  heartFill: { ios: 'heart.fill', android: 'favorite', web: 'favorite' },
-} as const
+const heartPath = 'M3 5H9V8H15V5H21V14H18V17H15V20H9V17H6V14H3Z'
 
 type ButtonPresentation = {
   readonly label: string
@@ -75,11 +72,16 @@ export function FavoriteButton({
         justifyContent: 'center',
         opacity: busy ? 0.5 : disabled ? 0.35 : pressed ? 0.6 : 1,
       })}>
-      <SymbolView
-        name={filled ? symbols.heartFill : symbols.heart}
-        size={24}
-        tintColor={filled ? colors.accent : withAlpha(colors.muted, 0.9)}
-      />
+      <Svg width={24} height={24} viewBox='0 0 24 24' accessibilityElementsHidden>
+        <Path
+          d={heartPath}
+          fill={filled ? colors.accent : 'none'}
+          stroke={filled ? colors.accent : withAlpha(colors.muted, 0.9)}
+          strokeWidth={2}
+          strokeLinecap='square'
+          strokeLinejoin='miter'
+        />
+      </Svg>
     </Pressable>
   )
 }

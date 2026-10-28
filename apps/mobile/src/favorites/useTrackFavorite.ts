@@ -13,6 +13,7 @@ import {
 import { env } from '@/env'
 import { useAuthStore } from '@/store/auth'
 
+import { dismissFavoriteNoticeAfterDelay } from './favoriteNotice'
 import {
   canSave,
   FavoriteEvent,
@@ -86,6 +87,19 @@ export function useTrackFavorite(track: FavoriteTrack) {
   const { id: trackId, type: trackType, slug: trackSlug } = track
   const key = accountId && sessionToken ? favoriteKey(accountId, trackId) : null
   const status = key ? statusFor(state, key) : null
+  const notice = state.key === key ? state.notice : null
+
+  useEffect(() => {
+    if (!notice || !key) return undefined
+
+    const timer = Effect.runFork(
+      dismissFavoriteNoticeAfterDelay(key, notice).pipe(
+        Effect.tap((event) => Effect.sync(() => dispatch(event))),
+      ),
+    )
+
+    return () => interrupt(timer)
+  }, [key, notice])
 
   useEffect(() => {
     if (!key || !sessionToken) return undefined
@@ -140,5 +154,5 @@ export function useTrackFavorite(track: FavoriteTrack) {
 
   const favorite = trackFavoriteFor(status)
 
-  return { favorite, press }
+  return { favorite, press, notice }
 }

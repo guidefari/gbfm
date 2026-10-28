@@ -49,12 +49,34 @@ test('the player heart saves the queued track only after the server acknowledges
   })
 
   await expect(add).toHaveAttribute('aria-pressed', 'false')
+  await expect
+    .poll(() =>
+      page
+        .locator('.player-panel')
+        .evaluate((panel) => Math.round(panel.getBoundingClientRect().top)),
+    )
+    .toBe(0)
+  const heartBounds = await add.boundingBox()
+  const playback = nowPlaying(page).getByRole('slider', { name: 'Playback position' })
+  const playbackBounds = await playback.boundingBox()
 
   await page.route('**/api/favorites', (route) =>
     route.fulfill({ status: 503, body: 'Unavailable' }),
   )
   await add.click()
   await expect(nowPlaying(page).getByText('Favorite could not be saved. Try again.')).toBeVisible()
+  const dismissNotice = nowPlaying(page).getByRole('button', { name: 'Dismiss favorite notice' })
+  await expect(dismissNotice).toBeVisible()
+  const dismissBounds = await dismissNotice.boundingBox()
+  expect(dismissBounds?.width).toBeGreaterThanOrEqual(44)
+  expect(dismissBounds?.height).toBeGreaterThanOrEqual(44)
+  expect(await add.boundingBox()).toEqual(heartBounds)
+  expect(await playback.boundingBox()).toEqual(playbackBounds)
+  await dismissNotice.click()
+  await expect(nowPlaying(page).getByText('Favorite could not be saved. Try again.')).toHaveCount(0)
+  await add.click()
+  await expect(nowPlaying(page).getByText('Favorite could not be saved. Try again.')).toBeVisible()
+  await expect(dismissNotice).toHaveCount(0, { timeout: 6000 })
   await expect(add).toHaveAttribute('aria-pressed', 'false')
   await expect(add).toBeEnabled()
   await page.unroute('**/api/favorites')

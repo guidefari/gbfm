@@ -111,4 +111,38 @@ describe('favorite state', () => {
     expect(run([FavoriteEvent.SaveStarted({ key: listenerTrack })], loading)).toBe(loading)
     expect(run([FavoriteEvent.SaveStarted({ key: listenerTrack })], expired)).toBe(expired)
   })
+
+  test('dismisses only the current failure without changing the retry state', () => {
+    const fail = (state: FavoriteState) =>
+      run(
+        [
+          FavoriteEvent.SaveStarted({ key: listenerTrack }),
+          FavoriteEvent.Failed({ key: listenerTrack, error: new FavoriteRequestFailed() }),
+        ],
+        state,
+      )
+
+    const first = fail(readyFor(listenerTrack, false))
+    const id = first.notice?.id
+    expect(id).toBeTypeOf('number')
+
+    if (id === undefined) throw new Error('Expected a failure notice')
+
+    const dismissed = run([FavoriteEvent.NoticeDismissed({ key: listenerTrack, id })], first)
+    expect(dismissed.notice).toBeNull()
+    expect(dismissed.status).toEqual(FavoriteStatus.SaveFailed({ favorite: false }))
+
+    const newer = fail(dismissed)
+    expect(newer.notice?.message).toBe(first.notice?.message)
+    expect(newer.notice?.id).not.toBe(id)
+    expect(run([FavoriteEvent.NoticeDismissed({ key: listenerTrack, id })], newer)).toBe(newer)
+
+    for (const key of [listenerOtherTrack, otherListenerTrack, listenerTrack]) {
+      const changed = run([FavoriteEvent.LoadStarted({ key })], newer)
+      expect(changed.notice).toBeNull()
+      expect(run([FavoriteEvent.NoticeDismissed({ key: listenerTrack, id })], changed)).toBe(
+        changed,
+      )
+    }
+  })
 })

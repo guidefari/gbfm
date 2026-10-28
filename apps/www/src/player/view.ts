@@ -94,7 +94,7 @@ const trackTitle = (h: H, current: QueueTrackType) =>
 
 const titleBlock = (model: Model, h: H, current: QueueTrackType, inputs: ViewInputs) =>
   h.div(
-    [h.Class('mb-5 min-w-0 shrink-0 sm:mb-8')],
+    [h.Class('relative mb-5 min-w-0 shrink-0 sm:mb-8')],
     [
       h.div(
         [h.Class('flex items-center gap-3')],
@@ -108,7 +108,7 @@ const titleBlock = (model: Model, h: H, current: QueueTrackType, inputs: ViewInp
           ),
         ],
       ),
-      Favorite.notice(model.favorite, h),
+      Favorite.notice(model.favorite, h, (message) => Message.GotFavoriteMessage({ message })),
     ],
   )
 

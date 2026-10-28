@@ -31,6 +31,7 @@ export const Model = Schema.Struct({
   status: Status,
   saving: Schema.Boolean,
   notice: Schema.NullOr(Schema.String),
+  noticeId: Schema.Number,
 })
 
 export type Model = typeof Model.Type
@@ -42,6 +43,7 @@ export const initialModel: Model = {
   status: 'idle',
   saving: false,
   notice: null,
+  noticeId: 0,
 }
 
 const LoadedState = Schema.Literals(['anonymous', 'active', 'inactive', 'unavailable'])
@@ -52,9 +54,26 @@ export const Message = defineMessageUnion({
   Retried: {},
   Saved: { generation: Schema.Number, audioId: Schema.String, active: Schema.Boolean },
   SaveFailed: { generation: Schema.Number, unauthorized: Schema.Boolean },
+  NoticeDismissed: { generation: Schema.Number, noticeId: Schema.Number },
 })
 
 export type Message = typeof Message.Type
+
+const DismissNotice = Command.define('PlayerFavorite.DismissNotice', {
+  args: { generation: Schema.Number, noticeId: Schema.Number },
+  messages: [Message.NoticeDismissed],
+  execute: ({ generation, noticeId }) =>
+    Effect.sleep('4 seconds').pipe(Effect.as(Message.NoticeDismissed({ generation, noticeId }))),
+})
+
+const notify = (model: Model, notice: string): Update.Return<Model, Message> => {
+  const noticeId = model.noticeId + 1
+
+  return {
+    model: { ...model, notice, noticeId },
+    commands: [DismissNotice({ generation: model.generation, noticeId })],
+  }
+}
 
 const Load = Command.define('PlayerFavorite.Load', {
   args: { generation: Schema.Number, track: Track },
@@ -157,13 +176,13 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
     Loaded: ({ generation, state }) =>
       generation !== model.generation || model.status !== 'loading'
         ? { model }
-        : {
-            model: {
-              ...model,
-              status: state,
-              notice: state === 'unavailable' ? 'Favorite status could not be loaded.' : null,
-            },
-          },
+        : state === 'unavailable'
+          ? notify({ ...model, status: state }, 'Favorite status could not be loaded.')
+          : { model: { ...model, status: state, notice: null } },
+    NoticeDismissed: ({ generation, noticeId }) =>
+      generation === model.generation && noticeId === model.noticeId && model.notice !== null
+        ? { model: { ...model, notice: null } }
+        : { model },
     Retried: () => (model.status === 'unavailable' ? load(model) : { model }),
     Toggled: () => {
       if (!model.track || model.saving || !['active', 'inactive'].includes(model.status))
@@ -187,16 +206,16 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
     SaveFailed: ({ generation, unauthorized }) =>
       generation !== model.generation || !model.saving
         ? { model }
-        : {
-            model: {
+        : notify(
+            {
               ...model,
               saving: false,
               status: unauthorized ? 'anonymous' : model.status,
-              notice: unauthorized
-                ? 'Your session has ended. Sign in to favorite.'
-                : 'Favorite could not be saved. Try again.',
             },
-          },
+            unauthorized
+              ? 'Your session has ended. Sign in to favorite.'
+              : 'Favorite could not be saved. Try again.',
+          ),
   })
 
 const heartButton =
@@ -209,7 +228,10 @@ export const button = <M>(
   returnTo: string,
 ) => {
   const heart = (filled: boolean) =>
-    lucide(iconPaths.heart, `size-6 ${filled ? 'fill-current' : ''}`)
+    lucide(
+      iconPaths.heart,
+      `size-6 [stroke-linecap:square] [stroke-linejoin:miter] ${filled ? 'fill-current' : ''}`,
+    )
 
   return Match.value(model.status).pipe(
     Match.when('idle', () => h.empty),
@@ -270,7 +292,38 @@ export const button = <M>(
   )
 }
 
-export const notice = <M>(model: Model, h: HtmlBuilder<M>) =>
+export const notice = <M>(model: Model, h: HtmlBuilder<M>, toMessage: (message: Message) => M) =>
   model.notice
-    ? h.p([h.Role('status'), h.Class('mt-2 text-sm text-foreground')], [model.notice])
+    ? h.div(
+        [
+          h.Key(`favorite-notice-${model.generation}-${model.noticeId}`),
+          h.Role('status'),
+          h.AriaLive('polite'),
+          h.AriaAtomic(true),
+          h.Class(
+            'absolute inset-x-0 bottom-full z-10 mb-3 flex items-center gap-2 rounded border border-highlight/40 border-l-2 bg-background pl-4 text-sm text-foreground shadow-lg',
+          ),
+        ],
+        [
+          h.span([h.Class('min-w-0 flex-1 py-3')], [model.notice]),
+          h.button(
+            [
+              h.Type('button'),
+              h.AriaLabel('Dismiss favorite notice'),
+              h.OnClick(
+                toMessage(
+                  Message.NoticeDismissed({
+                    generation: model.generation,
+                    noticeId: model.noticeId,
+                  }),
+                ),
+              ),
+              h.Class(
+                'inline-flex size-11 shrink-0 items-center justify-center text-foreground hover:bg-foreground/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              ),
+            ],
+            [lucide(iconPaths.close, 'size-4')],
+          ),
+        ],
+      )
     : h.empty
