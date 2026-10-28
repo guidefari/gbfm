@@ -1,4 +1,4 @@
-import { NativeTabs } from 'expo-router/unstable-native-tabs'
+import { NativeTabs } from 'expo-router/native-tabs'
 
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
 import { MiniPlayerBar } from '@/components/NowPlaying/MiniPlayerBar'

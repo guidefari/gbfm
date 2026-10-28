@@ -15,7 +15,7 @@ const nativeAudioStorageAdapter: AudioStorageAdapter = {
     return file.exists ? file.text() : null
   },
   write: (key, value) => {
-    new File(Paths.document, key).write(value)
+    new File(Paths.document, key).writeSync(value)
 
     return Promise.resolve()
   },

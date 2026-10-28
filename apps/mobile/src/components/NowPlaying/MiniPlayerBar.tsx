@@ -1,6 +1,6 @@
 import { brandDark } from '@gbfm/theme'
 import { useRouter } from 'expo-router'
-import { NativeTabs } from 'expo-router/unstable-native-tabs'
+import { NativeTabs } from 'expo-router/native-tabs'
 import { SymbolView } from 'expo-symbols'
 import {
   ActivityIndicator,
