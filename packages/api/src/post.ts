@@ -286,6 +286,19 @@ export const MicroPostScreenResponse = Schema.Struct({
 
 export const MicroPostScreenRepliesResponse = Schema.Array(MicroPostScreenPost)
 
+/** `music` is optional so clients keep decoding feeds from servers that predate it. */
+const MicroPostListPost = Schema.Struct({
+  ...CompiledMicroPostResponse.fields,
+  music: Schema.optional(Schema.NullOr(MicroPostScreenMusic)),
+})
+
+export const GetMicroPostListResponse = Schema.Struct({
+  data: Schema.Array(MicroPostListPost),
+  pagination: PaginationMeta,
+})
+
+export type MicroPostListPost = typeof MicroPostListPost.Type
+
 export type MicroPostScreenResponse = typeof MicroPostScreenResponse.Type
 
 export type MicroPostScreenPost = typeof MicroPostScreenPost.Type
@@ -346,7 +359,7 @@ export const PostGroup = /* @__PURE__ */ (() =>
     .add(
       HttpApiEndpoint.get('getMicroPosts', '/api/content/posts/micro', {
         query: GetMicroPostsQuery,
-        success: GetMicroPostsResponse,
+        success: GetMicroPostListResponse,
         error: HttpApiError.InternalServerError,
       }),
     )
