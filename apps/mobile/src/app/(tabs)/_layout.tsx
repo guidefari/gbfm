@@ -28,6 +28,13 @@ export default function TabsLayout() {
         />
         <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name='(tweets)' contentStyle={{ backgroundColor: colors.background }}>
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'text.bubble', selected: 'text.bubble.fill' }}
+          md={{ default: 'chat_bubble', selected: 'chat_bubble' }}
+        />
+        <NativeTabs.Trigger.Label>Tweets</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name='profile' contentStyle={{ backgroundColor: colors.background }}>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'person.crop.circle', selected: 'person.crop.circle.fill' }}
