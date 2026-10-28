@@ -21,13 +21,15 @@ for (const theme of ['light', 'dark']) {
         }),
       )
     }, theme)
-    await page.goto('/mixes')
+    await page.goto('/')
     await expect(page.locator('.site')).toHaveAttribute('data-interactive', 'true')
     const dock = page.locator('.mobile-dock')
     const navigation = page.locator('nav.dock-tabs')
-    const active = navigation.getByRole('link', { name: 'Mixes', exact: true })
+    const active = navigation.getByRole('link', { name: 'Home', exact: true })
     const expand = navigation.getByRole('button', { name: 'Show tabs', exact: true })
     await expect(active).toHaveAttribute('aria-current', 'page')
+    await expect(active).toHaveAttribute('href', '/')
+    await expect(navigation.getByRole('link', { name: 'Mixes', exact: true })).toHaveCount(0)
     const activeColor = await active.evaluate((element) => getComputedStyle(element).color)
     expect(await active.evaluate((element) => getComputedStyle(element, '::before').content)).toBe(
       'none',

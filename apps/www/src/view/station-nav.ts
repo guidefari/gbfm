@@ -26,7 +26,7 @@ export type StationNavProps<M> = {
 }
 
 const mobileTabs = [
-  ['/mixes', 'Mixes', iconPaths.disc],
+  ['/', 'Home', iconPaths.home],
   ['/shows', 'Shows', iconPaths.radio],
   ['/editorial', 'Editorial', iconPaths.editorial],
 ] as const
