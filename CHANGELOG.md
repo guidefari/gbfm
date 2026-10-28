@@ -1,3 +1,10 @@
+## [2.115.3](https://github.com/planetaryescape/gbfm/compare/v2.115.2...v2.115.3) (2026-10-28)
+
+
+### Performance Improvements
+
+* **editorial:** fix slow reloads with summary-only list reads ([#412](https://github.com/planetaryescape/gbfm/issues/412)) ([f90f0ac](https://github.com/planetaryescape/gbfm/commit/f90f0acbf7da729e5b08aaba5534a7f6838fa1c9))
+
 ## [2.115.2](https://github.com/planetaryescape/gbfm/compare/v2.115.1...v2.115.2) (2026-10-27)
 
 
