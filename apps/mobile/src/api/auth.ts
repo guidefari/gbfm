@@ -86,9 +86,11 @@ export const getSessionWithClient = Effect.fn('getSessionWithClient')(function* 
   }
 
   const data = yield* response.json.pipe(
-    Effect.flatMap(Schema.decodeUnknownEffect(BetterAuthSessionResponse)),
+    Effect.flatMap(Schema.decodeUnknownEffect(Schema.NullOr(BetterAuthSessionResponse))),
     Effect.mapError(() => new SessionUnavailable({ message: 'Unable to read session.' })),
   )
+
+  if (data === null) return yield* new SessionExpired()
 
   return toFullUser(data.user)
 })

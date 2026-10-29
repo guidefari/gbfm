@@ -3,6 +3,7 @@ import { Effect, Redacted, Schema } from 'effect'
 import { HttpClient, HttpClientError, HttpClientResponse } from 'effect/http'
 import { describe, expect, test } from 'vitest'
 
+import { getSessionWithClient } from './auth'
 import { loadFavorite, saveFavorite, type FavoriteTrack } from './favorites'
 
 const track: FavoriteTrack = {
@@ -96,6 +97,32 @@ const outcome = <A, E extends { readonly _tag: string }>(effect: Effect.Effect<A
     ),
   )
 
+describe('getSessionWithClient', () => {
+  test.each([
+    ['null session', () => jsonResponse(200, 'null')],
+    ['unauthorized', () => httpError(401, 'Unauthorized')],
+  ])('reports expiry for %s', async (_name, respond) => {
+    const server = fakeServer(respond)
+
+    expect(await outcome(getSessionWithClient(server.connection))).toEqual({
+      failed: 'SessionExpired',
+    })
+  })
+
+  test.each([
+    ['malformed session', () => jsonResponse(200, JSON.stringify({ user: { id: 'listener-1' } }))],
+    ['invalid JSON', () => jsonResponse(200, '{')],
+    ['service unavailable', () => httpError(503, 'ServiceUnavailable')],
+    ['network unavailable', () => undefined],
+  ])('reports unavailability for %s', async (_name, respond) => {
+    const server = fakeServer(respond)
+
+    expect(await outcome(getSessionWithClient(server.connection))).toEqual({
+      failed: 'SessionUnavailable',
+    })
+  })
+})
+
 describe('loadFavorite', () => {
   test('reads the current favorite state from the audio page with the bearer session', async () => {
     const server = fakeServer(() => readyPage('active'))
@@ -155,6 +182,21 @@ describe('loadFavorite', () => {
   test('reports expiry only after an anonymous page and a rejected bearer session', async () => {
     const server = fakeServer((_method, path) =>
       path === '/auth/get-session' ? httpError(401, 'Unauthorized') : readyPage('anonymous'),
+    )
+
+    expect(await outcome(loadFavorite(server.connection, track))).toEqual({
+      failed: 'FavoriteSessionExpired',
+    })
+    expect(server.seen.at(-1)).toEqual({
+      method: 'GET',
+      path: '/auth/get-session',
+      authorization: 'Bearer fixture-session-token',
+    })
+  })
+
+  test('reports expiry after an anonymous page and a null bearer session', async () => {
+    const server = fakeServer((_method, path) =>
+      path === '/auth/get-session' ? jsonResponse(200, 'null') : readyPage('anonymous'),
     )
 
     expect(await outcome(loadFavorite(server.connection, track))).toEqual({
