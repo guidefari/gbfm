@@ -2414,6 +2414,13 @@
   --tw-prose-links: var(--foreground);
   --tw-prose-quotes: var(--foreground);
 }
+.tweet-swipe-viewport {
+  overflow: clip;
+  min-height: 55dvh;
+}
+[data-tweet-motion][data-swipe-phase] {
+  will-change: transform, opacity;
+}
 .tweet-month {
   white-space: normal;
   text-align: center;

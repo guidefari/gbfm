@@ -4,7 +4,144 @@ const ready = async (page: Page, slug: string) => {
   await expect(page.locator('.site')).toHaveAttribute('data-interactive', 'true')
   await expect(page.locator('[data-tweet-swipe]')).toHaveAttribute('data-tweet-swipe', slug)
   await expect(page.locator('[data-tweet-swipe]')).toHaveAttribute('data-swipe-ready', 'true')
+  await expect(page.locator('[data-tweet-motion]')).not.toHaveAttribute('data-swipe-phase', /.+/)
 }
+
+const drag = (page: Page, phase: 'start' | 'move' | 'end' | 'cancel', x: number, time: number) =>
+  page.evaluate(
+    ({ phase, x, time }) => {
+      const target = document.querySelector('article')
+
+      if (!target) throw new Error('Missing article')
+      const touch = { identifier: 7, target, clientX: x, clientY: 250 }
+
+      const event = new Event(
+        { start: 'touchstart', move: 'touchmove', end: 'touchend', cancel: 'touchcancel' }[phase],
+        { bubbles: true, cancelable: true },
+      )
+
+      Object.defineProperties(event, {
+        touches: { value: phase === 'end' || phase === 'cancel' ? [] : [touch] },
+        changedTouches: { value: [touch] },
+        timeStamp: { value: time },
+      })
+      target.dispatchEvent(event)
+    },
+    { phase, x, time },
+  )
+
+test('tweet follows the finger and springs back below the slow-drag threshold', async ({
+  page,
+}) => {
+  await page.goto('/tweet/e2e-archive-one')
+  await ready(page, 'e2e-archive-one')
+  await drag(page, 'start', 150, 0)
+  await drag(page, 'move', 190, 300)
+  const motion = page.locator('[data-tweet-motion]')
+  await expect(motion).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 40, 0)')
+  await expect(page).toHaveURL(/\/tweet\/e2e-archive-one$/)
+  await drag(page, 'end', 190, 400)
+  await expect(motion).toHaveAttribute('data-swipe-phase', 'returning')
+  await expect(motion).not.toHaveAttribute('data-swipe-phase', /.+/)
+  await expect(motion).toHaveCSS('transform', 'none')
+  await expect(page).toHaveURL(/\/tweet\/e2e-archive-one$/)
+})
+
+test('short fast flick commits with exit and entrance motion', async ({ page }) => {
+  await page.goto('/tweet/e2e-archive-one')
+  await ready(page, 'e2e-archive-one')
+  await drag(page, 'start', 150, 0)
+  await drag(page, 'move', 190, 40)
+  await drag(page, 'end', 190, 50)
+  await expect(page.locator('[data-tweet-motion]')).toHaveAttribute('data-swipe-phase', 'exiting')
+  await expect(page).toHaveURL(/\/tweet\/e2e-archive-two$/)
+  await ready(page, 'e2e-archive-two')
+  await expect(page.locator('[data-tweet-motion]')).toHaveCSS('transform', 'none')
+})
+
+test('holding a short flick or reversing a long drag cancels the commit', async ({ page }) => {
+  await page.goto('/tweet/e2e-archive-one')
+  await ready(page, 'e2e-archive-one')
+  await drag(page, 'start', 150, 0)
+  await drag(page, 'move', 190, 40)
+  await drag(page, 'end', 190, 400)
+  await ready(page, 'e2e-archive-one')
+  await drag(page, 'start', 100, 1000)
+  await drag(page, 'move', 260, 1300)
+  await drag(page, 'move', 210, 1350)
+  await drag(page, 'end', 210, 1360)
+  await ready(page, 'e2e-archive-one')
+  await expect(page).toHaveURL(/\/tweet\/e2e-archive-one$/)
+})
+
+test('opening reading options during the exit cancels delayed swipe navigation', async ({
+  page,
+}) => {
+  await page.goto('/tweet/e2e-archive-one')
+  await ready(page, 'e2e-archive-one')
+  await drag(page, 'start', 150, 0)
+  await drag(page, 'move', 190, 40)
+  await drag(page, 'end', 190, 50)
+  await page.locator('summary[aria-label="Reading options"]').evaluate((element) => {
+    if (element instanceof HTMLElement) element.click()
+  })
+  await ready(page, 'e2e-archive-one')
+  await expect(page.locator('details[data-tweet-dock]')).toHaveAttribute('open', '')
+  await expect(page).toHaveURL(/\/tweet\/e2e-archive-one$/)
+})
+
+test('cancelled gestures and unavailable neighbours rebound without navigating', async ({
+  page,
+}) => {
+  await page.goto('/tweet/e2e-archive-one')
+  await ready(page, 'e2e-archive-one')
+  await drag(page, 'start', 190, 0)
+  await drag(page, 'move', 90, 300)
+  await expect(page.locator('[data-tweet-motion]')).toHaveCSS(
+    'transform',
+    'matrix(1, 0, 0, 1, -18, 0)',
+  )
+  await drag(page, 'end', 90, 400)
+  await ready(page, 'e2e-archive-one')
+  await drag(page, 'start', 150, 1000)
+  await drag(page, 'move', 270, 1100)
+  await drag(page, 'cancel', 270, 1150)
+  await ready(page, 'e2e-archive-one')
+  await expect(page).toHaveURL(/\/tweet\/e2e-archive-one$/)
+})
+
+test('adding a second finger immediately releases a dragged tweet', async ({ page }) => {
+  await page.goto('/tweet/e2e-archive-one')
+  await ready(page, 'e2e-archive-one')
+  await drag(page, 'start', 150, 0)
+  await drag(page, 'move', 210, 300)
+  await page.locator('article').evaluate((target) => {
+    const event = new Event('touchstart', { bubbles: true })
+    Object.defineProperty(event, 'touches', { value: [{ identifier: 7 }, { identifier: 8 }] })
+    target.dispatchEvent(event)
+  })
+  await expect(page.locator('[data-tweet-motion]')).toHaveAttribute('data-swipe-phase', 'returning')
+  await ready(page, 'e2e-archive-one')
+  await drag(page, 'end', 210, 400)
+  await expect(page).toHaveURL(/\/tweet\/e2e-archive-one$/)
+})
+
+test('reduced motion preserves thresholds and navigation without spatial animation', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/tweet/e2e-archive-one')
+  await ready(page, 'e2e-archive-one')
+  await drag(page, 'start', 150, 0)
+  await drag(page, 'move', 190, 40)
+  await expect(page.locator('[data-tweet-motion]')).toHaveCSS(
+    'transform',
+    'matrix(1, 0, 0, 1, 0, 0)',
+  )
+  await drag(page, 'end', 190, 50)
+  await expect(page).toHaveURL(/\/tweet\/e2e-archive-two$/)
+  await ready(page, 'e2e-archive-two')
+})
 
 const touchSwipe = (page: Page, selector: string, dx: number, dy = 0, originX = 150) =>
   page.evaluate(
@@ -100,6 +237,10 @@ test('trusted Chromium touch input navigates in both directions', async ({
         touchPoints: [{ x: from + (to - from) * fraction, y }],
       })
 
+    await expect(page.locator('[data-tweet-motion]')).toHaveCSS(
+      'transform',
+      `matrix(1, 0, 0, 1, ${to - from}, 0)`,
+    )
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
   }
 

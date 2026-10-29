@@ -84,96 +84,120 @@ export const view = (model: Model, h: HtmlBuilder<Message>) => {
         ],
       ),
       readerNotices(model, h, post.slug),
-      post.parentPostId && screen.root.id !== post.id ? parentPreview(screen.root) : h.empty,
-      h.article(
-        [
-          h.Class(
-            'space-y-4 rounded-lg border border-border/60 bg-card/60 p-4 shadow-sm sm:p-5 animate-in fade-in duration-300',
-          ),
-        ],
-        [
-          h.div(
-            [h.Class('space-y-1')],
-            [
-              authorRow(post.creators ?? [], post.createdAt),
-              editedAt
-                ? h.p(
-                    [
-                      h.Class(
-                        'pl-[52px] font-mono text-[11px] tracking-wider text-muted-foreground/60',
-                      ),
-                    ],
-                    [`Edited ${formatDate(editedAt)}`],
-                  )
-                : h.empty,
-            ],
-          ),
-          post.title
-            ? h.h1([h.Class('m-0 text-lg font-medium leading-snug tracking-tight')], [post.title])
-            : h.empty,
-          tweetBody(post, 'base'),
-          post.music ? musicCard(post.music, model, h, true) : h.empty,
-          screen.quote ? quoteCard(screen.quote) : h.empty,
-          post.tags?.length ? h.div([h.Class('pt-1')], [tagLinks(post.tags)]) : h.empty,
-          h.div(
-            [h.Class('border-t border-border/40 pt-3')],
-            [cardActions(post, canEdit(post), replyCount)],
-          ),
-        ],
-      ),
       h.div(
-        [h.Id('replies'), h.Class('mt-6 scroll-mt-4 space-y-4')],
+        [h.Class('tweet-swipe-viewport')],
         [
-          principal
-            ? h.form(
+          h.div(
+            [h.DataAttribute('tweet-motion', '')],
+            [
+              post.parentPostId && screen.root.id !== post.id
+                ? parentPreview(screen.root)
+                : h.empty,
+              h.article(
                 [
-                  h.Method('post'),
-                  h.Action(`/actions/reply?slug=${encodeURIComponent(post.slug)}`),
-                  h.Class('space-y-2 rounded-lg border border-border/60 bg-card/60 p-3'),
+                  h.Class(
+                    'space-y-4 rounded-lg border border-border/60 bg-card/60 p-4 shadow-sm sm:p-5 animate-in fade-in duration-300',
+                  ),
                 ],
                 [
-                  h.textarea([
-                    h.Name('content'),
-                    h.Required(true),
-                    h.Placeholder('Write a reply…'),
-                    h.AriaLabel('Reply'),
-                    h.Class(
-                      'h-20 w-full rounded-sm border border-input bg-background px-3 py-2 text-sm',
-                    ),
-                  ]),
                   h.div(
-                    [h.Class('flex justify-end')],
-                    [h.button([h.Type('submit'), h.Class('btn btn-primary btn-sm')], ['Reply'])],
+                    [h.Class('space-y-1')],
+                    [
+                      authorRow(post.creators ?? [], post.createdAt),
+                      editedAt
+                        ? h.p(
+                            [
+                              h.Class(
+                                'pl-[52px] font-mono text-[11px] tracking-wider text-muted-foreground/60',
+                              ),
+                            ],
+                            [`Edited ${formatDate(editedAt)}`],
+                          )
+                        : h.empty,
+                    ],
                   ),
-                ],
-              )
-            : h.p(
-                [h.Class('text-base')],
-                [
-                  h.a(
-                    [h.Href(`/auth/sign-in?returnTo=${encodeURIComponent(`/tweet/${post.slug}`)}`)],
-                    ['Sign in'],
+                  post.title
+                    ? h.h1(
+                        [h.Class('m-0 text-lg font-medium leading-snug tracking-tight')],
+                        [post.title],
+                      )
+                    : h.empty,
+                  tweetBody(post, 'base'),
+                  post.music ? musicCard(post.music, model, h, true) : h.empty,
+                  screen.quote ? quoteCard(screen.quote) : h.empty,
+                  post.tags?.length ? h.div([h.Class('pt-1')], [tagLinks(post.tags)]) : h.empty,
+                  h.div(
+                    [h.Class('border-t border-border/40 pt-3')],
+                    [cardActions(post, canEdit(post), replyCount)],
                   ),
-                  ' to reply',
                 ],
               ),
-          model.repliesStatus === 'loading' && (post.replyCount ?? 2) > 0
-            ? replySkeleton(post.replyCount ?? 2)
-            : h.empty,
-          model.repliesStatus === 'error'
-            ? h.p(
-                [h.Role('alert'), h.Class('text-sm text-muted-foreground')],
-                ['Replies are unavailable. Please reload to try again.'],
-              )
-            : h.empty,
-          replies.length > 0
-            ? h.div(
-                [],
-                replies.map((reply, index) =>
-                  replyCard(reply, index === replies.length - 1, canEdit(reply), model, h),
-                ),
-              )
-            : h.empty,
+              h.div(
+                [h.Id('replies'), h.Class('mt-6 scroll-mt-4 space-y-4')],
+                [
+                  principal
+                    ? h.form(
+                        [
+                          h.Method('post'),
+                          h.Action(`/actions/reply?slug=${encodeURIComponent(post.slug)}`),
+                          h.Class('space-y-2 rounded-lg border border-border/60 bg-card/60 p-3'),
+                        ],
+                        [
+                          h.textarea([
+                            h.Name('content'),
+                            h.Required(true),
+                            h.Placeholder('Write a reply…'),
+                            h.AriaLabel('Reply'),
+                            h.Class(
+                              'h-20 w-full rounded-sm border border-input bg-background px-3 py-2 text-sm',
+                            ),
+                          ]),
+                          h.div(
+                            [h.Class('flex justify-end')],
+                            [
+                              h.button(
+                                [h.Type('submit'), h.Class('btn btn-primary btn-sm')],
+                                ['Reply'],
+                              ),
+                            ],
+                          ),
+                        ],
+                      )
+                    : h.p(
+                        [h.Class('text-base')],
+                        [
+                          h.a(
+                            [
+                              h.Href(
+                                `/auth/sign-in?returnTo=${encodeURIComponent(`/tweet/${post.slug}`)}`,
+                              ),
+                            ],
+                            ['Sign in'],
+                          ),
+                          ' to reply',
+                        ],
+                      ),
+                  model.repliesStatus === 'loading' && (post.replyCount ?? 2) > 0
+                    ? replySkeleton(post.replyCount ?? 2)
+                    : h.empty,
+                  model.repliesStatus === 'error'
+                    ? h.p(
+                        [h.Role('alert'), h.Class('text-sm text-muted-foreground')],
+                        ['Replies are unavailable. Please reload to try again.'],
+                      )
+                    : h.empty,
+                  replies.length > 0
+                    ? h.div(
+                        [],
+                        replies.map((reply, index) =>
+                          replyCard(reply, index === replies.length - 1, canEdit(reply), model, h),
+                        ),
+                      )
+                    : h.empty,
+                ],
+              ),
+            ],
+          ),
         ],
       ),
     ],
