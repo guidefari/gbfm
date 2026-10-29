@@ -1,11 +1,12 @@
 import { radii } from '@gbfm/theme'
-import { ScrollView, Text, View } from 'react-native'
+import { Text, View } from 'react-native'
 
 import type { TweetScreenPost } from '@/api/tweets'
 import { withAlpha, useThemeColors } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
 import { replyCountLabel } from '@/tweets/tweetText'
 
+import { ReaderScrollView } from './SwipeExclusion'
 import { TweetAuthor } from './TweetAuthor'
 import { TweetBody } from './TweetBody'
 import { TweetRow } from './TweetRow'
@@ -31,7 +32,7 @@ export function TweetDetail({ post, parent, quote, replies }: Props) {
   const colors = useThemeColors()
 
   return (
-    <ScrollView
+    <ReaderScrollView
       contentInsetAdjustmentBehavior='automatic'
       contentContainerStyle={{ flexGrow: 1, padding: 20, paddingBottom: 32, gap: 16 }}>
       {parent ? (
@@ -70,6 +71,6 @@ export function TweetDetail({ post, parent, quote, replies }: Props) {
           <TweetRow key={reply.id} tweet={reply} />
         ))}
       </View>
-    </ScrollView>
+    </ReaderScrollView>
   )
 }

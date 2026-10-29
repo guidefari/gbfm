@@ -13,24 +13,34 @@ export type ReaderSwipe = {
   readonly maxVertical: number
 }
 
-const validPoint = (point: SwipePoint) =>
-  Number.isFinite(point.x) &&
-  Number.isFinite(point.y) &&
-  Number.isFinite(point.time) &&
-  point.pointers === 1
+const validPoint = (point: SwipePoint) => {
+  'worklet'
 
-export const beginReaderSwipe = (point: SwipePoint, viewportWidth: number): ReaderSwipe | null =>
-  validPoint(point) &&
-  Number.isFinite(viewportWidth) &&
-  point.x > 32 &&
-  point.x < viewportWidth - 32
+  return (
+    Number.isFinite(point.x) &&
+    Number.isFinite(point.y) &&
+    Number.isFinite(point.time) &&
+    point.pointers === 1
+  )
+}
+
+export const beginReaderSwipe = (point: SwipePoint, viewportWidth: number): ReaderSwipe | null => {
+  'worklet'
+
+  return validPoint(point) &&
+    Number.isFinite(viewportWidth) &&
+    point.x > 32 &&
+    point.x < viewportWidth - 32
     ? { origin: point, width: viewportWidth, samples: [point], axis: 'pending', maxVertical: 0 }
     : null
+}
 
 export const moveReaderSwipe = (
   swipe: ReaderSwipe | null,
   point: SwipePoint,
 ): ReaderSwipe | null => {
+  'worklet'
+
   if (!swipe || !validPoint(point) || point.time < (swipe.samples.at(-1)?.time ?? 0)) return null
 
   if (swipe.axis === 'pending' && point.time - swipe.origin.time > 700) return null
@@ -48,9 +58,15 @@ export const moveReaderSwipe = (
   return { ...swipe, axis: vertical >= 12 ? 'vertical' : 'pending', maxVertical, samples }
 }
 
-export const readerSwipeDistance = (width: number) => Math.min(160, Math.max(80, width * 0.25))
+export const readerSwipeDistance = (width: number) => {
+  'worklet'
+
+  return Math.min(160, Math.max(80, width * 0.25))
+}
 
 export const readerSwipeOffset = (swipe: ReaderSwipe | null, available = true) => {
+  'worklet'
+
   if (!swipe || swipe.axis !== 'horizontal' || swipe.maxVertical > 40) return 0
 
   const dx = (swipe.samples.at(-1)?.x ?? swipe.origin.x) - swipe.origin.x
@@ -61,7 +77,9 @@ export const readerSwipeOffset = (swipe: ReaderSwipe | null, available = true) =
 export const finishReaderSwipe = (
   swipe: ReaderSwipe | null,
   point: SwipePoint,
+  releaseVelocity?: number,
 ): 'older' | 'newer' | null => {
+  'worklet'
   const moved = moveReaderSwipe(swipe, point)
 
   if (!moved || moved.axis !== 'horizontal') return null
@@ -70,7 +88,10 @@ export const finishReaderSwipe = (
   const dy = point.y - moved.origin.y
   const first = moved.samples[0]
   const duration = first ? point.time - first.time : 0
-  const velocity = first && duration > 0 ? (point.x - first.x) / duration : 0
+  const sampledVelocity = first && duration > 0 ? (point.x - first.x) / duration : 0
+  const velocity = releaseVelocity ?? sampledVelocity
+
+  if (!Number.isFinite(velocity)) return null
   const threshold = readerSwipeDistance(moved.width)
   const reversing = velocity * Math.sign(dx) < -0.15
 

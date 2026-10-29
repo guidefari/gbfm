@@ -27,9 +27,11 @@ function Reader({
   const router = useRouter()
   const reader = useTweetReader(identity, sessionToken, initialSlug)
   const [options, setOptions] = useState(false)
+  const [entering, setEntering] = useState<'older' | 'newer' | null>(null)
   const { screen, navigation } = reader
 
-  const go = (slug: string | null) => {
+  const go = (slug: string | null, direction: 'older' | 'newer' | null = null) => {
+    setEntering(direction)
     setOptions(false)
     reader.go(slug)
   }
@@ -53,11 +55,17 @@ function Reader({
             onOptions={() => setOptions(true)}
           />
           <TweetSwipeSurface
-            disabled={reader.actionBusy || !navigation}
+            key={screen.post.slug}
+            disabled={options || reader.actionBusy || !navigation}
+            newer={Boolean(navigation?.newer)}
+            older={Boolean(navigation?.older)}
+            entering={entering}
             onSwipe={(direction) => {
               const target = navigation?.[direction]
 
-              if (target) go(target)
+              if (target) {
+                go(target, direction)
+              }
             }}>
             <TweetDetail
               key={screen.post.id}

@@ -5,6 +5,7 @@ import { useThemeColors } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
 import { keyedContent, splitInlineImages, type TweetInline as Inline } from '@/tweets/tweetContent'
 
+import { SwipeExclusion } from './SwipeExclusion'
 import { useTweetLink } from './TweetLink'
 import { TweetImage } from './TweetMedia'
 
@@ -70,28 +71,26 @@ export function TweetInlineContent({
   const colors = useThemeColors()
 
   return (
-    <View
-      onTouchStart={(event) => {
-        if (inlines.some(hasLink)) event.stopPropagation()
-      }}
-      style={{ gap: 10 }}>
-      {keyedContent(splitInlineImages(inlines)).map(({ item, key }) =>
-        item.type === 'image' ? (
-          <TweetImage key={key} src={item.image.src} alt={item.image.alt} link={item.link} />
-        ) : (
-          <Text
-            key={key}
-            selectable
-            style={{
-              color: colors.strong,
-              fontFamily: fonts.mono,
-              fontSize: size,
-              lineHeight: size * 1.45,
-            }}>
-            <InlineText inlines={item.inlines} />
-          </Text>
-        ),
-      )}
-    </View>
+    <SwipeExclusion disabled={!inlines.some(hasLink)}>
+      <View style={{ gap: 10 }}>
+        {keyedContent(splitInlineImages(inlines)).map(({ item, key }) =>
+          item.type === 'image' ? (
+            <TweetImage key={key} src={item.image.src} alt={item.image.alt} link={item.link} />
+          ) : (
+            <Text
+              key={key}
+              selectable
+              style={{
+                color: colors.strong,
+                fontFamily: fonts.mono,
+                fontSize: size,
+                lineHeight: size * 1.45,
+              }}>
+              <InlineText inlines={item.inlines} />
+            </Text>
+          ),
+        )}
+      </View>
+    </SwipeExclusion>
   )
 }

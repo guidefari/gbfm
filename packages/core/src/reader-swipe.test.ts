@@ -43,6 +43,14 @@ test('holding after a flick loses momentum; only recent motion counts', () => {
   expect(finishReaderSwipe(swipe, { ...start, x: 150, time: 400 })).toBeNull()
 })
 
+test('native recognizer velocity takes precedence over coalesced delivery timing', () => {
+  const swipe = beginReaderSwipe(start, 390)
+  const end = { ...start, x: 150, time: 1 }
+  expect(finishReaderSwipe(swipe, end, 0)).toBeNull()
+  expect(finishReaderSwipe(swipe, end, -0.8)).toBe('older')
+  expect(finishReaderSwipe(swipe, end, NaN)).toBeNull()
+})
+
 test('a deliberate slow drag can commit, but a reversal pulls it back', () => {
   let swipe = moveReaderSwipe(beginReaderSwipe(start, 390), { ...start, x: 170, time: 100 })
   swipe = moveReaderSwipe(swipe, { ...start, x: 40, time: 900 })

@@ -6,6 +6,7 @@ import { useThemeColors } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
 import { tweetLinkUrl, type TweetInline } from '@/tweets/tweetContent'
 
+import { SwipeExclusion } from './SwipeExclusion'
 import { TweetLink } from './TweetLink'
 
 export function TweetImage({
@@ -23,33 +24,35 @@ export function TweetImage({
   const uri = tweetLinkUrl(src)
 
   return (
-    <View onTouchStart={(event) => event.stopPropagation()} style={{ gap: 8 }}>
-      {failed || !uri || !uri.startsWith('http') ? (
-        <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 13 }}>
-          {alt || 'Image unavailable'}
-        </Text>
-      ) : (
-        <Image
-          source={{ uri }}
-          accessibilityLabel={alt || 'Tweet image'}
-          onError={() => setFailed(true)}
-          onLoad={({ nativeEvent }) => {
-            if (nativeEvent.source.width > 0 && nativeEvent.source.height > 0)
-              setAspectRatio(nativeEvent.source.width / nativeEvent.source.height)
-          }}
-          resizeMode='contain'
-          style={{
-            width: '100%',
-            aspectRatio,
-            maxHeight: 420,
-            backgroundColor: colors.surface,
-            borderRadius: radii.surface,
-          }}
-        />
-      )}
-      <TweetLink href={src} label='Open image' />
-      {link ? <TweetLink href={link.href} label='Open link' /> : null}
-    </View>
+    <SwipeExclusion>
+      <View style={{ gap: 8 }}>
+        {failed || !uri || !uri.startsWith('http') ? (
+          <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 13 }}>
+            {alt || 'Image unavailable'}
+          </Text>
+        ) : (
+          <Image
+            source={{ uri }}
+            accessibilityLabel={alt || 'Tweet image'}
+            onError={() => setFailed(true)}
+            onLoad={({ nativeEvent }) => {
+              if (nativeEvent.source.width > 0 && nativeEvent.source.height > 0)
+                setAspectRatio(nativeEvent.source.width / nativeEvent.source.height)
+            }}
+            resizeMode='contain'
+            style={{
+              width: '100%',
+              aspectRatio,
+              maxHeight: 420,
+              backgroundColor: colors.surface,
+              borderRadius: radii.surface,
+            }}
+          />
+        )}
+        <TweetLink href={src} label='Open image' />
+        {link ? <TweetLink href={link.href} label='Open link' /> : null}
+      </View>
+    </SwipeExclusion>
   )
 }
 

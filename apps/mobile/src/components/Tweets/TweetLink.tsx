@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { Linking, Text, View } from 'react-native'
+import { Linking, Text } from 'react-native'
 
 import { Button } from '@/components/Button'
 import { useThemeColors } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
 import { tweetLinkUrl } from '@/tweets/tweetContent'
+
+import { SwipeExclusion } from './SwipeExclusion'
 
 export function useTweetLink(href: string) {
   const [failed, setFailed] = useState(false)
@@ -35,9 +37,9 @@ export function TweetLink({ href, label }: { readonly href: string; readonly lab
 
   return (
     <>
-      <View onTouchStart={(event) => event.stopPropagation()}>
+      <SwipeExclusion>
         <Button role='link' label={`${label} ↗`} accessibilityLabel={label} onPress={open} />
-      </View>
+      </SwipeExclusion>
       {failed ? (
         <Text
           accessibilityRole='alert'
