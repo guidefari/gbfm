@@ -25,12 +25,13 @@ const toPlayer =
   }
 
 const adoptInPage =
-  (audioId: string, active: boolean): Step =>
+  (audioId: string, active: boolean, principalId: string): Step =>
   (model) => {
     const publicAction: PublicActions.Model = model.publicAction
     const document = publicAction.document
 
     return !document ||
+      publicAction.principalId !== principalId ||
       document.target.kind !== 'audio' ||
       document.target.id !== audioId ||
       publicAction.busy ||
@@ -63,10 +64,12 @@ const acceptedPageSave = (previous: Model, message: Message, next: Model) =>
     ? message.message
     : null
 
-const pageFavorite = (model: Model) => {
+const pageFavorite = (model: Model, principalId: string | null) => {
   const document = model.publicAction.document
 
   return document?.target.kind === 'audio' &&
+    principalId !== null &&
+    model.publicAction.principalId === principalId &&
     document.target.id === model.player.favorite.track?.audioId &&
     (document.state === 'active' || document.state === 'inactive')
     ? { audioId: document.target.id, active: document.state === 'active' }
@@ -76,13 +79,75 @@ const pageFavorite = (model: Model) => {
 const playerFavorite = (model: Model) => {
   const { track, status, saving } = model.player.favorite
 
-  return track && !saving && (status === 'active' || status === 'inactive')
-    ? { audioId: track.audioId, active: status === 'active' }
+  return track &&
+    model.player.favorite.principalId &&
+    !saving &&
+    (status === 'active' || status === 'inactive')
+    ? {
+        audioId: track.audioId,
+        active: status === 'active',
+        principalId: model.player.favorite.principalId,
+      }
     : null
 }
 
+const invalidatePageAccount: Step = (model) => {
+  const publicAction = model.publicAction
+
+  return !publicAction.document || publicAction.principalId === model.player.favorite.principalId
+    ? { model }
+    : {
+        model: {
+          ...model,
+          publicAction: {
+            ...publicAction,
+            principalId: model.player.favorite.principalId,
+            requestId: publicAction.requestId + 1,
+            busy: false,
+            notice: null,
+            document: {
+              ...publicAction.document,
+              state:
+                model.player.favorite.principalKnown && model.player.favorite.principalId === null
+                  ? 'anonymous'
+                  : 'unavailable',
+            },
+          },
+        },
+      }
+}
+
 const steps = (previous: Model, message: Message, next: Model): ReadonlyArray<Step> => {
-  const principalId = next.flags.principal?.id ?? null
+  const loadedFlags =
+    Predicate.isTagged(message, 'LoadedPage') && message.navigationId === previous.navigationId
+      ? message.flags
+      : null
+
+  const identityChangedDuringRead =
+    previous.player.favorite.principalId !== previous.navigationPrincipalId ||
+    previous.player.favorite.principalKnown !== previous.navigationPrincipalKnown
+
+  const acceptsPageIdentity =
+    loadedFlags &&
+    (loadedFlags.principal !== null || loadedFlags.principalKnown === true) &&
+    (!identityChangedDuringRead ||
+      (loadedFlags.principal?.id ?? null) === next.player.favorite.principalId)
+
+  const pageConfirmedSignOut =
+    Predicate.isTagged(message, 'GotPublicActionMessage') &&
+    Predicate.isTagged(message.message, 'Failed') &&
+    message.message.unauthorized &&
+    next.publicAction !== previous.publicAction
+
+  const principalId = pageConfirmedSignOut
+    ? null
+    : acceptsPageIdentity
+      ? (loadedFlags.principal?.id ?? null)
+      : next.player.favorite.principalId
+
+  const principalKnown =
+    pageConfirmedSignOut || acceptsPageIdentity ? true : next.player.favorite.principalKnown
+
   const playerSave = acceptedPlayerSave(previous, message, next)
   const pageSave = acceptedPageSave(previous, message, next)
   const pageReplaced = next.publicAction !== previous.publicAction && !pageSave
@@ -91,6 +156,7 @@ const steps = (previous: Model, message: Message, next: Model): ReadonlyArray<St
     pageReplaced && Predicate.isTagged(message, 'LoadedPage')
       ? next.navigationFavoriteChanges.find(
           (change) =>
+            change.principalId === next.publicAction.principalId &&
             change.principalId === principalId &&
             next.publicAction.document?.target.kind === 'audio' &&
             change.audioId === next.publicAction.document.target.id,
@@ -99,17 +165,23 @@ const steps = (previous: Model, message: Message, next: Model): ReadonlyArray<St
 
   const fresh =
     pageReplaced && Predicate.isTagged(message, 'LoadedPage')
-      ? (overtakingSave ?? pageFavorite(next))
+      ? (overtakingSave ?? pageFavorite(next, principalId))
       : null
 
   const cached =
     pageReplaced && Predicate.isTagged(message, 'ChangedUrl') ? playerFavorite(next) : null
 
   return [
-    ...(principalId === next.player.favorite.principalId
+    ...(principalId === next.player.favorite.principalId &&
+    principalKnown === next.player.favorite.principalKnown
       ? []
-      : [toPlayer(Player.Message.PrincipalChanged({ principalId }))]),
-    ...(playerSave ? [adoptInPage(playerSave.audioId, playerSave.active)] : []),
+      : [toPlayer(Player.Message.PrincipalChanged({ principalId, principalKnown }))]),
+    ...(next.publicAction.document && next.publicAction.principalId !== principalId
+      ? [invalidatePageAccount]
+      : []),
+    ...(playerSave
+      ? [adoptInPage(playerSave.audioId, playerSave.active, playerSave.principalId)]
+      : []),
     ...(pageSave
       ? [
           toPlayer(
@@ -120,9 +192,11 @@ const steps = (previous: Model, message: Message, next: Model): ReadonlyArray<St
           ),
         ]
       : []),
-    ...(overtakingSave ? [adoptInPage(overtakingSave.audioId, overtakingSave.active)] : []),
+    ...(overtakingSave
+      ? [adoptInPage(overtakingSave.audioId, overtakingSave.active, overtakingSave.principalId)]
+      : []),
     ...(fresh ? [toPlayer(Player.Message.FavoriteChangedElsewhere(fresh))] : []),
-    ...(cached ? [adoptInPage(cached.audioId, cached.active)] : []),
+    ...(cached ? [adoptInPage(cached.audioId, cached.active, cached.principalId)] : []),
   ]
 }
 
@@ -134,7 +208,7 @@ const steps = (previous: Model, message: Message, next: Model): ReadonlyArray<St
 export const syncPlayerFavorite = (previous: Model, message: Message, result: Return): Return => {
   const playerSave = acceptedPlayerSave(previous, message, result.model)
   const pageSave = acceptedPageSave(previous, message, result.model)
-  const principalId = previous.flags.principal?.id
+  const principalId = playerSave?.principalId ?? pageSave?.principalId
 
   const change = playerSave
     ? { audioId: playerSave.audioId, active: playerSave.active }

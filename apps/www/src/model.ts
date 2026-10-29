@@ -60,6 +60,7 @@ export const Flags = Schema.Struct({
   turnstileSiteKey: Schema.optional(Schema.String),
   status: Schema.Number,
   principal: Schema.NullOr(Principal),
+  principalKnown: Schema.optional(Schema.Boolean),
   items: Schema.Array(ContentItem),
   title: Schema.String,
   description: Schema.String,
@@ -103,6 +104,8 @@ export const Model = Schema.Struct({
   passwordVisible: Schema.Boolean,
   authSubmitting: Schema.Boolean,
   navigationId: Schema.Number,
+  navigationPrincipalId: Schema.NullOr(Schema.String),
+  navigationPrincipalKnown: Schema.Boolean,
   navigationFavoriteChanges: Schema.Array(
     Schema.Struct({ principalId: Schema.String, audioId: Schema.String, active: Schema.Boolean }),
   ),

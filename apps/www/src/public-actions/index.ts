@@ -22,22 +22,39 @@ export const Model = Schema.Struct({
   document: Schema.NullOr(Document),
   busy: Schema.Boolean,
   notice: Schema.NullOr(Schema.String),
+  principalId: Schema.NullOr(Schema.String),
+  requestId: Schema.Number,
 })
 
 export type Model = typeof Model.Type
 
 export const Message = defineMessageUnion({
   Toggle: {},
-  Saved: { target: Target, active: Schema.Boolean },
-  Failed: { target: Target, unauthorized: Schema.Boolean },
+  Saved: {
+    target: Target,
+    active: Schema.Boolean,
+    principalId: Schema.String,
+    requestId: Schema.Number,
+  },
+  Failed: {
+    target: Target,
+    unauthorized: Schema.Boolean,
+    principalId: Schema.String,
+    requestId: Schema.Number,
+  },
 })
 
 export type Message = typeof Message.Type
 
 const Save = Command.define('PublicActions.Save', {
-  args: { target: Target, active: Schema.Boolean },
+  args: {
+    target: Target,
+    active: Schema.Boolean,
+    principalId: Schema.String,
+    requestId: Schema.Number,
+  },
   messages: [Message.Saved, Message.Failed],
-  execute: ({ target, active }) =>
+  execute: ({ target, active, principalId, requestId }) =>
     Effect.tryPromise(async (signal) => {
       const path =
         target.kind === 'show'
@@ -56,26 +73,48 @@ const Save = Command.define('PublicActions.Save', {
       })
 
       return response.ok
-        ? Message.Saved({ target, active })
-        : Message.Failed({ target, unauthorized: response.status === 401 })
-    }).pipe(Effect.orElseSucceed(() => Message.Failed({ target, unauthorized: false }))),
+        ? Message.Saved({ target, active, principalId, requestId })
+        : Message.Failed({ target, unauthorized: response.status === 401, principalId, requestId })
+    }).pipe(
+      Effect.orElseSucceed(() =>
+        Message.Failed({ target, unauthorized: false, principalId, requestId }),
+      ),
+    ),
 })
 
-export const init = (document: Document | null): Model => ({ document, busy: false, notice: null })
+export const init = (document: Document | null, principalId: string | null = null): Model => ({
+  document,
+  principalId,
+  requestId: 0,
+  busy: false,
+  notice: null,
+})
 
 export const update = (model: Model, message: Message): Update.Return<Model, Message> =>
   Message.match<Update.Return<Model, Message>>(message, {
     Toggle: () =>
-      !model.document || model.busy || !['active', 'inactive'].includes(model.document.state)
+      !model.document ||
+      !model.principalId ||
+      model.busy ||
+      !['active', 'inactive'].includes(model.document.state)
         ? { model }
         : {
-            model: { ...model, busy: true, notice: null },
+            model: { ...model, requestId: model.requestId + 1, busy: true, notice: null },
             commands: [
-              Save({ target: model.document.target, active: model.document.state !== 'active' }),
+              Save({
+                target: model.document.target,
+                active: model.document.state !== 'active',
+                principalId: model.principalId,
+                requestId: model.requestId + 1,
+              }),
             ],
           },
-    Saved: ({ target, active }) =>
-      model.document?.target.id !== target.id || model.document.target.kind !== target.kind
+    Saved: ({ target, active, principalId, requestId }) =>
+      !model.busy ||
+      principalId !== model.principalId ||
+      requestId !== model.requestId ||
+      model.document?.target.id !== target.id ||
+      model.document.target.kind !== target.kind
         ? { model }
         : {
             model: {
@@ -85,13 +124,18 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
               notice: 'Saved',
             },
           },
-    Failed: ({ target, unauthorized }) =>
-      model.document?.target.id !== target.id || model.document.target.kind !== target.kind
+    Failed: ({ target, unauthorized, principalId, requestId }) =>
+      !model.busy ||
+      principalId !== model.principalId ||
+      requestId !== model.requestId ||
+      model.document?.target.id !== target.id ||
+      model.document.target.kind !== target.kind
         ? { model }
         : {
             model: {
               ...model,
               busy: false,
+              principalId: unauthorized ? null : model.principalId,
               document: {
                 ...model.document,
                 state: unauthorized ? 'anonymous' : model.document.state,

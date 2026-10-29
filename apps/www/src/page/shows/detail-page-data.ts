@@ -20,11 +20,13 @@ export const loadShowDetailData = async (
     method: 'GET',
   }).catch(() => null)
 
-  const page = await (
+  const decoded = await (
     response?.ok
       ? response.json().then(Schema.decodeUnknownSync(ShowPageResponse))
-      : Promise.resolve(ShowPageResponse.cases.Unavailable.make({ principal: null }))
-  ).catch(() => ShowPageResponse.cases.Unavailable.make({ principal: null }))
+      : Promise.resolve(null)
+  ).catch(() => null)
+
+  const page = decoded ?? ShowPageResponse.cases.Unavailable.make({ principal: null })
 
   const ready = ShowPageResponse.guards.Ready(page) ? page : null
 
@@ -47,6 +49,7 @@ export const loadShowDetailData = async (
     url: url.href,
     status,
     principal: page.principal,
+    principalKnown: decoded !== null,
     items,
     title,
     description,

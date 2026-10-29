@@ -99,7 +99,7 @@ export const Message = defineMessageUnion({
   DroppedAt: { index: Schema.Number },
   OperationCompleted: {},
   GotFavoriteMessage: { message: Favorite.Message },
-  PrincipalChanged: { principalId: Schema.NullOr(Schema.String) },
+  PrincipalChanged: { principalId: Schema.NullOr(Schema.String), principalKnown: Schema.Boolean },
   FavoriteChangedElsewhere: { audioId: Schema.String, active: Schema.Boolean },
 })
 
@@ -327,8 +327,11 @@ export const update = (
     OperationCompleted: () => ({ model }),
     GotFavoriteMessage: ({ message }) =>
       withFavorite(model, Favorite.update(model.favorite, message)),
-    PrincipalChanged: ({ principalId }) =>
-      withFavorite(model, Favorite.sync(model.favorite, model.snapshot.queue.current, principalId)),
+    PrincipalChanged: ({ principalId, principalKnown }) =>
+      withFavorite(
+        model,
+        Favorite.sync(model.favorite, model.snapshot.queue.current, principalId, principalKnown),
+      ),
     FavoriteChangedElsewhere: ({ audioId, active }) =>
       withFavorite(model, { model: Favorite.reconcile(model.favorite, audioId, active) }),
   })

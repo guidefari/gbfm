@@ -27,6 +27,7 @@ export const Status = Schema.Literals([
 export const Model = Schema.Struct({
   track: Schema.NullOr(Track),
   principalId: Schema.NullOr(Schema.String),
+  principalKnown: Schema.Boolean,
   generation: Schema.Number,
   status: Status,
   saving: Schema.Boolean,
@@ -39,6 +40,7 @@ export type Model = typeof Model.Type
 export const initialModel: Model = {
   track: null,
   principalId: null,
+  principalKnown: false,
   generation: 0,
   status: 'idle',
   saving: false,
@@ -49,11 +51,25 @@ export const initialModel: Model = {
 const LoadedState = Schema.Literals(['anonymous', 'active', 'inactive', 'unavailable'])
 
 export const Message = defineMessageUnion({
-  Loaded: { generation: Schema.Number, state: LoadedState },
+  Loaded: {
+    generation: Schema.Number,
+    state: LoadedState,
+    principalId: Schema.NullOr(Schema.String),
+    principalKnown: Schema.Boolean,
+  },
   Toggled: {},
   Retried: {},
-  Saved: { generation: Schema.Number, audioId: Schema.String, active: Schema.Boolean },
-  SaveFailed: { generation: Schema.Number, unauthorized: Schema.Boolean },
+  Saved: {
+    generation: Schema.Number,
+    audioId: Schema.String,
+    active: Schema.Boolean,
+    principalId: Schema.String,
+  },
+  SaveFailed: {
+    generation: Schema.Number,
+    unauthorized: Schema.Boolean,
+    principalId: Schema.String,
+  },
   NoticeDismissed: { generation: Schema.Number, noticeId: Schema.Number },
 })
 
@@ -93,20 +109,34 @@ const Load = Command.define('PlayerFavorite.Load', {
       Effect.map((page) =>
         Message.Loaded({
           generation,
+          principalId: page.principal?.id ?? null,
+          principalKnown: true,
           state:
             AudioPageResponse.guards.Ready(page) && page.audio.id === track.audioId
               ? page.favorite
               : 'unavailable',
         }),
       ),
-      Effect.orElseSucceed(() => Message.Loaded({ generation, state: 'unavailable' })),
+      Effect.orElseSucceed(() =>
+        Message.Loaded({
+          generation,
+          state: 'unavailable',
+          principalId: null,
+          principalKnown: false,
+        }),
+      ),
     ),
 })
 
 const Save = Command.define('PlayerFavorite.Save', {
-  args: { generation: Schema.Number, audioId: Schema.String, active: Schema.Boolean },
+  args: {
+    generation: Schema.Number,
+    audioId: Schema.String,
+    active: Schema.Boolean,
+    principalId: Schema.String,
+  },
   messages: [Message.Saved, Message.SaveFailed],
-  execute: ({ generation, audioId, active }) =>
+  execute: ({ generation, audioId, active, principalId }) =>
     Effect.tryPromise(async (signal) => {
       const response = await fetch(
         active ? '/api/favorites' : `/api/favorites/${encodeURIComponent(audioId)}`,
@@ -122,9 +152,13 @@ const Save = Command.define('PlayerFavorite.Save', {
       const settled = response.ok || response.status === (active ? 409 : 404)
 
       return settled
-        ? Message.Saved({ generation, audioId, active })
-        : Message.SaveFailed({ generation, unauthorized: response.status === 401 })
-    }).pipe(Effect.orElseSucceed(() => Message.SaveFailed({ generation, unauthorized: false }))),
+        ? Message.Saved({ generation, audioId, active, principalId })
+        : Message.SaveFailed({ generation, unauthorized: response.status === 401, principalId })
+    }).pipe(
+      Effect.orElseSucceed(() =>
+        Message.SaveFailed({ generation, unauthorized: false, principalId }),
+      ),
+    ),
 })
 
 const sameTrack = (left: Track | null, right: Track | null) =>
@@ -150,12 +184,15 @@ export const sync = (
   model: Model,
   current: QueueTrackType | null,
   principalId: string | null,
+  principalKnown = principalId !== null || model.principalKnown,
 ): Update.Return<Model, Message> => {
   const track = trackOf(current)
 
-  return sameTrack(model.track, track) && model.principalId === principalId
+  return sameTrack(model.track, track) &&
+    model.principalId === principalId &&
+    model.principalKnown === principalKnown
     ? { model }
-    : load({ ...model, track, principalId })
+    : load({ ...model, track, principalId, principalKnown })
 }
 
 /** Adopts a server-acknowledged favorite change made by another control for the same audio. */
@@ -173,19 +210,31 @@ export const reconcile = (model: Model, audioId: string, active: boolean): Model
 
 export const update = (model: Model, message: Message): Update.Return<Model, Message> =>
   Message.match<Update.Return<Model, Message>>(message, {
-    Loaded: ({ generation, state }) =>
-      generation !== model.generation || model.status !== 'loading'
-        ? { model }
-        : state === 'unavailable'
-          ? notify({ ...model, status: state }, 'Favorite status could not be loaded.')
-          : { model: { ...model, status: state, notice: null } },
+    Loaded: ({ generation, state, principalId, principalKnown }) => {
+      if (generation !== model.generation || model.status !== 'loading') return { model }
+
+      const identified = {
+        ...model,
+        principalId: principalKnown ? principalId : model.principalId,
+        principalKnown: principalKnown || model.principalKnown,
+      }
+
+      return state === 'unavailable'
+        ? notify({ ...identified, status: state }, 'Favorite status could not be loaded.')
+        : { model: { ...identified, status: state, notice: null } }
+    },
     NoticeDismissed: ({ generation, noticeId }) =>
       generation === model.generation && noticeId === model.noticeId && model.notice !== null
         ? { model: { ...model, notice: null } }
         : { model },
     Retried: () => (model.status === 'unavailable' ? load(model) : { model }),
     Toggled: () => {
-      if (!model.track || model.saving || !['active', 'inactive'].includes(model.status))
+      if (
+        !model.track ||
+        !model.principalId ||
+        model.saving ||
+        !['active', 'inactive'].includes(model.status)
+      )
         return { model }
 
       return {
@@ -195,22 +244,28 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
             generation: model.generation,
             audioId: model.track.audioId,
             active: model.status !== 'active',
+            principalId: model.principalId,
           }),
         ],
       }
     },
-    Saved: ({ generation, active }) =>
-      generation !== model.generation || !model.saving
+    Saved: ({ generation, active, principalId, audioId }) =>
+      generation !== model.generation ||
+      principalId !== model.principalId ||
+      audioId !== model.track?.audioId ||
+      !model.saving
         ? { model }
         : { model: { ...model, saving: false, status: active ? 'active' : 'inactive' } },
-    SaveFailed: ({ generation, unauthorized }) =>
-      generation !== model.generation || !model.saving
+    SaveFailed: ({ generation, unauthorized, principalId }) =>
+      generation !== model.generation || principalId !== model.principalId || !model.saving
         ? { model }
         : notify(
             {
               ...model,
               saving: false,
               status: unauthorized ? 'anonymous' : model.status,
+              principalId: unauthorized ? null : model.principalId,
+              principalKnown: unauthorized || model.principalKnown,
             },
             unauthorized
               ? 'Your session has ended. Sign in to favorite.'

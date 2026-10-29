@@ -23,11 +23,13 @@ export const loadAudioDetailData = async (
     { method: 'GET' },
   ).catch(() => null)
 
-  const page = await (
+  const decoded = await (
     response?.ok
       ? response.json().then(Schema.decodeUnknownSync(AudioPageResponse))
-      : Promise.resolve(AudioPageResponse.cases.Unavailable.make({ principal: null }))
-  ).catch(() => AudioPageResponse.cases.Unavailable.make({ principal: null }))
+      : Promise.resolve(null)
+  ).catch(() => null)
+
+  const page = decoded ?? AudioPageResponse.cases.Unavailable.make({ principal: null })
 
   const ready = AudioPageResponse.guards.Ready(page) ? page : null
 
@@ -53,6 +55,7 @@ export const loadAudioDetailData = async (
     url: url.href,
     status,
     principal: page.principal,
+    principalKnown: decoded !== null,
     items,
     title,
     description,

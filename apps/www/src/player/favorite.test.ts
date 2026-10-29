@@ -17,7 +17,15 @@ const track = (id: string, slug = id): QueueTrackType => ({
 const loaded = (state: 'active' | 'inactive' | 'anonymous' = 'inactive') => {
   const loading = sync(initialModel, track('mix-a'), 'user-1').model
 
-  return update(loading, Message.Loaded({ generation: loading.generation, state })).model
+  return update(
+    loading,
+    Message.Loaded({
+      generation: loading.generation,
+      state,
+      principalId: state === 'anonymous' ? null : 'user-1',
+      principalKnown: true,
+    }),
+  ).model
 }
 
 describe('player favorite', () => {
@@ -43,11 +51,73 @@ describe('player favorite', () => {
 
     const anonymous = update(
       loading.model,
-      Message.Loaded({ generation: loading.model.generation, state: 'anonymous' }),
+      Message.Loaded({
+        generation: loading.model.generation,
+        state: 'anonymous',
+        principalId: null,
+        principalKnown: true,
+      }),
     ).model
 
     expect(anonymous.status).toBe('anonymous')
     expect(update(anonymous, Message.Toggled()).commands).toBeUndefined()
+  })
+
+  it.each([true, false])(
+    'distinguishes confirmed signed-out responses from failed identity reads: %s',
+    (principalKnown) => {
+      const loading = sync(initialModel, track('mix-a'), 'user-1').model
+
+      const unavailable = update(
+        loading,
+        Message.Loaded({
+          generation: loading.generation,
+          state: 'unavailable',
+          principalId: null,
+          principalKnown,
+        }),
+      ).model
+
+      expect(unavailable.principalId).toBe(principalKnown ? null : 'user-1')
+      expect(unavailable.status).toBe('unavailable')
+    },
+  )
+
+  it('rejects save results with the wrong account or audio even if their generation matches', () => {
+    const saving = update(loaded(), Message.Toggled()).model
+
+    const wrongAccount = update(
+      saving,
+      Message.Saved({
+        generation: saving.generation,
+        audioId: 'mix-a',
+        active: true,
+        principalId: 'user-2',
+      }),
+    ).model
+
+    const wrongAudio = update(
+      saving,
+      Message.Saved({
+        generation: saving.generation,
+        audioId: 'mix-b',
+        active: true,
+        principalId: 'user-1',
+      }),
+    ).model
+
+    const wrongFailure = update(
+      saving,
+      Message.SaveFailed({
+        generation: saving.generation,
+        principalId: 'user-2',
+        unauthorized: true,
+      }),
+    ).model
+
+    expect(wrongAccount).toBe(saving)
+    expect(wrongAudio).toBe(saving)
+    expect(wrongFailure).toBe(saving)
   })
 
   it('clears stale state and ignores late loads after the track or account changes', () => {
@@ -56,12 +126,25 @@ describe('player favorite', () => {
     expect(second.status).toBe('loading')
 
     expect(
-      update(second, Message.Loaded({ generation: first.generation, state: 'active' })).model,
+      update(
+        second,
+        Message.Loaded({
+          generation: first.generation,
+          state: 'active',
+          principalId: 'user-1',
+          principalKnown: true,
+        }),
+      ).model,
     ).toEqual(second)
 
     const active = update(
       second,
-      Message.Loaded({ generation: second.generation, state: 'active' }),
+      Message.Loaded({
+        generation: second.generation,
+        state: 'active',
+        principalId: 'user-1',
+        principalKnown: true,
+      }),
     ).model
 
     const otherAccount = sync(active, track('mix-b'), 'user-2').model
@@ -78,12 +161,18 @@ describe('player favorite', () => {
       generation: inactive.generation,
       audioId: 'mix-a',
       active: true,
+      principalId: 'user-1',
     })
     expect(update(saving.model, Message.Toggled()).commands).toBeUndefined()
 
     const saved = update(
       saving.model,
-      Message.Saved({ generation: inactive.generation, audioId: 'mix-a', active: true }),
+      Message.Saved({
+        generation: inactive.generation,
+        audioId: 'mix-a',
+        active: true,
+        principalId: 'user-1',
+      }),
     ).model
 
     expect(saved).toMatchObject({ status: 'active', saving: false, notice: null })
@@ -95,8 +184,15 @@ describe('player favorite', () => {
 
     expect(next.saving).toBe(false)
     expect(
-      update(next, Message.Saved({ generation: saving.generation, audioId: 'mix-a', active: true }))
-        .model,
+      update(
+        next,
+        Message.Saved({
+          generation: saving.generation,
+          audioId: 'mix-a',
+          active: true,
+          principalId: 'user-1',
+        }),
+      ).model,
     ).toEqual(next)
   })
 
@@ -105,7 +201,11 @@ describe('player favorite', () => {
 
     const failed = update(
       saving,
-      Message.SaveFailed({ generation: saving.generation, unauthorized: false }),
+      Message.SaveFailed({
+        generation: saving.generation,
+        unauthorized: false,
+        principalId: 'user-1',
+      }),
     ).model
 
     expect(failed).toMatchObject({
@@ -116,7 +216,11 @@ describe('player favorite', () => {
 
     const expired = update(
       update(failed, Message.Toggled()).model,
-      Message.SaveFailed({ generation: saving.generation, unauthorized: true }),
+      Message.SaveFailed({
+        generation: saving.generation,
+        unauthorized: true,
+        principalId: 'user-1',
+      }),
     ).model
 
     expect(expired.status).toBe('anonymous')
@@ -127,7 +231,12 @@ describe('player favorite', () => {
 
     const unavailable = update(
       loading,
-      Message.Loaded({ generation: loading.generation, state: 'unavailable' }),
+      Message.Loaded({
+        generation: loading.generation,
+        state: 'unavailable',
+        principalId: 'user-1',
+        principalKnown: true,
+      }),
     ).model
 
     expect(unavailable).toMatchObject({
@@ -148,7 +257,12 @@ describe('player favorite', () => {
     expect(
       update(
         adopted,
-        Message.Saved({ generation: inactive.generation, audioId: 'mix-a', active: false }),
+        Message.Saved({
+          generation: inactive.generation,
+          audioId: 'mix-a',
+          active: false,
+          principalId: 'user-1',
+        }),
       ).model,
     ).toEqual(adopted)
     expect(reconcile(inactive, 'mix-b', true)).toBe(inactive)
@@ -159,8 +273,15 @@ describe('player favorite', () => {
     const loading = sync(initialModel, track('mix-a'), 'user-1').model
     const settled = reconcile(loading, 'mix-a', true)
     expect(
-      update(settled, Message.Loaded({ generation: loading.generation, state: 'inactive' })).model
-        .status,
+      update(
+        settled,
+        Message.Loaded({
+          generation: loading.generation,
+          state: 'inactive',
+          principalId: 'user-1',
+          principalKnown: true,
+        }),
+      ).model.status,
     ).toBe('active')
   })
 
@@ -170,7 +291,11 @@ describe('player favorite', () => {
 
       return update(
         saving,
-        Message.SaveFailed({ generation: saving.generation, unauthorized: false }),
+        Message.SaveFailed({
+          generation: saving.generation,
+          unauthorized: false,
+          principalId: 'user-1',
+        }),
       )
     }
 

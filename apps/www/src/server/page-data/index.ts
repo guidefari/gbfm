@@ -196,6 +196,7 @@ export const loadPageData = async (
         : '',
     status,
     principal: identity.principal,
+    principalKnown: identity.principalKnown,
     items,
     title,
     description:
@@ -222,7 +223,7 @@ export const loadPageData = async (
   return {
     redirect: null,
     flags,
-    identity,
+    identity: { principal: identity.principal, cookies: identity.cookies },
     response,
     neighbourResponse,
     tweetData,

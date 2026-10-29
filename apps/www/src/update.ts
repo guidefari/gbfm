@@ -148,7 +148,13 @@ const showPage = (
         : model.tweetReader,
       interactive: model.interactive,
       navigationId,
+      navigationPrincipalId: model.navigationPrincipalId,
+      navigationPrincipalKnown: model.navigationPrincipalKnown,
       navigationFavoriteChanges: model.navigationFavoriteChanges,
+      publicAction: {
+        ...next.model.publicAction,
+        requestId: model.publicAction.requestId + 1,
+      },
     },
     commands: [
       ...Command.mapMessages(next.commands ?? [], (message) =>
@@ -329,6 +335,7 @@ const updateApplication = (
       commands: [SaveReadMode({ value })],
     }),
     GotPublicActionMessage: ({ message }) => {
+      if (model.publicAction.principalId !== model.player.favorite.principalId) return { model }
       const child = PublicActions.update(model.publicAction, message)
 
       return {
@@ -458,6 +465,8 @@ const updateApplication = (
         ...menu.model,
         pageCache,
         navigationId,
+        navigationPrincipalId: model.player.favorite.principalId,
+        navigationPrincipalKnown: model.player.favorite.principalKnown,
         navigationFavoriteChanges: [],
         player: player.model,
         tweetReader: {
