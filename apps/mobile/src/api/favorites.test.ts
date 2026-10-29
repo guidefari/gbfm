@@ -1,6 +1,6 @@
 import { AudioPageResponse } from '@gbfm/api/audio'
 import { Effect, Redacted, Schema } from 'effect'
-import { HttpClient, HttpClientResponse } from 'effect/http'
+import { HttpClient, HttpClientError, HttpClientResponse } from 'effect/http'
 import { describe, expect, test } from 'vitest'
 
 import { loadFavorite, saveFavorite, type FavoriteTrack } from './favorites'
@@ -17,18 +17,26 @@ type SeenRequest = {
   readonly authorization: string
 }
 
-const fakeServer = (respond: (method: string, path: string) => Response) => {
+const fakeServer = (respond: (method: string, path: string) => Response | undefined) => {
   const seen: Array<SeenRequest> = []
 
   const httpClient = HttpClient.make((request, url) =>
-    Effect.sync(() => {
+    Effect.gen(function* () {
       seen.push({
         method: request.method,
         path: url.pathname,
         authorization: request.headers['authorization'] ?? '',
       })
 
-      return HttpClientResponse.fromWeb(request, respond(request.method, url.pathname))
+      const response = respond(request.method, url.pathname)
+
+      if (!response) {
+        return yield* new HttpClientError.HttpClientError({
+          reason: new HttpClientError.TransportError({ request }),
+        })
+      }
+
+      return HttpClientResponse.fromWeb(request, response)
     }),
   )
 
@@ -108,11 +116,69 @@ describe('loadFavorite', () => {
     expect(await outcome(loadFavorite(server.connection, track))).toEqual({ ok: false })
   })
 
-  test('treats an anonymous page for a signed-in listener as an expired session', async () => {
-    const server = fakeServer(() => readyPage('anonymous'))
+  test('keeps an anonymous page retryable when the bearer session is valid', async () => {
+    const server = fakeServer((_method, path) =>
+      path === '/auth/get-session'
+        ? jsonResponse(
+            200,
+            JSON.stringify({
+              user: {
+                id: 'listener-1',
+                name: 'Listener',
+                email: 'listener@example.test',
+                emailVerified: true,
+                createdAt: '2026-01-01T00:00:00.000Z',
+                updatedAt: '2026-01-01T00:00:00.000Z',
+              },
+            }),
+          )
+        : readyPage('anonymous'),
+    )
+
+    expect(await outcome(loadFavorite(server.connection, track))).toEqual({
+      failed: 'FavoriteRequestFailed',
+    })
+    expect(server.seen).toEqual([
+      {
+        method: 'GET',
+        path: '/api/content/audio/mix/late-night-signal/page',
+        authorization: 'Bearer fixture-session-token',
+      },
+      {
+        method: 'GET',
+        path: '/auth/get-session',
+        authorization: 'Bearer fixture-session-token',
+      },
+    ])
+  })
+
+  test('reports expiry only after an anonymous page and a rejected bearer session', async () => {
+    const server = fakeServer((_method, path) =>
+      path === '/auth/get-session' ? httpError(401, 'Unauthorized') : readyPage('anonymous'),
+    )
 
     expect(await outcome(loadFavorite(server.connection, track))).toEqual({
       failed: 'FavoriteSessionExpired',
+    })
+    expect(server.seen.at(-1)).toEqual({
+      method: 'GET',
+      path: '/auth/get-session',
+      authorization: 'Bearer fixture-session-token',
+    })
+  })
+
+  test.each([
+    ['service unavailable', () => httpError(503, 'ServiceUnavailable')],
+    ['network unavailable', () => undefined],
+    ['malformed session', () => jsonResponse(200, JSON.stringify({ user: { id: 'listener-1' } }))],
+    ['invalid JSON', () => jsonResponse(200, '{')],
+  ])('keeps an anonymous page retryable when session lookup has %s', async (_name, respond) => {
+    const server = fakeServer((_method, path) =>
+      path === '/auth/get-session' ? respond() : readyPage('anonymous'),
+    )
+
+    expect(await outcome(loadFavorite(server.connection, track))).toEqual({
+      failed: 'FavoriteRequestFailed',
     })
   })
 

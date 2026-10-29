@@ -1,6 +1,6 @@
 import type { FullUser, LoginRequest } from '@gbfm/core/api'
-import { Data, Effect, Schema } from 'effect'
-import { HttpClientRequest } from 'effect/http'
+import { Data, Effect, Redacted, Schema } from 'effect'
+import { HttpClientRequest, type HttpClient } from 'effect/http'
 
 import { getHttpClient } from '@/api/client'
 import { env } from '@/env'
@@ -66,30 +66,40 @@ export const login = (credentials: LoginRequest) =>
     return { user: toFullUser(data.user), sessionToken: data.token }
   })
 
+export const getSessionWithClient = Effect.fn('getSessionWithClient')(function* (connection: {
+  readonly httpClient: HttpClient.HttpClient
+  readonly baseUrl: string
+  readonly sessionToken: Redacted.Redacted
+}) {
+  const request = HttpClientRequest.get(`${connection.baseUrl}/auth/get-session`).pipe(
+    HttpClientRequest.bearerToken(connection.sessionToken),
+  )
+
+  const response = yield* connection.httpClient
+    .execute(request)
+    .pipe(Effect.mapError(() => new SessionUnavailable({ message: 'Unable to refresh session.' })))
+
+  if (response.status === 401) return yield* new SessionExpired()
+
+  if (response.status < 200 || response.status >= 300) {
+    return yield* new SessionUnavailable({ message: `Session check failed: ${response.status}` })
+  }
+
+  const data = yield* response.json.pipe(
+    Effect.flatMap(Schema.decodeUnknownEffect(BetterAuthSessionResponse)),
+    Effect.mapError(() => new SessionUnavailable({ message: 'Unable to read session.' })),
+  )
+
+  return toFullUser(data.user)
+})
+
 export const getSession = (sessionToken: string) =>
   Effect.gen(function* () {
-    const client = yield* getHttpClient
+    const httpClient = yield* getHttpClient
 
-    const request = HttpClientRequest.get(`${env.EXPO_PUBLIC_API_URL}/auth/get-session`).pipe(
-      HttpClientRequest.setHeader('Authorization', `Bearer ${sessionToken}`),
-    )
-
-    const response = yield* client
-      .execute(request)
-      .pipe(
-        Effect.mapError(() => new SessionUnavailable({ message: 'Unable to refresh session.' })),
-      )
-
-    if (response.status === 401) return yield* new SessionExpired()
-
-    if (response.status < 200 || response.status >= 300) {
-      return yield* new SessionUnavailable({ message: `Session check failed: ${response.status}` })
-    }
-
-    const data = yield* response.json.pipe(
-      Effect.flatMap(Schema.decodeUnknownEffect(BetterAuthSessionResponse)),
-      Effect.mapError(() => new SessionExpired()),
-    )
-
-    return toFullUser(data.user)
+    return yield* getSessionWithClient({
+      httpClient,
+      baseUrl: env.EXPO_PUBLIC_API_URL,
+      sessionToken: Redacted.make(sessionToken),
+    })
   })

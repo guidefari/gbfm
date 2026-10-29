@@ -3,6 +3,8 @@ import { Data, Effect, Match, Predicate, type Redacted } from 'effect'
 import { HttpClient, HttpClientRequest } from 'effect/http'
 import { HttpApiClient } from 'effect/http-api'
 
+import { getSessionWithClient } from './auth'
+
 export type FavoriteTrack = {
   readonly id: string
   readonly type: 'mix' | 'track' | 'misc'
@@ -45,7 +47,15 @@ const toFavoriteError = (error: { readonly _tag: string }): FavoriteError => {
 const pageFavorite = {
   active: () => Effect.succeed(true),
   inactive: () => Effect.succeed(false),
-  anonymous: () => Effect.fail(new FavoriteSessionExpired()),
+  anonymous: (connection: FavoritesConnection) =>
+    getSessionWithClient(connection).pipe(
+      Effect.mapError((error) =>
+        Predicate.isTagged(error, 'SessionExpired')
+          ? new FavoriteSessionExpired()
+          : new FavoriteRequestFailed(),
+      ),
+      Effect.flatMap(failRequest),
+    ),
   unavailable: () => Effect.fail(new FavoriteRequestFailed()),
 }
 
@@ -67,7 +77,7 @@ export const loadFavorite = (connection: FavoritesConnection, track: FavoriteTra
         Unavailable: () => Effect.fail(new FavoriteRequestFailed()),
         Ready: (ready) =>
           ready.audio.id === track.id
-            ? pageFavorite[ready.favorite]()
+            ? pageFavorite[ready.favorite](connection)
             : Effect.fail(new FavoriteTrackUnavailable()),
       }),
     )
