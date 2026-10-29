@@ -7,8 +7,7 @@ import { monthLabel, monthOf, timelineMonths } from '../timeline'
 import { readerActions } from './actions'
 import { calendar } from './calendar'
 
-const arrowClass =
-  'inline-flex h-11 shrink-0 items-center gap-1.5 rounded-sm px-3 text-sm text-muted-foreground no-underline transition-colors hover:bg-muted/60 hover:text-foreground'
+const arrowClass = 'btn flex-1'
 
 const arrow = (
   h: HtmlBuilder<Message>,
@@ -19,8 +18,8 @@ const arrow = (
 
   const content =
     direction === 'newer'
-      ? [lucide(iconPaths.chevronLeft, 'h-4 w-4'), h.span([h.Class('hidden sm:inline')], [label])]
-      : [h.span([h.Class('hidden sm:inline')], [label]), lucide(iconPaths.chevronRight, 'h-4 w-4')]
+      ? [lucide(iconPaths.chevronLeft, 'size-5'), label]
+      : [label, lucide(iconPaths.chevronRight, 'size-5')]
 
   if (!slug)
     return h.span(
@@ -52,8 +51,7 @@ const unreadSummary = (
   return h.span([h.Class(stale ? 'text-highlight/60' : 'text-highlight')], [`${count} unread`])
 }
 
-/** Fixed above the site's bottom nav; the page reserves matching space so it never hides content. */
-export const readerDock = (
+export const readerHeader = (
   h: HtmlBuilder<Message>,
   input: {
     readonly slug: string
@@ -68,48 +66,36 @@ export const readerDock = (
 ) => {
   const months = timelineMonths(input.timeline?.timeline ?? [])
   const current = monthOf(input.at)
-  const total = months.reduce((sum, month) => sum + month.total, 0)
   const count = input.timeline?.unreadCount ?? null
 
   return h.div(
-    [
-      h.Class(
-        'pointer-events-none fixed inset-x-0 bottom-[calc(var(--mobile-dock-height)+env(safe-area-inset-bottom))] z-30 px-3 pb-2 lg:bottom-12',
-      ),
-    ],
+    [h.Class('tweet-reader-navigation relative shrink-0')],
     [
       h.div(
+        [h.Class('relative')],
         [
-          h.Class(
-            'pointer-events-auto relative mx-auto flex max-w-[46rem] items-center rounded-sm border border-border bg-background/95 shadow-lg backdrop-blur',
-          ),
-        ],
-        [
-          arrow(h, 'newer', input.newer),
           h.details(
-            [h.Key(input.slug), h.DataAttribute('tweet-dock', ''), h.Class('group min-w-0 flex-1')],
+            [h.Key(input.slug), h.DataAttribute('tweet-dock', ''), h.Class('group')],
             [
               h.summary(
                 [
                   h.AriaLabel('Reading options'),
                   h.Class(
-                    'flex h-11 cursor-pointer list-none items-center justify-center gap-2 rounded-sm px-2 text-sm text-muted-foreground outline-none transition-colors hover:bg-muted/60 focus-visible:bg-muted/60 [&::-webkit-details-marker]:hidden',
+                    'btn btn-quiet cursor-pointer list-none [&::-webkit-details-marker]:hidden',
                   ),
                 ],
                 [
-                  h.span([h.Class('truncate text-foreground')], [monthLabel(current)]),
-                  h.span([h.AriaHidden(true)], ['·']),
-                  unreadSummary(h, count, input.checking, input.neighbours === null),
                   lucide(
                     iconPaths.chevronDown,
-                    'h-3.5 w-3.5 shrink-0 rotate-180 transition-transform group-open:rotate-0',
+                    'size-5 shrink-0 transition-transform group-open:rotate-180',
                   ),
+                  'Options',
                 ],
               ),
               h.div(
                 [
                   h.Class(
-                    'absolute inset-x-0 bottom-full mb-2 max-h-[min(70dvh,36rem)] space-y-4 overflow-y-auto rounded-sm border border-border bg-background p-4 shadow-xl',
+                    'tweet-reader-options absolute right-0 top-full z-30 mt-2 max-h-[min(70dvh,36rem)] w-[min(30rem,calc(100vw-2rem))] space-y-4 overflow-y-auto rounded-xl border border-border bg-background p-4 shadow-xl',
                   ),
                 ],
                 [
@@ -121,8 +107,12 @@ export const readerDock = (
                     ],
                     [
                       h.span([h.Class('text-sm text-foreground')], [monthLabel(current)]),
-                      count === null ? h.empty : h.span([], [`${count} of ${total} unread`]),
+                      unreadSummary(h, count, input.checking, input.neighbours === null),
                     ],
+                  ),
+                  h.div(
+                    [h.Class('flex gap-2')],
+                    [arrow(h, 'newer', input.newer), arrow(h, 'older', input.older)],
                   ),
                   months.length ? calendar(months, current) : h.empty,
                   readerActions(h, {
@@ -135,7 +125,6 @@ export const readerDock = (
               ),
             ],
           ),
-          arrow(h, 'older', input.older),
         ],
       ),
     ],

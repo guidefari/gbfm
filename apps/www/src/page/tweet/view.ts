@@ -15,7 +15,7 @@ import {
   tweetBody,
   type TweetPost,
 } from './card'
-import { readerDock } from './dock'
+import { readerHeader } from './dock'
 import { tweetHeading } from './heading'
 import { readerNotices } from './notices'
 
@@ -51,10 +51,38 @@ export const view = (model: Model, h: HtmlBuilder<Message>) => {
 
   const timelineNeighbours = neighbours ?? (model.interactive ? model.tweetReader.lastKnown : null)
 
+  const navigation = readerHeader(h, {
+    slug: post.slug,
+    at: post.createdAt,
+    newer: chronological?.newer,
+    older,
+    neighbours,
+    timeline: timelineNeighbours,
+    checking: model.interactive && model.tweetReader.metadataStatus === 'loading',
+    failed: model.tweetReader.metadataStatus === 'error',
+  })
+
   return h.div(
-    [h.Class('max-w-3xl px-4 pt-8 pb-28 mx-auto')],
     [
-      tweetHeading(post.createdAt, model.flags.renderedAt),
+      h.DataAttribute('tweet-swipe', post.slug),
+      h.DataAttribute('swipe-ready', chronological ? 'true' : 'false'),
+      h.Class('max-w-3xl px-4 pt-6 pb-8 mx-auto'),
+    ],
+    [
+      h.div(
+        [h.Class('mb-2 flex items-center gap-2')],
+        [tweetHeading(post.createdAt, model.flags.renderedAt), navigation],
+      ),
+      h.p(
+        [h.Class('mb-4 text-xs text-muted-foreground lg:hidden')],
+        [
+          chronological
+            ? 'Swipe left for older · right for newer'
+            : model.tweetReader.metadataStatus === 'error'
+              ? 'Navigation unavailable · open Options to retry'
+              : 'Loading navigation…',
+        ],
+      ),
       readerNotices(model, h, post.slug),
       post.parentPostId && screen.root.id !== post.id ? parentPreview(screen.root) : h.empty,
       h.article(
@@ -148,16 +176,6 @@ export const view = (model: Model, h: HtmlBuilder<Message>) => {
             : h.empty,
         ],
       ),
-      readerDock(h, {
-        slug: post.slug,
-        at: post.createdAt,
-        newer: chronological?.newer,
-        older,
-        neighbours,
-        timeline: timelineNeighbours,
-        checking: model.interactive && model.tweetReader.metadataStatus === 'loading',
-        failed: model.tweetReader.metadataStatus === 'error',
-      }),
     ],
   )
 }

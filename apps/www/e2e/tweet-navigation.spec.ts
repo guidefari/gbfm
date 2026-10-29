@@ -48,20 +48,24 @@ test('the reading dock and calendar remain usable without JavaScript', async ({ 
   await context.close()
 })
 
-test('the collapsed reading dock never covers the end of the page', async ({ page }) => {
+test('reading options stay in the header and do not add a fixed layer over the tweet', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/tweet/e2e-music-thread')
   await expect(page.getByRole('button', { name: 'Menu', exact: true })).toBeEnabled()
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
 
   const [contentBottom, dockTop] = await page.evaluate(() => {
-    const dock = document.querySelector('details[data-tweet-dock]')?.parentElement
+    const dock = document.querySelector('.dock-tabs')
     const replies = document.getElementById('replies')
 
     return [replies?.getBoundingClientRect().bottom ?? 0, dock?.getBoundingClientRect().top ?? 0]
   })
 
   expect(contentBottom).toBeLessThanOrEqual(dockTop)
+  await expect(page.locator('.tweet-reader-navigation')).toHaveCSS('position', 'relative')
+  await expect(page.locator('.tweet-reader-navigation')).not.toBeInViewport()
 })
 
 test('chronological arrows stay adjacent regardless of seen history', async ({ page }) => {
@@ -69,18 +73,10 @@ test('chronological arrows stay adjacent regardless of seen history', async ({ p
   await page.reload()
   await expect(page.getByRole('checkbox', { name: 'Skip seen' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Menu', exact: true })).toBeEnabled()
-  await expect(page.getByRole('link', { name: 'Newer tweet', exact: true })).toHaveAttribute(
-    'href',
-    '/tweet/e2e-archive-two',
-  )
-  await page.getByRole('link', { name: 'Newer tweet', exact: true }).focus()
+  await expect(page.locator('#tweet-newer')).toHaveAttribute('href', '/tweet/e2e-archive-two')
   await page.keyboard.press('ArrowLeft')
   await expect(page).toHaveURL(/\/tweet\/e2e-archive-two$/)
-  await expect(page.getByRole('link', { name: 'Older tweet', exact: true })).toHaveAttribute(
-    'href',
-    '/tweet/e2e-archive-one',
-  )
-  await page.getByRole('link', { name: 'Older tweet', exact: true }).focus()
+  await expect(page.locator('#tweet-older')).toHaveAttribute('href', '/tweet/e2e-archive-one')
   await page.keyboard.press('ArrowRight')
   await expect(page).toHaveURL(/\/tweet\/e2e-archive-one$/)
   await page.getByRole('button', { name: 'Menu', exact: true }).click()
@@ -224,6 +220,7 @@ test('Next unread goes older first, then clearly changes to newer, and reports c
   expect((await api.get('/api/content/posts/micro/e2e-archive-two/neighbours')).ok()).toBe(true)
   const response = await api.get('/api/content/posts/micro?limit=100')
   expect(response.ok()).toBe(true)
+
   const feed = Schema.decodeUnknownSync(
     Schema.Struct({
       data: Schema.Array(
@@ -232,8 +229,10 @@ test('Next unread goes older first, then clearly changes to newer, and reports c
       pagination: Schema.Struct({ hasMore: Schema.Boolean }),
     }),
   )(await response.json())
+
   expect(feed.pagination.hasMore).toBe(false)
   const seeds = new Set(['e2e-archive-one', 'e2e-archive-two', 'e2e-music-thread'])
+
   for (const post of feed.data)
     if (post.parentPostId === null && !seeds.has(post.slug))
       expect((await api.post(`/api/content/posts/micro/${post.slug}/seen`)).ok()).toBe(true)
@@ -369,7 +368,7 @@ test('late prefetched and loaded tweet responses cannot change a superseding pag
   })
   await page.goto('/tweet/e2e-archive-one')
   await expect(page.getByRole('button', { name: 'Menu', exact: true })).toBeEnabled()
-  await page.getByRole('link', { name: 'Newer tweet', exact: true }).click()
+  await (await openReader(page)).getByRole('link', { name: 'Newer tweet', exact: true }).click()
   await expect(page).toHaveURL(/\/tweet\/e2e-archive-two$/)
   await page.getByRole('button', { name: 'Menu', exact: true }).click()
   await page

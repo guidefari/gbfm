@@ -724,7 +724,7 @@
   overflow: hidden;
   pointer-events: auto;
   border: 1px solid color-mix(in oklab, var(--foreground) 12%, transparent);
-  border-radius: 1.125rem;
+  border-radius: var(--radius-overlay);
   background: color-mix(in oklab, var(--background) 82%, transparent);
   box-shadow: 0 12px 32px -12px rgb(0 0 0 / 0.5);
   -webkit-backdrop-filter: blur(24px) saturate(1.6);
@@ -1147,7 +1147,7 @@
   overflow: hidden;
   background: var(--background);
   border-top: 1px solid var(--border);
-  border-radius: 0.75rem 0.75rem 0 0;
+  border-radius: var(--radius-overlay) var(--radius-overlay) 0 0;
   padding: 0 max(0.5rem, env(safe-area-inset-right)) max(0.75rem, env(safe-area-inset-bottom))
     max(0.5rem, env(safe-area-inset-left));
   box-shadow: 0 -8px 32px #0003;
@@ -1621,6 +1621,7 @@
 .btn {
   display: inline-flex;
   min-height: var(--control-height);
+  min-width: var(--control-height);
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
@@ -1675,6 +1676,12 @@
 .btn-destructive:hover:not(:disabled, [aria-disabled='true']) {
   background: color-mix(in srgb, var(--destructive) 85%, var(--foreground));
   color: var(--destructive-foreground);
+}
+.player-primary-control {
+  width: 4.5rem;
+  height: 4.5rem;
+  padding: 0;
+  border-radius: var(--radius-round);
 }
 .btn-sm {
   min-height: var(--control-height);
