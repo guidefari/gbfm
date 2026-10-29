@@ -1,3 +1,32 @@
+# [2.116.0](https://github.com/planetaryescape/gbfm/compare/v2.115.3...v2.116.0) (2026-10-29)
+
+
+### Bug Fixes
+
+* **mobile:** confirm session expiry before favorite recovery ([7ab0540](https://github.com/planetaryescape/gbfm/commit/7ab0540df94f397eb8170189185e602b1f49a4cd))
+* **mobile:** keep the player close control clear of its header ([b0875ac](https://github.com/planetaryescape/gbfm/commit/b0875ac9f38ecbf6190a75c6d2aa153005110ea2))
+* **mobile:** preserve light-mode titles and show screen insets ([ad9b71d](https://github.com/planetaryescape/gbfm/commit/ad9b71dfd091b84d8a585c2f21a3c85c67bb6637))
+* **mobile:** preserve link destinations on inline tweet images ([a926f29](https://github.com/planetaryescape/gbfm/commit/a926f29d84b8ddedfe350e468cf4aa85535ecfbe))
+* **mobile:** recognize Better Auth null session responses ([207a70f](https://github.com/planetaryescape/gbfm/commit/207a70f4385292392a51d7aa71ea9fb4a7de6b52))
+* **player:** show favorite errors as toasts with stepped hearts ([0b31098](https://github.com/planetaryescape/gbfm/commit/0b31098dea8f90690183244b0b14ec8813787527))
+* **www:** adopt floating Apple Music-style playback controls ([73e7168](https://github.com/planetaryescape/gbfm/commit/73e7168e7ab7ebcb82ad1ae0b4954c562799366c))
+* **www:** bind favorite results to their request and account ([1c9f717](https://github.com/planetaryescape/gbfm/commit/1c9f717ce95b532db5546bb2141cf353a8c06454))
+* **www:** clarify mobile playback and match safe-area colours ([72da03c](https://github.com/planetaryescape/gbfm/commit/72da03cde9a93e45853c5c86ddae164751212be6))
+* **www:** make Home the first mobile navigation tab ([48d6659](https://github.com/planetaryescape/gbfm/commit/48d6659b5e2eeea1a98d8ce4efcf65f29d4f726d))
+* **www:** preserve favorite saves over late page responses ([e6749f3](https://github.com/planetaryescape/gbfm/commit/e6749f3dfe5ceba027c08699aef32b7900bb376a))
+* **www:** retain pending favorites across same-track navigation ([d7ab972](https://github.com/planetaryescape/gbfm/commit/d7ab9729d387adcf4be2c6ea7e6392452ed50973))
+* **www:** soften scrolling behind the mobile dock ([5296cc8](https://github.com/planetaryescape/gbfm/commit/5296cc88c104a5d27fca72e4e5b2455c4adfefbd))
+
+
+### Features
+
+* **api:** include batched music cards in the tweet feed ([7a526ac](https://github.com/planetaryescape/gbfm/commit/7a526acda7edb6ca6eb679c0fc75f59d8679392a))
+* **mobile:** browse tweets and reply threads ([600e253](https://github.com/planetaryescape/gbfm/commit/600e253533d985071ac05d4dc6dbdbf3b7d87510))
+* **mobile:** favorite the current track from Now Playing ([3ea54ed](https://github.com/planetaryescape/gbfm/commit/3ea54ed1adaabe6158f49028860422cdbe3b37eb))
+* **mobile:** render tweet music and media directly in the feed ([fcb3612](https://github.com/planetaryescape/gbfm/commit/fcb3612cdd63a036802cc468cbd5d02357eae13d))
+* **www:** favorite the queued track from the expanded player ([0570fdc](https://github.com/planetaryescape/gbfm/commit/0570fdc28e889d7f0755c271584b8dda641c55fd))
+* **www:** redraw contextual icons and clarify dock expansion ([bd2b654](https://github.com/planetaryescape/gbfm/commit/bd2b65462ee68857cdcdcb9eb54b37f8ec494d37))
+
 ## [2.115.3](https://github.com/planetaryescape/gbfm/compare/v2.115.2...v2.115.3) (2026-10-28)
 
 
