@@ -86,3 +86,6 @@ export const readerMonth = (createdAt: string) =>
   new Intl.DateTimeFormat('en', { month: 'short', year: 'numeric', timeZone: 'UTC' }).format(
     new Date(createdAt),
   )
+
+export const readerAcceptsAction = (state: ReaderState, request: number, focused: boolean) =>
+  focused && state.request === request && state.status === 'ready'

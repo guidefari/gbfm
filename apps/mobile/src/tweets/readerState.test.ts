@@ -1,9 +1,11 @@
 import { MicroPostNeighboursResponse } from '@gbfm/api/navigation'
+import { MicroPostScreenResponse } from '@gbfm/api/post'
 import { Schema } from 'effect'
 import { expect, test } from 'vitest'
 
 import {
   initialReaderState,
+  readerAcceptsAction,
   nextUnread,
   ReaderEvent,
   readerMonth,
@@ -82,4 +84,36 @@ test('navigation failure remains retryable rather than caught up', () => {
 
 test('month labels use UTC like the web timeline', () => {
   expect(readerMonth('2026-10-01T00:00:00Z')).toBe('Oct 2026')
+})
+
+test('delayed reset confirmations cannot act after blur, account unmount, or a newer request', () => {
+  const post = MicroPostScreenResponse.fields.post.make({
+    id: 'one',
+    slug: 'one',
+    title: null,
+    description: null,
+    thumbnailUrl: null,
+    content: null,
+    draft: false,
+    tags: [],
+    type: 'micro',
+    musicEntityType: null,
+    musicEntityId: null,
+    parentPostId: null,
+    rootPostId: null,
+    depth: 0,
+    quotedPostId: null,
+    createdAt: '2026-10-01T00:00:00Z',
+    updatedAt: '2026-10-01T00:00:00Z',
+    compiledContent: '',
+    music: null,
+  })
+
+  const screen = MicroPostScreenResponse.make({ post, root: post, replies: [], quote: null })
+  const ready = reduceReader(initialReaderState, ReaderEvent.Loaded({ request: 0, screen }))
+
+  expect(readerAcceptsAction(ready, 0, true)).toBe(true)
+  expect(readerAcceptsAction(ready, 0, false)).toBe(false)
+  expect(readerAcceptsAction(ready, 1, true)).toBe(false)
+  expect(readerAcceptsAction(initialReaderState, 0, true)).toBe(false)
 })

@@ -16,7 +16,7 @@ import {
 } from '@/api/tweetReader'
 import { env } from '@/env'
 
-import { initialReaderState, ReaderEvent, reduceReader } from './readerState'
+import { initialReaderState, readerAcceptsAction, ReaderEvent, reduceReader } from './readerState'
 
 const checkpoints = Atom.make<Readonly<Record<string, string>>>({}).pipe(Atom.keepAlive)
 
@@ -93,10 +93,12 @@ export function useTweetReader(
 
   const [state, dispatch] = useReducer(reduceReader, initialReaderState)
   const sequence = useRef(0)
+  const focused = useRef(false)
   const action = useRef<AbortController | null>(null)
 
   useFocusEffect(
     useCallback(() => {
+      focused.current = true
       const controller = new AbortController()
       const request = ++sequence.current
       action.current?.abort()
@@ -117,6 +119,7 @@ export function useTweetReader(
       })
 
       return () => {
+        focused.current = false
         controller.abort()
         const pendingAction = action.current
         action.current = null
@@ -131,7 +134,12 @@ export function useTweetReader(
   }
 
   const runAction = (kind: 'random' | 'reset') => {
-    if (action.current || !state.screen || state.status !== 'ready') return
+    if (
+      !readerAcceptsAction(state, sequence.current, focused.current) ||
+      action.current ||
+      !state.screen
+    )
+      return
 
     const controller = new AbortController()
     action.current = controller
