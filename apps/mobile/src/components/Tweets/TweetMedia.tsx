@@ -1,3 +1,4 @@
+import { radii } from '@gbfm/theme'
 import { useState } from 'react'
 import { Image, Text, View } from 'react-native'
 
@@ -22,7 +23,7 @@ export function TweetImage({
   const uri = tweetLinkUrl(src)
 
   return (
-    <View style={{ gap: 8 }}>
+    <View onTouchStart={(event) => event.stopPropagation()} style={{ gap: 8 }}>
       {failed || !uri || !uri.startsWith('http') ? (
         <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 13 }}>
           {alt || 'Image unavailable'}
@@ -42,7 +43,7 @@ export function TweetImage({
             aspectRatio,
             maxHeight: 420,
             backgroundColor: colors.surface,
-            borderRadius: 4,
+            borderRadius: radii.surface,
           }}
         />
       )}
@@ -68,7 +69,7 @@ export function TweetExternalCard({
       style={{
         gap: 10,
         padding: 14,
-        borderRadius: 4,
+        borderRadius: radii.surface,
         borderWidth: 1,
         borderColor: colors.muted,
         backgroundColor: colors.surface,

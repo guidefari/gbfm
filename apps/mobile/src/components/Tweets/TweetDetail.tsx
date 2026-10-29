@@ -1,3 +1,4 @@
+import { radii } from '@gbfm/theme'
 import { ScrollView, Text, View } from 'react-native'
 
 import type { TweetScreenPost } from '@/api/tweets'
@@ -46,7 +47,7 @@ export function TweetDetail({ post, parent, quote, replies }: Props) {
       {quote ? (
         <View
           style={{
-            borderRadius: 4,
+            borderRadius: radii.surface,
             borderWidth: 1,
             borderColor: withAlpha(colors.muted, 0.5),
             paddingHorizontal: 12,

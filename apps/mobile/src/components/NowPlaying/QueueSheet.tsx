@@ -1,7 +1,9 @@
+import { radii } from '@gbfm/theme'
 import { useState } from 'react'
 import { FlatList, Image, Modal, Pressable, Text, View } from 'react-native'
 
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
+import { Button } from '@/components/Button'
 import { Glyph } from '@/icons/Glyph'
 import { useThemeColors, withAlpha } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
@@ -62,13 +64,13 @@ export function QueueSheet() {
                     alignItems: 'center',
                     gap: 10,
                     padding: 8,
-                    borderRadius: 10,
+                    borderRadius: radii.surface,
                     backgroundColor: isCurrent ? withAlpha(colors.accent, 0.12) : 'transparent',
                   }}>
                   {track.thumbnailUrl ? (
                     <Image
                       source={{ uri: track.thumbnailUrl }}
-                      style={{ width: 36, height: 36, borderRadius: 6 }}
+                      style={{ width: 36, height: 36, borderRadius: radii.artwork }}
                       resizeMode='cover'
                     />
                   ) : (
@@ -76,7 +78,7 @@ export function QueueSheet() {
                       style={{
                         width: 36,
                         height: 36,
-                        borderRadius: 6,
+                        borderRadius: radii.artwork,
                         backgroundColor: withAlpha(colors.muted, 0.2),
                       }}
                     />
@@ -143,16 +145,7 @@ export function QueueSheet() {
               }}>
               {queueLabel}
             </Text>
-            <Pressable accessibilityRole='button' hitSlop={12} onPress={() => setIsOpen(false)}>
-              <Text
-                style={{
-                  color: colors.accent,
-                  fontFamily: fonts.monoSemiBold,
-                  fontSize: 14,
-                }}>
-                Done
-              </Text>
-            </Pressable>
+            <Button label='Done' variant='quiet' onPress={() => setIsOpen(false)} />
           </View>
 
           {queueLength === 0 ? (
@@ -202,7 +195,7 @@ export function QueueSheet() {
                       alignItems: 'center',
                       gap: 12,
                       padding: 10,
-                      borderRadius: 10,
+                      borderRadius: radii.surface,
                       backgroundColor: isCurrent ? withAlpha(colors.accent, 0.14) : colors.surface,
                     }}>
                     <Pressable
@@ -223,7 +216,7 @@ export function QueueSheet() {
                       {track.thumbnailUrl ? (
                         <Image
                           source={{ uri: track.thumbnailUrl }}
-                          style={{ width: 44, height: 44, borderRadius: 6 }}
+                          style={{ width: 44, height: 44, borderRadius: radii.artwork }}
                           resizeMode='cover'
                         />
                       ) : (

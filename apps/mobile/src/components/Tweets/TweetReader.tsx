@@ -5,13 +5,14 @@ import { Text, View } from 'react-native'
 import { useAuthStore } from '@/store/auth'
 import { useThemeColors } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
-import { readerMonth } from '@/tweets/readerState'
 import { useTweetReader } from '@/tweets/useTweetReader'
 
 import { ReaderButton } from './ReaderButton'
+import { ReaderHeader } from './ReaderHeader'
 import { ReaderOptions } from './ReaderOptions'
 import { TweetDetail } from './TweetDetail'
 import { TweetsStatus } from './TweetsStatus'
+import { TweetSwipeSurface } from './TweetSwipeSurface'
 
 function Reader({
   identity,
@@ -46,13 +47,22 @@ function Reader({
         <TweetsStatus kind='empty' message='no tweets yet' />
       ) : (
         <>
-          <TweetDetail
-            key={screen.post.id}
-            post={screen.post}
-            parent={screen.post.parentPostId ? screen.root : null}
-            quote={screen.quote}
-            replies={screen.replies}
-          />
+          <ReaderHeader date={screen.post.createdAt} onOptions={() => setOptions(true)} />
+          <TweetSwipeSurface
+            disabled={reader.actionBusy || !navigation}
+            onSwipe={(direction) => {
+              const target = navigation?.[direction]
+
+              if (target) go(target)
+            }}>
+            <TweetDetail
+              key={screen.post.id}
+              post={screen.post}
+              parent={screen.post.parentPostId ? screen.root : null}
+              quote={screen.quote}
+              replies={screen.replies}
+            />
+          </TweetSwipeSurface>
           {reader.progressFailed || reader.notice ? (
             <View style={{ paddingHorizontal: 12, paddingBottom: 8, gap: 6 }}>
               <Text
@@ -66,39 +76,13 @@ function Reader({
               />
             </View>
           ) : null}
-          <View
-            style={{
-              flexDirection: 'row',
-              padding: 8,
-              gap: 6,
-              borderTopWidth: 1,
-              borderColor: colors.muted,
-            }}>
-            <ReaderButton
-              label='Newer'
-              glyph='chevronLeft'
-              disabled={!navigation?.newer || reader.actionBusy}
-              onPress={() => navigation?.newer && go(navigation.newer)}
-            />
-            <View style={{ flex: 1 }}>
-              <ReaderButton
-                label={`${readerMonth(screen.post.createdAt)} · ${navigation ? `${navigation.unreadCount} unread` : reader.navigationStatus === 'error' ? 'retry navigation' : 'checking…'}`}
-                accessibilityLabel='Reading options'
-                onPress={() => setOptions(true)}
-              />
-            </View>
-            <ReaderButton
-              label='Older'
-              glyph='chevronRight'
-              disabled={!navigation?.older || reader.actionBusy}
-              onPress={() => navigation?.older && go(navigation.older)}
-            />
-          </View>
         </>
       )}
       <ReaderOptions
         visible={options}
         navigation={navigation}
+        onNewer={() => navigation?.newer && go(navigation.newer)}
+        onOlder={() => navigation?.older && go(navigation.older)}
         busy={reader.actionBusy}
         failed={reader.navigationStatus === 'error'}
         onClose={() => setOptions(false)}

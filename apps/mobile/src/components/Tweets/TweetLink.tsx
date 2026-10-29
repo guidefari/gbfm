@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Linking, Text } from 'react-native'
+import { Linking, Text, View } from 'react-native'
 
 import { Button } from '@/components/Button'
 import { useThemeColors } from '@/theme/colors'
@@ -35,7 +35,9 @@ export function TweetLink({ href, label }: { readonly href: string; readonly lab
 
   return (
     <>
-      <Button role='link' label={`${label} ↗`} accessibilityLabel={label} onPress={open} />
+      <View onTouchStart={(event) => event.stopPropagation()}>
+        <Button role='link' label={`${label} ↗`} accessibilityLabel={label} onPress={open} />
+      </View>
       {failed ? (
         <Text
           accessibilityRole='alert'

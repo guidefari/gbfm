@@ -32,6 +32,7 @@ export function TweetRow({ tweet }: { tweet: Tweet }) {
       <Pressable
         accessibilityRole='button'
         accessibilityLabel='Open tweet thread'
+        onTouchStart={(event) => event.stopPropagation()}
         onPress={openThread}
         style={{ minHeight: 44, justifyContent: 'center' }}>
         <TweetAuthor creator={tweet.creators?.[0]} createdAt={tweet.createdAt} />
@@ -49,6 +50,7 @@ export function TweetRow({ tweet }: { tweet: Tweet }) {
       <Pressable
         accessibilityRole='button'
         accessibilityLabel='View tweet thread'
+        onTouchStart={(event) => event.stopPropagation()}
         onPress={openThread}
         style={{ minHeight: 44, justifyContent: 'center' }}>
         <Text style={{ color: colors.accent, fontFamily: fonts.mono, fontSize: 12 }}>

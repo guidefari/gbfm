@@ -1,3 +1,4 @@
+import { radii } from '@gbfm/theme'
 import { useEffect, useState } from 'react'
 import { AccessibilityInfo, Animated, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -58,7 +59,7 @@ export function QueueToast() {
           alignItems: 'center',
           gap: 8,
           maxWidth: '100%',
-          borderRadius: 999,
+          borderRadius: radii.surface,
           borderWidth: 1,
           borderColor: withAlpha(colors.accent, 0.35),
           backgroundColor: colors.surface,

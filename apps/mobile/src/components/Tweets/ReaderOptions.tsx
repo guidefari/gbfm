@@ -1,4 +1,5 @@
 import type { MicroPostNeighboursResponse } from '@gbfm/api/navigation'
+import { radii } from '@gbfm/theme'
 import { Alert, Modal, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -19,6 +20,8 @@ type Props = {
   readonly onReset: () => void
   readonly onRetry: () => void
   readonly onArchive: () => void
+  readonly onNewer: () => void
+  readonly onOlder: () => void
 }
 
 export function ReaderOptions(props: Props) {
@@ -53,6 +56,9 @@ export function ReaderOptions(props: Props) {
           edges={['bottom']}
           style={{
             height: '80%',
+            borderTopLeftRadius: radii.overlay,
+            borderTopRightRadius: radii.overlay,
+            overflow: 'hidden',
             backgroundColor: colors.background,
             borderTopWidth: 1,
             borderColor: colors.muted,
@@ -70,7 +76,7 @@ export function ReaderOptions(props: Props) {
               style={{ color: colors.strong, fontFamily: fonts.monoSemiBold, fontSize: 18 }}>
               Reading options
             </Text>
-            <ReaderButton label='Close' onPress={props.onClose} />
+            <ReaderButton label='Close' quiet onPress={props.onClose} />
           </View>
           <ScrollView
             style={{ flex: 1 }}
@@ -82,6 +88,24 @@ export function ReaderOptions(props: Props) {
                   ? 'Unread navigation unavailable'
                   : 'Checking unread…'}
             </Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <View style={{ flex: 1 }}>
+                <ReaderButton
+                  label='Newer tweet'
+                  glyph='chevronLeft'
+                  disabled={props.busy || !props.navigation?.newer}
+                  onPress={props.onNewer}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <ReaderButton
+                  label='Older tweet'
+                  glyph='chevronRight'
+                  disabled={props.busy || !props.navigation?.older}
+                  onPress={props.onOlder}
+                />
+              </View>
+            </View>
             {'slug' in target ? (
               <ReaderButton
                 label={`Next unread (${target.kind})`}

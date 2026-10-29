@@ -1,4 +1,4 @@
-import { brandDark } from '@gbfm/theme'
+import { brandDark, radii } from '@gbfm/theme'
 import { useRouter } from 'expo-router'
 import { NativeTabs } from 'expo-router/native-tabs'
 import {
@@ -36,7 +36,7 @@ function Artwork({
         style={{
           width: size,
           height: size,
-          borderRadius: 4,
+          borderRadius: radii.artwork,
           backgroundColor: colors.accentSurface,
         }}
       />
@@ -46,25 +46,15 @@ function Artwork({
   return (
     <Image
       source={{ uri: url }}
-      style={{ width: size, height: size, borderRadius: 4 }}
+      style={{ width: size, height: size, borderRadius: radii.artwork }}
       resizeMode='cover'
     />
   )
 }
 
 export function MiniPlayerBar() {
-  const {
-    track,
-    isPlaying,
-    currentTime,
-    duration,
-    togglePlayback,
-    isBuffering,
-    isLoaded,
-    skipNext,
-    skipPrevious,
-    queue,
-  } = useNowPlaying()
+  const { track, isPlaying, currentTime, duration, togglePlayback, isBuffering, isLoaded } =
+    useNowPlaying()
 
   const router = useRouter()
   const colors = useThemeColors()
@@ -75,8 +65,6 @@ export function MiniPlayerBar() {
 
   const playGlyph = isPlaying ? 'pause' : 'play'
   const showSpinner = isBuffering || !isLoaded
-  const canSkipPrev = queue.currentIndex > 0
-  const canSkipNext = queue.currentIndex >= 0 && queue.currentIndex + 1 < queue.tracks.length
 
   if (placement === 'inline') {
     return (
@@ -102,21 +90,6 @@ export function MiniPlayerBar() {
         </Pressable>
         <Pressable
           accessibilityRole='button'
-          accessibilityLabel='Previous track'
-          hitSlop={8}
-          onPress={skipPrevious}
-          disabled={!canSkipPrev}
-          style={{
-            width: 28,
-            height: 28,
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: canSkipPrev ? 1 : 0.4,
-          }}>
-          <Glyph name='previous' size={14} color={textColor} />
-        </Pressable>
-        <Pressable
-          accessibilityRole='button'
           accessibilityLabel={showSpinner ? 'Loading' : isPlaying ? 'Pause' : 'Play'}
           hitSlop={8}
           onPress={togglePlayback}
@@ -126,21 +99,6 @@ export function MiniPlayerBar() {
           ) : (
             <Glyph name={playGlyph} size={16} color={textColor} />
           )}
-        </Pressable>
-        <Pressable
-          accessibilityRole='button'
-          accessibilityLabel='Next track'
-          hitSlop={8}
-          onPress={skipNext}
-          disabled={!canSkipNext}
-          style={{
-            width: 28,
-            height: 28,
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: canSkipNext ? 1 : 0.4,
-          }}>
-          <Glyph name='next' size={14} color={textColor} />
         </Pressable>
       </View>
     )
@@ -182,21 +140,6 @@ export function MiniPlayerBar() {
         </Pressable>
         <Pressable
           accessibilityRole='button'
-          accessibilityLabel='Previous track'
-          hitSlop={8}
-          onPress={skipPrevious}
-          disabled={!canSkipPrev}
-          style={{
-            width: 32,
-            height: 32,
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: canSkipPrev ? 1 : 0.4,
-          }}>
-          <Glyph name='previous' size={16} color={textColor} />
-        </Pressable>
-        <Pressable
-          accessibilityRole='button'
           accessibilityLabel={showSpinner ? 'Loading' : isPlaying ? 'Pause' : 'Play'}
           hitSlop={8}
           onPress={togglePlayback}
@@ -207,21 +150,6 @@ export function MiniPlayerBar() {
             <Glyph name={playGlyph} size={22} color={textColor} />
           )}
         </Pressable>
-        <Pressable
-          accessibilityRole='button'
-          accessibilityLabel='Next track'
-          hitSlop={8}
-          onPress={skipNext}
-          disabled={!canSkipNext}
-          style={{
-            width: 32,
-            height: 32,
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: canSkipNext ? 1 : 0.4,
-          }}>
-          <Glyph name='next' size={16} color={textColor} />
-        </Pressable>
       </View>
       {progress > 0 ? (
         <View
@@ -231,7 +159,7 @@ export function MiniPlayerBar() {
             left: 12,
             right: 12,
             height: 2,
-            borderRadius: 1,
+            borderRadius: radii.control,
             overflow: 'hidden',
             backgroundColor:
               Platform.OS === 'ios'

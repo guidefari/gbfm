@@ -1,3 +1,4 @@
+import { radii } from '@gbfm/theme'
 import { useRouter } from 'expo-router'
 import { useRef } from 'react'
 import type { AccessibilityActionEvent, LayoutChangeEvent } from 'react-native'
@@ -84,7 +85,7 @@ export default function NowPlaying() {
             <View
               style={{
                 aspectRatio: 1,
-                borderRadius: 12,
+                borderRadius: radii.artwork,
                 overflow: 'hidden',
                 borderWidth: 1,
                 borderColor: withAlpha(colors.accent, 0.2),
@@ -204,14 +205,18 @@ export default function NowPlaying() {
                   height: 72,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  borderRadius: 36,
-                  backgroundColor: colors.accent,
+                  borderRadius: radii.round,
+                  backgroundColor: colors.controls.primary,
                   opacity: pressed ? 0.85 : 1,
                 })}>
                 {isBuffering ? (
-                  <ActivityIndicator size='large' color={colors.onAccent} />
+                  <ActivityIndicator size='large' color={colors.controls.primaryForeground} />
                 ) : (
-                  <Glyph name={isPlaying ? 'pause' : 'play'} size={30} color={colors.onAccent} />
+                  <Glyph
+                    name={isPlaying ? 'pause' : 'play'}
+                    size={30}
+                    color={colors.controls.primaryForeground}
+                  />
                 )}
               </Pressable>
 

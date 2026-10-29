@@ -50,7 +50,7 @@ export function Button({
       onPress={onPress}
       style={({ pressed }) => ({
         minHeight: controlMetrics.height,
-        minWidth: iconOnly ? controlMetrics.height : undefined,
+        minWidth: controlMetrics.height,
         paddingHorizontal: iconOnly ? 0 : controlMetrics.paddingInline,
         paddingVertical: 10,
         borderRadius: radii.control,
