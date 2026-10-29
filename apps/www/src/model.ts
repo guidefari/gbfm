@@ -103,6 +103,9 @@ export const Model = Schema.Struct({
   passwordVisible: Schema.Boolean,
   authSubmitting: Schema.Boolean,
   navigationId: Schema.Number,
+  navigationFavoriteChanges: Schema.Array(
+    Schema.Struct({ principalId: Schema.String, audioId: Schema.String, active: Schema.Boolean }),
+  ),
   tweetReader: TweetReader.Model,
   error: Schema.NullOr(Schema.String),
   repliesStatus: Schema.Literals(['loading', 'ready', 'error']),

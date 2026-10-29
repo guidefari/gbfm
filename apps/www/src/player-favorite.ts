@@ -87,8 +87,20 @@ const steps = (previous: Model, message: Message, next: Model): ReadonlyArray<St
   const pageSave = acceptedPageSave(previous, message, next)
   const pageReplaced = next.publicAction !== previous.publicAction && !pageSave
 
+  const overtakingSave =
+    pageReplaced && Predicate.isTagged(message, 'LoadedPage')
+      ? next.navigationFavoriteChanges.find(
+          (change) =>
+            change.principalId === principalId &&
+            next.publicAction.document?.target.kind === 'audio' &&
+            change.audioId === next.publicAction.document.target.id,
+        )
+      : undefined
+
   const fresh =
-    pageReplaced && Predicate.isTagged(message, 'LoadedPage') ? pageFavorite(next) : null
+    pageReplaced && Predicate.isTagged(message, 'LoadedPage')
+      ? (overtakingSave ?? pageFavorite(next))
+      : null
 
   const cached =
     pageReplaced && Predicate.isTagged(message, 'ChangedUrl') ? playerFavorite(next) : null
@@ -108,6 +120,7 @@ const steps = (previous: Model, message: Message, next: Model): ReadonlyArray<St
           ),
         ]
       : []),
+    ...(overtakingSave ? [adoptInPage(overtakingSave.audioId, overtakingSave.active)] : []),
     ...(fresh ? [toPlayer(Player.Message.FavoriteChangedElsewhere(fresh))] : []),
     ...(cached ? [adoptInPage(cached.audioId, cached.active)] : []),
   ]
@@ -119,10 +132,33 @@ const steps = (previous: Model, message: Message, next: Model): ReadonlyArray<St
  * updates the player, while cached page data defers to the player's newer knowledge.
  */
 export const syncPlayerFavorite = (previous: Model, message: Message, result: Return): Return => {
-  const pending = steps(previous, message, result.model)
+  const playerSave = acceptedPlayerSave(previous, message, result.model)
+  const pageSave = acceptedPageSave(previous, message, result.model)
+  const principalId = previous.flags.principal?.id
 
-  if (pending.length === 0) return result
-  const synced = Update.combine(result.model, pending)
+  const change = playerSave
+    ? { audioId: playerSave.audioId, active: playerSave.active }
+    : pageSave
+      ? { audioId: pageSave.target.id, active: pageSave.active }
+      : null
+
+  const model =
+    change && principalId
+      ? {
+          ...result.model,
+          navigationFavoriteChanges: [
+            ...result.model.navigationFavoriteChanges.filter(
+              (saved) => saved.principalId !== principalId || saved.audioId !== change.audioId,
+            ),
+            { ...change, principalId },
+          ],
+        }
+      : result.model
+
+  const pending = steps(previous, message, model)
+
+  if (pending.length === 0) return { ...result, model }
+  const synced = Update.combine(model, pending)
 
   return {
     model: synced.model,

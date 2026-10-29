@@ -148,6 +148,7 @@ const showPage = (
         : model.tweetReader,
       interactive: model.interactive,
       navigationId,
+      navigationFavoriteChanges: model.navigationFavoriteChanges,
     },
     commands: [
       ...Command.mapMessages(next.commands ?? [], (message) =>
@@ -457,6 +458,7 @@ const updateApplication = (
         ...menu.model,
         pageCache,
         navigationId,
+        navigationFavoriteChanges: [],
         player: player.model,
         tweetReader: {
           ...model.tweetReader,
@@ -570,7 +572,12 @@ const updateApplication = (
         Result.succeed(flags),
       )
 
-      if (!model.loading && samePage(model.flags, flags))
+      if (
+        !model.loading &&
+        samePage(model.flags, flags) &&
+        (flags.publicAction?.target.kind !== 'audio' ||
+          model.publicAction.document?.state === flags.publicAction.state)
+      )
         return acceptTweet({ ...model, pageCache })
 
       const shown = showPage(model, flags, navigationId, key)
