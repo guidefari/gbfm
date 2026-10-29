@@ -117,6 +117,14 @@ const showPage = (
   const next = init(flags)
   const identityChanged = next.model.tweetReader.identity !== model.tweetReader.identity
 
+  const keepPendingPublicAction =
+    model.publicAction.busy &&
+    model.publicAction.document !== null &&
+    model.publicAction.principalId !== null &&
+    model.publicAction.principalId === next.model.publicAction.principalId &&
+    model.publicAction.document?.target.kind === next.model.publicAction.document?.target.kind &&
+    model.publicAction.document?.target.id === next.model.publicAction.document?.target.id
+
   const sameTweet =
     !identityChanged &&
     flags.tweet &&
@@ -151,10 +159,12 @@ const showPage = (
       navigationPrincipalId: model.navigationPrincipalId,
       navigationPrincipalKnown: model.navigationPrincipalKnown,
       navigationFavoriteChanges: model.navigationFavoriteChanges,
-      publicAction: {
-        ...next.model.publicAction,
-        requestId: model.publicAction.requestId + 1,
-      },
+      publicAction: keepPendingPublicAction
+        ? model.publicAction
+        : {
+            ...next.model.publicAction,
+            requestId: model.publicAction.requestId + 1,
+          },
     },
     commands: [
       ...Command.mapMessages(next.commands ?? [], (message) =>

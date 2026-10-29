@@ -132,6 +132,162 @@ const changeTrack = (model: Model, current: QueueTrackType) =>
   ).model
 
 describe('player favorite integration', () => {
+  it.each([false, true])(
+    'preserves a pending page save across same-audio navigation before its acknowledgement, changed content: %s',
+    (changedContent) => {
+      const inactive = settled(mixPage('inactive'), 'inactive')
+
+      const pending = send(
+        inactive,
+        Message.GotPublicActionMessage({ message: PublicActions.Message.Toggle() }),
+      ).model
+
+      const navigation = send(pending, changed('https://gbfm.co.za/mixes/local-frequencies')).model
+
+      const flags = changedContent
+        ? { ...mixPage('inactive'), description: 'Updated server content' }
+        : mixPage('inactive')
+
+      const loaded = loadMixPage(navigation, flags).model
+
+      const saved = send(
+        loaded,
+        Message.GotPublicActionMessage({
+          message: PublicActions.Message.Saved({
+            target: { id: 'mix-a', kind: 'audio' },
+            principalId: listener.id,
+            requestId: pending.publicAction.requestId,
+            active: true,
+          }),
+        }),
+      ).model
+
+      expect(navigation.publicAction).toEqual(pending.publicAction)
+      expect(loaded.publicAction).toEqual(pending.publicAction)
+      expect(loaded.player.favorite.status).toBe('inactive')
+      expect(saved.publicAction).toMatchObject({ busy: false, document: { state: 'active' } })
+      expect(saved.player.favorite.status).toBe('active')
+
+      const later = send(saved, changed('https://gbfm.co.za/mixes/local-frequencies')).model
+      const externalRemoval = loadMixPage(later).model
+
+      expect(externalRemoval.publicAction.document?.state).toBe('inactive')
+      expect(externalRemoval.player.favorite.status).toBe('inactive')
+    },
+  )
+
+  it('preserves the newest same-account pending request without accepting a superseded acknowledgement', () => {
+    const inactive = settled(mixPage('inactive'), 'inactive')
+
+    const first = send(
+      inactive,
+      Message.GotPublicActionMessage({ message: PublicActions.Message.Toggle() }),
+    ).model
+
+    const failed = send(
+      first,
+      Message.GotPublicActionMessage({
+        message: PublicActions.Message.Failed({
+          target: { id: 'mix-a', kind: 'audio' },
+          principalId: listener.id,
+          requestId: first.publicAction.requestId,
+          unauthorized: false,
+        }),
+      }),
+    ).model
+
+    const second = send(
+      failed,
+      Message.GotPublicActionMessage({ message: PublicActions.Message.Toggle() }),
+    ).model
+
+    const navigation = send(second, changed('https://gbfm.co.za/mixes/local-frequencies')).model
+    const loaded = loadMixPage(navigation).model
+
+    const obsolete = send(
+      loaded,
+      Message.GotPublicActionMessage({
+        message: PublicActions.Message.Saved({
+          target: { id: 'mix-a', kind: 'audio' },
+          principalId: listener.id,
+          requestId: first.publicAction.requestId,
+          active: true,
+        }),
+      }),
+    ).model
+
+    const saved = send(
+      obsolete,
+      Message.GotPublicActionMessage({
+        message: PublicActions.Message.Saved({
+          target: { id: 'mix-a', kind: 'audio' },
+          principalId: listener.id,
+          requestId: second.publicAction.requestId,
+          active: true,
+        }),
+      }),
+    ).model
+
+    expect(obsolete.publicAction).toEqual(second.publicAction)
+    expect(obsolete.player.favorite.status).toBe('inactive')
+    expect(obsolete.navigationFavoriteChanges).toEqual([])
+    expect(saved.publicAction).toMatchObject({ busy: false, document: { state: 'active' } })
+    expect(saved.player.favorite.status).toBe('active')
+  })
+
+  it.each<PublicActions.Document['target']>([
+    { kind: 'audio', id: 'mix-b' },
+    { kind: 'show', id: 'mix-a' },
+  ])('invalidates a pending page save when the target changes to $kind/$id', (target) => {
+    const inactive = settled(mixPage('inactive'), 'inactive')
+
+    const pending = send(
+      inactive,
+      Message.GotPublicActionMessage({ message: PublicActions.Message.Toggle() }),
+    ).model
+
+    const navigation = send(pending, changed('https://gbfm.co.za/other-target')).model
+
+    const loaded = send(
+      navigation,
+      Message.LoadedPage({
+        flags: page('/other-target', listener, {
+          target,
+          path: '/other-target',
+          state: 'inactive',
+        }),
+        key: '/other-target',
+        navigationId: navigation.navigationId,
+      }),
+    ).model
+
+    const current = send(
+      loaded,
+      Message.GotPublicActionMessage({ message: PublicActions.Message.Toggle() }),
+    ).model
+
+    const obsolete = send(
+      current,
+      Message.GotPublicActionMessage({
+        message: PublicActions.Message.Saved({
+          target: { kind: 'audio', id: 'mix-a' },
+          principalId: listener.id,
+          requestId: pending.publicAction.requestId,
+          active: true,
+        }),
+      }),
+    ).model
+
+    expect(loaded.publicAction).toMatchObject({
+      busy: false,
+      document: { target, state: 'inactive' },
+    })
+    expect(current.publicAction.busy).toBe(true)
+    expect(obsolete.publicAction).toEqual(current.publicAction)
+    expect(obsolete.player.favorite.status).toBe('inactive')
+    expect(obsolete.navigationFavoriteChanges).toEqual([])
+  })
+
   it('preserves an API-recovered account and its acknowledged save when page identity was unknown', () => {
     const loading = playing(page('/about', null)).model
 
