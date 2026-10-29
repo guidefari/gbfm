@@ -43,6 +43,12 @@ const pendingShowSlug = (route: Route, shows: Page.Shows.ShowsDocument) =>
     Match.orElse(() => null),
   )
 
+const currentPath = (model: Model) => {
+  const url = new URL(model.flags.url)
+
+  return `${url.pathname}${url.search}`
+}
+
 export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
   const visibleNav = nav.filter(
     ([href]) => href !== '/collections' || model.flags.principal?.role === 'admin',
@@ -212,9 +218,16 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
           interactive: model.interactive,
           menuOpen: model.mobileMenu.isOpen,
           queueResolved: model.player.hasHadTrack,
+          minimized: model.navMinimized,
           nowPlaying: model.player.snapshot.queue.current
             ? {
                 title: model.player.snapshot.queue.current.title,
+                subtitle: (model.player.snapshot.queue.current.creators ?? [])
+                  .map((creator) => creator.name)
+                  .join(', '),
+                hasNext:
+                  model.player.snapshot.queue.currentIndex <
+                  model.player.snapshot.queue.tracks.length - 1,
                 thumbnailUrl: model.player.snapshot.queue.current.thumbnailUrl ?? null,
                 isPlaying: model.player.snapshot.transport.isPlaying,
                 progress: model.player.snapshot.transport.duration
@@ -225,6 +238,8 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
               }
             : null,
           togglePlay: Message.GotPlayerMessage({ message: Player.Message.TogglePlayPause() }),
+          nextTrack: Message.GotPlayerMessage({ message: Player.Message.Next() }),
+          expandNav: Message.NavMinimizeChanged({ minimized: false }),
           openPlayer: Message.GotPlayerMessage({ message: Player.Message.ToggleFullscreen() }),
           openSearch: Message.GotSearchMessage({ message: Search.Message.Opened() }),
           toggleMenu: Message.MenuToggled(),
@@ -277,6 +292,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
           slotId: 'player',
           model: model.player,
           view: Player.view,
+          viewInputs: { returnTo: currentPath(model) },
           toParentMessage: (message) => Message.GotPlayerMessage({ message }),
         }),
       ],

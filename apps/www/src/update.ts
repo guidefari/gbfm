@@ -25,6 +25,7 @@ import * as Creator from './page/creator'
 import * as Dashboard from './page/dashboard'
 import * as TweetReader from './page/tweet/reader'
 import * as Player from './player'
+import { syncPlayerFavorite } from './player-favorite'
 import * as PublicActions from './public-actions'
 import { isServerPath, Route } from './route'
 import * as Search from './search'
@@ -116,6 +117,14 @@ const showPage = (
   const next = init(flags)
   const identityChanged = next.model.tweetReader.identity !== model.tweetReader.identity
 
+  const keepPendingPublicAction =
+    model.publicAction.busy &&
+    model.publicAction.document !== null &&
+    model.publicAction.principalId !== null &&
+    model.publicAction.principalId === next.model.publicAction.principalId &&
+    model.publicAction.document?.target.kind === next.model.publicAction.document?.target.kind &&
+    model.publicAction.document?.target.id === next.model.publicAction.document?.target.id
+
   const sameTweet =
     !identityChanged &&
     flags.tweet &&
@@ -147,6 +156,15 @@ const showPage = (
         : model.tweetReader,
       interactive: model.interactive,
       navigationId,
+      navigationPrincipalId: model.navigationPrincipalId,
+      navigationPrincipalKnown: model.navigationPrincipalKnown,
+      navigationFavoriteChanges: model.navigationFavoriteChanges,
+      publicAction: keepPendingPublicAction
+        ? model.publicAction
+        : {
+            ...next.model.publicAction,
+            requestId: model.publicAction.requestId + 1,
+          },
     },
     commands: [
       ...Command.mapMessages(next.commands ?? [], (message) =>
@@ -176,7 +194,10 @@ const showPage = (
   }
 }
 
-export const update = (model: Model, message: Message): Update.Return<Model, Message, Services> =>
+const updateApplication = (
+  model: Model,
+  message: Message,
+): Update.Return<Model, Message, Services> =>
   Message.match<Update.Return<Model, Message, Services>>(message, {
     GotSpotifyPlaybackMessage: ({ message }) => {
       const child = SpotifyPlayback.update(model.spotifyPlayback, message)
@@ -248,7 +269,7 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
         for (const slug of slugs) {
           if (!slug) continue
 
-          const step = update(
+          const step = updateApplication(
             prefetched,
             Message.PrefetchRequested({ href: `/tweet/${encodeURIComponent(slug)}` }),
           )
@@ -282,6 +303,7 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
     },
     ChallengeStatusChanged: ({ status }) => ({ model: { ...model, challengeStatus: status } }),
     MenuToggled: () => (model.mobileMenu.isOpen ? closeMobileMenu(model) : openMobileMenu(model)),
+    NavMinimizeChanged: ({ minimized }) => ({ model: { ...model, navMinimized: minimized } }),
     GotMobileMenuMessage: ({ message }) => updateMobileMenu(model, message),
     MenuDragStarted: ({ pointerId, clientY }) =>
       !model.mobileMenu.isOpen ||
@@ -323,6 +345,7 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
       commands: [SaveReadMode({ value })],
     }),
     GotPublicActionMessage: ({ message }) => {
+      if (model.publicAction.principalId !== model.player.favorite.principalId) return { model }
       const child = PublicActions.update(model.publicAction, message)
 
       return {
@@ -386,7 +409,7 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
     },
     GotCreatorResult: ({ message, navigationId }) =>
       navigationId === model.navigationId
-        ? update(model, Message.GotCreatorMessage({ message }))
+        ? updateApplication(model, Message.GotCreatorMessage({ message }))
         : { model },
     GotDashboardMessage: ({ message }) => {
       const child = Dashboard.update(model.dashboard, message)
@@ -400,7 +423,7 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
     },
     GotDashboardResult: ({ message, navigationId }) =>
       navigationId === model.navigationId
-        ? update(model, Message.GotDashboardMessage({ message }))
+        ? updateApplication(model, Message.GotDashboardMessage({ message }))
         : { model },
     RequestedUrl: ({ request }) =>
       UrlRequest.match<Update.Return<Model, Message, Services>>(request, {
@@ -452,6 +475,9 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
         ...menu.model,
         pageCache,
         navigationId,
+        navigationPrincipalId: model.player.favorite.principalId,
+        navigationPrincipalKnown: model.player.favorite.principalKnown,
+        navigationFavoriteChanges: [],
         player: player.model,
         tweetReader: {
           ...model.tweetReader,
@@ -565,7 +591,12 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
         Result.succeed(flags),
       )
 
-      if (!model.loading && samePage(model.flags, flags))
+      if (
+        !model.loading &&
+        samePage(model.flags, flags) &&
+        (flags.publicAction?.target.kind !== 'audio' ||
+          model.publicAction.document?.state === flags.publicAction.state)
+      )
         return acceptTweet({ ...model, pageCache })
 
       const shown = showPage(model, flags, navigationId, key)
@@ -600,6 +631,9 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
     },
     NavigationCompleted: () => ({ model }),
   })
+
+export const update = (model: Model, message: Message): Update.Return<Model, Message, Services> =>
+  syncPlayerFavorite(model, message, updateApplication(model, message))
 
 /** The page the screen is showing: the pending destination while loading, else the loaded page. */
 export const displayedPath = (model: Model) =>

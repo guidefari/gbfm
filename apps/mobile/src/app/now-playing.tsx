@@ -5,6 +5,8 @@ import type { AccessibilityActionEvent, LayoutChangeEvent } from 'react-native'
 import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native'
 
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
+import { NowPlayingTitle } from '@/components/NowPlaying/NowPlayingTitle'
+import { PlayerSheetHeader } from '@/components/NowPlaying/PlayerSheetHeader'
 import { QueueSheet } from '@/components/NowPlaying/QueueSheet'
 import { Screen } from '@/components/Screen'
 import { useThemeColors, withAlpha } from '@/theme/colors'
@@ -50,7 +52,6 @@ export default function NowPlaying() {
   const progress = duration > 0 ? Math.min(currentTime / duration, 1) : 0
   const scrubWidthRef = useRef(0)
   const displayTrack = track ?? queue.current
-  const displayCreators = displayTrack?.creators ?? []
 
   const handleScrubLayout = (event: LayoutChangeEvent) => {
     scrubWidthRef.current = event.nativeEvent.layout.width
@@ -75,25 +76,7 @@ export default function NowPlaying() {
 
   return (
     <Screen>
-      <View
-        style={{
-          alignSelf: 'center',
-          width: 36,
-          height: 4,
-          borderRadius: 2,
-          backgroundColor: withAlpha(colors.muted, 0.45),
-          marginTop: 8,
-        }}
-      />
-
-      <Pressable
-        accessibilityRole='button'
-        accessibilityLabel='Close'
-        hitSlop={12}
-        onPress={() => router.back()}
-        style={{ position: 'absolute', top: 16, right: 16, padding: 8 }}>
-        <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 14 }}>Close</Text>
-      </Pressable>
+      <PlayerSheetHeader onClose={() => router.back()} />
 
       {!displayTrack ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
@@ -137,23 +120,7 @@ export default function NowPlaying() {
               )}
             </View>
 
-            <View style={{ gap: 6 }}>
-              <Text
-                style={{
-                  color: colors.strong,
-                  fontFamily: fonts.monoSemiBold,
-                  fontSize: 20,
-                  lineHeight: 26,
-                }}
-                numberOfLines={2}>
-                {displayTrack.title}
-              </Text>
-              {displayCreators.length ? (
-                <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 13 }}>
-                  {displayCreators.map((creator) => creator.name).join(', ')}
-                </Text>
-              ) : null}
-            </View>
+            <NowPlayingTitle track={displayTrack} />
 
             <View style={{ gap: 6 }}>
               <Pressable

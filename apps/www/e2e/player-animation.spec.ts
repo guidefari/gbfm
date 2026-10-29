@@ -1,5 +1,42 @@
 import { expect, test } from '@playwright/test'
 
+test('player accepts a real collapse click during entry', async ({ page }) => {
+  await page.setViewportSize({ width: 768, height: 1024 })
+  await page.goto('/shows/e2e-local-radio')
+  await page.addStyleTag({
+    content:
+      '.player-panel[data-enter] { transition-duration: 4s !important; transition-timing-function: linear !important; }',
+  })
+  await page.getByRole('button', { name: 'Play episode 1: Local Frequencies', exact: true }).click()
+
+  const player = page.getByRole('dialog', { name: 'Now playing', exact: true })
+  const panel = page.locator('#fullscreen-player-panel')
+  const collapse = player.getByRole('button', { name: 'Collapse player', exact: true })
+  await expect(panel).toHaveAttribute('data-enter')
+  await expect.poll(async () => (await collapse.boundingBox())?.y ?? Infinity).toBeLessThan(800)
+  await collapse.evaluate((button) => {
+    button.addEventListener(
+      'click',
+      () => {
+        button.setAttribute(
+          'data-clicked-during-entry',
+          String(Boolean(button.closest('[data-enter]'))),
+        )
+      },
+      { once: true },
+    )
+  })
+  const bounds = await collapse.boundingBox()
+
+  if (!bounds) throw new Error('Expected the collapse player button')
+  await page.mouse.click(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)
+  await expect(collapse).toHaveAttribute('data-clicked-during-entry', 'true')
+  await expect(player).not.toBeVisible()
+  await expect
+    .poll(() => page.evaluate(() => getComputedStyle(document.documentElement).overflow))
+    .not.toBe('hidden')
+})
+
 test('player slides as one opaque panel and releases scroll locking after collapse', async ({
   page,
 }) => {

@@ -99,7 +99,7 @@ const compactBar = <M>(
   interactive: boolean,
 ) =>
   h.div(
-    [h.Class('sticky top-0 z-30 h-0')],
+    [h.Class('sticky top-0 z-30 hidden h-0 lg:block')],
     [
       h.div(
         [

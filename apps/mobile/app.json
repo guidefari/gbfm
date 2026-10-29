@@ -1,6 +1,7 @@
 {
   "expo": {
     "scheme": "gbfm",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "orientation": "default",
     "web": {
@@ -17,17 +18,35 @@
           "recordAudioAndroid": false,
           "enableBackgroundPlayback": true
         }
-      ]
+      ],
+      "expo-font",
+      "expo-status-bar",
+      "expo-web-browser"
     ],
-    "name": "mobile",
-    "slug": "mobile",
-    "newArchEnabled": true,
+    "name": "gbfm",
+    "slug": "gbfm",
+    "version": "1.0.0",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "fm.goosebumps.mobile"
+      "bundleIdentifier": "fm.goosebumps.gbfm",
+      "appleTeamId": "78328YPS5M",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "b89560f9-d549-4ba4-9295-d1b9fc482f88"
+      }
+    },
+    "owner": "guidefari"
   }
 }

@@ -1,0 +1,134 @@
+{
+  "version": 1,
+  "blocks": [
+    {
+      "_tag": "Paragraph",
+      "children": [
+        {
+          "_tag": "Link",
+          "href": "https://example.com/album",
+          "title": "Album destination",
+          "children": [
+            {
+              "_tag": "Image",
+              "src": "https://cdn.goosebumps.fm/cover.webp",
+              "alt": "Record sleeve",
+              "title": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "_tag": "Paragraph",
+      "children": [
+        {
+          "_tag": "Strong",
+          "children": [
+            {
+              "_tag": "Link",
+              "href": "https://example.com/album",
+              "title": "Album destination",
+              "children": [
+                {
+                  "_tag": "Image",
+                  "src": "https://cdn.goosebumps.fm/cover.webp",
+                  "alt": "Record sleeve",
+                  "title": null
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "_tag": "Paragraph",
+      "children": [
+        {
+          "_tag": "Link",
+          "href": "https://example.com/album",
+          "title": "Album destination",
+          "children": [
+            { "_tag": "Text", "value": "Before the artwork" },
+            {
+              "_tag": "Image",
+              "src": "https://cdn.goosebumps.fm/cover.webp",
+              "alt": "Record sleeve",
+              "title": null
+            },
+            { "_tag": "Text", "value": "After the artwork" }
+          ]
+        }
+      ]
+    },
+    {
+      "_tag": "Paragraph",
+      "children": [
+        {
+          "_tag": "Link",
+          "href": "/outer",
+          "title": "Outer destination",
+          "children": [
+            {
+              "_tag": "Emphasis",
+              "children": [
+                {
+                  "_tag": "Delete",
+                  "children": [
+                    {
+                      "_tag": "Link",
+                      "href": "https://example.com/album",
+                      "title": "Album destination",
+                      "children": [
+                        {
+                          "_tag": "Image",
+                          "src": "https://cdn.goosebumps.fm/cover.webp",
+                          "alt": "Record sleeve",
+                          "title": null
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "_tag": "Paragraph",
+      "children": [
+        {
+          "_tag": "Link",
+          "href": "/albums/fixture",
+          "title": null,
+          "children": [
+            {
+              "_tag": "Strong",
+              "children": [
+                {
+                  "_tag": "Emphasis",
+                  "children": [
+                    {
+                      "_tag": "Delete",
+                      "children": [
+                        {
+                          "_tag": "Image",
+                          "src": "https://cdn.goosebumps.fm/cover.webp",
+                          "alt": "Record sleeve",
+                          "title": null
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

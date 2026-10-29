@@ -2,17 +2,10 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 
 import type { Principal } from '../model'
 import { signInHref } from '../page/auth/links'
-import { artworkUrl, fallbackArtwork, imageSource } from './artwork'
 import { iconPaths, lucide } from './icons'
+import { mobilePlayer, type NowPlaying } from './mobile-player'
 import { isActiveNavLink } from './nav-active'
 import { wordmark } from './wordmark'
-
-type NowPlaying = {
-  readonly title: string
-  readonly thumbnailUrl: string | null
-  readonly isPlaying: boolean
-  readonly progress: number
-}
 
 export type StationNavProps<M> = {
   readonly pathname: string
@@ -23,11 +16,20 @@ export type StationNavProps<M> = {
   readonly menuOpen: boolean
   readonly queueResolved: boolean
   readonly nowPlaying: NowPlaying | null
+  readonly minimized: boolean
   readonly togglePlay: M
+  readonly nextTrack: M
   readonly openPlayer: M
   readonly openSearch: M
   readonly toggleMenu: M
+  readonly expandNav: M
 }
+
+const mobileTabs = [
+  ['/', 'Home', iconPaths.home],
+  ['/shows', 'Shows', iconPaths.radio],
+  ['/editorial', 'Editorial', iconPaths.editorial],
+] as const
 
 const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
@@ -37,7 +39,7 @@ const desktopLinkClass = `inline-flex h-8 shrink-0 items-center rounded-sm px-2.
 const desktopIconButtonClass = `flex size-8 shrink-0 items-center justify-center rounded-sm p-0 transition-colors hover:bg-muted ${focusRing}`
 
 const tabClass =
-  "relative flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-1 border-0 bg-transparent p-0 no-underline text-muted-foreground transition-colors before:absolute before:inset-x-1/4 before:top-0 before:h-0.5 before:rounded-b-sm before:bg-highlight before:opacity-0 before:transition-opacity before:content-[''] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring aria-[current=page]:text-foreground aria-[current=page]:before:opacity-100"
+  'dock-tab relative flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-[0.875rem] border-0 bg-transparent p-0 no-underline text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring aria-[current=page]:text-highlight'
 
 const tabIconClass = 'size-[22px] shrink-0 [stroke-width:1.75]'
 
@@ -159,7 +161,10 @@ export const stationNav = <M>(h: HtmlBuilder<M>, props: StationNavProps<M>) => {
   )
 
   const tabLabel = (label: string) =>
-    h.span([h.Class('max-w-full truncate px-1 text-[11px] font-medium leading-none')], [label])
+    h.span(
+      [h.Class('max-w-full truncate px-0.5 text-[10px] font-medium leading-none tracking-tight')],
+      [label],
+    )
 
   const tabLink = (href: string, label: string, icon: string) =>
     h.a(
@@ -172,92 +177,36 @@ export const stationNav = <M>(h: HtmlBuilder<M>, props: StationNavProps<M>) => {
       [lucide(icon, tabIconClass), tabLabel(label)],
     )
 
-  const mobile = h.nav(
+  const minimized = props.minimized && nowPlaying !== null
+  const onTabRoute = mobileTabs.some(([href]) => isActiveNavLink(props.pathname, href))
+
+  const mobile = h.div(
+    [h.Class('mobile-dock lg:hidden'), ...(minimized ? [h.DataAttribute('minimized', '')] : [])],
     [
-      h.AriaLabel('Primary'),
-      h.Class(
-        'fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden',
+      mobilePlayer(
+        h,
+        nowPlaying,
+        props.queueResolved,
+        props.openPlayer,
+        props.togglePlay,
+        props.nextTrack,
       ),
-    ],
-    [
-      h.div(
-        [h.Class('grid h-14 grid-cols-5')],
+      h.nav(
+        [h.AriaLabel('Primary'), h.Class('dock-platter dock-tabs')],
         [
-          nowPlaying
-            ? h.button(
-                [
-                  h.Type('button'),
-                  h.AriaLabel('Now playing'),
-                  h.OnClick(props.openPlayer),
-                  h.Class(`${tabClass} text-foreground`),
-                ],
-                [
-                  h.span(
-                    [
-                      h.Class(
-                        'relative flex size-[22px] shrink-0 items-center justify-center overflow-hidden rounded-sm border border-border',
-                      ),
-                    ],
-                    [
-                      h.img([
-                        imageSource(artworkUrl(nowPlaying.thumbnailUrl || fallbackArtwork, 96)),
-                        h.Alt(''),
-                        h.Class('size-full object-cover'),
-                      ]),
-                      h.span(
-                        [
-                          h.Class(
-                            'absolute inset-0 flex items-center justify-center bg-background/40',
-                          ),
-                        ],
-                        [playIcon(nowPlaying.isPlaying, 'h-3 w-3 text-white')],
-                      ),
-                    ],
-                  ),
-                  tabLabel(nowPlaying.isPlaying ? 'Playing' : 'Paused'),
-                ],
-              )
-            : props.queueResolved
-              ? tabLink('/mixes', 'Mixes', iconPaths.disc)
-              : h.div(
-                  [h.Class('contents')],
-                  [
-                    h.button(
-                      [
-                        h.Type('button'),
-                        h.AriaLabel('Now playing'),
-                        h.OnClick(props.openPlayer),
-                        h.Class(`${tabClass} nav-queued-tab text-foreground`),
-                      ],
-                      [
-                        h.span(
-                          [
-                            h.Class(
-                              'relative flex size-[22px] shrink-0 items-center justify-center overflow-hidden rounded-sm border border-border bg-muted bg-cover bg-center [background-image:var(--queued-art)]',
-                            ),
-                          ],
-                          [
-                            h.span(
-                              [
-                                h.Class(
-                                  'absolute inset-0 flex items-center justify-center bg-background/40',
-                                ),
-                              ],
-                              [playIcon(false, 'h-3 w-3 text-white')],
-                            ),
-                          ],
-                        ),
-                        tabLabel('Paused'),
-                      ],
-                    ),
-                    h.div(
-                      [h.Class('nav-idle-tab contents')],
-                      [tabLink('/mixes', 'Mixes', iconPaths.disc)],
-                    ),
-                  ],
-                ),
-          tabLink('/shows', 'Shows', iconPaths.radio),
-          tabLink('/editorial', 'Editorial', iconPaths.book),
+          h.button(
+            [
+              h.Type('button'),
+              h.AriaLabel('Show tabs'),
+              h.Tabindex(minimized ? 0 : -1),
+              h.AriaHidden(!minimized),
+              h.OnClick(props.expandNav),
+              ...(onTabRoute ? [h.DataAttribute('active', '')] : []),
+              h.Class(`dock-tabs-expand ${tabClass} data-[active]:text-highlight`),
+            ],
+            [lucide(iconPaths.tabs, tabIconClass)],
+          ),
+          ...mobileTabs.map(([href, label, icon]) => tabLink(href, label, icon)),
           h.button(
             [
               h.Type('button'),

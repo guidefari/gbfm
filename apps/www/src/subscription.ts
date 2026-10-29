@@ -4,6 +4,7 @@ import { Subscription } from 'foldkit'
 import { authSubmitEvents } from './auth-submit'
 import { Message } from './message'
 import type { Model } from './model'
+import { navMinimizeEvents } from './nav-scroll'
 import * as Creator from './page/creator'
 import * as Player from './player'
 import * as Search from './search'
@@ -21,6 +22,24 @@ const menuSubscriptions = Subscription.make<Model, Message>()((entry) => ({
               released: Message.MenuDragReleased,
               cancelled: Message.MenuDragCancelled,
             })
+          : Stream.empty,
+    },
+  ),
+}))
+
+const navSubscriptions = Subscription.make<Model, Message>()((entry) => ({
+  navMinimize: entry(
+    { active: Schema.Boolean, minimized: Schema.Boolean },
+    {
+      modelToDependencies: (model) => ({
+        active: model.interactive && model.player.snapshot.queue.current !== null,
+        minimized: model.navMinimized,
+      }),
+      dependenciesToStream: ({ active, minimized }) =>
+        active
+          ? navMinimizeEvents<Message>(minimized, (minimized) =>
+              Message.NavMinimizeChanged({ minimized }),
+            )
           : Stream.empty,
     },
   ),
@@ -44,6 +63,7 @@ const authSubscriptions = Subscription.make<Model, Message>()((entry) => ({
 
 export const subscriptions = Subscription.aggregate(
   menuSubscriptions,
+  navSubscriptions,
   authSubscriptions,
   Subscription.lift(Search.subscriptions)<Model, Message>({
     read: (model) => Option.some(model.search),

@@ -7,6 +7,7 @@ import { Schema } from 'effect'
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest'
 
 import { Route } from '../../route'
+import { loadIdentity } from '../../server/page-data/identity'
 import { loadAudioDetailData } from './page-data'
 
 const principal: AudioPagePrincipal = {
@@ -126,6 +127,7 @@ describe('Audio detail WWW data loading', () => {
     ])
     expect(page.flags.status).toBe(200)
     expect(page.flags.principal).toEqual(principal)
+    expect(page.flags.principalKnown).toBe(true)
     expect(page.flags.items[0]?.title).toBe('Fixture audio')
     expect(page.flags.items[0]?.href).toBe('/mixes/fixture-audio')
     expect(page.flags.publicAction).toEqual({
@@ -147,6 +149,7 @@ describe('Audio detail WWW data loading', () => {
     const { flags } = await load()
     expect(flags.status).toBe(404)
     expect(flags.principal).toEqual(principal)
+    expect(flags.principalKnown).toBe(true)
     expect(flags.items).toEqual([])
     expect(flags.publicAction).toBeNull()
     expect(flags.failure).toBeNull()
@@ -160,6 +163,7 @@ describe('Audio detail WWW data loading', () => {
     const { flags } = await load()
     expect(flags.status).toBe(503)
     expect(flags.principal).toEqual(principal)
+    expect(flags.principalKnown).toBe(true)
     expect(flags.failure).toBe('Content is unavailable right now.')
     expect(calls).toHaveLength(1)
   })
@@ -169,6 +173,7 @@ describe('Audio detail WWW data loading', () => {
     const { flags } = await load()
     expect(flags.status).toBe(503)
     expect(flags.principal).toBeNull()
+    expect(flags.principalKnown).toBe(false)
     expect(flags.items).toEqual([])
   })
 
@@ -177,6 +182,7 @@ describe('Audio detail WWW data loading', () => {
     const { flags } = await load()
     expect(flags.status).toBe(503)
     expect(flags.principal).toBeNull()
+    expect(flags.principalKnown).toBe(false)
     expect(calls).toHaveLength(1)
   })
 
@@ -207,4 +213,37 @@ describe('Audio detail WWW data loading', () => {
     await load('track', 'fixture / track')
     expect(calls[0]?.path).toBe('/api/content/audio/track/fixture%20%2F%20track/page')
   })
+
+  test('a decoded anonymous response confirms signed-out identity rather than a lookup fallback', async () => {
+    payload = Schema.decodeUnknownSync(Schema.Json)(
+      AudioPageResponse.cases.Ready.make({
+        ...ready,
+        principal: null,
+        favorite: 'anonymous',
+      }),
+    )
+    const { flags } = await load()
+
+    expect(flags.principal).toBeNull()
+    expect(flags.principalKnown).toBe(true)
+    expect(flags.publicAction?.state).toBe('anonymous')
+  })
+
+  test.each([200, 503])(
+    'session identity distinguishes a confirmed empty session from lookup failure: %s',
+    async (responseStatus) => {
+      payload = null
+      status = responseStatus
+
+      const identity = await loadIdentity(
+        new Request('http://www.local/about', {
+          headers: { cookie: 'session_token=disposable-fixture' },
+        }),
+      )
+
+      expect(identity.principal).toBeNull()
+      expect(identity.principalKnown).toBe(responseStatus === 200)
+      expect(calls[0]?.path).toBe('/auth/get-session')
+    },
+  )
 })

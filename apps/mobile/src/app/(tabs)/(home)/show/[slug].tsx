@@ -5,7 +5,6 @@ import { ActivityIndicator, FlatList, Image, Pressable, Text, View } from 'react
 
 import type { ShowEpisode } from '@/api/shows'
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
-import { Screen } from '@/components/Screen'
 import { episodesFamily } from '@/store/atoms/episodes'
 import { useThemeColors } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
@@ -60,7 +59,7 @@ function EpisodeRow({ episode, onEnqueue }: { episode: ShowEpisode; onEnqueue: (
         <View style={{ flex: 1, gap: 2 }}>
           <Text
             style={{
-              color: isCurrent ? colors.accent : colors.overlayText,
+              color: isCurrent ? colors.accent : colors.strong,
               fontFamily: fonts.monoSemiBold,
               fontSize: 14,
             }}
@@ -120,101 +119,99 @@ export default function ShowScreen() {
   }
 
   return (
-    <Screen>
+    <View style={{ flex: 1, backgroundColor: colors.background }} collapsable={false}>
       <Stack.Screen options={{ title: title ?? '' }} />
-      <View style={{ flex: 1, backgroundColor: colors.background }} collapsable={false}>
-        {AsyncResult.isInitial(result) || AsyncResult.isWaiting(result) ? (
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator size='large' color={colors.accent} />
-          </View>
-        ) : AsyncResult.isSuccess(result) && result.value.length > 0 ? (
-          <FlatList
-            data={result.value}
-            keyExtractor={(episode) => episode.id}
-            renderItem={({ item }) => (
-              <EpisodeRow episode={item} onEnqueue={() => enqueueAll([item])} />
-            )}
-            ListHeaderComponent={
-              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
-                <Pressable
-                  accessibilityRole='button'
-                  onPress={handlePlayAll}
-                  style={({ pressed }) => ({
-                    flex: 1,
-                    minHeight: 44,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: 4,
-                    backgroundColor: colors.accent,
-                    opacity: pressed ? 0.85 : 1,
-                  })}>
-                  <Text
-                    style={{
-                      color: colors.surface,
-                      fontFamily: fonts.monoSemiBold,
-                      fontSize: 14,
-                      letterSpacing: 0.5,
-                    }}>
-                    Play all
-                  </Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole='button'
-                  onPress={handleEnqueueAll}
-                  style={({ pressed }) => ({
-                    flex: 1,
-                    minHeight: 44,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: 4,
-                    borderWidth: 1,
-                    borderColor: colors.accent,
-                    opacity: pressed ? 0.85 : 1,
-                  })}>
-                  <Text
-                    style={{
-                      color: colors.accent,
-                      fontFamily: fonts.monoSemiBold,
-                      fontSize: 14,
-                      letterSpacing: 0.5,
-                    }}>
-                    Queue all
-                  </Text>
-                </Pressable>
-              </View>
-            }
-            contentInsetAdjustmentBehavior='automatic'
-            contentContainerStyle={{ padding: 20 }}
-          />
-        ) : AsyncResult.isSuccess(result) ? (
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 14 }}>
-              no episodes yet
+      {AsyncResult.isInitial(result) || AsyncResult.isWaiting(result) ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size='large' color={colors.accent} />
+        </View>
+      ) : AsyncResult.isSuccess(result) && result.value.length > 0 ? (
+        <FlatList
+          data={result.value}
+          keyExtractor={(episode) => episode.id}
+          renderItem={({ item }) => (
+            <EpisodeRow episode={item} onEnqueue={() => enqueueAll([item])} />
+          )}
+          ListHeaderComponent={
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+              <Pressable
+                accessibilityRole='button'
+                onPress={handlePlayAll}
+                style={({ pressed }) => ({
+                  flex: 1,
+                  minHeight: 44,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 4,
+                  backgroundColor: colors.accent,
+                  opacity: pressed ? 0.85 : 1,
+                })}>
+                <Text
+                  style={{
+                    color: colors.surface,
+                    fontFamily: fonts.monoSemiBold,
+                    fontSize: 14,
+                    letterSpacing: 0.5,
+                  }}>
+                  Play all
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole='button'
+                onPress={handleEnqueueAll}
+                style={({ pressed }) => ({
+                  flex: 1,
+                  minHeight: 44,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 4,
+                  borderWidth: 1,
+                  borderColor: colors.accent,
+                  opacity: pressed ? 0.85 : 1,
+                })}>
+                <Text
+                  style={{
+                    color: colors.accent,
+                    fontFamily: fonts.monoSemiBold,
+                    fontSize: 14,
+                    letterSpacing: 0.5,
+                  }}>
+                  Queue all
+                </Text>
+              </Pressable>
+            </View>
+          }
+          contentInsetAdjustmentBehavior='automatic'
+          contentContainerStyle={{ padding: 20 }}
+        />
+      ) : AsyncResult.isSuccess(result) ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 14 }}>
+            no episodes yet
+          </Text>
+        </View>
+      ) : (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+          <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 14 }}>
+            couldn't load episodes
+          </Text>
+          <Pressable
+            accessibilityRole='button'
+            onPress={refresh}
+            style={({ pressed }) => ({
+              borderWidth: 2,
+              borderColor: colors.accent,
+              borderRadius: 4,
+              paddingHorizontal: 20,
+              paddingVertical: 10,
+              opacity: pressed ? 0.7 : 1,
+            })}>
+            <Text style={{ color: colors.accent, fontFamily: fonts.monoSemiBold, fontSize: 14 }}>
+              retry
             </Text>
-          </View>
-        ) : (
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-            <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 14 }}>
-              couldn't load episodes
-            </Text>
-            <Pressable
-              accessibilityRole='button'
-              onPress={refresh}
-              style={({ pressed }) => ({
-                borderWidth: 2,
-                borderColor: colors.accent,
-                borderRadius: 4,
-                paddingHorizontal: 20,
-                paddingVertical: 10,
-                opacity: pressed ? 0.7 : 1,
-              })}>
-              <Text style={{ color: colors.accent, fontFamily: fonts.monoSemiBold, fontSize: 14 }}>
-                retry
-              </Text>
-            </Pressable>
-          </View>
-        )}
-      </View>
-    </Screen>
+          </Pressable>
+        </View>
+      )}
+    </View>
   )
 }

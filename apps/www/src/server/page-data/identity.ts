@@ -12,10 +12,10 @@ export const loadIdentity = async (request: Request) => {
     !request.headers.get('cookie')?.includes('session_token=') &&
     !request.headers.has('authorization')
   )
-    return { principal: null, cookies: [] }
+    return { principal: null, principalKnown: true, cookies: [] }
   const response = await apiRequest(request, '/auth/get-session', { method: 'GET' })
-  const payload = record(await json(response))
-  const user = record(payload?.user)
+  const payload = await json(response)
+  const user = response.ok ? record(record(payload)?.user) : null
 
   const principal = user
     ? Schema.decodeUnknownSync(Principal)({
@@ -27,7 +27,11 @@ export const loadIdentity = async (request: Request) => {
       })
     : null
 
-  return { principal, cookies: response.headers.getSetCookie() }
+  return {
+    principal,
+    principalKnown: response.ok && (payload === null || user !== null),
+    cookies: response.headers.getSetCookie(),
+  }
 }
 
 export const loadPublicActionState = async (

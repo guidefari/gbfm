@@ -212,8 +212,13 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
           ),
         )
 
+        const musicByPostId = yield* dieOnDatabaseError(svc.getMicroPostScreenMusic(result.data))
+
         return {
-          data: result.data.map(toDateStrings),
+          data: result.data.map((post) => ({
+            ...toDateStrings(post),
+            music: musicByPostId.get(post.id) ?? null,
+          })),
           pagination: result.pagination,
         }
       }),

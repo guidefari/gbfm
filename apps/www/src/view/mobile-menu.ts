@@ -11,7 +11,7 @@ import { isActiveNavLink } from './nav-active'
 
 const browseIcons = new Map([
   ['/shows', iconPaths.radio],
-  ['/editorial', iconPaths.book],
+  ['/editorial', iconPaths.editorial],
   ['/tweets', iconPaths.message],
   ['/labels', iconPaths.album],
 ])

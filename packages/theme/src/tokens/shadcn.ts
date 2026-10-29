@@ -32,7 +32,7 @@ export const light: SemanticTokens = {
   highlight: 'hsl(213 90% 55%)',
   highlightForeground: '#111827',
   background: 'hsl(213 50% 93%)',
-  backgroundHex: '#e8eef7',
+  backgroundHex: '#e4ecf6',
   foreground: 'hsl(213 35% 16%)',
   card: 'hsl(213 30% 99%)',
   cardForeground: 'hsl(213 35% 14%)',

@@ -1,3 +1,5 @@
+export * as Favorite from './favorite'
+
 export { closeOverlays, initialModel, Message, Model, Snapshot, update } from './model'
 
 export {

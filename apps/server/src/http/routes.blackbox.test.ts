@@ -14,6 +14,7 @@ import { MicroPostNeighboursResponse, MicroPostRandomUnreadResponse } from '@gbf
 import {
   CompiledMicroPostResponse,
   CompiledPostResponse,
+  GetMicroPostListResponse,
   GetMicroPostsResponse,
   MicroPostScreenRepliesResponse,
   MicroPostScreenResponse,
@@ -3071,6 +3072,213 @@ describe('GET /api/content/posts/micro/:slug/screen', () => {
     )
 
     expect(response.status).toBe(404)
+  })
+})
+
+describe('GET /api/content/posts/micro music attachments', () => {
+  it('adds verified music to each tweet in the page without changing paging or filtering', async () => {
+    const suffix = crypto.randomUUID()
+    const tag = `feed-music-${suffix}`
+    const albumId = crypto.randomUUID()
+    const trackId = crypto.randomUUID()
+    const minute = 60_000
+    const now = Date.now()
+
+    await db.batch([
+      db
+        .insert(musicEntityTypesTable)
+        .values([
+          { id: 'album', displayName: 'Album' },
+          { id: 'track', displayName: 'Track' },
+        ])
+        .onConflictDoNothing(),
+      db
+        .insert(musicPlatformsTable)
+        .values([{ id: 'spotify', displayName: 'Spotify' }])
+        .onConflictDoNothing(),
+      db.insert(musicAlbumsTable).values({
+        id: albumId,
+        title: 'Feed Album',
+        slug: `feed-album-${suffix}`,
+        artistNames: ['Feed Artist'],
+        coverImageUrl: 'https://cdn.goosebumps.fm/user-content/feed-album.png',
+      }),
+      db.insert(musicTracksTable).values({
+        id: trackId,
+        title: 'Feed Track',
+        slug: `feed-track-${suffix}`,
+        artistNames: null,
+        coverImageUrl: null,
+      }),
+    ])
+    await db.insert(musicEntityLinksTable).values([
+      {
+        entityType: 'album',
+        entityId: albumId,
+        platform: 'spotify',
+        url: 'https://open.spotify.com/album/feed',
+        status: 'verified',
+      },
+      {
+        entityType: 'track',
+        entityId: trackId,
+        platform: 'spotify',
+        url: 'https://open.spotify.com/track/rejected',
+        status: 'rejected',
+      },
+    ])
+
+    const seeded = await db
+      .insert(postsTable)
+      .values([
+        {
+          slug: `feed-album-tweet-${suffix}`,
+          content: 'album tweet',
+          type: 'micro',
+          draft: false,
+          musicEntityType: 'album',
+          musicEntityId: albumId,
+          createdAt: new Date(now),
+        },
+        {
+          slug: `feed-plain-tweet-${suffix}`,
+          content: 'plain tweet',
+          type: 'micro',
+          draft: false,
+          createdAt: new Date(now - minute),
+        },
+        {
+          slug: `feed-track-tweet-${suffix}`,
+          content: 'track tweet',
+          type: 'micro',
+          draft: false,
+          musicEntityType: 'track',
+          musicEntityId: trackId,
+          createdAt: new Date(now - 2 * minute),
+        },
+        {
+          slug: `feed-draft-tweet-${suffix}`,
+          content: 'draft tweet',
+          type: 'micro',
+          draft: true,
+          musicEntityType: 'album',
+          musicEntityId: albumId,
+          createdAt: new Date(now - 3 * minute),
+        },
+        {
+          slug: `feed-untagged-tweet-${suffix}`,
+          content: 'untagged tweet',
+          type: 'micro',
+          draft: false,
+          musicEntityType: 'album',
+          musicEntityId: albumId,
+          createdAt: new Date(now - 4 * minute),
+        },
+      ])
+      .returning()
+
+    const [albumTweet, plainTweet, trackTweet, draftTweet] = seeded
+
+    if (!albumTweet || !plainTweet || !trackTweet || !draftTweet)
+      throw new Error('Failed to seed tweet feed')
+
+    const [reply] = await db
+      .insert(postsTable)
+      .values({
+        slug: `feed-reply-${suffix}`,
+        content: 'reply tweet',
+        type: 'micro',
+        draft: false,
+        parentPostId: albumTweet.id,
+        rootPostId: albumTweet.id,
+        depth: 1,
+        musicEntityType: 'album',
+        musicEntityId: albumId,
+        createdAt: new Date(now + minute),
+      })
+      .returning()
+
+    if (!reply) throw new Error('Failed to seed tweet feed reply')
+    const taggedIds = [albumTweet.id, plainTweet.id, trackTweet.id, draftTweet.id, reply.id]
+    await Promise.all(
+      taggedIds.map((postId) => replaceEntityLabels(db, 'post', postId, { tags: [tag] })),
+    )
+
+    const albumMusic = {
+      entity: {
+        id: albumId,
+        type: 'album',
+        title: 'Feed Album',
+        artistNames: ['Feed Artist'],
+        coverImageUrl: 'https://cdn.goosebumps.fm/user-content/feed-album.png',
+      },
+      links: [{ platform: 'spotify', url: 'https://open.spotify.com/album/feed' }],
+    }
+
+    try {
+      const firstResponse = await webHandler.handler(
+        new Request(`http://localhost/api/content/posts/micro?tag=${tag}&limit=2&offset=0`),
+      )
+
+      expect(firstResponse.status).toBe(200)
+      const legacy = await decodeResponseBody(GetMicroPostsResponse, firstResponse.clone())
+      const first = await decodeResponseBody(GetMicroPostListResponse, firstResponse)
+      expect(legacy.data.map((post) => post.slug)).toEqual([albumTweet.slug, plainTweet.slug])
+      expect(first.data.map((post) => post.slug)).toEqual([albumTweet.slug, plainTweet.slug])
+      expect(first.pagination).toEqual({ total: 3, limit: 2, offset: 0, hasMore: true })
+      expect(first.data[0]?.music).toEqual(albumMusic)
+      expect(first.data[0]?.replyCount).toBe(1)
+      expect(first.data[1]?.music).toBeNull()
+
+      const secondResponse = await webHandler.handler(
+        new Request(`http://localhost/api/content/posts/micro?tag=${tag}&limit=2&offset=2`),
+      )
+
+      expect(secondResponse.status).toBe(200)
+      const second = await decodeResponseBody(GetMicroPostListResponse, secondResponse)
+      expect(second.data.map((post) => post.slug)).toEqual([trackTweet.slug])
+      expect(second.pagination).toEqual({ total: 3, limit: 2, offset: 2, hasMore: false })
+      expect(second.data[0]?.music).toEqual({
+        entity: {
+          id: trackId,
+          type: 'track',
+          title: 'Feed Track',
+          artistNames: null,
+          coverImageUrl: null,
+        },
+        links: [],
+      })
+
+      const albumsResponse = await webHandler.handler(
+        new Request(`http://localhost/api/content/posts/micro?tag=${tag}&musicEntityType=album`),
+      )
+
+      expect(albumsResponse.status).toBe(200)
+      const albums = await decodeResponseBody(GetMicroPostListResponse, albumsResponse)
+      expect(albums.data.map((post) => post.slug)).toEqual([albumTweet.slug])
+      expect(albums.data[0]?.music).toEqual(albumMusic)
+    } finally {
+      await db
+        .delete(entityLabelsTable)
+        .where(
+          and(
+            eq(entityLabelsTable.entityType, 'post'),
+            inArray(entityLabelsTable.entityId, taggedIds),
+          ),
+        )
+      await db.delete(postsTable).where(eq(postsTable.id, reply.id))
+      await db.delete(postsTable).where(
+        inArray(
+          postsTable.id,
+          seeded.map((post) => post.id),
+        ),
+      )
+      await db
+        .delete(musicEntityLinksTable)
+        .where(inArray(musicEntityLinksTable.entityId, [albumId, trackId]))
+      await db.delete(musicAlbumsTable).where(eq(musicAlbumsTable.id, albumId))
+      await db.delete(musicTracksTable).where(eq(musicTracksTable.id, trackId))
+    }
   })
 })
 

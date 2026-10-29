@@ -1,4 +1,4 @@
-import { NativeTabs } from 'expo-router/unstable-native-tabs'
+import { NativeTabs } from 'expo-router/native-tabs'
 
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
 import { MiniPlayerBar } from '@/components/NowPlaying/MiniPlayerBar'
@@ -27,6 +27,13 @@ export default function TabsLayout() {
           md={{ default: 'home', selected: 'home_filled' }}
         />
         <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name='(tweets)' contentStyle={{ backgroundColor: colors.background }}>
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'text.bubble', selected: 'text.bubble.fill' }}
+          md={{ default: 'chat_bubble', selected: 'chat_bubble' }}
+        />
+        <NativeTabs.Trigger.Label>Tweets</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name='profile' contentStyle={{ backgroundColor: colors.background }}>
         <NativeTabs.Trigger.Icon

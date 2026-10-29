@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "blocks": [
+    {
+      "_tag": "Paragraph",
+      "children": [
+        { "_tag": "Text", "value": "listen to " },
+        {
+          "_tag": "Link",
+          "href": "https://example.com",
+          "title": null,
+          "children": [{ "_tag": "Strong", "children": [{ "_tag": "Text", "value": "this" }] }]
+        }
+      ]
+    },
+    { "_tag": "ThematicBreak" },
+    {
+      "_tag": "List",
+      "ordered": false,
+      "start": null,
+      "items": [
+        {
+          "checked": null,
+          "children": [{ "_tag": "Paragraph", "children": [{ "_tag": "Text", "value": "first" }] }]
+        }
+      ]
+    }
+  ]
+}

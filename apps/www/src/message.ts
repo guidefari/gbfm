@@ -23,6 +23,7 @@ export const Message = defineMessageUnion({
   ChallengeStatusChanged: { status: ChallengeStatus },
   GotTweetReaderMessage: { message: TweetReader.Message },
   MenuToggled: {},
+  NavMinimizeChanged: { minimized: Schema.Boolean },
   PasswordVisibilityToggled: {},
   AuthFormSubmitted: {},
   AuthFormRestored: {},

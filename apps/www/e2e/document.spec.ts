@@ -5,10 +5,8 @@ test.describe('without JavaScript', () => {
 
   test('document styles load before the client, including mobile navigation', async ({ page }) => {
     await page.goto('/mixes/e2e-local-frequencies')
-    await expect(page.getByRole('navigation', { name: 'Primary', exact: true })).toHaveCSS(
-      'position',
-      'fixed',
-    )
+    await expect(page.locator('.mobile-dock')).toHaveCSS('position', 'fixed')
+    await expect(page.getByRole('navigation', { name: 'Primary', exact: true })).toBeVisible()
     await expect(
       page.getByRole('heading', { name: 'Local Frequencies', exact: true }),
     ).toBeVisible()
@@ -25,6 +23,7 @@ test('whole-document responses preserve head metadata, HEAD, redirects, and JSON
   const response = await request.get('/mixes/e2e-local-frequencies', {
     headers: { 'x-request-id': 'document-browser-fixture' },
   })
+
   expect(response.status()).toBe(200)
   expect(response.headers()['x-request-id']).toBe('document-browser-fixture')
   expect(response.headers()['cache-control']).toContain('no-store')
@@ -55,7 +54,7 @@ for (const theme of ['light', 'dark']) {
   test(`${theme} document restores the queue and adopts the existing SSR root`, async ({
     page,
   }) => {
-    const errors: string[] = []
+    const errors: Array<string> = []
     page.on('pageerror', (error) => errors.push(error.message))
     await page.addInitScript((theme) => {
       localStorage.setItem('vite-ui-theme', theme)
@@ -81,14 +80,20 @@ for (const theme of ['light', 'dark']) {
       if (route.request().resourceType() === 'script') await gate.promise
       await route.continue()
     })
+
     try {
       await page.goto('/mixes/e2e-local-frequencies', { waitUntil: 'commit' })
       const root = page.locator('.site')
       await expect(root).toHaveCount(1)
       await expect(root).toHaveAttribute('data-foldkit-build', /.+/)
       const original = await root.elementHandle()
+
       if (!original) throw new Error('Missing SSR root')
       await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
+      await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute(
+        'content',
+        theme === 'dark' ? '#16415a' : '#e4ecf6',
+      )
       await expect(page.locator('html')).toHaveAttribute('data-queued', '')
       expect(
         await page.locator('html').evaluate((html) => html.style.getPropertyValue('--queued-art')),
@@ -97,9 +102,13 @@ for (const theme of ['light', 'dark']) {
       await expect(root).not.toHaveAttribute('data-foldkit-build')
       expect(await original.evaluate((node) => node.isConnected)).toBe(true)
       await expect(root).toHaveAttribute('data-interactive', 'true')
+      await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute(
+        'content',
+        theme === 'dark' ? '#16415a' : '#e4ecf6',
+      )
       await expect(page.locator('[data-foldkit-refused]')).toHaveCount(0)
       await page
-        .getByRole('navigation', { name: 'Primary', exact: true })
+        .getByRole('region', { name: 'Mini player', exact: true })
         .getByRole('button', { name: 'Now playing', exact: true })
         .click()
       const player = page.getByRole('dialog', { name: 'Now playing', exact: true })
@@ -111,6 +120,46 @@ for (const theme of ['light', 'dark']) {
     }
   })
 }
+
+test('browser chrome follows theme changes and the page surface', async ({ page }) => {
+  await page.goto('/shows/e2e-local-radio')
+  await expect(page.locator('.site')).toHaveAttribute('data-interactive', 'true')
+
+  for (const theme of ['light', 'dark', 'system']) {
+    await page.evaluate((theme) => {
+      localStorage.setItem('vite-ui-theme', theme)
+      window.dispatchEvent(new StorageEvent('storage', { key: 'vite-ui-theme' }))
+    }, theme)
+    await expect(page.locator('html')).toHaveAttribute(
+      'data-theme',
+      theme === 'light' ? 'light' : 'dark',
+    )
+    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute(
+      'content',
+      theme === 'light' ? '#e4ecf6' : '#16415a',
+    )
+
+    const surfaces = await page.locator('.site').evaluate((site) => ({
+      root: getComputedStyle(document.documentElement).backgroundColor,
+      page: getComputedStyle(site).backgroundColor,
+    }))
+
+    expect(surfaces.root).toBe(surfaces.page)
+
+    const edge = await page.evaluate(() => {
+      const navigation = document.querySelector('nav.dock-tabs')
+
+      return {
+        floats: navigation ? navigation.getBoundingClientRect().bottom < innerHeight : false,
+        docked: Boolean(
+          document.elementFromPoint(innerWidth / 2, innerHeight - 1)?.closest('.mobile-dock'),
+        ),
+      }
+    })
+
+    expect(edge).toEqual({ floats: true, docked: false })
+  }
+})
 
 test('keyboard search stream opens after hydration', async ({ page }) => {
   await page.goto('/mixes')
@@ -137,14 +186,18 @@ test('failed responsive artwork recovers to the local cover and does not retry a
   // An error on the fallback itself must not write src again and cause a request loop.
   const mutations = await cover.evaluate(async (image) => {
     let changes = 0
+
     const observer = new MutationObserver((records) => {
       changes += records.length
     })
+
     observer.observe(image, { attributes: true, attributeFilter: ['src'] })
     image.dispatchEvent(new Event('error'))
     await Promise.resolve()
     observer.disconnect()
+
     return changes
   })
+
   expect(mutations).toBe(0)
 })
