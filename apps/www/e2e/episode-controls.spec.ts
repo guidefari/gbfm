@@ -30,7 +30,9 @@ for (const viewport of [
     expect(pageWidth.content).toBeLessThanOrEqual(pageWidth.viewport)
     await control.click()
     const player = page.getByRole('dialog', { name: 'Now playing', exact: true })
+    const panel = page.locator('#fullscreen-player-panel')
     await expect(player.getByRole('button', { name: 'Pause', exact: true })).toBeVisible()
+    await expect(panel).not.toHaveAttribute('data-transition')
     await player.getByRole('button', { name: 'Collapse player' }).click()
 
     const pause = page.getByRole('button', {
@@ -57,6 +59,7 @@ for (const viewport of [
     await expect(mini.getByRole('button', { name: 'Next track', exact: true })).toBeDisabled()
     await mini.getByRole('button', { name: 'Now playing', exact: true }).click()
     await expect(player).toBeVisible()
+    await expect(panel).not.toHaveAttribute('data-transition')
     await player.getByRole('button', { name: 'Collapse player' }).click()
     await expect(player).not.toBeVisible()
 
