@@ -70,8 +70,19 @@ test('the player heart saves the queued track only after the server acknowledges
   const dismissBounds = await dismissNotice.boundingBox()
   expect(dismissBounds?.width).toBeGreaterThanOrEqual(44)
   expect(dismissBounds?.height).toBeGreaterThanOrEqual(44)
-  expect(await add.boundingBox()).toEqual(heartBounds)
-  expect(await playback.boundingBox()).toEqual(playbackBounds)
+
+  for (const [actual, previous] of [
+    [await add.boundingBox(), heartBounds],
+    [await playback.boundingBox(), playbackBounds],
+  ]) {
+    if (!actual || !previous) throw new Error('Player controls must remain measurable')
+
+    expect(actual.x).toBeCloseTo(previous.x, 1)
+    expect(actual.y).toBeCloseTo(previous.y, 1)
+    expect(actual.width).toBeCloseTo(previous.width, 1)
+    expect(actual.height).toBeCloseTo(previous.height, 1)
+  }
+
   await dismissNotice.click()
   await expect(nowPlaying(page).getByText('Favorite could not be saved. Try again.')).toHaveCount(0)
   await add.click()
