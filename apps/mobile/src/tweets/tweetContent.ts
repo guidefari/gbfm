@@ -8,22 +8,32 @@ export type TweetInline = Extract<TweetBlock, { readonly _tag: 'Paragraph' }>['c
 
 type ImageInline = Extract<TweetInline, { readonly _tag: 'Image' }>
 
+type ImageLink = Pick<Extract<TweetInline, { readonly _tag: 'Link' }>, 'href' | 'title'>
+
 type StyledInline = Extract<TweetInline, { readonly children: ReadonlyArray<TweetInline> }>
 
 type InlineSection =
   | { readonly type: 'text'; readonly inlines: ReadonlyArray<TweetInline> }
-  | { readonly type: 'image'; readonly image: ImageInline }
+  | { readonly type: 'image'; readonly image: ImageInline; readonly link: ImageLink | null }
 
 const styledSections = (inline: StyledInline): ReadonlyArray<InlineSection> =>
   splitInlineImages(inline.children).map((section) =>
     section.type === 'image'
-      ? section
+      ? {
+          ...section,
+          link:
+            section.link ??
+            Match.value(inline).pipe(
+              Match.tag('Link', ({ href, title }) => ({ href, title })),
+              Match.orElse(() => null),
+            ),
+        }
       : { type: 'text', inlines: [{ ...inline, children: section.inlines }] },
   )
 
 const sectionsFor = (inline: TweetInline): ReadonlyArray<InlineSection> =>
   Match.valueTags(inline, {
-    Image: (image): ReadonlyArray<InlineSection> => [{ type: 'image', image }],
+    Image: (image): ReadonlyArray<InlineSection> => [{ type: 'image', image, link: null }],
     Emphasis: styledSections,
     Strong: styledSections,
     Delete: styledSections,

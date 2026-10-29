@@ -3,11 +3,19 @@ import { Image, Text, View } from 'react-native'
 
 import { useThemeColors } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
-import { tweetLinkUrl } from '@/tweets/tweetContent'
+import { tweetLinkUrl, type TweetInline } from '@/tweets/tweetContent'
 
 import { TweetLink } from './TweetLink'
 
-export function TweetImage({ src, alt }: { readonly src: string; readonly alt: string }) {
+export function TweetImage({
+  src,
+  alt,
+  link = null,
+}: {
+  readonly src: string
+  readonly alt: string
+  readonly link?: Pick<Extract<TweetInline, { readonly _tag: 'Link' }>, 'href' | 'title'> | null
+}) {
   const colors = useThemeColors()
   const [failed, setFailed] = useState(false)
   const [aspectRatio, setAspectRatio] = useState(1.5)
@@ -39,6 +47,7 @@ export function TweetImage({ src, alt }: { readonly src: string; readonly alt: s
         />
       )}
       <TweetLink href={src} label='Open image' />
+      {link ? <TweetLink href={link.href} label='Open link' /> : null}
     </View>
   )
 }

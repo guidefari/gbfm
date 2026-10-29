@@ -70,7 +70,7 @@ export function TweetInlineContent({
     <View style={{ gap: 10 }}>
       {keyedContent(splitInlineImages(inlines)).map(({ item, key }) =>
         item.type === 'image' ? (
-          <TweetImage key={key} src={item.image.src} alt={item.image.alt} />
+          <TweetImage key={key} src={item.image.src} alt={item.image.alt} link={item.link} />
         ) : (
           <Text
             key={key}
