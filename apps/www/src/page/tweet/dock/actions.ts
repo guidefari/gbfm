@@ -149,7 +149,7 @@ export const readerActions = (
               h.summary(
                 [
                   h.Class(
-                    'cursor-pointer list-none py-1 text-xs text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden',
+                    'btn btn-quiet w-full cursor-pointer list-none [&::-webkit-details-marker]:hidden',
                   ),
                 ],
                 ['Reset reading history…'],

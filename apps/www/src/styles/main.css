@@ -2414,6 +2414,15 @@
   --tw-prose-links: var(--foreground);
   --tw-prose-quotes: var(--foreground);
 }
+.tweet-month {
+  white-space: normal;
+  text-align: center;
+}
+.tweet-month[aria-current='date'] {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 8%, var(--card));
+}
 @layer components {
   .rich-content {
     overflow-wrap: anywhere;
