@@ -142,3 +142,22 @@ for (const viewport of [
     )
   })
 }
+
+for (const theme of ['light', 'dark']) {
+  test(`manual ${theme} theme keeps tweet prose at the semantic foreground color`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: 'light' })
+    await page.addInitScript((theme) => localStorage.setItem('vite-ui-theme', theme), theme)
+    await page.goto('/tweet/e2e-archive-one')
+    await ready(page, 'e2e-archive-one')
+    await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
+
+    const foreground = await page
+      .locator('[data-tweet-swipe]')
+      .evaluate((element) => getComputedStyle(element).color)
+
+    await expect(page.locator('article .prose')).toHaveCSS('color', foreground)
+    await expect(page.locator('article .prose p')).toHaveCSS('color', foreground)
+  })
+}
