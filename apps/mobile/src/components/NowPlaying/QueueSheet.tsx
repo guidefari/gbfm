@@ -1,15 +1,10 @@
-import { SymbolView } from 'expo-symbols'
 import { useState } from 'react'
 import { FlatList, Image, Modal, Pressable, Text, View } from 'react-native'
 
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
+import { Glyph } from '@/icons/Glyph'
 import { useThemeColors, withAlpha } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
-
-const symbols = {
-  remove: { ios: 'xmark', android: 'close', web: 'close' },
-  open: { ios: 'chevron.up', android: 'expand_less', web: 'expand_less' },
-} as const
 
 export function QueueSheet() {
   const { queue, skipTo, removeFromQueue } = useNowPlaying()
@@ -48,7 +43,7 @@ export function QueueSheet() {
           <Text style={{ color: colors.accent, fontFamily: fonts.monoSemiBold, fontSize: 12 }}>
             Open
           </Text>
-          <SymbolView name={symbols.open} size={12} tintColor={colors.accent} />
+          <Glyph name='chevronUp' size={12} color={colors.accent} />
         </View>
       </Pressable>
 
@@ -276,7 +271,7 @@ export function QueueSheet() {
                         backgroundColor: withAlpha(colors.muted, 0.18),
                         opacity: pressed ? 0.6 : 1,
                       })}>
-                      <SymbolView name={symbols.remove} size={12} tintColor={colors.muted} />
+                      <Glyph name='close' size={12} color={colors.muted} />
                     </Pressable>
                   </View>
                 )

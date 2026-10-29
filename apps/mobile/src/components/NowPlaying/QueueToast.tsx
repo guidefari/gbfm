@@ -1,13 +1,11 @@
-import { SymbolView } from 'expo-symbols'
 import { useEffect, useState } from 'react'
 import { AccessibilityInfo, Animated, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
+import { Glyph } from '@/icons/Glyph'
 import { useThemeColors, withAlpha } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
-
-const checkSymbol = { ios: 'checkmark', android: 'check', web: 'check' } as const
 
 const VISIBLE_MS = 2400
 
@@ -67,7 +65,7 @@ export function QueueToast() {
           paddingHorizontal: 14,
           paddingVertical: 10,
         }}>
-        <SymbolView name={checkSymbol} size={12} tintColor={colors.accent} />
+        <Glyph name='check' size={12} color={colors.accent} />
         <Text
           numberOfLines={1}
           style={{

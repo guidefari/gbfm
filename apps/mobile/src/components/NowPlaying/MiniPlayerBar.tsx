@@ -1,7 +1,6 @@
 import { brandDark } from '@gbfm/theme'
 import { useRouter } from 'expo-router'
 import { NativeTabs } from 'expo-router/native-tabs'
-import { SymbolView } from 'expo-symbols'
 import {
   ActivityIndicator,
   DynamicColorIOS as dynamicColorIOS,
@@ -13,6 +12,7 @@ import {
 } from 'react-native'
 
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
+import { Glyph } from '@/icons/Glyph'
 import { useThemeColors } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
 
@@ -20,13 +20,6 @@ const textColor =
   Platform.OS === 'ios'
     ? dynamicColorIOS({ dark: brandDark.overlayText, light: brandDark.bg })
     : brandDark.overlayText
-
-const symbols = {
-  previous: { ios: 'backward.fill', android: 'skip_previous', web: 'skip_previous' },
-  play: { ios: 'play.fill', android: 'play_arrow', web: 'play_arrow' },
-  pause: { ios: 'pause.fill', android: 'pause', web: 'pause' },
-  next: { ios: 'forward.fill', android: 'skip_next', web: 'skip_next' },
-} as const
 
 function Artwork({
   url,
@@ -80,7 +73,7 @@ export function MiniPlayerBar() {
 
   if (!track) return null
 
-  const symbolName = isPlaying ? symbols.pause : symbols.play
+  const playGlyph = isPlaying ? 'pause' : 'play'
   const showSpinner = isBuffering || !isLoaded
   const canSkipPrev = queue.currentIndex > 0
   const canSkipNext = queue.currentIndex >= 0 && queue.currentIndex + 1 < queue.tracks.length
@@ -120,7 +113,7 @@ export function MiniPlayerBar() {
             justifyContent: 'center',
             opacity: canSkipPrev ? 1 : 0.4,
           }}>
-          <SymbolView name={symbols.previous} size={14} tintColor={textColor} />
+          <Glyph name='previous' size={14} color={textColor} />
         </Pressable>
         <Pressable
           accessibilityRole='button'
@@ -131,7 +124,7 @@ export function MiniPlayerBar() {
           {showSpinner ? (
             <ActivityIndicator size='small' color={textColor} />
           ) : (
-            <SymbolView name={symbolName} size={16} tintColor={textColor} />
+            <Glyph name={playGlyph} size={16} color={textColor} />
           )}
         </Pressable>
         <Pressable
@@ -147,7 +140,7 @@ export function MiniPlayerBar() {
             justifyContent: 'center',
             opacity: canSkipNext ? 1 : 0.4,
           }}>
-          <SymbolView name={symbols.next} size={14} tintColor={textColor} />
+          <Glyph name='next' size={14} color={textColor} />
         </Pressable>
       </View>
     )
@@ -200,7 +193,7 @@ export function MiniPlayerBar() {
             justifyContent: 'center',
             opacity: canSkipPrev ? 1 : 0.4,
           }}>
-          <SymbolView name={symbols.previous} size={16} tintColor={textColor} />
+          <Glyph name='previous' size={16} color={textColor} />
         </Pressable>
         <Pressable
           accessibilityRole='button'
@@ -211,7 +204,7 @@ export function MiniPlayerBar() {
           {showSpinner ? (
             <ActivityIndicator size='small' color={textColor} />
           ) : (
-            <SymbolView name={symbolName} size={22} tintColor={textColor} />
+            <Glyph name={playGlyph} size={22} color={textColor} />
           )}
         </Pressable>
         <Pressable
@@ -227,7 +220,7 @@ export function MiniPlayerBar() {
             justifyContent: 'center',
             opacity: canSkipNext ? 1 : 0.4,
           }}>
-          <SymbolView name={symbols.next} size={16} tintColor={textColor} />
+          <Glyph name='next' size={16} color={textColor} />
         </Pressable>
       </View>
       {progress > 0 ? (
