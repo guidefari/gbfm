@@ -33,7 +33,7 @@ export function TweetDetail({ post, parent, quote, replies }: Props) {
   return (
     <ScrollView
       contentInsetAdjustmentBehavior='automatic'
-      contentContainerStyle={{ padding: 20, paddingBottom: 32, gap: 16 }}>
+      contentContainerStyle={{ flexGrow: 1, padding: 20, paddingBottom: 32, gap: 16 }}>
       {parent ? (
         <View style={{ gap: 4, opacity: 0.85 }}>
           <SectionLabel>thread start</SectionLabel>

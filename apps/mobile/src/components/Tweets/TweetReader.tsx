@@ -47,7 +47,11 @@ function Reader({
         <TweetsStatus kind='empty' message='no tweets yet' />
       ) : (
         <>
-          <ReaderHeader date={screen.post.createdAt} onOptions={() => setOptions(true)} />
+          <ReaderHeader
+            date={screen.post.createdAt}
+            navigationStatus={reader.navigationStatus}
+            onOptions={() => setOptions(true)}
+          />
           <TweetSwipeSurface
             disabled={reader.actionBusy || !navigation}
             onSwipe={(direction) => {

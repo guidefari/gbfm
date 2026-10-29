@@ -12,6 +12,7 @@ export const glyphs = {
   sleeve: { stroke: 'M3 3H21V21H3Z M8 8H16V16H8Z', fill: 'M11 11H13V13H11Z' },
   warning: { stroke: 'M12 3L22 20H2Z M12 9V13', fill: 'M11 15H13V17H11Z' },
   chevronUp: { stroke: 'M6 15L12 9L18 15' },
+  chevronDown: { stroke: 'M6 9L12 15L18 9' },
   chevronLeft: { stroke: 'M15 6L9 12L15 18' },
   chevronRight: { stroke: 'M9 6L15 12L9 18' },
   shuffle: {
