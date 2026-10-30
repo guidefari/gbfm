@@ -1,3 +1,10 @@
+# [2.117.0](https://github.com/planetaryescape/gbfm/compare/v2.116.0...v2.117.0) (2026-10-30)
+
+
+### Features
+
+* **editorial:** let authors read their drafts ([ff29dbf](https://github.com/planetaryescape/gbfm/commit/ff29dbf7ffd0cb87955c18e1399710cab6018ac6))
+
 # [2.116.0](https://github.com/planetaryescape/gbfm/compare/v2.115.3...v2.116.0) (2026-10-29)
 
 
