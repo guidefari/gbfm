@@ -184,6 +184,7 @@ const showPage = (
         metadata: flags.metadata,
         noindex:
           flags.status !== 200 ||
+          flags.items.some((item) => item.draft) ||
           Route.guards.Dashboard(next.model.route) ||
           Route.guards.Composer(next.model.route) ||
           Route.guards.Auth(next.model.route) ||

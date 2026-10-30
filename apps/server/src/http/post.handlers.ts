@@ -2,6 +2,8 @@ import { Api } from '@gbfm/api/api'
 import { AuthSession } from '@gbfm/api/middleware/auth'
 import {
   GetEditorialPostsResponse,
+  GetEditorialSummariesResponse,
+  CompiledEditorialPostResponse,
   GetEditorialTagsResponse,
   GetMicroTagsResponse,
   GetPostTagsResponse,
@@ -13,7 +15,10 @@ import { Effect, Schema } from 'effect'
 import { HttpServerResponse } from 'effect/http'
 import { HttpApiBuilder, HttpApiError } from 'effect/http-api'
 
-import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
+import {
+  dieOnDatabaseError as makeDieOnDatabaseError,
+  getOptionalActor,
+} from '@/http/handler-utils'
 import { omitUndefined } from '@/lib/omit-undefined'
 import { resolvePostMusic } from '@/services/post-music-resolution'
 import { PostService } from '@/services/post.service'
@@ -169,6 +174,7 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
     .handle('getEditorialSummaries', ({ query }) =>
       Effect.gen(function* () {
         const svc = yield* PostService
+        const actor = yield* getOptionalActor
 
         const result = yield* dieOnDatabaseError(
           svc.getEditorialSummaries(
@@ -176,24 +182,45 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
               limit: query.limit ?? 20,
               offset: query.offset ?? 0,
               tag: query.tag,
+              readerId: actor?.userId,
             }),
           ),
         )
 
-        return { data: result.data.map(toDateStrings), pagination: result.pagination }
+        const body = yield* Schema.encodeEffect(GetEditorialSummariesResponse)({
+          data: result.data.map(toDateStrings),
+          pagination: result.pagination,
+        }).pipe(Effect.orDie)
+
+        return (yield* HttpServerResponse.json(body).pipe(Effect.orDie)).pipe(
+          HttpServerResponse.setHeader('Cache-Control', 'private, no-store'),
+          HttpServerResponse.setHeader('Vary', 'Cookie, Authorization'),
+        )
       }),
     )
     .handle('getEditorialPostBySlug', ({ params }) =>
       Effect.gen(function* () {
         const svc = yield* PostService
+        const actor = yield* getOptionalActor
 
         const post = yield* dieOnDatabaseError(
           svc
-            .getEditorialBySlug(params.slug)
+            .getEditorialBySlug(params.slug, actor?.userId)
             .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())),
         )
 
-        return toDateStrings(post)
+        const body = yield* Schema.encodeEffect(CompiledEditorialPostResponse)(
+          toDateStrings(post),
+        ).pipe(Effect.orDie)
+
+        const response = (yield* HttpServerResponse.json(body).pipe(Effect.orDie)).pipe(
+          HttpServerResponse.setHeader('Cache-Control', 'private, no-store'),
+          HttpServerResponse.setHeader('Vary', 'Cookie, Authorization'),
+        )
+
+        return post.draft
+          ? HttpServerResponse.setHeader(response, 'X-Robots-Tag', 'noindex, nofollow')
+          : response
       }),
     )
     .handle('getMicroPosts', ({ query }) =>

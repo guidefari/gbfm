@@ -30,7 +30,7 @@ import {
   projectEntityLabelsForRows,
   replaceEntityLabels,
 } from '@/db/labels'
-import { Database } from '@/db/layer'
+import { Database, type DatabaseClient } from '@/db/layer'
 import {
   musicAlbumsTable,
   musicEntityLinksTable,
@@ -100,6 +100,7 @@ type EditorialSummary = {
   updatedAt: Date
   creators: NonNullable<SelectMdxCompiledPost['creators']>
   tags: SelectMdxCompiledPost['tags']
+  draft: boolean
 }
 
 export interface PostService {
@@ -147,12 +148,14 @@ export interface PostService {
     limit: number
     offset: number
     tag?: string
+    readerId?: string
   }) => Effect.Effect<
     { data: Array<EditorialSummary>; pagination: PaginationMetadata },
     DatabaseError
   >
   readonly getEditorialBySlug: (
     slug: string,
+    readerId?: string,
   ) => Effect.Effect<SelectMdxCompiledEditorialPost, DatabaseError | NotFoundError>
   readonly getMicroPosts: (options: {
     limit: number
@@ -542,6 +545,9 @@ const fetchReplyCountsByParentId = (postIds: Array<string>) =>
     return replyCountsByParentId
   })
 
+const readablePosts = (db: DatabaseClient, readerId?: string) =>
+  or(eq(postsTable.draft, false), readerId ? postIdsForCreator(db, readerId) : undefined)
+
 const getPostRowsEffect = (
   options: {
     limit: number
@@ -554,6 +560,7 @@ const getPostRowsEffect = (
     q?: string
     musicEntityType?: 'album' | 'track' | 'playlist'
     musicEntityId?: string
+    readerId?: string
   },
   actor?: { userId: string; userRole: string },
 ) =>
@@ -571,7 +578,7 @@ const getPostRowsEffect = (
             : undefined
 
     const visibilityCondition = Match.value(actor).pipe(
-      Match.when(undefined, () => eq(postsTable.draft, false)),
+      Match.when(undefined, () => readablePosts(db, options.readerId)),
       Match.when(
         (currentActor) => currentActor.userRole === 'admin',
         () => undefined,
@@ -1175,6 +1182,7 @@ const getEditorialSummariesEffect = (
           updatedAt: post.updatedAt,
           creators: creatorsByPostId.get(post.id) ?? [],
           tags: post.tags,
+          draft: post.draft,
         },
       ]
     })
@@ -1366,7 +1374,7 @@ const getByTagEffect = (tag: string, options: { limit: number; offset: number })
     }
   })
 
-const getBySlugEffect = (slug: string, mdx: MdxService, includeDrafts = false) =>
+const getBySlugEffect = (slug: string, mdx: MdxService, includeDrafts = false, readerId?: string) =>
   Effect.gen(function* () {
     const db = yield* Database
 
@@ -1378,7 +1386,7 @@ const getBySlugEffect = (slug: string, mdx: MdxService, includeDrafts = false) =
           .where(
             includeDrafts
               ? eq(postsTable.slug, slug)
-              : and(eq(postsTable.slug, slug), eq(postsTable.draft, false)),
+              : and(eq(postsTable.slug, slug), readablePosts(db, readerId)),
           )
           .limit(1),
       catch: (error) =>
@@ -1411,9 +1419,9 @@ const getBySlugEffect = (slug: string, mdx: MdxService, includeDrafts = false) =
     return processedPost
   }).pipe(Effect.withSpan('post.getBySlug', { attributes: { slug } }))
 
-const getEditorialBySlugEffect = (slug: string, mdx: MdxService) =>
+const getEditorialBySlugEffect = (slug: string, mdx: MdxService, readerId?: string) =>
   Effect.gen(function* () {
-    const post = yield* getBySlugEffect(slug, mdx)
+    const post = yield* getBySlugEffect(slug, mdx, false, readerId)
 
     return yield* toEditorialPost(post).pipe(
       Effect.mapError(
@@ -2600,7 +2608,8 @@ export const PostServiceLayer = Layer.effect(
         ),
       getEditorials: (opts) => provideDb(getEditorialsEffect(opts, mdx)),
       getEditorialSummaries: (opts) => provideDb(getEditorialSummariesEffect(opts)),
-      getEditorialBySlug: (slug) => provideDb(getEditorialBySlugEffect(slug, mdx)),
+      getEditorialBySlug: (slug, readerId) =>
+        provideDb(getEditorialBySlugEffect(slug, mdx, readerId)),
       getMicroPosts: (opts) => provideDb(getMicroPostsEffect(opts, mdx)),
       getLatestMicroPost: provideDb(getLatestMicroPostEffect),
       getMicroPostBySlug: (slug) => provideDb(getMicroPostBySlugEffect(slug, mdx)),
