@@ -153,6 +153,7 @@ export const EditorialPostSummary = Schema.Struct({
   updatedAt: PostResponse.fields.updatedAt,
   creators: Schema.Array(Creator),
   tags: PostResponse.fields.tags,
+  draft: Schema.optional(Schema.Boolean),
 })
 
 export const GetEditorialSummariesResponse = Schema.Struct({
