@@ -272,20 +272,10 @@ for (const viewport of [
     const button = page.getByRole('link', { name: 'Newer tweet', exact: true })
     await expect(button).toHaveCSS('border-radius', '4px')
     await expect(button).toHaveCSS('font-size', '14px')
-    const months = page.getByRole('navigation', { name: 'Tweets per month' }).getByRole('link')
-    await expect(months.first()).toHaveCSS('min-height', '44px')
-    await expect(months.first()).toHaveCSS('border-radius', '4px')
-
-    const targets = await months.evaluateAll((links) =>
-      links.map((link) => {
-        const box = link.getBoundingClientRect()
-
-        return { width: box.width, height: box.height }
-      }),
-    )
-
-    expect(targets.length).toBeGreaterThan(0)
-    expect(targets.every((target) => target.width >= 44 && target.height >= 44)).toBe(true)
+    await expect(page.getByRole('navigation', { name: 'Tweets per month' })).toHaveCount(0)
+    const browse = page.getByRole('link', { name: 'Browse tweets', exact: true })
+    await expect(browse).toHaveCSS('min-height', '44px')
+    await expect(browse).toHaveCSS('border-radius', '4px')
     const bounds = await page.locator('.tweet-reader-options').boundingBox()
 
     if (!bounds) throw new Error('Missing reading options bounds')

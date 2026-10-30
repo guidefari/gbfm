@@ -26,15 +26,12 @@ const nextUnread = (
   target: ReturnType<typeof Reader.nextUnread>,
   checking: boolean,
   failed: boolean,
+  linkFor: (slug: string) => string,
 ) =>
   Reader.UnreadTarget.$match(target, {
     Older: ({ slug: next }) =>
       h.a(
-        [
-          h.Href(`/tweet/${encodeURIComponent(next)}`),
-          h.AriaLabel('Next unread (older)'),
-          h.Class(primaryButton),
-        ],
+        [h.Href(linkFor(next)), h.AriaLabel('Next unread (older)'), h.Class(primaryButton)],
         [
           'Next unread',
           h.span([h.Class('opacity-60')], ['older']),
@@ -43,11 +40,7 @@ const nextUnread = (
       ),
     Newer: ({ slug: next }) =>
       h.a(
-        [
-          h.Href(`/tweet/${encodeURIComponent(next)}`),
-          h.AriaLabel('Next unread (newer)'),
-          h.Class(primaryButton),
-        ],
+        [h.Href(linkFor(next)), h.AriaLabel('Next unread (newer)'), h.Class(primaryButton)],
         [
           lucide(iconPaths.chevronLeft, 'h-4 w-4'),
           'Next unread',
@@ -104,6 +97,7 @@ export const readerActions = (
     readonly neighbours: MicroPostNeighboursResponse | null
     readonly checking: boolean
     readonly failed: boolean
+    readonly linkFor?: ((slug: string) => string) | undefined
   },
 ) => {
   const target = Reader.nextUnread(input.neighbours)
@@ -112,7 +106,14 @@ export const readerActions = (
   return h.div(
     [h.Class('space-y-2')],
     [
-      nextUnread(h, input.slug, target, input.checking, input.failed),
+      nextUnread(
+        h,
+        input.slug,
+        target,
+        input.checking,
+        input.failed,
+        input.linkFor ?? ((slug) => `/tweet/${encodeURIComponent(slug)}`),
+      ),
       h.div(
         [h.Class('grid grid-cols-2 gap-2')],
         [
@@ -127,15 +128,11 @@ export const readerActions = (
               h.button(
                 [
                   h.Type('submit'),
-                  h.AriaLabel('Random unread'),
+                  h.AriaLabel('Surprise me'),
                   h.Disabled(caughtUp),
                   h.Class(`${secondaryButton} w-full cursor-pointer`),
                 ],
-                [
-                  lucide(iconPaths.shuffle, 'h-4 w-4'),
-                  'Random',
-                  h.span([h.Class('hidden sm:inline')], [' unread']),
-                ],
+                [lucide(iconPaths.shuffle, 'h-4 w-4'), 'Surprise me'],
               ),
             ],
           ),

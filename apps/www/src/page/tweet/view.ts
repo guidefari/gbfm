@@ -3,6 +3,7 @@ import type { HtmlBuilder } from 'foldkit/html'
 import type { Message } from '../../message'
 import type { Model } from '../../model'
 import { formatDate } from '../../view/format-date'
+import { browseHref } from './browse/links'
 import {
   authorRow,
   cardActions,
@@ -50,6 +51,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>) => {
     model.repliesStatus === 'ready' ? replies.length : (post.replyCount ?? replies.length)
 
   const timelineNeighbours = neighbours ?? (model.interactive ? model.tweetReader.lastKnown : null)
+  const browse = model.flags.tweetBrowse
 
   const navigation = readerHeader(h, {
     slug: post.slug,
@@ -60,6 +62,8 @@ export const view = (model: Model, h: HtmlBuilder<Message>) => {
     timeline: timelineNeighbours,
     checking: model.interactive && model.tweetReader.metadataStatus === 'loading',
     failed: model.tweetReader.metadataStatus === 'error',
+    browseLink: browse ? browseHref(browse.month, browse.page) : undefined,
+    linkFor: browse ? (slug: string) => browseHref(browse.month, browse.page, slug) : undefined,
   })
 
   return h.div(

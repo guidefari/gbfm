@@ -15,7 +15,7 @@ const chooseTweets = async (page: Page) => {
     .click()
 }
 
-test('the month calendar navigates the archive without triggering background keyboard shortcuts', async ({
+test('the compact reading menu does not trigger background keyboard shortcuts', async ({
   page,
 }) => {
   await page.goto('/tweet/e2e-archive-one')
@@ -23,28 +23,24 @@ test('the month calendar navigates the archive without triggering background key
   const reader = await openReader(page)
   await page.keyboard.press('ArrowLeft')
   await expect(page).toHaveURL(/\/tweet\/e2e-archive-one$/)
-  await expect(reader.getByRole('link', { name: 'Jump to Feb 2020', exact: true })).toHaveAttribute(
-    'href',
-    '/tweet/e2e-archive-two',
-  )
-  await reader.getByRole('link', { name: 'Jump to Feb 2020', exact: true }).click()
+  await expect(reader.getByRole('navigation', { name: 'Tweets per month' })).toHaveCount(0)
+  await reader.getByRole('link', { name: 'Newer tweet', exact: true }).click()
   await expect(page).toHaveURL(/\/tweet\/e2e-archive-two$/)
   const next = await openReader(page)
-  await expect(next.getByRole('link', { name: 'Jump to Feb 2020', exact: true })).toHaveAttribute(
-    'aria-current',
-    'date',
-  )
-  await next.getByRole('link', { name: 'Jump to Jan 2020', exact: true }).click()
+  await next.getByRole('link', { name: 'Older tweet', exact: true }).click()
   await expect(page).toHaveURL(/\/tweet\/e2e-archive-one$/)
 })
 
-test('the reading dock and calendar remain usable without JavaScript', async ({ browser }) => {
+test('reading options and browsing remain usable without JavaScript', async ({ browser }) => {
   const context = await browser.newContext({ javaScriptEnabled: false })
   const page = await context.newPage()
   await page.goto('/tweet/e2e-archive-one')
   const reader = await openReader(page)
-  await reader.getByRole('link', { name: 'Jump to Feb 2020', exact: true }).click()
+  await reader.getByRole('link', { name: 'Newer tweet', exact: true }).click()
   await expect(page).toHaveURL(/\/tweet\/e2e-archive-two$/)
+  await page.getByRole('link', { name: 'Browse tweets', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Browse tweets', exact: true })).toBeVisible()
+  await expect(page.locator('.tweet-browse-row').first()).toBeVisible()
   await context.close()
 })
 
@@ -101,7 +97,7 @@ test('random unread form loads another published tweet through the local API', a
 
   await page.goto('/tweet/e2e-archive-one')
   expect((await seen).ok()).toBe(true)
-  await (await openReader(page)).getByRole('button', { name: 'Random unread', exact: true }).click()
+  await (await openReader(page)).getByRole('button', { name: 'Surprise me', exact: true }).click()
   await expect(page).toHaveURL(/\/tweet\/(?!e2e-archive-one)[^?]+$/)
   await expect(
     (await openReader(page)).getByRole('link', { name: 'Latest', exact: true }),
@@ -253,7 +249,7 @@ test('Next unread goes older first, then clearly changes to newer, and reports c
   await expect(page).toHaveURL(/\/tweet\/e2e-music-thread$/)
   const last = await openReader(page)
   await expect(last.getByText('Caught up', { exact: true })).toBeVisible()
-  await expect(last.getByRole('button', { name: 'Random unread', exact: true })).toBeDisabled()
+  await expect(last.getByRole('button', { name: 'Surprise me', exact: true })).toBeDisabled()
 })
 
 test('starting over resets reading history and opens the latest tweet', async ({ page }) => {
@@ -308,7 +304,7 @@ test('random immediate click records the submitted tweet before leaving', async 
 }) => {
   await page.route('**/api/content/posts/micro/e2e-archive-one/seen', (route) => route.abort())
   await page.goto('/tweet/e2e-archive-one')
-  await (await openReader(page)).getByRole('button', { name: 'Random unread', exact: true }).click()
+  await (await openReader(page)).getByRole('button', { name: 'Surprise me', exact: true }).click()
   await expect(page).toHaveURL(/\/tweet\/(?!e2e-archive-one)[^?]+$/)
   const cookies = await page.context().cookies()
 
