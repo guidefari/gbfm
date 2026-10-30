@@ -6,7 +6,6 @@ import {
   type ReaderSwipe,
 } from '@gbfm/core/reader-swipe'
 
-import { concreteSlug } from './reader'
 import { createSwipeMotion } from './swipe-motion'
 
 const excluded =
@@ -71,14 +70,14 @@ export const startTweetSwipes = () => {
 
     if (surface.getAttribute('data-swipe-ready') !== 'true') return
 
-    if (pendingSlug === slug || concreteSlug(location.href) !== slug) return
+    if (pendingSlug === slug || location.pathname !== `/tweet/${encodeURIComponent(slug)}`) return
 
     pendingSlug = null
 
     const gesture = beginReaderSwipe(point(event, touch), innerWidth)
 
     if (gesture)
-      active = { gesture, identifier: touch.identifier, path: location.href, slug, surface }
+      active = { gesture, identifier: touch.identifier, path: location.pathname, slug, surface }
   }
 
   const move = (event: TouchEvent) => {
@@ -113,7 +112,7 @@ export const startTweetSwipes = () => {
     if (
       !current ||
       pendingSlug === current.slug ||
-      current.path !== location.href ||
+      current.path !== location.pathname ||
       !current.surface.isConnected ||
       current.surface.getAttribute('data-tweet-swipe') !== current.slug
     ) {
@@ -146,7 +145,7 @@ export const startTweetSwipes = () => {
     pendingSlug = current.slug
     motion.commit(current.surface, current.slug, direction, () => {
       if (
-        current.path === location.href &&
+        current.path === location.pathname &&
         current.surface.isConnected &&
         current.surface.getAttribute('data-tweet-swipe') === current.slug &&
         !document.querySelector('dialog[open], :popover-open, details[data-tweet-dock][open]')

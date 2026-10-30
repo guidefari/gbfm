@@ -15,7 +15,14 @@ const chooseTweets = async (page: Page) => {
     .click()
 }
 
-test('the compact reading menu does not trigger background keyboard shortcuts', async ({
+test('the discarded archive URL returns to a single full post', async ({ page }) => {
+  await page.goto('/tweets?q=archive')
+  await expect(page).toHaveURL(/\/tweet\/[^/?]+$/)
+  await expect(page.locator('[data-tweet-swipe]')).toBeVisible()
+  await expect(page.locator('.tweet-browse-row')).toHaveCount(0)
+})
+
+test('visiting a month opens one full post without background keyboard navigation', async ({
   page,
 }) => {
   await page.goto('/tweet/e2e-archive-one')
@@ -23,24 +30,31 @@ test('the compact reading menu does not trigger background keyboard shortcuts', 
   const reader = await openReader(page)
   await page.keyboard.press('ArrowLeft')
   await expect(page).toHaveURL(/\/tweet\/e2e-archive-one$/)
-  await expect(reader.getByRole('navigation', { name: 'Tweets per month' })).toHaveCount(0)
-  await reader.getByRole('link', { name: 'Newer tweet', exact: true }).click()
+  await expect(page.locator('.tweet-browse-row')).toHaveCount(0)
+  await expect(page.getByRole('link', { name: 'Browse tweets', exact: true })).toHaveCount(0)
+  await reader.getByText('Visit a month', { exact: true }).click()
+  await reader.getByRole('combobox', { name: 'Choose a month' }).selectOption('e2e-archive-two')
+  await reader.getByRole('button', { name: 'Visit', exact: true }).click()
   await expect(page).toHaveURL(/\/tweet\/e2e-archive-two$/)
   const next = await openReader(page)
-  await next.getByRole('link', { name: 'Older tweet', exact: true }).click()
+  await next.getByText('Visit a month', { exact: true }).click()
+  await expect(next.getByRole('combobox', { name: 'Choose a month' })).toHaveValue(
+    'e2e-archive-two',
+  )
+  await next.getByRole('combobox', { name: 'Choose a month' }).selectOption('e2e-archive-one')
+  await next.getByRole('button', { name: 'Visit', exact: true }).click()
   await expect(page).toHaveURL(/\/tweet\/e2e-archive-one$/)
 })
 
-test('reading options and browsing remain usable without JavaScript', async ({ browser }) => {
+test('visiting a month works without JavaScript', async ({ browser }) => {
   const context = await browser.newContext({ javaScriptEnabled: false })
   const page = await context.newPage()
   await page.goto('/tweet/e2e-archive-one')
   const reader = await openReader(page)
-  await reader.getByRole('link', { name: 'Newer tweet', exact: true }).click()
+  await reader.getByText('Visit a month', { exact: true }).click()
+  await reader.getByRole('combobox', { name: 'Choose a month' }).selectOption('e2e-archive-two')
+  await reader.getByRole('button', { name: 'Visit', exact: true }).click()
   await expect(page).toHaveURL(/\/tweet\/e2e-archive-two$/)
-  await page.getByRole('link', { name: 'Browse tweets', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Browse tweets', exact: true })).toBeVisible()
-  await expect(page.locator('.tweet-browse-row').first()).toBeVisible()
   await context.close()
 })
 
@@ -194,8 +208,8 @@ test('storage denial degrades to latest and independent tabs do not share checkp
 test('tweet search URLs do not resume and unread failures do not claim caught up', async ({
   page,
 }) => {
-  await page.goto('/tweets?q=archive')
-  await expect(page).toHaveURL(/\/tweets\?q=archive$/)
+  await page.goto('/tweets?q=ambient')
+  await expect(page).toHaveURL(/\/tweets\?q=ambient$/)
   await page.route('**/api/content/posts/micro/*/neighbours', (route) =>
     route.fulfill({ status: 500, body: '{}' }),
   )

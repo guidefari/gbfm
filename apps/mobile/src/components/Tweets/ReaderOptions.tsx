@@ -1,5 +1,6 @@
 import type { MicroPostNeighboursResponse } from '@gbfm/api/navigation'
 import { radii } from '@gbfm/theme'
+import { useState } from 'react'
 import { Alert, Modal, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -8,6 +9,7 @@ import { fonts } from '@/theme/fonts'
 import { nextUnread } from '@/tweets/readerState'
 
 import { ReaderButton } from './ReaderButton'
+import { ReaderMonths } from './ReaderMonths'
 
 type Props = {
   readonly visible: boolean
@@ -19,7 +21,6 @@ type Props = {
   readonly onRandom: () => void
   readonly onReset: () => void
   readonly onRetry: () => void
-  readonly onArchive: () => void
   readonly onNewer: () => void
   readonly onOlder: () => void
 }
@@ -27,6 +28,12 @@ type Props = {
 export function ReaderOptions(props: Props) {
   const colors = useThemeColors()
   const target = nextUnread(props.navigation)
+  const [dates, setDates] = useState(false)
+
+  const close = () => {
+    setDates(false)
+    props.onClose()
+  }
 
   const reset = () =>
     Alert.alert(
@@ -39,7 +46,7 @@ export function ReaderOptions(props: Props) {
     )
 
   return (
-    <Modal visible={props.visible} animationType='slide' transparent onRequestClose={props.onClose}>
+    <Modal visible={props.visible} animationType='slide' transparent onRequestClose={close}>
       <View
         style={{
           flex: 1,
@@ -49,7 +56,7 @@ export function ReaderOptions(props: Props) {
         <Pressable
           accessibilityRole='button'
           accessibilityLabel='Close reading options'
-          onPress={props.onClose}
+          onPress={close}
           style={{ flex: 1 }}
         />
         <SafeAreaView
@@ -74,79 +81,105 @@ export function ReaderOptions(props: Props) {
             <Text
               accessibilityRole='header'
               style={{ color: colors.strong, fontFamily: fonts.monoSemiBold, fontSize: 18 }}>
-              Reading options
+              {dates ? 'Visit a month' : 'Reading options'}
             </Text>
-            <ReaderButton label='Close' quiet onPress={props.onClose} />
+            <ReaderButton
+              label={dates ? 'Back' : 'Close'}
+              quiet
+              onPress={dates ? () => setDates(false) : close}
+            />
           </View>
           <ScrollView
             style={{ flexGrow: 0, flexShrink: 1 }}
             contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20, gap: 14 }}>
-            <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 12 }}>
-              {props.navigation
-                ? `${props.navigation.unreadCount} unread`
-                : props.failed
-                  ? 'Unread navigation unavailable'
-                  : 'Checking unread…'}
-            </Text>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <View style={{ flex: 1 }}>
-                <ReaderButton
-                  label='Newer tweet'
-                  glyph='chevronLeft'
-                  disabled={props.busy || !props.navigation?.newer}
-                  onPress={props.onNewer}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <ReaderButton
-                  label='Older tweet'
-                  glyph='chevronRight'
-                  disabled={props.busy || !props.navigation?.older}
-                  onPress={props.onOlder}
-                />
-              </View>
-            </View>
-            {'slug' in target ? (
-              <ReaderButton
-                label='Next unread'
-                primary
-                disabled={props.busy}
-                onPress={() => props.onGo(target.slug)}
+            {dates ? (
+              <ReaderMonths
+                timeline={props.navigation?.timeline ?? []}
+                onGo={(slug) => {
+                  setDates(false)
+                  props.onGo(slug)
+                }}
               />
-            ) : target.kind === 'caught-up' ? (
-              <View style={{ gap: 8 }}>
-                <Text
-                  accessibilityRole='text'
-                  style={{ color: colors.accent, fontFamily: fonts.mono }}>
-                  Caught up
+            ) : (
+              <>
+                <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 12 }}>
+                  {props.navigation
+                    ? `${props.navigation.unreadCount} unread`
+                    : props.failed
+                      ? 'Unread navigation unavailable'
+                      : 'Checking unread…'}
                 </Text>
-                <ReaderButton label='Start over' primary disabled={props.busy} onPress={reset} />
-              </View>
-            ) : props.failed ? (
-              <ReaderButton label='Retry navigation' onPress={props.onRetry} />
-            ) : null}
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <View style={{ flex: 1 }}>
+                    <ReaderButton
+                      label='Newer tweet'
+                      glyph='chevronLeft'
+                      disabled={props.busy || !props.navigation?.newer}
+                      onPress={props.onNewer}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <ReaderButton
+                      label='Older tweet'
+                      glyph='chevronRight'
+                      disabled={props.busy || !props.navigation?.older}
+                      onPress={props.onOlder}
+                    />
+                  </View>
+                </View>
+                {'slug' in target ? (
+                  <ReaderButton
+                    label='Next unread'
+                    primary
+                    disabled={props.busy}
+                    onPress={() => props.onGo(target.slug)}
+                  />
+                ) : target.kind === 'caught-up' ? (
+                  <View style={{ gap: 8 }}>
+                    <Text
+                      accessibilityRole='text'
+                      style={{ color: colors.accent, fontFamily: fonts.mono }}>
+                      Caught up
+                    </Text>
+                    <ReaderButton
+                      label='Start over'
+                      primary
+                      disabled={props.busy}
+                      onPress={reset}
+                    />
+                  </View>
+                ) : props.failed ? (
+                  <ReaderButton label='Retry navigation' onPress={props.onRetry} />
+                ) : null}
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <View style={{ flex: 1 }}>
+                    <ReaderButton
+                      label='Latest'
+                      disabled={props.busy}
+                      onPress={() => props.onGo(null)}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <ReaderButton
+                      label='Surprise me'
+                      disabled={props.busy || !props.navigation || target.kind === 'caught-up'}
+                      onPress={props.onRandom}
+                    />
+                  </View>
+                </View>
                 <ReaderButton
-                  label='Latest'
-                  disabled={props.busy}
-                  onPress={() => props.onGo(null)}
+                  label='Visit a month'
+                  quiet
+                  disabled={props.busy || !props.navigation?.timeline.length}
+                  onPress={() => setDates(true)}
                 />
-              </View>
-              <View style={{ flex: 1 }}>
                 <ReaderButton
-                  label='Surprise me'
-                  disabled={props.busy || !props.navigation || target.kind === 'caught-up'}
-                  onPress={props.onRandom}
+                  label='Reset reading history…'
+                  disabled={props.busy || !props.navigation}
+                  onPress={reset}
                 />
-              </View>
-            </View>
-            <ReaderButton label='Browse tweets' quiet onPress={props.onArchive} />
-            <ReaderButton
-              label='Reset reading history…'
-              disabled={props.busy || !props.navigation}
-              onPress={reset}
-            />
+              </>
+            )}
           </ScrollView>
         </SafeAreaView>
       </View>

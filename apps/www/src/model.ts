@@ -16,7 +16,6 @@ import * as Dashboard from './page/dashboard'
 import { DashboardDocument } from './page/dashboard/document'
 import { ListeningPage } from './page/listening/document'
 import { ShowsDocument } from './page/shows/document'
-import { TweetBrowseDocument } from './page/tweet/browse/document'
 import * as TweetReader from './page/tweet/reader'
 import * as Player from './player'
 import * as PublicActions from './public-actions'
@@ -70,7 +69,6 @@ export const Flags = Schema.Struct({
   skipSeen: Schema.Boolean,
   tweet: Schema.NullOr(MicroPostScreenResponse),
   neighbours: Schema.NullOr(MicroPostNeighboursResponse),
-  tweetBrowse: Schema.optional(TweetBrowseDocument),
   dashboard: Schema.NullOr(DashboardDocument),
   listening: Schema.optional(ListeningPage),
   profile: Schema.NullOr(PublicProfileResponse),

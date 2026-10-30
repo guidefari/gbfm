@@ -3,9 +3,9 @@ import type { HtmlBuilder } from 'foldkit/html'
 
 import type { Message } from '../../../message'
 import { iconPaths, lucide } from '../../../view/icons'
-import { browseHref } from '../browse/links'
 import { monthLabel, monthOf } from '../timeline'
 import { readerActions } from './actions'
+import { monthPicker } from './month-picker'
 
 const arrowClass = 'btn flex-1'
 
@@ -13,7 +13,6 @@ const arrow = (
   h: HtmlBuilder<Message>,
   direction: 'newer' | 'older',
   slug: string | null | undefined,
-  linkFor?: (slug: string) => string,
 ) => {
   const label = direction === 'newer' ? 'Newer' : 'Older'
 
@@ -31,7 +30,7 @@ const arrow = (
   return h.a(
     [
       h.Id(`tweet-${direction}`),
-      h.Href(linkFor ? linkFor(slug) : `/tweet/${encodeURIComponent(slug)}`),
+      h.Href(`/tweet/${encodeURIComponent(slug)}`),
       h.AriaLabel(`${label} tweet`),
       h.Class(arrowClass),
     ],
@@ -63,24 +62,14 @@ export const readerHeader = (
     readonly timeline: MicroPostNeighboursResponse | null
     readonly checking: boolean
     readonly failed: boolean
-    readonly linkFor?: ((slug: string) => string) | undefined
-    readonly browseLink?: string | undefined
   },
 ) => {
   const current = monthOf(input.at)
   const count = input.timeline?.unreadCount ?? null
 
   return h.div(
-    [h.Class('tweet-reader-navigation relative flex shrink-0 items-center gap-1')],
+    [h.Class('tweet-reader-navigation relative shrink-0')],
     [
-      h.a(
-        [
-          h.Href(input.browseLink ?? browseHref()),
-          h.AriaLabel('Browse tweets'),
-          h.Class('btn btn-quiet'),
-        ],
-        ['Browse'],
-      ),
       h.div(
         [h.Class('relative')],
         [
@@ -122,18 +111,15 @@ export const readerHeader = (
                   ),
                   h.div(
                     [h.Class('flex gap-2')],
-                    [
-                      arrow(h, 'newer', input.newer, input.linkFor),
-                      arrow(h, 'older', input.older, input.linkFor),
-                    ],
+                    [arrow(h, 'newer', input.newer), arrow(h, 'older', input.older)],
                   ),
                   readerActions(h, {
                     slug: input.slug,
                     neighbours: input.neighbours,
                     checking: input.checking,
                     failed: input.failed,
-                    linkFor: input.linkFor,
                   }),
+                  monthPicker(h, input.timeline?.timeline ?? [], current),
                 ],
               ),
             ],

@@ -7,17 +7,13 @@ import { expect, test } from 'vitest'
 import {
   loadReaderNavigation,
   loadReaderPost,
-  loadTweetBrowse,
   randomReaderPost,
   recordReaderVisit,
   resetReaderHistory,
   type ReaderConnection,
 } from './tweetReader'
 
-const fixture = (
-  respond: (method: string, path: string, query: URLSearchParams) => Response,
-  authenticated = false,
-) => {
+const fixture = (respond: (method: string, path: string) => Response, authenticated = false) => {
   const requests: Array<{ method: string; path: string; authorization: string | undefined }> = []
 
   const httpClient = HttpClient.make((request, url) => {
@@ -28,7 +24,7 @@ const fixture = (
     })
 
     return Effect.succeed(
-      HttpClientResponse.fromWeb(request, respond(request.method, url.pathname, url.searchParams)),
+      HttpClientResponse.fromWeb(request, respond(request.method, url.pathname)),
     )
   })
 
@@ -163,58 +159,6 @@ test('anonymous reads do not send a bearer token', async () => {
 
   await Effect.runPromise(loadReaderNavigation(server.connection, 'one'))
   expect(server.requests[0]?.authorization).toBeUndefined()
-})
-
-test('browsing previews is read-only and keeps authentication on feed and date reads', async () => {
-  const server = fixture((_method, path, query) => {
-    if (path.endsWith('/neighbours'))
-      return json({
-        newer: null,
-        older: null,
-        olderUnread: null,
-        seen: false,
-        unreadCount: 2,
-        timeline: [{ month: '2026-10', total: 2, unread: 2, newestSlug: post.slug }],
-      })
-    expect(query.get('limit')).toBe('2')
-    expect(query.get('offset')).toBe('0')
-
-    return Response.json({
-      data: [post],
-      pagination: { total: 2, limit: 2, offset: 0, hasMore: false },
-    })
-  }, true)
-
-  const result = await Effect.runPromise(
-    loadTweetBrowse(server.connection, post.slug, '2026-10', 0),
-  )
-
-  expect(result.posts[0]?.slug).toBe(post.slug)
-  expect(result.timeline[0]?.month).toBe('2026-10')
-  expect(
-    server.requests.every(
-      (request) => request.method === 'GET' && request.authorization === 'Bearer test-session',
-    ),
-  ).toBe(true)
-  expect(server.requests.some((request) => request.path.endsWith('/seen'))).toBe(false)
-})
-
-test('a date-service outage leaves recent previews and pagination available', async () => {
-  const server = fixture((_method, path, query) => {
-    if (path.endsWith('/neighbours')) return json(new HttpApiError.InternalServerError(), 500)
-    expect(query.get('offset')).toBe('30')
-    expect(query.get('limit')).toBe('30')
-
-    return Response.json({
-      data: [post],
-      pagination: { total: 70, limit: 30, offset: 30, hasMore: true },
-    })
-  })
-
-  const result = await Effect.runPromise(loadTweetBrowse(server.connection, post.slug, null, 1))
-
-  expect(result).toMatchObject({ datesAvailable: false, total: 70, page: 1, hasMore: true })
-  expect(result.posts).toHaveLength(1)
 })
 
 test('a viewed tweet is recorded through the existing POST endpoint', async () => {

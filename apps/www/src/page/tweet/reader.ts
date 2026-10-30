@@ -28,11 +28,7 @@ export const concreteSlug = (href: string) => {
   const match = /^\/tweet\/([^/]+)$/.exec(url.pathname)
 
   try {
-    const slug = match?.[1]
-      ? parseCheckpoint(decodeURIComponent(match[1]))
-      : url.pathname === '/tweets' && url.searchParams.get('q') === 'archive'
-        ? parseCheckpoint(url.searchParams.get('selected'))
-        : null
+    const slug = match?.[1] ? parseCheckpoint(decodeURIComponent(match[1])) : null
 
     return slug && !['latest', 'new'].includes(slug) ? slug : null
   } catch {

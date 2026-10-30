@@ -7,8 +7,6 @@ import { ObservePrivateMedia } from './media-preview/mount'
 import { Message } from './message'
 import type { Model } from './model'
 import * as Page from './page'
-import { isTweetBrowse } from './page/tweet/browse/links'
-import { browseView } from './page/tweet/browse/view'
 import { isEntry } from './page/tweet/reader'
 import * as Player from './player'
 import * as PublicActions from './public-actions'
@@ -100,23 +98,21 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
           : Route.match(model.route, {
               Home: () => Page.Home.view(model, h),
               Listing: ({ kind }) =>
-                kind === 'tweets' && model.flags.tweetBrowse
-                  ? browseView(model, h)
-                  : kind === 'tweets' && isEntry(model.flags.url)
-                    ? h.section(
-                        [h.Class('page')],
-                        [
-                          h.p([h.Role('status')], ['Opening Tweets…']),
-                          link(h, '/tweet/latest', 'Latest'),
-                        ],
+                kind === 'tweets' && isEntry(model.flags.url)
+                  ? h.section(
+                      [h.Class('page')],
+                      [
+                        h.p([h.Role('status')], ['Opening Tweets…']),
+                        link(h, '/tweet/latest', 'Latest'),
+                      ],
+                    )
+                  : kind === 'editorial'
+                    ? Page.EditorialList.view(
+                        model.flags.items,
+                        model.flags.renderedAt,
+                        model.flags.failure ?? null,
                       )
-                    : kind === 'editorial'
-                      ? Page.EditorialList.view(
-                          model.flags.items,
-                          model.flags.renderedAt,
-                          model.flags.failure ?? null,
-                        )
-                      : Page.Content.listingView(model, h, kind),
+                    : Page.Content.listingView(model, h, kind),
               Detail: ({ kind }) =>
                 kind === 'tweets'
                   ? Page.Tweet.view(model, h)
@@ -190,15 +186,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => {
         )
       : null
 
-  const pendingBrowse =
-    model.flags.tweetBrowse &&
-    model.pendingPath &&
-    isTweetBrowse(new URL(model.pendingPath, model.flags.url))
-      ? page
-      : null
-
-  const content =
-    pendingBrowse ?? pendingShow ?? (target ? pageSkeleton(target, model.route) : null) ?? page
+  const content = pendingShow ?? (target ? pageSkeleton(target, model.route) : null) ?? page
 
   return {
     title: model.flags.metadata

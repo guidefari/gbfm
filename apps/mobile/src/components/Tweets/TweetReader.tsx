@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { Text, View } from 'react-native'
 
@@ -24,7 +23,6 @@ function Reader({
   readonly initialSlug: string | undefined
 }) {
   const colors = useThemeColors()
-  const router = useRouter()
   const reader = useTweetReader(identity, sessionToken, initialSlug)
   const [options, setOptions] = useState(false)
   const [entering, setEntering] = useState<'older' | 'newer' | null>(null)
@@ -34,13 +32,6 @@ function Reader({
     setEntering(direction)
     setOptions(false)
     reader.go(slug)
-  }
-
-  const browse = () => {
-    setOptions(false)
-
-    if (initialSlug) router.dismissTo('/(tabs)/(tweets)/archive')
-    else router.push('/(tabs)/(tweets)/archive')
   }
 
   return (
@@ -60,7 +51,6 @@ function Reader({
             date={screen.post.createdAt}
             navigationStatus={reader.navigationStatus}
             onOptions={() => setOptions(true)}
-            onBrowse={browse}
           />
           <TweetSwipeSurface
             key={screen.post.slug}
@@ -119,7 +109,6 @@ function Reader({
           setOptions(false)
           reader.retry()
         }}
-        onArchive={browse}
       />
     </View>
   )

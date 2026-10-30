@@ -12,11 +12,9 @@ import { loadListeningPage } from '../../page/listening/page-data'
 import { loadShowDetailData } from '../../page/shows/detail-page-data'
 import { loadShowsData } from '../../page/shows/page-data'
 import { staticPages } from '../../page/static/pages'
-import { isTweetBrowse } from '../../page/tweet/browse/links'
-import { loadTweetBrowseData } from '../../page/tweet/browse/page-data'
 import { skipsSeenTweets } from '../../page/tweet/navigation'
 import { loadTweetData } from '../../page/tweet/page-data'
-import { parseCheckpoint, isEntry } from '../../page/tweet/reader'
+import { isEntry } from '../../page/tweet/reader'
 import type { Document as PublicActionDocument } from '../../public-actions'
 import { Route } from '../../route'
 import { apiRequest, endpointFor } from '../api'
@@ -44,29 +42,15 @@ export const loadPageData = async (
       route.slug,
     )
 
-  const browsingTweets = isTweetBrowse(url)
-  const endpoint = isEntry(url.href) || browsingTweets ? null : endpointFor(route)
-
-  const tweetSlug =
-    Route.guards.Detail(route) && route.kind === 'tweets'
-      ? route.slug
-      : browsingTweets
-        ? parseCheckpoint(url.searchParams.get('selected'))
-        : null
-
-  const tweetEndpoint = tweetSlug
-    ? `/api/content/posts/micro/${encodeURIComponent(tweetSlug)}/screen?part=main`
-    : endpoint
-
-  const tweetPromise = loadTweetData(ownedRequest, tweetEndpoint, tweetSlug)
-  const browsePromise = loadTweetBrowseData(ownedRequest, url)
+  const endpoint = isEntry(url.href) ? null : endpointFor(route)
+  const tweetSlug = Route.guards.Detail(route) && route.kind === 'tweets' ? route.slug : null
+  const tweetPromise = loadTweetData(ownedRequest, endpoint, tweetSlug)
   const showsPromise = loadShowsData(ownedRequest, endpoint, route, url)
 
   const identity = await loadIdentity(ownedRequest)
   const listening = await loadListeningPage(ownedRequest, route, url, identity.principal !== null)
   const dashboard = await loadDashboardData(ownedRequest, route, url, identity.principal)
   const tweetData = tweetPromise ? await tweetPromise : null
-  const tweetBrowse = browsePromise ? await browsePromise : undefined
   const showsData = showsPromise ? await showsPromise : null
 
   const selectedListingShow = showsData?.shows?.shows.find(
@@ -226,7 +210,6 @@ export const loadPageData = async (
     skipSeen: skipsSeenTweets(request.headers.get('cookie')),
     tweet,
     neighbours,
-    tweetBrowse,
     dashboard,
     listening: listening?.page,
     profile,

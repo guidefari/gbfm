@@ -9,12 +9,10 @@ import { ReaderButton } from './ReaderButton'
 export function ReaderHeader({
   date,
   onOptions,
-  onBrowse,
   navigationStatus,
 }: {
   readonly date: string
   readonly onOptions: () => void
-  readonly onBrowse: () => void
   readonly navigationStatus: ReaderState['navigationStatus']
 }) {
   const colors = useThemeColors()
@@ -37,21 +35,13 @@ export function ReaderHeader({
         <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 12 }}>
           {readerMonth(date)}
         </Text>
-        <View style={{ flexDirection: 'row', gap: 4 }}>
-          <ReaderButton
-            label='Browse'
-            accessibilityLabel='Browse tweets'
-            quiet
-            onPress={onBrowse}
-          />
-          <ReaderButton
-            label='Options'
-            accessibilityLabel='Reading options'
-            glyph='chevronDown'
-            quiet
-            onPress={onOptions}
-          />
-        </View>
+        <ReaderButton
+          label='Options'
+          accessibilityLabel='Reading options'
+          glyph='chevronDown'
+          quiet
+          onPress={onOptions}
+        />
       </View>
       <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 11 }}>{hint}</Text>
     </View>
