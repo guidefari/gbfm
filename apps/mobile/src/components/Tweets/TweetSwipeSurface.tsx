@@ -7,7 +7,7 @@ import {
 } from '@gbfm/core/reader-swipe'
 import { useFocusEffect } from 'expo-router'
 import { type PropsWithChildren, useCallback, useEffect } from 'react'
-import { useWindowDimensions } from 'react-native'
+import { useWindowDimensions, View } from 'react-native'
 import {
   GestureDetector,
   GestureHandlerRootView,
@@ -20,23 +20,26 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  withTiming,
 } from 'react-native-reanimated'
 import { scheduleOnRN } from 'react-native-worklets'
 
 import { SwipeGestureContext } from './SwipeExclusion'
 import { useReaderReducedMotion } from './useReaderMotion'
 
+const spring = { damping: 28, stiffness: 280, mass: 0.8, overshootClamping: true }
+
 export function TweetSwipeSurface({
   children,
   onSwipe,
   disabled,
+  pending,
   newer,
   older,
   entering,
 }: PropsWithChildren<{
   readonly onSwipe: (direction: 'older' | 'newer') => void
   readonly disabled: boolean
+  readonly pending: boolean
   readonly newer: boolean
   readonly older: boolean
   readonly entering: 'older' | 'newer' | null
@@ -44,38 +47,44 @@ export function TweetSwipeSurface({
   const { width } = useWindowDimensions()
   const reduced = useReaderReducedMotion()
   const swipe = useSharedValue<ReaderSwipe | null>(null)
-  const offset = useSharedValue(0)
-  const opacity = useSharedValue(1)
+  const offset = useSharedValue(!reduced && entering ? (entering === 'older' ? 48 : -48) : 0)
   const settling = useSharedValue(false)
   const enabled = useSharedValue(!disabled)
 
   const cancel = useCallback(() => {
     enabled.set(false)
     cancelAnimation(offset)
-    cancelAnimation(opacity)
     offset.set(0)
-    opacity.set(1)
     swipe.set(null)
     settling.set(false)
-  }, [enabled, offset, opacity, swipe, settling])
+  }, [enabled, offset, swipe, settling])
 
   useFocusEffect(
     useCallback(() => {
-      enabled.set(!disabled)
+      enabled.set(true)
 
       return cancel
-    }, [cancel, disabled, enabled]),
+    }, [cancel, enabled]),
   )
 
   useEffect(() => {
-    if (!entering || reduced) return
-    offset.set(entering === 'older' ? 48 : -48)
-    offset.set(withSpring(0, { damping: 24, stiffness: 260, mass: 0.8 }))
+    enabled.set(!disabled)
+
+    if (disabled && !pending) {
+      swipe.set(null)
+      settling.set(false)
+      offset.set(reduced ? 0 : withSpring(0, spring))
+    }
+  }, [disabled, pending, reduced, enabled, swipe, settling, offset])
+
+  useEffect(() => {
+    if (entering && !reduced) offset.set(withSpring(0, spring))
   }, [entering, reduced, offset])
 
   const pan = usePanGesture({
-    activeOffsetX: [-18, 18],
-    failOffsetY: [-10, 10],
+    enabled: !disabled,
+    activeOffsetX: [-12, 12],
+    failOffsetY: [-12, 12],
     maxPointers: 1,
     onTouchesDown: (event) => {
       'worklet'
@@ -105,35 +114,50 @@ export function TweetSwipeSurface({
     },
     onTouchesMove: (event) => {
       'worklet'
+      const current = swipe.get()
       const touch = event.allTouches[0]
 
-      const moved = touch
-        ? moveReaderSwipe(swipe.get(), {
-            x: touch.absoluteX,
-            y: touch.absoluteY,
-            time: Date.now(),
-            pointers: event.numberOfTouches,
-          })
-        : null
-
-      swipe.set(moved)
-
-      if (!moved || moved.axis === 'vertical' || moved.maxVertical > 40) {
+      if (
+        !current ||
+        !touch ||
+        event.numberOfTouches !== 1 ||
+        Math.abs(touch.absoluteY - current.origin.y) > 40
+      ) {
+        swipe.set(null)
         GestureStateManager.fail(event.handlerTag)
 
         return
       }
 
-      if (moved.axis !== 'horizontal') return
-      cancelAnimation(offset)
-      const dx = readerSwipeOffset(moved)
-      offset.set(reduced ? 0 : readerSwipeOffset(moved, dx < 0 ? older : newer))
+      if (current.axis !== 'pending') return
+
+      const moved = moveReaderSwipe(current, {
+        x: touch.absoluteX,
+        y: touch.absoluteY,
+        time: Date.now(),
+        pointers: event.numberOfTouches,
+      })
+
+      swipe.set(moved)
+
+      if (!moved || moved.axis === 'vertical') GestureStateManager.fail(event.handlerTag)
     },
     onUpdate: (event) => {
       'worklet'
-      offset.set(
-        reduced ? 0 : event.translationX * ((event.translationX < 0 ? older : newer) ? 1 : 0.18),
-      )
+
+      if (!enabled.get() || settling.get()) return
+
+      const moved = moveReaderSwipe(swipe.get(), {
+        x: event.absoluteX,
+        y: event.absoluteY,
+        time: Date.now(),
+        pointers: event.numberOfPointers,
+      })
+
+      swipe.set(moved)
+      const dx = readerSwipeOffset(moved)
+      cancelAnimation(offset)
+      offset.set(reduced ? 0 : readerSwipeOffset(moved, dx < 0 ? older : newer))
     },
     onDeactivate: (event) => {
       'worklet'
@@ -141,12 +165,7 @@ export function TweetSwipeSurface({
       const direction = !event.canceled
         ? finishReaderSwipe(
             swipe.get(),
-            {
-              x: event.absoluteX,
-              y: event.absoluteY,
-              time: Date.now(),
-              pointers: 1,
-            },
+            { x: event.absoluteX, y: event.absoluteY, time: Date.now(), pointers: 1 },
             event.velocityX / 1000,
           )
         : null
@@ -154,47 +173,33 @@ export function TweetSwipeSurface({
       swipe.set(null)
 
       if (!enabled.get() || !direction || !(direction === 'older' ? older : newer)) {
-        offset.set(reduced ? 0 : withSpring(0, { damping: 22, stiffness: 240, mass: 0.8 }))
+        offset.set(reduced ? 0 : withSpring(0, spring))
 
         return
       }
 
       settling.set(true)
-
-      if (reduced) {
-        scheduleOnRN(onSwipe, direction)
-
-        return
-      }
-
-      opacity.set(withTiming(0, { duration: 170 }))
-      offset.set(
-        withTiming(direction === 'older' ? -width : width, { duration: 170 }, (finished) => {
-          if (finished && enabled.get()) scheduleOnRN(onSwipe, direction)
-        }),
-      )
+      offset.set(reduced ? 0 : withSpring(direction === 'older' ? -24 : 24, spring))
+      scheduleOnRN(onSwipe, direction)
     },
     onFinalize: () => {
       'worklet'
       swipe.set(null)
 
-      if (!settling.get())
-        offset.set(reduced ? 0 : withSpring(0, { damping: 22, stiffness: 240, mass: 0.8 }))
+      if (!settling.get()) offset.set(reduced ? 0 : withSpring(0, spring))
     },
   })
 
-  const style = useAnimatedStyle(() => ({
-    opacity: opacity.get(),
-    transform: [{ translateX: offset.get() }],
-  }))
-
+  const style = useAnimatedStyle(() => ({ transform: [{ translateX: offset.get() }] }))
   const scroll = useNativeGesture({ requireToFail: pan, cancelsJSResponder: false })
 
   return (
     <GestureHandlerRootView style={{ flex: 1, overflow: 'hidden' }}>
       <SwipeGestureContext value={{ pan, scroll }}>
         <GestureDetector gesture={pan}>
-          <Animated.View style={[{ flex: 1 }, style]}>{children}</Animated.View>
+          <View collapsable={false} style={{ flex: 1 }}>
+            <Animated.View style={[{ flex: 1 }, style]}>{children}</Animated.View>
+          </View>
         </GestureDetector>
       </SwipeGestureContext>
     </GestureHandlerRootView>

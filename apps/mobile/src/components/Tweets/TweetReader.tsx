@@ -28,6 +28,15 @@ function Reader({
   const [entering, setEntering] = useState<'older' | 'newer' | null>(null)
   const { screen, navigation } = reader
 
+  const feedback = {
+    loading: 'Opening next tweet…',
+    error: "Couldn't open that tweet. Your current post is still here.",
+    ready: reader.notice ?? "Couldn't save reading progress.",
+    empty: null,
+  }[reader.status]
+
+  const retryLabel = reader.progressFailed ? 'Retry reading progress' : 'Reading options'
+
   const go = (slug: string | null, direction: 'older' | 'newer' | null = null) => {
     setEntering(direction)
     setOptions(false)
@@ -36,9 +45,9 @@ function Reader({
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {reader.status === 'loading' ? (
+      {reader.status === 'loading' && !screen ? (
         <TweetsStatus kind='loading' />
-      ) : reader.status === 'error' ? (
+      ) : reader.status === 'error' && !screen ? (
         <>
           <TweetsStatus kind='error' message="couldn't load this tweet" onRetry={reader.retry} />
           <ReaderButton label='Latest' onPress={() => go(null)} />
@@ -54,7 +63,8 @@ function Reader({
           />
           <TweetSwipeSurface
             key={screen.post.slug}
-            disabled={options || reader.actionBusy || !navigation}
+            disabled={options || reader.actionBusy || reader.status !== 'ready' || !navigation}
+            pending={reader.status === 'loading'}
             newer={Boolean(navigation?.newer)}
             older={Boolean(navigation?.older)}
             entering={entering}
@@ -73,17 +83,26 @@ function Reader({
               replies={screen.replies}
             />
           </TweetSwipeSurface>
-          {reader.progressFailed || reader.notice ? (
+          {reader.status === 'loading' ||
+          reader.status === 'error' ||
+          reader.progressFailed ||
+          reader.notice ? (
             <View style={{ paddingHorizontal: 12, paddingBottom: 8, gap: 6 }}>
               <Text
                 accessibilityLiveRegion='polite'
                 style={{ color: colors.strong, fontFamily: fonts.mono, fontSize: 12 }}>
-                {reader.notice ?? "Couldn't save reading progress."}
+                {feedback}
               </Text>
-              <ReaderButton
-                label={reader.progressFailed ? 'Retry reading progress' : 'Reading options'}
-                onPress={reader.progressFailed ? reader.retry : () => setOptions(true)}
-              />
+              {reader.status !== 'loading' ? (
+                <ReaderButton
+                  label={reader.status === 'error' ? 'Retry tweet' : retryLabel}
+                  onPress={
+                    reader.status === 'error' || reader.progressFailed
+                      ? reader.retry
+                      : () => setOptions(true)
+                  }
+                />
+              ) : null}
             </View>
           ) : null}
         </>

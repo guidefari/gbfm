@@ -62,13 +62,17 @@ export type ReaderEvent =
 export const ReaderEvent = Data.taggedEnum<ReaderEvent>()
 
 export const reduceReader = (state: ReaderState, event: ReaderEvent): ReaderState => {
-  if (ReaderEvent.$is('Started')(event)) return { ...initialReaderState, request: event.request }
+  if (ReaderEvent.$is('Started')(event))
+    return { ...initialReaderState, request: event.request, screen: state.screen }
 
   if (state.request !== event.request) return state
 
   return ReaderEvent.$match(event, {
     Action: ({ busy }) => ({ ...state, actionBusy: busy }),
-    Loaded: ({ screen }): ReaderState => ({ ...state, screen, status: screen ? 'ready' : 'empty' }),
+    Loaded: ({ screen }): ReaderState =>
+      !screen && state.screen
+        ? { ...state, status: 'error' }
+        : { ...state, screen, status: screen ? 'ready' : 'empty' },
     Failed: (): ReaderState => ({ ...state, status: 'error' }),
     Progress: ({ failed }) => ({ ...state, progressFailed: failed }),
     Navigation: ({ navigation }): ReaderState => ({
