@@ -124,8 +124,8 @@ export const createSwipeMotion = () => {
         [
           { transform, opacity: 1 },
           {
-            transform: `translateX(${direction === 'older' ? -innerWidth : innerWidth}px)`,
-            opacity: 0,
+            transform: `translateX(${direction === 'older' ? -24 : 24}px)`,
+            opacity: 1,
           },
         ],
         170,

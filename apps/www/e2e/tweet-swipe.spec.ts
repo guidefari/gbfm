@@ -47,6 +47,60 @@ test('tweet follows the finger and springs back below the slow-drag threshold', 
   await expect(page).toHaveURL(/\/tweet\/e2e-archive-one$/)
 })
 
+test('a slow swipe keeps the current post visible while the next request is waiting', async ({
+  page,
+}) => {
+  let release = () => {}
+
+  let requested = () => {}
+
+  const waiting = new Promise<void>((resolve) => {
+    release = resolve
+  })
+
+  const started = new Promise<void>((resolve) => {
+    requested = resolve
+  })
+
+  await page.route('**/tweet/e2e-archive-two*', async (route) => {
+    requested()
+    await waiting
+    await route.continue()
+  })
+  await page.goto('/tweet/e2e-archive-one')
+  await ready(page, 'e2e-archive-one')
+  await drag(page, 'start', 150, 0)
+
+  for (let step = 1; step <= 12; step++) {
+    await drag(page, 'move', 150 + step * 10, step * 120)
+    await expect(page.locator('[data-tweet-motion]')).toHaveCSS(
+      'transform',
+      `matrix(1, 0, 0, 1, ${step === 1 ? 0 : step * 10}, 0)`,
+    )
+  }
+
+  await drag(page, 'end', 270, 1500)
+  await started
+
+  try {
+    const motion = page.locator('[data-tweet-motion]')
+    await expect(motion).toHaveCSS('opacity', '1')
+    await expect(page.locator('[data-tweet-swipe]')).toHaveAttribute(
+      'data-tweet-swipe',
+      'e2e-archive-one',
+    )
+    await expect
+      .poll(async () => Math.abs((await motion.boundingBox())?.x ?? Infinity))
+      .toBeLessThan(80)
+    await expect(motion).toHaveCSS('opacity', '1')
+    await expect(page.locator('summary[aria-label="Reading options"]')).toBeVisible()
+  } finally {
+    release()
+  }
+
+  await ready(page, 'e2e-archive-two')
+})
+
 test('short fast flick commits with exit and entrance motion', async ({ page }) => {
   await page.goto('/tweet/e2e-archive-one')
   await ready(page, 'e2e-archive-one')
