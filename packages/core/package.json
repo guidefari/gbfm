@@ -8,6 +8,7 @@
     "./api": "./src/api/index.ts",
     "./media-preview": "./src/media-preview.ts",
     "./reader-swipe": "./src/reader-swipe.ts",
+    "./tweet-browse": "./src/tweet-browse.ts",
     "./observability/request-id": "./src/observability/request-id.ts",
     "./observability/local-loki": "./src/observability/local-loki.ts",
     "./observability/trace-sampling": "./src/observability/trace-sampling.ts",

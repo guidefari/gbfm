@@ -36,6 +36,13 @@ function Reader({
     reader.go(slug)
   }
 
+  const browse = () => {
+    setOptions(false)
+
+    if (initialSlug) router.dismissTo('/(tabs)/(tweets)/archive')
+    else router.push('/(tabs)/(tweets)/archive')
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {reader.status === 'loading' ? (
@@ -53,6 +60,7 @@ function Reader({
             date={screen.post.createdAt}
             navigationStatus={reader.navigationStatus}
             onOptions={() => setOptions(true)}
+            onBrowse={browse}
           />
           <TweetSwipeSurface
             key={screen.post.slug}
@@ -111,10 +119,7 @@ function Reader({
           setOptions(false)
           reader.retry()
         }}
-        onArchive={() => {
-          setOptions(false)
-          router.push('/(tabs)/(tweets)/archive')
-        }}
+        onArchive={browse}
       />
     </View>
   )

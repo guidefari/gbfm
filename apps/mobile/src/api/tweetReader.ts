@@ -1,4 +1,5 @@
 import { Api } from '@gbfm/api/api'
+import { browseMonths, browseWindow } from '@gbfm/core/tweet-browse'
 import { Data, Effect, Predicate, type Redacted } from 'effect'
 import { HttpClient, HttpClientRequest } from 'effect/http'
 import { HttpApiClient } from 'effect/http-api'
@@ -81,3 +82,43 @@ export const resetReaderHistory = (connection: ReaderConnection) =>
 
     return undefined
   }).pipe(Effect.mapError(requestFailed))
+
+export const loadTweetBrowse = (
+  connection: ReaderConnection,
+  from: string | null,
+  month: string | null,
+  page: number,
+) =>
+  Effect.gen(function* () {
+    const posts = yield* HttpApiClient.group(Api, {
+      group: 'post',
+      baseUrl: connection.baseUrl,
+      httpClient: clientFor(connection),
+    })
+
+    const latest = from ?? (yield* posts.getLatestMicroPost())?.slug
+
+    const navigation = latest
+      ? yield* loadReaderNavigation(connection, latest).pipe(Effect.orElseSucceed(() => null))
+      : null
+
+    const timeline = navigation?.timeline ?? []
+    const window = browseWindow(timeline, month, page)
+
+    const result = yield* posts.getMicroPosts({
+      query: { offset: window.offset, limit: timeline.length ? window.limit : 30 },
+    })
+
+    return {
+      ...window,
+      timeline: browseMonths(timeline),
+      posts: result.data.filter(
+        (post) => !window.month || post.createdAt.slice(0, 7) === window.month,
+      ),
+      total: timeline.length ? window.total : result.pagination.total,
+      hasMore: timeline.length ? window.hasMore : result.pagination.hasMore,
+      datesAvailable: navigation !== null,
+    }
+  }).pipe(Effect.mapError(requestFailed))
+
+export type TweetBrowseData = Effect.Success<ReturnType<typeof loadTweetBrowse>>

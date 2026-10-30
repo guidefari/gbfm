@@ -1,104 +1,119 @@
-import { useAtomRefresh, useAtomValue } from '@effect/atom-react'
-import { AsyncResult } from 'effect/reactivity'
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text } from 'react-native'
+import { browseMonthLabel } from '@gbfm/core/tweet-browse'
+import { useRouter } from 'expo-router'
+import { useState } from 'react'
+import { FlatList, RefreshControl, Text, View } from 'react-native'
 
-import { Screen } from '@/components/Screen'
-import { TweetRow } from '@/components/Tweets/TweetRow'
+import { BrowseDateFilter } from '@/components/Tweets/BrowseDateFilter'
+import { BrowseTweetRow } from '@/components/Tweets/BrowseTweetRow'
+import { ReaderButton } from '@/components/Tweets/ReaderButton'
 import { TweetsStatus } from '@/components/Tweets/TweetsStatus'
-import { tweetsAtom } from '@/store/atoms/tweets'
 import { useThemeColors } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
-import { useTweetPages } from '@/tweets/useTweetPages'
-
-function TweetsHeading() {
-  const colors = useThemeColors()
-
-  return (
-    <Text
-      accessibilityRole='header'
-      style={{
-        color: colors.accent,
-        fontFamily: fonts.monoSemiBold,
-        fontSize: 22,
-        lineHeight: 26,
-        paddingTop: 4,
-        paddingBottom: 4,
-      }}>
-      tweets
-    </Text>
-  )
-}
-
-function TweetsFooter({
-  status,
-  onRetry,
-}: {
-  status: 'idle' | 'loading' | 'failed'
-  onRetry: () => void
-}) {
-  const colors = useThemeColors()
-
-  if (status === 'loading') {
-    return <ActivityIndicator color={colors.accent} style={{ paddingVertical: 20 }} />
-  }
-
-  if (status === 'failed') {
-    return (
-      <Pressable
-        accessibilityRole='button'
-        onPress={onRetry}
-        style={({ pressed }) => ({ paddingVertical: 20, opacity: pressed ? 0.7 : 1 })}>
-        <Text
-          style={{
-            color: colors.accent,
-            fontFamily: fonts.monoSemiBold,
-            fontSize: 13,
-            textAlign: 'center',
-          }}>
-          couldn't load more, tap to retry
-        </Text>
-      </Pressable>
-    )
-  }
-
-  return null
-}
+import { useTweetBrowse } from '@/tweets/useTweetBrowse'
 
 export default function TweetsArchive() {
-  const result = useAtomValue(tweetsAtom)
-  const refresh = useAtomRefresh(tweetsAtom)
   const colors = useThemeColors()
-  const firstPage = AsyncResult.isSuccess(result) ? result.value : null
-  const { tweets, status, loadMore } = useTweetPages(firstPage)
+  const router = useRouter()
+  const [month, setMonth] = useState<string | null>(null)
+  const [page, setPage] = useState(0)
+  const browse = useTweetBrowse(null, month, page)
+  const data = browse.data
+
+  const empty = {
+    error: <TweetsStatus kind='error' message="Couldn't load tweets" onRetry={browse.refresh} />,
+    loading: <TweetsStatus kind='loading' />,
+    ready: <TweetsStatus kind='empty' message='No tweets in this date range.' />,
+  }[browse.status]
 
   return (
-    <Screen>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <FlatList
-        data={tweets}
+        key={`${month}:${page}`}
+        contentInsetAdjustmentBehavior='automatic'
+        data={data?.posts ?? []}
         keyExtractor={(tweet) => tweet.id}
-        renderItem={({ item }) => <TweetRow tweet={item} />}
-        ListHeaderComponent={TweetsHeading}
-        ListEmptyComponent={
-          firstPage ? (
-            <TweetsStatus kind='empty' message='no tweets yet' />
-          ) : AsyncResult.isFailure(result) ? (
-            <TweetsStatus kind='error' message="couldn't load tweets" onRetry={refresh} />
-          ) : (
-            <TweetsStatus kind='loading' />
-          )
+        renderItem={({ item, index }) => (
+          <>
+            {index === 0 ||
+            data?.posts[index - 1]?.createdAt.slice(0, 7) !== item.createdAt.slice(0, 7) ? (
+              <Text
+                style={{
+                  paddingTop: 24,
+                  color: colors.muted,
+                  fontFamily: fonts.monoSemiBold,
+                  fontSize: 12,
+                }}>
+                {browseMonthLabel(item.createdAt.slice(0, 7))}
+              </Text>
+            ) : null}
+            <BrowseTweetRow
+              tweet={item}
+              onPress={() =>
+                router.push({
+                  pathname: '/(tabs)/(tweets)/tweet/[slug]',
+                  params: { slug: item.slug },
+                })
+              }
+            />
+          </>
+        )}
+        ListHeaderComponent={
+          <View style={{ gap: 12, paddingTop: 12 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 8,
+              }}>
+              <BrowseDateFilter
+                timeline={data?.timeline ?? []}
+                selected={data ? data.month : month}
+                onSelect={(value) => {
+                  setMonth(value)
+                  setPage(0)
+                }}
+              />
+              <ReaderButton
+                label='Back to reader'
+                quiet
+                onPress={() =>
+                  router.canGoBack() ? router.back() : router.replace('/(tabs)/(tweets)')
+                }
+              />
+            </View>
+            {data ? (
+              <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 11 }}>
+                {data.total} {data.total === 1 ? 'tweet' : 'tweets'} · newest first
+              </Text>
+            ) : null}
+            {data && !data.datesAvailable ? (
+              <ReaderButton label='Retry date filters' quiet onPress={browse.refresh} />
+            ) : null}
+          </View>
         }
-        ListFooterComponent={<TweetsFooter status={status} onRetry={loadMore} />}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.5}
+        ListEmptyComponent={empty}
+        ListFooterComponent={
+          data ? (
+            <View style={{ flexDirection: 'row', gap: 8, paddingVertical: 24 }}>
+              {data.page > 0 ? (
+                <ReaderButton label='Newer tweets' onPress={() => setPage(data.page - 1)} />
+              ) : null}
+              {data.hasMore ? (
+                <ReaderButton label='Older tweets' onPress={() => setPage(data.page + 1)} />
+              ) : null}
+            </View>
+          ) : undefined
+        }
         refreshControl={
           <RefreshControl
-            refreshing={firstPage !== null && AsyncResult.isWaiting(result)}
-            onRefresh={refresh}
+            refreshing={browse.status === 'loading' && data !== null}
+            onRefresh={browse.refresh}
             tintColor={colors.accent}
           />
         }
         contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 20, paddingBottom: 24 }}
       />
-    </Screen>
+    </View>
   )
 }

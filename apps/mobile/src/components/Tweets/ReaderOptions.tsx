@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { useThemeColors, withAlpha } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
-import { nextUnread, readerMonth } from '@/tweets/readerState'
+import { nextUnread } from '@/tweets/readerState'
 
 import { ReaderButton } from './ReaderButton'
 
@@ -55,7 +55,7 @@ export function ReaderOptions(props: Props) {
         <SafeAreaView
           edges={['bottom']}
           style={{
-            height: '80%',
+            maxHeight: '75%',
             borderTopLeftRadius: radii.overlay,
             borderTopRightRadius: radii.overlay,
             overflow: 'hidden',
@@ -79,7 +79,7 @@ export function ReaderOptions(props: Props) {
             <ReaderButton label='Close' quiet onPress={props.onClose} />
           </View>
           <ScrollView
-            style={{ flex: 1 }}
+            style={{ flexGrow: 0, flexShrink: 1 }}
             contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20, gap: 14 }}>
             <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 12 }}>
               {props.navigation
@@ -108,7 +108,7 @@ export function ReaderOptions(props: Props) {
             </View>
             {'slug' in target ? (
               <ReaderButton
-                label={`Next unread (${target.kind})`}
+                label='Next unread'
                 primary
                 disabled={props.busy}
                 onPress={() => props.onGo(target.slug)}
@@ -135,28 +135,13 @@ export function ReaderOptions(props: Props) {
               </View>
               <View style={{ flex: 1 }}>
                 <ReaderButton
-                  label='Random unread'
+                  label='Surprise me'
                   disabled={props.busy || !props.navigation || target.kind === 'caught-up'}
                   onPress={props.onRandom}
                 />
               </View>
             </View>
-            <ReaderButton label='Browse feed archive' onPress={props.onArchive} />
-            <Text style={{ color: colors.strong, fontFamily: fonts.monoSemiBold, fontSize: 13 }}>
-              Jump to month
-            </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {props.navigation?.timeline.map((month) => (
-                <View key={month.month} style={{ flexBasis: '48%', flexGrow: 1 }}>
-                  <ReaderButton
-                    label={`${readerMonth(`${month.month}-01T00:00:00Z`)} · ${month.unread}/${month.total}`}
-                    accessibilityLabel={`${readerMonth(`${month.month}-01T00:00:00Z`)} · ${month.unread} of ${month.total} unread`}
-                    disabled={props.busy}
-                    onPress={() => props.onGo(month.newestSlug)}
-                  />
-                </View>
-              ))}
-            </View>
+            <ReaderButton label='Browse tweets' quiet onPress={props.onArchive} />
             <ReaderButton
               label='Reset reading history…'
               disabled={props.busy || !props.navigation}
